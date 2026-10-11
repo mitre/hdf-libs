@@ -18,7 +18,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -29,7 +29,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -40,7 +40,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -51,7 +51,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -62,7 +62,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -73,7 +73,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             }
           ],
@@ -138,7 +138,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             },
             {
@@ -149,7 +149,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-10T23:39:24.55132Z",
+              "startTime": "2026-10-11T00:55:33.968Z",
               "status": "failed"
             }
           ],
@@ -200,7 +200,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T23:39:24.55132Z",
+  "timestamp": "2026-10-11T00:55:33.968Z",
   "tool": {
     "format": "SARIF",
     "name": "Gitleaks"

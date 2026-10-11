@@ -273,10 +273,9 @@ var sarifAliases = map[string]float64{
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format.
 // ConvertSarifToHDF converts SARIF input to HDF Results.
-// The optional inputVersion parameter specifies the SARIF schema version
-// (e.g. "2.0.0", "2.1.0"). When omitted or empty, the version is read from
-// the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
-// before processing.
+// The optional inputVersion parameter requests a SARIF schema version. Only 2.1 is
+// supported, so any other explicit value is refused rather than silently ignored;
+// omitting it accepts whatever the document declares on a best-effort basis.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -285,7 +284,13 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		return nil, err
 	}
 
-	timestamp := time.Now()
+	// NormalizeTimestamp, not .UTC(): canonical HDF time is UTC AT MILLISECOND
+	// precision, and the helper exists so converter output is byte-identical to the
+	// TypeScript peer regardless of offset or sub-millisecond digits. A bare
+	// time.Now() carried the host's zone, so the same input produced a different
+	// document under a different TZ; .UTC() alone would fix the zone and leave Go
+	// emitting microseconds where JavaScript emits milliseconds.
+	timestamp := hdfutil.NormalizeTimestamp(time.Now())
 
 	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
@@ -317,90 +322,20 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 	return hdfResult, nil
 }
 
-// normalizeSarifVersion handles structural differences between SARIF versions.
-// SARIF 2.0 uses "resources.rules" instead of "tool.driver.rules"; this function
-// rewrites 2.0 structure to 2.1 layout so the converter logic can be unified.
-// If the version is not 2.0 or if the input already has 2.1 structure, the
-// input is returned unchanged.
-func normalizeSarifVersion(input []byte, explicitVersion string) ([]byte, error) {
-	// Quick check: only normalize if version indicates 2.0
-	if !isSarif20(input, explicitVersion) {
-		return input, nil
+// assertSupportedVersion rejects an explicitly requested version this converter does
+// not implement. Only SARIF 2.1.0 is supported: it is the OASIS Standard, the vendored
+// schema's version enum admits that value alone, and every fixture in the corpus
+// declares it. The 2.0 committee draft is not supported — a previous normalization
+// claimed to rewrite its resources.rules into tool.driver.rules but required
+// tool.driver to already exist, which 2.1 introduced, so it could never fire on a real
+// 2.0 document. Rejecting an explicit 2.0 request is honest where silently ignoring it
+// was not. A document whose own version field says 2.0 is still converted on a
+// best-effort basis; only an explicit request is refused.
+func assertSupportedVersion(explicitVersion string) error {
+	if explicitVersion == "" || strings.HasPrefix(explicitVersion, "2.1") {
+		return nil
 	}
-
-	// Parse into a generic map for structural rewriting
-	var doc map[string]any
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
-	}
-
-	runs, ok := doc["runs"].([]any)
-	if !ok || len(runs) == 0 {
-		return input, nil
-	}
-
-	modified := false
-	for _, runRaw := range runs {
-		run, ok := runRaw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// SARIF 2.0: "resources" → { "rules": [...] }
-		// SARIF 2.1: "tool" → { "driver": { "rules": [...] } }
-		resources, hasResources := run["resources"].(map[string]any)
-		if !hasResources {
-			continue
-		}
-
-		rules, hasRules := resources["rules"]
-		if !hasRules {
-			continue
-		}
-
-		// Move resources.rules → tool.driver.rules (only if tool.driver exists
-		// and doesn't already have rules)
-		tool, _ := run["tool"].(map[string]any)
-		if tool == nil {
-			continue
-		}
-		driver, _ := tool["driver"].(map[string]any)
-		if driver == nil {
-			continue
-		}
-		if _, alreadyHasRules := driver["rules"]; !alreadyHasRules {
-			driver["rules"] = rules
-			modified = true
-		}
-
-		// Clean up the resources field
-		delete(run, "resources")
-	}
-
-	// Update version to 2.1.0 so downstream code doesn't re-normalize
-	if modified {
-		doc["version"] = "2.1.0"
-		return json.Marshal(doc)
-	}
-
-	return input, nil
-}
-
-// isSarif20 checks if the input is SARIF 2.0 based on the explicit version
-// parameter or the version field in the document. When an explicit version is
-// provided, it takes precedence over the document's version field.
-func isSarif20(input []byte, explicitVersion string) bool {
-	if explicitVersion != "" {
-		return strings.HasPrefix(explicitVersion, "2.0")
-	}
-	// No explicit version — check the document's version field
-	var peek struct {
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(input, &peek); err != nil {
-		return false
-	}
-	return strings.HasPrefix(peek.Version, "2.0")
+	return fmt.Errorf("sarif: unsupported input version %q; only 2.1 is supported", explicitVersion)
 }
 
 // --- Run-level conversion ---
@@ -1420,7 +1355,17 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 		}
 	}
 
-	codeDesc := fmt.Sprintf("URL : %s LINE : %d COLUMN : %d", uri, line, column)
+	// The URL slot is omitted when no uri is known rather than left empty. §3.4.5
+	// permits an artifactLocation carrying only an index, and region — which holds the
+	// line and column — is a SIBLING of artifactLocation, so the position is known even
+	// when the file is not. Publishing "URL :  LINE : 5" reads as missing data, and
+	// dropping the whole location would discard a line we have. Resolving the index
+	// against run.artifacts would recover the path; that is not implemented, and a
+	// consumer needing it reads the result's rawSourceRecord.
+	codeDesc := fmt.Sprintf("LINE : %d COLUMN : %d", line, column)
+	if uri != "" {
+		codeDesc = fmt.Sprintf("URL : %s %s", uri, codeDesc)
+	}
 	if snippet != "" {
 		codeDesc = fmt.Sprintf("%s\n%s", codeDesc, snippet)
 	}
@@ -1433,8 +1378,8 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 	}
 }
 
-// parseSarif applies the converter's input guards, normalizes SARIF 2.0 to
-// 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
+// parseSarif applies the converter's input guards, refuses an explicitly requested
+// version other than 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
 // they accept and reject exactly the same inputs.
 func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 	if len(input) == 0 {
@@ -1447,16 +1392,17 @@ func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 	if len(inputVersion) > 0 && inputVersion[0] != "" {
 		effectiveVersion = inputVersion[0]
 	}
-	normalized, err := normalizeSarifVersion(input, effectiveVersion)
-	if err != nil {
+	if err := assertSupportedVersion(effectiveVersion); err != nil {
 		return nil, err
 	}
 	var sarif SarifFile
-	if err := json.Unmarshal(normalized, &sarif); err != nil {
+	if err := json.Unmarshal(input, &sarif); err != nil {
 		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
 	}
-	if len(sarif.Runs) == 0 {
-		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
+	// An empty runs array is conformant (§3.13.4) and converts to a document with no
+	// baselines, which hdf-results permits. Only a MISSING runs field is an error.
+	if sarif.Runs == nil {
+		return nil, fmt.Errorf("invalid SARIF structure: missing runs field")
 	}
 	return &sarif, nil
 }

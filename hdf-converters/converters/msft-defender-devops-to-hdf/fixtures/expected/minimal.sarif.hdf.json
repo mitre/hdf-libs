@@ -22,7 +22,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-10T23:39:24.703219Z",
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -110,7 +110,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/1/results/0"
               },
-              "startTime": "2026-10-10T23:39:24.703219Z",
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -173,7 +173,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/1/results/1"
               },
-              "startTime": "2026-10-10T23:39:24.703219Z",
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -243,7 +243,7 @@
     "name": "msft-defender-devops-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T23:39:24.703219Z",
+  "timestamp": "2026-10-11T00:55:33.788Z",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -295,11 +296,12 @@ func TestInvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid SARIF JSON")
 }
 
+// An ABSENT runs field is an error; an EMPTY one is conformant (§3.13.4) and converts.
 func TestMissingRuns(t *testing.T) {
 	input := `{ "version": "2.1.0" }`
 	_, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "missing or empty runs field")
+	assert.Contains(t, err.Error(), "missing runs field")
 }
 
 // --- Level resolution tests ---
@@ -1707,6 +1709,17 @@ func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
 		"spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)")
 }
 
+// WHAT THIS GUARANTEE DOES NOT COVER. A golden-based parity test can only discriminate
+// shapes the corpus actually contains, so it is silent on every conformant construct no
+// fixture carries. Four Go/TypeScript divergences were found by reading the two
+// implementations against the spec, not by this test, and it stayed green through all of
+// them: an empty runs array, a SARIF 2.0 resources.rules block, an artifactLocation with
+// no uri, and a host-zone timestamp. Two of them now have fixtures; the 2.0 shape
+// cannot have one, because the only vendored schema admits 2.1.0 alone, so it is
+// covered by inline documents in both languages instead. The conformance
+// surface is much larger than the corpus (SARIF defines 30 result properties alone), so a
+// divergence in an uncovered construct will not be caught here. Add a fixture when a
+// conformant shape matters, rather than trusting this to find it.
 func TestSnapshots(t *testing.T) {
 	// SARIF fixtures carry no run start time; conversion-time fallback. Suppression
 	// overrides likewise carry no owner/date, so appliedAt/expiresAt are conversion-
@@ -1813,94 +1826,6 @@ func TestConvertSarifToHDF_ExplicitVersion(t *testing.T) {
 		assert.Equal(t, len(resultDefault.Baselines[i].Requirements),
 			len(resultExplicit.Baselines[i].Requirements),
 			"baseline %d requirement count should match", i)
-	}
-}
-
-func TestNormalizeSarifVersion_21Passthrough(t *testing.T) {
-	input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"test","rules":[{"id":"R1"}]}},"results":[]}]}`)
-	output, err := normalizeSarifVersion(input, "")
-	require.NoError(t, err)
-	// 2.1 input should pass through unchanged
-	assert.Equal(t, input, output)
-}
-
-func TestNormalizeSarifVersion_20ResourcesRules(t *testing.T) {
-	// SARIF 2.0 has resources.rules instead of tool.driver.rules
-	input := []byte(`{
-		"version": "2.0.0",
-		"runs": [{
-			"tool": {"driver": {"name": "test"}},
-			"resources": {"rules": [{"id": "R1", "name": "TestRule"}]},
-			"results": []
-		}]
-	}`)
-
-	output, err := normalizeSarifVersion(input, "")
-	require.NoError(t, err)
-
-	var doc map[string]any
-	require.NoError(t, json.Unmarshal(output, &doc))
-
-	// Version should be upgraded to 2.1.0
-	assert.Equal(t, "2.1.0", doc["version"])
-
-	// resources should be removed, rules should be in tool.driver.rules
-	runs := doc["runs"].([]any)
-	run := runs[0].(map[string]any)
-	_, hasResources := run["resources"]
-	assert.False(t, hasResources, "resources field should be removed")
-
-	tool := run["tool"].(map[string]any)
-	driver := tool["driver"].(map[string]any)
-	rules, hasRules := driver["rules"].([]any)
-	assert.True(t, hasRules, "tool.driver.rules should exist")
-	assert.Len(t, rules, 1)
-	assert.Equal(t, "R1", rules[0].(map[string]any)["id"])
-}
-
-func TestNormalizeSarifVersion_ExplicitVersionOverride(t *testing.T) {
-	// Document says 2.1.0 but explicit version says 2.0 — trust explicit
-	input := []byte(`{
-		"version": "2.1.0",
-		"runs": [{
-			"tool": {"driver": {"name": "test"}},
-			"resources": {"rules": [{"id": "R1"}]},
-			"results": []
-		}]
-	}`)
-
-	output, err := normalizeSarifVersion(input, "2.0.0")
-	require.NoError(t, err)
-
-	var doc map[string]any
-	require.NoError(t, json.Unmarshal(output, &doc))
-
-	// resources.rules should be moved even though doc version says 2.1
-	tool := doc["runs"].([]any)[0].(map[string]any)["tool"].(map[string]any)
-	driver := tool["driver"].(map[string]any)
-	_, hasRules := driver["rules"]
-	assert.True(t, hasRules, "should normalize when explicit version is 2.0")
-}
-
-func TestIsSarif20(t *testing.T) {
-	tests := []struct {
-		name     string
-		version  string
-		docVer   string
-		expected bool
-	}{
-		{"explicit 2.0.0", "2.0.0", "2.1.0", true},
-		{"explicit 2.0.0-csd", "2.0.0-csd.2", "2.1.0", true},
-		{"explicit 2.1.0", "2.1.0", "2.0.0", false},
-		{"empty explicit, doc 2.0", "", "2.0.0", true},
-		{"empty explicit, doc 2.1", "", "2.1.0", false},
-		{"empty both", "", "", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			doc := []byte(`{"version":"` + tt.docVer + `"}`)
-			assert.Equal(t, tt.expected, isSarif20(doc, tt.version))
-		})
 	}
 }
 
@@ -2788,4 +2713,150 @@ func TestConvertSarifToHDF_RawSourceRecordDoesNotHTMLEscape(t *testing.T) {
 	assert.Contains(t, rec.Content, "a && b < c > d")
 	escaped := "\\" + "u00"
 	assert.NotContains(t, rec.Content, escaped, "no character may be \\u00XX-escaped")
+}
+
+// --- Go/TypeScript conformance parity (§3.13.4, §3.4.5) ---
+
+// §3.13.4 makes an empty runs array conformant. Go rejected it while TypeScript
+// converted it, so one language refused a file the other accepted. A zero-baseline
+// HDF document is schema-valid (baselines has no minItems), so accepting is the
+// answer: refusing a conformant document is the worse failure.
+func TestConvertSarifToHDF_EmptyRunsIsAccepted(t *testing.T) {
+	result, err := ConvertSarifToHDF([]byte(`{"version":"2.1.0","runs":[]}`), testConverterVersion)
+	require.NoError(t, err, "an empty runs array is conformant SARIF and must convert")
+	assert.Empty(t, result.Baselines, "no runs means no baselines, not an error")
+	require.NotNil(t, result.Generator)
+}
+
+// §3.4.5 permits an artifactLocation with no uri, because region — which carries the
+// line and column — is a SIBLING of artifactLocation, not inside it. So the position
+// is known even when the file is not, and discarding it loses data we have because of
+// data we do not.
+func TestConvertSarifToHDF_UriLessLocationKeepsItsRegion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":5,"startColumn":7}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+
+	cd := req.Results[0].CodeDesc
+	assert.Contains(t, cd, "LINE : 5", "the line is known and must survive")
+	assert.Contains(t, cd, "COLUMN : 7")
+	assert.NotContains(t, cd, "URL :", "no uri is known, so no empty URL slot may be published")
+
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Line)
+	assert.EqualValues(t, 5, *req.SourceLocation.Line)
+	assert.Nil(t, req.SourceLocation.Ref, "there is no ref to report")
+}
+
+// A bare time.Now() carries the host's zone, so the same input produced a different
+// document in a different TZ — and diverged from TypeScript, which always emits Z.
+// The canonical HDF form is trimmed-UTC RFC3339.
+func TestConvertSarifToHDF_TimestampsAreUTCRegardlessOfHostZone(t *testing.T) {
+	// Pin a non-UTC Local for the duration: asserting a zero offset would otherwise
+	// pass under TZ=UTC whether or not the converter normalizes, and TZ=UTC is how
+	// this suite normally runs — so the test would be vacuous exactly where it runs.
+	saved := time.Local
+	time.Local = time.FixedZone("TEST+09", 9*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	_, offset := result.Timestamp.Zone()
+	assert.Zero(t, offset, "the document timestamp must carry a zero offset, not the host's")
+	_, resultOffset := result.Baselines[0].Requirements[0].Results[0].StartTime.Zone()
+	assert.Zero(t, resultOffset, "a result's startTime must carry a zero offset")
+}
+
+// SARIF 2.0 support is removed: it was never reachable for a real 2.0 document,
+// because the normalization required tool.driver, which 2.1 introduced. Both
+// languages now treat such a document the same way — resources.rules is simply not a
+// place rules are looked for.
+func TestConvertSarifToHDF_SarifTwoZeroResourcesRulesAreNotNormalized(t *testing.T) {
+	input := []byte(`{"version":"2.0.0","runs":[{"tool":{"driver":{"name":"T"}},
+		"resources":{"rules":[{"id":"R1","name":"RuleOne","defaultConfiguration":{"level":"error"}}]},
+		"results":[{"ruleId":"R1","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "m", *req.Title, "the rule is not found, so the message is the title")
+	assert.InDelta(t, 0.5, req.Impact, 0.0001, "no rule means the fallback level")
+}
+
+// Canonical HDF time is UTC at MILLISECOND precision — hdfutil.NormalizeTimestamp
+// exists so Go output is byte-identical to the TypeScript peer. A bare time.Now()
+// carried the host's zone, and .UTC() alone would have left Go emitting microseconds
+// where JavaScript emits milliseconds, so the fraction length is asserted too.
+func TestConvertSarifToHDF_TimestampsAreCanonicalMillisecondUTC(t *testing.T) {
+	saved := time.Local
+	time.Local = time.FixedZone("TEST+09", 9*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	for name, ts := range map[string]time.Time{
+		"document timestamp": *result.Timestamp,
+		"result startTime":   result.Baselines[0].Requirements[0].Results[0].StartTime,
+	} {
+		_, offset := ts.Zone()
+		assert.Zero(t, offset, "%s must carry a zero offset, not the host's", name)
+		assert.Zero(t, ts.Nanosecond()%1_000_000,
+			"%s must be truncated to milliseconds, which is what JavaScript emits", name)
+	}
+}
+
+// Refusing an unsupported explicit version is the one new user-visible behaviour in
+// dropping SARIF 2.0, and it has to be asserted: without this, replacing the guard call
+// with a no-op passes the whole package, and the CLI would silently accept
+// --from sarif@2.0 again while doing nothing with it.
+func TestConvertSarifToHDF_RefusesAnUnsupportedExplicitVersion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"T"}},"results":[]}]}`)
+
+	for _, requested := range []string{"2.0.0", "2.0", "1.0.0", "3.0.0"} {
+		t.Run(requested, func(t *testing.T) {
+			_, err := ConvertSarifToHDF(input, testConverterVersion, requested)
+			require.Error(t, err, "an explicit %q must be refused, not ignored", requested)
+			assert.Contains(t, err.Error(), "unsupported input version")
+			assert.Contains(t, err.Error(), requested, "the error must name the version asked for")
+
+			// ExpectedRequirementCount shares the guard, so it must refuse identically —
+			// the two exist to accept and reject exactly the same inputs.
+			_, _, countErr := ExpectedRequirementCount(input, requested)
+			require.Error(t, countErr, "the count path must refuse %q too", requested)
+		})
+	}
+}
+
+// The supported version, and an omitted one, both convert.
+func TestConvertSarifToHDF_AcceptsTheSupportedExplicitVersion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	for _, requested := range []string{"", "2.1.0", "2.1"} {
+		_, err := ConvertSarifToHDF(input, testConverterVersion, requested)
+		require.NoError(t, err, "%q must be accepted", requested)
+	}
 }

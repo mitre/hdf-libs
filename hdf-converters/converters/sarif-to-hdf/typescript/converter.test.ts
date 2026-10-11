@@ -1903,3 +1903,56 @@ describe('per-result carriage (§3.27.2, §3.27.12, §3.27.16)', () => {
     expect(r.tags['sarif-source-result-count']).toBe(1);
   });
 });
+
+describe('Go/TypeScript conformance parity (§3.13.4, §3.4.5)', () => {
+  // §3.13.4 makes an empty runs array conformant, and a zero-baseline HDF document is
+  // schema-valid, so Go no longer rejects what this side has always accepted.
+  it('accepts an empty runs array', async () => {
+    const out = JSON.parse(await convertSarifToHdf('{"version":"2.1.0","runs":[]}'));
+    expect(out.baselines).toEqual([]);
+    expect(out.generator).toBeDefined();
+  });
+
+  // §3.4.5 permits an artifactLocation with only an index. region — which carries the
+  // line and column — is a SIBLING of artifactLocation, so filtering on a truthy uri
+  // discarded a position that was known.
+  it('keeps the region of a uri-less location', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":5,"startColumn":7}}}]}]}]}`;
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0].codeDesc).toContain('LINE : 5');
+    expect(req.results[0].codeDesc).toContain('COLUMN : 7');
+    expect(req.results[0].codeDesc).not.toContain('URL :');
+    expect(req.results[0].codeDesc).not.toBe('No source location');
+    expect(req.sourceLocation.line).toBe(5);
+    expect(req.sourceLocation.ref).toBeUndefined();
+  });
+
+  // SARIF 2.0's resources.rules was never reachable in Go either, because the
+  // normalization required tool.driver, which 2.1 introduced. Both languages now
+  // simply do not look for rules there.
+  it('does not normalize SARIF 2.0 resources.rules', async () => {
+    const input = `{"version":"2.0.0","runs":[{"tool":{"driver":{"name":"T"}},
+      "resources":{"rules":[{"id":"R1","name":"RuleOne","defaultConfiguration":{"level":"error"}}]},
+      "results":[{"ruleId":"R1","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.title).toBe('m');
+    expect(req.impact).toBe(0.5);
+  });
+
+  // Both languages emit a zero-offset time. Go carried the host's zone from a bare
+  // time.Now(); this side has always produced Z via toISOString.
+  it('emits a zero-offset timestamp', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+    const out = JSON.parse(await convertSarifToHdf(input));
+    expect(out.timestamp).toMatch(/Z$/);
+    expect(out.baselines[0].requirements[0].results[0].startTime).toMatch(/Z$/);
+  });
+});

@@ -8,8 +8,9 @@ import (
 )
 
 // versionedSarifConverter wraps the SARIF converter with VersionedConverter
-// support, allowing callers to specify which SARIF schema version the input
-// conforms to (e.g. "2.0.0" vs "2.1.0").
+// support, so a caller can state which SARIF schema version the input conforms to.
+// Only 2.1.0 is supported; any other explicit version is refused rather than
+// silently ignored.
 type versionedSarifConverter struct {
 	inputVersion string
 }
@@ -46,10 +47,13 @@ func (c *versionedSarifConverter) SetInputVersion(v string) {
 	c.inputVersion = v
 }
 
-// SupportedVersions returns the SARIF versions this converter handles,
-// latest first.
+// SupportedVersions returns the SARIF versions this converter handles. 2.1.0 is the
+// only one: it is the OASIS Standard and the single value the vendored schema's
+// version enum admits. The 2.0 committee draft was listed here while the converter
+// could not in fact process it, so a library consumer was told 2.0 worked and then
+// refused.
 func (c *versionedSarifConverter) SupportedVersions() []string {
-	return []string{"2.1.0", "2.0.0"}
+	return []string{"2.1.0"}
 }
 
 func init() {

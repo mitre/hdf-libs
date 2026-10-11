@@ -665,7 +665,11 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
 
   // Create results for each location
   const results = (result.locations || [])
-    .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
+    // Gate on the location existing, NOT on a truthy uri: §3.4.5 permits an
+    // artifactLocation carrying only an index, and region — which holds the line and
+    // column — is a sibling of artifactLocation, so filtering on uri discarded a
+    // position that was known. Matches Go's createHDFResult gate.
+    .filter(loc => loc.physicalLocation)
     .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
 
   // If no locations, create a location-less result so the finding isn't silently dropped
@@ -1027,7 +1031,15 @@ function createHDFResult(
   const column = location.physicalLocation?.region?.startColumn || 0;
   const snippet = location.physicalLocation?.region?.snippet?.text;
 
-  let codeDesc = `URL : ${uri} LINE : ${line} COLUMN : ${column}`;
+  // The URL slot is omitted when no uri is known rather than left empty: publishing
+  // "URL :  LINE : 5" reads as missing data, while dropping the location would discard
+  // a line we have. Resolving artifactLocation.index against run.artifacts would
+  // recover the path; that is not implemented, and a consumer needing it reads the
+  // result's rawSourceRecord. Mirrors Go's createHDFResult.
+  let codeDesc = `LINE : ${line} COLUMN : ${column}`;
+  if (uri) {
+    codeDesc = `URL : ${uri} ${codeDesc}`;
+  }
   if (snippet) {
     codeDesc = `${codeDesc}\n${snippet}`;
   }

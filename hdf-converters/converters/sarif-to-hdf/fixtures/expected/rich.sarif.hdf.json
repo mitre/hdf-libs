@@ -35,7 +35,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             },
             {
@@ -46,7 +46,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "notApplicable"
             },
             {
@@ -57,7 +57,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/8"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             }
           ],
@@ -143,7 +143,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             }
           ],
@@ -204,7 +204,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             },
             {
@@ -215,7 +215,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             },
             {
@@ -227,7 +227,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/9"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "failed"
             }
           ],
@@ -238,23 +238,23 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-10T23:39:24.554913Z",
+              "appliedAt": "2026-10-11T00:55:33.972Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-10T23:39:24.554913Z",
+              "expiresAt": "2027-10-11T00:55:33.972Z",
               "reason": "This is a test API key used only in development environments",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-10T23:39:24.554913Z",
+              "appliedAt": "2026-10-11T00:55:33.972Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-10T23:39:24.554913Z",
+              "expiresAt": "2027-10-11T00:55:33.972Z",
               "reason": "Marked as false positive by security team",
               "status": "notApplicable",
               "type": "falsePositive"
@@ -333,7 +333,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "passed"
             },
             {
@@ -344,7 +344,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "notReviewed"
             }
           ],
@@ -399,7 +399,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-10T23:39:24.554913Z",
+              "startTime": "2026-10-11T00:55:33.972Z",
               "status": "notApplicable"
             }
           ],
@@ -447,7 +447,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T23:39:24.554913Z",
+  "timestamp": "2026-10-11T00:55:33.972Z",
   "tool": {
     "format": "SARIF",
     "name": "SecurityScanner",

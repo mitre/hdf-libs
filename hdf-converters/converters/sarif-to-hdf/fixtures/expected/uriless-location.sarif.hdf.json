@@ -1,0 +1,75 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Finding whose artifact is addressed by index.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "LINE : 42 COLUMN : 9",
+              "rawSourceRecord": {
+                "content": "{\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"index\":0},\"region\":{\"startColumn\":9,\"startLine\":42}}}],\"message\":{\"text\":\"Finding whose artifact is addressed by index.\"},\"ruleId\":\"EX001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-11T00:55:33.979Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 42
+          },
+          "id": "EX001",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "kind": "fail",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
+          },
+          "title": "IndexedArtifact",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "5f91c121a7b7b5a3948cb72d3c0ff606e37c4fc2de4bb394c6c883c814d47d6e"
+      },
+      "name": "ExampleAnalyzer",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-11T00:55:33.979Z",
+  "tool": {
+    "format": "SARIF",
+    "name": "ExampleAnalyzer",
+    "version": "1.2.3"
+  }
+}

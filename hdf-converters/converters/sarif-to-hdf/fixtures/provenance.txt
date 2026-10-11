@@ -65,6 +65,20 @@ No counterpart in either upstream checked. Introduced by this repository in
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
+### `no-runs.sarif`
+Schema-confirmed, not real: no published tool sample emits an empty runs array, so
+this was built for that case and validated against the vendored schema. §3.13.4
+makes `runs: []` conformant; it exists to stop the Go/TypeScript parity test being
+vacuous for that shape, since Go used to reject it while TypeScript converted it.
+
+### `uriless-location.sarif`
+Schema-confirmed, not real: built to cover §3.4.5's artifactLocation carrying only an
+`index`, and validated against the vendored schema. `region` is a sibling of
+`artifactLocation`, so the line and column are known even though the uri is not, and
+TypeScript used to discard the whole location while Go kept it. `artifacts[0]` holds
+the path the index addresses, so the fixture also stands ready for index resolution if
+that is ever implemented.
+
 ### `results-absent.sarif`
 Schema-confirmed, not real: no published tool sample exercises a run that
 reports no result set, so this was built for that case and validated against
@@ -116,6 +130,9 @@ A version below is what the fixture *says about itself*; where a format carries 
 SARIF 2.1.0 has a machine-readable schema and it is vendored here: `sarif-schema-2.1.0.json`, recorded in `provenance.json` (OASIS canonical URL, SHA-256, retrieval date). It is JSON Schema draft-04, which the TypeScript sweep cannot compile (ajv 8); the Go sweep compiles and hash-checks it.
 
 Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures then present validate against the vendored schema.
+
+`no-runs.sarif` and `uriless-location.sarif` (added 2026-10-10) both validate against
+the vendored schema with the same python jsonschema Draft4Validator.
 
 `results-absent.sarif` (added 2026-10-09; validated with python jsonschema 4.26 Draft4Validator,
 and covered by the Go gojsonschema sweep in-tree) validates. Note the schema and the spec prose

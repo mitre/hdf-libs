@@ -172,7 +172,6 @@ input instead. A directory is searched recursively; files in it that are not
 HDF results documents are passed over.
 
 Use format@version to specify a format version:
-  --from sarif@2.0    Convert SARIF 2.0 input
   --to hdf@3          Modern HDF (default)
   --to hdf@2          Legacy Heimdall HDF schema (InSpec exec-json shape; loads in Heimdall2)
   --from hdf@2        Convert from the legacy Heimdall HDF schema
@@ -182,7 +181,7 @@ Examples:
   hdf convert scan.nessus                              # Auto-detect, convert to HDF
   hdf convert scan.nessus -o results.json              # Write to file
   hdf convert --from nessus --to hdf scan.nessus       # Explicit formats
-  hdf convert --from sarif@2.0 scan.sarif              # Explicit version
+  hdf convert --from hdf@2 legacy.json                 # Explicit input version
   hdf convert scan.json --nist-rev 5                   # Emit NIST 800-53 Rev 5 control tags
   hdf convert results.json --to html -o report.html    # Self-contained HTML report
   hdf convert results.json --to html --report-type manager -o report.html
@@ -320,7 +319,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// convert invocation (the process exits after).
 	hdfutil.SetDefaultMaxInputSize(maxInputSizeBytes())
 
-	// Parse version specifiers from format flags (e.g. "sarif@2.0" → "sarif", "2.0")
+	// Parse version specifiers from format flags (e.g. "hdf@2" → "hdf", "2")
 	fromFormat, fromVersion := parseFormatVersion(fromFormat)
 	toFormat, toVersion := parseFormatVersion(toFormat)
 
