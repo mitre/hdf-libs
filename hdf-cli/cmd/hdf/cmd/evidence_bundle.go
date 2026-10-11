@@ -92,11 +92,15 @@ since inert context was never a candidate. Everything stays recorded in the pack
 which travels in the archive and is the durable list.
 
 Every recorded checksum is verified before anything is written: this build computes every
-algorithm Hash_Algorithm admits. Two kinds cannot be verified: one recording an empty value, and
-one on a reference that cannot travel, whose bytes are not here to check. Both travel and the run
-says so; a reference recording no checksum at all travels silently — 'hdf evidence verify' reports
-those. A mismatch or a missing document fails the command and writes no archive — a partial bundle
-is worse than none, because it looks complete.
+algorithm Hash_Algorithm admits. Three kinds cannot be verified: one recording no checksum at all,
+one recording an empty value, and one on a reference that cannot travel, whose bytes are not here
+to check. The first two DO travel, and are counted separately because the remedy differs — one
+needs a checksum added, the other has one to fill in. The third does not travel at all and is
+reported as not carried. Every one is reported on stderr: the first two as COUNTS, the third
+NAMING the reference. 'hdf evidence verify' names each CONTENT entry individually, which is where
+to look for which ones; it does not report externalEvidence, so a count here can include an entry
+verify will not name. A mismatch or a missing document fails the command and writes no archive —
+a partial bundle is worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
 destroy the evidence it is packaging. It also refuses a path that already exists, so a
@@ -389,7 +393,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// one path. Incrementing it in the contents loop alone is what left a tampered
 	// artifact travelling unverified behind an externalEvidence entry whose recorded
 	// checksum value was empty.
-	var emptyChecksum int
+	var emptyChecksum, noChecksum int
 	// Recorded checksums this build cannot compute, reported by subject and reason.
 	var unverifiable []string
 	collect := func(t target) error {
@@ -443,8 +447,18 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			// A recorded-but-blank value is unverifiable, not a mismatch. Hashing against
 			// it would report "the package records <blank> but the file hashes to …",
 			// presenting an unverifiable record as a changed file.
+			//
+			// Counted either way. checksumRecorded used to gate this, so an entry
+			// recording NO checksum object fell through silently and its document
+			// travelled under the extent claim with nothing vouching for it, while
+			// `evidence verify` reported the same entry as skipped — the two commands
+			// disagreed about whether the operator should be told. The two shapes stay
+			// separate because the remedy differs: one has a checksum to fill in, the
+			// other needs one added.
 			if t.checksumRecorded {
 				emptyChecksum++
+			} else {
+				noChecksum++
 			}
 			return nil
 		}
@@ -549,6 +563,9 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	}
 	if noExtURI > 0 {
 		fmt.Fprintf(os.Stderr, "  %d external evidence reference(s) record no uri and name nothing to carry\n", noExtURI)
+	}
+	if noChecksum > 0 {
+		fmt.Fprintf(os.Stderr, "  %d reference(s) record no checksum and could not be verified\n", noChecksum)
 	}
 	if emptyChecksum > 0 {
 		fmt.Fprintf(os.Stderr, "  %d reference(s) record an empty checksum value and could not be verified\n", emptyChecksum)

@@ -1814,11 +1814,223 @@ func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T
 
 	assert.Contains(t, help, "this build computes every algorithm Hash_Algorithm admits",
 		"the help must state the guarantee the tooling actually provides")
-	assert.Contains(t, help, "Two kinds cannot be verified",
-		"an empty value and a reference that cannot travel; an uncomputable algorithm is no longer one")
-	// The specific falsehoods this guards against returning.
+	assert.Contains(t, help, "Three kinds cannot be verified",
+		"no checksum at all, an empty value, and a reference that cannot travel")
+	// The specific falsehoods this guards against returning. Note what went wrong here
+	// once: this guard asserted the COUNT as an exact string, so when a later card made
+	// bundle report a third kind, the stale "Two kinds" stayed pinned and the test went on
+	// passing — a prose guard is also a LOCK on that prose, and it passing is not evidence
+	// the prose is accurate. The NotContains lines below are the half that actually bites,
+	// because each names a specific claim that must never come back.
 	assert.NotContains(t, help, "neither Go nor Node implements",
 		"blake3 is computed now, so the help must not say otherwise")
 	assert.NotContains(t, help, "algorithm this build cannot compute",
 		"no longer a reachable case through this command")
+	assert.NotContains(t, help, "travels silently",
+		"bundle reports an entry with no checksum; nothing it carries travels unmentioned")
+	assert.NotContains(t, help, "Two kinds cannot be verified",
+		"the count moved to three and must not regress")
+	// Both of these were asserted TRUE by an earlier draft of this paragraph and are
+	// false: the third kind is defined as a reference that cannot travel, so a sentence
+	// claiming every kind travels contradicts its own list. Measured in
+	// TestEvidenceBundle_TheThreeUnverifiableKindsBehaveAsTheHelpSays.
+	assert.NotContains(t, help, "All three travel",
+		"the third kind does not travel; it is reported as not carried")
+	assert.NotContains(t, help, "Both travel",
+		"the predecessor of the same false claim, when there were two kinds")
+	// Third strengthening-into-falsehood in this paragraph: bundle COUNTS the two kinds
+	// that travel and names only the third, while verify names each entry. Measured in
+	// TestEvidenceBundle_TheThreeUnverifiableKindsBehaveAsTheHelpSays.
+	assert.NotContains(t, help, "Every one of them is named on stderr",
+		"the two travelling kinds are counted, not named")
+	// Fourth strengthening-into-falsehood in this paragraph, and the one that finally
+	// shows the shape of the habit: an unqualified cross-command claim. verify names each
+	// CONTENT entry but reports no externalEvidence at all (52n0c.36), and bundle's count
+	// spans both arrays — so "names each entry individually" was false for part of the
+	// population the sentence it followed had just counted.
+	assert.NotContains(t, help, "names each entry individually",
+		"verify names each CONTENT entry; it does not report externalEvidence")
+}
+
+// Content_Reference requires type and uri but NOT checksum, so a schema-valid package can
+// carry a document nothing vouches for. `evidence verify` already says so — "- <uri> (no
+// checksum)" and a skipped count — while bundle carried it under an absolute extent claim
+// and said nothing, so the two commands disagreed about whether the operator should be
+// told. The maintainer's decision is REPORT: the archive is still written, because refusing
+// would reject a document the schema admits, but the gap is stated. Deliberately distinct
+// from the recorded-but-BLANK case, which has its own message: one records a checksum and
+// leaves it empty, the other records none, and an operator fixing them does different work.
+func TestEvidenceBundle_ReportsAnEntryWithNoChecksumAtAll(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "r.json"), src, 0o600))
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "no-sum",
+		// No checksum key at all — not an empty object, not a blank value.
+		"contents": []map[string]any{{"type": "hdf-results", "uri": "r.json"}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	archive := filepath.Join(dir, "n.zip")
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err, "reporting, not refusing: the schema admits this package")
+	// FileExists proves an ARCHIVE was written, not what is inside it — the stronger
+	// assertion is below, and the comment says only what the check shows.
+	assert.FileExists(t, archive, "the archive is still written; the point is that the gap is stated")
+	names := make([]string, 0, 2)
+	for name := range zipEntries(t, archive) {
+		names = append(names, name)
+	}
+	assert.Contains(t, names, "r.json", "and the unvouched document does travel, rather than being dropped")
+
+	assert.Contains(t, stderr, "1 reference(s) record no checksum",
+		"an unvouched document must not travel under a silent extent claim")
+	assert.NotContains(t, stderr, "record an empty checksum value",
+		"this entry records no checksum at all, which is a different fix from an empty value")
+}
+
+// The two unverifiable shapes are counted separately, so a package carrying one of each
+// reports both rather than collapsing them into one number an operator cannot act on.
+func TestEvidenceBundle_SeparatesNoChecksumFromAnEmptyChecksumValue(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	for _, n := range []string{"none.json", "blank.json"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), src, 0o600))
+	}
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "both",
+		"contents": []map[string]any{
+			{"type": "hdf-results", "uri": "none.json"},
+			{"type": "hdf-results", "uri": "blank.json",
+				"checksum": map[string]string{"algorithm": "sha256", "value": ""}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "b.zip"))
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "1 reference(s) record no checksum")
+	assert.Contains(t, stderr, "1 reference(s) record an empty checksum value")
+}
+
+// The counter is shared across contents[] and externalEvidence[], so an unchecksummed
+// in-tree external artifact is counted too. The CHANGELOG asserts that; nothing enforced
+// it, and a later narrowing of the count to contents[] would have left the entry false
+// with every test still green.
+func TestEvidenceBundle_CountsAnUnchecksummedExternalEvidenceEntry(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "audit.ndjson"), []byte("log\n"), 0o600))
+
+	doc := updatedPackage(t, pkgPath)
+	doc["externalEvidence"] = []any{
+		// In-tree and with NO checksum: it travels, and must be counted as unverified.
+		map[string]any{"uri": "scans/audit.ndjson", "format": "raw-log"},
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	archive := filepath.Join(dir, "x.zip")
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "record no checksum",
+		"an unchecksummed external evidence artifact is counted, not only a contents entry")
+
+	names := make([]string, 0, 4)
+	for name := range zipEntries(t, archive) {
+		names = append(names, name)
+	}
+	assert.Contains(t, names, "scans/audit.ndjson", "and the in-tree artifact still travels")
+}
+
+// The help paragraph above makes POSITIVE behavioural claims — which kinds cannot be
+// verified, which of them travel, and that each is named on stderr. Substring guards
+// cannot check any of that: a Contains asserts the sentence's own words back at it, which
+// is how "Two kinds cannot be verified" and then "All three travel" each stayed green
+// while false. These assertions come from RUNS instead: one package per kind, asserting
+// the line the operator actually sees and whether the document is actually in the archive.
+//
+// The honest limit, so this is not oversold the way its predecessors were: a BEHAVIOUR
+// test catches behaviour drifting from the documented claim. It cannot catch prose
+// drifting while behaviour stands still, which is how both previous falsehoods arose. What
+// closes that gap is the NotContains half of the help guard, naming each claim already
+// found false — a regression lock on corrections, not a check on new prose. Writing a new
+// positive claim into that paragraph still requires measuring it, and nothing here will
+// stop someone who does not.
+func TestEvidenceBundle_TheThreeUnverifiableKindsBehaveAsTheHelpSays(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		uri      string
+		checksum map[string]string
+		wantLine string
+		travels  bool
+	}{
+		{
+			name: "no checksum at all", uri: "extra.json", checksum: nil,
+			wantLine: "record no checksum", travels: true,
+		},
+		{
+			name: "empty checksum value", uri: "extra.json",
+			checksum: map[string]string{"algorithm": "sha256", "value": ""},
+			wantLine: "record an empty checksum value", travels: true,
+		},
+		{
+			// A reference that cannot travel. Checksummed, so it is excluded by its
+			// REACHABILITY rather than by anything about its checksum.
+			name: "reference that cannot travel", uri: "https://example.com/remote.json",
+			checksum: map[string]string{"algorithm": "sha256", "value": strings.Repeat("a", 64)},
+			wantLine: "not carried", travels: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+			require.NoError(t, err)
+			for _, n := range []string{"doc.json", "extra.json"} {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, n), src, 0o600))
+			}
+			sum := sha256.Sum256(src)
+			good := map[string]any{"type": "hdf-results", "uri": "doc.json",
+				"checksum": map[string]string{"algorithm": "sha256", "value": hex.EncodeToString(sum[:])}}
+			extra := map[string]any{"type": "hdf-results", "uri": tc.uri}
+			if tc.checksum != nil {
+				extra["checksum"] = tc.checksum
+			}
+
+			pkg, marshalErr := json.Marshal(map[string]any{"name": "kinds", "contents": []map[string]any{good, extra}})
+			require.NoError(t, marshalErr)
+			pkgPath := filepath.Join(dir, "pkg.json")
+			require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+			archive := filepath.Join(dir, "k.zip")
+			_, stderr, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+			require.NoError(t, bundleErr, "none of the three kinds fails the command")
+			assert.Contains(t, stderr, tc.wantLine, "the operator is told about this kind")
+
+			names := make([]string, 0, 3)
+			for name := range zipEntries(t, archive) {
+				names = append(names, name)
+			}
+			if tc.travels {
+				assert.Contains(t, names, "extra.json", "the help says this kind travels")
+			} else {
+				// ElementsMatch rather than Len: a count passes for ANY two entries,
+				// including a pair that does not include the package. The NotContains
+				// below is close to vacuous on its own — a remote uri is diverted before
+				// collect, so no code path can produce an entry by that name — so this
+				// identity assertion is what actually carries the non-travel claim.
+				assert.ElementsMatch(t, []string{"pkg.json", "doc.json"}, names,
+					"the help says this kind does not travel: the archive is the package and the one carried document")
+				assert.NotContains(t, names, "remote.json", "and nothing named for the remote reference")
+			}
+		})
+	}
 }
