@@ -342,16 +342,23 @@ func TestConvertSingleFile_OutputDirectory(t *testing.T) {
 
 // --- Exit codes ---
 
-// exitCodeOf applies main.go's rule to a command error: an ExitCoder's own
-// code, anything else 1.
+// exitCodeOf is the code main.go would exit with for an error that came back
+// through the root command.
 func exitCodeOf(t *testing.T, err error) int {
 	t.Helper()
 	require.Error(t, err)
-	var ec ExitCoder
-	if errors.As(err, &ec) {
-		return ec.ExitCode()
-	}
-	return 1
+	code, _ := ExitStatus(err)
+	return code
+}
+
+// exitCodeFromRun is the same for an error obtained by calling a command's run
+// path directly: the root tree marks every RunE error, so the mark is applied
+// here by hand.
+func exitCodeFromRun(t *testing.T, err error) int {
+	t.Helper()
+	require.Error(t, err)
+	code, _ := ExitStatus(&runError{err: err})
+	return code
 }
 
 func TestRunBulk_ExitCodes(t *testing.T) {
@@ -375,13 +382,13 @@ func TestRunBulk_ExitCodes(t *testing.T) {
 		require.NoError(t, run(failOn()))
 	})
 	t.Run("mixed outcomes exit 3", func(t *testing.T) {
-		assert.Equal(t, 3, exitCodeOf(t, run(failOn("b"))))
+		assert.Equal(t, 3, exitCodeFromRun(t, run(failOn("b"))))
 	})
 	t.Run("every file failing exits 1", func(t *testing.T) {
-		assert.Equal(t, 1, exitCodeOf(t, run(failOn("a", "b", "c"))))
+		assert.Equal(t, 1, exitCodeFromRun(t, run(failOn("a", "b", "c"))))
 	})
 	t.Run("withFailClosed keeps 1 for mixed outcomes", func(t *testing.T) {
-		assert.Equal(t, 1, exitCodeOf(t, run(failOn("b"), withFailClosed())))
+		assert.Equal(t, 1, exitCodeFromRun(t, run(failOn("b"), withFailClosed())))
 	})
 }
 
@@ -463,7 +470,7 @@ func TestFetchGitlabVulnerabilities_GroupExitCodes(t *testing.T) {
 		_ = captureStderr(t, func() {
 			_, err = runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", filepath.Join(t.TempDir(), "hdf"))
 		})
-		assert.Equal(t, 3, exitCodeOf(t, err))
+		assert.Equal(t, 3, exitCodeFromRun(t, err))
 	})
 	t.Run("every project failing exits 1", func(t *testing.T) {
 		// A listing naming only the two projects whose probes are recorded as failures.
@@ -485,6 +492,33 @@ func TestFetchGitlabVulnerabilities_GroupExitCodes(t *testing.T) {
 		_ = captureStderr(t, func() {
 			_, err = runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", filepath.Join(t.TempDir(), "hdf"))
 		})
-		assert.Equal(t, 1, exitCodeOf(t, err))
+		assert.Equal(t, 1, exitCodeFromRun(t, err))
+	})
+}
+
+// A glob that matches nothing is a mistake in every reading, so it is neither a
+// success nor a failed run: exit 4, naming the pattern, and the message is printed.
+func TestExitStatus_NothingToDoIsFour(t *testing.T) {
+	pattern := filepath.Join(t.TempDir(), "*.json")
+	for _, args := range [][]string{
+		{"validate", pattern},
+		{"list", pattern},
+		{"convert", pattern, "-o", t.TempDir() + "/"},
+	} {
+		t.Run(args[0], func(t *testing.T) {
+			_, _, err := executeCommand(args...)
+			require.Error(t, err)
+			code, report := ExitStatus(err)
+			assert.Equal(t, 4, code)
+			assert.True(t, report, "the message must be printed")
+			assert.Contains(t, err.Error(), pattern)
+		})
+	}
+	t.Run("evidence build with no results files", func(t *testing.T) {
+		sys := filepath.Join("testdata", "evidence-verify", "system.json")
+		_, _, err := executeCommand("evidence", "build", "--system", sys)
+		require.Error(t, err)
+		code, _ := ExitStatus(err)
+		assert.Equal(t, 4, code)
 	})
 }

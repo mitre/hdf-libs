@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -193,7 +194,80 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewMCPCmd())
 	cmd.AddCommand(NewVersionCmd())
 
+	markRunErrors(cmd)
 	return cmd
+}
+
+// Exit codes a command returns by returning an error; main.go turns them into
+// the process status through ExitStatus. Diff's POSIX and detailed codes are
+// command-local and documented with that command.
+const (
+	exitUsage       = 2
+	exitPartial     = 3
+	exitNothingToDo = 4
+)
+
+// ExitCoder is implemented by errors that carry a specific process exit code.
+// exitCodeError is the only implementation; ExitStatus still falls back to this
+// interface so a future one is printed rather than read as a usage error.
+type ExitCoder interface {
+	error
+	ExitCode() int
+}
+
+// exitCodeError carries a specific exit code. The command has usually already
+// said everything (a diff verdict, a bulk summary, a validation report), so
+// main prints no Error line unless report is set.
+type exitCodeError struct {
+	code    int
+	message string
+	report  bool
+}
+
+func (e *exitCodeError) Error() string { return e.message }
+func (e *exitCodeError) ExitCode() int { return e.code }
+
+// runError marks an error as coming from a command's own run, so ExitStatus
+// can tell it from the errors Cobra raises before a command runs.
+type runError struct{ err error }
+
+func (e *runError) Error() string { return e.err.Error() }
+func (e *runError) Unwrap() error { return e.err }
+
+// markRunErrors wraps every RunE in the tree. Cobra has no hook for the
+// errors it raises itself (unknown flag or command, arity, a missing required
+// flag), so the run side is marked instead and everything unmarked is usage.
+func markRunErrors(cmd *cobra.Command) {
+	if run := cmd.RunE; run != nil {
+		cmd.RunE = func(c *cobra.Command, args []string) error {
+			if err := run(c, args); err != nil {
+				return &runError{err: err}
+			}
+			return nil
+		}
+	}
+	for _, sub := range cmd.Commands() {
+		markRunErrors(sub)
+	}
+}
+
+// ExitStatus maps the error Execute returned to a process exit code and says
+// whether main should print it: an exit-code error's own code (printed only
+// when it asks), 1 for a failed run, 2 for a usage or invocation error.
+func ExitStatus(err error) (code int, report bool) {
+	var ece *exitCodeError
+	if errors.As(err, &ece) {
+		return ece.code, ece.report
+	}
+	var ec ExitCoder
+	if errors.As(err, &ec) {
+		return ec.ExitCode(), true
+	}
+	var rf *runError
+	if errors.As(err, &rf) {
+		return 1, true
+	}
+	return exitUsage, true
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

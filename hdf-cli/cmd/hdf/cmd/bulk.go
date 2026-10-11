@@ -37,10 +37,6 @@ type BulkProcessFn func(file string) error
 // rider on five unrelated commands.
 type bulkOption func(*bulkConfig)
 
-// exitPartial is the exit code for a bulk run with both successes and failures;
-// a run where every file failed stays 1, so a caller can tell the two apart.
-const exitPartial = 3
-
 type bulkConfig struct {
 	failureDetail bool
 	failClosed    bool
@@ -165,7 +161,7 @@ func expandGlobs(args []string) ([]string, error) {
 				return nil, fmt.Errorf("invalid glob pattern %q: %w", arg, err)
 			}
 			if len(matches) == 0 {
-				return nil, fmt.Errorf("no files matched pattern %q", arg)
+				return nil, &exitCodeError{code: exitNothingToDo, message: fmt.Sprintf("no files matched pattern %q", arg), report: true}
 			}
 			sort.Strings(matches)
 			for _, m := range matches {

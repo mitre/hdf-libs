@@ -22,23 +22,6 @@ func passthroughOf(ext *hdf.Extensions) map[string]interface{} {
 	return ext.Passthrough
 }
 
-// ExitCoder is implemented by errors that carry a specific process exit code.
-// main.go checks for this interface to use the correct exit code instead of
-// defaulting to 1.
-type ExitCoder interface {
-	error
-	ExitCode() int
-}
-
-// exitCodeError carries a specific exit code; diff and runBulk return it.
-type exitCodeError struct {
-	code    int
-	message string
-}
-
-func (e *exitCodeError) Error() string { return e.message }
-func (e *exitCodeError) ExitCode() int { return e.code }
-
 // groupByBaseline is the key value for grouping by baseline name.
 const groupByBaselineKey = "baseline"
 
@@ -224,7 +207,7 @@ Examples:
 	cmd.Flags().BoolVar(&flags.newOnly, "new", false, "Show only new requirements")
 	cmd.Flags().BoolVar(&flags.absent, "absent", false, "Show only absent requirements")
 	cmd.Flags().BoolVar(&flags.all, "all", false, "Include unchanged requirements/components in output")
-	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences, 2=error")
+	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences")
 	cmd.Flags().BoolVar(&flags.detailedExitCode, "detailed-exitcode", false,
 		"Use detailed exit codes: 0=identical, 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift")
 	cmd.Flags().BoolVarP(&flags.quiet, "quiet", "q", false, "Suppress output, return exit code only (implies --exit-code)")
