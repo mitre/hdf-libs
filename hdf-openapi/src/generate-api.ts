@@ -94,6 +94,14 @@ const VALIDATION_PROBLEM_SCHEMA = {
   },
 };
 
+/** Paged operations that publish no example, each with the reason no capture is stable. */
+export const ENVELOPE_EXAMPLE_EXEMPT: Record<string, string> = {
+  hdf_convert:
+    'the reply carries sha256 of the converted document and the converter stamps time.Now(), so no capture is byte-stable',
+  hdf_aggregate:
+    'the binding names no fullResponse, so the operation emits no envelope for an example to live in',
+};
+
 /** Schemas exempt from the additionalProperties:false rule, each with its reason. */
 export const STRICTNESS_EXEMPT: Record<string, string> = {
   Problem: 'RFC 9457 admits extension members, and §3 uses one (`scope` on the 403)',
@@ -522,7 +530,34 @@ function summarize(description: string | undefined, fallback: string): string {
   return first.length > 0 ? first : fallback;
 }
 
-function okResponse(binding: ToolBinding): Record<string, unknown> {
+/**
+ * Where each envelope member's example value comes from in the raw MCP reply.
+ *
+ * `next` is absent: the cursor's opaque format is ADR-0011's to define.
+ */
+const EXAMPLE_SOURCE: Record<string, string> = {
+  total: 'total',
+  limit: 'returned',
+  summary: 'summary',
+};
+
+/** The envelope example, built from the members the envelope declares. */
+function envelopeExample(
+  properties: Record<string, unknown>,
+  items: string,
+  capture: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (capture[items] === undefined) return undefined;
+  const example: Record<string, unknown> = { [items]: capture[items] };
+  for (const member of Object.keys(properties)) {
+    const from = EXAMPLE_SOURCE[member];
+    if (from === undefined) continue;
+    if (capture[from] !== undefined) example[member] = capture[from];
+  }
+  return example;
+}
+
+function okResponse(binding: ToolBinding, capture?: Record<string, unknown>): Record<string, unknown> {
   const named = [binding.fullResponse ?? []].flat();
   if (named.length === 0) return { description: 'Success' };
   // One name is the shape; several are the set the table records — mode x verbosity for
@@ -539,41 +574,44 @@ function okResponse(binding: ToolBinding): Record<string, unknown> {
       ? { $ref: `#/components/schemas/${named[0]}` }
       : { anyOf: named.map((n) => ({ $ref: `#/components/schemas/${n}` })) };
   const items = binding.items;
+  if (items === undefined) {
+    return { description: 'Success', content: { 'application/json': { schema } } };
+  }
+
+  // The envelope: the named row shape under `items`, with the cursor the rewrite map
+  // substitutes for the MCP's page index.
+  const envelope = {
+    type: 'object',
+    additionalProperties: false,
+    required: [items],
+    properties: {
+      [items]: { type: 'array', items: schema },
+      next: { type: 'string', description: 'Cursor for the following page.' },
+      total: { type: 'integer' },
+      // AIP-158: the server echoes the limit it actually applied, which may be
+      // lower than the one asked for.
+      limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE },
+      // A comparison-level rollup, where the tool returns one. It is envelope
+      // data rather than a row, and the envelope closes itself, so without a
+      // declared member the response could not carry it at all. Three of its ten
+      // members — `unchanged`, `total` and `matchedCount` — cannot be recovered
+      // from the rows either, because all three count unchanged entries and those
+      // never enter the array. Distinct from the envelope's `total`: that counts
+      // the pageable rows, while the summary's own counts every entry the diff
+      // compared — requirement diffs in temporal mode, component diffs in
+      // system-drift, since /comparisons serves both.
+      ...(binding.summaryRef !== undefined
+        ? { summary: { $ref: `#/components/schemas/${binding.summaryRef}` } }
+        : {}),
+    },
+  };
+
+  const example = capture === undefined
+    ? undefined
+    : envelopeExample(envelope.properties as Record<string, unknown>, items, capture);
   return {
     description: 'Success',
-    content: {
-      'application/json': {
-        // The envelope: the named row shape under `items`, with the cursor the rewrite map
-        // substitutes for the MCP's page index.
-        schema: items
-          ? {
-              type: 'object',
-              additionalProperties: false,
-              required: [items],
-              properties: {
-                [items]: { type: 'array', items: schema },
-                next: { type: 'string', description: 'Cursor for the following page.' },
-                total: { type: 'integer' },
-                // AIP-158: the server echoes the limit it actually applied, which may be
-                // lower than the one asked for.
-                limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE },
-                // A comparison-level rollup, where the tool returns one. It is envelope
-                // data rather than a row, and the envelope closes itself, so without a
-                // declared member the response could not carry it at all. Three of its ten
-                // members — `unchanged`, `total` and `matchedCount` — cannot be recovered
-                // from the rows either, because all three count unchanged entries and those
-                // never enter the array. Distinct from the envelope's `total`: that counts
-                // the pageable rows, while the summary's own counts every entry the diff
-                // compared — requirement diffs in temporal mode, component diffs in
-                // system-drift, since /comparisons serves both.
-                ...(binding.summaryRef !== undefined
-                  ? { summary: { $ref: `#/components/schemas/${binding.summaryRef}` } }
-                  : {}),
-              },
-            }
-          : schema,
-      },
-    },
+    content: { 'application/json': { schema: envelope, ...(example ? { example } : {}) } },
   };
 }
 
@@ -629,6 +667,7 @@ function operationFor(
   schemas: Record<string, unknown>,
   inputProperties: Record<string, unknown>,
   raisableCodes: string[],
+  capture?: Record<string, unknown>,
 ): Operation {
   // §3 gives a write-class operation hdf:write as well as hdf:read, so the scope set is
   // also what says whether this is a write — read from the one place that decides it.
@@ -654,7 +693,7 @@ function operationFor(
   const hasBody = bodyFields.length > 0 || binding.bodyRef !== undefined;
 
   const responses: Record<string, unknown> = {
-    '200': { ...okResponse(binding), headers: rateLimitHeaders() },
+    '200': { ...okResponse(binding, capture), headers: rateLimitHeaders() },
     ...conventionalResponses(hasBody),
   };
 
@@ -758,6 +797,11 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     throw new Error('the contract golden has no toolErrorCodes; run pnpm run sync:golden');
   }
   const codesFor = new Map(Object.entries(contract.toolErrorCodes));
+  // Raw MCP replies, captured in hdf-cli and synced here. The projection into an example
+  // happens below, so ADR-0008 §2's rewrite map stays in one language.
+  const envelopes = JSON.parse(
+    readFileSync(join(HERE, 'mcp-envelopes.golden.json'), 'utf-8'),
+  ) as { captures: Record<string, Record<string, unknown>> };
   for (const [name, shape] of Object.entries(contract.fullShapes)) {
     schemas[name] = stripTransportState(shape);
   }
@@ -785,6 +829,7 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       schemas,
       inputsFor.get(name) ?? {},
       codesFor.get(name) ?? [],
+      envelopes.captures[name],
     );
   };
 
@@ -883,6 +928,19 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
           }
         }
       }
+    }
+  }
+
+  // A paged operation publishes an example or is excused by name. Without this a new
+  // paged tool ships an envelope no capture backs, and nothing says so.
+  for (const [name, binding] of Object.entries(table.tools ?? {})) {
+    if (binding.items === undefined) continue;
+    if (envelopes.captures[name] !== undefined) continue;
+    const reason = ENVELOPE_EXAMPLE_EXEMPT[name];
+    if (reason === undefined || reason.length < 20) {
+      throw new Error(
+        `${name} is paged with no captured reply; capture it or list it in ENVELOPE_EXAMPLE_EXEMPT with a reason`,
+      );
     }
   }
 

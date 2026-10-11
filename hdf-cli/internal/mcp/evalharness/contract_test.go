@@ -171,15 +171,22 @@ func TestContractGolden_MatchesLive(t *testing.T) {
 	}
 }
 
-// driveProtocolLists runs the server in-process over a pipe transport and returns each
-// named method's result, keyed by method.
+// protocolRequest is one JSON-RPC call to drive, labelled so several calls to the same
+// method stay distinguishable in the result map.
+type protocolRequest struct {
+	label  string
+	method string
+	params any
+}
+
+// driveRequests runs the server in-process over a pipe transport and returns each
+// request's result, keyed by label.
 //
-// Generalises driveToolsListWith to several methods in one session, because the contract
-// spans tools/list, resources/list and resources/templates/list and a per-method session
-// would re-pay the handshake and could, in principle, observe a different surface.
-func driveProtocolLists(t *testing.T, register func(*sdkmcp.Server), methods []string) map[string]json.RawMessage {
+// One session for every request, because a per-request session would re-pay the handshake
+// and could, in principle, observe a different surface.
+func driveRequests(t *testing.T, register func(*sdkmcp.Server), requests []protocolRequest) map[string]json.RawMessage {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	reqR, reqW := io.Pipe()
@@ -194,19 +201,27 @@ func driveProtocolLists(t *testing.T, register func(*sdkmcp.Server), methods []s
 	reqs := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"contract","version":"1.0.0"}}}` + "\n" +
 		`{"jsonrpc":"2.0","method":"notifications/initialized"}` + "\n"
 	wantByID := map[float64]string{}
-	for i, method := range methods {
+	for i, request := range requests {
 		id := i + 2
-		wantByID[float64(id)] = method
-		reqs += fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q}`, id, method) + "\n"
+		wantByID[float64(id)] = request.label
+		if request.params == nil {
+			reqs += fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q}`, id, request.method) + "\n"
+			continue
+		}
+		params, err := json.Marshal(request.params)
+		if err != nil {
+			t.Fatalf("marshalling params for %s: %v", request.label, err)
+		}
+		reqs += fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q,"params":%s}`, id, request.method, params) + "\n"
 	}
 	go func() { _, _ = io.WriteString(reqW, reqs) }()
 
-	out := make(map[string]json.RawMessage, len(methods))
+	out := make(map[string]json.RawMessage, len(requests))
 	sc := bufio.NewScanner(respR)
 	sc.Buffer(make([]byte, 0, 1024*1024), 8*1024*1024)
-	for len(out) < len(methods) {
+	for len(out) < len(requests) {
 		if !sc.Scan() {
-			t.Fatalf("server closed after %d of %d results; got %v", len(out), len(methods), keysOfRaw(out))
+			t.Fatalf("server closed after %d of %d results; got %v", len(out), len(requests), keysOfRaw(out))
 		}
 		var frame struct {
 			ID     any             `json:"id"`
@@ -220,16 +235,26 @@ func driveProtocolLists(t *testing.T, register func(*sdkmcp.Server), methods []s
 		if !ok {
 			continue
 		}
-		method, wanted := wantByID[id]
+		label, wanted := wantByID[id]
 		if !wanted {
 			continue
 		}
 		if frame.Error != nil {
-			t.Fatalf("%s returned an error: %s", method, frame.Error)
+			t.Fatalf("%s returned an error: %s", label, frame.Error)
 		}
-		out[method] = frame.Result
+		out[label] = frame.Result
 	}
 	return out
+}
+
+// driveProtocolLists drives several parameterless methods, keyed by method name.
+func driveProtocolLists(t *testing.T, register func(*sdkmcp.Server), methods []string) map[string]json.RawMessage {
+	t.Helper()
+	requests := make([]protocolRequest, 0, len(methods))
+	for _, method := range methods {
+		requests = append(requests, protocolRequest{label: method, method: method})
+	}
+	return driveRequests(t, register, requests)
 }
 
 func keysOfRaw(m map[string]json.RawMessage) []string {

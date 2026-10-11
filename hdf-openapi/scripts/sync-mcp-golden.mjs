@@ -16,7 +16,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const SRC = join(here, '..', 'src');
 const FROM = join(here, '..', '..', 'hdf-cli', 'internal', 'mcp', 'evalharness', 'testdata');
 
-const GOLDENS = ['mcp-contract.golden.json', 'tools-list.golden.json'];
+const GOLDENS = [
+  'mcp-contract.golden.json',
+  'tools-list.golden.json',
+  'mcp-envelopes.golden.json',
+];
 
 export function syncGoldens({ check = false } = {}) {
   const drifted = [];

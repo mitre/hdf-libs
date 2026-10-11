@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
+import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, ENVELOPE_EXAMPLE_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
 import { bindingFaults, FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
 import { loadConventions } from '../src/conventions.js';
 
@@ -1171,5 +1171,90 @@ describe('a summaryRef that cannot reach a response is a fault', () => {
     planted.tools!.hdf_diff!.summaryRef = 'diff.nope';
     const faults = bindingFaults(planted, { toolsList, contract });
     expect(faults.join('\n')).toMatch(/hdf_diff: summaryRef names diff\.nope, absent from the contract/);
+  });
+});
+
+// Each paged operation publishes an envelope schema; these pin that it also publishes an
+// EXAMPLE, projected by the generator from a captured MCP reply rather than written here.
+describe('the paged operations publish an example projected from a captured reply', () => {
+  const envelopes = JSON.parse(
+    readFileSync(join(SRC, 'mcp-envelopes.golden.json'), 'utf-8'),
+  ) as { captures: Record<string, Record<string, unknown>> };
+
+  const pagedTools = Object.entries(table.tools ?? {}).filter(([, b]) => b.items !== undefined);
+  const captured = pagedTools.filter(([tool]) => envelopes.captures[tool] !== undefined);
+
+  const exampleFor = (binding: (typeof pagedTools)[number][1]): Record<string, unknown> => {
+    const media = (
+      doc.paths[binding.path!]![binding.method!]!.responses['200'] as {
+        content?: Record<string, { example?: Record<string, unknown> }>;
+      }
+    ).content?.['application/json'];
+    return media?.example ?? {};
+  };
+
+  it('every paged tool is either captured or exempt with a reason', () => {
+    expect(pagedTools.length, 'no paged bindings, so the cases below are empty').toBeGreaterThan(2);
+    expect(captured.length, 'nothing is captured, so the cases below are empty').toBeGreaterThan(1);
+    for (const [tool] of pagedTools) {
+      const hasCapture = envelopes.captures[tool] !== undefined;
+      const reason = ENVELOPE_EXAMPLE_EXEMPT[tool];
+      expect(
+        hasCapture || (reason !== undefined && reason.length > 20),
+        `${tool} is paged with neither a capture nor a reason`,
+      ).toBe(true);
+      expect(hasCapture && reason !== undefined, `${tool} is both captured and exempt`).toBe(false);
+    }
+  });
+
+  // Guards the GENERATOR, not the capture: both sides read one golden, so a corrupted
+  // capture passes here and is caught by sync --check and the Go drift test instead.
+  it.each(captured.map(([tool, b]) => [tool, b] as const))(
+    '%s publishes rows byte-equal to its capture',
+    (tool, binding) => {
+      const rows = envelopes.captures[tool]![binding.items!];
+      expect(rows, `${tool}'s capture has no ${binding.items} array`).toBeDefined();
+      expect(exampleFor(binding)[binding.items!]).toEqual(rows);
+    },
+  );
+
+  it.each(captured.map(([tool, b]) => [tool, b] as const))(
+    '%s publishes no cursor, which is ADR-0011s to define',
+    (_tool, binding) => {
+      expect(Object.keys(exampleFor(binding))).not.toContain('next');
+    },
+  );
+
+  it.each(captured.map(([tool, b]) => [tool, b] as const))(
+    '%s publishes no MCP transport state',
+    (_tool, binding) => {
+      for (const member of Object.keys(exampleFor(binding))) {
+        expect(STRIPPED_OUTPUT_FIELDS.has(member), `${member} is transport state`).toBe(false);
+      }
+    },
+  );
+
+  // An example may only carry members the envelope declares, which is what stops a capture
+  // smuggling a member the schema forbids past additionalProperties: false.
+  it.each(captured.map(([tool, b]) => [tool, b] as const))(
+    '%s publishes only members its envelope declares',
+    (_tool, binding) => {
+      const schema = (
+        doc.paths[binding.path!]![binding.method!]!.responses['200'] as {
+          content: Record<string, { schema: { properties?: Record<string, unknown> } }>;
+        }
+      ).content['application/json']!.schema;
+      const declared = Object.keys(schema.properties ?? {});
+      for (const member of Object.keys(exampleFor(binding))) {
+        expect(declared, `${member} is in the example and not in the envelope`).toContain(member);
+      }
+    },
+  );
+
+  it('every exempt entry names a tool that is actually paged', () => {
+    const pagedNames = pagedTools.map(([tool]) => tool);
+    for (const tool of Object.keys(ENVELOPE_EXAMPLE_EXEMPT)) {
+      expect(pagedNames, `${tool} is exempt and is not a paged binding`).toContain(tool);
+    }
   });
 });
