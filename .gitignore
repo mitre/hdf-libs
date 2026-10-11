@@ -119,6 +119,9 @@ hdf-cli/SAF_CLI_COMPARISON.md
 # Claude Code worktree workspaces (created per agent run, not for commit)
 .claude/worktrees/
 
+# Agent scratch space (probe binaries, throwaway scripts; never for commit)
+.scratch/
+
 # VitePress build cache (regenerated locally; not part of release artifact)
 site/.vitepress/cache/
 .tools/
