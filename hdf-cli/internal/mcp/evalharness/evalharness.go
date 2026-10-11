@@ -56,7 +56,21 @@ const (
 	// description had to say a governing POA&M counts too; measured 5617.
 	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
 	// measured 5669.
-	ToolsListTotalBudget = 5700
+	// Raised to 5710 (owner decision 2026-10-11) so hdf_validate's content field
+	// can say that inline content does not resolve an evidence package's
+	// references: hdf-libs-52n0c.32 made it stop resolving them against the MCP
+	// root, and the published schema said nothing about it, which is false by
+	// omission to a client that reads only the schema. Buys correctness, not
+	// surface, like the 1020 per-tool raise. Measured 5707; a longer first wording
+	// measured 5716 and was tightened before raising. hdf-libs-5cim9 — the audit
+	// this block has named as due since the 5580 raise — still has not run.
+	// NOTE on the ordinals above: they do not reconcile. Counting the "Raised"
+	// clauses makes 5580 the fourth, but its own text calls it the fifth, and the
+	// ReadProfileBudget block below runs two ahead of its clause count in the same
+	// way. Both schemes are now in the file and neither can be checked, so this
+	// entry claims no ordinal; 5cim9 should settle the count rather than each
+	// raise re-deriving it.
+	ToolsListTotalBudget = 5710
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -114,7 +128,13 @@ const (
 	// Unlike the raise above, trimming did NOT help — three wordings measured
 	// 3969/3971/3972, so the cheapest was the clearest and the cost is the field
 	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
-	ReadProfileBudget = 4000
+	// Raised to 4010 (owner decision 2026-10-11) so hdf_validate's content field
+	// can say that inline content does not resolve an evidence package's
+	// references — hdf_validate is in this profile, so the correctness fix in
+	// hdf-libs-52n0c.32 lands here too. Measured 4007, against 3987 before the
+	// wording was added. No ordinal claimed, for the reason recorded against
+	// ToolsListTotalBudget above; 5cim9 still has not run.
+	ReadProfileBudget = 4010
 )
 
 var (

@@ -28,7 +28,7 @@ const ValidateResponseTokenCap = respond.ConciseTokenBudget
 // inline content, an optional docType, and one of three modes.
 type validateInput struct {
 	Source  *handle.Source `json:"source,omitempty" jsonschema:"the document to validate, as {path} or {handle}; omit when using content"`
-	Content string         `json:"content,omitempty" jsonschema:"inline HDF document to validate, as an alternative to source"`
+	Content string         `json:"content,omitempty" jsonschema:"inline HDF document to validate, as an alternative to source; an evidence package's references are not resolved from inline content, so pass source.path to verify them"`
 	DocType string         `json:"docType,omitempty" jsonschema:"optional document type to validate against in schema mode (e.g. hdf-results); defaults to the detected type"`
 	Mode    string         `json:"mode" jsonschema:"validation mode: schema, checksums, or completeness"`
 }
@@ -79,7 +79,7 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 			return argError(fmt.Sprintf("unknown mode %q", in.Mode), "use mode schema, checksums, or completeness"), errorValidateOutput(), nil
 		}
 
-		content, baseDir, load, terr := resolveForValidate(in, ldr)
+		content, fetch, load, terr := resolveForValidate(in, ldr)
 		if terr != nil {
 			return toolError(terr), errorValidateOutput(), nil
 		}
@@ -89,9 +89,9 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 		case "schema":
 			validateSchema(&out, in.DocType, content, load)
 		case "checksums":
-			validateChecksums(&out, content, baseDir, load)
+			validateChecksums(&out, content, fetch, load)
 		case "completeness":
-			validateCompleteness(&out, content, baseDir, load)
+			validateCompleteness(&out, content, fetch, load)
 		}
 		boundValidateResponse(&out)
 		return textResult(fmt.Sprintf("hdf_validate (%s): valid=%t, %d error(s). Detail in structuredContent.",
@@ -100,33 +100,53 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 }
 
 // resolveForValidate turns the source-or-content input into confined bytes, the
-// base directory referenced files resolve against, and a loaded document. Inline
-// content resolves referenced files against HDF_MCP_ROOT; a source resolves them
-// against the source document's own directory.
-func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, string, *loader.Result, *mcperr.Error) {
+// fetcher that referenced files are read through, and a loaded document. A
+// content reference means a path relative to the package document's own
+// directory, so the rule is whether the document HAS a directory: one read from a
+// file resolves against filepath.Dir of its own path, and one that never existed
+// as a file resolves nothing. Two inputs reach the second case — inline content,
+// and a handle with an empty path, which marks a document authored in this session
+// and never written. Keying on the input field instead missed the second and left
+// it resolving against the MCP root. Deciding it here is also what keeps the
+// checksums and completeness modes from diverging.
+func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, hdfengine.FetchFunc, *loader.Result, *mcperr.Error) {
 	hasContent := in.Content != ""
 	hasSource := in.Source != nil && (in.Source.Path != "" || in.Source.Handle != "")
 	switch {
 	case hasContent && hasSource:
-		return nil, "", nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
+		return nil, nil, nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
 		res, err := ldr.Load([]byte(in.Content))
 		if err != nil {
-			return nil, "", nil, sizeOrLoadError(err)
+			return nil, nil, nil, sizeOrLoadError(err)
 		}
-		return []byte(in.Content), mcpRoot(), res, nil
+		return []byte(in.Content), unresolvableFetch(noLocationInline), res, nil
 	case hasSource:
 		resolved, e := resolveSource(*in.Source, ldr, "source")
 		if e != nil {
-			return nil, "", nil, e
+			return nil, nil, nil, e
 		}
-		base := mcpRoot()
-		if p, err := hdfutil.SafePath(mcpRoot(), resolved.Handle.Path); err == nil {
-			base = filepath.Dir(p)
+		// Tested directly rather than inferred from SafePath refusing an empty
+		// path: the condition is that the document HAS no location, and reading it
+		// off an error both hid a real path failure and made the fallback to the
+		// MCP root look deliberate.
+		if resolved.Handle.Path == "" {
+			return resolved.Content, unresolvableFetch(noLocationAuthored), resolved.Load, nil
 		}
-		return resolved.Content, base, resolved.Load, nil
+		// RETAINED THOUGH UNREACHABLE TODAY: both resolvers confine the path before
+		// returning (resolvePath, resolveHandle), so this fires only if containment
+		// changes between their check and this one. It fails closed rather than
+		// falling back to the MCP root, which is the substitution this card removed —
+		// deleting it would quietly restore that fallback for whatever reaches here.
+		p, perr := hdfutil.SafePath(mcpRoot(), resolved.Handle.Path)
+		if perr != nil {
+			return nil, nil, nil, mcperr.New(mcperr.PathDenied,
+				"the document's own path resolves outside HDF_MCP_ROOT",
+				map[string]any{"path": resolved.Handle.Path})
+		}
+		return resolved.Content, confinedFetchAt(filepath.Dir(p)), resolved.Load, nil
 	default:
-		return nil, "", nil, mcperr.New(mcperr.DocumentNotFound, "no source or content provided", nil).
+		return nil, nil, nil, mcperr.New(mcperr.DocumentNotFound, "no source or content provided", nil).
 			WithNextCall("pass source.path/source.handle or inline content")
 	}
 }
@@ -159,13 +179,13 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 }
 
 // validateChecksums fills the verdict for checksums mode: verify each referenced
-// file's sha256, and report the agent-override count across the package results.
-func validateChecksums(out *validateOutput, content []byte, baseDir string, load *loader.Result) {
+// file against the algorithm its own entry records, and report the agent-override
+// count across the package results.
+func validateChecksums(out *validateOutput, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
 	contents, ok := requireEvidencePackage(out, content, load)
 	if !ok {
 		return
 	}
-	fetch := confinedFetchAt(baseDir)
 	out.Valid = true
 	var unverifiable []string
 	for _, r := range hdfengine.VerifyChecksums(contents, fetch) {
@@ -200,13 +220,12 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 
 // validateCompleteness fills the verdict for completeness mode: every planned
 // baseline must be covered by a results document in the package.
-func validateCompleteness(out *validateOutput, content []byte, baseDir string, load *loader.Result) {
+func validateCompleteness(out *validateOutput, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
 	contents, ok := requireEvidencePackage(out, content, load)
 	if !ok {
 		return
 	}
 	planRef, _, _ := hdfengine.ParseEvidencePackage(content)
-	fetch := confinedFetchAt(baseDir)
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 
 	if planRef == "" {
@@ -245,6 +264,28 @@ func requireEvidencePackage(out *validateOutput, content []byte, load *loader.Re
 		return nil, false
 	}
 	return contents, true
+}
+
+// The two ways a document can arrive with no location of its own, as the reason
+// clause of the refusal below. Written out rather than derived, because the
+// remedy is the same but the situation a caller has to recognize is not.
+const (
+	noLocationInline   = "inline content has no package directory"
+	noLocationAuthored = "a handle with no path is a document that was never written to a file, so it has no package directory"
+)
+
+// unresolvableFetch is the fetcher for a document that carries no location: the
+// bytes never existed as a file, so there is no package directory and every
+// candidate base is a guess. Resolving against HDF_MCP_ROOT would read a
+// same-named file the package never referenced — reporting drift in a document
+// the operator never named, or, where that file happened to match, reporting
+// verified bytes nobody read. Refusing is reported per entry by the callers: a
+// checksum error, and an unreadable planRef in completeness mode.
+func unresolvableFetch(why string) hdfengine.FetchFunc {
+	return func(uri string) ([]byte, error) {
+		return nil, fmt.Errorf("referenced file %q cannot be resolved: %s to resolve it against; "+
+			"pass source.path to a package file on disk instead", uri, why)
+	}
 }
 
 // confinedFetchAt resolves a referenced URI relative to base, confined by

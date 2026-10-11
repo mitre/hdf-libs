@@ -1437,7 +1437,7 @@
         "additionalProperties": false,
         "properties": {
           "content": {
-            "description": "inline HDF document to validate, as an alternative to source",
+            "description": "inline HDF document to validate, as an alternative to source; an evidence package's references are not resolved from inline content, so pass source.path to verify them",
             "type": "string"
           },
           "docType": {

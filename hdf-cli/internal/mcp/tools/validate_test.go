@@ -26,9 +26,17 @@ func callValidate(t *testing.T, in validateInput) (*sdkmcp.CallToolResult, valid
 	return res, out
 }
 
+// writeInRoot writes content at a root-relative path inside the HDF_MCP_ROOT
+// writeRoot established. The path may name subdirectories, which is what lets a
+// test place a package somewhere other than the root and so tell the two
+// resolution bases apart.
 func writeInRoot(t *testing.T, name string, content []byte) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(os.Getenv("HDF_MCP_ROOT"), name), content, 0o600); err != nil {
+	full := filepath.Join(os.Getenv("HDF_MCP_ROOT"), name)
+	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+		t.Fatalf("mkdir for %s: %v", name, err)
+	}
+	if err := os.WriteFile(full, content, 0o600); err != nil {
 		t.Fatalf("write %s: %v", name, err)
 	}
 }
@@ -475,4 +483,181 @@ func TestHdfValidate_ChecksumsMode_HonoursBlake3(t *testing.T) {
 			t.Errorf("want a mismatch error naming r.json, got %+v", out.Errors)
 		}
 	})
+}
+
+// A content reference means a path relative to the package document's own
+// directory. Inline content never existed as a file, so there is no such
+// directory and every base is a guess: resolving against HDF_MCP_ROOT reads a
+// same-named file the package never referenced. Both halves are asserted here —
+// source.path resolves against the package, inline content refuses to resolve —
+// because the hazard is not that resolution fails but that it succeeds against
+// the wrong file.
+func TestHdfValidate_InlineContentResolvesAgainstThePackageNotTheRoot(t *testing.T) {
+	// Two DIFFERENT results documents share the name r.json: one at the MCP root,
+	// one beside the package in sub/. The package records its NEIGHBOUR's digest,
+	// so reading the root's copy instead is observable in the verdict.
+	neighbour := []byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`)
+	rootDecoy := []byte(`{"baselines":[{"requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}]}]}]}`)
+	if sha256HexT(neighbour) == sha256HexT(rootDecoy) {
+		t.Fatal("precondition: the two same-named documents must differ")
+	}
+	pkg := evidencePkg("", contentEntry("hdf-results", "r.json", sha256HexT(neighbour)))
+	writeRoot(t, "r.json", rootDecoy)
+	writeInRoot(t, "sub/r.json", neighbour)
+	writeInRoot(t, "sub/ev.json", pkg)
+
+	// via source.path: the base IS the package file's directory, so the neighbour
+	// the package named is the file that gets hashed.
+	_, viaPath := callValidate(t, validateInput{Source: &handle.Source{Path: "sub/ev.json"}, Mode: "checksums"})
+	if !viaPath.Valid {
+		t.Fatalf("via source.path: want valid (the package's own neighbour matches); errors = %+v", viaPath.Errors)
+	}
+	if viaPath.AgentOverrideCount != 0 {
+		t.Errorf("via source.path: agentOverrideCount = %d, want 0 — the neighbour records no override; counting one means the root decoy was read", viaPath.AgentOverrideCount)
+	}
+
+	// via content: the same bytes, with no directory of their own.
+	_, viaInline := callValidate(t, validateInput{Content: string(pkg), Mode: "checksums"})
+	if viaInline.Valid {
+		t.Fatal("via content: want invalid — a reference that was never resolved cannot be reported as verified")
+	}
+	if len(viaInline.Errors) != 1 || viaInline.Errors[0].Path != "r.json" {
+		t.Fatalf("via content: want exactly one error naming r.json, got %+v", viaInline.Errors)
+	}
+	msg := viaInline.Errors[0].Message
+	if strings.Contains(msg, "mismatch") {
+		t.Errorf("via content: nothing was resolved, so this must not be reported as drift in the operator's evidence: %q", msg)
+	}
+	// A digest in the message could only have been computed from the root decoy:
+	// the entry's own expected digest is only ever printed alongside an actual one.
+	if strings.Contains(msg, sha256HexT(rootDecoy)) {
+		t.Errorf("via content: message carries the ROOT decoy's digest, so the wrong file was hashed: %q", msg)
+	}
+	// The remedy the message names is the one this test just exercised above.
+	if !strings.Contains(msg, "source.path") {
+		t.Errorf("via content: an unresolvable reference must name the remedy, got %q", msg)
+	}
+	if viaInline.AgentOverrideCount != 0 {
+		t.Errorf("via content: agentOverrideCount = %d, want 0 — counting the root decoy's override proves it was read", viaInline.AgentOverrideCount)
+	}
+}
+
+// completeness shares confinedFetchAt with checksums, and an unreadable content
+// reference there makes a planned baseline uncovered — so the same substitution
+// silently changes the verdict. This is the dangerous direction: the root's
+// documents agree with each other, so resolving against them reports COMPLETE
+// for a package whose own plan was never read.
+func TestHdfValidate_InlineContentCompletenessDoesNotResolveAgainstTheRoot(t *testing.T) {
+	rootPlan := []byte(`{"assessments":[{"baselineRef":"RHEL9-STIG"}]}`)
+	subPlan := []byte(`{"assessments":[{"baselineRef":"RHEL9-STIG"},{"baselineRef":"PostgreSQL-STIG"}]}`)
+	rhel := []byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`)
+	pkg := evidencePkg("plan.json", contentEntry("hdf-results", "rhel.json", sha256HexT(rhel)))
+	writeRoot(t, "plan.json", rootPlan)
+	writeInRoot(t, "rhel.json", rhel)
+	writeInRoot(t, "sub/plan.json", subPlan)
+	writeInRoot(t, "sub/rhel.json", rhel)
+	writeInRoot(t, "sub/ev.json", pkg)
+
+	_, viaPath := callValidate(t, validateInput{Source: &handle.Source{Path: "sub/ev.json"}, Mode: "completeness"})
+	if viaPath.Valid {
+		t.Fatal("via source.path: the package's own plan lists a baseline it does not cover, so it is incomplete")
+	}
+	var namesMissing bool
+	for _, e := range viaPath.Errors {
+		if strings.Contains(e.Message, "PostgreSQL-STIG") {
+			namesMissing = true
+		}
+	}
+	if !namesMissing {
+		t.Fatalf("via source.path: want the missing baseline named, got %+v", viaPath.Errors)
+	}
+
+	_, viaInline := callValidate(t, validateInput{Content: string(pkg), Mode: "completeness"})
+	if viaInline.Valid {
+		t.Fatal("via content: want invalid — an unresolvable planRef is not evidence of completeness")
+	}
+	if len(viaInline.Errors) == 0 || !strings.Contains(viaInline.Errors[0].Message, "cannot read plan") {
+		t.Fatalf("via content: want the planRef reported unresolvable, got %+v", viaInline.Errors)
+	}
+	// No plan was read, so no baseline can be named missing either — that verdict
+	// would have come from a plan the package did not reference.
+	for _, e := range viaInline.Errors {
+		if strings.Contains(e.Message, "missing results for baseline") {
+			t.Errorf("via content: no plan was resolved, so nothing can be reported missing: %+v", e)
+		}
+	}
+}
+
+// A handle with an EMPTY path is a document authored or derived in this session and
+// never written to disk, so it has no directory of its own — the same condition
+// inline content is in. Keying the refusal on the input FIELD rather than on the
+// absence of a location left this route resolving against HDF_MCP_ROOT, so
+// hdf_author -> hdf_validate still reported a package verified against whatever
+// happened to share its reference's name. This is the card's P1 inverse, reachable
+// through a different door.
+func TestHdfValidate_APathlessHandleResolvesNothingEither(t *testing.T) {
+	// The package records the ROOT file's digest. So if the reference resolves
+	// against the root the package VERIFIES — a clean verdict over a document the
+	// package never named. The assertion is therefore on valid=false.
+	rootDecoy := []byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`)
+	pkg := evidencePkg("", contentEntry("hdf-results", "r.json", sha256HexT(rootDecoy)))
+	writeRoot(t, "r.json", rootDecoy)
+
+	// Seed the loader's content cache, which is what a pathless handle resolves from.
+	ldr := loader.New(0, 0, 0)
+	if _, err := ldr.Load(pkg); err != nil {
+		t.Fatalf("seeding the in-memory cache: %v", err)
+	}
+	encoded, err := handle.Encode(handle.Compute("", pkg, "evidence-package", hdfengine.Version()))
+	if err != nil {
+		t.Fatalf("encoding the handle: %v", err)
+	}
+
+	_, out, callErr := hdfValidate(ldr)(context.Background(), nil,
+		validateInput{Source: &handle.Source{Handle: encoded}, Mode: "checksums"})
+	if callErr != nil {
+		t.Fatalf("hdfValidate returned a Go error: %v", callErr)
+	}
+
+	// completeness shares the fetcher, which is chosen before the mode switch —
+	// asserted rather than left to the structure, because that shared fetcher is
+	// exactly what a later refactor could split.
+	t.Run("completeness refuses the same handle", func(t *testing.T) {
+		withPlan := evidencePkg("plan.json", contentEntry("hdf-results", "r.json", sha256HexT(rootDecoy)))
+		pldr := loader.New(0, 0, 0)
+		if _, err := pldr.Load(withPlan); err != nil {
+			t.Fatalf("seeding the in-memory cache: %v", err)
+		}
+		enc, err := handle.Encode(handle.Compute("", withPlan, "evidence-package", hdfengine.Version()))
+		if err != nil {
+			t.Fatalf("encoding the handle: %v", err)
+		}
+		_, cOut, cErr := hdfValidate(pldr)(context.Background(), nil,
+			validateInput{Source: &handle.Source{Handle: enc}, Mode: "completeness"})
+		if cErr != nil {
+			t.Fatalf("hdfValidate returned a Go error: %v", cErr)
+		}
+		if cOut.Valid {
+			t.Error("an unresolvable planRef is not evidence of completeness")
+		}
+		if len(cOut.Errors) == 0 || !strings.Contains(cOut.Errors[0].Message, "cannot be resolved") {
+			t.Errorf("want the plan reported as unresolvable, got %+v", cOut.Errors)
+		}
+	})
+
+	if out.Valid {
+		t.Error("a pathless handle has no package directory, so its references must not " +
+			"resolve against HDF_MCP_ROOT — reporting valid here is a verdict over bytes nobody read")
+	}
+	if len(out.Errors) == 0 {
+		t.Fatal("want one error per unresolvable entry")
+	}
+	msg := out.Errors[0].Message
+	if !strings.Contains(msg, "cannot be resolved") {
+		t.Errorf("the entry must be reported as unresolvable, got %q", msg)
+	}
+	if strings.Contains(msg, "mismatch") || strings.Contains(msg, sha256HexT(rootDecoy)) {
+		t.Errorf("nothing was resolved, so this must not be reported as drift, and must not "+
+			"carry the root file's digest: %q", msg)
+	}
 }
