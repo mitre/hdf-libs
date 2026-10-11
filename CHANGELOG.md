@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A group command handed a subcommand it does not have now exits 2 instead of printing help and exiting 0.** `hdf evidence bogus`, and the same under `system`, `events`, `amend`, `fetch`, `plan`, `label`, `generate` and `completion`, reported success, so a pipeline that typed a subcommand wrong could not tell. Cobra applies its unknown-command check to the root only; a group invoked with no subcommand still prints its help and exits 0.
 - **The deprecated `Hdf*` type aliases in `@mitre/hdf-schema` are real types again; since 3.3.0 they had been `any`.** `HdfResults`, `HdfBaseline`, `HdfComparison`, `HdfSystem`, `HdfPlan`, `HdfAmendments` and `HdfEvidencePackage` were declared as `export type HdfResults = HDFResults` beneath an `export * from './ts/hdf.js'`, and `export *` re-exports a name without binding it, so each alias referred to an undefined identifier. Every consumer compiling with `skipLibCheck`, the workspace default, got `any`: `const x: HdfResults = 42` compiled on every published version from 3.3.0 to 3.7.2. The barrel now imports the `HDF*` names it aliases, a top-level `Identity` type in the helpers declaration that collided with the schema's own is gone, and two tests pin it: the emitted declarations lib-check clean, and a probe assigning a number to each alias is rejected. Consumers on the deprecated names may see new type errors that were always real; migrate to the `HDF*` names. (#451)
 
 ### Changed

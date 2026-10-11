@@ -194,8 +194,68 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewMCPCmd())
 	cmd.AddCommand(NewVersionCmd())
 
+	// Before the walk below, so the generated completion group is covered too;
+	// ExecuteC calls this again later and returns early.
+	cmd.InitDefaultCompletionCmd()
+	rejectUnknownSubcommands(cmd)
 	markRunErrors(cmd)
 	return cmd
+}
+
+// helpArgName is Cobra's help command, which it registers on the root only.
+const helpArgName = "help"
+
+// rejectUnknownSubcommands gives every group command the unknown-command check
+// Cobra applies only to the root, whose own check tests for a parent
+// (legacyArgs). A command that cannot run returns flag.ErrHelp, which ExecuteC
+// swallows after printing help, so `hdf evidence bogus` exited 0 and a pipeline
+// that typed a subcommand wrong read it as success. Giving the group a run of
+// its own is what lets Cobra reach argument validation at all. The root is left
+// alone so it keeps the suggestions legacyArgs adds.
+func rejectUnknownSubcommands(cmd *cobra.Command) {
+	for _, sub := range cmd.Commands() {
+		rejectUnknownSubcommands(sub)
+	}
+	if !cmd.HasParent() || !cmd.HasSubCommands() || cmd.Runnable() {
+		return
+	}
+	// SuggestionsFor reads this and Cobra only defaults it inside its own
+	// unknown-command helper, which a group never reaches, so without this the
+	// suggestion below could never fire.
+	if cmd.SuggestionsMinimumDistance <= 0 {
+		cmd.SuggestionsMinimumDistance = 2
+	}
+	// Being runnable makes Cobra print a usage line for the group itself. Reduce
+	// it to the bare name: the only thing this run does is print help, so a
+	// placeholder carried in Use (`fetch <source>`) would advertise a form the
+	// validator above rejects.
+	cmd.Use = cmd.Name()
+	cmd.DisableFlagsInUseLine = true
+	cmd.Args = func(c *cobra.Command, args []string) error {
+		if len(args) == 0 || args[0] == helpArgName {
+			return nil
+		}
+		msg := fmt.Sprintf("unknown command %q for %q", args[0], c.CommandPath())
+		if suggestions := c.SuggestionsFor(args[0]); !c.DisableSuggestions && len(suggestions) > 0 {
+			msg += "\n\nDid you mean this?\n\t" + strings.Join(suggestions, "\n\t")
+		}
+		return errors.New(msg)
+	}
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		// Cobra mounts its help command on the root only, so `hdf evidence help`
+		// would otherwise read as a name the group does not have. It is a common
+		// habit and the group's help is exactly what it asks for.
+		if len(args) > 1 && args[0] == helpArgName {
+			if sub, _, err := c.Find(args[1:]); err == nil && sub != c {
+				// Cobra adds this during the subcommand's own execute, which
+				// this path never reaches, so without it the help it prints is
+				// missing its own --help row.
+				sub.InitDefaultHelpFlag()
+				return sub.Help()
+			}
+		}
+		return c.Help()
+	}
 }
 
 // Exit codes a command returns by returning an error; main.go turns them into

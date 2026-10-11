@@ -1154,13 +1154,13 @@ One vocabulary for every command, so a pipeline can test the code rather than pa
 |------|---------|
 | `0` | Success. In a bulk run, every file succeeded. |
 | `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written; `query` with no matching requirements. |
-| `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command the root does not know. The message is Cobra's. |
+| `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command name that does not exist — at the root (`hdf bogus`) or under a group (`hdf evidence bogus`). A group invoked with no subcommand at all prints its help and exits 0. |
 | `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
 | `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
 
 `--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
 
-Two gaps to know about. A group command given a subcommand it does not have (`hdf evidence bogus`) prints that group's help and exits 0, which is Cobra's behaviour for a command that cannot run on its own. And `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
+One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
 
 ## Supported Conversions
 
