@@ -161,7 +161,11 @@ func remainingExtensions(doc map[string]interface{}) map[string]interface{} {
 	kept := map[string]interface{}{}
 	for k, v := range passthrough {
 		if k == "sarif" {
-			continue // consumed by readCarriedBags and re-emitted onto its objects
+			// Consumed by readCarriedBags. A bag whose address matches an emitted object
+			// is re-emitted onto it; one whose address matches nothing is dropped from the
+			// output entirely rather than preserved here. It survives in the INPUT
+			// document, which is not the same as surviving the export.
+			continue
 		}
 		kept[k] = v
 	}

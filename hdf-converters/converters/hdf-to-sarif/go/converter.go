@@ -493,15 +493,25 @@ func ruleTags(req map[string]interface{}) []interface{} {
 			tags = append(tags, s)
 		}
 	}
+	// Each guard is on the ELEMENT, not on the prefixed result: "nist/" + "" is
+	// non-empty, so guarding after concatenation emitted a bare "nist/" for an empty
+	// entry while the TypeScript peer, which guards the element, emitted nothing.
+	// tags is additionalProperties:true, so an empty entry is schema-valid input.
 	for _, cwe := range exportmap.StringSlice(req["cwe"]) {
-		add("external/cwe/" + normalizeCWETag(cwe))
+		if cwe != "" {
+			add("external/cwe/" + normalizeCWETag(cwe))
+		}
 	}
 	reqTags, _ := exportmap.AsMap(req["tags"])
 	for _, nist := range exportmap.StringSlice(reqTags["nist"]) {
-		add("nist/" + nist)
+		if nist != "" {
+			add("nist/" + nist)
+		}
 	}
 	for _, cci := range exportmap.StringSlice(reqTags["cci"]) {
-		add("cci/" + cci)
+		if cci != "" {
+			add("cci/" + cci)
+		}
 	}
 	sort.Strings(tags)
 	out := make([]interface{}, 0, len(tags))

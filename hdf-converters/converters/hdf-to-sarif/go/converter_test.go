@@ -2,6 +2,7 @@ package hdftosarif
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -532,4 +533,18 @@ func TestConvertHDFToSARIF_RejectsMalformedInput(t *testing.T) {
 			assert.Contains(t, err.Error(), converterName)
 		})
 	}
+}
+
+// The schema URI embeds the version three times in a path that is NOT derivable from
+// the version string (v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json), so the two
+// constants cannot be generated from one another and would otherwise drift apart in
+// silence when the version is repointed. Asserting containment is what makes the
+// deferral of --to sarif@<version> safe: repointing is two edits, and this fails if
+// only one is made.
+func TestSARIFSchemaURIContainsTheVersion(t *testing.T) {
+	assert.Contains(t, SARIFSchemaURI, SARIFVersion,
+		"the schema URI must name the version the converter emits")
+	assert.NotEqual(t, "", SARIFVersion)
+	assert.True(t, strings.HasPrefix(SARIFSchemaURI, "https://"),
+		"the schema URI must be the canonical OASIS https location")
 }

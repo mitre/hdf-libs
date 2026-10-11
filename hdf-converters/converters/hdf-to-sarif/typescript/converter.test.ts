@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertHdfToSarif } from './converter.js';
+import { convertHdfToSarif, SARIF_SCHEMA_URI, SARIF_VERSION } from './converter.js';
 
 /** Matches the Go peer's testVersion so the same behaviour is asserted either side. */
 const TEST_VERSION = '0.0.0';
@@ -442,5 +442,18 @@ describe('convertHdfToSarif', () => {
   // here, so this asserts only the rejection.
   it('rejects input that is not JSON', () => {
     expect(() => convertHdfToSarif('not json', TEST_VERSION)).toThrow(/Invalid JSON/);
+  });
+});
+
+describe('version and schema URI cannot drift apart', () => {
+  // The URI embeds the version three times in a path that is NOT derivable from the
+  // version string, so the two constants cannot be generated from one another and
+  // would otherwise drift in silence when the version is repointed. This is what
+  // makes deferring --to sarif@<version> safe: repointing is two edits per language,
+  // and this fails if only one is made. Mirrors Go's TestSARIFSchemaURIContainsTheVersion.
+  it('the schema URI names the version the converter emits', () => {
+    expect(SARIF_SCHEMA_URI).toContain(SARIF_VERSION);
+    expect(SARIF_VERSION).not.toBe('');
+    expect(SARIF_SCHEMA_URI.startsWith('https://')).toBe(true);
   });
 });

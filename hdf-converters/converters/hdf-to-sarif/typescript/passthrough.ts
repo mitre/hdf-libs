@@ -145,7 +145,10 @@ export function remainingExtensions(doc: Obj): Obj | undefined {
   if (!passthrough || Object.keys(passthrough).length === 0) return undefined;
   const kept: Obj = {};
   for (const [k, v] of Object.entries(passthrough)) {
-    // sarif is consumed by readCarriedBags and re-emitted onto its objects.
+    // Consumed by readCarriedBags. A bag whose address matches an emitted object is
+    // re-emitted onto it; one whose address matches nothing is dropped from the output
+    // entirely rather than preserved here. It survives in the INPUT document, which is
+    // not the same as surviving the export.
     if (k === 'sarif') continue;
     kept[k] = v;
   }

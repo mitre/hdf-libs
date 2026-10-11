@@ -118,6 +118,27 @@ export function resultsCorpus(): CorpusCase[] {
       why: 'absent code must omit the check element entirely, not emit an empty one',
     },
     {
+      name: 'empty-tag-entry',
+      // tags is additionalProperties:true, so an empty string inside tags.nist is
+      // schema-valid input. A prefixing exporter that guards emptiness AFTER
+      // concatenation emits a bare "nist/" where one guarding the element emits
+      // nothing — a reachable Go/TypeScript divergence no other case reaches.
+      input: JSON.stringify(
+        withTimestamp(
+          testhdf.results(
+            testhdf.req('V-1', {
+              title: 't',
+              severity: 'medium',
+              code: 'c',
+              tags: {nist: [''], cci: ['']},
+            }),
+          ),
+        ),
+      ),
+      contract: 'MustConvert',
+      why: 'an empty tag entry must contribute no tag, identically in both languages',
+    },
+    {
       name: 'requirement-with-non-token-id',
       // Every other MustConvert case uses an id that happens to satisfy OSCAL's
       // token pattern, which is why an exporter copying ids into a token-typed

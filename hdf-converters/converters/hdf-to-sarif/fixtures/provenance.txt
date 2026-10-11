@@ -53,7 +53,24 @@ source build reports).
   sourceLocation.ref/line          → results[].locations[].physicalLocation.artifactLocation.uri / region.startLine
   results[].status                 → results[].kind
   results[].message|codeDesc       → results[].message.text
-  everything else                  → the `hdf` property bag (see the converter's docs)
+  everything shared.BuildHDFBlock  → the `hdf` property bag (see the converter's docs)
+  carries
+
+NOT CARRIED, and not yet commented at the call sites. `BuildHDFBlock` builds the `hdf`
+bag and does not reach these, so they reach neither a first-class SARIF field nor the bag:
+
+  document root            remediation
+  Evaluated_Requirement    externalReferences, evidence, effectiveChecksum,
+                           applicability, controlType, verificationMethod
+
+`externalReferences` is the consequential one: `ruleHelpURI` falls back to
+`exportmap.FirstRefURL`, which reads only `refs[]`, so an advisory URL recorded in
+`externalReferences` is lost rather than becoming `helpUri`. The gap in `BuildHDFBlock`
+was already known here — `requirementBlock` re-adds `sourceLocation` precisely because
+the shared block does not carry it — so one field of eight was patched and the rest were
+not. Carrying them is a shared-helper change rather than an exporter one and is tracked
+separately; this record names them so the line above cannot be read as a claim that
+nothing is dropped.
 
 ### `grype-cve.hdf.json`
 Produced by this repository's `grype-to-hdf`, as

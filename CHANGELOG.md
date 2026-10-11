@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **`hdf convert --to sarif` exports SARIF 2.1.0, so SARIF stops being a one-way door** (`hdf-to-sarif`, Go and TypeScript, `convertHdfToSarif`). HDF already ingests SARIF and nine converters delegate to that importer, but SARIF was absent from the export side, so everything HDF can normalize was unreachable to the dashboards that consume SARIF the way Heimdall consumes HDF. Output is validated against the same vendored OASIS schema `sarif-to-hdf` reads, in both languages, for every fixture.
+- **`hdf convert --to sarif` exports SARIF 2.1.0, so SARIF stops being a one-way door** (`hdf-to-sarif`, Go and TypeScript, `convertHdfToSarif`). HDF already ingests SARIF and eight converters delegate to that importer, but SARIF was absent from the export side, so everything HDF can normalize was unreachable to the dashboards that consume SARIF the way Heimdall consumes HDF. Output is validated against the same vendored OASIS schema `sarif-to-hdf` reads, in both languages, for every fixture.
 
   The modelling decisions a consumer will notice:
   - **One run per baseline.** SARIF ties a run to a single tool invocation and a run carries exactly one tool; the baseline is the HDF unit with its own name, version, checksums and status, so flattening a multi-baseline document into one run would merge rules that were never evaluated together. The baseline name becomes `runAutomationDetails.id`.

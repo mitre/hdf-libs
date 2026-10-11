@@ -145,6 +145,19 @@ func ResultsCorpus() []CorpusCase {
 			Why:      "absent code must omit the check element entirely, not emit an empty one",
 		},
 		{
+			Name: "empty-tag-entry",
+			// tags is additionalProperties:true, so an empty string inside tags.nist is
+			// schema-valid input. A prefixing exporter that guards emptiness AFTER
+			// concatenation emits a bare "nist/" where one guarding the element emits
+			// nothing — a reachable Go/TypeScript divergence no other case reaches,
+			// because every other corpus requirement carries either real tags or none.
+			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("V-1",
+				testhdf.Title("t"), testhdf.Severity("medium"), testhdf.Code("c"),
+				testhdf.Tag("nist", []string{""}), testhdf.Tag("cci", []string{""}))))),
+			Contract: MustConvert,
+			Why:      "an empty tag entry must contribute no tag, identically in both languages",
+		},
+		{
 			Name: "requirement-with-non-token-id",
 			// Every other MustConvert case uses an id that happens to satisfy
 			// OSCAL's token pattern, which is why an exporter copying ids into a
