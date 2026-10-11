@@ -514,13 +514,13 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			continue
 		}
 		// EVERY reference is a LOCATION and may legitimately be absolute — `evidence set
-		// --plan-ref /abs/path` and `add-evidence --uri /abs/path` both record one, and
-		// the schema's own description of contents[].uri says "Can be a relative path or
-		// absolute URL". Resolved, so an absolute path landing inside the package is
-		// carried and one outside it is reported rather than refused. contents[] used to
-		// be special-cased through the strict shape check on the belief that it was
-		// "package-relative by contract"; nothing in the schema says so, and refusing it
-		// made bundle reject packages `evidence verify` now accepts.
+		// --plan-ref /abs/path` and `add-evidence --uri /abs/path` both record one.
+		// Resolved, so an absolute path landing inside the package is carried and one
+		// outside it is reported rather than refused. contents[] used to be special-cased
+		// through the strict shape check and refusing it made bundle reject packages
+		// `evidence verify` accepts. The schema now describes the package-relative form as
+		// the one the tooling resolves, and says in the same breath that another shape is
+		// schema-valid and reported — so that description is not a licence to refuse one.
 		ref, inTree := packageSubtreeRef(pkgDir, r.uri)
 		if !inTree {
 			aside("outside the package's directory")

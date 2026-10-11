@@ -2317,17 +2317,23 @@ type SBOMCoverage struct {
 
 // A reference to an HDF document or BOM/manifest included in the evidence package.
 type ContentReference struct {
-	// Cryptographic checksum for verifying the referenced document's integrity.                          
-	Checksum                                                                                  *Checksum   `json:"checksum,omitempty"`
-	// componentId of the component this content entry relates to. Use to link SBOMs, results,            
-	// or other documents to a specific system component.                                                 
-	ComponentRef                                                                              *string     `json:"componentRef,omitempty"`
-	// Optional description of this content entry.                                                        
-	Description                                                                               *string     `json:"description,omitempty"`
-	// The type of HDF document being referenced.                                                         
-	Type                                                                                      ContentType `json:"type"`
-	// URI to the document. Can be a relative path or absolute URL.                                       
-	URI                                                                                       string      `json:"uri"`
+	// Cryptographic checksum for verifying the referenced document's integrity.                            
+	Checksum                                                                                    *Checksum   `json:"checksum,omitempty"`
+	// componentId of the component this content entry relates to. Use to link SBOMs, results,              
+	// or other documents to a specific system component.                                                   
+	ComponentRef                                                                                *string     `json:"componentRef,omitempty"`
+	// Optional description of this content entry.                                                          
+	Description                                                                                 *string     `json:"description,omitempty"`
+	// The type of HDF document being referenced.                                                           
+	Type                                                                                        ContentType `json:"type"`
+	// Interpreted as a path relative to the package document's own directory — that is what the            
+	// reference MEANS, independently of any one consumer. It is never fetched: there is no                 
+	// network retrieval anywhere in evidence handling. `uri-reference` admits shapes other than            
+	// a relative path and they stay schema-valid; how a consumer resolves one, and what it does            
+	// when it cannot, is that consumer's own contract. An artifact deliberately held elsewhere             
+	// belongs in externalEvidence[], which references it by URI and checksum without retrieving            
+	// it.                                                                                                  
+	URI                                                                                         string      `json:"uri"`
 }
 
 // A reference to external native-format evidence (log/telemetry corpus or other artifact) carried

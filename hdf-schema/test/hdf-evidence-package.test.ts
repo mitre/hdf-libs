@@ -311,3 +311,87 @@ describe('hdf-evidence-package.schema.json', () => {
     expect(validate({ ...minimal, labels: { count: 42 } })).toBe(false);
   });
 });
+
+// The schema is a published contract an integrator builds against, so a description
+// promising a capability the toolchain refuses is worse than one stating the constraint.
+// A content reference MEANS a path relative to the package document's own directory. How
+// each consumer resolves one varies — the CLI handles an absolute in-package path through
+// packageSubtreeRef before SafePath sees it, and the MCP's inline-content mode resolves
+// against its root rather than the package's directory — which is why this description
+// states the MEANING and leaves resolution to the consumer. Nothing fetches a remote one,
+// and nothing is going to:
+// externalEvidence exists so a remote artifact is carried by URI plus hash and never
+// retrieved. Asserted on the source schema, which is what build:schemas bundles into
+// dist and syncs into the validator embeds.
+describe('Content_Reference.uri describes what the toolchain actually does', () => {
+  const uri = (hdfEvidenceSchema as { $defs: Record<string, { properties: Record<string, { description: string }> }> })
+    .$defs.Content_Reference.properties.uri;
+
+  it('does not promise an absolute URL', () => {
+    expect(uri.description).not.toMatch(/absolute URL/i);
+  });
+
+  // Denotational on purpose: the field has a MEANING independent of any consumer, and
+  // every implementation-shaped phrasing of it was falsified by one consumer or another —
+  // the CLI resolves an absolute in-package path before SafePath sees it, and the MCP's
+  // inline-content mode resolves against its own root. "Never fetched" survives because it
+  // is true of the whole toolchain: net/http appears in none of the evidence commands, the
+  // engine, or the MCP.
+  it('states the meaning and the never-fetched invariant', () => {
+    expect(uri.description).toMatch(/relative to the package document's own directory/i);
+    expect(uri.description).toMatch(/never fetched/i);
+    expect(uri.description).toMatch(/externalEvidence/);
+  });
+
+  // A schema description is consumed by integrators who may never run this CLI and is the
+  // one artifact here with no test that can compare it against a binary. Two successive
+  // drafts named per-command behaviour and got it wrong — "not read … does not travel" is
+  // false for an absolute path landing INSIDE the package (it is read, verified and
+  // carried), and "report it and carry on" is false for a schemeless URI (bundle refuses
+  // the package). So the rule is: state only what holds for every consumer. The per-command
+  // matrix belongs with the commands.
+  // An earlier version of this guard listed three command names. Five of six per-command
+  // rewrites passed it — including the previous draft's own false sentence, "such a document
+  // is not read, so its checksum goes unverified and it does not travel in a bundle", which
+  // names nothing and was wrong anyway. The defect was never that a command is named; it is
+  // that a per-consumer OUTCOME gets stated as a property of the document. So this rejects
+  // the vocabulary such a claim needs. It is NOT airtight and is not pretending to be: a
+  // word list is bounded by whoever wrote it, and a reviewer's probe of the first version
+  // walked straight past it. It raises the cost of reintroducing the defect; it cannot make
+  // the claim testable, which is why the per-command matrix belongs where a test can run the
+  // binaries (hdf-libs-52n0c.19) rather than in a published description.
+  it('makes no per-command claim, in any wording', () => {
+    // The backtick is REQUIRED: without it this also failed legitimate prose such as "the HDF
+    // document", which the parent definition's own description contains.
+    expect(uri.description, 'description names an hdf command').not.toMatch(/`hdf[ _][a-z]/i);
+    for (const word of ['bundle', 'archive', 'verified', 'refuse', 'travel', 'exit ', 'mcp', 'invalid']) {
+      expect(uri.description.toLowerCase(), `description uses the per-command word "${word}"`)
+        .not.toContain(word);
+    }
+  });
+
+  // The examples ship in dist and reach consumers through IDE tooltips, so one
+  // demonstrating a package the CLI refuses is a worked example of a mistake.
+  it('ships no example whose uri is remote', () => {
+    const examples = (hdfEvidenceSchema as { $defs: Record<string, { examples?: { uri?: string }[] }> })
+      .$defs.Content_Reference.examples;
+    expect(examples?.length).toBeGreaterThan(0);
+    // An ALLOWLIST, not a list of remote shapes to reject: enumerating schemes let
+    // protocol-relative `//host/path` and schemeless opaque uris through, and `mailto:a@b.c`
+    // is the shape `hdf evidence verify` turns into a hard error at exit 1 rather than a
+    // report. Requiring a package-relative path admits only what the tooling resolves.
+    for (const e of examples ?? []) {
+      expect(e.uri, `example uri ${e.uri} is not a package-relative path`).toMatch(
+        /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/,
+      );
+      expect(e.uri, `example uri ${e.uri} escapes the package directory`).not.toMatch(/(^|\/)\.\.(\/|$)/);
+    }
+  });
+
+  // External_Evidence_Reference's absolute/remote support is REAL and must be untouched.
+  it('leaves External_Evidence_Reference.uri promising an absolute URL', () => {
+    const ext = (hdfEvidenceSchema as { $defs: Record<string, { properties: Record<string, { description: string }> }> })
+      .$defs.External_Evidence_Reference.properties.uri;
+    expect(ext.description).toMatch(/absolute URL/i);
+  });
+});
