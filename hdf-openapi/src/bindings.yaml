@@ -213,7 +213,7 @@ synthetic:
     bodyRef: IngestRequest
     fullResponse: DocumentCreated
 
-  delete:
+  deleteDocument:
     method: delete
     path: /documents/{id}
     class: admin

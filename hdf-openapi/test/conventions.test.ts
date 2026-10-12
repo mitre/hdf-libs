@@ -119,7 +119,7 @@ describe('the synthetic operations', () => {
 
   it('the four operations ADR-0008 §2 names are all present', () => {
     expect(Object.keys(table.synthetic ?? {}).sort()).toEqual([
-      'delete',
+      'deleteDocument',
       'exchangeApiKey',
       'ingest',
       'issueToken',

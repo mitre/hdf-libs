@@ -629,6 +629,38 @@ function inQueryPosition(shape: Record<string, unknown>): Record<string, unknown
   return shape;
 }
 
+/**
+ * Identifiers a generated client cannot use as a method name. A document whose operationId
+ * is a keyword forces every generator to mangle it, and they mangle differently — which is
+ * the instability a stable operationId exists to prevent.
+ */
+const RESERVED_IDENTIFIERS = new Set([
+  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete',
+  'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if',
+  'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw',
+  'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield', 'let', 'static',
+  'implements', 'interface', 'package', 'private', 'protected', 'public', 'await',
+]);
+
+/**
+ * The operationId, camelCased from the binding's own name so the mapping stays mechanical.
+ * The three sources spelled it three ways — snake_case tool names, camelCase synthetics and
+ * kebab-case resources — and one was `delete`.
+ */
+function operationIdFor(name: string): string {
+  const parts = name.split(/[-_]/).filter((part) => part !== '');
+  const id = parts
+    .map((part, i) => (i === 0 ? part : `${part[0]!.toUpperCase()}${part.slice(1)}`))
+    .join('');
+  if (!/^[a-z][A-Za-z0-9]*$/.test(id)) {
+    throw new Error(`${name}: operationId ${id} is not a usable identifier`);
+  }
+  if (RESERVED_IDENTIFIERS.has(id)) {
+    throw new Error(`${name}: operationId ${id} is a reserved word; name the binding something else`);
+  }
+  return id;
+}
+
 function parameterFor(
   field: string,
   placement: string,
@@ -943,7 +975,7 @@ function operationFor(
   }
 
   return {
-    operationId: name,
+    operationId: operationIdFor(name),
     summary,
     parameters: parameters.length > 0 ? parameters : undefined,
     requestBody: requestBodyFor(binding, bodyFields, schemas, inputProperties),
@@ -1019,8 +1051,10 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       (t) => [t.name, t.inputSchema?.properties ?? {}],
     ),
   );
+  const bindingNameOf = new Map<string, string>();
   const add = (binding: ToolBinding, name: string, cls: string): void => {
     if (!binding.method || !binding.path) return;
+    bindingNameOf.set(operationIdFor(name), name);
     paths[binding.path] ??= {};
     paths[binding.path]![binding.method] = operationFor(
       name,
@@ -1098,9 +1132,11 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       if (status === '204') continue;
       const described = response.content?.['application/json']?.schema !== undefined;
       if (described) continue;
-      if (RESPONSE_SHAPE_EXEMPT[op.operationId] === undefined) {
+      // Keyed by the binding name, which is what a maintainer edits, not by the derived id.
+      const bound = bindingNameOf.get(op.operationId) ?? op.operationId;
+      if (RESPONSE_SHAPE_EXEMPT[bound] === undefined) {
         throw new Error(
-          `${method.toUpperCase()} ${path} (${op.operationId}) publishes a success body with no schema ` +
+          `${method.toUpperCase()} ${path} (${bound}) publishes a success body with no schema ` +
             'and is not in RESPONSE_SHAPE_EXEMPT; name the shape or record why it has none',
         );
       }

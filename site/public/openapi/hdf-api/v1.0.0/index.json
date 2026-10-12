@@ -13,7 +13,7 @@
   "paths": {
     "/documents/{id}": {
       "get": {
-        "operationId": "hdf_open",
+        "operationId": "hdfOpen",
         "summary": "Open an HDF document: detect its type, validate it, mint a reusable handle, and return a headline summary.",
         "parameters": [
           {
@@ -113,7 +113,7 @@
         ]
       },
       "delete": {
-        "operationId": "delete",
+        "operationId": "deleteDocument",
         "summary": "DELETE /documents/{id}",
         "parameters": [
           {
@@ -261,7 +261,7 @@
     },
     "/documents/{id}/requirements": {
       "get": {
-        "operationId": "hdf_query",
+        "operationId": "hdfQuery",
         "summary": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call hdf_inspect.",
         "parameters": [
           {
@@ -802,7 +802,7 @@
     },
     "/documents/{id}/compliance": {
       "get": {
-        "operationId": "hdf_compliance",
+        "operationId": "hdfCompliance",
         "summary": "Compute aggregate percent compliance and status/severity rollups (by effective status: impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, with an optional grouped breakdown and threshold verdict.",
         "parameters": [
           {
@@ -974,7 +974,7 @@
     },
     "/requirements": {
       "get": {
-        "operationId": "hdf_aggregate",
+        "operationId": "hdfAggregate",
         "summary": "Roll up status/severity counts across MULTIPLE HDF results or baseline documents in one call: per-source counts plus a server-computed total and compliance, so an agent never carries partial sums across turns.",
         "parameters": [
           {
@@ -1170,7 +1170,7 @@
     },
     "/documents/{id}/structure": {
       "get": {
-        "operationId": "hdf_inspect",
+        "operationId": "hdfInspect",
         "summary": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection.",
         "parameters": [
           {
@@ -1283,7 +1283,7 @@
     },
     "/comparisons": {
       "get": {
-        "operationId": "hdf_diff",
+        "operationId": "hdfDiff",
         "summary": "Compare two HDF documents: temporal (results across time) or system-drift (system documents).",
         "parameters": [
           {
@@ -1537,7 +1537,7 @@
     },
     "/validations": {
       "post": {
-        "operationId": "hdf_validate",
+        "operationId": "hdfValidate",
         "summary": "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results).",
         "parameters": [
           {
@@ -1687,7 +1687,7 @@
     },
     "/conversions": {
       "post": {
-        "operationId": "hdf_convert",
+        "operationId": "hdfConvert",
         "summary": "Convert source security-tool output into an HDF results document and return a compact SUMMARY plus a reusable handle — never the converted body.",
         "parameters": [
           {
@@ -1918,7 +1918,7 @@
     },
     "/documents/authored": {
       "post": {
-        "operationId": "hdf_author",
+        "operationId": "hdfAuthor",
         "summary": "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body.",
         "requestBody": {
           "required": true,
@@ -2104,7 +2104,7 @@
     },
     "/documents/{id}/amendments": {
       "post": {
-        "operationId": "hdf_apply_amendment",
+        "operationId": "hdfApplyAmendment",
         "summary": "Apply an hdf-amendments document to an HDF results document, deterministically producing a NEW results file with effectiveStatus/effectiveImpact/disposition computed — the results input is NEVER overwritten.",
         "parameters": [
           {
@@ -2557,7 +2557,7 @@
     },
     "/catalog/converters": {
       "get": {
-        "operationId": "hdf-converter-catalog",
+        "operationId": "hdfConverterCatalog",
         "summary": "GET /catalog/converters",
         "responses": {
           "200": {
@@ -2601,7 +2601,7 @@
     },
     "/enums/{name}": {
       "get": {
-        "operationId": "hdf-enum",
+        "operationId": "hdfEnum",
         "summary": "GET /enums/{name}",
         "parameters": [
           {
@@ -2655,7 +2655,7 @@
     },
     "/schemas/{docType}": {
       "get": {
-        "operationId": "hdf-schema-whole",
+        "operationId": "hdfSchemaWhole",
         "summary": "GET /schemas/{docType}",
         "parameters": [
           {
@@ -2709,7 +2709,7 @@
     },
     "/schemas/{docType}/{def}": {
       "get": {
-        "operationId": "hdf-schema-slice",
+        "operationId": "hdfSchemaSlice",
         "summary": "GET /schemas/{docType}/{def}",
         "parameters": [
           {

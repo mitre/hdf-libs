@@ -283,7 +283,16 @@ describe('the rewrite map strips MCP transport state from responses', () => {
       })
       .map((op) => op.operationId)
       .sort();
-    expect(shapeless).toEqual(Object.keys(RESPONSE_SHAPE_EXEMPT).sort());
+    // The exemption record is keyed by binding name; the document carries the derived id.
+    const expected = Object.keys(RESPONSE_SHAPE_EXEMPT)
+      .map((name) =>
+        name
+          .split(/[-_]/)
+          .map((part, i) => (i === 0 ? part : `${part[0]!.toUpperCase()}${part.slice(1)}`))
+          .join(''),
+      )
+      .sort();
+    expect(shapeless).toEqual(expected);
   });
 
   // OpenAPI 3.1.1 §4.8.17: an absent `content` asserts an EMPTY body. Ten operations said
@@ -1115,6 +1124,46 @@ describe('the synthetic operations declare an error surface too', () => {
 // §2's rewrite map keeps MCP vocabulary off the HTTP surface. Parameter descriptions now
 // come from the MCP's own input schemas, so the rule has to cover prose and not only
 // property names, which propertyNamesIn already guards.
+// The three sources spelled these three ways — snake_case tool names, camelCase synthetics
+// and kebab-case resources — and one was `delete`, a reserved word in the language most
+// clients are generated into. Every generator had to mangle four of them, and they mangle
+// differently, which is the instability a stable operationId exists to prevent.
+describe('the operationIds are usable identifiers in one convention', () => {
+  const ids = Object.values(doc.paths).flatMap((item) => Object.values(item)).map((op) => op.operationId);
+
+  it('there are operations to check', () => {
+    expect(ids.length).toBeGreaterThan(15);
+  });
+
+  it('every id is unique', () => {
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it.each(ids)('%s is lowerCamelCase', (id) => {
+    expect(id).toMatch(/^[a-z][A-Za-z0-9]*$/);
+  });
+
+  it('refuses a binding whose name camelCases to a reserved word', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: { delete: { method: 'delete', path: '/x', class: 'admin', scopes: ['hdf:admin'], success: 204 } },
+        },
+      }),
+    ).toThrow(/operationId delete is a reserved word/);
+  });
+
+  it('refuses a binding name that cannot be an identifier', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: { '9lives': { method: 'get', path: '/x', class: 'read', scopes: ['hdf:read'] } },
+        },
+      }),
+    ).toThrow(/is not a usable identifier/);
+  });
+});
+
 describe('no description names the transport it was derived from', () => {
   const descriptions: [string, string][] = [];
   const walk = (node: unknown, where: string): void => {
