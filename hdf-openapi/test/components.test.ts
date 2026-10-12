@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   EMBED_DIR,
+  EXPECTED_DEFINITIONS,
   MAIN_SCHEMAS,
   ROOT_COMPONENT_NAMES,
   buildComponentsDocument,
@@ -112,9 +113,9 @@ describe('roots', () => {
 
 describe('definitions are hoisted and self-contained', () => {
   it('hoists every named definition and adds nothing else', () => {
-    // 115 named definitions across the bundles + 8 roots. Measured against the
+    // 118 named definitions across the bundles + 8 roots. Measured against the
     // tracked embed; a change here is a schema-set change and must be reviewed.
-    expect(Object.keys(schemas)).toHaveLength(115 + 8);
+    expect(Object.keys(schemas)).toHaveLength(EXPECTED_DEFINITIONS + 8);
   });
 
   it('emits component keys OpenAPI accepts', () => {
@@ -331,13 +332,17 @@ describe('2020-12 features pass through untouched', () => {
 
   // Pinned absolutely as well: the derived count above proves nothing was lost
   // relative to the input, and these prove the input itself has not drifted
-  // without review. Measured against the tracked embed at schema v3.7.0.
+  // without review. Measured against the tracked embed at schema v3.8.0.
+  //
+  // dependentRequired is 0 because ADR-0017 re-expressed Integrity's
+  // algorithm/checksum pairing as two if/then members of an allOf. Equivalent
+  // constraint, which is why `if` rose by the same change.
   it('matches the tracked keyword baseline', () => {
     expect({
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 76, if: 8, dependentRequired: 1 });
+    }).toEqual({ unevaluatedProperties: 76, if: 13, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {
@@ -372,7 +377,9 @@ describe('$ref shapes the schemas do not currently use but 2020-12 permits', () 
     return () => buildComponentsDocument(planted);
   }
 
-  const RESULTS_ID = 'https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.7.0';
+  // Read from the bundle the generator reads: a hardcoded version rots at every
+  // schema minor, which is how it broke on the v3.8.0 bump.
+  const RESULTS_ID = (bundles.get('hdf-results.schema.json') as JsonSchema).$id as string;
 
   // Nothing in the embed refs a resource as a whole today, so this path would
   // otherwise be untested code that breaks the first time a schema uses it.

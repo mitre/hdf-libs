@@ -39,7 +39,7 @@ export const ROOT_COMPONENT_NAMES: Record<string, string> = {
 };
 
 /** Named definitions across the bundles, excluding the eight roots. */
-export const EXPECTED_DEFINITIONS = 115;
+export const EXPECTED_DEFINITIONS = 118;
 
 const DIALECT = 'https://json-schema.org/draft/2020-12/schema';
 const COMPONENT_PREFIX = '#/components/schemas/';

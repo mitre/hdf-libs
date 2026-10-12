@@ -99,7 +99,7 @@ describe('extraction produces a self-contained 2020-12 schema', () => {
   // Every component, not only the 8 roots and the 42 definitions that carry examples.
   // extractStandaloneSchema throws on a dangling reference, so a broken $defs closure
   // anywhere in the document surfaces here; restricting this to the example-bearing
-  // subset left 73 of 123 components never extracted and never compiled.
+  // subset left 73 of the components never extracted and never compiled.
   it.each(Object.keys(schemas))('%s extracts to a schema that compiles standalone', (name) => {
     const standalone = extractStandaloneSchema(doc, name);
     expect(standalone.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
@@ -111,7 +111,7 @@ describe('extraction produces a self-contained 2020-12 schema', () => {
     const standalone = extractStandaloneSchema(doc, 'Checksum');
     const defs = (standalone.$defs ?? {}) as Record<string, unknown>;
     // The EXACT closure, not an upper bound: `Checksum` references `Hash_Algorithm` and
-    // nothing else. A bound of "fewer than all 123" would still pass if the walk dragged
+    // nothing else. A bound of "fewer than all of them" would still pass if the walk dragged
     // in a hundred unreachable definitions.
     expect(Object.keys(defs).sort()).toEqual(['Checksum', 'Hash_Algorithm']);
   });
@@ -329,8 +329,9 @@ describe('every definition example validates against its extracted definition', 
     // The exact count, not a floor. A floor of 20 against an actual 42 would let half the
     // definitions lose their examples without the guard noticing — which is precisely the
     // vacuity it exists to prevent. Raise this deliberately when definitions gain examples.
-    expect(withExamples.length).toBe(42);
-    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(120);
+    // 45 definitions carrying 133 examples at schema v3.8.0.
+    expect(withExamples.length).toBe(45);
+    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(133);
   });
 
   it.each(withExamples.map(([name]) => name))('%s', (name) => {
