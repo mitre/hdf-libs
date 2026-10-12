@@ -18,6 +18,8 @@ func TestParseFormatVersion(t *testing.T) {
 		wantVersion string
 	}{
 		{"sarif", "sarif", ""},
+		// Still parsed, though the SARIF converter refuses 2.0: splitting the
+		// specifier and deciding whether the version is supported are separate steps.
 		{"sarif@2.0", "sarif", "2.0"},
 		{"hdf@1", "hdf", "1"},
 		{"hdf@2", "hdf", "2"},

@@ -2,6 +2,16 @@
 
 - **Status:** Proposed
 - **Date:** 2026-09-27
+- **Amended:** 2026-10-11 — `content` originally read "the record's bytes, as the tool
+  wrote them". Implementing the first producer showed that promise is unkeepable for a
+  dual-language converter: Go and JavaScript JSON serializers disagree on key order, HTML
+  escaping and number rendering, so a converter obliged to stay byte-identical with its
+  twin must canonicalize. The schema description now says a producer SHOULD write the
+  bytes unchanged and MAY write a canonical form, and that a consumer MUST compare by
+  parsing and MUST NOT checksum the field against its input. Byte-exact carriage stays
+  available through `extensions.rawSourceArtifacts[]`, which forbids a parsed `document`
+  precisely so bytes and checksum survive. The split is deliberate: the artifact carries
+  bytes, the record carries meaning.
 - **Deciders:** Will Dower
 - **Supersedes:** the draft `adr-0016-source-artifact-carriage.md` on branch `feat/schema-greenfield`, whose source-artifact strand is calved off into this ADR. That draft's remaining strands stay with it.
 - **Relates to:**
@@ -127,7 +137,7 @@ The policy belongs in the converter documentation and in the `build-converter` s
 
 | Member | Value |
 |---|---|
-| `content` | the record's bytes, as the tool wrote them |
+| `content` | the record, complete but not necessarily byte-for-byte — see the amendment below |
 | `encoding` | `utf-8` or `base64`, the same pair §3 gives artifacts |
 | `mediaType` | the **record's** IANA media type, which may be narrower than its artifact's — an XCCDF `rule-result` is `application/xml` even when the document embedding it is JSON |
 | `pointer` | optional: a JSON Pointer (RFC 6901) or XPath locating the record inside its artifact, e.g. `/matches/3` |

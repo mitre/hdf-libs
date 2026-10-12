@@ -718,6 +718,30 @@ export function defaultOverrideExpiry(appliedAt: Date): Date {
   return expiresAt;
 }
 
+// Synthesized notReviewed placeholder for a scan that never analyzed its target.
+// The sibling buildNoFindingsRequirement is for a tool that ran clean, which is a
+// pass; reporting a tool that never ran as passed asserts a scan that did not happen.
+export function buildNotAnalyzedRequirement(
+  id: string,
+  codeDesc: string,
+  startTime: Date,
+): EvaluatedRequirement {
+  return {
+    id,
+    title: 'Not analyzed',
+    impact: 0,
+    descriptions: [{ label: 'default', data: codeDesc }],
+    results: [
+      {
+        status: ResultStatus.NotReviewed,
+        codeDesc,
+        startTime,
+      },
+    ],
+    tags: {},
+  };
+}
+
 // Synthesized passed placeholder for tools that ran clean. Required because
 // the HDF schema enforces requirements.minItems=1.
 export function buildNoFindingsRequirement(
