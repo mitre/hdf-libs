@@ -2117,3 +2117,209 @@ func TestEvidenceBundle_TheThreeUnverifiableKindsBehaveAsTheHelpSays(t *testing.
 		})
 	}
 }
+
+// bundleHelpClaims returns the CLAIMS in bundle's Long help: the lines that start at
+// column zero. The layout is one claim per line with its continuations indented, so a
+// claim's start is a visible boundary and a reflow inside one claim cannot push text
+// into the next. Derived from the RENDERED help rather than the source literal, because
+// what a reader sees is the thing under test.
+func bundleHelpClaims(t *testing.T) []string {
+	t.Helper()
+	help, _, err := executeCommand("evidence", "bundle", "--help")
+	require.NoError(t, err)
+	// Everything before the Examples block and cobra's own sections. Those are command
+	// invocations and flag tables, not prose claims — an example is verified by RUNNING
+	// it, which other tests here do, and anchoring it would assert its spelling instead.
+	for _, boundary := range []string{"\nExamples:", "\nUsage:"} {
+		if i := strings.Index(help, boundary); i > 0 {
+			help = help[:i]
+		}
+	}
+	claims := make([]string, 0, 32)
+	for _, line := range strings.Split(help, "\n") {
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, " ") {
+			// A continuation of the claim above, NOT a claim of its own. Folded in, never
+			// skipped: the first version of this helper dropped every space-prefixed line,
+			// so the coverage check below only ever saw claim OPENINGS — and a continuation
+			// is exactly where a width-driven trim lands, which is how 52n0c.16, .36 and
+			// .39 each lost a clause. 22 of 25 claims had no protection on their
+			// continuation text at all.
+			if len(claims) == 0 {
+				t.Fatalf("help begins with an indented line, so the claim structure is broken: %q", line)
+			}
+			claims[len(claims)-1] += " " + strings.TrimSpace(line)
+			continue
+		}
+		claims = append(claims, strings.TrimSpace(line))
+	}
+	return claims
+}
+
+// bundleHelpLineWidths returns the width of every rendered help line before the Examples
+// and Usage sections, so AC 1's width property is ASSERTED rather than left to the
+// author's prose. Nothing stopped a future edit re-widening a line past the limit.
+func bundleHelpLineWidths(t *testing.T) []int {
+	t.Helper()
+	help, _, err := executeCommand("evidence", "bundle", "--help")
+	require.NoError(t, err)
+	for _, boundary := range []string{"\nExamples:", "\nUsage:"} {
+		if i := strings.Index(help, boundary); i > 0 {
+			help = help[:i]
+		}
+	}
+	widths := make([]int, 0, 80)
+	for _, line := range strings.Split(help, "\n") {
+		if line != "" {
+			widths = append(widths, len([]rune(line)))
+		}
+	}
+	return widths
+}
+
+// EVERY claim carries an anchor, and every anchor matches a claim. This is the assertion
+// set that cannot silently fall behind the text: a claim added without an anchor fails
+// here, and an anchor whose claim was deleted or reworded fails too. The sentence-level
+// anchors elsewhere in this file hold eight specific points; this holds the whole
+// paragraph, which is what four rounds of review on 52n0c.39 could not do by eye.
+//
+// The layout exists because the defect class is mechanical: this paragraph was edited
+// five times and shipped wrong four of them, every time because an edit changed a
+// token's length, the line had to rewrap, and a neighbouring phrase was lost or a name
+// was left straddling a newline. One claim per line removes the boundary a phrase can
+// fall off.
+func TestEvidenceBundle_HelpIsOneClaimPerLine(t *testing.T) {
+	claims := bundleHelpClaims(t)
+	require.NotEmpty(t, claims, "the derivation must find claims, or it proves nothing")
+
+	// Each anchor is a distinctive fragment of one claim. Short enough to survive a
+	// reword, long enough to identify the claim it belongs to.
+	anchors := []string{
+		"Write an evidence package and all of its referenced documents",
+		"The archive root IS the package's own directory",
+		"A reference recorded as an ABSOLUTE path inside the package is the exception",
+		"Every reference that travels is covered",
+		"That is reported here and never repaired by rewriting the package",
+		"'hdf evidence set' (systemRef, planRef)",
+		"Bundle and 'hdf evidence info --verify' resolve references identically",
+		"Verification additionally checks completeness",
+		"Both honour the checksum algorithm the package records",
+		"Nothing outside the package directory is read",
+		"What travels: the package",
+		"Anything that cannot travel is reported on stderr",
+		"Everything stays recorded in the package",
+		"Every recorded checksum is verified before anything is written",
+		"Three kinds cannot be verified",
+		"The first two DO travel",
+		"The third does not travel at all",
+		"Every one is reported on stderr",
+		"'hdf evidence info --verify' names each entry individually",
+		"A count here can still exceed what that command names",
+		"A mismatch or a missing document fails the command",
+		"-o refuses a path naming the package",
+		"It also refuses a path that already exists",
+		"--overwrite does not lift the refusals above it",
+		"Under --overwrite a failed run leaves whatever was already at that path",
+	}
+
+	// Every claim is anchored. A claim with no anchor means the assertion set fell behind
+	// the text, which is how a broken sentence ships unnoticed.
+	for _, claim := range claims {
+		matched := false
+		for _, a := range anchors {
+			if strings.HasPrefix(claim, a) {
+				matched = true
+				break
+			}
+		}
+		assert.True(t, matched, "no anchor covers this claim, so nothing would notice if it "+
+			"broke:\n  %s", claim)
+	}
+
+	// And every anchor still matches something. An anchor matching nothing means its
+	// claim was deleted or reworded — which is the direction a reflow eats a phrase.
+	for _, a := range anchors {
+		found := false
+		for _, claim := range claims {
+			if strings.HasPrefix(claim, a) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "this anchor matches no claim — the claim it names was "+
+			"deleted or reworded: %q", a)
+	}
+}
+
+// EVERY WORD OF EVERY CLAIM IS COVERED, not just the opening line each anchor matches.
+// The anchors above are PREFIXES, so a clause dropped from the middle or tail of a
+// claim's continuation lines satisfies them — and a continuation is exactly where a
+// width-driven trim lands. That is how 52n0c.16, .36 and .39 each lost a clause, and
+// the first version of this test could not have seen any of them.
+//
+// Asserted as a token count per claim, because the defect class is LOSS: a phrase eaten
+// by a reflow changes its claim's length, wherever in the claim it sat. A deliberate
+// reword updates the number, which is the point — it makes the edit visible. Meaning is
+// held separately by the sentence anchors and the bare-command-name regexp; neither of
+// those can see a length change, and this cannot see a same-length reword.
+func TestEvidenceBundle_EveryClaimKeepsItsWholeText(t *testing.T) {
+	claims := bundleHelpClaims(t)
+
+	// {token count, the claim's opening words, for naming the failure}.
+	want := []struct {
+		tokens int
+		opens  string
+	}{
+		{24, "Write an evidence package and all"},
+		{47, "The archive root IS the package's"},
+		{36, "A reference recorded as an ABSOLUTE"},
+		{12, "Every reference that travels is covered,"},
+		{11, "That is reported here and never"},
+		{18, "'hdf evidence set' (systemRef, planRef) and"},
+		{47, "Bundle and 'hdf evidence info --verify'"},
+		{33, "Verification additionally checks completeness, which bundle"},
+		{8, "Both honour the checksum algorithm the"},
+		{29, "Nothing outside the package directory is"},
+		{39, "What travels: the package, the documents"},
+		{30, "Anything that cannot travel is reported"},
+		{16, "Everything stays recorded in the package,"},
+		{16, "Every recorded checksum is verified before"},
+		{31, "Three kinds cannot be verified: one"},
+		{26, "The first two DO travel, and"},
+		{13, "The third does not travel at"},
+		{16, "Every one is reported on stderr:"},
+		{22, "'hdf evidence info --verify' names each"},
+		{30, "A count here can still exceed"},
+		{25, "A mismatch or a missing document"},
+		{20, "-o refuses a path naming the"},
+		{22, "It also refuses a path that"},
+		{20, "--overwrite does not lift the refusals"},
+		{25, "Under --overwrite a failed run leaves"},
+	}
+
+	require.Len(t, claims, len(want),
+		"the number of claims changed; add or remove an entry deliberately rather than "+
+			"letting the table fall behind the help")
+	for i, w := range want {
+		got := len(strings.Fields(claims[i]))
+		assert.Equal(t, w.tokens, got,
+			"claim %d lost or gained text — check for a phrase eaten by a reflow:\n  %s...\n  %s",
+			i+1, w.opens, claims[i])
+	}
+}
+
+// AC 1's width property, asserted rather than left to the author's word. The layout only
+// bounds a reflow while every line stays inside the limit; nothing else stopped a future
+// edit re-widening one.
+func TestEvidenceBundle_HelpLinesStayWithinTheWidth(t *testing.T) {
+	const limit = 92 // the width the surrounding help was already hand-wrapped to
+	widths := bundleHelpLineWidths(t)
+	require.NotEmpty(t, widths, "the derivation must find lines, or it proves nothing")
+	for i, w := range widths {
+		assert.LessOrEqual(t, w, limit,
+			"rendered help line %d is %d characters, over the %d-character limit the "+
+				"one-claim-per-line layout depends on", i+1, w, limit)
+	}
+}

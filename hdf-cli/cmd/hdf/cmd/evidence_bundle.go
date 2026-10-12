@@ -62,54 +62,66 @@ func newEvidenceBundleCmd() *cobra.Command {
 		Use:   "bundle <package-file>",
 		Short: "Bundle an evidence package and every document it references into one archive",
 		Long: `Write an evidence package and all of its referenced documents into a single portable
-archive, for handing to a GRC tool or an assessor.
+    archive, for handing to a GRC tool or an assessor.
 
-The archive root IS the package's own directory: an entry's path is its reference resolved
-relative to the package, so extracting anywhere reproduces the layout it was built from, and a
-package whose references are recorded relatively verifies identically on the extracted copy with
-no path rewriting. A reference recorded as an ABSOLUTE path inside the package is the exception:
-its document travels under a relative name while the package still names the producing machine's
-path, so the extracted copy cannot resolve it. Every reference that travels is covered, both
-documents and in-tree external evidence. That is reported here and never repaired by rewriting
-the package: 'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
-(externalEvidence) record such a reference relatively at authoring time.
+The archive root IS the package's own directory: an entry's path is its reference
+    resolved relative to the package, so extracting anywhere reproduces the layout it
+    was built from, and a package whose references are recorded relatively verifies
+    identically on the extracted copy with no path rewriting.
+A reference recorded as an ABSOLUTE path inside the package is the exception: its
+    document travels under a relative name while the package still names the producing
+    machine's path, so the extracted copy cannot resolve it.
+Every reference that travels is covered, both documents and in-tree external evidence.
+That is reported here and never repaired by rewriting the package:
+'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
+    (externalEvidence) record such a reference relatively at authoring time.
 
-Bundle and 'hdf evidence info --verify' resolve references identically, and neither refuses
-a package for the shape of one: a reference to something the package does not contain — an
-absolute path elsewhere, a parent traversal, or a URI on another system — is reported by
-both. Verification additionally checks completeness, which bundle does not, so it can still
-fail a package bundle accepts — for instance when a planned baseline's only results document
-is one of those unreachable references. Both honour the checksum algorithm the package
-records. Nothing outside the package directory is read: such a
-reference is never resolved into a path, and a symlink that leaves the package is refused at the
-read boundary.
+Bundle and 'hdf evidence info --verify' resolve references identically, and neither
+    refuses a package for the shape of one: a reference to something the package does
+    not contain — an absolute path elsewhere, a parent traversal, or a URI on another
+    system — is reported by both.
+Verification additionally checks completeness, which bundle does not, so it can still
+    fail a package bundle accepts — for instance when a planned baseline's only results
+    document is one of those unreachable references.
+Both honour the checksum algorithm the package records.
+Nothing outside the package directory is read: such a reference is never resolved into a
+    path, and a symlink that leaves the package is refused at the read boundary.
 
 What travels: the package, the documents named by systemRef and planRef, every document
-in contents[], and externalEvidence[] artifacts that live inside the package's
-directory. externalReferences[] is inert context and never travels, though -o may not
-overwrite what it names. Anything that cannot travel is reported on stderr, naming the
-field that records it — with one deliberate exception, a remote externalReferences href,
-since inert context was never a candidate. Everything stays recorded in the package,
-which travels in the archive and is the durable list.
+    in contents[], and externalEvidence[] artifacts that live inside the package's
+    directory. externalReferences[] is inert context and never travels, though -o may
+    not overwrite what it names.
+Anything that cannot travel is reported on stderr, naming the field that records it —
+    with one deliberate exception, a remote externalReferences href, since inert context
+    was never a candidate.
+Everything stays recorded in the package, which travels in the archive and is the
+    durable list.
 
-Every recorded checksum is verified before anything is written: this build computes every
-algorithm Hash_Algorithm admits. Three kinds cannot be verified: one recording no checksum at all,
-one recording an empty value, and one on a reference that cannot travel, whose bytes are not here
-to check. The first two DO travel, and are counted separately because the remedy differs — one
-needs a checksum added, the other has one to fill in. The third does not travel at all and is
-reported as not carried. Every one is reported on stderr: the first two as COUNTS, the third
-NAMING the reference. 'hdf evidence info --verify' names each entry individually, in contents[] and in
-externalEvidence[] alike, which is where to look for which ones. A count here can still exceed
-what that command names, because this count also covers the root reference FIELDS and the schema gives
-systemRef and planRef no checksum to record. A mismatch or a missing document fails the command and writes no archive —
-a partial bundle is worse than none, because it looks complete.
+Every recorded checksum is verified before anything is written: this build computes
+    every algorithm Hash_Algorithm admits.
+Three kinds cannot be verified: one recording no checksum at all, one recording an empty
+    value, and one on a reference that cannot travel, whose bytes are not here to check.
+The first two DO travel, and are counted separately because the remedy differs — one
+    needs a checksum added, the other has one to fill in.
+The third does not travel at all and is reported as not carried.
+Every one is reported on stderr: the first two as COUNTS, the third NAMING the
+    reference.
+'hdf evidence info --verify' names each entry individually, in contents[] and in
+    externalEvidence[] alike, which is where to look for which ones.
+A count here can still exceed what that command names, because this count also covers
+    the root reference FIELDS and the schema gives systemRef and planRef no checksum to
+    record.
+A mismatch or a missing document fails the command and writes no archive — a partial
+    bundle is worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
-destroy the evidence it is packaging. It also refuses a path that already exists, so a
-previous archive is never replaced silently; pass --overwrite to replace it deliberately.
---overwrite does not lift the refusals above it: a path naming an input is refused with or
-without the flag. Under --overwrite a failed run leaves whatever was already at that path
-untouched rather than deleting it, and says so on stderr naming the path.
+    destroy the evidence it is packaging.
+It also refuses a path that already exists, so a previous archive is never replaced
+    silently; pass --overwrite to replace it deliberately.
+--overwrite does not lift the refusals above it: a path naming an input is refused with
+    or without the flag.
+Under --overwrite a failed run leaves whatever was already at that path untouched rather
+    than deleting it, and says so on stderr naming the path.
 
 Examples:
   hdf evidence bundle boe.json -o boe.zip
