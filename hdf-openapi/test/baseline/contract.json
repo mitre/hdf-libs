@@ -1,5 +1,5 @@
 {
   "$comment": "The reference API's identity. A changed digest under an unchanged version fails test/contract-version.test.ts: bump API_VERSION in src/generate-api.ts, then re-record with `pnpm run contract:update`. The digest covers the whole document except info, so it moves for a schema change, a golden change, a binding or conventions change, and a generator change.",
   "version": "2.0.0",
-  "digest": "8c3258333be926217ebdc4432e44d7336c2287ae2490471ca4157801bfe9dc62"
+  "digest": "3527fc36c8f08a81ec305a45cbc7b79c5cc2a1f73b9291508067529c8f099b50"
 }

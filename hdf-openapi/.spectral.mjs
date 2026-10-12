@@ -75,5 +75,33 @@ export default {
       files: ['**#/components/schemas/Input_Constraints/properties/allowedValues'],
       rules: { 'array-items': 'off' },
     },
+    {
+      // oas3-operation-security-defined requires every scope in a security requirement to
+      // appear in the scheme's own `scopes` map — which only exists for oauth2 and
+      // openIdConnect flows. This document declares one `http`/`bearer` scheme, and
+      // OpenAPI 3.1.1 §4.8.30 says that for a non-oauth2 scheme "the array MAY contain a
+      // list of role names" with no corresponding declaration, so the construct is legal
+      // and the rule has nothing to validate it against. The closed vocabulary is still
+      // advertised, as `x-hdf-scopes` on the scheme, and a test asserts every operation's
+      // scopes come from it.
+      files: ['**/dist/hdf-api.oas.json'],
+      rules: { 'oas3-operation-security-defined': 'off' },
+    },
+    {
+      // No `servers`, deliberately: ADR-0008 §6 records that this document describes a
+      // contract rather than a deployment, and a templated server whose default is `/`
+      // fails oas3-server-variables because every substitution must yield a valid URL.
+      files: ['**/dist/hdf-api.oas.json'],
+      rules: { 'oas3-api-servers': 'off' },
+    },
+    {
+      // engine.statusCounts and engine.thresholdConfig are registered because the MCP
+      // exposes them, and referenced by no operation because the reply they are parts of
+      // has no whole-response shape yet — which RESPONSE_SHAPE_EXEMPT.hdf_compliance
+      // records. A test asserts these are the ONLY unreferenced components, so this waiver
+      // cannot absorb a third.
+      files: ['**/dist/hdf-api.oas.json'],
+      rules: { 'oas3-unused-component': 'off' },
+    },
   ],
 };

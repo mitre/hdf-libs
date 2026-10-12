@@ -204,6 +204,8 @@ tools:
 # this section still names shapes rather than carrying them.
 synthetic:
   ingest:
+    description: >-
+      Store a document, returning the server-issued id that addresses it and the ETag that conditions later writes. Re-submitting identical bytes returns the existing id.
     method: post
     path: /documents
     etag: true
@@ -215,6 +217,8 @@ synthetic:
     fullResponse: DocumentCreated
 
   deleteDocument:
+    description: >-
+      Delete a stored document. Conditional: the current ETag must be supplied in If-Match, and a document another cites, or one under a legal hold, is refused.
     method: delete
     path: /documents/{id}
     class: admin
@@ -238,6 +242,8 @@ synthetic:
   # security: [] is expressed by the empty scopes list, which Spectral's
   # operation-security-defined accepts.
   issueToken:
+    description: >-
+      Exchange client credentials for an access token. Served by the authorization server, so it carries no bearer requirement of its own.
     method: post
     path: /api/auth/oauth2/token
     class: documentOnly
@@ -246,6 +252,8 @@ synthetic:
     fullResponse: TokenResponse
 
   exchangeApiKey:
+    description: >-
+      Exchange a long-lived API key for a short-lived access token, for callers that cannot hold client credentials.
     method: post
     path: /api/auth/api-key/exchange
     class: documentOnly
@@ -255,18 +263,26 @@ synthetic:
 
 resources:
   hdf-converter-catalog:
+    description: >-
+      The source formats this deployment can convert, which is the vocabulary the conversion request accepts.
     method: get
     path: /catalog/converters
   # The 24 hdf-enum-* resources in the contract are instances of this template, and are
   # covered by binding it rather than by a hand-kept list of 24 that rots when an enum is
   # added to the schema.
   hdf-enum:
+    description: >-
+      The members of one closed vocabulary the HDF schemas declare.
     method: get
     path: /enums/{name}
   hdf-schema-whole:
+    description: >-
+      The JSON Schema document for one HDF document type.
     method: get
     path: /schemas/{docType}
   hdf-schema-slice:
+    description: >-
+      One named definition from an HDF document type's schema.
     method: get
     path: /schemas/{docType}/{def}
 

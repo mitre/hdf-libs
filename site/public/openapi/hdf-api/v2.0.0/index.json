@@ -4,19 +4,28 @@
   "info": {
     "title": "HDF Reference API",
     "version": "2.0.0",
+    "description": "Reference HTTP API for the Heimdall Data Format, generated from the HDF MCP server's tool contract and a closed-grammar binding table. Generated — do not edit by hand. Errors are RFC 9457 problem documents whose `type` dereferences to its documentation; see problems.json in this package.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
     },
+    "contact": {
+      "name": "MITRE Security Automation Framework",
+      "url": "https://saf.mitre.org"
+    },
     "x-hdf-schema-version": "3.8.0",
     "x-hdf-mcp-golden-sha": "ec27be8da06472d428e1040f91b1fbc723d2237bc8297f19adc0cdf41d3263ac",
-    "x-hdf-contract-digest": "8c3258333be926217ebdc4432e44d7336c2287ae2490471ca4157801bfe9dc62"
+    "x-hdf-contract-digest": "3527fc36c8f08a81ec305a45cbc7b79c5cc2a1f73b9291508067529c8f099b50"
   },
   "paths": {
     "/documents/{id}": {
       "get": {
         "operationId": "hdfOpen",
+        "tags": [
+          "documents"
+        ],
         "summary": "Open an HDF document: detect its type, validate it, mint a reusable handle, and return a headline summary.",
+        "description": "Open an HDF document: detect its type, validate it, mint a reusable handle, and return a headline summary. Optional first hop for a multi-question session; a one-shot path call also works.",
         "parameters": [
           {
             "name": "id",
@@ -116,7 +125,11 @@
       },
       "delete": {
         "operationId": "deleteDocument",
-        "summary": "DELETE /documents/{id}",
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete a stored document.",
+        "description": "Delete a stored document. Conditional: the current ETag must be supplied in If-Match, and a document another cites, or one under a legal hold, is refused.",
         "parameters": [
           {
             "name": "id",
@@ -264,7 +277,11 @@
     "/documents/{id}/requirements": {
       "get": {
         "operationId": "hdfQuery",
-        "summary": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call hdf_inspect.",
+        "tags": [
+          "documents"
+        ],
+        "summary": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call `GET /documents/{id}/structure`.",
+        "description": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call `GET /documents/{id}/structure`. Pass sources[] instead of source to combine SEVERAL results documents into one set for the call (rows then carry <tool>/<baseline> names). verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding in `code` is projected by no verbosity — read the source file for the `code` payload itself.",
         "parameters": [
           {
             "name": "id",
@@ -805,7 +822,11 @@
     "/documents/{id}/compliance": {
       "get": {
         "operationId": "hdfCompliance",
+        "tags": [
+          "documents"
+        ],
         "summary": "Compute aggregate percent compliance and status/severity rollups (by effective status: impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, with an optional grouped breakdown and threshold verdict.",
+        "description": "Compute aggregate percent compliance and status/severity rollups (by effective status: impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results document, with an optional grouped breakdown and threshold verdict. counts is aggregate — for per-requirement status use `GET /documents/{id}/requirements`. counts uses SAF threshold-file keys: skipped = notReviewed, no_impact = notApplicable. The agentOverrides block is the detective surface: agent-attributed override count and the compliance delta they account for.",
         "parameters": [
           {
             "name": "id",
@@ -977,7 +998,11 @@
     "/requirements": {
       "get": {
         "operationId": "hdfAggregate",
+        "tags": [
+          "requirements"
+        ],
         "summary": "Roll up status/severity counts across MULTIPLE HDF results or baseline documents in one call: per-source counts plus a server-computed total and compliance, so an agent never carries partial sums across turns.",
+        "description": "Roll up status/severity counts across MULTIPLE HDF results or baseline documents in one call: per-source counts plus a server-computed total and compliance, so an agent never carries partial sums across turns. Optional status/severity/nist filters narrow the counted set. Counts only — never per-requirement rows. A source that fails to load is reported in failures[] and the rest still aggregate. For a single document use `GET /documents/{id}/compliance`; for requirement rows use `GET /documents/{id}/requirements`.",
         "parameters": [
           {
             "name": "sources",
@@ -1173,7 +1198,11 @@
     "/documents/{id}/structure": {
       "get": {
         "operationId": "hdfInspect",
+        "tags": [
+          "documents"
+        ],
         "summary": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection.",
+        "description": "Inspect an HDF document's structure and metadata for any of the eight document types (counts, inventories, envelopes) — never a requirement collection. To list requirements use `GET /documents/{id}/requirements` (verbosity=full for descriptions[]). The raw scanner finding retained in each requirement's `code` is projected by no read tool — read the source file for the `code` payload.",
         "parameters": [
           {
             "name": "id",
@@ -1286,7 +1315,11 @@
     "/comparisons": {
       "get": {
         "operationId": "hdfDiff",
+        "tags": [
+          "comparisons"
+        ],
         "summary": "Compare two HDF documents: temporal (results across time) or system-drift (system documents).",
+        "description": "Compare two HDF documents: temporal (results across time) or system-drift (system documents). Returns a summary and a bounded change list; with output set, writes an hdf-comparison document.",
         "parameters": [
           {
             "name": "from",
@@ -1540,7 +1573,11 @@
     "/validations": {
       "post": {
         "operationId": "hdfValidate",
+        "tags": [
+          "validations"
+        ],
         "summary": "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results).",
+        "description": "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
         "parameters": [
           {
             "name": "mode",
@@ -1690,7 +1727,11 @@
     "/conversions": {
       "post": {
         "operationId": "hdfConvert",
+        "tags": [
+          "conversions"
+        ],
         "summary": "Convert source security-tool output into an HDF results document and return a compact SUMMARY plus a reusable handle — never the converted body.",
+        "description": "Convert source security-tool output into an HDF results document and return a compact SUMMARY plus a reusable handle — never the converted body. from is auto-detected (incl NDJSON) when omitted. Batch mode: pass sources[] and/or directory to convert many files in one call, returning a per-file summary array (continue-past-failure unless failFast). With output/outputDir it writes under the shared write model (dryRun previews; writes-disabled returns a preview). Output failing hdf-results validation is refused.",
         "parameters": [
           {
             "name": "from",
@@ -1921,7 +1962,11 @@
     "/documents/authored": {
       "post": {
         "operationId": "hdfAuthor",
+        "tags": [
+          "documents"
+        ],
         "summary": "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body.",
+        "description": "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-item shapes: the compact hdf://schema/{docType}/{def} slices, not the whole schema. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
         "requestBody": {
           "required": true,
           "content": {
@@ -2107,7 +2152,11 @@
     "/documents/{id}/amendments": {
       "post": {
         "operationId": "hdfApplyAmendment",
+        "tags": [
+          "documents"
+        ],
         "summary": "Apply an hdf-amendments document to an HDF results document, deterministically producing a NEW results file with effectiveStatus/effectiveImpact/disposition computed — the results input is NEVER overwritten.",
+        "description": "Apply an hdf-amendments document to an HDF results document, deterministically producing a NEW results file with effectiveStatus/effectiveImpact/disposition computed — the results input is NEVER overwritten. The applied file retains statusOverrides[] with appliedBy, so attribution and agent-override counts survive on the results artifact itself. Returns the before/after projected compliance, the changed-requirement count, and a reusable handle — never the document body. Writes under the shared write model (dry_run returns the delta without writing; a writes-disabled deployment returns a preview). Output that does not validate as hdf-results is refused.",
         "parameters": [
           {
             "name": "id",
@@ -2316,7 +2365,11 @@
     "/documents": {
       "post": {
         "operationId": "ingest",
-        "summary": "POST /documents",
+        "tags": [
+          "documents"
+        ],
+        "summary": "Store a document, returning the server-issued id that addresses it and the ETag that conditions later writes.",
+        "description": "Store a document, returning the server-issued id that addresses it and the ETag that conditions later writes. Re-submitting identical bytes returns the existing id.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2404,7 +2457,11 @@
     "/api/auth/oauth2/token": {
       "post": {
         "operationId": "issueToken",
-        "summary": "POST /api/auth/oauth2/token",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange client credentials for an access token.",
+        "description": "Exchange client credentials for an access token. Served by the authorization server, so it carries no bearer requirement of its own.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2482,7 +2539,11 @@
     "/api/auth/api-key/exchange": {
       "post": {
         "operationId": "exchangeApiKey",
-        "summary": "POST /api/auth/api-key/exchange",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange a long-lived API key for a short-lived access token, for callers that cannot hold client credentials.",
+        "description": "Exchange a long-lived API key for a short-lived access token, for callers that cannot hold client credentials.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2560,7 +2621,11 @@
     "/catalog/converters": {
       "get": {
         "operationId": "hdfConverterCatalog",
-        "summary": "GET /catalog/converters",
+        "tags": [
+          "catalog"
+        ],
+        "summary": "The source formats this deployment can convert, which is the vocabulary the conversion request accepts.",
+        "description": "The source formats this deployment can convert, which is the vocabulary the conversion request accepts.",
         "responses": {
           "200": {
             "description": "Success. The body is JSON whose shape this document does not yet describe.",
@@ -2604,7 +2669,11 @@
     "/enums/{name}": {
       "get": {
         "operationId": "hdfEnum",
-        "summary": "GET /enums/{name}",
+        "tags": [
+          "enums"
+        ],
+        "summary": "The members of one closed vocabulary the HDF schemas declare.",
+        "description": "The members of one closed vocabulary the HDF schemas declare.",
         "parameters": [
           {
             "name": "name",
@@ -2658,7 +2727,11 @@
     "/schemas/{docType}": {
       "get": {
         "operationId": "hdfSchemaWhole",
-        "summary": "GET /schemas/{docType}",
+        "tags": [
+          "schemas"
+        ],
+        "summary": "The JSON Schema document for one HDF document type.",
+        "description": "The JSON Schema document for one HDF document type.",
         "parameters": [
           {
             "name": "docType",
@@ -2712,7 +2785,11 @@
     "/schemas/{docType}/{def}": {
       "get": {
         "operationId": "hdfSchemaSlice",
-        "summary": "GET /schemas/{docType}/{def}",
+        "tags": [
+          "schemas"
+        ],
+        "summary": "One named definition from an HDF document type's schema.",
+        "description": "One named definition from an HDF document type's schema.",
         "parameters": [
           {
             "name": "docType",
@@ -2772,6 +2849,44 @@
       }
     }
   },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Token issuance, served by the authorization server rather than a service route."
+    },
+    {
+      "name": "catalog",
+      "description": "What this deployment supports."
+    },
+    {
+      "name": "comparisons",
+      "description": "Differential analysis between two documents."
+    },
+    {
+      "name": "conversions",
+      "description": "Conversion of third-party tool output into HDF."
+    },
+    {
+      "name": "documents",
+      "description": "Stored HDF documents: ingest, read, amend and delete."
+    },
+    {
+      "name": "enums",
+      "description": "The closed vocabularies the schemas declare."
+    },
+    {
+      "name": "requirements",
+      "description": "Requirement-level reads across one document or many."
+    },
+    {
+      "name": "schemas",
+      "description": "The HDF JSON Schema documents themselves."
+    },
+    {
+      "name": "validations",
+      "description": "Schema validation of a submitted document."
+    }
+  ],
   "components": {
     "schemas": {
       "Evaluated_Baseline": {

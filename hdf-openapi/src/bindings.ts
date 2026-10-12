@@ -39,6 +39,7 @@ export const CLOSED_KEYS = new Set([
   'success',
   'problems',
   'etag',
+  'description',
 ]);
 
 /** Keys that would make the table carry a schema instead of naming one. */
@@ -93,6 +94,8 @@ export interface ToolBinding {
   etag?: boolean;
   /** Hand-set scopes, which §2 allows only on a synthetic operation. */
   scopes?: string[];
+  /** Prose for an operation the MCP does not describe: a synthetic one, or a resource. */
+  description?: string;
 }
 
 export interface BindingTable {

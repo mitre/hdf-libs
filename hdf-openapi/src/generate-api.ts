@@ -377,6 +377,7 @@ function formatsIn(node: unknown, where: string): { format: string; where: strin
 
 interface Operation {
   operationId: string;
+  tags?: string[];
   summary?: string;
   parameters?: unknown[];
   requestBody?: unknown;
@@ -776,6 +777,53 @@ function parameterFor(
 }
 
 /** First sentence of the MCP's own description: generated, not authored. */
+/**
+ * Rewrites a tool name mentioned in prose into the operation that binds it.
+ *
+ * The MCP's descriptions cross-reference each other — "for other document types call
+ * hdf_inspect" — which is useful to an agent and meaningless to an HTTP client, who has no
+ * hdf_inspect. §2's rewrite map keeps that vocabulary off this surface; it applies to prose
+ * for the same reason it applies to member names. A mention of a tool nothing binds is a
+ * refusal rather than a silent leak.
+ */
+function rewriteToolMentions(text: string, operations: Map<string, string>): string {
+  return text.replace(/\bhdf_[a-z_]+\b/g, (tool) => {
+    const operation = operations.get(tool);
+    if (operation === undefined) {
+      throw new Error(`a description names ${tool}, which no operation binds`);
+    }
+    return operation;
+  });
+}
+
+/** What each tag groups, for a rendered document and for a generated client's class name. */
+const TAG_DESCRIPTIONS: Record<string, string> = {
+  documents: 'Stored HDF documents: ingest, read, amend and delete.',
+  requirements: 'Requirement-level reads across one document or many.',
+  comparisons: 'Differential analysis between two documents.',
+  conversions: 'Conversion of third-party tool output into HDF.',
+  validations: 'Schema validation of a submitted document.',
+  catalog: 'What this deployment supports.',
+  enums: 'The closed vocabularies the schemas declare.',
+  schemas: 'The HDF JSON Schema documents themselves.',
+  auth: 'Token issuance, served by the authorization server rather than a service route.',
+};
+
+/**
+ * The resource an operation belongs to, from the first non-templated path segment. Tags
+ * group operations in a rendered document and are what most generators name a client class
+ * after, so every operation carries exactly one and nothing hand-maintains the list.
+ */
+function tagFor(path: string): string {
+  const segments = path.split('/').filter((part) => part !== '' && !part.startsWith('{'));
+  // The auth routes live under /api/auth/... and belong together, not under "api".
+  if (segments[0] === 'api' && segments[1] === 'auth') return 'auth';
+  return segments[0] ?? 'default';
+}
+
+const prose = (text: string | undefined, operations: Map<string, string>): string | undefined =>
+  text === undefined ? undefined : rewriteToolMentions(text, operations);
+
 function summarize(description: string | undefined, fallback: string): string {
   if (!description) return fallback;
   const first = description.split(/(?<=\.)\s|\n/)[0]!.trim();
@@ -933,6 +981,7 @@ function operationFor(
   binding: ToolBinding,
   cls: string,
   summary: string,
+  description: string | undefined,
   schemas: Record<string, unknown>,
   inputProperties: Record<string, unknown>,
   raisableCodes: string[],
@@ -1037,7 +1086,12 @@ function operationFor(
 
   return {
     operationId: operationIdFor(name),
+    tags: [tagFor(binding.path ?? '')],
     summary,
+    // Both, always. `summary` is the first sentence and `description` the whole of it; for
+    // a one-sentence operation they coincide, and omitting the longer field to avoid the
+    // duplication left five operations with no description at all.
+    ...(description !== undefined ? { description } : {}),
     parameters: parameters.length > 0 ? parameters : undefined,
     requestBody: requestBodyFor(binding, bodyFields, schemas, inputProperties),
     responses,
@@ -1051,6 +1105,7 @@ function operationFor(
 
 export interface ApiDocument {
   openapi: string;
+  tags?: { name: string; description: string }[];
   jsonSchemaDialect?: string;
   servers?: { url: string; variables?: Record<string, { default: string; description?: string }> }[];
   info: Record<string, string>;
@@ -1126,6 +1181,14 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     ),
   );
   const bindingNameOf = new Map<string, string>();
+  // Built before any operation is described, so a cross-reference resolves whichever order
+  // the tools are walked in.
+  const operationOf = new Map<string, string>();
+  for (const [name, binding] of Object.entries({ ...table.tools, ...table.synthetic })) {
+    if (binding.method && binding.path) {
+      operationOf.set(name, `\`${binding.method.toUpperCase()} ${binding.path}\``);
+    }
+  }
   const add = (binding: ToolBinding, name: string, cls: string): void => {
     if (!binding.method || !binding.path) return;
     bindingNameOf.set(operationIdFor(name), name);
@@ -1134,7 +1197,11 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       name,
       binding,
       cls,
-      summarize(describe.get(name), `${binding.method.toUpperCase()} ${binding.path}`),
+      summarize(
+        prose(binding.description ?? describe.get(name), operationOf),
+        `${binding.method.toUpperCase()} ${binding.path}`,
+      ),
+      prose(binding.description ?? describe.get(name), operationOf),
       schemas,
       inputsFor.get(name) ?? {},
       codesFor.get(name) ?? [],
@@ -1346,7 +1413,13 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     info: {
       title: 'HDF Reference API',
       version: API_VERSION,
+      description:
+        'Reference HTTP API for the Heimdall Data Format, generated from the HDF MCP ' +
+        "server's tool contract and a closed-grammar binding table. Generated — do not edit " +
+        'by hand. Errors are RFC 9457 problem documents whose `type` dereferences to its ' +
+        'documentation; see problems.json in this package.',
       license: { name: 'Apache-2.0', identifier: 'Apache-2.0' },
+      contact: { name: 'MITRE Security Automation Framework', url: 'https://saf.mitre.org' },
       'x-hdf-schema-version': componentsDoc.info.version,
       'x-hdf-mcp-golden-sha': createHash('sha256').update(contractRaw).digest('hex'),
       // Over the whole document with `info` excluded. The two shas above cover two of the
@@ -1357,6 +1430,13 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       'x-hdf-contract-digest': '',
     } as unknown as Record<string, string>,
     paths,
+    tags: [...new Set(Object.values(paths).flatMap((item) => Object.values(item).flatMap((op) => op.tags ?? [])))]
+      .sort()
+      .map((name) => {
+        const description = TAG_DESCRIPTIONS[name];
+        if (description === undefined) throw new Error(`tag ${name} has no description`);
+        return { name, description };
+      }),
     components: {
       schemas,
       headers: sharedHeaders(),

@@ -1191,9 +1191,31 @@ describe('no description names the transport it was derived from', () => {
 
   it('none names an MCP tool, an MCP environment variable, or the MCP itself', () => {
     const leaks = descriptions
+      // `info.description` records where the document came from, which is provenance rather
+      // than something a client programs against. Everything under `paths` and `components`
+      // is the contract and is held to the rule.
+      .filter(([where]) => where !== '/info')
       .filter(([, text]) => /HDF_MCP_|\bhdf_[a-z_]+|\bMCP\b/.test(text))
       .map(([where, text]) => `${where}: ${text}`);
     expect(leaks).toEqual([]);
+  });
+
+  it('a description naming a tool nothing binds is refused', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: {
+            probe: {
+              method: 'get',
+              path: '/x',
+              class: 'read',
+              scopes: ['hdf:read'],
+              description: 'see hdf_nonexistent for the other case',
+            },
+          },
+        },
+      }),
+    ).toThrow(/names hdf_nonexistent, which no operation binds/);
   });
 });
 
