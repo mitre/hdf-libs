@@ -37,6 +37,7 @@ export const CLOSED_KEYS = new Set([
   'scopes',
   'success',
   'problems',
+  'etag',
 ]);
 
 /** Keys that would make the table carry a schema instead of naming one. */
@@ -87,6 +88,8 @@ export interface ToolBinding {
   success?: number;
   /** Problem statuses this operation declares, each naming its problem types. */
   problems?: Record<string, string[]>;
+  /** Whether the success response issues the document's ETag. */
+  etag?: boolean;
 }
 
 export interface BindingTable {

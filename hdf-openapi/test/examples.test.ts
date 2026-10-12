@@ -8,7 +8,13 @@ const DIST = join(HERE, '..', 'dist');
 const SRC = join(HERE, '..', 'src');
 
 interface OpenApiDocument {
-  components: { schemas: Record<string, unknown>; responses?: Record<string, unknown> };
+  components: {
+    schemas: Record<string, unknown>;
+    responses?: Record<string, unknown>;
+    headers?: Record<string, unknown>;
+    parameters?: Record<string, unknown>;
+    requestBodies?: Record<string, unknown>;
+  };
   paths?: Record<string, unknown>;
 }
 
@@ -131,6 +137,11 @@ function sites(doc: OpenApiDocument): Site[] {
   };
   walk(doc.paths ?? {}, 'paths');
   walk(doc.components.responses ?? {}, 'components/responses');
+  // The regions the comment below predicted. ETag, Retry-After and the RateLimit pair
+  // became shared components, and their examples lived outside the gate for one build.
+  walk(doc.components.headers ?? {}, 'components/headers');
+  walk(doc.components.parameters ?? {}, 'components/parameters');
+  walk(doc.components.requestBodies ?? {}, 'components/requestBodies');
   return found;
 }
 

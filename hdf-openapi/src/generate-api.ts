@@ -150,18 +150,22 @@ function sharedResponses(): Record<string, unknown> {
           schema: { type: 'string' },
           example: 'Bearer error="insufficient_scope", scope="hdf:write", resource_metadata="https://hdf.example.org/.well-known/oauth-protected-resource"',
         },
+        ...rateLimitHeaders(),
       },
     },
     TooManyRequests: {
       ...problemRef('Quota exceeded', 429, 'quota-exceeded'),
-      headers: { ...rateLimitHeaders(), 'Retry-After': { schema: { type: 'integer' } } },
+      headers: retryAfterHeaders(),
     },
-    InternalError: problemRef('Internal error', 500, 'internal-error'),
+    InternalError: { ...problemRef('Internal error', 500, 'internal-error'), headers: rateLimitHeaders() },
     StoreUnavailable: {
       ...problemRef('Store unavailable', 503, 'store-unavailable'),
-      headers: { 'Retry-After': { schema: { type: 'integer' } } },
+      headers: retryAfterHeaders(),
     },
-    UnsupportedMediaType: problemRef('Unsupported media type', 415, 'unsupported-media-type'),
+    UnsupportedMediaType: {
+      ...problemRef('Unsupported media type', 415, 'unsupported-media-type'),
+      headers: rateLimitHeaders(),
+    },
   };
 }
 
@@ -424,6 +428,7 @@ function problemResponseForRefs(status: number, refs: ProblemRef[]): Record<stri
   }
   return {
     description: refs.map((r) => r.title).join(' | '),
+    headers: rateLimitHeaders(),
     content: { 'application/problem+json': { schema, examples } },
   };
 }
@@ -461,6 +466,7 @@ function problemResponse(code: string): Record<string, unknown> {
   const { type } = PROBLEM_TYPES[code]!;
   return {
     description: code,
+    headers: rateLimitHeaders(),
     content: {
       'application/problem+json': {
         schema: { $ref: '#/components/schemas/Problem' },
@@ -481,19 +487,66 @@ function problemResponse(code: string): Record<string, unknown> {
  * only on the 429: a client should learn its budget from a call that worked, rather than
  * having to provoke a rejection to find out.
  */
-function rateLimitHeaders(): Record<string, unknown> {
+/**
+ * ADR-0008 §3's conventions as actual shared components. They were inlined on every
+ * response, which is why one wrong example appeared nineteen times.
+ */
+function sharedHeaders(): Record<string, unknown> {
   return {
+    ETag: {
+      description:
+        'Strong entity-tag for the document, the `sha256` of its stored bytes. Condition a ' +
+        'write on it with `If-Match` (RFC 9110 §8.8.3, §13.1.1).',
+      required: true,
+      schema: { type: 'string' },
+      example: '"b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"',
+    },
     RateLimit: {
       description: 'Remaining quota for the active window, as a structured field.',
       schema: { type: 'string' },
-      example: 'limit=100, remaining=87, reset=12',
+      // draft-ietf-httpapi-ratelimit-headers-11 §4: a dictionary keyed by policy name with
+      // `r` remaining and `t` seconds to reset. The `limit=/remaining=/reset=` form this
+      // carried was draft-07 and was removed in -08.
+      example: '"default";r=87;t=12',
     },
     'RateLimit-Policy': {
       description: 'The quota policy this endpoint applies.',
       schema: { type: 'string' },
       example: '"default";q=100;w=60',
     },
+    'Retry-After': {
+      description: 'Delay before retrying, in seconds or as an HTTP-date (RFC 9110 §10.2.3).',
+      schema: { oneOf: [{ type: 'integer', minimum: 0 }, { type: 'string' }] },
+      example: 42,
+    },
   };
+}
+
+/** The one request parameter every conditional write shares. */
+function sharedParameters(): Record<string, unknown> {
+  return {
+    IfMatch: {
+      name: 'If-Match',
+      in: 'header',
+      required: true,
+      description:
+        'The document ETag the write is conditioned on, taken from the `ETag` of a prior ' +
+        'response. A mismatch is 412 (RFC 9110 §13.1.1).',
+      schema: { type: 'string' },
+    },
+  };
+}
+
+const headerRef = (name: string): Record<string, unknown> => ({
+  $ref: `#/components/headers/${name}`,
+});
+
+function rateLimitHeaders(): Record<string, unknown> {
+  return { RateLimit: headerRef('RateLimit'), 'RateLimit-Policy': headerRef('RateLimit-Policy') };
+}
+
+function retryAfterHeaders(): Record<string, unknown> {
+  return { ...rateLimitHeaders(), 'Retry-After': headerRef('Retry-After') };
 }
 
 function conventionalResponses(hasBody: boolean): Record<string, unknown> {
@@ -800,14 +853,17 @@ function operationFor(
     responses['404'] = problemResponseFor(404, ['DOCUMENT_NOT_FOUND']);
   }
   if (byStatus.has(412)) {
-    parameters.push({
-      name: 'If-Match',
-      in: 'header',
-      required: true,
-      description:
-        'The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).',
-      schema: { type: 'string' },
-    });
+    parameters.push({ $ref: '#/components/parameters/IfMatch' });
+  }
+  // §3 ties the validator to the document's sha256, so an operation that returns or changes
+  // one document issues it. Declared in §2's grammar rather than derived: nothing in the MCP
+  // has a validator concept, and a 204 has no representation to tag.
+  if (binding.etag === true) {
+    if (success === 204) throw new Error(`${name}: declares etag with a 204, which tags nothing`);
+    (successResponse as { headers: Record<string, unknown> }).headers = {
+      ETag: headerRef('ETag'),
+      ...rateLimitHeaders(),
+    };
   }
 
   return {
@@ -1054,6 +1110,8 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     paths,
     components: {
       schemas,
+      headers: sharedHeaders(),
+      parameters: sharedParameters(),
       responses: sharedResponses(),
       // ADR-0008 §3: one http/bearer scheme, with the closed scope vocabulary advertised
       // as x-hdf-scopes. No oauth2 scheme, because its URLs vary per deployment; clients

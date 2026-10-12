@@ -17,7 +17,8 @@ properties:
     pattern: '^[0-9a-f]{64}$'
     description: >-
       Digest of the submitted bytes. Advisory, and the secondary key for idempotent
-      re-ingest (Zalando #231) rather than an identifier a caller may address.
+      re-ingest (Zalando #231) rather than an identifier a caller may address:
+      condition a write on the `ETag` this response carries, not on this member.
 examples:
   - id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
     sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

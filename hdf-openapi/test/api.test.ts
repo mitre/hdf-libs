@@ -20,6 +20,16 @@ const table = loadBindings(readFileSync(join(SRC, 'bindings.yaml'), 'utf-8'));
 writeApiDocument();
 const doc = generateApiDocument();
 
+/** Resolves a parameter that may be a $ref into components.parameters. */
+function resolveParam(p: Record<string, unknown>): Record<string, unknown> {
+  const ref = p.$ref as string | undefined;
+  if (ref === undefined) return p;
+  const shared = (doc.components as { parameters: Record<string, Record<string, unknown>> }).parameters;
+  const resolved = shared[ref.slice(ref.lastIndexOf('/') + 1)];
+  if (resolved === undefined) throw new Error(`unresolvable parameter ref ${ref}`);
+  return resolved;
+}
+
 describe('the generated reference API', () => {
   it('is OpenAPI 3.1 and carries the contract versions it was built from', () => {
     expect(doc.openapi).toMatch(/^3\.1\./);
@@ -961,9 +971,9 @@ describe('each operation declares the problem responses its tool can raise', () 
     const op = operationFor('hdf_apply_amendment');
     expect(perTool.hdf_apply_amendment).toContain('HANDLE_STALE');
     expect(Object.keys(op.responses as Record<string, unknown>)).toContain('412');
-    const headers = ((op.parameters ?? []) as { name: string; in: string }[]).filter(
-      (p) => p.in === 'header',
-    );
+    const headers = (op.parameters ?? [])
+      .map((p) => resolveParam(p as Record<string, unknown>))
+      .filter((p) => p.in === 'header');
     expect(headers.map((h) => h.name)).toContain('If-Match');
   });
 
@@ -1050,6 +1060,76 @@ describe('the synthetic operations declare an error surface too', () => {
 // 409 — and none of it is derivable: a synthetic operation raises no mcperr code, and the
 // two 409 conditions are ADR-0009/ADR-0013 service concerns the MCP has no equivalent for.
 // So §2's grammar declares them and the generator reads the declaration.
+// §3 ties identity to the document's sha256 "exposed as ETag", and for one release no
+// response declared the header while two operations required If-Match — so neither was
+// callable, and problems.json told callers to read a header nothing sent. These assert the
+// general property rather than the two instances, so a third conditional operation cannot
+// repeat it.
+describe('a conditional write can obtain the validator it requires', () => {
+  const conditional = Object.entries(doc.paths).flatMap(([path, item]) =>
+    Object.entries(item)
+      .filter(([, op]) =>
+        (op.parameters ?? [])
+          .map((p) => resolveParam(p as Record<string, unknown>))
+          .some((p) => p.name === 'If-Match'),
+      )
+      .map(([method, op]) => [`${method.toUpperCase()} ${path}`, op] as const),
+  );
+
+  const issuers = Object.entries(doc.paths).flatMap(([path, item]) =>
+    Object.entries(item).flatMap(([method, op]) =>
+      Object.entries(op.responses as Record<string, { headers?: Record<string, unknown> }>)
+        .filter(([status, r]) => Number(status) < 400 && r.headers?.ETag !== undefined)
+        .map(([status]) => `${method.toUpperCase()} ${path} ${status}`),
+    ),
+  );
+
+  it('some operation requires If-Match and some response issues an ETag', () => {
+    expect(conditional.length, 'no conditional write, so the checks below are empty').toBeGreaterThan(0);
+    expect(issuers.length, 'no response issues an ETag, so the checks below are empty').toBeGreaterThan(0);
+  });
+
+  it('the canonical single-document read issues it, which is where a client looks first', () => {
+    expect(issuers).toContain('GET /documents/{id} 200');
+  });
+
+  it.each(conditional)('%s issues the new validator on success, or returns no content', (_label, op) => {
+    const success = Object.entries(op.responses as Record<string, { headers?: Record<string, unknown> }>)
+      .filter(([status]) => Number(status) < 400);
+    expect(success).toHaveLength(1);
+    const [status, response] = success[0]!;
+    // A 204 has no representation to tag; anything else must hand back the new validator,
+    // or a client chaining two writes has to re-read between them.
+    if (status !== '204') expect(response.headers?.ETag).toBeDefined();
+  });
+
+  it('the ETag is a strong validator, as a content hash can be', () => {
+    const header = (doc.components as { headers: Record<string, { example?: string; required?: boolean }> })
+      .headers.ETag!;
+    expect(header.required).toBe(true);
+    expect(header.example).toMatch(/^"[0-9a-f]{64}"$/);
+  });
+
+  it('refuses an etag declaration on an operation with no representation', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: {
+            probe: {
+              method: 'delete',
+              path: '/documents/{id}',
+              class: 'admin',
+              scopes: ['hdf:admin'],
+              success: 204,
+              etag: true,
+            },
+          },
+        },
+      }),
+    ).toThrow(/declares etag with a 204/);
+  });
+});
+
 describe("a synthetic operation's declared statuses reach the document", () => {
   const declaring = Object.entries(table.synthetic ?? {}).filter(
     ([, b]) => b.success !== undefined || b.problems !== undefined,
@@ -1125,9 +1205,9 @@ describe("a synthetic operation's declared statuses reach the document", () => {
 
   it('the conditional delete requires If-Match', () => {
     const op = doc.paths['/documents/{id}']!.delete!;
-    const header = (op.parameters ?? []).find(
-      (p) => (p as { name: string }).name === 'If-Match',
-    ) as { required: boolean; in: string } | undefined;
+    const header = (op.parameters ?? [])
+      .map((p) => resolveParam(p as Record<string, unknown>))
+      .find((p) => p.name === 'If-Match') as { required: boolean; in: string } | undefined;
     expect(header, 'DELETE /documents/{id} declares a 412 and no If-Match').toBeDefined();
     expect(header!.in).toBe('header');
     expect(header!.required).toBe(true);

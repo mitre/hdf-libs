@@ -14,6 +14,7 @@
 
 tools:
   hdf_open:
+    etag: true
     method: get
     path: /documents/{id}
     fields:
@@ -165,6 +166,7 @@ tools:
       - convert.batch.entry
 
   hdf_author:
+    etag: true
     method: post
     path: /documents/authored
     fields:
@@ -182,6 +184,7 @@ tools:
         reason: the service decides whether a write happens, not the caller
 
   hdf_apply_amendment:
+    etag: true
     method: post
     path: /documents/{id}/amendments
     fields:
@@ -203,6 +206,7 @@ synthetic:
   ingest:
     method: post
     path: /documents
+    etag: true
     class: write
     scopes:
       - hdf:write

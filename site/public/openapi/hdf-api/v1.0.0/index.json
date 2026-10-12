@@ -49,19 +49,14 @@
               }
             },
             "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -73,6 +68,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -122,13 +125,7 @@
             }
           },
           {
-            "name": "If-Match",
-            "in": "header",
-            "required": true,
-            "description": "The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).",
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/IfMatch"
           }
         ],
         "responses": {
@@ -136,18 +133,10 @@
             "description": "No content",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -159,6 +148,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -179,6 +176,14 @@
           },
           "409": {
             "description": "DELETE_RESTRICTED | HELD",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -207,6 +212,14 @@
           },
           "412": {
             "description": "HANDLE_STALE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -618,18 +631,10 @@
             },
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -641,6 +646,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -661,6 +674,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -763,18 +784,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -786,6 +799,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -806,6 +827,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -930,18 +959,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -953,6 +974,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -973,6 +1002,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1073,18 +1110,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1096,6 +1125,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1286,18 +1323,10 @@
             },
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1309,6 +1338,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1329,6 +1366,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1440,18 +1485,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1463,6 +1500,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1483,6 +1528,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1619,18 +1672,10 @@
             },
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1642,6 +1687,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1662,6 +1715,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1680,6 +1741,14 @@
           },
           "422": {
             "description": "AMBIGUOUS_FORMAT | NO_CONVERTER | SCHEMA_INVALID",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1798,19 +1867,14 @@
           "200": {
             "description": "Success",
             "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1822,6 +1886,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1842,6 +1914,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1860,6 +1940,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1919,13 +2007,7 @@
             }
           },
           {
-            "name": "If-Match",
-            "in": "header",
-            "required": true,
-            "description": "The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).",
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/IfMatch"
           }
         ],
         "requestBody": {
@@ -1955,19 +2037,14 @@
           "200": {
             "description": "Success",
             "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -1979,6 +2056,14 @@
           },
           "404": {
             "description": "DOCUMENT_NOT_FOUND",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1999,6 +2084,14 @@
           },
           "412": {
             "description": "HANDLE_STALE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2019,6 +2112,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2037,6 +2138,14 @@
           },
           "422": {
             "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2115,19 +2224,14 @@
               }
             },
             "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2139,6 +2243,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2201,18 +2313,10 @@
             },
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2224,6 +2328,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2279,18 +2391,10 @@
             },
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2302,6 +2406,14 @@
           },
           "413": {
             "description": "TOO_LARGE",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2340,18 +2452,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2399,18 +2503,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2458,18 +2554,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -2525,18 +2613,10 @@
             "description": "Success",
             "headers": {
               "RateLimit": {
-                "description": "Remaining quota for the active window, as a structured field.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "limit=100, remaining=87, reset=12"
+                "$ref": "#/components/headers/RateLimit"
               },
               "RateLimit-Policy": {
-                "description": "The quota policy this endpoint applies.",
-                "schema": {
-                  "type": "string"
-                },
-                "example": "\"default\";q=100;w=60"
+                "$ref": "#/components/headers/RateLimit-Policy"
               }
             }
           },
@@ -10599,7 +10679,7 @@
           "sha256": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
-            "description": "Digest of the submitted bytes. Advisory, and the secondary key for idempotent re-ingest (Zalando #231) rather than an identifier a caller may address."
+            "description": "Digest of the submitted bytes. Advisory, and the secondary key for idempotent re-ingest (Zalando #231) rather than an identifier a caller may address: condition a write on the `ETag` this response carries, not on this member."
           }
         },
         "examples": [
@@ -12820,6 +12900,56 @@
         "additionalProperties": false
       }
     },
+    "headers": {
+      "ETag": {
+        "description": "Strong entity-tag for the document, the `sha256` of its stored bytes. Condition a write on it with `If-Match` (RFC 9110 §8.8.3, §13.1.1).",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "\"b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c\""
+      },
+      "RateLimit": {
+        "description": "Remaining quota for the active window, as a structured field.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "\"default\";r=87;t=12"
+      },
+      "RateLimit-Policy": {
+        "description": "The quota policy this endpoint applies.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "\"default\";q=100;w=60"
+      },
+      "Retry-After": {
+        "description": "Delay before retrying, in seconds or as an HTTP-date (RFC 9110 §10.2.3).",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "example": 42
+      }
+    },
+    "parameters": {
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "description": "The document ETag the write is conditioned on, taken from the `ETag` of a prior response. A mismatch is 412 (RFC 9110 §13.1.1).",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
     "responses": {
       "Unauthorized": {
         "description": "No or invalid credentials",
@@ -12864,6 +12994,12 @@
               "type": "string"
             },
             "example": "Bearer error=\"insufficient_scope\", scope=\"hdf:write\", resource_metadata=\"https://hdf.example.org/.well-known/oauth-protected-resource\""
+          },
+          "RateLimit": {
+            "$ref": "#/components/headers/RateLimit"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimit-Policy"
           }
         }
       },
@@ -12883,23 +13019,13 @@
         },
         "headers": {
           "RateLimit": {
-            "description": "Remaining quota for the active window, as a structured field.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "limit=100, remaining=87, reset=12"
+            "$ref": "#/components/headers/RateLimit"
           },
           "RateLimit-Policy": {
-            "description": "The quota policy this endpoint applies.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "\"default\";q=100;w=60"
+            "$ref": "#/components/headers/RateLimit-Policy"
           },
           "Retry-After": {
-            "schema": {
-              "type": "integer"
-            }
+            "$ref": "#/components/headers/Retry-After"
           }
         }
       },
@@ -12915,6 +13041,14 @@
               "title": "Internal error",
               "status": 500
             }
+          }
+        },
+        "headers": {
+          "RateLimit": {
+            "$ref": "#/components/headers/RateLimit"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimit-Policy"
           }
         }
       },
@@ -12933,10 +13067,14 @@
           }
         },
         "headers": {
+          "RateLimit": {
+            "$ref": "#/components/headers/RateLimit"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimit-Policy"
+          },
           "Retry-After": {
-            "schema": {
-              "type": "integer"
-            }
+            "$ref": "#/components/headers/Retry-After"
           }
         }
       },
@@ -12952,6 +13090,14 @@
               "title": "Unsupported media type",
               "status": 415
             }
+          }
+        },
+        "headers": {
+          "RateLimit": {
+            "$ref": "#/components/headers/RateLimit"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimit-Policy"
           }
         }
       }
