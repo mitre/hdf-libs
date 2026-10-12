@@ -770,13 +770,15 @@ func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
 	assert.NotContains(t, verifyOut, "1 skipped",
 		"the pre-fix count, which covered contents[] only")
 
-	// The residual divergence, measured and pinned for BOTH root reference fields
-	// rather than left to surprise someone. planRef matters more than systemRef here:
-	// it is the field verify's DEFAULT mode needs, so the only shape where the counts
-	// reconcile is one verify cannot run its primary check on. Carded as 52n0c.40.
+	// And the counts reconcile for a package that NAMES a root reference too, not only
+	// for one without. This block used to pin the opposite: a systemRef or planRef moved
+	// bundle's count and not verification's, because bundle counted the reference FIELD,
+	// which the schema gives no checksum property. Both fields are still measured
+	// independently — the divergence was identical for each, so a fix proven on one says
+	// nothing about the other.
 	for _, tc := range []struct{ name, field, value string }{
-		{"a systemRef adds to bundle's count only", "systemRef", "system.json"},
-		{"and so does a planRef, which verify's default mode needs", "planRef", "plan.json"},
+		{"a systemRef leaves both counts alone", "systemRef", "system.json"},
+		{"and so does a planRef, which verification's default mode needs", "planRef", "plan.json"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			src, rErr := os.ReadFile(filepath.Join(evidenceFixtureDir, "plan.json"))
@@ -807,9 +809,11 @@ func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
 			require.NoError(t, bErr)
 
 			assert.Contains(t, vOut, "2 skipped",
-				"a root reference field is not a checksummed entry, so verify is unmoved")
-			assert.Contains(t, bStderr, "3 reference(s) record no checksum",
-				"bundle counts the root reference field, which the schema gives no checksum property")
+				"a root reference field is not a checksummed entry, so verification is unmoved")
+			assert.Contains(t, bStderr, "2 reference(s) record no checksum",
+				"and bundle is unmoved for the same reason: there is nowhere to record one")
+			assert.NotContains(t, bStderr, "3 reference(s) record no checksum",
+				"the pre-fix count, which counted a field that cannot carry a checksum")
 		})
 	}
 }
@@ -929,7 +933,7 @@ func TestEvidenceInfoVerify_RendersEveryReachableState(t *testing.T) {
 	for state, want := range map[string]string{
 		"match":              "✓ rhel9-results.json (sha256 match)",
 		"mismatch":           "✗ system.json (sha256 MISMATCH)",
-		"no checksum":        "- noplan.json (no checksum)",
+		"no checksum":        "- noplan.json (no checksum recorded)",
 		"error":              "! unreadable.json (error:",
 		"not reachable here": "? https://logs.example.gov/x.ndjson (not reachable here:",
 	} {
@@ -1126,4 +1130,82 @@ func TestEvidenceInfoVerify_RequireChecksumsSeesWhatTheDocumentRecords(t *testin
 		assert.Contains(t, e.Error(), "rhel9-results.json",
 			"AND the unchecksummed entry — 'both can fail at once' is a claim in the help")
 	})
+}
+
+// --verify distinguishes an entry recording NO checksum from one recording a BLANK
+// value, in the same words 'hdf evidence info' and 'hdf evidence bundle' use. It used to
+// print "(no checksum)" for both, so the surface an operator reaches for detail was the
+// one that told them least — and the remedies differ: one needs a checksum added, the
+// other has one to fill in.
+//
+// Written because the test that claimed to prove this consistency called plain 'info',
+// never '--verify', so it passed against the one surface that was never broken. An
+// independent reviewer also established that nothing in the engine had to change for
+// this: EvidenceContent carries ChecksumRecorded, evidenceVerifyResult is CLI-local, and
+// verifyRecordedArray already walks the entries that hold the distinction.
+func TestEvidenceInfoVerify_DistinguishesABlankChecksumFromAnAbsentOne(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	for _, n := range []string{"absent.json", "blank.json"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), src, 0o600))
+	}
+	pkg, err := json.Marshal(map[string]any{
+		"name": "two-kinds",
+		"contents": []map[string]any{
+			{"type": "hdf-results", "uri": "absent.json"},
+			{"type": "hdf-results", "uri": "blank.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": ""}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	out, _, err := executeCommand("evidence", "info", pkgPath, "--verify", "--checksums-only")
+	require.NoError(t, err)
+
+	assert.Contains(t, out, "absent.json (no checksum recorded)",
+		"an entry with no checksum object at all")
+	assert.Contains(t, out, "blank.json (checksum recorded but empty)",
+		"and one whose recorded value is blank, which is a different fix")
+	assert.NotContains(t, out, "(no checksum)",
+		"the collapsed phrasing that told an operator which of the two neither")
+}
+
+// And all three surfaces agree, asserted by RUNNING each on one package rather than by
+// reading any of their help. The three reach the fact by different routes — bundle from
+// the reference enumeration, --verify from the engine's results, the default listing from
+// the raw document — so one shared function is the only thing holding them together.
+func TestEvidenceSurfaces_DescribeTheTwoUnverifiableKindsIdentically(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	for _, n := range []string{"absent.json", "blank.json"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), src, 0o600))
+	}
+	pkg, err := json.Marshal(map[string]any{
+		"name": "all-three",
+		"contents": []map[string]any{
+			{"type": "hdf-results", "uri": "absent.json"},
+			{"type": "hdf-results", "uri": "blank.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": ""}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	listing, _, err := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, err)
+	verified, _, err := executeCommand("evidence", "info", pkgPath, "--verify", "--checksums-only")
+	require.NoError(t, err)
+	_, bundled, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "a.zip"))
+	require.NoError(t, err)
+
+	for _, phrase := range []string{"no checksum recorded", "checksum recorded but empty"} {
+		assert.Contains(t, listing, phrase, "the default listing")
+		assert.Contains(t, verified, phrase, "the --verify listing")
+		assert.Contains(t, bundled, phrase, "and bundle's report")
+	}
 }

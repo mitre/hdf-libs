@@ -48,10 +48,16 @@ type evidenceVerifyResult struct {
 	// package chooses, and the human output names it, so the line cannot claim an
 	// algorithm that was not used.
 	Algorithm string `json:"algorithm,omitempty"`
-	Status    string `json:"status"` // "match", "mismatch", "skipped", "error"
-	Expected  string `json:"expected,omitempty"`
-	Actual    string `json:"actual,omitempty"`
-	Error     string `json:"error,omitempty"`
+	// ChecksumRecorded says whether the DOCUMENT carried a checksum object, which the
+	// engine's skipped status deliberately does not distinguish — nothing was hashed
+	// either way. The remedies differ though, so the listing does distinguish: one entry
+	// needs a checksum added, the other has one to fill in. Carried here rather than in
+	// the engine because this is a reporting concern and the engine is dual-language.
+	ChecksumRecorded bool   `json:"checksumRecorded"`
+	Status           string `json:"status"` // "match", "mismatch", "skipped", "error"
+	Expected         string `json:"expected,omitempty"`
+	Actual           string `json:"actual,omitempty"`
+	Error            string `json:"error,omitempty"`
 }
 
 type verifyCounts struct {
@@ -430,12 +436,17 @@ func verifyRecordedArray(entries []hdfengine.EvidenceContent, field string,
 		if reason, bad := unreachableBy[c.URI]; bad {
 			results = append(results, evidenceVerifyResult{
 				URI: c.URI, Type: c.Type, Format: c.Format, Field: field,
-				Status: verifyUnreachable, Error: reason,
+				ChecksumRecorded: c.ChecksumRecorded,
+				Status:           verifyUnreachable, Error: reason,
 			})
 			counts.unreachable++
 			continue
 		}
-		results = append(results, verified[next])
+		// The engine's result does not carry it, so it is taken from the entry this
+		// result was computed from — the same entry, by construction of reachable.
+		r := verified[next]
+		r.ChecksumRecorded = c.ChecksumRecorded
+		results = append(results, r)
 		next++
 	}
 	return results, counts, reachable
@@ -516,7 +527,7 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 		case verifyMismatch:
 			fmt.Printf("  \u2717 %s (%s MISMATCH)\n", sanitizeOutput(r.URI), sanitizeOutput(r.Algorithm))
 		case verifySkipped:
-			fmt.Printf("  - %s (no checksum)\n", sanitizeOutput(r.URI))
+			fmt.Printf("  - %s (%s)\n", sanitizeOutput(r.URI), checksumStateFrom(r.ChecksumRecorded, ""))
 		case verifyError:
 			fmt.Printf("  ! %s (error: %s)\n", sanitizeOutput(r.URI), r.Error)
 		case verifyUnreachable:

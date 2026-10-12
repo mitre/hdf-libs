@@ -101,16 +101,15 @@ Every recorded checksum is verified before anything is written: this build compu
     every algorithm Hash_Algorithm admits.
 Three kinds cannot be verified: one recording no checksum at all, one recording an empty
     value, and one on a reference that cannot travel, whose bytes are not here to check.
-The first two DO travel, and are counted separately because the remedy differs — one
+The first two DO travel, and are reported separately because the remedy differs — one
     needs a checksum added, the other has one to fill in.
 The third does not travel at all and is reported as not carried.
-Every one is reported on stderr: the first two as COUNTS, the third NAMING the
-    reference.
-'hdf evidence info --verify' names each entry individually, in contents[] and in
-    externalEvidence[] alike, which is where to look for which ones.
-A count here can still exceed what that command names, because this count also covers
-    the root reference FIELDS and the schema gives systemRef and planRef no checksum to
-    record.
+Every one is reported on stderr NAMING the reference it concerns, with a count after
+    each kind.
+'hdf evidence info --verify' names every entry too, in contents[] and in
+    externalEvidence[] alike, and says what hashing the ones it could reach produced.
+The two counts reconcile: both are over the entries the schema gives a checksum, so a
+    root reference field — systemRef and planRef have none to record — moves neither.
 A mismatch or a missing document fails the command and writes no archive — a partial
     bundle is worse than none, because it looks complete.
 
@@ -175,7 +174,41 @@ type recordedRef struct {
 	checksum         string
 	algorithm        string
 	checksumRecorded bool
+	// Whether the schema gives this reference's field a checksum property at all.
+	// systemRef and planRef are bare uri-reference strings, so "records no checksum"
+	// is not a gap in them — there is nowhere to record one. Counting them put
+	// something in that number an operator could not act on, and made the count
+	// diverge from the verification surface's for every package naming a system.
+	// Set at the same construction sites that set the three fields above, so the two
+	// cannot drift apart.
+	canRecordChecksum bool
 }
+
+// reportUnverifiable names each reference of one unverifiable kind, then states the
+// count. The names are what an operator acts on; the count stays because a long list
+// needs a total, and because it is the number the verification surface reconciles with.
+//
+// Bounded through hdfutil.LimitSlice — the same mechanism LimitSliceWithWarning uses,
+// rather than a second one. Not that wrapper itself: its message says "Input truncated",
+// which is true of a converter reading a document and false of a report describing one.
+func reportUnverifiable(uris []string, recorded bool, summary string) {
+	if len(uris) == 0 {
+		return
+	}
+	state := checksumStateFrom(recorded, "")
+	shown, truncated := hdfutil.LimitSlice(uris, maxNamedUnverifiable)
+	for _, uri := range shown {
+		fmt.Fprintf(os.Stderr, "  - %s (%s)\n", sanitizeOutput(uri), state)
+	}
+	if truncated {
+		fmt.Fprintf(os.Stderr, "    ... and %d more, not listed\n", len(uris)-len(shown))
+	}
+	fmt.Fprintf(os.Stderr, "  %d reference(s) %s and could not be verified\n", len(uris), summary)
+}
+
+// Enough that a real package lists every entry, few enough that a pathological one does
+// not bury the rest of the report.
+const maxNamedUnverifiable = 50
 
 // recordedRefs returns EVERY reference the document makes. Every consumer of "what does
 // this package point at" derives from here rather than enumerating fields at its own
@@ -202,22 +235,33 @@ func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recor
 		refs = append(refs, recordedRef{
 			uri: c.URI, label: "content reference", field: "contents", kind: refDocument,
 			checksum: c.Checksum, algorithm: c.ChecksumAlgorithm, checksumRecorded: c.ChecksumRecorded,
+			canRecordChecksum: true,
 		})
 	}
 	for _, e := range externalEvidenceRefs(pkgData) {
 		refs = append(refs, recordedRef{
 			uri: e.uri, label: "external evidence", field: "externalEvidence", kind: refExternal,
 			checksum: e.checksum, algorithm: e.algorithm, checksumRecorded: e.recorded,
+			canRecordChecksum: true,
 		})
 	}
 	for _, c := range externalContextRefs(pkgData) {
 		refs = append(refs, recordedRef{
+			// External_Reference DOES declare a checksum, so the schema fact is true here
+			// even though nothing reads it: a context reference is inert and never
+			// reaches the collector, which is decided by kind, not by this flag. The two
+			// stay separate so each comes from one source.
 			uri: c, label: "external reference", field: "externalReferences", kind: refContext,
+			canRecordChecksum: true,
 		})
 	}
 	for _, c := range rawSourceArtifactRefs(pkgData) {
 		refs = append(refs, recordedRef{
+			// Raw_Source_Artifact is allOf over External_Reference, so it declares a
+			// checksum — "of the exact bytes the converter read", in the schema's own
+			// words. Inert all the same, decided by kind, like externalReferences.
 			uri: c, label: "raw source artifact", field: "extensions.rawSourceArtifacts", kind: refContext,
+			canRecordChecksum: true,
 		})
 	}
 	return refs, nil
@@ -397,13 +441,16 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// relative ref would name a string that appears nowhere in the package.
 	type target struct {
 		uri, subject, label, checksum, algorithm string
-		checksumRecorded                         bool
+		checksumRecorded, canRecordChecksum      bool
 	}
 	// Counted inside collect so BOTH contents[] and externalEvidence[] are covered by
 	// one path. Incrementing it in the contents loop alone is what left a tampered
 	// artifact travelling unverified behind an externalEvidence entry whose recorded
 	// checksum value was empty.
-	var emptyChecksum, noChecksum int
+	// Collections, not counters: a count tells an operator how many references to fix
+	// and not which, and these two kinds are the ones they can actually act on. The
+	// kind that cannot travel was already named.
+	var emptyChecksum, noChecksum []string
 	// Recorded checksums this build cannot compute, reported by subject and reason.
 	var unverifiable []string
 	collect := func(t target) error {
@@ -465,10 +512,15 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			// disagreed about whether the operator should be told. The two shapes stay
 			// separate because the remedy differs: one has a checksum to fill in, the
 			// other needs one added.
-			if t.checksumRecorded {
-				emptyChecksum++
-			} else {
-				noChecksum++
+			switch {
+			case !t.canRecordChecksum:
+				// Travels, and is not counted: a reference field has nowhere to record a
+				// checksum, so its absence is not a gap. The document is normally also a
+				// contents[] entry carrying its own, which is where it is counted.
+			case t.checksumRecorded:
+				emptyChecksum = append(emptyChecksum, subject)
+			default:
+				noChecksum = append(noChecksum, subject)
 			}
 			return nil
 		}
@@ -553,6 +605,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		if err := collect(target{
 			uri: ref, subject: r.uri, label: r.label,
 			checksum: r.checksum, algorithm: r.algorithm, checksumRecorded: r.checksumRecorded,
+			canRecordChecksum: r.canRecordChecksum,
 		}); err != nil {
 			return err
 		}
@@ -574,12 +627,8 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	if noExtURI > 0 {
 		fmt.Fprintf(os.Stderr, "  %d external evidence reference(s) record no uri and name nothing to carry\n", noExtURI)
 	}
-	if noChecksum > 0 {
-		fmt.Fprintf(os.Stderr, "  %d reference(s) record no checksum and could not be verified\n", noChecksum)
-	}
-	if emptyChecksum > 0 {
-		fmt.Fprintf(os.Stderr, "  %d reference(s) record an empty checksum value and could not be verified\n", emptyChecksum)
-	}
+	reportUnverifiable(noChecksum, false, "record no checksum")
+	reportUnverifiable(emptyChecksum, true, "record an empty checksum value")
 	for _, u := range unverifiable {
 		fmt.Fprintf(os.Stderr, "  checksum could not be verified for %s\n", sanitizeOutput(u))
 	}

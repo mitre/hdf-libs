@@ -1861,16 +1861,23 @@ func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T
 		"the same retired claim in its other phrasing")
 	assert.Contains(t, help, "in contents[] and in externalEvidence[] alike",
 		"the paragraph must say verify's coverage spans both arrays")
-	// The replacement for the retired claim was ITSELF an unqualified cross-command
-	// claim — "a count here has a named counterpart there" — false for a root
-	// reference field, which this count covers and verify never names. Measured:
-	// adding a planRef or a systemRef moves this count and not verify's.
+	// This claim has now been through three states, and each NotContains below marks one
+	// that was measured false rather than merely reworded.
+	//
+	// It began as an unqualified "a count here has a named counterpart there" — false for
+	// a root reference field, which bundle counted and the verification surface never
+	// named. It was then corrected to state that asymmetry openly. 52n0c.40 REMOVED the
+	// asymmetry itself: the count no longer covers reference fields, so both surfaces are
+	// over the same population and the counts reconcile for every package shape. Stating
+	// an asymmetry that no longer exists would now be the false claim, so the guard that
+	// pinned that sentence is retired with it.
 	assert.NotContains(t, help, "has a named counterpart there",
-		"bundle counts root reference fields that verify does not name")
-	// The sentence survives; only the name in it changed, because `hdf evidence verify`
-	// was removed (52n0c.39) and printed help may not cite a command that exits 1.
-	assert.Contains(t, help, "can still exceed what that command names",
-		"the asymmetry that remains must be stated, not implied away")
+		"the first version: unqualified, and false for a root reference field")
+	assert.NotContains(t, help, "can still exceed what that command names",
+		"the second: true when bundle counted reference fields, false since 52n0c.40")
+	assert.Contains(t, help, "The two counts reconcile",
+		"and the measured truth: 2/2 for a package with no root ref, with a systemRef, "+
+			"and with a planRef")
 	// WIDENED, because the version of this guard that pinned only the two-word form was
 	// GREEN while the help it had just read said "Verify additionally checks …" — the
 	// message asserted a claim the check could not enforce. Three hand sweeps each missed
@@ -2215,8 +2222,8 @@ func TestEvidenceBundle_HelpIsOneClaimPerLine(t *testing.T) {
 		"The first two DO travel",
 		"The third does not travel at all",
 		"Every one is reported on stderr",
-		"'hdf evidence info --verify' names each entry individually",
-		"A count here can still exceed what that command names",
+		"'hdf evidence info --verify' names every entry too",
+		"The two counts reconcile",
 		"A mismatch or a missing document fails the command",
 		"-o refuses a path naming the package",
 		"It also refuses a path that already exists",
@@ -2289,9 +2296,9 @@ func TestEvidenceBundle_EveryClaimKeepsItsWholeText(t *testing.T) {
 		{31, "Three kinds cannot be verified: one"},
 		{26, "The first two DO travel, and"},
 		{13, "The third does not travel at"},
-		{16, "Every one is reported on stderr:"},
-		{22, "'hdf evidence info --verify' names each"},
-		{30, "A count here can still exceed"},
+		{17, "Every one is reported on stderr NAMING"},
+		{24, "'hdf evidence info --verify' names every entry"},
+		{30, "The two counts reconcile: both are over"},
 		{25, "A mismatch or a missing document"},
 		{20, "-o refuses a path naming the"},
 		{22, "It also refuses a path that"},
@@ -2321,5 +2328,358 @@ func TestEvidenceBundle_HelpLinesStayWithinTheWidth(t *testing.T) {
 		assert.LessOrEqual(t, w, limit,
 			"rendered help line %d is %d characters, over the %d-character limit the "+
 				"one-claim-per-line layout depends on", i+1, w, limit)
+	}
+}
+
+// A reference FIELD is not an unchecksummed entry. systemRef and planRef are bare
+// uri-reference strings — the schema gives neither a checksum property — so counting
+// them under "records no checksum" put something in the number that an operator has
+// nowhere to fix, and made bundle's count diverge from the verification surface's for
+// every package that names a system.
+func TestEvidenceBundle_DoesNotCountAReferenceFieldThatCannotCarryAChecksum(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []string{"rhel9-results.json", "system.json"} {
+		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, f))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, f), src, 0o600))
+	}
+	results, rerr := os.ReadFile(filepath.Join(dir, "rhel9-results.json"))
+	require.NoError(t, rerr)
+	sum := sha256.Sum256(results)
+
+	// The ONLY checksum-less thing here is the systemRef. Every checksum-bearing entry
+	// records one, so a correct count is zero.
+	pkg, err := json.Marshal(map[string]any{
+		"name":      "ref-field",
+		"systemRef": "system.json",
+		"contents": []map[string]any{{
+			"type": "hdf-results", "uri": "rhel9-results.json",
+			"checksum": map[string]any{"algorithm": "sha256", "value": hex.EncodeToString(sum[:])},
+		}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "r.zip"))
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "record no checksum",
+		"a systemRef has nowhere to record a checksum, so it cannot be missing one")
+}
+
+// And the count reconciles with the verification surface for a package that names a
+// system — not only for one that does not. The old count was right for a system-less
+// package and wrong for every other, which is why a single-shape pin did not catch it.
+func TestEvidenceBundle_CountReconcilesWithVerificationWhenASystemIsNamed(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []string{"rhel9-results.json", "system.json"} {
+		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, f))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, f), src, 0o600))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "audit.ndjson"), []byte("log\n"), 0o600))
+
+	// Two checksum-bearing entries record nothing; the systemRef is a third reference
+	// but not a third unchecksummed entry.
+	pkg, err := json.Marshal(map[string]any{
+		"name":      "reconcile",
+		"systemRef": "system.json",
+		"contents":  []map[string]any{{"type": "hdf-results", "uri": "rhel9-results.json"}},
+		"externalEvidence": []map[string]any{
+			{"uri": "audit.ndjson", "format": "raw-log"},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, bundleErr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "r.zip"))
+	require.NoError(t, err)
+	assert.Contains(t, bundleErr, "2 reference(s) record no checksum",
+		"the two checksum-bearing entries, and not the systemRef")
+
+	verifyOut, _, verr := executeCommand("evidence", "info", pkgPath, "--verify")
+	require.NoError(t, verr)
+	assert.Contains(t, verifyOut, "2 skipped",
+		"both surfaces must report the same population for the same package")
+}
+
+// The canRecordChecksum flag is derived from the SCHEMA, with no exceptions and no
+// hand-kept list: a reference field can record a checksum exactly when its resolved
+// type declares a checksum property. Asserted against the schema itself so adding a
+// checksum to a field that lacks one — or a new reference field — fails here instead of
+// silently moving a count nobody is watching.
+// resolveToObject follows a schema node to the object type it denotes: through an
+// array's items, through a $ref local or into primitives, and through an allOf, which is
+// how Raw_Source_Artifact inherits External_Reference's checksum rather than declaring
+// one. Returns the node and the document it now lives in, since a primitive $ref changes
+// which $defs a later local $ref resolves against.
+func resolveToObject(t *testing.T, load func(string) map[string]any,
+	node, cur map[string]any,
+) (map[string]any, map[string]any) {
+	t.Helper()
+	primitiveRef := regexp.MustCompile(`primitives/([a-z-]+)/v[\d.]+#/\$defs/(\w+)`)
+	localRef := regexp.MustCompile(`^#/\$defs/(\w+)$`)
+	for range 8 {
+		if node == nil {
+			return nil, cur
+		}
+		if items, ok := node["items"].(map[string]any); ok {
+			node = items
+			continue
+		}
+		if _, hasProps := node["properties"]; !hasProps {
+			if branches, ok := node["allOf"].([]any); ok {
+				// The branch that carries the properties: the others constrain.
+				var next map[string]any
+				for _, b := range branches {
+					branch, _ := b.(map[string]any)
+					if branch == nil {
+						continue
+					}
+					if _, isRef := branch["$ref"]; isRef {
+						next = branch
+						break
+					}
+					if _, p := branch["properties"]; p {
+						next = branch
+						break
+					}
+				}
+				if next != nil {
+					node = next
+					continue
+				}
+			}
+		}
+		ref, ok := node["$ref"].(string)
+		if !ok {
+			return node, cur
+		}
+		if m := localRef.FindStringSubmatch(ref); m != nil {
+			defs, _ := cur["$defs"].(map[string]any)
+			node, _ = defs[m[1]].(map[string]any)
+			continue
+		}
+		m := primitiveRef.FindStringSubmatch(ref)
+		if m == nil {
+			return node, cur
+		}
+		cur = load(filepath.Join("primitives", m[1]+".schema.json"))
+		defs, _ := cur["$defs"].(map[string]any)
+		node, _ = defs[m[2]].(map[string]any)
+	}
+	return node, cur
+}
+
+func TestEvidenceBundle_ChecksumBearingFieldsMatchTheSchema(t *testing.T) {
+	schemaDir := filepath.Join("..", "..", "..", "..", "hdf-schema", "src", "schemas")
+	load := func(rel string) map[string]any {
+		raw, err := os.ReadFile(filepath.Join(schemaDir, rel))
+		require.NoError(t, err, "the schema is the authority for what can record a checksum")
+		var doc map[string]any
+		require.NoError(t, json.Unmarshal(raw, &doc))
+		return doc
+	}
+	root := load("hdf-evidence-package.schema.json")
+
+	// Resolve a top-level property to the object type a reference actually is: step
+	// through an array's items and follow $refs, local or into primitives.
+	// Resolves a DOTTED path too. The first version could only address a top-level
+	// property, so "extensions.rawSourceArtifacts" fell out of the comparison entirely
+	// and its flag sat wrong — unchecked rather than checked and wrong, which is worse.
+	declaresChecksum := func(field string) bool {
+		cur := root
+		props, _ := root["properties"].(map[string]any)
+		segments := strings.Split(field, ".")
+		node, _ := props[segments[0]].(map[string]any)
+		for _, seg := range segments[1:] {
+			node, cur = resolveToObject(t, load, node, cur)
+			if node == nil {
+				return false
+			}
+			inner, _ := node["properties"].(map[string]any)
+			node, _ = inner[seg].(map[string]any)
+		}
+		node, _ = resolveToObject(t, load, node, cur)
+		if node == nil {
+			return false
+		}
+		typeProps, _ := node["properties"].(map[string]any)
+		_, has := typeProps["checksum"]
+		return has
+	}
+
+	// A package naming every reference field, so recordedRefs yields one of each.
+	pkg, err := json.Marshal(map[string]any{
+		"name":               "schema-parity",
+		"systemRef":          "system.json",
+		"planRef":            "plan.json",
+		"contents":           []map[string]any{{"type": "hdf-results", "uri": "r.json"}},
+		"externalEvidence":   []map[string]any{{"uri": "audit.ndjson", "format": "raw-log"}},
+		"externalReferences": []map[string]any{{"href": "https://example.com/a", "type": "advisory"}},
+		"extensions": map[string]any{
+			"rawSourceArtifacts": []map[string]any{{"href": "raw.xml", "sourceName": "nessus"}},
+		},
+	})
+	require.NoError(t, err)
+	var contents []hdfengine.EvidenceContent
+	require.NoError(t, json.Unmarshal([]byte(`[{"type":"hdf-results","uri":"r.json"}]`), &contents))
+	refs, err := recordedRefs(pkg, contents)
+	require.NoError(t, err)
+
+	seen := map[string]bool{}
+	for _, r := range refs {
+		if r.uri == "" {
+			continue
+		}
+		seen[r.field] = true
+		assert.Equal(t, declaresChecksum(r.field), r.canRecordChecksum,
+			"field %q: the schema and the flag disagree about whether it can record a checksum", r.field)
+	}
+	// And the derivation reached every field, so a pass cannot mean "checked nothing".
+	for _, f := range []string{"systemRef", "planRef", "contents", "externalEvidence",
+		"externalReferences", "extensions.rawSourceArtifacts"} {
+		assert.True(t, seen[f], "recordedRefs yielded no %q, so that field went unchecked", f)
+	}
+}
+
+// Narrowing the COUNT must not narrow what -o refuses to overwrite. Those are different
+// questions over the same enumeration: whether a reference can record a checksum, and
+// whether the archive would clobber a document the package points at. A systemRef
+// answers no to the first and yes to the second, so it is the case that tells them
+// apart — and the reason recordedRefs stays complete rather than being filtered.
+func TestEvidenceBundle_RefusesOutputOverASystemRefItNoLongerCounts(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []string{"rhel9-results.json", "system.json"} {
+		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, f))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, f), src, 0o600))
+	}
+	pkg, err := json.Marshal(map[string]any{
+		"name":      "guard",
+		"systemRef": "system.json",
+		"contents":  []map[string]any{{"type": "hdf-results", "uri": "rhel9-results.json"}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	// The archive would be written over the very document systemRef names. --overwrite is
+	// passed deliberately: without it this path also trips the "already exists" refusal,
+	// whose message names the same file, so the test would pass even with systemRef
+	// dropped from the enumeration entirely — it did, until a mutant showed it could not
+	// tell the two refusals apart. The REASON is the assertion, not the filename.
+	_, _, err = executeCommand("evidence", "bundle", pkgPath,
+		"-o", filepath.Join(dir, "system.json"), "--overwrite")
+	require.Error(t, err, "-o must still refuse a path naming a reference the count now ignores")
+	assert.Contains(t, err.Error(), "the system reference this package records",
+		"the refusal must come from the reference enumeration, not from the file existing")
+}
+
+// Each unverifiable reference is NAMED, not just counted. bundle already named the kind
+// that cannot travel; the two kinds an operator can actually act on were the two it
+// reduced to a number, so a large package told them how many to fix and not which.
+//
+// The vocabulary is 'hdf evidence info's, via one shared function rather than a copy of
+// its strings: recordedChecksumState's own comment calls this "the same distinction
+// evidence bundle counts separately", so the phrases were already canonical somewhere
+// else in the tree.
+func TestEvidenceBundle_NamesEachUnchecksummedReference(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	for _, n := range []string{"a.json", "b.json", "c.json"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), src, 0o600))
+	}
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "named",
+		"contents": []map[string]any{
+			{"type": "hdf-results", "uri": "a.json"},
+			{"type": "hdf-results", "uri": "b.json"},
+			// Recorded but blank — schema-valid, and a different fix from the two above.
+			{"type": "hdf-results", "uri": "c.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": ""}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "n.zip"))
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr, "a.json (no checksum recorded)", "the first must be named")
+	assert.Contains(t, stderr, "b.json (no checksum recorded)",
+		"and so must the second — naming one and counting the rest is the defect")
+	assert.Contains(t, stderr, "c.json (checksum recorded but empty)",
+		"the two kinds stay distinguishable because the remedy differs")
+}
+
+// A pathological package must not bury the rest of the report, and the truncation says
+// how many it withheld rather than trailing off. Bounded through the same LimitSlice the
+// repo already uses, not a second mechanism.
+func TestEvidenceBundle_BoundsTheNamesAndSaysHowManyAreOmitted(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	const total = maxNamedUnverifiable + 7
+	entries := make([]map[string]any, 0, total)
+	for i := range total {
+		name := fmt.Sprintf("r%02d.json", i)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), src, 0o600))
+		entries = append(entries, map[string]any{"type": "hdf-results", "uri": name})
+	}
+	pkg, err := json.Marshal(map[string]any{"name": "many", "contents": entries})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "m.zip"))
+	require.NoError(t, err)
+
+	named := strings.Count(stderr, "(no checksum recorded)")
+	assert.Equal(t, maxNamedUnverifiable, named, "the list is bounded at the stated limit")
+	assert.Contains(t, stderr, fmt.Sprintf("... and %d more, not listed", total-maxNamedUnverifiable),
+		"and the number withheld is stated, so the list cannot quietly appear complete")
+	assert.Contains(t, stderr, fmt.Sprintf("%d reference(s) record no checksum", total),
+		"while the COUNT still covers every one of them")
+}
+
+// The two surfaces describe one entry the same way. They reach it by different routes —
+// bundle from the reference enumeration, verification from the engine's results — so
+// nothing but a shared vocabulary keeps them from drifting, and drifting is what they
+// did before 52n0c.36. Derived from RUNS of both commands on one package, never from
+// substrings of either one's help.
+func TestEvidenceBundleAndInfo_DescribeAnUnchecksummedEntryConsistently(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.json"), src, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "b.json"), src, 0o600))
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "consistent",
+		"contents": []map[string]any{
+			{"type": "hdf-results", "uri": "a.json"},
+			{"type": "hdf-results", "uri": "b.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": ""}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	_, bundleErr, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "c.zip"))
+	require.NoError(t, err)
+	infoOut, _, err := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, err)
+
+	// One vocabulary, two commands: the phrase each prints for an entry comes from
+	// checksumStateFrom, so a reword in one surface cannot leave the other behind.
+	for _, want := range []string{"no checksum recorded", "checksum recorded but empty"} {
+		assert.Contains(t, bundleErr, want, "bundle must use the shared phrase")
+		assert.Contains(t, infoOut, want, "and info must use the same one for the same entry")
 	}
 }

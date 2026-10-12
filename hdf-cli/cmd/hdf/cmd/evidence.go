@@ -179,24 +179,37 @@ Examples:
 // Defensive on shape because runDocInfo does NOT schema-validate: it checks the document
 // type and unmarshals, so a hand-edited package can arrive with a checksum that is not an
 // object, or a value that is not a string.
+// checksumStateFrom names what a document records about an entry's checksum from the two
+// facts every caller already has: whether a checksum object is present, and the value it
+// carries. 'hdf evidence bundle' names its unverifiable references through this, so the
+// two surfaces cannot drift into describing one entry two ways.
+func checksumStateFrom(recorded bool, value string) string {
+	switch {
+	case !recorded:
+		return "no checksum recorded"
+	case strings.TrimSpace(value) == "":
+		return "checksum recorded but empty"
+	default:
+		return "checksum recorded"
+	}
+}
+
 func recordedChecksumState(entry map[string]interface{}) string {
 	raw, present := entry["checksum"]
 	if !present {
-		return "no checksum recorded"
+		return checksumStateFrom(false, "")
 	}
 	cs, ok := raw.(map[string]interface{})
 	if !ok {
 		return "checksum unreadable"
 	}
 	value, isString := cs["value"].(string)
-	switch {
-	case !isString && cs["value"] != nil:
+	// Shape failure stays here: it is a property of the raw JSON, which the fact-based
+	// helper never sees.
+	if !isString && cs["value"] != nil {
 		return "checksum unreadable"
-	case strings.TrimSpace(value) == "":
-		return "checksum recorded but empty"
-	default:
-		return "checksum recorded"
 	}
+	return checksumStateFrom(true, value)
 }
 
 func outputEvidenceInfoHuman(doc map[string]interface{}) error {
