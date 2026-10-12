@@ -2,6 +2,7 @@ package exportmap
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -246,6 +247,28 @@ func TestEpochHelpers(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestEncodeDocument(t *testing.T) {
+	// Two-space indentation, and otherwise everything EncodeLine guarantees:
+	// key-sorted, HTML not escaped, negative zero normalized, trailing newline.
+	// The TS stringifyDocument asserts these same bytes. String escaping is
+	// indentation-independent and stays covered by the EncodeLine cases.
+	doc, err := EncodeDocument(map[string]interface{}{
+		"b": []interface{}{1, "x&y"},
+		"a": map[string]interface{}{"z": math.Copysign(0, -1), "sep": "plain"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "{\n  \"a\": {\n    \"sep\": \"plain\",\n    \"z\": 0\n  },\n"+
+		"  \"b\": [\n    1,\n    \"x&y\"\n  ]\n}\n", string(doc))
+}
+
+func TestEncodeDocument_RawNumberTokensSurvive(t *testing.T) {
+	// json.Number marshals verbatim at any indentation, which is what keeps
+	// FloatToken's decimal-point contract intact for a document exporter too.
+	doc, err := EncodeDocument(map[string]interface{}{"score": FloatToken(8)})
+	require.NoError(t, err)
+	assert.Equal(t, "{\n  \"score\": 8.0\n}\n", string(doc))
+}
+
 func TestEncodeLine_NonBMPKeyOrder(t *testing.T) {
 	// Keys sort bytewise (UTF-8 == code-point): a < U+E000 < U+1F600. The TS
 	// canonicalize must reproduce this exact order (see exportmap.test.ts) — a
@@ -438,4 +461,55 @@ func TestStatusOf_SharedCaseTable(t *testing.T) {
 			assert.Equal(t, c.Want.Suppressed, got.Suppressed, c.Note)
 		})
 	}
+}
+
+// The five requirement fields below are schema-valid on Evaluated_Requirement but
+// were absent from the passthrough map, so every exporter using this block dropped
+// them. Asserted by value, not presence: a presence-only check passes when the
+// wrong value is carried.
+func TestBuildHDFBlock_CarriesTheRequirementFieldsTheBagDropped(t *testing.T) {
+	req := map[string]interface{}{
+		"id":                 "V-2",
+		"evidence":           []interface{}{map[string]interface{}{"type": "log", "data": "bG9n"}},
+		"effectiveChecksum":  map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+		"controlType":        "technical",
+		"verificationMethod": "automated",
+		"applicability":      "required",
+	}
+	hdf := BuildHDFBlock(req, map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+
+	assert.Equal(t, []interface{}{map[string]interface{}{"type": "log", "data": "bG9n"}}, hdf["evidence"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc"}, hdf["effective_checksum"])
+	assert.Equal(t, "technical", hdf["control_type"])
+	assert.Equal(t, "automated", hdf["verification_method"])
+	assert.Equal(t, "required", hdf["applicability"])
+}
+
+// A requirement that omits them must not gain empty keys — the block is read by
+// consumers that distinguish absent from empty.
+func TestBuildHDFBlock_OmitsTheNewFieldsWhenAbsent(t *testing.T) {
+	hdf := BuildHDFBlock(map[string]interface{}{"id": "V-3"},
+		map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+
+	for _, k := range []string{"evidence", "effective_checksum", "control_type", "verification_method", "applicability"} {
+		assert.NotContains(t, hdf, k, "absent field %q must not appear", k)
+	}
+}
+
+// externalReferences is declared on Requirement_Core, which Evaluated_Requirement
+// composes, so it is a requirement field as well as a document-root one. The dist
+// bundle leaves Requirement_Core as an unresolvable external $ref, which is why a
+// naive walk of the bundle misses this and the five fields above.
+func TestBuildHDFBlock_CarriesRequirementExternalReferences(t *testing.T) {
+	req := map[string]interface{}{
+		"id": "V-4",
+		"externalReferences": []interface{}{
+			map[string]interface{}{"sourceName": "NVD", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-1", "kind": "advisory"},
+		},
+	}
+	hdf := BuildHDFBlock(req, map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+
+	assert.Equal(t, []interface{}{
+		map[string]interface{}{"sourceName": "NVD", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-1", "kind": "advisory"},
+	}, hdf["external_references"])
 }

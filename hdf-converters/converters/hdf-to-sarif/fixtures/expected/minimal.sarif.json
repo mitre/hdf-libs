@@ -1,0 +1,112 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "properties": {
+    "hdf": {
+      "components": [
+        {
+          "name": "web-server-01",
+          "type": "host"
+        }
+      ],
+      "statistics": {
+        "duration": 45.5
+      }
+    }
+  },
+  "runs": [
+    {
+      "automationDetails": {
+        "id": "Minimal Baseline"
+      },
+      "conversion": {
+        "tool": {
+          "driver": {
+            "name": "hdf-to-sarif",
+            "version": "0.0.0"
+          }
+        }
+      },
+      "properties": {
+        "hdf": {
+          "integrity": {
+            "algorithm": "sha256",
+            "checksum": "abc123"
+          },
+          "name": "Minimal Baseline",
+          "version": "1.0.0"
+        }
+      },
+      "results": [
+        {
+          "kind": "pass",
+          "message": {
+            "text": "Control check passed"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "Control check passed",
+                "startTime": "2025-01-15T10:00:00Z",
+                "status": "passed"
+              }
+            }
+          },
+          "ruleId": "REQ-001",
+          "ruleIndex": 0
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "HDF Assessment Tool",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "This is a test requirement"
+              },
+              "id": "REQ-001",
+              "name": "Test Requirement",
+              "properties": {
+                "hdf": {
+                  "baseline": "Minimal Baseline",
+                  "control_id": "REQ-001",
+                  "descriptions": [
+                    {
+                      "data": "This is a test requirement",
+                      "label": "default"
+                    }
+                  ],
+                  "exporter_version": "0.0.0",
+                  "impact": 0.7,
+                  "nist": [
+                    "AC-1",
+                    "AC-2"
+                  ],
+                  "overridden": false,
+                  "status": "passed",
+                  "suppressed": false,
+                  "tags": {
+                    "nist": [
+                      "AC-1",
+                      "AC-2"
+                    ]
+                  }
+                },
+                "tags": [
+                  "nist/AC-1",
+                  "nist/AC-2"
+                ]
+              },
+              "shortDescription": {
+                "text": "Test Requirement"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

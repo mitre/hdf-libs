@@ -59,6 +59,7 @@ import {
   convertHdfToXccdf,
   convertHdfToOscalSar,
   convertHdfToOscalPoam,
+  convertHdfToSarif,
   convertOscalCatalogToHdf,
   convertOscalProfileToHdf,
   convertOscalComponentToHdf,
@@ -365,6 +366,11 @@ describe('Main exports', () => {
   it('should export convertHdfToOscalSar from main index', () => {
     expect(convertHdfToOscalSar).toBeDefined();
     expect(typeof convertHdfToOscalSar).toBe('function');
+  });
+
+  it('should export convertHdfToSarif from main index', () => {
+    expect(convertHdfToSarif).toBeDefined();
+    expect(typeof convertHdfToSarif).toBe('function');
   });
 
   it('should export convertHdfToOscalPoam from main index', () => {

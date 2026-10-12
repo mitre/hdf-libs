@@ -1,0 +1,525 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "properties": {
+    "hdf": {
+      "timestamp": "2026-10-09T16:04:26.26065Z"
+    }
+  },
+  "runs": [
+    {
+      "automationDetails": {
+        "description": {
+          "text": "Static Analysis Results Interchange Format"
+        },
+        "id": "Flawfinder"
+      },
+      "conversion": {
+        "tool": {
+          "driver": {
+            "name": "hdf-to-sarif",
+            "version": "0.0.0"
+          }
+        }
+      },
+      "properties": {
+        "hdf": {
+          "generator": {
+            "name": "sarif-to-hdf",
+            "version": "dev"
+          },
+          "name": "Flawfinder",
+          "resultsChecksum": {
+            "algorithm": "sha256",
+            "value": "cf499ad626389beef4e18edfb39b5929f675168d0012489d5551a856e6179d0a"
+          },
+          "title": "Static Analysis Results Interchange Format",
+          "version": "2.1.0"
+        }
+      },
+      "results": [
+        {
+          "fingerprints": {
+            "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+          },
+          "kind": "fail",
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 36
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test-patched.c LINE : 36 COLUMN : 2\n gets(f);"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test-patched.c LINE : 36 COLUMN : 2\n gets(f);",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1014",
+          "ruleIndex": 0
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+          },
+          "kind": "fail",
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 36
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test.c LINE : 32 COLUMN : 2\n gets(f);"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test.c LINE : 32 COLUMN : 2\n gets(f);",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1014",
+          "ruleIndex": 0
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+          },
+          "kind": "fail",
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 60
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test-patched.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test-patched.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1010",
+          "ruleIndex": 1
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+          },
+          "kind": "fail",
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 60
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1010",
+          "ruleIndex": 1
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+          },
+          "kind": "fail",
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 60
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test-patched.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test-patched.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1010",
+          "ruleIndex": 1
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+          },
+          "kind": "fail",
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test-patched.c"
+                },
+                "region": {
+                  "startLine": 60
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1010",
+          "ruleIndex": 1
+        },
+        {
+          "fingerprints": {
+            "contextHash/v1": "b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9"
+          },
+          "kind": "fail",
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "test/test.c"
+                },
+                "region": {
+                  "startLine": 81
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "URL : test/test.c LINE : 81 COLUMN : 10\n  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);"
+          },
+          "properties": {
+            "hdf": {
+              "result": {
+                "codeDesc": "URL : test/test.c LINE : 81 COLUMN : 10\n  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
+                "startTime": "2026-10-09T16:04:26.26065Z",
+                "status": "failed"
+              }
+            }
+          },
+          "ruleId": "FF1059",
+          "ruleIndex": 2
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "Flawfinder",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20)."
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+              "id": "FF1014",
+              "name": "buffer/gets",
+              "properties": {
+                "hdf": {
+                  "baseline": "Flawfinder",
+                  "cci": [
+                    "CCI-001310"
+                  ],
+                  "code": " gets(f);",
+                  "control_id": "FF1014",
+                  "control_type": "technical",
+                  "descriptions": [
+                    {
+                      "data": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20).",
+                      "label": "default"
+                    }
+                  ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "bbd9899513a584d10923f88c90dd5d1c5a1cc740d815ef11a0aedb57cb2c4565"
+                  },
+                  "exporter_version": "0.0.0",
+                  "generator": {
+                    "name": "sarif-to-hdf",
+                    "version": "dev"
+                  },
+                  "impact": 0.7,
+                  "nist": [
+                    "SI-10"
+                  ],
+                  "overridden": false,
+                  "severity": "high",
+                  "source_location": {
+                    "line": 36,
+                    "ref": "test/test-patched.c"
+                  },
+                  "status": "failed",
+                  "suppressed": false,
+                  "tags": {
+                    "cci": [
+                      "CCI-001310"
+                    ],
+                    "cwe": [
+                      "CWE-20",
+                      "CWE-120"
+                    ],
+                    "fingerprints": {
+                      "fingerprints": {
+                        "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+                      }
+                    },
+                    "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+                    "nist": [
+                      "SI-10"
+                    ],
+                    "severity": "error"
+                  },
+                  "tool": {
+                    "format": "SARIF",
+                    "name": "Flawfinder",
+                    "version": "2.0.15"
+                  },
+                  "verification_method": "automated"
+                },
+                "tags": [
+                  "cci/CCI-001310",
+                  "nist/SI-10"
+                ]
+              },
+              "shortDescription": {
+                "text": "buffer/gets"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "fullDescription": {
+                "text": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+              "id": "FF1010",
+              "name": "buffer/strncat",
+              "properties": {
+                "hdf": {
+                  "baseline": "Flawfinder",
+                  "cci": [
+                    "CCI-001310"
+                  ],
+                  "code": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
+                  "control_id": "FF1010",
+                  "control_type": "technical",
+                  "descriptions": [
+                    {
+                      "data": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).",
+                      "label": "default"
+                    }
+                  ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "a321b369ba667130833ef0e51c1991dfc0f8b4e49afb939b6275972d6adcc1bb"
+                  },
+                  "exporter_version": "0.0.0",
+                  "generator": {
+                    "name": "sarif-to-hdf",
+                    "version": "dev"
+                  },
+                  "impact": 0.3,
+                  "nist": [
+                    "SI-10"
+                  ],
+                  "overridden": false,
+                  "severity": "low",
+                  "source_location": {
+                    "line": 60,
+                    "ref": "test/test-patched.c"
+                  },
+                  "status": "failed",
+                  "suppressed": false,
+                  "tags": {
+                    "cci": [
+                      "CCI-001310"
+                    ],
+                    "cwe": [
+                      "CWE-120"
+                    ],
+                    "fingerprints": {
+                      "fingerprints": {
+                        "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+                      }
+                    },
+                    "helpUri": "https://cwe.mitre.org/data/definitions/120.html",
+                    "nist": [
+                      "SI-10"
+                    ],
+                    "severity": "note"
+                  },
+                  "tool": {
+                    "format": "SARIF",
+                    "name": "Flawfinder",
+                    "version": "2.0.15"
+                  },
+                  "verification_method": "automated"
+                },
+                "tags": [
+                  "cci/CCI-001310",
+                  "nist/SI-10"
+                ]
+              },
+              "shortDescription": {
+                "text": "buffer/strncat"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)."
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/829.html",
+              "id": "FF1059",
+              "name": "misc/LoadLibraryEx",
+              "properties": {
+                "hdf": {
+                  "baseline": "Flawfinder",
+                  "cci": [
+                    "CCI-001310"
+                  ],
+                  "code": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
+                  "control_id": "FF1059",
+                  "control_type": "technical",
+                  "descriptions": [
+                    {
+                      "data": "misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20).",
+                      "label": "default"
+                    }
+                  ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+                  },
+                  "exporter_version": "0.0.0",
+                  "generator": {
+                    "name": "sarif-to-hdf",
+                    "version": "dev"
+                  },
+                  "impact": 0.5,
+                  "nist": [
+                    "SI-10"
+                  ],
+                  "overridden": false,
+                  "severity": "medium",
+                  "source_location": {
+                    "line": 81,
+                    "ref": "test/test.c"
+                  },
+                  "status": "failed",
+                  "suppressed": false,
+                  "tags": {
+                    "cci": [
+                      "CCI-001310"
+                    ],
+                    "cwe": [
+                      "CWE-20",
+                      "CWE-829"
+                    ],
+                    "fingerprints": {
+                      "fingerprints": {
+                        "contextHash/v1": "b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9"
+                      }
+                    },
+                    "helpUri": "https://cwe.mitre.org/data/definitions/829.html",
+                    "nist": [
+                      "SI-10"
+                    ],
+                    "severity": "warning"
+                  },
+                  "tool": {
+                    "format": "SARIF",
+                    "name": "Flawfinder",
+                    "version": "2.0.15"
+                  },
+                  "verification_method": "automated"
+                },
+                "tags": [
+                  "cci/CCI-001310",
+                  "nist/SI-10"
+                ]
+              },
+              "shortDescription": {
+                "text": "misc/LoadLibraryEx"
+              }
+            }
+          ],
+          "version": "2.0.15"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

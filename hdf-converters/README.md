@@ -83,6 +83,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CKLB (DISA STIG Viewer 3.x checklist) | `convertHdfToCklb` |
 | OSCAL SAR | `convertHdfToOscalSar` |
 | OSCAL POA&M | `convertHdfToOscalPoam` |
+| SARIF 2.1.0 | `convertHdfToSarif` |
 | CSAF VEX (HDF Amendments → advisory, partial-fidelity) | `convertHdfToCsafVex` |
 | OpenVEX (HDF Amendments → statements, partial-fidelity) | `convertHdfToOpenVex` |
 | CycloneDX VEX (HDF Amendments → BOM, partial-fidelity) | `convertHdfToCyclonedxVex` |

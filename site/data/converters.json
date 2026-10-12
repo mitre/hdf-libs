@@ -206,6 +206,12 @@
     },
     {
       "source": "hdf",
+      "dest": "sarif",
+      "name": "HDF Results to SARIF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
       "dest": "splunk",
       "name": "HDF Results to Splunk (CIM/HEC)",
       "acceptsEmpty": false

@@ -116,15 +116,12 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 
 // augmentHDFBlock adds the Splunk-specific lossless keys the shared exportmap
 // block omits but the splunk-to-hdf importer round-trips: the requirement's
-// source_location and verification_method, the baseline metadata beyond its
-// name (version/title/checksum/groups), and the full target component. Each is
+// source_location, the baseline metadata beyond its name
+// (version/title/checksum/groups), and the full target component. Each is
 // emitted only when the source carries it, so absent fields stay absent.
 func augmentHDFBlock(hdf, req, baseline, component map[string]interface{}) {
 	if v, ok := req["sourceLocation"]; ok {
 		hdf["source_location"] = v
-	}
-	if v, ok := req["verificationMethod"]; ok {
-		hdf["verification_method"] = v
 	}
 	if v, ok := baseline["version"]; ok {
 		hdf["baseline_version"] = v
