@@ -218,6 +218,12 @@ export function buildHDFBlock(
     poams: 'poams',
     code: 'code',
     refs: 'refs',
+    evidence: 'evidence',
+    effectiveChecksum: 'effective_checksum',
+    controlType: 'control_type',
+    verificationMethod: 'verification_method',
+    applicability: 'applicability',
+    externalReferences: 'external_references',
   };
   for (const [src, dst] of Object.entries(passthrough)) {
     if (src in req) hdf[dst] = req[src];

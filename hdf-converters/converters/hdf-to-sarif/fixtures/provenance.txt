@@ -56,21 +56,28 @@ source build reports).
   everything shared.BuildHDFBlock  → the `hdf` property bag (see the converter's docs)
   carries
 
-NOT CARRIED, and not yet commented at the call sites. `BuildHDFBlock` builds the `hdf`
-bag and does not reach these, so they reach neither a first-class SARIF field nor the bag:
+FIELD COVERAGE. Every property of a results document is carried: 26 are reachable on
+`Evaluated_Requirement` (16 of its own plus `Requirement_Core`'s 12, overlapping on
+`descriptions` and `sourceLocation`) and 16 at the document root. Each maps to a SARIF
+field or reaches the `hdf` bag.
 
-  document root            remediation
-  Evaluated_Requirement    externalReferences, evidence, effectiveChecksum,
-                           applicability, controlType, verificationMethod
+Complete at property granularity only. Nested inside those properties, this exporter
+carries no bytes it was converted FROM and echoes back nothing it has already consumed;
+what that drops is listed under coverage gaps below, with the rationale at each function
+in `go/passthrough.go`.
 
-`externalReferences` is the consequential one: `ruleHelpURI` falls back to
-`exportmap.FirstRefURL`, which reads only `refs[]`, so an advisory URL recorded in
-`externalReferences` is lost rather than becoming `helpUri`. The gap in `BuildHDFBlock`
-was already known here — `requirementBlock` re-adds `sourceLocation` precisely because
-the shared block does not carry it — so one field of eight was patched and the rest were
-not. Carrying them is a shared-helper change rather than an exporter one and is tracked
-separately; this record names them so the line above cannot be read as a claim that
-nothing is dropped.
+Seven fields previously reached neither a SARIF field nor the bag: `evidence`,
+`effectiveChecksum`, `controlType`, `verificationMethod`, `applicability` and
+`externalReferences`, all missing from the shared export block, and `remediation`,
+missing from this exporter's document-root key list. The shared-block gap was not
+SARIF-specific -- `hdf-to-ecs` and `hdf-to-splunk` use the same block -- so fixing it
+there changed those two exporters' output as well.
+
+Counting these is error-prone: the bundle embeds the common-primitives subschema under a
+`$defs` key equal to that subschema's `$id`, with `Requirement_Core` under its `$defs` in
+turn, so a walk following only `#/$defs/<Name>` has nothing to follow, stops at 16
+properties and reports full coverage. Resolve `$id`, or validate candidate documents
+against a real validator.
 
 ### `grype-cve.hdf.json`
 Produced by this repository's `grype-to-hdf`, as
@@ -132,6 +139,19 @@ re-quoted from the redacted form in the same change.
 
 ## Recorded coverage gaps
 
+- **Deliberate nested drops.** Three, all because the exporter carries no bytes it was
+  converted FROM and echoes back nothing it already consumed:
+  `extensions.rawSourceArtifacts` (`remainingExtensions` at document scope,
+  `baselineExtensions` at baseline scope); every `results[].rawSourceRecord`
+  (`withoutRawSourceRecord`); and everything under `extensions.passthrough.sarif`
+  except a property bag whose address matches an emitted object -- an unmatched bag
+  survives in the input, not the output, and even a matched one loses any key the
+  exporter already set (`setBag`). All in `go/passthrough.go`, which carries the
+  rationale. Tested: `go/schema_validation_test.go` and its TypeScript peer assert the
+  document-scope `rawSourceArtifacts` and `rawSourceRecord` drops, and
+  `go/passthrough_test.go` the unmatched-bag and consumed-namespace behavior. The
+  baseline-scope `rawSourceArtifacts` drop has no test in either language and is correct
+  by code reading only.
 - **Region precision.** `tags["sarif-region"]` is this converter's documented
   home for `startColumn`/`endLine`/`endColumn`/offsets/snippet, because HDF's
   `Source_Location` is `{ref, line}` and closed. No committed fixture carries

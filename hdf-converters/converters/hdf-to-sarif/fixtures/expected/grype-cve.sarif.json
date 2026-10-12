@@ -147,6 +147,10 @@
                       "label": "check"
                     }
                   ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "bbd9899513a584d10923f88c90dd5d1c5a1cc740d815ef11a0aedb57cb2c4565"
+                  },
                   "epss": {
                     "date": "2026-09-19",
                     "percentile": 0.89018,
@@ -282,7 +286,8 @@
                   "tool": {
                     "name": "Grype",
                     "version": "0.117.0"
-                  }
+                  },
+                  "verification_method": "automated"
                 },
                 "security-severity": "8.6",
                 "tags": [
@@ -358,6 +363,10 @@
                       "label": "check"
                     }
                   ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+                  },
                   "epss": {
                     "date": "2026-09-19",
                     "percentile": 0.88768,
@@ -418,7 +427,8 @@
                   "tool": {
                     "name": "Grype",
                     "version": "0.117.0"
-                  }
+                  },
+                  "verification_method": "automated"
                 },
                 "security-severity": "5.3",
                 "tags": [

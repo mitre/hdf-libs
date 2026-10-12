@@ -291,12 +291,17 @@
                   ],
                   "code": " gets(f);",
                   "control_id": "FF1014",
+                  "control_type": "technical",
                   "descriptions": [
                     {
                       "data": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20).",
                       "label": "default"
                     }
                   ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "bbd9899513a584d10923f88c90dd5d1c5a1cc740d815ef11a0aedb57cb2c4565"
+                  },
                   "exporter_version": "0.0.0",
                   "generator": {
                     "name": "sarif-to-hdf",
@@ -337,7 +342,8 @@
                     "format": "SARIF",
                     "name": "Flawfinder",
                     "version": "2.0.15"
-                  }
+                  },
+                  "verification_method": "automated"
                 },
                 "tags": [
                   "cci/CCI-001310",
@@ -366,12 +372,17 @@
                   ],
                   "code": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
                   "control_id": "FF1010",
+                  "control_type": "technical",
                   "descriptions": [
                     {
                       "data": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).",
                       "label": "default"
                     }
                   ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "a321b369ba667130833ef0e51c1991dfc0f8b4e49afb939b6275972d6adcc1bb"
+                  },
                   "exporter_version": "0.0.0",
                   "generator": {
                     "name": "sarif-to-hdf",
@@ -411,7 +422,8 @@
                     "format": "SARIF",
                     "name": "Flawfinder",
                     "version": "2.0.15"
-                  }
+                  },
+                  "verification_method": "automated"
                 },
                 "tags": [
                   "cci/CCI-001310",
@@ -440,12 +452,17 @@
                   ],
                   "code": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
                   "control_id": "FF1059",
+                  "control_type": "technical",
                   "descriptions": [
                     {
                       "data": "misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20).",
                       "label": "default"
                     }
                   ],
+                  "effective_checksum": {
+                    "algorithm": "sha256",
+                    "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+                  },
                   "exporter_version": "0.0.0",
                   "generator": {
                     "name": "sarif-to-hdf",
@@ -486,7 +503,8 @@
                     "format": "SARIF",
                     "name": "Flawfinder",
                     "version": "2.0.15"
-                  }
+                  },
+                  "verification_method": "automated"
                 },
                 "tags": [
                   "cci/CCI-001310",

@@ -98,6 +98,7 @@ function documentBlock(doc: Obj): Obj | undefined {
     'externalReferences',
     'derivation',
     'preAmendmentChecksum',
+    'remediation',
   ]) {
     if (key in doc) block[key] = doc[key];
   }

@@ -26,6 +26,11 @@
       "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"V-1\",\"label\":\"default\"}],\"id\":\"V-1\",\"impact\":0,\"results\":[{\"codeDesc\":\"V-1\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{\"cci\":[\"\"],\"nist\":[\"\"]},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"
     },
     {
+      "name": "passthrough-only-fields",
+      "contract": "MustConvert",
+      "input": "{\"baselines\":[{\"name\":\"b\",\"requirements\":[{\"applicability\":\"required\",\"code\":\"c\",\"descriptions\":[{\"data\":\"d\",\"label\":\"default\"}],\"evidence\":[{\"data\":\"bG9n\",\"type\":\"log\"}],\"externalReferences\":[{\"href\":\"https://nvd.nist.gov/vuln/detail/CVE-2021-1\",\"kind\":\"advisory\",\"sourceName\":\"NVD\"}],\"id\":\"V-1\",\"impact\":0.5,\"results\":[{\"codeDesc\":\"cd\",\"startTime\":\"2024-01-01T00:00:00Z\",\"status\":\"failed\"}],\"tags\":{\"nist\":[\"AC-6\"]},\"title\":\"t\"}]}],\"generator\":{\"name\":\"t\",\"version\":\"0.0.0\"},\"remediation\":{\"uri\":\"https://example.com/fix.yml\"},\"timestamp\":\"2024-01-01T00:00:00Z\"}"
+    },
+    {
       "name": "requirement-with-non-token-id",
       "contract": "MustConvert",
       "input": "{\"baselines\":[{\"name\":\"test\",\"requirements\":[{\"code\":\"c\",\"descriptions\":[{\"data\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"label\":\"default\"}],\"id\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"impact\":0,\"results\":[{\"codeDesc\":\"CVE-2018-25032/ruby:nokogiri/1.10.9\",\"startTime\":\"2020-01-01T00:00:00Z\",\"status\":\"notReviewed\"}],\"severity\":\"medium\",\"tags\":{},\"title\":\"t\"}]}],\"generator\":{\"name\":\"testhdf\",\"version\":\"0.0.0\"},\"timestamp\":\"2020-01-01T00:00:00Z\"}"

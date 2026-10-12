@@ -86,7 +86,7 @@ func documentBlock(doc map[string]interface{}) map[string]interface{} {
 	for _, key := range []string{
 		"id", "timestamp", "statistics", "runner", "components", "planRef",
 		"systemRef", "integrity", "externalReferences", "derivation",
-		"preAmendmentChecksum",
+		"preAmendmentChecksum", "remediation",
 	} {
 		if v, ok := doc[key]; ok {
 			block[key] = v

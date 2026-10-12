@@ -267,18 +267,24 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 		hdf["cci"] = cci
 	}
 	passthrough := map[string]string{
-		"tags":             "tags",
-		"cvss":             "cvss",
-		"cwe":              "cwe",
-		"epss":             "epss",
-		"kev":              "kev",
-		"affectedPackages": "affected_packages",
-		"descriptions":     "descriptions",
-		"results":          "results",
-		"statusOverrides":  "status_overrides",
-		"poams":            "poams",
-		"code":             "code",
-		"refs":             "refs",
+		"tags":               "tags",
+		"cvss":               "cvss",
+		"cwe":                "cwe",
+		"epss":               "epss",
+		"kev":                "kev",
+		"affectedPackages":   "affected_packages",
+		"descriptions":       "descriptions",
+		"results":            "results",
+		"statusOverrides":    "status_overrides",
+		"poams":              "poams",
+		"code":               "code",
+		"refs":               "refs",
+		"evidence":           "evidence",
+		"effectiveChecksum":  "effective_checksum",
+		"controlType":        "control_type",
+		"verificationMethod": "verification_method",
+		"applicability":      "applicability",
+		"externalReferences": "external_references",
 	}
 	for src, dst := range passthrough {
 		if v, ok := req[src]; ok {

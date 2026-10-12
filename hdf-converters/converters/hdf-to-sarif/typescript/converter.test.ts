@@ -457,3 +457,18 @@ describe('version and schema URI cannot drift apart', () => {
     expect(SARIF_SCHEMA_URI.startsWith('https://')).toBe(true);
   });
 });
+
+describe('document-root fields with no SARIF home', () => {
+  // remediation is the one root field SARIF cannot express and the document bag
+  // did not carry, so a pointer to automated remediation content was dropped.
+  it('carries remediation into the document bag', () => {
+    const log = convert(doc(requirement(), { remediation: { uri: 'https://example.com/fix.yml' } })) as Json;
+    const bag = (log as Record<string, Record<string, Record<string, Json>>>).properties.hdf;
+    expect((bag.remediation as Record<string, Json>).uri).toBe('https://example.com/fix.yml');
+  });
+
+  it('adds no remediation key when the document omits it', () => {
+    const log = convert(doc(requirement())) as Record<string, Record<string, Record<string, Json>>>;
+    expect(log.properties?.hdf ?? {}).not.toHaveProperty('remediation');
+  });
+});

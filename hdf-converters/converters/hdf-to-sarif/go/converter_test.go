@@ -548,3 +548,20 @@ func TestSARIFSchemaURIContainsTheVersion(t *testing.T) {
 	assert.True(t, strings.HasPrefix(SARIFSchemaURI, "https://"),
 		"the schema URI must be the canonical OASIS https location")
 }
+
+// remediation is the one document-root field SARIF has no home for and the
+// document bag did not carry, so a pointer to automated remediation content was
+// dropped on export.
+func TestConvertHDFToSARIF_CarriesDocumentRemediation(t *testing.T) {
+	doc := testhdf.Results(testhdf.Req("V-1"))
+	doc.Remediation = &hdf.Remediation{URI: "https://example.com/fix.yml"}
+	log := convertDoc(t, doc)
+
+	props, ok := log["properties"].(map[string]interface{})
+	require.True(t, ok, "document has no properties bag")
+	bag, ok := props[hdfBagKey].(map[string]interface{})
+	require.True(t, ok, "document bag missing")
+	rem, ok := bag["remediation"].(map[string]interface{})
+	require.True(t, ok, "remediation not carried into the document bag")
+	assert.Equal(t, "https://example.com/fix.yml", rem["uri"])
+}
