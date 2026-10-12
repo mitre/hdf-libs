@@ -76,8 +76,10 @@ func newEvidenceVerifyRemovedCmd() *cobra.Command {
 // lists what they typed instead of a fixed pair. Keyed on Changed(), not on the value: a
 // flag that defaults true is indistinguishable from an explicit setting by value alone.
 func strayVerifyFlags(c *cobra.Command) []string {
-	stray := make([]string, 0, 3)
-	for _, name := range []string{"checksums-only", "require-reachable", "require-checksums-match"} {
+	stray := make([]string, 0, 4)
+	for _, name := range []string{
+		"checksums-only", "require-reachable", "require-checksums", "require-checksums-match",
+	} {
 		if c.Flags().Changed(name) {
 			stray = append(stray, "--"+name)
 		}
@@ -86,7 +88,7 @@ func strayVerifyFlags(c *cobra.Command) []string {
 }
 
 func newEvidenceInfoCmd() *cobra.Command {
-	var verify, checksumsOnly, requireReachable, requireChecksumsMatch bool
+	var verify, checksumsOnly, requireReachable, requireChecksumsMatch, requireChecksums bool
 
 	cmd := &cobra.Command{
 		Use:   "info <file>",
@@ -108,16 +110,28 @@ the plan the package names rather than read from the stored summary, which the
 schema itself calls informational and not authoritative. A mismatch fails the
 command.
 
+Two narrow opt-ins tighten that, and they answer different questions about the
+same entry. --require-checksums fails when a reference records NOTHING to
+verify, naming each one. --require-checksums-match, which is ON by default,
+fails when a checksum that WAS computed disagrees. An entry recording no
+checksum cannot mismatch and one that mismatches is not unchecksummed, so the
+two never fire for the same reason, and both can fail at once. Neither is a
+default to reach for: --require-checksums is for an assessor who needs every
+document checksum-governed, as --require-reachable is for one who needs the
+package self-contained.
+
 Examples:
   hdf evidence info q1-2026.hdf-evidence-package.json
   hdf evidence info q1-2026.hdf-evidence-package.json --json
   hdf evidence info q1-2026.hdf-evidence-package.json --verify
   hdf evidence info q1-2026.hdf-evidence-package.json --verify --checksums-only
-  hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-reachable`,
+  hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-reachable
+  hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-checksums`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			if verify {
-				return runEvidenceVerify(args[0], checksumsOnly, requireReachable, requireChecksumsMatch)
+				return runEvidenceVerify(args[0], checksumsOnly, requireReachable,
+					requireChecksumsMatch, requireChecksums)
 			}
 			// Refused rather than ignored: a flag that silently does nothing is how an
 			// operator comes to believe a check ran. --require-checksums-match is included
@@ -138,10 +152,13 @@ Examples:
 		"With --verify: check checksums only, skipping the completeness check")
 	cmd.Flags().BoolVar(&requireReachable, "require-reachable", false,
 		"With --verify: fail if the package records a reference this machine cannot resolve")
-	// The true here is the real default, and it is the OPPOSITE of --require-reachable
-	// above, deliberately. A contents[] mismatch failed before this flag existed, so
-	// defaulting it false would not add a valve: it would quietly stop a tampered
-	// document from failing.
+	cmd.Flags().BoolVar(&requireChecksums, "require-checksums", false,
+		"With --verify: fail if any reference records no checksum to verify, naming each; "+
+			"narrow, for an assessor who needs every document checksum-governed")
+	// The true here is the real default, and it is the OPPOSITE of the two flags above,
+	// deliberately. A contents[] mismatch failed before this flag existed, so defaulting
+	// it false would not add a valve: it would quietly stop a tampered document from
+	// failing.
 	cmd.Flags().BoolVar(&requireChecksumsMatch, "require-checksums-match", true,
 		"With --verify: fail if a checksum this run could compute disagrees with the file; "+
 			"pass =false to report a mismatch without failing")

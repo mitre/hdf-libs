@@ -695,8 +695,7 @@ func TestEvidenceVerify_TheValveDoesNotTolerateAnUnreadableArtifact(t *testing.T
 // package using it as designed can never pass that flag — accepted deliberately, and
 // worth failing loudly if it ever changes.
 func TestEvidenceVerify_RequireReachableCoversExternalEvidence(t *testing.T) {
-	dir, pkgPath := referencePackage(t)
-	_ = dir
+	_, pkgPath := referencePackage(t)
 	pkg := readPackage(t, pkgPath)
 	pkg["externalEvidence"] = []any{map[string]any{
 		"uri": "https://logs.example.gov/audit.ndjson", "format": "raw-log",
@@ -966,4 +965,165 @@ func TestEvidenceVerify_TheSixthStateExistsInTheEngine(t *testing.T) {
 	assert.Equal(t, hdfengine.ChecksumUnsupported, results[0].Status,
 		"an algorithm the build cannot compute is unsupported, never a mismatch — a mismatch "+
 			"would say their evidence changed when nothing was hashed")
+}
+
+// --require-checksums is the opt-in that turns an entry recording NO checksum from a
+// report into a failure — the parallel of --require-reachable, and deliberately narrow:
+// for an assessor who needs every document checksum-governed, not a default anybody
+// should reach for. Content_Reference requires type and uri but not checksum, so a
+// schema-valid package can carry a document nothing vouches for.
+func TestEvidenceInfoVerify_RequireChecksumsFailsOnAnUnchecksummedEntry(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "audit.ndjson"), []byte("log\n"), 0o600))
+
+	pkg := readPackage(t, pkgPath)
+	entries, ok := pkg["contents"].([]any)
+	require.True(t, ok)
+	require.GreaterOrEqual(t, len(entries), 2)
+	// One entry records NO checksum object, another records a BLANK value. .16 treats
+	// them alike as "nothing to verify", and so must this flag.
+	first, ok := entries[0].(map[string]any)
+	require.True(t, ok)
+	delete(first, "checksum")
+	second, ok := entries[1].(map[string]any)
+	require.True(t, ok)
+	second["checksum"] = map[string]any{"algorithm": "sha256", "value": ""}
+	// And an externalEvidence entry with none, because 52n0c.36 put both arrays through
+	// one path and a flag scoped to one of them would reintroduce that divergence.
+	pkg["externalEvidence"] = []any{map[string]any{"uri": "audit.ndjson", "format": "raw-log"}}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	// Without the flag: reported, exit 0 — byte-identical to today.
+	stdout, _, defErr := executeCommand("evidence", "info", "--verify", "--checksums-only", pkgPath)
+	require.NoError(t, defErr, "the default must still report rather than refuse")
+	assert.Contains(t, stdout, "3 skipped", "all three unchecksummed entries are reported")
+
+	// With it: a failure that NAMES every such entry rather than only counting them.
+	_, _, flagErr := executeCommand("evidence", "info", "--verify", "--checksums-only",
+		"--require-checksums", pkgPath)
+	require.Error(t, flagErr, "--require-checksums makes an unchecksummed entry a failure")
+	for _, uri := range []string{"system.json", "rhel9-results.json", "audit.ndjson"} {
+		assert.Contains(t, flagErr.Error(), uri,
+			"every entry recording nothing must be named, not merely counted")
+	}
+}
+
+// The three strictness flags compose: each fails for its own reason, two can fail at
+// once, and the message names only what actually happened. The --require-reachable
+// branch already had that property and must not regress.
+func TestEvidenceInfoVerify_StrictnessFlagsComposeAndNameOnlyWhatHappened(t *testing.T) {
+	_, pkgPath := referencePackage(t)
+	pkg := readPackage(t, pkgPath)
+	entries, _ := pkg["contents"].([]any)
+	require.GreaterOrEqual(t, len(entries), 1)
+	first, ok := entries[0].(map[string]any)
+	require.True(t, ok)
+	delete(first, "checksum")
+	// A remote reference, which is unreachable but NOT unchecksummed.
+	pkg["externalEvidence"] = []any{map[string]any{
+		"uri": "https://logs.example.gov/x.ndjson", "format": "raw-log",
+		"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)}}}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	t.Run("checksums only", func(t *testing.T) {
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-checksums", pkgPath)
+		require.Error(t, e)
+		assert.Contains(t, e.Error(), "no checksum to verify is recorded")
+		assert.NotContains(t, e.Error(), "could not be resolved",
+			"only what happened: nothing was asked about reachability")
+	})
+
+	t.Run("reachability only", func(t *testing.T) {
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-reachable", pkgPath)
+		require.Error(t, e)
+		assert.Contains(t, e.Error(), "could not be resolved")
+		assert.NotContains(t, e.Error(), "no checksum to verify is recorded")
+	})
+
+	t.Run("both at once names both", func(t *testing.T) {
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-checksums", "--require-reachable", pkgPath)
+		require.Error(t, e)
+		assert.Contains(t, e.Error(), "no checksum to verify is recorded")
+		assert.Contains(t, e.Error(), "could not be resolved")
+	})
+}
+
+// THE TWO CASES WHOSE ABSENCE LET A FALSE CLAIM SHIP. The first version of
+// --require-checksums derived "records no checksum" from the verification RESULT status,
+// and verifyRecordedArray overwrites an unresolved entry's status before the engine ever
+// classifies its checksum — so an off-package artifact with no digest, the sharpest case
+// the flag exists for, passed at exit 0 while the help promised it would fail. And the
+// mismatch verdict RETURNED before the strictness clauses were built, so a package that
+// both mismatched and recorded nothing reported only the mismatch, while three prose
+// surfaces claimed the flags compose.
+func TestEvidenceInfoVerify_RequireChecksumsSeesWhatTheDocumentRecords(t *testing.T) {
+	good, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "system.json"))
+	require.NoError(t, err)
+	goodSum := sha256.Sum256(good)
+
+	t.Run("an unreachable reference recording no checksum still fails", func(t *testing.T) {
+		_, pkgPath := referencePackage(t)
+		pkg := readPackage(t, pkgPath)
+		// Outside the package subtree, so the classifier marks it unreachable BEFORE any
+		// checksum is looked at. Whether the document records one is still a fact.
+		pkg["contents"] = []any{
+			map[string]any{"type": "hdf-system", "uri": "system.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": hex.EncodeToString(goodSum[:])}},
+			map[string]any{"type": "hdf-results", "uri": "/var/evidence/offsite.json"},
+		}
+		out, mErr := json.MarshalIndent(pkg, "", " ")
+		require.NoError(t, mErr)
+		require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-checksums", pkgPath)
+		require.Error(t, e, "an unreachable entry that records no checksum records no checksum")
+		assert.Contains(t, e.Error(), "/var/evidence/offsite.json",
+			"and must be NAMED, which is what the flag's help promises")
+	})
+
+	t.Run("a remote externalEvidence entry recording no checksum also fails", func(t *testing.T) {
+		_, pkgPath := referencePackage(t)
+		pkg := readPackage(t, pkgPath)
+		pkg["externalEvidence"] = []any{map[string]any{
+			"uri": "https://logs.example.gov/x.ndjson", "format": "raw-log"}}
+		out, mErr := json.MarshalIndent(pkg, "", " ")
+		require.NoError(t, mErr)
+		require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-checksums", pkgPath)
+		require.Error(t, e)
+		assert.Contains(t, e.Error(), "https://logs.example.gov/x.ndjson")
+	})
+
+	t.Run("a mismatch and an unchecksummed entry are BOTH reported", func(t *testing.T) {
+		_, pkgPath := referencePackage(t)
+		pkg := readPackage(t, pkgPath)
+		pkg["contents"] = []any{
+			// Wrong digest for a file that IS there, so it mismatches.
+			map[string]any{"type": "hdf-system", "uri": "system.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)}},
+			map[string]any{"type": "hdf-results", "uri": "rhel9-results.json"},
+		}
+		out, mErr := json.MarshalIndent(pkg, "", " ")
+		require.NoError(t, mErr)
+		require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+		// --require-checksums-match is at its default true, so both conditions hold.
+		_, _, e := executeCommand("evidence", "info", "--verify", "--checksums-only",
+			"--require-checksums", pkgPath)
+		require.Error(t, e)
+		assert.Contains(t, e.Error(), "checksum mismatch(es)",
+			"the mismatch must be reported")
+		assert.Contains(t, e.Error(), "rhel9-results.json",
+			"AND the unchecksummed entry — 'both can fail at once' is a claim in the help")
+	})
 }

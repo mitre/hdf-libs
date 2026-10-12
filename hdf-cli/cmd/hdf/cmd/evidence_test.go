@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -195,13 +196,20 @@ func TestEvidenceInfo_RefusesVerifyOnlyFlagsWithoutVerify(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
 
+	// TABLE-DRIVEN OVER EVERY VERIFY-ONLY FLAG, and it must grow when one is added. A
+	// mutant removing the newest flag from strayVerifyFlags left this suite green,
+	// because the table listed only the flags that existed when it was written — the
+	// same untested-gate shape the test itself was added to close, one flag later.
+	var covered []string
 	for _, tc := range []struct{ name, flag string }{
 		{"checksums-only", "--checksums-only"},
 		{"require-reachable", "--require-reachable"},
+		{"require-checksums", "--require-checksums"},
 		// The one the old rationale wrongly excluded: it defaults true, so only
 		// Changed() can tell an explicit =false from the default.
 		{"require-checksums-match set explicitly", "--require-checksums-match=false"},
 	} {
+		covered = append(covered, strings.TrimPrefix(strings.Split(tc.flag, "=")[0], "--"))
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, runErr := executeCommand("evidence", "info", pkgPath, tc.flag)
 			require.Error(t, runErr, "%s does nothing without --verify and must be refused", tc.flag)
@@ -215,4 +223,19 @@ func TestEvidenceInfo_RefusesVerifyOnlyFlagsWithoutVerify(t *testing.T) {
 	// typed, not on the flags' values.
 	_, _, okErr := executeCommand("evidence", "info", pkgPath)
 	require.NoError(t, okErr, "an unset --require-checksums-match must not trip the refusal")
+
+	// THE TABLE CANNOT FALL BEHIND THE FLAG SET AGAIN. Every flag info declares whose
+	// help says "With --verify" must appear above, derived from the command rather than
+	// from memory — which is what let the table go stale when --require-checksums landed.
+	declared := map[string]bool{}
+	newEvidenceInfoCmd().Flags().VisitAll(func(f *pflag.Flag) {
+		if strings.HasPrefix(f.Usage, "With --verify") {
+			declared[f.Name] = true
+		}
+	})
+	require.NotEmpty(t, declared, "the derivation must find something, or it proves nothing")
+	for name := range declared {
+		assert.Contains(t, covered, name,
+			"--%s is a --verify-only flag and is not covered by the refusal table above", name)
+	}
 }

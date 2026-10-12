@@ -63,7 +63,9 @@ type verifyCounts struct {
 	unsupported int
 }
 
-func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireChecksumsMatch bool) error {
+func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireChecksumsMatch,
+	requireChecksums bool,
+) error {
 	data, err := readInputFile(pkgPath) // size-gated read boundary (honors --max-size)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -117,30 +119,35 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireC
 
 	renderVerifyOutput(doc, results, counts, hdfengine.AgentOverridesInPackage(reachable, fetch), refStatus)
 
-	// A fetch error always fails: the package named an artifact this run could not
-	// read at all. A MISMATCH is the operator's to govern — it fails by default,
-	// which is what contents[] already did, and --require-checksums-match=false is
-	// the valve. Tolerated mismatches are still named above and counted in the
-	// summary, because a fail-open switch that also goes quiet is how a pipeline
-	// passes for months without anyone learning.
+	// ONE composing verdict for every condition, because the switch this replaces
+	// RETURNED on a mismatch before the strictness clauses were built — so a package
+	// that both mismatched and recorded no checksum reported only the mismatch, while
+	// three prose surfaces claimed the flags could fail at once. A reason per condition,
+	// each added only when that condition actually occurred.
+	var why []string
+
+	// A fetch error always fails: the package named an artifact this run could not read
+	// at all, which no flag governs.
+	if counts.errors > 0 {
+		why = append(why, fmt.Sprintf("%d reference(s) could not be read", counts.errors))
+	}
+
+	// A MISMATCH is the operator's to govern. It fails by default, which is what
+	// contents[] already did, and =false is the valve — in which case it is still named
+	// per entry above, still counted in the summary, and said outright here, because a
+	// fail-open switch that also goes quiet is how a pipeline passes for months.
 	switch {
-	case counts.errors > 0 && counts.mismatch > 0 && requireChecksumsMatch:
-		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
-	case counts.errors > 0:
-		return fmt.Errorf("%d reference(s) could not be read", counts.errors)
 	case counts.mismatch > 0 && requireChecksumsMatch:
-		return fmt.Errorf("%d checksum mismatch(es)", counts.mismatch)
+		why = append(why, fmt.Sprintf("%d checksum mismatch(es)", counts.mismatch))
 	case counts.mismatch > 0:
 		fmt.Fprintf(os.Stderr, "Note: %d checksum mismatch(es) tolerated because "+
 			"--require-checksums-match=false; the package is NOT intact\n", counts.mismatch)
 	}
-	if requireReachable && (len(unreachableBy) > 0 || counts.unsupported > 0) {
-		// Only what actually happened is named. Reporting "0 references could not be
-		// resolved" alongside a real checksum problem reads as noise and invites the
-		// operator to look for a reference fault that is not there.
-		var why []string
+
+	if requireReachable {
 		if n := len(unreachableBy); n > 0 {
-			why = append(why, fmt.Sprintf("%d recorded reference(s) could not be resolved", n))
+			why = append(why, fmt.Sprintf("%d recorded reference(s) could not be resolved "+
+				"(--require-reachable)", n))
 		}
 		// RETAINED THOUGH CURRENTLY UNREACHABLE HERE: this build computes every algorithm
 		// Hash_Algorithm admits, and validation refuses an off-schema one before any
@@ -149,10 +156,32 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireC
 		// implements it, deleting this would make --require-reachable silently stop
 		// failing, which is the fail-open class this command exists to prevent.
 		if counts.unsupported > 0 {
-			why = append(why, fmt.Sprintf("%d checksum(s) name an algorithm this build cannot compute",
-				counts.unsupported))
+			why = append(why, fmt.Sprintf("%d checksum(s) name an algorithm this build cannot "+
+				"compute (--require-reachable)", counts.unsupported))
 		}
-		return fmt.Errorf("%s; --require-reachable was given", strings.Join(why, " and "))
+	}
+
+	if requireChecksums {
+		// Read from the DOCUMENT, not from the verification results. What a package
+		// RECORDS is knowable without resolving anything, and deriving it from the
+		// result status silently exempted every unresolved entry: verifyRecordedArray
+		// overwrites an unreachable entry's status before the engine ever classifies its
+		// checksum, so an off-package artifact with no digest — the sharpest case this
+		// flag exists for — passed at exit 0.
+		//
+		// NAMED, not counted: an operator who has to add checksums needs to know which
+		// references. Spans BOTH arrays, because 52n0c.36 put them through one path and
+		// a flag scoped to one would reintroduce the divergence that card closed.
+		missing := urisWithoutRecordedChecksum(contents, external)
+		if len(missing) > 0 {
+			why = append(why, fmt.Sprintf("no checksum to verify is recorded for %d %s: %s "+
+				"(--require-checksums)", len(missing), plural("reference", len(missing)),
+				strings.Join(missing, ", ")))
+		}
+	}
+
+	if len(why) > 0 {
+		return fmt.Errorf("%s", strings.Join(why, "; "))
 	}
 
 	// Completeness checking (default behavior unless --checksums-only)
@@ -334,6 +363,30 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 
 	fmt.Fprintf(os.Stderr, "Completeness check passed: all %d planned baselines have results\n", len(comp.Planned))
 	return nil
+}
+
+// urisWithoutRecordedChecksum names every entry whose checksum the DOCUMENT does not
+// record, in document order across both arrays. Derived from the parsed entries rather
+// than from verification results on purpose: whether a package records a checksum is a
+// property of the package, true or false before anything is resolved or read, and
+// reading it off a result status exempted every entry whose status had been overwritten
+// to unreachable — which is every off-package artifact, the sharpest case the flag
+// exists for.
+//
+// An entry with NO checksum object and one whose VALUE is blank are alike here: both
+// record nothing to verify, which is why the engine classifies both as skipped and why
+// 52n0c.16 counts them under one heading while reporting them separately. The remedies
+// differ; what --require-checksums asks is the same question of both.
+func urisWithoutRecordedChecksum(arrays ...[]hdfengine.EvidenceContent) []string {
+	out := make([]string, 0, 8)
+	for _, entries := range arrays {
+		for _, c := range entries {
+			if strings.TrimSpace(c.Checksum) == "" {
+				out = append(out, c.URI)
+			}
+		}
+	}
+	return out
 }
 
 // The two arrays a package records checksums in. Named constants rather than
