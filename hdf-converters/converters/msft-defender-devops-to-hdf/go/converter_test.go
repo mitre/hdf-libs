@@ -271,7 +271,7 @@ func TestConvert_DelegatesBaseSARIF(t *testing.T) {
 
 	// The SARIF converter should have populated these standard tags
 	assert.NotNil(t, req.Tags["nist"], "nist tag should be set by SARIF converter")
-	assert.NotNil(t, req.Tags["severity"], "severity tag should be set by SARIF converter")
+	assert.NotNil(t, req.Tags["sarif-level"], "sarif-level tag should be set by SARIF converter")
 }
 
 // ---- Checksum ----

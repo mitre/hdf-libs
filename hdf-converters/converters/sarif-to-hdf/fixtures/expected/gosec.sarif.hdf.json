@@ -16,7 +16,13 @@
           "results": [
             {
               "codeDesc": "URL : internal/db/users.go LINE : 34 COLUMN : 2\n\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
-              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"primaryLocationHash\":\"gosec-g201-users-34\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"internal/db/users.go\"},\"region\":{\"endColumn\":68,\"endLine\":34,\"snippet\":{\"text\":\"\\tquery := fmt.Sprintf(\\\"SELECT * FROM users WHERE id = %s\\\", id)\"},\"startColumn\":2,\"startLine\":34}}}],\"message\":{\"text\":\"SQL string formatting\"},\"ruleId\":\"G201\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-11T01:15:07.926Z",
               "status": "failed"
             }
           ],
@@ -43,7 +49,18 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "primaryLocationHash": "gosec-g201-users-34"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "code": "\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)",
           "controlType": "technical",
@@ -67,7 +84,13 @@
             {
               "codeDesc": "URL : internal/handlers/files.go LINE : 56 COLUMN : 15\n\tdata, err := os.ReadFile(filePath)",
               "message": "Suppressed: #nosec G304 -- filePath is validated against allowlist",
-              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"warning\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"internal/handlers/files.go\"},\"region\":{\"endColumn\":42,\"endLine\":56,\"snippet\":{\"text\":\"\\tdata, err := os.ReadFile(filePath)\"},\"startColumn\":15,\"startLine\":56}}}],\"message\":{\"text\":\"Potential file inclusion via variable\"},\"ruleId\":\"G304\",\"ruleIndex\":2,\"suppressions\":[{\"justification\":\"#nosec G304 -- filePath is validated against allowlist\",\"kind\":\"inSource\",\"status\":\"accepted\"}]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-11T01:15:07.926Z",
               "status": "failed"
             }
           ],
@@ -78,12 +101,12 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-08-09T17:25:53.193386-04:00",
+              "appliedAt": "2026-10-11T01:15:07.926Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-08-09T17:25:53.193386-04:00",
+              "expiresAt": "2027-10-11T01:15:07.926Z",
               "reason": "#nosec G304 -- filePath is validated against allowlist",
               "status": "passed",
               "type": "waiver"
@@ -102,7 +125,15 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "warning",
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1,
             "suppressions": [
               {
                 "justification": "#nosec G304 -- filePath is validated against allowlist",
@@ -126,7 +157,13 @@
           "results": [
             {
               "codeDesc": "URL : internal/auth/checksum.go LINE : 12 COLUMN : 8\n\th := md5.New()",
-              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"warning\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"internal/auth/checksum.go\"},\"region\":{\"snippet\":{\"text\":\"\\th := md5.New()\"},\"startColumn\":8,\"startLine\":12}}}],\"message\":{\"text\":\"Use of weak cryptographic primitive\"},\"ruleId\":\"G401\",\"ruleIndex\":3}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/2"
+              },
+              "startTime": "2026-10-11T01:15:07.926Z",
               "status": "failed"
             }
           ],
@@ -148,7 +185,15 @@
             "nist": [
               "SC-12"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "code": "\th := md5.New()",
           "controlType": "technical",
@@ -169,7 +214,13 @@
           "results": [
             {
               "codeDesc": "URL : internal/config/constants.go LINE : 7 COLUMN : 2\n\tdbPassword = \"supersecret123\"",
-              "startTime": "2026-07-12T18:56:41.922525-04:00",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"internal/config/constants.go\"},\"region\":{\"snippet\":{\"text\":\"\\tdbPassword = \\\"supersecret123\\\"\"},\"startColumn\":2,\"startLine\":7}}}],\"message\":{\"text\":\"Potential hardcoded credentials\"},\"ruleId\":\"G101\",\"ruleIndex\":0}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/3"
+              },
+              "startTime": "2026-10-11T01:15:07.926Z",
               "status": "failed"
             }
           ],
@@ -193,7 +244,15 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "code": "\tdbPassword = \"supersecret123\"",
           "title": "Look for hard coded credentials",
@@ -213,7 +272,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:41.922525-04:00",
+  "timestamp": "2026-10-11T01:15:07.926Z",
   "tool": {
     "format": "SARIF",
     "name": "gosec",

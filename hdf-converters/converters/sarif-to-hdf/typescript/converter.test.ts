@@ -66,7 +66,7 @@ describe('SARIF Converter', async () => {
       expect(ff1014.title).toBe('buffer/gets');
       expect(ff1014.descriptions[0].data).toContain('Does not check for buffer overflows');
       expect(ff1014.impact).toBe(0.7);
-      expect(ff1014.tags.severity).toBe('error');
+      expect(ff1014.tags['sarif-level']).toBe('error');
       expect(ff1014.tags.cwe).toContain('CWE-120');
       expect(ff1014.tags.cwe).toContain('CWE-20');
       expect(ff1014.tags.nist).toContain('SI-10');
@@ -106,6 +106,79 @@ describe('SARIF Converter', async () => {
       expect(req.results[0].status).toBe('passed');
       expect(req.results[0].codeDesc).toContain('ExampleAnalyzer');
       expect(req.results[0].codeDesc).toContain('zero findings');
+    });
+
+    // §3.14.23 makes null the default for an absent results array, and Appendix I
+    // gives that null a meaning: the tool "either failed to start or failed to begin
+    // its analysis". An empty array is the opposite. This implementation threw on the
+    // null case entirely; Go reported it as a clean pass.
+    // The fixture can only carry the absent form, since a literal null fails the
+    // vendored schema. Pin literal null against the fixture's own output so the
+    // golden covers both spellings rather than only one.
+    it('produces the same requirement for literal null as for the absent fixture', async () => {
+      const absent = loadFixture('input', 'results-absent.sarif');
+      const doc = JSON.parse(absent);
+      doc.runs[0].results = null;
+      const fromAbsent = JSON.parse(await convertSarifToHdf(absent));
+      const fromNull = JSON.parse(await convertSarifToHdf(JSON.stringify(doc)));
+      const a = fromAbsent.baselines[0].requirements[0];
+      const n = fromNull.baselines[0].requirements[0];
+      expect(n.id).toBe(a.id);
+      expect(n.title).toBe(a.title);
+      expect(n.impact).toBe(a.impact);
+      expect(n.results[0].status).toBe(a.results[0].status);
+      expect(n.results[0].codeDesc).toBe(a.results[0].codeDesc);
+    });
+
+    it('treats the results-absent fixture as not analyzed', async () => {
+      const input = loadFixture('input', 'results-absent.sarif');
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-not-analyzed');
+      expect(req.results[0].status).toBe('notReviewed');
+      expect(req.results[0].codeDesc).not.toContain('zero findings');
+    });
+
+    it('treats results:null as not analyzed, not as a pass', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'TestTool', version: '1.0.0'}},
+          invocations: [{executionSuccessful: false}],
+          results: null,
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.results[0].status).toBe('notReviewed');
+      expect(req.results[0].codeDesc).not.toContain('zero findings');
+    });
+
+    it('treats an absent results array the same as results:null', async () => {
+      const absent = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'TestTool'}}}],
+      });
+      const nulled = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'TestTool'}}, results: null}],
+      });
+      const a = JSON.parse(await convertSarifToHdf(absent));
+      const n = JSON.parse(await convertSarifToHdf(nulled));
+      expect(a.baselines[0].requirements[0].results[0].status)
+        .toBe(n.baselines[0].requirements[0].results[0].status);
+      expect(a.baselines[0].requirements[0].results[0].status).toBe('notReviewed');
+    });
+
+    it('distinguishes a run that found nothing from one that never ran', async () => {
+      const tool = {driver: {name: 'TestTool'}};
+      const ranClean = JSON.stringify({version: '2.1.0', runs: [{tool, results: []}]});
+      const neverRan = JSON.stringify({version: '2.1.0', runs: [{tool, results: null}]});
+      const clean = JSON.parse(await convertSarifToHdf(ranClean));
+      const never = JSON.parse(await convertSarifToHdf(neverRan));
+      expect(clean.baselines[0].requirements[0].results[0].status).toBe('passed');
+      expect(never.baselines[0].requirements[0].results[0].status).toBe('notReviewed');
     });
 
     it('should synthesize a per-run placeholder for each empty baseline', async () => {
@@ -264,7 +337,7 @@ describe('SARIF Converter', async () => {
       const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.impact).toBe(0.7);
-      expect(req.tags.severity).toBe('error');
+      expect(req.tags['sarif-level']).toBe('error');
     });
   });
 
@@ -1200,7 +1273,7 @@ describe('SARIF Converter', async () => {
       expect(sec002.id).toBe('SEC-002');
       expect(sec002.title).toBe('WeakCrypto');
       expect(sec002.impact).toBe(0.5);
-      expect(sec002.tags.severity).toBe('warning');
+      expect(sec002.tags['sarif-level']).toBe('warning');
       expect(sec002.results).toHaveLength(1);
       expect(sec002.results[0].status).toBe('failed');
 
@@ -1311,7 +1384,7 @@ describe('SARIF Converter', async () => {
       // All SpotBugs results are note level → 0.3 impact
       for (const req of baseline.requirements) {
         expect(req.impact).toBe(0.3);
-        expect(req.tags.severity).toBe('note');
+        expect(req.tags['sarif-level']).toBe('note');
       }
 
       // NM_METHOD_NAMING_CONVENTION — 33 results
@@ -1580,12 +1653,15 @@ describe('security-severity (CVSS) impact and severity', () => {
     expect(req.severity).toBe('high');
   });
 
-  // CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
-  // converter's existing zero-impact floor still applies.
-  it('keeps the existing zero-impact floor for CVSS 0.0', async () => {
+  // security-severity is GitHub's property, so GitHub's reading governs, and it
+  // documents that "a value of 0.0 or any other value outside the given range is
+  // regarded as having no security severity" — an absent rating, not a rating of
+  // none, so the level mapping applies. Replaces an earlier reading that treated 0.0
+  // as a CVSS "none" which won and was then floored to 0.1.
+  it('treats security-severity 0.0 as absent and falls back to level', async () => {
     const req = await firstRequirement(sarifWith('error', '0.0'));
-    expect(req.impact).toBe(0.1);
-    expect(req.severity).toBe('low');
+    expect(req.impact).toBe(0.7);
+    expect(req.severity).toBe('high');
   });
 
   it('accepts a JSON number as well as the conventional string', async () => {
@@ -1672,5 +1748,410 @@ describe('rules defined on tool.extensions', () => {
     });
     const result = JSON.parse(await convertSarifToHdf(input));
     expect(result.baselines[0].requirements[0].title).toBe('from the driver');
+  });
+});
+
+describe('severity resolution (§3.27.9, §3.27.10, §3.50.3)', () => {
+  const doc = (rules: string, result: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[${rules}]}},
+      "results":[{"ruleId":"R1",${result},"message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+
+  const req = async (rules: string, result: string) => {
+    const out = JSON.parse(await convertSarifToHdf(doc(rules, result)));
+    return out.baselines[0].requirements[0];
+  };
+
+  // §3.27.10: a rule's defaultConfiguration.level applies only to a result "which
+  // does not itself specify a level property".
+  it("honours the result's own level over the rule default", async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"level":"error","kind":"fail"');
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
+  });
+
+  // §3.27.10: "none" means the concept of severity does not apply.
+  it('honours an explicit none when nothing else specifies a severity', async () => {
+    const r = await req('{"id":"R1"}', '"level":"none","kind":"informational"');
+    expect(r.impact).toBe(0);
+    expect(r.tags['sarif-level']).toBe('none');
+  });
+
+  // §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
+  // "none" on a failing result contradicts the definition and must not be honoured.
+  // Honouring it would put a reported failure at impact 0, which the effective-status
+  // ladder reads as notApplicable — dropping a real finding out of the denominator.
+  it('does not honour a none carried by a failing result', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"error"}}', '"level":"none","kind":"fail"');
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
+    expect(r.results[0].status).toBe('failed');
+  });
+
+  // The case that actually guards the hazard: with no rule default to fall back on,
+  // honouring a failing result's "none" would resolve the group to none and put a
+  // reported failure at impact 0. The rule-default branch masks that.
+  it('falls through to the default level for a none on a failing result', async () => {
+    const r = await req('{"id":"R1"}', '"level":"none","kind":"fail"');
+    expect(r.impact).toBe(0.5);
+    expect(r.tags['sarif-level']).toBe('warning');
+    expect(r.tags['sarif-severity-source']).toBe('fallback');
+  });
+
+  // A "none" on a passing result is only spec compliance, so it must not discard a
+  // rule's declared severity.
+  it('lets a rule default beat a none carried by a passing result', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"level":"none","kind":"pass"');
+    expect(r.impact).toBe(0.3);
+    expect(r.tags['sarif-level']).toBe('note');
+  });
+
+  it('replaces tags.severity with tags.sarif-level', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"kind":"fail"');
+    expect(r.tags['sarif-level']).toBe('note');
+    expect(r.tags).not.toHaveProperty('severity');
+  });
+
+  it.each([
+    ['{"id":"R1","properties":{"security-severity":"8.6"}}', '"kind":"fail"', 'security-severity'],
+    ['{"id":"R1"}', '"level":"error","kind":"fail"', 'result-level'],
+    ['{"id":"R1","defaultConfiguration":{"level":"note"}}', '"kind":"fail"', 'rule-default'],
+    ['{"id":"R1"}', '"kind":"fail"', 'fallback'],
+  ])('records severity provenance (%#)', async (rules, result, want) => {
+    const r = await req(rules, result);
+    expect(r.tags['sarif-severity-source']).toBe(want);
+  });
+
+  // A note listed before an error must not present the group as a note.
+  it('takes the worst failing level in a mixed group', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+      "results":[
+        {"ruleId":"R1","level":"note","kind":"fail","message":{"text":"low"},
+          "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+        {"ruleId":"R1","level":"error","kind":"fail","message":{"text":"high"},
+          "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`;
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const r = out.baselines[0].requirements[0];
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
+  });
+});
+
+describe('per-result carriage (§3.27.2, §3.27.12, §3.27.16)', () => {
+  const twoResults = (a: string, b: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[${a},${b}]}]}`;
+  const res = (kind: string, fp: string, uri: string) =>
+    `{"ruleId":"R1","kind":"${kind}","message":{"text":"${fp}"},"partialFingerprints":{"h":"${fp}"},
+      "locations":[{"physicalLocation":{"artifactLocation":{"uri":"${uri}"},"region":{"startLine":1}}}]}`;
+
+  const firstReq = async (doc: string) => {
+    const out = JSON.parse(await convertSarifToHdf(doc));
+    return out.baselines[0].requirements[0];
+  };
+
+  // Results sharing a ruleId become one requirement, and everything past the first was
+  // dropped. Fingerprints are the identity cross-run correlation depends on.
+  it('keeps every result\'s fingerprints, not just the first', async () => {
+    const r = await firstReq(twoResults(res('fail', 'first', 'a.c'), res('fail', 'second', 'b.c')));
+    expect(r.results).toHaveLength(2);
+    const per = r.tags['sarif-results'];
+    expect(per).toHaveLength(2);
+    expect(per.map((e: {partialFingerprints?: {h?: string}}) => e.partialFingerprints?.h).sort())
+      .toEqual(['first', 'second']);
+  });
+
+  it('does not claim one kind for a group that mixes them', async () => {
+    const r = await firstReq(twoResults(res('pass', 'p', 'a.c'), res('fail', 'f', 'b.c')));
+    expect(r.tags).not.toHaveProperty('kind');
+    expect(r.tags['sarif-results'].map((e: {kind: string}) => e.kind).sort()).toEqual(['fail', 'pass']);
+  });
+
+  it('keeps the aggregate kind when the group agrees', async () => {
+    const r = await firstReq(twoResults(res('fail', 'a', 'a.c'), res('fail', 'b', 'b.c')));
+    expect(r.tags['kind']).toBe('fail');
+  });
+
+  // ADR-0017 scoped rawSourceRecord to the result because records merged onto a
+  // requirement collide and one has to be discarded — this card's defect.
+  it('gives each result its own verbatim native record', async () => {
+    const r = await firstReq(twoResults(res('fail', 'alpha', 'a.c'), res('fail', 'beta', 'b.c')));
+    for (const [i, want] of ['alpha', 'beta'].entries()) {
+      const rec = r.results[i].rawSourceRecord;
+      expect(rec.mediaType).toBe('application/json');
+      expect(rec.encoding).toBe('utf-8');
+      expect(rec.content).toContain(want);
+      expect(JSON.parse(rec.content).ruleId).toBe('R1');
+      expect(rec.pointer).toBe(`/runs/0/results/${i}`);
+    }
+  });
+
+  // §3.27.12: locations are not distinct occurrences, but one HDF result per location
+  // is what a consumer can act on, so the source count must stay recoverable.
+  it('publishes the source result count so cardinality survives the expansion', async () => {
+    const doc = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},"locations":[
+        {"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}},
+        {"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}},
+        {"physicalLocation":{"artifactLocation":{"uri":"c.c"},"region":{"startLine":3}}}]}]}]}`;
+    const r = await firstReq(doc);
+    expect(r.results).toHaveLength(3);
+    expect(r.tags['sarif-source-result-count']).toBe(1);
+  });
+});
+
+describe('Go/TypeScript conformance parity (§3.13.4, §3.4.5)', () => {
+  // §3.13.4 makes an empty runs array conformant, and a zero-baseline HDF document is
+  // schema-valid, so Go no longer rejects what this side has always accepted.
+  it('accepts an empty runs array', async () => {
+    const out = JSON.parse(await convertSarifToHdf('{"version":"2.1.0","runs":[]}'));
+    expect(out.baselines).toEqual([]);
+    expect(out.generator).toBeDefined();
+  });
+
+  // §3.4.5 permits an artifactLocation with only an index. region — which carries the
+  // line and column — is a SIBLING of artifactLocation, so filtering on a truthy uri
+  // discarded a position that was known.
+  it('keeps the region of a uri-less location', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":5,"startColumn":7}}}]}]}]}`;
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0].codeDesc).toContain('LINE : 5');
+    expect(req.results[0].codeDesc).toContain('COLUMN : 7');
+    expect(req.results[0].codeDesc).not.toContain('URL :');
+    expect(req.results[0].codeDesc).not.toBe('No source location');
+    expect(req.sourceLocation.line).toBe(5);
+    expect(req.sourceLocation.ref).toBeUndefined();
+  });
+
+  // SARIF 2.0's resources.rules was never reachable in Go either, because the
+  // normalization required tool.driver, which 2.1 introduced. Both languages now
+  // simply do not look for rules there.
+  it('does not normalize SARIF 2.0 resources.rules', async () => {
+    const input = `{"version":"2.0.0","runs":[{"tool":{"driver":{"name":"T"}},
+      "resources":{"rules":[{"id":"R1","name":"RuleOne","defaultConfiguration":{"level":"error"}}]},
+      "results":[{"ruleId":"R1","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.title).toBe('m');
+    expect(req.impact).toBe(0.5);
+  });
+
+  // Both languages emit a zero-offset time. Go carried the host's zone from a bare
+  // time.Now(); this side has always produced Z via toISOString.
+  it('emits a zero-offset timestamp', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+    const out = JSON.parse(await convertSarifToHdf(input));
+    expect(out.timestamp).toMatch(/Z$/);
+    expect(out.baselines[0].requirements[0].results[0].startTime).toMatch(/Z$/);
+  });
+});
+
+describe('artifactLocation.index resolution (§3.4.5)', () => {
+  const doc = (artifacts: string, loc: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "artifacts":${artifacts},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":${loc},
+          "region":{"startLine":42,"startColumn":9}}}]}]}]}`;
+  const req = async (artifacts: string, loc: string) =>
+    JSON.parse(await convertSarifToHdf(doc(artifacts, loc))).baselines[0].requirements[0];
+
+  it('resolves an index to the artifact path', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}},{"location":{"uri":"src/other.c"}}]', '{"index":0}');
+    expect(r.sourceLocation.ref).toBe('src/indexed.c');
+    expect(r.results[0].codeDesc).toContain('URL : src/indexed.c');
+  });
+
+  it('selects the artifact the index names, not the first', async () => {
+    const r = await req('[{"location":{"uri":"src/first.c"}},{"location":{"uri":"src/second.c"}}]', '{"index":1}');
+    expect(r.sourceLocation.ref).toBe('src/second.c');
+  });
+
+  // THE TYPING HAZARD: §3.4.5 gives index a default of -1, so treating an absent one as
+  // 0 would resolve every uri-less location to artifacts[0] and invent a path.
+  it.each([
+    ['index absent', '{}'],
+    ['index -1', '{"index":-1}'],
+    ['out of range', '{"index":7}'],
+    ['negative other', '{"index":-5}'],
+  ])('does not resolve to the first artifact when %s', async (_name, loc) => {
+    const r = await req('[{"location":{"uri":"src/first.c"}}]', loc);
+    expect(r.sourceLocation?.ref).toBeUndefined();
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
+  });
+
+  it('falls back when the run carries no artifacts table', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},
+          "region":{"startLine":42,"startColumn":9}}}]}]}]}`;
+    const r = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
+  });
+
+  it('prefers an explicit uri over the index', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}}]', '{"uri":"src/explicit.c","index":0}');
+    expect(r.sourceLocation.ref).toBe('src/explicit.c');
+  });
+
+  it('does not follow an artifact whose own location is index-addressed', async () => {
+    const r = await req('[{"location":{"index":1}},{"location":{"uri":"src/real.c"}}]', '{"index":0}');
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
+  });
+
+  // Resolution rewrites the parsed result in place, and this side builds
+  // rawSourceRecord from those objects — so without a pre-resolution snapshot the record
+  // would report a uri THIS CONVERTER inferred rather than what the tool wrote. Caught
+  // by the Go/TS golden parity test, which Go passes because it captures unparsed bytes.
+  // extractBacktrace reads code-flow step locations for their uri, and those steps may
+  // be index-addressed too. Resolving only a result's own locations left a backtrace
+  // entry as ":7" — an empty path with a bare line.
+  it('resolves an index on a code-flow step', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "artifacts":[{"location":{"uri":"src/sink.c"}},{"location":{"uri":"src/flow.c"}}],
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":42}}}],
+        "codeFlows":[{"threadFlows":[{"locations":[
+          {"location":{"physicalLocation":{"artifactLocation":{"index":1},"region":{"startLine":7}}}}]}]}]}]}]}`;
+    const r = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(r.results[0].codeDesc).toContain('URL : src/sink.c');
+    expect(r.results[0].backtrace[0]).toContain('src/flow.c');
+    expect(r.results[0].backtrace[0]).not.toBe(':7');
+  });
+
+  it('keeps the inferred uri out of the native record', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}}]', '{"index":0}');
+    expect(r.results[0].codeDesc).toContain('URL : src/indexed.c');
+    const record = JSON.parse(r.results[0].rawSourceRecord.content);
+    const loc = record.locations[0].physicalLocation.artifactLocation;
+    expect(loc).toEqual({index: 0});
+    expect(loc.uri).toBeUndefined();
+  });
+});
+
+describe('worst-wins across inherited levels', () => {
+  // SARIF 3.27.10 resolves a level PER FAILING RESULT -- its own level, else the rule
+  // default, else warning -- and worst-wins ranks those. Ranking the raw result levels
+  // instead lets an explicit note outrank the error a level-less sibling inherited.
+  const doc = (ruleLevel: string | undefined, levels: (string | undefined)[]) =>
+    JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: {
+            name: 'T',
+            rules: [{
+              id: 'R1',
+              ...(ruleLevel ? {defaultConfiguration: {level: ruleLevel}} : {}),
+            }],
+          },
+        },
+        results: levels.map(l => ({
+          ruleId: 'R1',
+          ruleIndex: 0,
+          message: {text: 'm'},
+          ...(l ? {level: l} : {}),
+          locations: [],
+        })),
+      }],
+    });
+
+  it.each([
+    ['level-less failing result inherits a higher rule default', 'error', ['note', undefined], 'error', 'rule-default'],
+    ['an explicit level still wins when it outranks the default', 'note', ['error', undefined], 'error', 'result-level'],
+    ['no rule default: a level-less failing result falls back to warning', undefined, ['note', undefined], 'warning', 'fallback'],
+    ['every failing result level-less: the rule default governs', 'error', [undefined, undefined], 'error', 'rule-default'],
+  ])('%s', async (_name, ruleLevel, levels, wantLevel, wantSource) => {
+    const out = JSON.parse(await convertSarifToHdf(doc(ruleLevel as string | undefined, levels as (string | undefined)[])));
+    const req = out.baselines[0].requirements[0];
+    expect(req.tags['sarif-level']).toBe(wantLevel);
+    expect(req.tags['sarif-severity-source']).toBe(wantSource);
+  });
+});
+
+describe('address locations keep only what is representable', () => {
+  // physicalLocation.anyOf is [{required:[address]},{required:[artifactLocation]}], so a
+  // conformant location may carry an address and no artifactLocation. Go and TypeScript
+  // disagreed here on schema-valid input, in opposite directions.
+  const doc = (physical: Record<string, unknown>) =>
+    JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'}, locations: [{physicalLocation: physical}]}],
+      }],
+    });
+
+  it('keeps the position when an address carries a region', async () => {
+    const out = JSON.parse(await convertSarifToHdf(doc({address: {absoluteAddress: 4198400}, region: {startLine: 42, startColumn: 7}})));
+    expect(out.baselines[0].requirements[0].results[0].codeDesc).toBe('LINE : 42 COLUMN : 7');
+  });
+
+  it('reports no location when an address carries no region', async () => {
+    const out = JSON.parse(await convertSarifToHdf(doc({address: {absoluteAddress: 4198400}})));
+    expect(out.baselines[0].requirements[0].results[0].codeDesc).toBe('No source location');
+  });
+});
+
+describe('rawSourceRecord numeric tokens', () => {
+  // JSON.parse rounds any integer above 2^53 and re-formats 1.0, 1e5 and -0, so a
+  // record built from a plain parse both diverges from its Go peer and reports a value
+  // the source never contained. These are the exact tokens Go's json.Number preserves.
+  const input = JSON.stringify({
+    version: '2.1.0',
+    runs: [{
+      tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+      results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'}}],
+    }],
+  // properties is injected as raw text so the big integer is never a JS number here
+  }).replace('"message":{"text":"m"}',
+    '"message":{"text":"m"},"properties":{"big":9007199254740993,"flt":1.0,"exp":1e5,"negz":-0,"tiny":0.1}');
+
+  it('preserves every token exactly, matching Go', async () => {
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const content = out.baselines[0].requirements[0].results[0].rawSourceRecord.content as string;
+    for (const want of ['"big":9007199254740993', '"exp":1e5', '"flt":1.0', '"negz":-0', '"tiny":0.1']) {
+      expect(content).toContain(want);
+    }
+    expect(content).not.toContain('9007199254740992');
+  });
+});
+
+describe('rawSourceRecord cardinality', () => {
+  // One SARIF result with several locations expands to several HDF results sharing ONE
+  // source record, so exactly one carries it. Copying it onto each made the output grow
+  // with the square of the location count, since the record contains the locations array.
+  it('carries the record once per source result', async () => {
+    const loc = (uri: string, line: number) => ({physicalLocation: {artifactLocation: {uri}, region: {startLine: line}}});
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'},
+          locations: [loc('a.c', 1), loc('b.c', 2), loc('c.c', 3)]}],
+      }],
+    });
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const rows = out.baselines[0].requirements[0].results;
+    expect(rows).toHaveLength(3);
+    expect(rows.filter((r: {rawSourceRecord?: unknown}) => r.rawSourceRecord !== undefined)).toHaveLength(1);
+    expect(rows[0].rawSourceRecord.pointer).toBe('/runs/0/results/0');
   });
 });

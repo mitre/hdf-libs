@@ -3,11 +3,12 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
-import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
+import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -24,8 +25,14 @@ interface SarifRun {
     driver?: SarifDriver;
     extensions?: SarifDriver[];
   };
-  results: SarifResult[];
+  // Nullable and optional on purpose: §3.14.23 gives an absent or null results
+  // array the opposite meaning to [] — nothing analyzed, versus a scan that ran
+  // and found nothing. Declaring it as a plain array also threw on the null.
+  results?: SarifResult[] | null;
   taxonomies?: SarifTaxonomy[];
+  // The table artifactLocation.index addresses (§3.4.5). Only each entry's location
+  // is read: an index resolves to that location's uri and no further.
+  artifacts?: { location?: { uri?: string; index?: number } }[];
 }
 
 interface SarifDriver {
@@ -141,6 +148,10 @@ interface SarifLocation {
   physicalLocation?: {
     artifactLocation?: {
       uri?: string;
+      // Optional, so an ABSENT index is undefined rather than 0: §3.4.5 gives index a
+      // default of -1, and treating a missing one as 0 would resolve every uri-less
+      // location to artifacts[0] and invent a path the document never claimed.
+      index?: number;
     };
     region?: {
       startLine?: number;
@@ -157,11 +168,26 @@ interface SarifLocation {
   };
 }
 
+// SARIF's "severity does not apply" level (§3.27.10), distinct from an absent level,
+// which defaults to warning.
+const LEVEL_NONE = 'none';
+
+// Where a requirement's impact came from, recorded in tags so a consumer can tell a
+// vendor convention from a spec field from a fallback.
+const SEVERITY_SOURCE_SECURITY_SEVERITY = 'security-severity';
+const SEVERITY_SOURCE_RESULT_LEVEL = 'result-level';
+const SEVERITY_SOURCE_RULE_DEFAULT = 'rule-default';
+const SEVERITY_SOURCE_FALLBACK = 'fallback';
+
 // --- Impact mapping ---
-// SARIF "error"/"warning"/"note" levels are aliases; unknown levels fall
-// through the shared standard map to 0.0, then get bumped to a 0.1 floor at
-// the call site. Mirrors Go's sarifAliases + getImpact. This table is the
-// FALLBACK — a rule carrying a usable security-severity outranks it.
+// SARIF "error"/"warning"/"note" levels are aliases; unknown levels fall through the
+// shared standard map to 0.0 and are then bumped to a 0.1 floor at the call site. An
+// explicit "none" is exempt from that floor, because §3.27.10 means severity genuinely
+// does not apply. Mirrors Go's sarifAliases + getImpact. This table is the FALLBACK —
+// a rule carrying a usable security-severity outranks it.
+//
+// SARIF 2.2 (committee draft) renames this to securitySeverity on a 0-100 scale rather
+// than 0-10; nothing here reads that key, so a 2.2 producer falls back to level.
 const SARIF_ALIASES: Record<string, number> = {
   error: 0.7,
   warning: 0.5,
@@ -175,6 +201,13 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const sarif = parseJSON<SarifFile>(input);
+
+  // A SECOND parse, kept apart from the typed one above and used only to build the
+  // rawSourceRecords. parseJSON gives numbers as doubles, which is what the typed
+  // fields (startLine, index, securitySeverity) want; the record must instead carry
+  // the tokens the tool actually wrote, so it is built from this parse. Walking it
+  // only to snapshot each result means it is discarded immediately afterward.
+  const preserved = parseJSONPreservingNumbers(input) as {runs?: unknown[]} | null;
 
   if (!sarif || typeof sarif !== 'object') {
     throw new Error('Invalid SARIF structure: not a valid JSON object');
@@ -201,41 +234,94 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum, timestamp)),
+    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx])),
     timestamp,
   });
 }
 
 // --- Run-level conversion ---
 
-function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
+// Fills in the uri an artifactLocation.index addresses. §3.4.5 permits a location to
+// carry only an index into run.artifacts, so the file IS known even where uri is
+// absent — without this the line survives and the path does not.
+//
+// ONE LEVEL ONLY, and deliberately. An artifact's own location may itself be
+// index-addressed, so following the chain would need a cycle guard and would hand a
+// consumer a path this converter inferred transitively rather than one the document
+// stated about the finding. An artifact whose location has no uri resolves to nothing.
+//
+// Anything unresolvable falls back to no path rather than throwing: an undefined
+// index, the schema's -1 default, a negative value, an index past the table, or no
+// table at all. uriBaseId is NOT handled — it names a base-URI symbol resolved
+// against run.originalUriBaseIds, which is separate addressing and out of scope.
+// Mirrors Go's resolveArtifactIndices.
+function resolveArtifactIndices(run: SarifRun): void {
+  const artifacts = run.artifacts;
+  if (!run.results || !artifacts || artifacts.length === 0) return;
+
+  const resolveOne = (location?: SarifLocation): void => {
+    const loc = location?.physicalLocation?.artifactLocation;
+    if (!loc || loc.uri || loc.index === undefined) return;
+    if (loc.index < 0 || loc.index >= artifacts.length) return;
+    const uri = artifacts[loc.index]?.location?.uri;
+    if (uri) loc.uri = uri;
+  };
+
+  for (const result of run.results) {
+    for (const location of result.locations ?? []) resolveOne(location);
+    // Code-flow steps are locations too, and extractBacktrace reads them for their uri.
+    // Missing them left a backtrace entry as ":7" — an empty path with a bare line, the
+    // exact loss this resolution prevents — and CodeQL is the family that hits it.
+    for (const flow of result.codeFlows ?? []) {
+      for (const thread of flow.threadFlows ?? []) {
+        for (const step of thread.locations ?? []) resolveOne(step.location);
+      }
+    }
+  }
+}
+
+function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): EvaluatedBaseline {
+  // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
+  // the parsed objects in place, and rawSourceRecord is built from them, so without
+  // this a record would carry the uri THIS CONVERTER inferred rather than what the
+  // tool wrote. Go captures the unparsed bytes at decode time for the same reason.
+  const preservedResults = (preservedRun as {results?: unknown[]} | undefined)?.results;
+  const rawSnapshots = (run.results ?? []).map((r, i) =>
+    stringifyLine(canonicalize(preservedResults?.[i] ?? r)).replace(/\n$/, ''));
+  resolveArtifactIndices(run);
+
   const ruleMap = buildRuleMap(run);
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
   // When ruleId is absent, fall back to message text as the grouping key.
-  const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results);
+  const analyzed = run.results !== null && run.results !== undefined;
+  const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results ?? []);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedResults) {
     // eslint-disable-next-line no-console
-    console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${run.results.length})`);
+    console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${(run.results ?? []).length})`);
   }
   const groupOrder: string[] = [];
-  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
-  for (const result of limitedResults) {
+  // indices is parallel to results: indices[i] is results[i]'s position in
+  // run.results, which rawSourceRecord.pointer needs to address the source record.
+  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[]; raws: string[] }>();
+  for (const [srcIdx, result] of limitedResults.entries()) {
     const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
     let group = groupMap.get(groupKey);
     if (!group) {
       const rule = ruleMap.get(result.ruleId);
-      group = { rule, results: [] };
+      group = { rule, results: [], indices: [], raws: [] };
       groupMap.set(groupKey, group);
       groupOrder.push(groupKey);
     }
     group.results.push(result);
+    group.indices.push(srcIdx);
+    group.raws.push(rawSnapshots[srcIdx] ?? '');
   }
 
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
-    return convertResultGroup(ruleId, group.rule, group.results, timestamp);
+    return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
   });
 
   // Use tool name for baseline name if available
@@ -245,11 +331,17 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
     const driverName = run.tool?.driver?.name?.trim() || '';
     const target = driverName || 'SARIF analyzer';
     const idPrefix = driverName || 'sarif';
-    requirements.push(buildNoFindingsRequirement(
-      `${idPrefix}-no-findings`,
-      `${target} ran and reported zero findings.`,
-      timestamp,
-    ));
+    requirements.push(analyzed
+      ? buildNoFindingsRequirement(
+          `${idPrefix}-no-findings`,
+          `${target} ran and reported zero findings.`,
+          timestamp,
+        )
+      : buildNotAnalyzedRequirement(
+          `${idPrefix}-not-analyzed`,
+          `${target} reported no result set; the run did not analyze.`,
+          timestamp,
+        ));
   }
 
   return createMinimalBaseline(baselineName, requirements, {
@@ -279,7 +371,7 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], timestamp: Date): EvaluatedRequirement {
+function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], raws: string[], timestamp: Date): EvaluatedRequirement {
   const firstResult = sarifResults[0]!;
 
   // Derive requirement-level metadata from the rule and first result
@@ -294,27 +386,56 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   const nistControls = mapCWEToNIST(cweIds, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciControls = nistToCci(nistControls);
 
-  // Determine requirement-level impact from the rule's inherent severity.
-  // The rule's security-severity is its CVSS base score and OUTRANKS level:
-  // level is the tool's own triage and several scanners emit one level for
-  // every finding, so preferring it would collapse the CVSS spread that is the
-  // only real severity signal such a document carries. Both are rule-level, so
-  // nothing per-result is discarded. Level remains the fallback.
-  const ruleLevel = resolveRuleLevel(rule, sarifResults);
+  // Determine requirement-level impact from the rule group's resolved level.
+  // security-severity is a GitHub Code Scanning convention, NOT a SARIF one: the
+  // string appears nowhere in the OASIS 2.1.0 specification or its schema. It
+  // currently OUTRANKS level because it is a 0-10 score rather than one of four
+  // buckets, so it carries severity spread that level cannot. Whether a vendor
+  // convention should outrank a spec field is an open question on this card.
+  const {level: ruleLevel, source: levelSource} = resolveRuleLevel(rule, sarifResults);
   const cvssImpact = securitySeverityImpact(rule);
-  const impact = (cvssImpact ?? severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0)) || 0.1;
+  const severitySource = cvssImpact === undefined ? levelSource : SEVERITY_SOURCE_SECURITY_SEVERITY;
+  const rawImpact = cvssImpact ?? severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0);
+  // Impact 0 is floored so an unrecognized level does not read as "not applicable",
+  // which is what the effective-status ladder makes of it. An explicit "none" is
+  // exempt: §3.27.10 means severity genuinely does not apply there.
+  const impact = rawImpact === 0 && ruleLevel !== LEVEL_NONE ? 0.1 : rawImpact;
 
   // Source location from first result's first location
   const sourceLocation = firstResult.locations && firstResult.locations.length > 0
     ? extractSourceLocation(firstResult.locations[0]!)
     : undefined;
 
-  // Convert each SARIF result into RequirementResult(s)
+  // Convert each SARIF result into RequirementResult(s), and give every one the
+  // native record it came from. §3.27.12 says the locations array is not a list of
+  // distinct occurrences, yet one HDF result per location is what a consumer can act
+  // on, so the expansion stays and the source cardinality is published instead (see
+  // the sarif-source-result-count tag). All results expanded from one SARIF result
+  // share its record and pointer, because they share its source.
   const results: RequirementResult[] = [];
-  for (const sr of sarifResults) {
-    results.push(...convertSarifResultToHDFResults(sr));
+  const perResult: Record<string, unknown>[] = [];
+  for (const [i, sr] of sarifResults.entries()) {
+    const expanded = convertSarifResultToHDFResults(sr);
+    const record = rawSourceRecordFor(raws[i] ?? '', runIdx, sourceIndices[i] ?? i);
+    for (const [j, r] of expanded.entries()) {
+      // The record goes on the FIRST expanded result only. All of them came from one
+      // SARIF result and so share one source record, and that record contains the whole
+      // locations array — so copying it onto each of N expanded results makes the output
+      // grow with the SQUARE of the location count (measured: a 20KB input with 200
+      // locations produced 4.3MB). One record per SARIF result is the honest cardinality
+      // and keeps ADR-0017's rule intact, since nothing is merged across SARIF results;
+      // the record's own pointer still says which result it came from.
+      if (j === 0) r.rawSourceRecord = record;
+      perResult.push(perResultTagEntry(sr));
+    }
+    results.push(...expanded);
   }
 
+  // Title, descriptions, sourceLocation, code and fixes are deliberately derived from
+  // the FIRST result and are a requirement-level SUMMARY, not a per-result record. HDF
+  // scopes these to the requirement while SARIF scopes them to each finding, and
+  // synthesizing a merged title would invent a requirement no tool reported. The
+  // per-result detail lives on each result's rawSourceRecord.
   // Build descriptions from rule metadata and first result
   const descriptions = buildDescriptions(description, rule, firstResult);
 
@@ -324,7 +445,17 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   const allSuppressions = sarifResults.flatMap(sr => sr.suppressions ?? []);
 
   // Build tags
-  const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions);
+  const tags = buildTags(firstResult, rule, ruleLevel, severitySource, cweIds, nistControls, cciControls, allSuppressions);
+  tags['sarif-results'] = perResult;
+  tags['sarif-source-result-count'] = sarifResults.length;
+  // An aggregate kind is published only when the group agrees on one. Taking the
+  // first result's kind made a group holding a pass and a fail report just one.
+  const uk = uniformKind(sarifResults);
+  if (uk !== undefined) {
+    tags['kind'] = uk;
+  } else {
+    delete tags['kind'];
+  }
 
   const options: {
     sourceLocation?: SourceLocation;
@@ -446,9 +577,9 @@ function packageFromSarifProperties(props: SarifResult['properties']): ReturnTyp
 // score, so both languages reject both. Mirrors Go's decimalScore.
 const DECIMAL_SCORE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 
-// Reads the rule's security-severity property — the SARIF convention for carrying
-// a CVSS base score, and what GitHub's own ingestion keys on — and scales it to an
-// HDF impact. Returns undefined when the property is absent or is not a finite
+// Reads the rule's security-severity property — a GitHub Code Scanning convention
+// for carrying a CVSS base score, absent from the OASIS SARIF 2.1.0 specification
+// and its schema — and scales it to an HDF impact. Returns undefined when the property is absent or is not a finite
 // score within 0.0-10.0, so the caller falls back to the level mapping rather than
 // deriving an impact from an unusable value. Producers emit the score as a string;
 // a JSON number is accepted too. Mirrors Go's securitySeverityImpact.
@@ -465,24 +596,140 @@ function securitySeverityImpact(rule?: ReportingDescriptor): number | undefined 
   } else {
     return undefined;
   }
-  if (!Number.isFinite(score) || score < 0 || score > 10) return undefined;
+  // score <= 0, not < 0: GitHub documents 0.0 and out-of-range values alike as
+  // carrying no security severity, so both fall through to the level mapping.
+  if (!Number.isFinite(score) || score <= 0 || score > 10) return undefined;
   return roundImpact(score / 10);
 }
 
-// Determines the inherent severity level for a rule, independent of per-result kind overrides.
-function resolveRuleLevel(rule: ReportingDescriptor | undefined, results: SarifResult[]): string {
-  if (rule?.defaultConfiguration?.level) {
-    return rule.defaultConfiguration.level;
-  }
-  // Find first result that represents a failure with an explicit level
+// Orders the SARIF level enum by severity so a rule group reports its worst member.
+// "none" is outside the order: §3.27.10 defines it as severity not applying, so it
+// never competes with a real level.
+const LEVEL_RANK: Record<string, number> = {note: 1, warning: 2, error: 3};
+
+// An unrecognized level ranks 0, matching Go's zero value for a missing map key, so
+// the two languages order the same group identically.
+const rankOf = (level: string): number => LEVEL_RANK[level] ?? 0;
+
+// Determines a rule group's level and where it came from. Mirrors Go's resolveRuleLevel.
+//
+// §3.27.10 resolves a level only for a result whose kind is "fail" (§3.27.9 defaults
+// an absent kind to "fail"), in the order: the result's own level, then
+// invocation.ruleConfigurationOverrides, then rule.defaultConfiguration.level, then
+// "warning". The override branch is deliberately not implemented — it needs
+// run.invocations and result.provenance, neither of which is parsed yet.
+//
+// Only a failing result's level is ranked, and a "none" is never ranked at all.
+// §3.27.10 defines "none" as "the concept of severity does not apply to this result
+// because the kind property has a value other than fail". So a "none" on a failing
+// result contradicts the spec's own definition and is ignored rather than honoured —
+// honouring it would put a reported FAILURE at impact 0, which the effective-status
+// ladder reads as notApplicable, dropping a real finding out of the denominator.
+//
+// A group's level is its WORST failing member, not its first. SARIF scopes severity
+// to the result; HDF scopes it to the requirement, and a result says only that a
+// requirement of that severity is in some state. That difference is deliberate on
+// both sides, so the per-result level is summarized onto the requirement rather than
+// HDF's model being bent to mirror SARIF's. Worst-wins cannot under-report.
+function resolveRuleLevel(
+  rule: ReportingDescriptor | undefined,
+  results: SarifResult[]
+): {level: string; source: string} {
+  const ruleDefault = rule?.defaultConfiguration?.level ?? '';
+  let worst = '';
+  let source = '';
+  let sawNone = false;
   for (const r of results) {
-    if (!r.kind || r.kind === 'fail') {
-      if (r.level) {
-        return r.level;
-      }
+    const failing = !r.kind || r.kind === 'fail';
+    if (r.level === LEVEL_NONE) {
+      // Only meaningful on a non-failing result, which is the conformant case.
+      if (!failing) sawNone = true;
+      continue;
+    }
+    if (!failing) continue;
+    // Resolve each failing result SEPARATELY before ranking. A failing result with no
+    // level of its own inherits the rule default, so ranking the raw levels would let
+    // an explicit note outrank the error a level-less sibling inherited.
+    let effective = r.level ?? '';
+    let from = SEVERITY_SOURCE_RESULT_LEVEL;
+    if (!effective) {
+      effective = ruleDefault;
+      from = SEVERITY_SOURCE_RULE_DEFAULT;
+    }
+    if (!effective) {
+      effective = 'warning';
+      from = SEVERITY_SOURCE_FALLBACK;
+    }
+    if (!worst || rankOf(effective) > rankOf(worst)) {
+      worst = effective;
+      source = from;
     }
   }
-  return 'warning';
+  if (worst) return {level: worst, source};
+  if (ruleDefault) return {level: ruleDefault, source: SEVERITY_SOURCE_RULE_DEFAULT};
+  if (sawNone) return {level: LEVEL_NONE, source: SEVERITY_SOURCE_RESULT_LEVEL};
+  return {level: 'warning', source: SEVERITY_SOURCE_FALLBACK};
+}
+
+// Carries one SARIF result, complete, on the HDF result(s) it produced. ADR-0017 scoped
+// this to the result deliberately: records merged onto the requirement collide, and
+// merging entries that share an id has to discard one, which is how the non-first
+// result's metadata used to be lost. Encoding is utf-8 rather than base64 because a
+// SARIF result is JSON and therefore valid UTF-8 text. Mirrors Go's rawSourceRecordFor.
+function rawSourceRecordFor(content: string, runIdx: number, resultIdx: number): RawSourceRecord {
+  return {
+    // The parsed result carries every property the document had, including the 17 of
+    // SARIF's 30 that SarifResult does not declare; sorting matches Go, whose record
+    // is re-marshalled from the untyped result for the same reason. Original key order
+    // and whitespace are therefore not preserved — the content is complete, not
+    // byte-exact. The shared canonical encoder is used rather than JSON.stringify
+    // because Go HTML-escapes <, > and & while JavaScript does not, and because it
+    // sorts keys, escapes U+2028/U+2029 and normalizes negative zero — the four
+    // places the two languages' serializers disagree.
+    content,
+    encoding: ExternalReferenceEncoding.UTF8,
+    mediaType: 'application/json',
+    pointer: `/runs/${runIdx}/results/${resultIdx}`,
+  };
+}
+
+// The queryable half of per-result carriage. rawSourceRecord holds the whole record
+// but as an opaque string, so nothing can filter on what is inside it; fingerprints
+// exist for cross-run correlation, which needs them addressable. Only fields a
+// requirement-level summary cannot represent go here. Mirrors Go's perResultTagEntry.
+function perResultTagEntry(result: SarifResult): Record<string, unknown> {
+  const entry: Record<string, unknown> = {
+    // The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
+    // key, so applying the default invents no history; tags["kind"] stays verbatim.
+    kind: result.kind || 'fail',
+  };
+  if (result.level) entry.level = result.level;
+  if (result.fingerprints && Object.keys(result.fingerprints).length > 0) {
+    entry.fingerprints = result.fingerprints;
+  }
+  if (result.partialFingerprints && Object.keys(result.partialFingerprints).length > 0) {
+    entry.partialFingerprints = result.partialFingerprints;
+  }
+  return entry;
+}
+
+// The kind every result in the group STATED, or undefined when they disagree or any
+// omitted it. Deliberately not defaulting an absent kind to "fail" even though
+// §3.27.9 does: tags["kind"] carries what the tool wrote, the way tags["sarif-level"]
+// carries the level verbatim, so publishing a spec-derived value under the same key
+// would silently change what the tag means. The effective kind is in the per-result
+// entries instead. Mirrors Go's uniformKind.
+function uniformKind(results: SarifResult[]): string | undefined {
+  let kind: string | undefined;
+  for (const r of results) {
+    if (!r.kind) return undefined;
+    if (kind === undefined) {
+      kind = r.kind;
+      continue;
+    }
+    if (r.kind !== kind) return undefined;
+  }
+  return kind;
 }
 
 // Converts a single SARIF result into one or more HDF RequirementResults.
@@ -504,7 +751,17 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
 
   // Create results for each location
   const results = (result.locations || [])
-    .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
+    // Keep a location when there is something representable in it. Filtering on a
+    // truthy uri discarded a position that was known, because §3.4.5 permits an
+    // artifactLocation carrying only an index and region is a sibling of
+    // artifactLocation. Accepting any physicalLocation went too far the other way: the
+    // schema's anyOf admits an address instead of an artifactLocation, and an address
+    // with no region became "LINE : 0 COLUMN : 0". Mirrors Go's gate.
+    .filter(
+      loc =>
+        loc.physicalLocation !== undefined &&
+        (loc.physicalLocation.artifactLocation !== undefined || loc.physicalLocation.region !== undefined)
+    )
     .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
 
   // If no locations, create a location-less result so the finding isn't silently dropped
@@ -782,13 +1039,17 @@ function buildTags(
   result: SarifResult,
   rule: ReportingDescriptor | undefined,
   resolvedLevel: string,
+  severitySource: string,
   cweIds: string[],
   nistControls: string[],
   cciControls: string[],
   allSuppressions: Suppression[]
 ): Record<string, unknown> {
   const tags: Record<string, unknown> = {
-    severity: resolvedLevel,
+    // The SARIF level verbatim. Not "severity": impact may derive from GitHub's
+    // security-severity instead, so one name would carry two different values.
+    'sarif-level': resolvedLevel,
+    'sarif-severity-source': severitySource,
     cwe: cweIds,
     nist: nistControls,
     cci: cciControls,
@@ -862,7 +1123,15 @@ function createHDFResult(
   const column = location.physicalLocation?.region?.startColumn || 0;
   const snippet = location.physicalLocation?.region?.snippet?.text;
 
-  let codeDesc = `URL : ${uri} LINE : ${line} COLUMN : ${column}`;
+  // The URL slot is omitted when no uri is known rather than left empty: publishing
+  // "URL :  LINE : 5" reads as missing data, while dropping the location would discard
+  // a line we have. An index into run.artifacts is resolved before this point (see
+  // resolveArtifactIndices), so a uri reaching here as empty means the document
+  // addressed no resolvable file. Mirrors Go's createHDFResult.
+  let codeDesc = `LINE : ${line} COLUMN : ${column}`;
+  if (uri) {
+    codeDesc = `URL : ${uri} ${codeDesc}`;
+  }
   if (snippet) {
     codeDesc = `${codeDesc}\n${snippet}`;
   }

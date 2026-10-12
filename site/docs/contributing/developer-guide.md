@@ -508,6 +508,10 @@ inventing schema.
 
 ---
 
+## Go Modules: Downgrades Drop Sibling Pins
+
+A `go get` that downgrades a dependency below what a sibling module requires removes that sibling's `require` line, and the next `go mod tidy` adds it back at the zero pseudo-version `v3.0.0-00010101000000-000000000000`, because the `replace` directive resolves the sibling from its local directory. Tidy calls that tidy, every local build passes, and the module is unpublishable: a consumer cannot fetch a version no tag provides. This happens in and out of workspace mode alike; `go mod tidy` ignores `go.work` entirely. After any `go get`, read its `go: removed ...` and `go: downgraded ...` lines and `git diff go.mod` before tidying, and restore a removed sibling pin by hand. CI's `check-go` job runs `pnpm run lint:go-mod-tidy`, which fails if `go mod tidy -diff` would change any module or if any `github.com/mitre/hdf-libs/...` require sits at the zero pseudo-version, naming the module either way; the release workflow's `--check` is the last line, this one is the first. Tidiness also matters because the dependency scanner reads each `go.mod` as text, so a require that lags the resolved graph is what it judges.
+
 ## Dependency Audit Overrides
 
 The security gate (`pnpm security`) fails on prod advisories at moderate+ and dev
