@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import {
   generateHash,
   sha256,
@@ -310,6 +311,51 @@ describe('Hash Utilities', () => {
       const hash = await hashObject(profile);
       expect(hash).toHaveLength(64);
       expect(typeof hash).toBe('string');
+    });
+  });
+
+  describe('byte input', () => {
+    const abc = new Uint8Array([0x61, 0x62, 0x63]);
+
+    it('hashes bytes to the FIPS 180-4 SHA-256 vector for "abc"', async () => {
+      expect(await sha256(abc)).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    });
+
+    it('hashes bytes to the FIPS 180-4 SHA-512 vector for "abc"', async () => {
+      expect(await sha512(abc)).toBe(
+        'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f'
+      );
+    });
+
+    it('hashes an empty byte array to the SHA-256 empty-message vector', async () => {
+      expect(await sha256(new Uint8Array())).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+    });
+
+    it('hashes bytes that are not valid UTF-8 without re-encoding them', async () => {
+      const raw = new Uint8Array([0xff, 0xfe, 0x00, 0x80]);
+      expect(await sha256(raw)).toBe(createHash('sha256').update(raw).digest('hex'));
+    });
+
+    it('hashes only the bytes a view covers, not its whole backing buffer', async () => {
+      const backing = new Uint8Array([0x00, 0x61, 0x62, 0x63, 0x00]);
+      expect(await sha256(backing.subarray(1, 4))).toBe(
+        'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
+      );
+    });
+
+    it('hashes a view over shared memory, which Web Crypto refuses to read directly', async () => {
+      const shared = new Uint8Array(new SharedArrayBuffer(3));
+      shared.set(abc);
+      expect(await sha256(shared)).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    });
+
+    it('gives a string and its UTF-8 bytes the same hash', async () => {
+      expect(await generateHash(new TextEncoder().encode('hello world'))).toBe(await generateHash('hello world'));
+    });
+
+    it('verifies bytes against their hash', async () => {
+      expect(await verifyHash(abc, 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')).toBe(true);
+      expect(await verifyHash(abc, '0'.repeat(64))).toBe(false);
     });
   });
 });

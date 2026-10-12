@@ -10,7 +10,11 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import { DATE_GUARD_RULES } from './scripts/eslint-timestamp-guard.mjs';
-import { deprecatedAliasGuardBlock } from './scripts/eslint-deprecated-alias-guard.mjs';
+import {
+  deprecatedAliasGuardBlock,
+  DEPRECATED_ALIAS_IMPORT_RESTRICTION,
+} from './scripts/eslint-deprecated-alias-guard.mjs';
+import { nodeBuiltinGuardBlock } from './scripts/eslint-node-builtin-guard.mjs';
 
 // Package source trees. Most packages publish from src/; hdf-parsers and
 // hdf-validators from typescript/; hdf-converters also lints the three trees
@@ -62,6 +66,9 @@ const ALIAS_GUARDED = [
   'hdf-parsers/typescript/**/*.ts',
   'hdf-validators/typescript/**/*.ts',
 ];
+
+// Packages whose entry point must bundle for the browser.
+const BROWSER_SAFE = ['hdf-engine/src/**/*.ts'];
 
 // projectService resolves each file against its OWN package's tsconfig. A
 // single root-level `project` cannot: it is one path, and the type-aware rules
@@ -215,6 +222,9 @@ export default [
     },
   },
   deprecatedAliasGuardBlock(tsparser, ALIAS_GUARDED),
+  // Must follow the alias guard: both set no-restricted-imports on hdf-engine/src
+  // and the later block replaces the earlier, so this one carries both.
+  nodeBuiltinGuardBlock(tsparser, BROWSER_SAFE, DEPRECATED_ALIAS_IMPORT_RESTRICTION),
   {
     // Generator scripts and the test suite: Node ESM. Matched at any depth so a
     // file added in a new subdirectory is linted rather than silently skipped.

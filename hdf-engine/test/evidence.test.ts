@@ -44,17 +44,17 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     expect(agentOverridesInPackage(contents, fetch)).toBe(2);
   });
 
-  it('classifies checksums: match, mismatch, skipped (same as Go)', () => {
+  it('classifies checksums: match, mismatch, skipped (same as Go)', async () => {
     const goodHash = sha256Hex(readBytes('rhel-results.json'));
     const contents: EvidenceContent[] = [
       { uri: 'rhel-results.json', type: 'hdf-results', checksum: goodHash },
       { uri: 'plan.json', type: 'hdf-plan', checksum: '0'.repeat(64) },
       { uri: 'rhel-results.json', type: 'hdf-results', checksum: '' },
     ];
-    const got = verifyChecksums(contents, fetch);
+    const got = await verifyChecksums(contents, fetch);
     expect(got.map((r) => r.status)).toEqual(['match', 'mismatch', 'skipped']);
-    expect(got[1]?.expected).toBeTruthy();
-    expect(got[1]?.actual).toBeTruthy();
+    expect(got[1]?.expected).toBe('0'.repeat(64));
+    expect(got[1]?.actual).toBe(sha256Hex(readBytes('plan.json')));
   });
 });
 
@@ -74,11 +74,11 @@ describe('evidence-verify engine — unit', () => {
     expect(contents[1]?.checksum).toBe('');
   });
 
-  it('classifies a fetch failure as error', () => {
+  it('classifies a fetch failure as error', async () => {
     const throwing: FetchFn = () => {
       throw new Error('no such file: x');
     };
-    const got = verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
+    const got = await verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
     expect(got[0]?.status).toBe('error');
     expect(got[0]?.error).toContain('no such file');
   });
@@ -184,11 +184,11 @@ describe('evidence-verify engine — unit', () => {
     expect(agentOverridesInPackage([{ uri: 'z.json', type: 'hdf-results', checksum: '' }], mem)).toBe(1);
   });
 
-  it('classifies a non-Error throw as error with the stringified value', () => {
+  it('classifies a non-Error throw as error with the stringified value', async () => {
     const throwing: FetchFn = () => {
       throw 'plain string failure';
     };
-    const got = verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
+    const got = await verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
     expect(got[0]?.status).toBe('error');
     expect(got[0]?.error).toBe('plain string failure');
   });
