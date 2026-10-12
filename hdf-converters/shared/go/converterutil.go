@@ -352,6 +352,30 @@ func NISTTagsFromMap(tags map[string]interface{}) []string {
 	return hdfutil.TagStrings(tags, "nist")
 }
 
+// BuildNotAnalyzedRequirement synthesizes a notReviewed placeholder for a scan
+// that never analyzed its target. The sibling BuildNoFindingsRequirement is for a
+// tool that ran clean, which is a pass; reporting a tool that never ran as passed
+// asserts a clean scan that did not happen.
+func BuildNotAnalyzedRequirement(id, codeDesc string, startTime time.Time) hdf.EvaluatedRequirement {
+	title := "Not analyzed"
+	return hdf.EvaluatedRequirement{
+		ID:    id,
+		Title: &title,
+		Descriptions: []hdf.Description{
+			{Label: "default", Data: codeDesc},
+		},
+		Results: []hdf.RequirementResult{
+			{
+				Status:    hdf.NotReviewed,
+				CodeDesc:  codeDesc,
+				StartTime: startTime,
+			},
+		},
+		Tags:   map[string]interface{}{},
+		Impact: 0,
+	}
+}
+
 // BuildNoFindingsRequirement synthesizes a passed placeholder for tools that
 // ran clean. Required because the HDF schema enforces requirements.minItems=1.
 func BuildNoFindingsRequirement(id, codeDesc string, startTime time.Time) hdf.EvaluatedRequirement {
@@ -519,6 +543,23 @@ type AffectedPackageOptions struct {
 // is present — callers should skip the entry rather than emit a
 // schema-invalid AffectedPackage. Empty strings are treated as missing.
 //
+// PackageInstanceID is the identity a finding's affected package carries as its
+// resourceId: the purl when the source gives one, else name@version, else the
+// bare name, else "". One rule for every converter that stamps a package, so a
+// downstream join on resourceId meets the same string whichever tool produced it.
+func PackageInstanceID(purl, name, version string) string {
+	if purl != "" {
+		return purl
+	}
+	if name == "" {
+		return ""
+	}
+	if version != "" {
+		return name + "@" + version
+	}
+	return name
+}
+
 // The schema's anyOf requires at least one of:
 //   - name + version + ecosystem
 //   - purl alone

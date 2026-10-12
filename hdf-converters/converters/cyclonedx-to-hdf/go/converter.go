@@ -490,15 +490,10 @@ func componentInstanceID(componentLookup map[string]CDXComponent, ref string) st
 // purlType extracts the type segment of a purl ("pkg:maven/..." -> "maven").
 // Returns "" for anything that is not a purl.
 func purlType(purl string) string {
-	rest, ok := strings.CutPrefix(purl, "pkg:")
-	if !ok {
-		return ""
+	if p := hdfutil.ParsePurl(purl); p != nil {
+		return p.Type
 	}
-	t, _, found := strings.Cut(rest, "/")
-	if !found {
-		return ""
-	}
-	return t
+	return ""
 }
 
 // buildAffectedPackages assembles the requirement's affected-package inventory

@@ -1,6 +1,7 @@
 // Package diff provides GNU diff compatible and detailed exit codes
-// for HDF comparison operations. Basic codes (0/1/2) follow the GNU diff
-// convention. Detailed codes (10-14) communicate nuanced security outcomes
+// for HDF comparison operations. Basic codes are 0 for identical and 1 for
+// differences; Error is GNU diff's trouble code, which this repo's own CLI
+// does not use. Detailed codes (10-14) communicate nuanced security outcomes
 // such as fixes, regressions, baseline changes, and metadata drift.
 package diff
 
@@ -8,7 +9,10 @@ package diff
 const (
 	Identical   = 0
 	Differences = 1
-	Error       = 2
+	// Error is GNU diff's trouble code. The hdf CLI does not return it: a diff
+	// that fails to run exits 1 like any failed operation, and 2 there means a
+	// usage error. Kept for a caller that wants GNU's convention instead.
+	Error = 2
 )
 
 // Detailed exit codes (nuanced security outcomes).
@@ -20,10 +24,9 @@ const (
 	DriftOnly       = 14
 )
 
-// ComputeBasicExitCode returns 0 for identical, 1 for any differences.
-//
-// Note: error (exit code 2) is not computed from the summary — callers
-// should return Error directly when I/O or parse errors occur.
+// ComputeBasicExitCode returns 0 for identical, 1 for any differences, and
+// never Error: a summary cannot describe a run that failed to produce one.
+// A caller that follows the hdf CLI returns 1 for such a failure, not Error.
 func ComputeBasicExitCode(summary ComparisonSummary) int {
 	if hasDifferences(summary) {
 		return Differences

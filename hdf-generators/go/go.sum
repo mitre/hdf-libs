@@ -1,5 +1,5 @@
-github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.1 h1:plbldj68jGIHdcEaHNQ14ZisFdA0mB8hDoQeSFoQjJI=
-github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.1/go.mod h1:uo89JOu0BdfXPmOaudx+0paElgBThDsBM0K0cmgpur0=
+github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2 h1:/suiSo6A9x9KLu43zPJ7LJTRNGc0sxCdtz+7tChkiko=
+github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2/go.mod h1:jNDr/VF8pqA7JFIX7VeaPB2ekzSNlbt5ehbFPl+7JWk=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=

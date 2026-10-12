@@ -203,10 +203,9 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	// the columns are always populated and sortable.
 	effStatus := shared.RequirementEffectiveStatus(*requirement)
 	effImpact := shared.RequirementEffectiveImpact(*requirement)
-	disposition := ""
-	if requirement.Disposition != nil {
-		disposition = string(*requirement.Disposition)
-	}
+	// Through the ladder like the two effective columns above it; the stored
+	// disposition is an output cache the document may carry stale or not at all.
+	disposition := shared.RequirementDisposition(*requirement, time.Time{})
 
 	// statusOverrides[] provenance — emit ALL overrides joined with "; ".
 	overrideReason := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.Reason })

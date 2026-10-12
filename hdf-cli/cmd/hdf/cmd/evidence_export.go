@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -110,7 +111,7 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		}
 
 		outPath := filepath.Join(outputDir, outputName)
-		if writeErr := os.WriteFile(outPath, output, 0o600); writeErr != nil { // #nosec G703
+		if writeErr := atomicfile.WriteFile(outPath, output, 0o600); writeErr != nil {
 			return fmt.Errorf("failed to write %s: %w", outPath, writeErr)
 		}
 

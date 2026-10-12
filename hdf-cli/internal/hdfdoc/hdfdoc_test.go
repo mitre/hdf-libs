@@ -157,17 +157,56 @@ func TestApplyComponentID_Generate(t *testing.T) {
 	assert.NotEqual(t, id0, id1, "generate must mint a distinct UUID per component")
 }
 
-func TestApplyComponentID_NoComponents(t *testing.T) {
-	in := []byte(`{"baselines":[]}`)
-	out, err := ApplyComponentID(in, testComponentID, false)
-	require.NoError(t, err)
-	assert.Equal(t, in, out)
+// Stamping a document with nothing to stamp used to succeed and rewrite the file
+// with no componentId anywhere — success reported for work not done.
+func TestApplyComponentID_NoComponentsIsAnError(t *testing.T) {
+	requests := map[string]struct {
+		fixedID  string
+		generate bool
+	}{
+		"fixed id": {testComponentID, false},
+		"generate": {"", true},
+	}
+	for docName, doc := range map[string]string{
+		"no components field": `{"baselines":[]}`,
+		"empty components":    `{"components":[]}`,
+	} {
+		for reqName, req := range requests {
+			t.Run(docName+"/"+reqName, func(t *testing.T) {
+				out, err := ApplyComponentID([]byte(doc), req.fixedID, req.generate)
+				require.Error(t, err)
+				assert.Nil(t, out, "a refused stamp must hand back no document")
+				require.ErrorIs(t, err, ErrNoComponents)
+				assert.Contains(t, err.Error(), "no components")
+			})
+		}
+	}
+}
+
+// The two no-components refusals are one sentence with one word changed, so a
+// user who has met either recognizes the other.
+func TestNoComponentsErrorsAgreeAcrossFields(t *testing.T) {
+	_, cidErr := ApplyComponentID([]byte(`{"components":[]}`), testComponentID, false)
+	require.Error(t, cidErr)
+	assert.Equal(t, "document has no components to set componentId on", cidErr.Error())
+
+	_, extErr := ApplyExternalIDs([]byte(`{"components":[]}`), map[string]string{"cmdb": "X"}, "")
+	require.Error(t, extErr)
+	assert.Equal(t, "document has no components to set external IDs on", extErr.Error())
+	require.ErrorIs(t, extErr, ErrNoComponents)
 }
 
 func TestApplyComponentID_NothingRequested(t *testing.T) {
 	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"}]}`), "", false)
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), "componentId")
+
+	// Callers that thread an unset componentId unconditionally (the MCP convert
+	// tool) must not be refused for a document that was never asked to carry one.
+	in := []byte(`{"baselines":[]}`)
+	out, err = ApplyComponentID(in, "", false)
+	require.NoError(t, err)
+	assert.Equal(t, in, out)
 }
 
 func TestApplyComponentID_Errors(t *testing.T) {

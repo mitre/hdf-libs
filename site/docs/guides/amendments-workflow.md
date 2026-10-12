@@ -108,6 +108,8 @@ The results file is unchanged; the amended copy carries the merge. On the amende
 
 Viewers and downstream tooling read the effective layer; auditors read the trail.
 
+Apply prints `Applied N of M override(s)` and exits 0 even when N is 0: a register that carries a decision about one CVE is meant to be applied to every new results file whether or not that CVE appears, so matching nothing is a normal outcome. When the register was written for this document and a miss would be a bug, pass `--require-match`; apply then fails, names the overrides that matched nothing, and writes no output.
+
 ## Amendments applied to multiple re-scans over time
 
 To continue the example, imagine Tuesday's pipeline run scans the same image with the same underlying base image issue. The Grype tool has no idea that our specific organization has already issued a POA&M for CVE-2021-36159. So the scan "finds" the same CVE. But our HDF Amendment file, representing our POA&M, is a standing document and not an annotation trapped inside Monday's file:

@@ -741,3 +741,24 @@ describe('hdf-to-csv malformed containers', () => {
     expect(convertHdfToCsv('{"baselines":[]}')).toBe('');
   });
 });
+
+// Parity: TestConvertHDFToCSV_DispositionIsComputed in go. The Disposition
+// column comes from the governing override, as the two effective columns
+// beside it already do; a document with no stored disposition still names
+// the waiver that governs it.
+describe('Disposition is computed, not read from the stored field', () => {
+  it('names the governing override on a document that stores no disposition', () => {
+    const req = testhdf.req('V-WAIVED', { impact: 0.5, status: 'failed' });
+    req.statusOverrides = [
+      {
+        type: 'waiver', status: 'passed', reason: 'accepted by the AO',
+        appliedBy: { type: 'email', identifier: 'ao@example.gov' },
+        appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+      },
+    ];
+    const lines = convertHdfToCsv(JSON.stringify(testhdf.results(req as never))).trim().split('\n');
+    const header = lines[0]!.split(',');
+    const row = lines[1]!.split(',');
+    expect(row[header.indexOf('Disposition')], "the governing override's type, not a stored field").toBe('waiver');
+  });
+});

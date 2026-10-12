@@ -94,7 +94,7 @@ func TestMerge_ProvenanceLabels(t *testing.T) {
 	gosec := merged.Baselines[0]
 	assert.Equal(t, map[string]string{"tool": "gosec", "toolVersion": "dev", "sourceDocument": "gosec.hdf.json"}, gosec.Labels)
 	// The gosec baseline's own extensions ride along untouched.
-	assert.Contains(t, gosec.Extensions, "gosec")
+	assert.Contains(t, gosec.Extensions.Passthrough, "gosec")
 
 	zap := merged.Baselines[1]
 	assert.Equal(t, map[string]string{
@@ -121,8 +121,8 @@ func TestMerge_Root(t *testing.T) {
 	assert.Equal(t, "2026-07-12T22:56:36.173673Z", merged.Timestamp.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"), "gosec's timestamp is the latest of the three")
 	assert.Len(t, merged.Components, 5, "4 ZAP sites + 1 grype image, no componentIds → all kept")
 
-	ext, ok := merged.Extensions["hdf-merge"].(map[string]any)
-	require.True(t, ok, "extensions[hdf-merge] must be present: %v", merged.Extensions)
+	ext, ok := merged.Extensions.Passthrough["hdf-merge"].(map[string]any)
+	require.True(t, ok, "extensions.passthrough[hdf-merge] must be present: %v", merged.Extensions)
 	assert.Equal(t, Version(), ext["version"])
 	sources, ok := ext["sources"].([]any)
 	require.True(t, ok)
@@ -230,7 +230,7 @@ func TestMerge_NoTimestampOnAnyInput(t *testing.T) {
 	merged, _, err := Merge([]MergeSource{{Name: "g.json", Doc: g}})
 	require.NoError(t, err)
 	assert.Nil(t, merged.Timestamp)
-	src := merged.Extensions["hdf-merge"].(map[string]any)["sources"].([]any)[0].(map[string]any)
+	src := merged.Extensions.Passthrough["hdf-merge"].(map[string]any)["sources"].([]any)[0].(map[string]any)
 	_, has := src["timestamp"]
 	assert.False(t, has, "provenance carries no timestamp when the input had none")
 }

@@ -226,6 +226,10 @@
             "description": "replace an existing output file (default false)",
             "type": "boolean"
           },
+          "requireMatch": {
+            "description": "fail when no override matched; default false, since a register carried across documents may match nothing",
+            "type": "boolean"
+          },
           "results": {
             "additionalProperties": false,
             "description": "the HDF results document to apply amendments to, as {path} or {handle}",

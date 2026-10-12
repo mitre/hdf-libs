@@ -284,6 +284,30 @@ describe('hdf-to-html converter', () => {
     expect(inForceThen).toContain(detail('Effective status', badge('passed', 'Passed')));
   });
 
+  // Parity: TestConvertHDFToHTML_ImpactOverrideExpiryIsJudgedAtAssessmentTime.
+  it('judges an impact override at the assessment time, as it does a status override', () => {
+    const adjusted = (expiresAt: string): Doc => {
+      const doc = JSON.parse(JSON.stringify(waived(expiresAt))) as Doc;
+      const req = ((doc.baselines as Doc[])[0]!.requirements as Doc[])[0]!;
+      req.impact = 0.9;
+      req.statusOverrides = [
+        {
+          type: 'riskAdjustment',
+          reason: 'Compensating control reduces exposure',
+          appliedBy: { type: 'email', identifier: 'issm@example.gov' },
+          appliedAt: '2019-06-01T00:00:00Z',
+          expiresAt,
+          impact: { value: 0.1 },
+        },
+      ];
+      return doc;
+    };
+    // Expired by the wall clock, in force when the assessment ran.
+    expect(render(adjusted('2020-06-01T00:00:00Z'), 'manager')).toContain(detail('Effective impact', '0.10'));
+    // Expired before the assessment ran.
+    expect(render(adjusted('2019-12-31T00:00:00Z'), 'manager')).toContain(detail('Effective impact', '0.90'));
+  });
+
   it('falls back to the latest result time when the document has no timestamp', () => {
     const doc = waived('2019-12-31T00:00:00Z');
     delete doc.timestamp;
@@ -577,6 +601,8 @@ describe('hdf-to-html converter', () => {
     it('renders the optional detail fields', () => {
     const req = testhdf.req('V-1', { impact: 0.7, status: 'failed', tags: { nist: 'AC-1', cci: ['CCI-1', 7, 'CCI-2'] } }) as unknown as Doc;
     req.severity = 'critical';
+    // Stored caches left in on purpose: the rows below must come from the ladder,
+    // so these are now the evidence that the cache is ignored.
     req.effectiveImpact = 0.3;
     req.disposition = 'waiver';
     req.statusOverrides = [
@@ -591,8 +617,8 @@ describe('hdf-to-html converter', () => {
     for (const want of [
       '<dt>Port</dt><dd>5432</dd>', '<dt>Provider</dt><dd>aws</dd>', '<dt>Owner</dt><dd>dba@example.gov (email)</dd>',
       '<dt>Operator</dt><dd>ops</dd>', '<dt>Duration</dt><dd>12.35 s</dd>',
-      detail('Severity', 'critical'), detail('Impact', '0.70'), detail('Effective impact', '0.30'),
-      detail('Disposition', 'waiver'), detail('NIST Controls', 'AC-1'), detail('CCI Controls', 'CCI-1, CCI-2'),
+      detail('Severity', 'critical'), detail('Impact', '0.70'), detail('Effective impact', '0.70'),
+      detail('Disposition', 'operationalRequirement'), detail('NIST Controls', 'AC-1'), detail('CCI Controls', 'CCI-1, CCI-2'),
       '<span class="sev c-critical"><span class="vh">Severity: </span>Critical</span>',
       '<span class="tags"><span class="vh">Controls: </span><span class="tag">AC-1</span><span class="tag">CCI-1</span><span class="tag">CCI-2</span></span>',
       '<td>operationalRequirement</td><td></td>',
@@ -600,6 +626,26 @@ describe('hdf-to-html converter', () => {
       expect(out).toContain(want);
     }
     expect(out).not.toContain('governing');
+  });
+
+  // Parity: TestConvertHDFToHTML_SeverityAndDispositionFollowTheLadder in go.
+  // The badge and the two rows must agree with the summary table, which counts
+  // through the shared ladder; severity is left unset so the impact drives the band.
+  it('derives the badge, effective impact and disposition through the ladder', () => {
+    const req = testhdf.req('V-RESCORED', { impact: 0.9, status: 'failed' });
+    req.statusOverrides = [
+      {
+        type: 'riskAdjustment', reason: 'compensating control in place',
+        appliedBy: { type: 'email', identifier: 'a@example.gov' },
+        appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        impact: { value: 0.1 },
+      },
+    ];
+    const out = render(testhdf.results(req as never) as unknown as Doc);
+    expect(out, 'the badge must follow the re-scored impact').toContain('<span class="sev c-low">');
+    expect(out, 'and must not keep the raw band').not.toContain('<span class="sev c-critical">');
+    expect(out, 'computed through the ladder, not a cache the document does not carry').toContain(detail('Effective impact', '0.10'));
+    expect(out, "the governing override's type, not a stored field").toContain(detail('Disposition', 'riskAdjustment'));
   });
 
   it('rejects what is not a results document', () => {

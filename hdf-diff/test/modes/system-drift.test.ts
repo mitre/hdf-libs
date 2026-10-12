@@ -169,7 +169,7 @@ describe('system drift comparison mode', () => {
     it('should detect authorizationStatus change in system-level field changes', () => {
       const diff = diffSystems(systemV1, systemV2);
       expect(diff.extensions).toBeDefined();
-      const sysChanges = diff.extensions!['systemFieldChanges'] as Array<Record<string, unknown>>;
+      const sysChanges = diff.extensions!.passthrough!['systemFieldChanges'] as Array<Record<string, unknown>>;
       expect(sysChanges).toBeDefined();
       const authChange = sysChanges.find((fc) => fc['path'] === 'authorizationStatus');
       expect(authChange).toBeDefined();
@@ -305,7 +305,7 @@ describe('system drift comparison mode', () => {
       };
       const diff = diffSystems(old, updated);
       expect(diff.extensions).toBeDefined();
-      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      const flowChanges = diff.extensions!.passthrough!['dataFlowChanges'] as Array<Record<string, unknown>>;
       expect(flowChanges).toHaveLength(1);
       expect(flowChanges[0]!['state']).toBe('added');
     });
@@ -318,7 +318,7 @@ describe('system drift comparison mode', () => {
       };
       const updated = { name: 'System', components: [], dataFlows: [] };
       const diff = diffSystems(old, updated);
-      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      const flowChanges = diff.extensions!.passthrough!['dataFlowChanges'] as Array<Record<string, unknown>>;
       expect(flowChanges).toHaveLength(1);
       expect(flowChanges[0]!['state']).toBe('removed');
     });
@@ -335,14 +335,14 @@ describe('system drift comparison mode', () => {
         dataFlows: [{ from: 'aaa', to: 'bbb', protocol: 'HTTPS', port: 443 }],
       };
       const diff = diffSystems(old, updated);
-      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      const flowChanges = diff.extensions!.passthrough!['dataFlowChanges'] as Array<Record<string, unknown>>;
       expect(flowChanges).toHaveLength(1);
       expect(flowChanges[0]!['state']).toBe('updated');
     });
 
     it('should not add dataFlowChanges when no flows exist', () => {
       const diff = diffSystems(systemV1, systemV2);
-      expect(diff.extensions?.['dataFlowChanges']).toBeUndefined();
+      expect(diff.extensions?.passthrough?.['dataFlowChanges']).toBeUndefined();
     });
   });
 

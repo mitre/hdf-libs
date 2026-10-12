@@ -13,7 +13,7 @@ import (
 
 // HDFToChecklist maps HDF Results back to the format-neutral Checklist model.
 //
-// When the HDF carries checklist passthrough (extensions/tags written by
+// When the HDF carries checklist passthrough (extensions.passthrough/tags written by
 // ChecklistToHDF — i.e. the HDF originated from a CKL/CKLB), the original
 // fields are reproduced losslessly. For arbitrary HDF from any other tool, the
 // required checklist fields are synthesized best-effort (id->Vuln_Num,
@@ -39,13 +39,22 @@ func HDFToChecklist(input []byte) (*Checklist, error) {
 	}
 
 	cl := &Checklist{}
-	applyRootExtensions(cl, results.Extensions)
+	applyRootExtensions(cl, passthrough(results.Extensions))
 	cl.Asset = buildAsset(&results, cl)
 
 	for i := range results.Baselines {
 		cl.Stigs = append(cl.Stigs, baselineToStig(&results.Baselines[i]))
 	}
 	return cl, nil
+}
+
+// passthrough is where unmodeled producer data lives; `extensions` itself is
+// closed to undeclared keys.
+func passthrough(ext *hdf.Extensions) map[string]interface{} {
+	if ext == nil {
+		return nil
+	}
+	return ext.Passthrough
 }
 
 func applyRootExtensions(cl *Checklist, ext map[string]interface{}) {
@@ -66,15 +75,15 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 		// (which would fabricate a HOST_NAME the source never had).
 		if c.Hostname != nil {
 			a.HostName = *c.Hostname
-		} else if c.Name != derefStr(c.FQDN) && c.Name != derefStr(c.IPAddress) {
+		} else if c.Name != hdfutil.Deref(c.FQDN) && c.Name != hdfutil.Deref(c.IPAddress) {
 			a.HostName = c.Name
 		}
-		a.HostIP = derefStr(c.IPAddress)
-		a.HostFQDN = derefStr(c.FQDN)
-		a.HostMAC = derefStr(c.MACAddress)
+		a.HostIP = hdfutil.Deref(c.IPAddress)
+		a.HostFQDN = hdfutil.Deref(c.FQDN)
+		a.HostMAC = hdfutil.Deref(c.MACAddress)
 	}
 	// Merge asset extras from root extensions (round-trip).
-	if extras, ok := mapVal(results.Extensions, "assetExtras"); ok {
+	if extras, ok := mapVal(passthrough(results.Extensions), "assetExtras"); ok {
 		a.Role = strVal(extras, "role")
 		a.AssetType = strVal(extras, "assetType")
 		a.Marking = strVal(extras, "marking")
@@ -93,16 +102,17 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 
 func baselineToStig(bl *hdf.EvaluatedBaseline) Stig {
 	stig := Stig{
-		Title:   derefStr(bl.Title),
-		Version: derefStr(bl.Version),
+		Title:   hdfutil.Deref(bl.Title),
+		Version: hdfutil.Deref(bl.Version),
 	}
 	// Round-trip metadata from baseline extensions.
-	stig.StigID = strVal(bl.Extensions, "stigid")
-	stig.UUID = strVal(bl.Extensions, "uuid")
-	stig.ReleaseInfo = strVal(bl.Extensions, "releaseInfo")
-	stig.DisplayName = strVal(bl.Extensions, "displayName")
-	stig.ReferenceIdentifier = strVal(bl.Extensions, "referenceIdentifier")
-	stig.Classification = strVal(bl.Extensions, "classification")
+	blExt := passthrough(bl.Extensions)
+	stig.StigID = strVal(blExt, "stigid")
+	stig.UUID = strVal(blExt, "uuid")
+	stig.ReleaseInfo = strVal(blExt, "releaseInfo")
+	stig.DisplayName = strVal(blExt, "displayName")
+	stig.ReferenceIdentifier = strVal(blExt, "referenceIdentifier")
+	stig.Classification = strVal(blExt, "classification")
 	if stig.StigID == "" {
 		stig.StigID = stig.Title
 	}
@@ -122,7 +132,7 @@ func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 		RuleVer:               tagStr(tags, "stig_id"),
 		GroupID:               orDefault(tagStr(tags, "group_id"), req.ID),
 		GroupTitle:            tagStr(tags, "gtitle"),
-		RuleTitle:             derefStr(req.Title),
+		RuleTitle:             hdfutil.Deref(req.Title),
 		Weight:                tagStr(tags, "weight"),
 		Severity:              resolveSeverity(req, tags),
 		CCIs:                  resolveCCIs(tags),
@@ -400,11 +410,4 @@ func intVal(m map[string]interface{}, key string) int {
 	default:
 		return 0
 	}
-}
-
-func derefStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

@@ -232,13 +232,10 @@ func vulnInstance(vuln NeuVectorVuln) (resource, id string) {
 	if vuln.FileName != "" {
 		return "file", vuln.FileName
 	}
-	if vuln.PackageName == "" {
-		return "", ""
+	if id := shared.PackageInstanceID("", vuln.PackageName, vuln.PackageVersion); id != "" {
+		return "package", id
 	}
-	if vuln.PackageVersion == "" {
-		return "package", vuln.PackageName
-	}
-	return "package", vuln.PackageName + "@" + vuln.PackageVersion
+	return "", ""
 }
 
 // vulnTitle generates a human-readable title for the vulnerability.
@@ -534,8 +531,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	// report.cmds is scan-wide image build history — baseline-scope metadata with
 	// no typed HDF home. Emit it once under the tool namespace, only when present.
 	if cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds); len(cmds) > 0 {
-		baseline.Extensions = map[string]interface{}{
-			"neuvector": map[string]interface{}{"cmds": cmds},
+		baseline.Extensions = &hdf.Extensions{
+			Passthrough: map[string]interface{}{"neuvector": map[string]interface{}{"cmds": cmds}},
 		}
 	}
 

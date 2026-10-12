@@ -269,14 +269,15 @@ For removed/deprecated fields, the same walk applies in reverse: remove the row,
 ### Phase 5 — CHANGELOG
 
 1. Open `CHANGELOG.md`. Insert a new `## [NEW_VERSION] - YYYY-MM-DD` block at the top (rename the existing `## [Unreleased]` block if the changes are already drafted there).
-2. **Actively derive the breaking changes — do not leave them implied by the version bump.** A minor bump signals *"the schema changed"* but never explains *what broke*; that explanation is this section's job, and consumers cannot infer it from a version number. Walk the diff since `BASE` and enumerate every change that could break a downstream consumer, **excluding genuinely new/additive features** (a new optional field or new converter is a New Feature, not a breaking change). Concretely, treat as breaking and explain each in plain English (what changed, why, and the migration): schema field renames or removals; enum value removals; tightened/added validation (previously-valid docs now rejected); changed defaults; renamed/re-numbered CLI flags, arguments, or version identifiers; changed output shape or semantics of an existing command; and any consumer-visible behavior change (even one shipping in a patch). If the walk finds none, state "No breaking changes" explicitly rather than omitting the section. Sources for the walk: `git diff BASE..HEAD -- hdf-schema/src/schemas/`, the Phase 1 crosspr behavior-change note, and CLI help/output deltas.
-3. Sections to fill in (skip empty ones, but never skip Breaking Changes silently — see step 2):
+2. **Open the block with a `### Highlights` prose summary — the first thing under the version heading, before `### Added`.** The per-change bullets are one line per PR, so a reader meets the new converters and a behaviour overhaul at the same weight as a dependency bump and a PR that changed nothing they can see. The summary is where the release says what mattered: three to six short paragraphs, one per theme, written for a consumer deciding whether to upgrade — name the capability and what it lets them do, link each theme to the bullet or section that details it, and say which themes change behaviour. Choose the themes from the `BASE..HEAD` PR list (Phase 0) and the swarm review's release-note findings (Phase 1), not from the bullet order: a converter, a fetcher, a report format, a reworked command or policy surface, a cross-cutting correctness fix. Leave out of the summary anything with no consumer-visible effect — dependency updates, CI, refactors, test-only work — even when it was most of the diff. For 3.7.2 the themes were the hadolint, HTML and GitLab vulnerability converters and the reworked threshold policy; the bullets alone buried all four. Write it last, once the bullets are final, verify every claim in it against the code or a real run the same way as any other doc sentence, and then **stop: present the draft and get an editing pass from the user before it goes into the file.** The summary is the release's voice, and the themes and their weighting are an editorial call the maintainer makes, not a derivation; the 3.7.2 draft was close on the first pass and still needed that read.
+3. **Actively derive the breaking changes — do not leave them implied by the version bump.** A minor bump signals *"the schema changed"* but never explains *what broke*; that explanation is this section's job, and consumers cannot infer it from a version number. Walk the diff since `BASE` and enumerate every change that could break a downstream consumer, **excluding genuinely new/additive features** (a new optional field or new converter is a New Feature, not a breaking change). Concretely, treat as breaking and explain each in plain English (what changed, why, and the migration): schema field renames or removals; enum value removals; tightened/added validation (previously-valid docs now rejected); changed defaults; renamed/re-numbered CLI flags, arguments, or version identifiers; changed output shape or semantics of an existing command; and any consumer-visible behavior change (even one shipping in a patch). If the walk finds none, state "No breaking changes" explicitly rather than omitting the section. Sources for the walk: `git diff BASE..HEAD -- hdf-schema/src/schemas/`, the Phase 1 crosspr behavior-change note, and CLI help/output deltas.
+4. Sections to fill in (skip empty ones, but never skip Breaking Changes silently — see step 3):
    - **New Features**
    - **Breaking Changes / Notable behavior changes** (each item explained, not just named: field renames, enum removals, schema-validation tightening, changed defaults, renamed/re-numbered CLI flags or version identifiers, changed command output/semantics — *and* any consumer-visible behavior change shipping in a patch, prominently).
    - **Architecture Changes** (for minor/major, note the schema `$id` bump explicitly: *"Schema version bumped from vOLD to vNEW across all `$id`/`$ref` URLs"*).
    - **Compatibility** (state backward-compat posture; "v(OLD-1).x documents validate cleanly under vNEW" is the typical line for additive minors).
    - **Internal consumer notes** if quicktype-generated Go names changed (constant-name collisions etc.)
-4. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
+5. **Do not touch any earlier `## [vX]` entry.** Those are factual history.
 
 ### Phase 6 — Build / lint / test gate
 
@@ -302,7 +303,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Subject:** `chore(release): bump workspace from OLD to NEW`
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
-6. **Never tag a stable release manually.** Stable tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag vNEW` for the stable. The one sanctioned manual tag is the **`vNEW-rc.N` prerelease tag** that triggers Phase 7.5's dry-run — pushing that tag drives the workflow's prerelease path; it is not a manual publish.
+6. **Only the root tag is pushed by hand, and only onto a prepare commit.** The workflow runs on a pushed `vNEW` or `vNEW-rc.N` root tag and creates the per-module tags itself (`hdf-cli/vNEW`, `hdf-converters/vNEW`, etc.) in lockstep on the same commit; never push those by hand. The root tag must sit on the squash commit of that version's prepare PR (Phase 7.5 step 0), checked by subject before tagging — on any other commit the modules publish with requires no tag provides.
 7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` only (there is no per-major `v3` tag — the Publish step sets exactly `--tag next` for a stable and `--tag rc` for an rc) — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other packages (10 at the time of writing) keep the default `latest` behavior for a stable and get `next` for an rc — do not "harmonize" them onto `next`.
 
 ### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
@@ -327,13 +328,17 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
    git commit -s -am "chore(release): prepare vNEW-rc.1"
    # push, open the PR, merge; then tag the SQUASH-MERGE COMMIT ON MAIN —
    # the branch commit has a different SHA and is not what main carries.
+   # Check the subject before tagging; 3.7.2-rc.1 was tagged on the commit
+   # BEFORE its prepare commit and published modules nobody could build:
+   git fetch origin && git log -1 --format='%h %s' origin/main   # must read "chore(release): prepare vNEW-rc.1"
+   git tag vNEW-rc.1 origin/main && git push origin vNEW-rc.1
    ```
 
    Without it the tag publishes Go modules that resolve for nobody: Go reads each module's `go.mod` from the tagged commit and ignores its `replace` directives, so requires naming the stable `vNEW` point at a version no tag provides. `go get` still succeeds and only `go build` fails, which is why rc.1 through rc.4 of 3.6.0 all shipped broken. This mirrors etcd's `release_mod.sh` and opentelemetry-go's `multimod prerelease`; both commit the rewrite before tagging.
 
    The workflow deliberately does NOT do this for you. It runs on the tag, so any commit it made would come too late.
 
-   Two modules stay at their zero pseudo-version because no release tags them (`hdf-fixtures`, `hdf-schema/testhdf/go`) — the script names them. Until `hdf-libs-gqw5k` is fixed they keep `go list -m all` and `go mod tidy` broken for consumers, at stable as much as at a prerelease, so do not read a green `go build` as proof the module graph is sound.
+   Every module the workflow tags, `hdf-fixtures` and `hdf-schema/testhdf/go` included, is rewritten; the script fails closed if any require's path cannot carry the version.
 
    After the prerelease, the stable cut needs the same rewrite at the stable version, through the same short-PR flow (`release/vNEW-stable-prepare`) — a prerelease always moves the requires, so this is not optional. The stable tag then lands on its own squash commit, which is what keeps it off the rc's commit (goreleaser prefers an `-rc` tag sharing a commit with the stable; `GORELEASER_CURRENT_TAG` is the proven backstop, the separate commit is the first line).
 
@@ -398,9 +403,10 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] *(minor/major)* `hdf-schema/README.md` new "What's new in vNEW" section added
 - [ ] Breaking changes actively derived from the `BASE..HEAD` diff (excluding new/additive features) and each explained in the CHANGELOG's Breaking Changes section — or "No breaking changes" stated explicitly (never left implied by the version bump)
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched
+- [ ] The new entry opens with a `### Highlights` prose summary: one paragraph per consumer-visible theme, each linked to its detail, behaviour changes named, nothing internal in it — and the user edited the draft before it went in
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
-- [ ] No stable `git tag` run manually (the `vNEW-rc.N` prerelease tag for Phase 7.5 is the one sanctioned manual tag)
+- [ ] Each root tag (`vNEW-rc.N`, then `vNEW`) was pushed onto its own prepare commit, subject checked first; no per-module tag pushed by hand
 - [ ] *(when cutting any prerelease tag)* Phase 7.5 step 0 prepare-release commit: `scripts/set-go-module-versions.sh vNEW-rc.N` run and committed BEFORE the tag, and a consumer `go build` against the published prerelease passes outside the repo
 - [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next` (or `rc`) at NEW, no per-major tag expected; no manual publishes or dist-tag moves to `latest`

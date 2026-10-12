@@ -35,6 +35,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
   - [mcp](#mcp) -- Run the HDF MCP server (stdio transport)
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
+- [Exit codes](#exit-codes)
 - [Supported Conversions](#supported-conversions)
   - [To HDF](#to-hdf)
   - [From HDF](#from-hdf)
@@ -55,7 +56,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.7.0
+VERSION=3.7.2
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -66,7 +67,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -100,7 +101,7 @@ The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directl
 
 ### validate
 
-Validate an HDF results or baseline file against the JSON schema. Returns exit code 0 on success, 1 on failure.
+Validate an HDF results or baseline file against the JSON schema. Exit codes are listed under [Exit codes](#exit-codes): 0 when every file is valid, 1 when every file is invalid, 3 when some are.
 
 ```
 USAGE
@@ -138,7 +139,7 @@ For a results document the success line is followed by `Agent-attributed overrid
 
 #### validate threshold
 
-Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation.
+Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation; a gate never exits 3, however many documents it was given (see [Exit codes](#exit-codes)).
 
 ```
 USAGE
@@ -212,15 +213,15 @@ Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          273
-  ? not_reviewed    1196
+  ✗ failed          271
+  ○ not_applicable  233
+  ? not_reviewed    965
 
 $ hdf list results.json --detail requirements -s failed
-Requirements: 273
+Requirements: 271
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
-SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
 V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
@@ -312,17 +313,18 @@ Example output:
 
 ```console
 $ hdf query results.json --status failed --limit 5
-Found 4 matching requirement(s):
+Found 5 matching requirement(s):
 
-ID         Status  Severity  Title
----------  ------  --------  -------------------------------------------------------
-SV-257777  failed  HIGH      RHEL 9 must be a vendor-supported release.
-V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+ID        Status  Severity  Title
+--------  ------  --------  -------------------------------------------------------
+V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
+V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
 
 $ hdf query results.json --status failed --count
-273
+271
 ```
 
 ### diff
@@ -342,7 +344,7 @@ FLAGS
       --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
   -q, --quiet              Suppress output, return exit code only (implies --exit-code)
-      --exit-code          POSIX diff exit codes: 0=identical, 1=differences, 2=error
+      --exit-code          POSIX diff exit codes: 0=identical, 1=differences
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
       --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
@@ -443,13 +445,14 @@ INPUT/OUTPUT
               recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
   -o <dir>/   One output per input, named after the input file; inputs that share a file
-              name are named by their path below the directory they share (host1--results)
+              name are each numbered in argument order (results.1, results.2)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only;
+                              warns and still writes when the converter emits no components)
       --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
       --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
@@ -522,6 +525,8 @@ EXAMPLES
 
 `hdf system create` takes its input as a positional file path or URL and auto-detects the format. Its `--from` flag (`cyclonedx | spdx | cyclonedx-mlbom | spdx-ai`) does not select a parser the way `hdf convert --from` does: it only asserts that the detected BOM format matches, and the command fails if it does not.
 
+`hdf system update-component --component-name <name>` selects the component to refresh, and the name must match exactly one: a component name is a label, not identity (`componentId` is), so a document may legitimately carry two components with the same name, and an ambiguous name is refused before anything is written rather than refreshing whichever came first. Omit `--component-name` to reconcile every subject by its stable `boms[].uniqueId`. `hdf label set/remove --component-name` applies the same rule through the same selector, with the same message.
+
 Example output:
 
 ```console
@@ -591,6 +596,7 @@ SUBCOMMANDS
 
 EXAMPLES
   hdf amend apply --results results.json --amendments waivers.json -o merged.json
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json --require-match   # fail if nothing matched
   hdf amend list waivers.json
   hdf amend verify waivers.json                     # structure, expiry, chain
   hdf amend verify waivers.json results.json         # also check against results
@@ -725,6 +731,9 @@ named on the command line is overwritten and the others are left alone. The valu
 is carried verbatim and may be any non-empty string. `set` exits non-zero and
 writes nothing when the pair is malformed, a scheme is given twice, the document
 has no components, or `--component-name` matches none or more than one.
+`--component-id` and `--generate-component-id` are refused on a document with no
+components for the same reason — there is nothing to stamp, and rewriting the
+file while reporting success would claim an id was attached when it was not.
 
 Example output:
 
@@ -997,16 +1006,18 @@ USAGE
 
 FLAGS
   -u, --url string              GitLab instance URL (default "https://gitlab.com")
-      --project string          Project full path (namespace/project); exclusive with --group
+      --project string          Project full path (namespace/project)
       --group string            Group full path; fetches every non-archived project in it
       --include-subgroups       With --group, include projects of subgroups (default true)
-      --state string            Comma-separated states: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
-      --report-type string      Comma-separated report types: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
-      --format string           Output format: hdf or raw (default "hdf")
+      --state string            Comma-separated vulnerability states to fetch: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
+      --report-type string      Comma-separated report types to fetch: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
+      --format string           Output format: hdf (convert to HDF) or raw (fetched envelope) (default "hdf")
   -o, --output string           Output file path with --project (default: stdout)
       --out-dir string          Output directory with --group; one file per project
-      --max-pages int           Maximum pages per project or group listing (default 200)
-      --max-response-size int   Max response size in bytes per request (default 25MB, -1 for no limit)
+      --page-size int           Findings requested per GraphQL page (default: 25, sized to GitLab's query complexity cap)
+      --max-pages int           Maximum pages per project, group listing or finding history (default: 500)
+      --max-response-size int   Maximum response size in bytes per request (default: 25MB, -1 for no limit)
+      --no-validate             Skip schema validation of converter output before writing
       --check                   Run the probe only and print the tier and ingestion diagnosis (every project with --group)
 
 EXAMPLES
@@ -1135,6 +1146,22 @@ These flags apply to all commands.
 | `--no-headers` | | `false` | Suppress column headers in table output |
 | `--schema-dir` | | | Load schemas from a directory instead of the embedded copies |
 
+## Exit codes
+
+One vocabulary for every command, so a pipeline can test the code rather than parse the output.
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success. In a bulk run, every file succeeded. |
+| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written; `query` with no matching requirements. |
+| `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command name that does not exist — at the root (`hdf bogus`) or under a group (`hdf evidence bogus`). A group invoked with no subcommand at all prints its help and exits 0. |
+| `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
+| `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
+
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
+
+One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
+
 ## Supported Conversions
 
 ### To HDF
@@ -1177,9 +1204,9 @@ These flags apply to all commands.
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
-| `oscal-assessment-plan` | | OSCAL Assessment Plan → HDF Plan |
+| `oscal-assessment-plan` | `oscal-sap` | OSCAL Assessment Plan → HDF Plan |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
-| `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-component-definition` | `oscal-component` | OSCAL Component Definition → HDF Baseline |
 | `oscal-profile` | | OSCAL Profile → HDF Baseline (requires `--catalog`) |
 | `oscal-ssp` | | OSCAL System Security Plan → HDF System |
 | `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |
@@ -1221,7 +1248,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
 | `hdf-amendments` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 
-Both `--from` and `--to` accept `format@version` when a format has more than one schema version: `--to hdf@2` writes the legacy Heimdall schema, `--to hdf@3` (the default) writes the modern one, and `--from hdf@2` reads a legacy document back. The same syntax selects an input schema version elsewhere, as in `--from sarif@2.0`. Note that `hdf@1` is not a distinct schema — for raw InSpec output use `--from inspec`.
+Both `--from` and `--to` accept `format@version` when a format has more than one schema version: `--to hdf@2` writes the legacy Heimdall schema, `--to hdf@3` (the default) writes the modern one, and `--from hdf@2` reads a legacy document back. Note that `hdf@1` is not a distinct schema — for raw InSpec output use `--from inspec`.
 
 ## Credential Handling
 

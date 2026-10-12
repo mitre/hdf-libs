@@ -168,7 +168,14 @@ func (r ThresholdRule) label() string {
 // breached bound. Evaluation is filter → count → compare, calling the engine's
 // own filter rather than a second matcher: the duplication this repo flags as its
 // most common defect is exactly what a private rule matcher would be.
+// EvaluateRules is EvaluateRulesContext with a background context, kept for
+// callers that have none; a caller with a live context should pass it so a
+// cancelled run stops filtering instead of finishing every rule.
 func EvaluateRules(config *ThresholdConfig, results hdf.HDFResults, opts RuleOptions) []Violation {
+	return EvaluateRulesContext(context.Background(), config, results, opts)
+}
+
+func EvaluateRulesContext(ctx context.Context, config *ThresholdConfig, results hdf.HDFResults, opts RuleOptions) []Violation {
 	if config == nil || len(config.Rules) == 0 {
 		return nil
 	}
@@ -177,7 +184,7 @@ func EvaluateRules(config *ThresholdConfig, results hdf.HDFResults, opts RuleOpt
 		// The matches, not just their count: naming which requirements broke a
 		// gate is the difference between a red check a reader can act on and one
 		// that sends them to an artifact and a script. This filter already ran.
-		matches := Filter(context.Background(), results, rule.Where.filterOptions(opts))
+		matches := Filter(ctx, results, rule.Where.filterOptions(opts))
 		matched := len(matches)
 		if rule.Max != nil && matched > *rule.Max {
 			violations = append(violations, Violation{
@@ -229,13 +236,21 @@ type ThresholdInput struct {
 // so two call sites hand-assembling it is two chances to pair a grid counted one
 // way with rules filtered another.
 func NewThresholdInput(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) ThresholdInput {
-	counts := CountControlsByStatus(results, statusOf)
+	return NewThresholdInputAt(results, statusOf, time.Time{})
+}
+
+// NewThresholdInputAt builds the input as of now, so the grid's counts and
+// the rules judge an override's expiry against the same instant. A zero now
+// means the wall clock, as every ladder here reads it.
+func NewThresholdInputAt(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string, now time.Time) ThresholdInput {
+	counts := CountControlsByStatusAt(results, statusOf, now)
 	return ThresholdInput{
 		Results:    results,
 		Counts:     counts,
 		Compliance: CalculateCompliance(counts),
-		ControlMap: MapControlIDsByStatus(results, statusOf),
+		ControlMap: MapControlIDsByStatusAt(results, statusOf, now),
 		StatusOf:   statusOf,
+		Now:        now,
 	}
 }
 
@@ -244,8 +259,16 @@ func NewThresholdInput(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequir
 // evaluates the grid alone and refuses a config carrying rules, so a caller
 // cannot half-implement a policy without being told.
 func Evaluate(config *ThresholdConfig, in ThresholdInput) []Violation {
+	return EvaluateContext(context.Background(), config, in)
+}
+
+// EvaluateContext is Evaluate under a caller's context: the grid half is
+// already computed in the input, the rules half filters under ctx, and a
+// cancelled run returns what it had — the caller reads ctx.Err() to tell a
+// partial result from a clean one, as the query and aggregate tools do.
+func EvaluateContext(ctx context.Context, config *ThresholdConfig, in ThresholdInput) []Violation {
 	violations := validateGrid(config, in.Counts, in.Compliance, in.ControlMap)
-	return append(violations, EvaluateRules(config, in.Results, RuleOptions{
+	return append(violations, EvaluateRulesContext(ctx, config, in.Results, RuleOptions{
 		Now:      in.Now,
 		StatusOf: in.StatusOf,
 	})...)

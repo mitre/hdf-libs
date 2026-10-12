@@ -5,6 +5,7 @@ import (
 	"maps"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // Requirement roll-up — the single implementation of ADR-0017 §6 ("Requirement
@@ -168,14 +169,7 @@ func packageIdentity(p hdf.AffectedPackage) string {
 	if p.Purl != nil && *p.Purl != "" {
 		return "purl\x00" + *p.Purl
 	}
-	return "nv\x00" + deref(p.Name) + "\x00" + deref(p.Version)
-}
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
+	return "nv\x00" + hdfutil.Deref(p.Name) + "\x00" + hdfutil.Deref(p.Version)
 }
 
 // canonical is the identity of a member that declares none of its own: its whole

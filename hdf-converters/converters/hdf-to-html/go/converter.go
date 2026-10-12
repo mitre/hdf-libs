@@ -669,48 +669,6 @@ func (r *renderer) chips(heading string, m map[string]string) {
 	r.line(closeList)
 }
 
-// statusBuckets lists a count set's five status buckets in the order the
-// report's columns and stat lists use them.
-func statusBuckets(c *hdfengine.StatusCounts) [5]*hdfengine.SeverityCounts {
-	return [5]*hdfengine.SeverityCounts{&c.Passed, &c.Failed, &c.Skipped, &c.NoImpact, &c.Error}
-}
-
-func addSeverities(dst, src *hdfengine.SeverityCounts) {
-	dst.Critical += src.Critical
-	dst.High += src.High
-	dst.Medium += src.Medium
-	dst.Low += src.Low
-	dst.Informational += src.Informational
-	dst.Total += src.Total
-}
-
-// addCounts rolls src into dst: the engine counts one document at a time, and
-// the report rolls baselines up into sources and sources into a whole.
-func addCounts(dst, src *hdfengine.StatusCounts) {
-	d, s := statusBuckets(dst), statusBuckets(src)
-	for i := range d {
-		addSeverities(d[i], s[i])
-	}
-}
-
-func countTotal(c *hdfengine.StatusCounts) int {
-	total := 0
-	for _, bucket := range statusBuckets(c) {
-		total += bucket.Total
-	}
-	return total
-}
-
-// severityTotals sums each severity across the statuses: the severity panel
-// counts every requirement, whatever its status.
-func severityTotals(c *hdfengine.StatusCounts) hdfengine.SeverityCounts {
-	var out hdfengine.SeverityCounts
-	for _, bucket := range statusBuckets(c) {
-		addSeverities(&out, bucket)
-	}
-	return out
-}
-
 // compliancePercent is the compliance percentage hdf-engine computes, to two
 // places, so the report never disagrees with `hdf validate threshold` in the
 // last digit. FormatFixed is toFixed's rounding, which is what the TypeScript
@@ -726,9 +684,9 @@ func complianceText(c *hdfengine.StatusCounts) string {
 // severityClass maps a severity onto the fixed set the stylesheet knows; an
 // informational, absent or unrecognized severity is "none".
 func severityClass(severity string) string {
-	switch severity {
-	case severityCritical, severityHigh, severityMedium, severityLow:
-		return severity
+	// The engine's bucket rule; its informational catch-all is the stylesheet's "none".
+	if b := hdfengine.SeverityBucket(severity); b != "informational" {
+		return b
 	}
 	return severityNone
 }
@@ -787,7 +745,6 @@ type statusTally struct {
 
 func (r *renderer) tally() *statusTally {
 	t := &statusTally{
-		all:         &hdfengine.StatusCounts{},
 		perSource:   make([]*hdfengine.StatusCounts, len(r.sources)),
 		perBaseline: make([][]*hdfengine.StatusCounts, len(r.sources)),
 	}
@@ -795,14 +752,13 @@ func (r *renderer) tally() *statusTally {
 		r.src = &r.sources[si]
 		t.anyRef = t.anyRef || r.src.hasRef
 		baselines := r.src.doc.Baselines
-		t.perSource[si] = &hdfengine.StatusCounts{}
 		t.perBaseline[si] = make([]*hdfengine.StatusCounts, len(baselines))
 		for i := range baselines {
 			t.perBaseline[si][i] = r.tallyBaseline(t, baselines[i])
-			addCounts(t.perSource[si], t.perBaseline[si][i])
 		}
-		addCounts(t.all, t.perSource[si])
+		t.perSource[si] = hdfengine.AddCounts(t.perBaseline[si]...)
 	}
+	t.all = hdfengine.AddCounts(t.perSource...)
 	return t
 }
 
@@ -816,7 +772,7 @@ func (r *renderer) tallyBaseline(t *statusTally, baseline hdf.EvaluatedBaseline)
 		t.checks.add(r.effectiveStatus(*req), req.Results)
 	}
 	one := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{baseline}}
-	return hdfengine.CountControlsByStatus(one, r.effectiveStatus)
+	return hdfengine.CountControlsByStatusAt(one, r.effectiveStatus, r.src.ref)
 }
 
 func (r *renderer) status() {
@@ -835,7 +791,7 @@ func (r *renderer) status() {
 // asOf states the instant effective status was judged at, when there is one.
 func (r *renderer) asOf(t *statusTally) {
 	switch {
-	case countTotal(t.all) == 0 || !t.anyRef:
+	case hdfengine.SeverityTotals(t.all).Total == 0 || !t.anyRef:
 	case r.aggregated:
 		r.line(`<p class="as-of">Effective status evaluated for each source as of its own assessment time. ` +
 			`Overrides that had expired by then are not applied.</p>`)
@@ -846,7 +802,7 @@ func (r *renderer) asOf(t *statusTally) {
 }
 
 func (r *renderer) dashboard(t *statusTally) {
-	all, severities, checks := t.all, severityTotals(t.all), t.checks
+	all, severities, checks := t.all, hdfengine.SeverityTotals(t.all), t.checks
 	r.line(`<div class="dashboard">`)
 
 	r.line(`<div class="panel">`)
@@ -858,7 +814,7 @@ func (r *renderer) dashboard(t *statusTally) {
 	r.line(stat(classNotApplicable, all.NoImpact.Total, labelNotApplicable, ""))
 	r.line(stat(classNotReviewed, all.Skipped.Total, labelNotReviewed, ""))
 	r.line(stat(statusError, all.Error.Total, labelError, ""))
-	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(countTotal(all)) + `</span><span class="lbl">Total</span></li>`)
+	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(severities.Total) + `</span><span class="lbl">Total</span></li>`)
 	r.line(closeList)
 	r.line(bar("Requirements by status", []segment{
 		{statusPassed, statusPassed, all.Passed.Total}, {statusFailed, statusFailed, all.Failed.Total},
@@ -1010,7 +966,7 @@ func bar(label string, segments []segment) string {
 func summaryRow(name string, c *hdfengine.StatusCounts) string {
 	var b strings.Builder
 	b.WriteString(`<tr><th scope="row">` + name + "</th>")
-	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, countTotal(c)} {
+	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, hdfengine.SeverityTotals(c).Total} {
 		b.WriteString("<td>" + strconv.Itoa(n) + "</td>")
 	}
 	b.WriteString("<td>" + complianceText(c) + rowClose)
@@ -1106,7 +1062,8 @@ func descriptionHeading(label string) string {
 
 func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	effective := r.effectiveStatus(*req)
-	severity := hdfengine.DeriveSeverity(req.Impact, req.Severity)
+	severity := hdfengine.DeriveSeverity(shared.RequirementEffectiveImpactAt(*req, r.src.ref), req.Severity)
+	disposition := shared.RequirementDisposition(*req, r.src.ref)
 	nist := hdfutil.TagStrings(req.Tags, "nist")
 	cci := hdfutil.TagStrings(req.Tags, "cci")
 
@@ -1134,7 +1091,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 
 	r.resultRows(req.Results)
 
-	rows := requirementRows(req, effective, severity, location, nist, cci, lead)
+	rows := requirementRows(req, r.src.ref, effective, severity, disposition, location, nist, cci, lead)
 	f := r.openFold("", "", r.detailHeading(), "Result Details", "the result details", len(rows))
 	r.openTable(`class="details" aria-label="Result details"`, "")
 	for _, row := range rows {
@@ -1201,15 +1158,15 @@ func (r *renderer) description(text string) {
 
 // requirementRows is the detail table: the two statuses, every field that has a
 // value, then the references and the descriptions other than the lead.
-func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, location string, nist, cci []string, lead int) []string {
+func requirementRows(req *hdf.EvaluatedRequirement, ref time.Time, effective, severity, disposition, location string, nist, cci []string, lead int) []string {
 	statuses := make([]string, len(req.Results))
 	for i := range req.Results {
 		statuses[i] = string(req.Results[i].Status)
 	}
-	effectiveImpact := ""
-	if req.EffectiveImpact != nil {
-		effectiveImpact = hdfutil.FormatFixed(*req.EffectiveImpact, 2)
-	}
+	// Through the ladder, never the stored cache: the stored effectiveImpact and
+	// disposition are output caches a document may carry stale or not at all,
+	// and the summary table this page also shows already counts the ladder.
+	effectiveImpact := hdfutil.FormatFixed(shared.RequirementEffectiveImpactAt(*req, ref), 2)
 	rows := []string{
 		detailRow("Effective status", statusBadge(effective)),
 		detailRow("Assessed status", statusBadge(hdfutil.WorstStatus(statuses))),
@@ -1220,7 +1177,7 @@ func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, locatio
 		{"Severity", severity},
 		{"Impact", hdfutil.FormatFixed(req.Impact, 2)},
 		{"Effective impact", effectiveImpact},
-		{"Disposition", string(hdfutil.Deref(req.Disposition))},
+		{"Disposition", disposition},
 		{"Control type", string(hdfutil.Deref(req.ControlType))},
 		{"Verification method", string(hdfutil.Deref(req.VerificationMethod))},
 		{"Applicability", string(hdfutil.Deref(req.Applicability))},

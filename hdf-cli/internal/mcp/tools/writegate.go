@@ -92,6 +92,12 @@ func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenP
 // retry sees a clean slate instead of hitting O_EXCL and misreporting the failed
 // write as OUTPUT_EXISTS. A failed removal is logged but never surfaced — the
 // original write error is what the caller needs to see.
+//
+// This is deliberately not internal/atomicfile: that helper replaces the
+// destination by rename, which cannot also carry O_EXCL's TOCTOU-free "refuse to
+// clobber" — the guarantee this tool surface is built on. The two coexist
+// because they protect different things: atomicfile protects a destination it is
+// allowed to replace, this gate protects one it is not.
 func removePartialWrite(confined string) {
 	if err := os.Remove(confined); err != nil && !errors.Is(err, os.ErrNotExist) {
 		slog.Error("could not remove partial write", "error", err)

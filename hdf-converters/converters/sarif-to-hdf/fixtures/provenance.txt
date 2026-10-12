@@ -65,6 +65,28 @@ No counterpart in either upstream checked. Introduced by this repository in
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
+### `no-runs.sarif`
+Schema-confirmed, not real: no published tool sample emits an empty runs array, so
+this was built for that case and validated against the vendored schema. §3.13.4
+makes `runs: []` conformant; it exists to stop the Go/TypeScript parity test being
+vacuous for that shape, since Go used to reject it while TypeScript converted it.
+
+### `uriless-location.sarif`
+Schema-confirmed, not real: built to cover §3.4.5's artifactLocation carrying only an
+`index`, and validated against the vendored schema. `region` is a sibling of
+`artifactLocation`, so the line and column are known even though the uri is not, and
+TypeScript used to discard the whole location while Go kept it. `artifacts[0]` holds
+the path the index addresses, and that resolution is now implemented: the fixture's
+golden shows `src/indexed.c` reaching both `sourceLocation.ref` and the codeDesc URL
+slot, while the result's `rawSourceRecord` still carries only the index the tool wrote.
+
+### `results-absent.sarif`
+Schema-confirmed, not real: no published tool sample exercises a run that
+reports no result set, so this was built for that case and validated against
+the vendored schema (see Validation below). SARIF 2.1.0 omits `results`
+when a run analyzed nothing; the document is minimal and carries only
+`tool.driver` plus a failed `invocations[0]`.
+
 ### `sarif_input.sarif`
 Byte-identical to SAF CLI `test/sample_data/sarif/sample_input_report/sarif_input.sarif`.
 
@@ -99,6 +121,9 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `grype.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: grype 0.91.2.
 - `osv-scanner-2.5.1.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: osv-scanner 2.5.1.
 - `rich.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SecurityScanner 3.2.1.
+- `results-absent.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.2.3.
+- `no-runs.sarif` — SARIF 2.1.0; `runs` is an empty array, so there is no `tool.driver` block and the producer and its version are not determinable from file content. Schema-confirmed, not a real run.
+- `uriless-location.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.2.3.
 - `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
 - `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
 - `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.
@@ -107,4 +132,15 @@ A version below is what the fixture *says about itself*; where a format carries 
 
 SARIF 2.1.0 has a machine-readable schema and it is vendored here: `sarif-schema-2.1.0.json`, recorded in `provenance.json` (OASIS canonical URL, SHA-256, retrieval date). It is JSON Schema draft-04, which the TypeScript sweep cannot compile (ajv 8); the Go sweep compiles and hash-checks it.
 
-Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures validate against the vendored schema.
+Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures then present validate against the vendored schema.
+
+`no-runs.sarif` and `uriless-location.sarif` (added 2026-10-10) both validate against
+the vendored schema with the same python jsonschema Draft4Validator.
+
+`results-absent.sarif` (added 2026-10-09; validated with python jsonschema 4.26 Draft4Validator,
+and covered by the Go gojsonschema sweep in-tree) validates. Note the schema and the spec prose
+diverge on how a run says it analyzed nothing: §3.14.23 describes an absent
+`results` as defaulting to null, but `run.properties.results` is `type: array`
+with no null member, so a literal `"results": null` does NOT validate. The
+conformant shape is to omit the property, which is what this fixture does. The
+converters accept both, since a literal null appears in the wild.

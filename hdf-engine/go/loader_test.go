@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 func loadFixtureBytes(t *testing.T, name string) []byte {
@@ -37,7 +39,7 @@ func TestLoad_Results_Valid(t *testing.T) {
 }
 
 func TestLoad_Baseline_Valid(t *testing.T) {
-	data := loadFixtureBytes(t, "baseline-fixture.json")
+	data := fixtures.Baseline.Win2022Stig
 	res, err := Load(data, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

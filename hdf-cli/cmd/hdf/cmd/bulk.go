@@ -37,7 +37,10 @@ type BulkProcessFn func(file string) error
 // rider on five unrelated commands.
 type bulkOption func(*bulkConfig)
 
-type bulkConfig struct{ failureDetail bool }
+type bulkConfig struct {
+	failureDetail bool
+	failClosed    bool
+}
 
 // withFailureDetail prints the inner command's OWN captured output under a failed
 // file, instead of collapsing it to the first line of its error. Use it where the
@@ -47,6 +50,14 @@ type bulkConfig struct{ failureDetail bool }
 // question differently depending on how many files were passed.
 func withFailureDetail() bulkOption {
 	return func(c *bulkConfig) { c.failureDetail = true }
+}
+
+// withFailClosed makes any failure exit 1 instead of 3 for a mixed run. Two
+// callers need it: a verdict gate, where one failing document fails the gate
+// whatever the others did, and an all-or-nothing batch, where a failed file
+// means nothing was written and "partial" would be false.
+func withFailClosed() bulkOption {
+	return func(c *bulkConfig) { c.failClosed = true }
 }
 
 func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn, opts ...bulkOption) error {
@@ -122,10 +133,17 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn, 
 		printBulkErrors(withoutDetail(results))
 	}
 
-	if bulkHasFailure(results) {
+	passed, failed := bulkSummaryCounts(results)
+	switch {
+	case failed == 0:
+		return nil
+	case passed == 0 || cfg.failClosed:
 		return fmt.Errorf("%s", verb)
+	default:
+		// Each failure is already on stderr and the summary on stdout, so the
+		// error carries the code and main prints nothing more.
+		return &exitCodeError{code: exitPartial, message: verb}
 	}
-	return nil
 }
 
 // expandGlobs expands glob patterns in the argument list and returns
@@ -143,7 +161,7 @@ func expandGlobs(args []string) ([]string, error) {
 				return nil, fmt.Errorf("invalid glob pattern %q: %w", arg, err)
 			}
 			if len(matches) == 0 {
-				return nil, fmt.Errorf("no files matched pattern %q", arg)
+				return nil, &exitCodeError{code: exitNothingToDo, message: fmt.Sprintf("no files matched pattern %q", arg), report: true}
 			}
 			sort.Strings(matches)
 			for _, m := range matches {
@@ -288,16 +306,6 @@ func firstLine(s string) string {
 	return s
 }
 
-// bulkHasFailure returns true if any result has Success == false.
-func bulkHasFailure(results []BulkResult) bool {
-	for _, r := range results {
-		if !r.Success {
-			return true
-		}
-	}
-	return false
-}
-
 // isDirectoryOutput reports whether -o names a directory rather than a file:
 // it ends in a path separator, or it already exists as one. A trailing
 // separator is the only way to say "a directory that does not exist yet".
@@ -310,21 +318,4 @@ func isDirectoryOutput(path string) bool {
 	}
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
-}
-
-// bulkOutputPath computes the output filename for a bulk conversion.
-// Input "scan.nessus" with toFormat "hdf" → "scan.hdf.json"
-// Input "report.sarif" with toFormat "csv" produces "report.hdf.csv".
-func bulkOutputPath(outputDir, inputPath, toFormat string) string {
-	base := filepath.Base(inputPath)
-	ext := filepath.Ext(base)
-	stem := base[:len(base)-len(ext)]
-
-	var outName string
-	if toFormat == "hdf" || toFormat == "" {
-		outName = stem + ".hdf.json"
-	} else {
-		outName = stem + ".hdf." + toFormat
-	}
-	return filepath.Join(outputDir, outName)
 }

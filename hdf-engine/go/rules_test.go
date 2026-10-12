@@ -12,6 +12,7 @@ import (
 	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 
 	"github.com/stretchr/testify/assert"
@@ -368,4 +369,39 @@ func schemaStatusForRules(req hdf.EvaluatedRequirement) string {
 		statuses = append(statuses, string(r.Status))
 	}
 	return hdfutil.WorstStatus(statuses)
+}
+
+// A caller with a live context gets to stop a rule evaluation; the background
+// context the old entry point fabricated never could. Pre-cancelled, the filter
+// yields nothing, and the caller tells a partial result from a clean one through
+// ctx.Err() — the contract the query and aggregate tools already use.
+func TestEvaluateRulesContext_StopsWhenCancelled(t *testing.T) {
+	results := testhdf.Results(testhdf.Req("V-1", testhdf.Impact(0.9), testhdf.Status(hdf.Failed)))
+	limit := 0
+	config := &ThresholdConfig{Rules: []ThresholdRule{{Name: "no failures", Where: RulePredicate{Status: In("failed")}, Max: &limit}}}
+	require.NotEmpty(t, EvaluateRulesContext(context.Background(), config, results, RuleOptions{StatusOf: effectiveStatusOf(false)}), "the rule trips on a live run")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	assert.Empty(t, EvaluateRulesContext(ctx, config, results, RuleOptions{StatusOf: effectiveStatusOf(false)}), "a cancelled run stops filtering rather than finishing every rule")
+	assert.Error(t, ctx.Err(), "and the caller can see why it is empty")
+}
+
+// Now governs the grid half as well as the rules half: an impact override that
+// has expired by now no longer re-scores the requirement the counts band it in.
+func TestNewThresholdInputAt_JudgesOverrideExpiryAtNow(t *testing.T) {
+	req := testhdf.Req("V-1", testhdf.Impact(0.9), testhdf.Status(hdf.Failed))
+	req.StatusOverrides = []hdf.StatusOverride{{
+		Type: hdf.RiskAdjustment, Reason: "compensated", AppliedBy: hdf.Identity{Type: hdf.Email, Identifier: "a@example.gov"},
+		AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), ExpiresAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		Impact: &hdf.ImpactOverride{Value: 0.1},
+	}}
+	results := testhdf.Results(req)
+	statusOf := func(hdf.EvaluatedRequirement) string { return "failed" }
+
+	before := NewThresholdInputAt(results, statusOf, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+	assert.Equal(t, 1, before.Counts.Failed.Low, "while the re-score governs, the failure counts as low")
+	after := NewThresholdInputAt(results, statusOf, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	assert.Equal(t, 1, after.Counts.Failed.Critical, "once it has expired, the raw 0.9 counts as critical")
+	assert.Equal(t, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), after.Now, "and the rules half is handed the same instant")
 }

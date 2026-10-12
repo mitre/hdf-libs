@@ -460,9 +460,17 @@ export function tagMatchesGlob(tags: Record<string, unknown>, key: string, patte
  * document. Refused rather than tolerated in either direction.
  * Parity: ValidTag in go/filter.go.
  */
+/**
+ * validKeyValue is the one "key:value with a non-empty key" test behind every
+ * expression the filter takes in that shape; the exported names keep the
+ * vocabulary each flag advertises. Parity: validKeyValue in go/filter.go.
+ */
+function validKeyValue(s: string): boolean {
+  return s.indexOf(':') > 0;
+}
+
 export function validTag(s: string): boolean {
-  const colon = s.indexOf(':');
-  return colon > 0;
+  return validKeyValue(s);
 }
 
 /**
@@ -492,8 +500,7 @@ function governingPoamType(control: EvaluatedRequirement, now?: string): string 
  * Parity: ValidBaselineLabel in go/filter.go.
  */
 export function validBaselineLabel(s: string): boolean {
-  const colon = s.indexOf(':');
-  return colon > 0;
+  return validKeyValue(s);
 }
 
 /**

@@ -485,10 +485,15 @@ func compareImpact(impact float64, op string, val float64) bool {
 // merely selected nothing, a colonless tag was DROPPED from the filter list
 // entirely, so a predicate made only of colonless values matched the whole
 // document. Refused rather than tolerated in either direction.
-func ValidTag(s string) bool {
+// validKeyValue is the one "key:value with a non-empty key" test behind every
+// expression the filter takes in that shape; the exported names keep the
+// vocabulary each flag advertises. Parity: validKeyValue in src/query.ts.
+func validKeyValue(s string) bool {
 	key, _, found := strings.Cut(s, ":")
 	return found && key != ""
 }
+
+func ValidTag(s string) bool { return validKeyValue(s) }
 
 func tagContains(tags map[string]any, key, value string) bool {
 	for _, s := range hdfutil.TagStrings(tags, key) {
@@ -512,10 +517,7 @@ func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
 // carrying no colon names no key, so it can never match any document — the same
 // forever-green gate a misspelled status value produces, which is why it is
 // refused rather than allowed to select nothing.
-func ValidBaselineLabel(s string) bool {
-	key, _, found := strings.Cut(s, ":")
-	return found && key != ""
-}
+func ValidBaselineLabel(s string) bool { return validKeyValue(s) }
 
 // governingPoamType returns the KIND of the governing POA&M, or "" when the
 // governing entry is an override or nothing governs. It resolves through the

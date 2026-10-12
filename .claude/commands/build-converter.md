@@ -128,7 +128,8 @@ Never let real structured data land only in freetext when HDF has a home for it.
 - **References** → external links into `refs[]` (the `Reference` type), not parsed-then-dropped.
 - **Remediation / fix / tips** → labeled `descriptions[]` entries.
 - **Triage / waiver / suppression** → reconstruct `statusOverrides[]` (+ `disposition`, `effectiveStatus`) with owner/date/reason when the source carries them — not a lossy status flip plus a tag.
-- **Raw source** → put the finding's raw source (or a serialized source object) in `requirement.code` so Heimdall's CODE tab renders (see `nessus`/`ionchannel`/`splunk` for the pattern).
+- **Raw source record** → put the source tool's own record for a finding in `results[].rawSourceRecord` (`content` + `encoding` + `mediaType`, and `pointer` when the record has an addressable location in the input). **Not `requirement.code`** — that field means the code, query or check that *ran*, and a serialized finding is not code. The record is scoped to the result because that is where the native record lives: one (vulnerability, package) pair is one result, so a CVE reported against two packages has two different records and a requirement-scoped field would have to discard one. ADR-0017 §5.
+- **The whole input** → `extensions.rawSourceArtifacts[]`, one entry per artifact the converter read, distinct from the per-finding record above (ADR-0017 §2).
 - **Timestamps** → derive the top-level `timestamp` and per-result `startTime` from the source's real scan/finding time; never `time.Now()`/`new Date()` when the source supplies a time.
 - **Categorization / metadata** → source taxonomy with no first-class field goes to `tags` passthrough, not dropped.
 - **Tool identity** → set `tool.version` from the source when present.
@@ -173,15 +174,21 @@ The bar is high. Three-line schema additions accumulate; every one is a schema-v
 ### Fixture sources (in priority order)
 
 1. **Real tool output** captured from an actual run or public CI pipeline (e.g., GitHub Actions artifacts, open-source project test resources)
-2. The heimdall2 repo at `~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`
-3. The SAF CLI repo at `~/repos/saf/test/sample_data/`
+2. The heimdall2 repo at `~/repos/mitre/heimdall2/libs/hdf-converters/test/sample_input_report/`
+3. The SAF CLI repo at `~/repos/mitre/saf/test/sample_data/`
 4. Sanitized/anonymized copies of real customer data
 
 Before writing any fixtures, check both repos:
 ```bash
-ls ~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/
-ls ~/repos/saf/test/sample_data/
+ls ~/repos/mitre/heimdall2/libs/hdf-converters/test/sample_input_report/
+ls ~/repos/mitre/saf/test/sample_data/
 ```
+
+A converter's own sample may live beside its mapper rather than in the shared
+input directory — heimdall2 keeps prisma's under
+`libs/hdf-converters/sample_jsons/prisma_mapper/sample_input_report/`. If the
+clones are absent, query GitHub instead (`gh api search/code`) rather than
+concluding no upstream sample exists.
 
 ### Fixture validation requirement
 
@@ -1296,7 +1303,8 @@ cat output.json | head -40
 **All converters — field coverage (review Step 1a):**
 - [ ] Coverage judged against the source **spec/schema** where one exists (every spec-defined field mapped or justified) — NOT just the fields present in the sample fixture
 - [ ] Every source field has a logged disposition: mapped, no-HDF-home (Step 1b), or asked-the-developer — none silently dropped
-- [ ] Structured data lands in its structured HDF field, not freetext: `cvss[]` (score+vector), `cwe[]`, `epss`/`kev`, `sourceLocation`, `components[]`, `refs[]`, `statusOverrides[]`, `requirement.code`
+- [ ] Structured data lands in its structured HDF field, not freetext: `cvss[]` (score+vector), `cwe[]`, `epss`/`kev`, `sourceLocation`, `components[]`, `refs[]`, `statusOverrides[]`
+- [ ] Raw source data is carried where it belongs: the per-finding record in `results[].rawSourceRecord`, the whole input in `extensions.rawSourceArtifacts[]` — and **not** in `requirement.code`, which is the check that ran (ADR-0017 §2, §5)
 - [ ] Top-level `timestamp` / result `startTime` / `tool.version` come from the source when it supplies them (never `time.Now()`/`new Date()` as a substitute for a real source time)
 - [ ] No "parsed into the struct but never emitted" fields — each is mapped or justified in the plan
 

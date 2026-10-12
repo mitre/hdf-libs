@@ -88,6 +88,14 @@ describe('requirementEffectiveImpact', () => {
       expect(requirementEffectiveImpact(c.req)).toBeCloseTo(c.want, 9);
     });
   }
+
+  // Parity: TestRequirementEffectiveImpactAt_JudgesExpiryAtRef in shared/go.
+  it('a reference time governs expiry', () => {
+    const r = req({ impact: 0.9, statusOverrides: [adjustment(0.1, '2019-06-01T00:00:00Z', '2020-06-01T00:00:00Z')] });
+    expect(requirementEffectiveImpact(r, '2020-01-01T00:00:00Z')).toBeCloseTo(0.1, 9);
+    expect(requirementEffectiveImpact(r, '2021-01-01T00:00:00Z')).toBeCloseTo(0.9, 9);
+    expect(requirementEffectiveImpact(r)).toBeCloseTo(0.9, 9);
+  });
 });
 
 // Parity: TestGoverningOverrideIndex_IsByAppliedAtNotPosition in shared/go.
@@ -236,5 +244,21 @@ describe('requirementStatusInput: Go zero time as a Date instance', () => {
       },
     ]);
     expect(requirementEffectiveStatus(req)).toBe('passed');
+  });
+});
+
+// Parity: TestRequirementDisposition_DoesNotReadPoams in shared/go. A plan
+// governs status in hdf-engine and hdf-diff, but an export carries the plan
+// separately, so a POA&M alone yields no disposition here and the stored
+// fallback still applies.
+describe('requirementDisposition: does not read poams', () => {
+  const plan = { appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z', status: 'passed' };
+
+  it('a plan alone governs no export disposition', () => {
+    expect(requirementDisposition(req({ id: 'V-1', impact: 0.5, poams: [plan] }), '2026-06-01T00:00:00Z')).toBe('');
+  });
+
+  it('with no overrides the stored field is still the fallback, plan or not', () => {
+    expect(requirementDisposition(req({ id: 'V-1', impact: 0.5, poams: [plan], disposition: 'waiver' }), '2026-06-01T00:00:00Z')).toBe('waiver');
   });
 });

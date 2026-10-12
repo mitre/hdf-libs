@@ -346,12 +346,37 @@ func TestHdfConvert_RejectsNonUUIDComponentID(t *testing.T) {
 	}
 }
 
+// A converter whose source names no target produces no component, so a
+// componentId that could not be applied is a notice on a successful conversion —
+// the same call the CLI makes a warning, never a refusal.
+func TestHdfConvert_ComponentIDOnComponentlessOutputNotices(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	res, out := callConvert(t, convertInput{
+		Content: string(gosecFixture(t)), From: "gosec", Output: "out.json",
+		ComponentID: "11111111-1111-1111-1111-111111111111",
+	})
+	if res != nil && res.IsError {
+		t.Fatalf("an unapplied componentId must not fail the conversion: %s", payloadTextOrEmpty(res))
+	}
+	if !strings.Contains(out.Notice, "no components") || !strings.Contains(out.Notice, "componentId") {
+		t.Fatalf("the notice must say the componentId was not applied, got %q", out.Notice)
+	}
+	data, err := os.ReadFile(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "11111111-1111-1111-1111-111111111111") {
+		t.Fatal("nothing was stamped, so the written document must not carry the id")
+	}
+}
+
 func TestConvertAndPostProcess_RejectsNonUUIDComponentID(t *testing.T) {
 	conv, err := convreg.GetConverter("aws-config", "hdf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, terr := convertAndPostProcess(conv, awsConfigFixture(t), nil, "CI0012345")
+	out, _, terr := convertAndPostProcess(conv, awsConfigFixture(t), nil, "CI0012345")
 	if terr == nil || out != nil {
 		t.Fatalf("a non-UUID componentId must be refused with no document, got %d bytes / %v", len(out), terr)
 	}

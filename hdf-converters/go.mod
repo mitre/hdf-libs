@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-converters/v3
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/adrg/xdg v0.5.3
@@ -8,14 +8,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.6
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.1
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.1
-	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.1
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/stretchr/testify v1.12.1
 	github.com/terminalstatic/go-xsd-validate v0.1.8
@@ -41,7 +41,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.44.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
 
 replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../hdf-schema/dist/go

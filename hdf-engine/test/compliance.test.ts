@@ -1000,3 +1000,33 @@ describe('an override missing its timestamps', () => {
     expect(counts.failed.medium).toBe(0);
   });
 });
+
+// Parity: TestNewThresholdInputAt_JudgesOverrideExpiryAtNow in go. The
+// reference time governs the grid half as well as the rules half: an impact
+// override that has expired by now no longer re-scores the requirement into the
+// band the counts put it in.
+describe('a reference time governs the counts', () => {
+  const doc = (): HDFResults => {
+    const req = {
+      id: 'V-1', impact: 0.9, results: [{ status: 'failed' }],
+      statusOverrides: [{
+        type: 'riskAdjustment', reason: 'compensated',
+        appliedBy: { type: 'email', identifier: 'a@example.gov' },
+        appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2025-06-01T00:00:00Z',
+        impact: { value: 0.1 },
+      }],
+    };
+    return { baselines: [{ requirements: [req] }] } as unknown as HDFResults;
+  };
+  const failed = () => 'failed';
+
+  it('counts the re-score while the override governs, and the raw impact once it has expired', () => {
+    expect(countControlsByStatus(doc(), failed, '2025-01-01T00:00:00Z').failed.low).toBe(1);
+    expect(countControlsByStatus(doc(), failed, '2026-01-01T00:00:00Z').failed.critical).toBe(1);
+  });
+
+  it('bands the control map the same way', () => {
+    expect(mapControlIDsByStatus(doc(), failed, '2025-01-01T00:00:00Z')[0]!.severity).toBe('low');
+    expect(mapControlIDsByStatus(doc(), failed, '2026-01-01T00:00:00Z')[0]!.severity).toBe('critical');
+  });
+});

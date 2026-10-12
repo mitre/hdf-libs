@@ -103,6 +103,13 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			return argError("aggregate needs at least one source",
 				"pass sources[] with one or more {path} or {handle} documents"), errorAggregateOutput(), nil
 		}
+		// Validated before any document is read, through the same helper
+		// hdf_query uses: a filter value outside its vocabulary counts nothing
+		// and returns a clean rollup, which is indistinguishable from a
+		// legitimately empty one.
+		if refusal := refuseUnknownStatusSeverity(in.Status, in.Severity); refusal != nil {
+			return refusal, errorAggregateOutput(), nil
+		}
 
 		// The all-source total is counted over the engine's Merge of the
 		// filtered documents — the same in-memory view hdf_query and

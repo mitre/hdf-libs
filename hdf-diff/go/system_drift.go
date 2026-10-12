@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // systemTrackedFields are the component-level fields tracked for field changes.
@@ -131,7 +133,8 @@ func DiffSystems(ctx context.Context, oldSystem, newSystem map[string]any) (HdfC
 		ComponentDiffs:   componentDiffs,
 	}
 
-	// Build extensions map for system-level changes and data flow changes
+	// System-level and data-flow changes are not modeled by hdf-comparison, so
+	// they ride in extensions.passthrough — `extensions` itself is closed.
 	extensions := map[string]any{}
 
 	if len(systemFieldChanges) > 0 {
@@ -144,7 +147,7 @@ func DiffSystems(ctx context.Context, oldSystem, newSystem map[string]any) (HdfC
 	}
 
 	if len(extensions) > 0 {
-		result.Extensions = extensions
+		result.Extensions = &hdf.Extensions{Passthrough: extensions}
 	}
 
 	return result, nil

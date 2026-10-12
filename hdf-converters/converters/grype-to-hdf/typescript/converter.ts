@@ -16,7 +16,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
-import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
@@ -262,8 +262,7 @@ function getReferences(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVuln
  * nothing at all, so the caller leaves both fields unset.
  */
 function packageInstanceId(a: GrypeArtifact): string {
-  if (a.purl) return a.purl;
-  return a.version ? `${a.name}@${a.version}` : a.name;
+  return sharedPackageInstanceId(a.purl ?? '', a.name, a.version ?? '');
 }
 
 function buildCodeDesc(match: GrypeMatch): string {

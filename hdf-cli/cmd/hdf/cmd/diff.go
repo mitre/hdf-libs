@@ -13,22 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ExitCoder is implemented by errors that carry a specific process exit code.
-// main.go checks for this interface to use the correct exit code instead of
-// defaulting to 1.
-type ExitCoder interface {
-	error
-	ExitCode() int
+// passthroughOf reads the unmodeled-data map out of a document's extensions;
+// `extensions` itself is closed, so nothing else can live beside it.
+func passthroughOf(ext *hdf.Extensions) map[string]interface{} {
+	if ext == nil {
+		return nil
+	}
+	return ext.Passthrough
 }
-
-// exitCodeError is returned by runDiff to signal a specific exit code.
-type exitCodeError struct {
-	code    int
-	message string
-}
-
-func (e *exitCodeError) Error() string { return e.message }
-func (e *exitCodeError) ExitCode() int { return e.code }
 
 // groupByBaseline is the key value for grouping by baseline name.
 const groupByBaselineKey = "baseline"
@@ -128,7 +120,7 @@ type diffResult struct {
 	// unevaluatedProperties:false constraint, it ships inside the schema's
 	// `extensions` tool-data slot at marshal time — see outputDiffJSON.
 	ComponentDiffs []componentSummary `json:"-"`
-	Extensions     map[string]any     `json:"extensions,omitempty"`
+	Extensions     *hdf.Extensions    `json:"extensions,omitempty"`
 
 	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
 	// Set to "Component" for --system, or the group-by key for --group-by.
@@ -177,7 +169,10 @@ Requirements are matched by ID across the two documents and classified as:
 Exit codes (--exit-code): GNU diff compatible
   0 - no differences found (assessments are identical)
   1 - differences found (any kind)
-  2 - error (file not found, parse failure, etc.)
+
+A diff that cannot run at all (file not found, parse failure) also exits 1, so
+in this mode 1 does not tell a failure apart from a difference. Use
+--detailed-exitcode, where 1 means only that.
 
 Exit codes (--detailed-exitcode): nuanced security outcomes
   0  - identical (no differences)
@@ -215,7 +210,7 @@ Examples:
 	cmd.Flags().BoolVar(&flags.newOnly, "new", false, "Show only new requirements")
 	cmd.Flags().BoolVar(&flags.absent, "absent", false, "Show only absent requirements")
 	cmd.Flags().BoolVar(&flags.all, "all", false, "Include unchanged requirements/components in output")
-	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences, 2=error")
+	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences")
 	cmd.Flags().BoolVar(&flags.detailedExitCode, "detailed-exitcode", false,
 		"Use detailed exit codes: 0=identical, 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift")
 	cmd.Flags().BoolVarP(&flags.quiet, "quiet", "q", false, "Suppress output, return exit code only (implies --exit-code)")
@@ -556,14 +551,17 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 // --- Output formatters ---
 
 func outputDiffJSON(result diffResult) error {
-	// hdf-comparison's unevaluatedProperties:false rejects any top-level
-	// field outside the schema. Wrap CLI-only data (per-component compliance
-	// summaries) into the schema's `extensions` slot before marshal.
+	// hdf-comparison's unevaluatedProperties:false rejects any top-level field
+	// outside the schema, and `extensions` is itself closed. Wrap CLI-only data
+	// (per-component compliance summaries) into extensions.passthrough.
 	if len(result.ComponentDiffs) > 0 {
 		if result.Extensions == nil {
-			result.Extensions = map[string]any{}
+			result.Extensions = &hdf.Extensions{}
 		}
-		result.Extensions["componentSummaries"] = result.ComponentDiffs
+		if result.Extensions.Passthrough == nil {
+			result.Extensions.Passthrough = map[string]any{}
+		}
+		result.Extensions.Passthrough["componentSummaries"] = result.ComponentDiffs
 	}
 	output, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
@@ -770,15 +768,16 @@ func resolveGroupValues(groupKey string, oldResults, newResults hdf.HDFResults, 
 			}
 		}
 	default:
-		// Label key: look up in baseline extensions.labels
+		// Label key: look up in baseline extensions.passthrough.labels
 		baselineGroupMap := make(map[string]string)
 		for _, results := range []hdf.HDFResults{oldResults, newResults} {
 			for _, baseline := range results.Baselines {
-				if baseline.Extensions != nil {
-					if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
-						if val, ok := labels[groupKey].(string); ok {
-							baselineGroupMap[baseline.Name] = val
-						}
+				if baseline.Extensions == nil {
+					continue
+				}
+				if labels, ok := baseline.Extensions.Passthrough["labels"].(map[string]interface{}); ok {
+					if val, ok := labels[groupKey].(string); ok {
+						baselineGroupMap[baseline.Name] = val
 					}
 				}
 			}
@@ -965,7 +964,7 @@ type systemDiffResult struct {
 	ComparisonMode string                 `json:"comparisonMode"`
 	Summary        diff.ComparisonSummary `json:"summary"`
 	ComponentDiffs []systemDiffComponent  `json:"componentDiffs"`
-	Extensions     map[string]interface{} `json:"extensions,omitempty"`
+	Extensions     *hdf.Extensions        `json:"extensions,omitempty"`
 }
 
 // runSystemDiff compares two system documents in systemDrift mode.
@@ -1042,7 +1041,7 @@ func engineSystemResultToSystemDiffResult(comp diff.HdfComparison) systemDiffRes
 		extensions = make(map[string]interface{})
 
 		// Convert systemFieldChanges ([]types.FieldChange → []systemDiffFieldChange)
-		if sfc, ok := comp.Extensions["systemFieldChanges"]; ok {
+		if sfc, ok := comp.Extensions.Passthrough["systemFieldChanges"]; ok {
 			if typedChanges, ok := sfc.([]diff.FieldChange); ok {
 				converted := make([]systemDiffFieldChange, 0, len(typedChanges))
 				for _, fc := range typedChanges {
@@ -1060,7 +1059,7 @@ func engineSystemResultToSystemDiffResult(comp diff.HdfComparison) systemDiffRes
 		}
 
 		// Convert dataFlowChanges ([]diff.DataFlowChange → []systemDiffDataFlow)
-		if dfc, ok := comp.Extensions["dataFlowChanges"]; ok {
+		if dfc, ok := comp.Extensions.Passthrough["dataFlowChanges"]; ok {
 			if typedChanges, ok := dfc.([]diff.DataFlowChange); ok {
 				converted := make([]systemDiffDataFlow, 0, len(typedChanges))
 				for _, df := range typedChanges {
@@ -1080,12 +1079,17 @@ func engineSystemResultToSystemDiffResult(comp diff.HdfComparison) systemDiffRes
 		}
 	}
 
+	var wrapped *hdf.Extensions
+	if len(extensions) > 0 {
+		wrapped = &hdf.Extensions{Passthrough: extensions}
+	}
+
 	return systemDiffResult{
 		FormatVersion:  comp.FormatVersion,
 		ComparisonMode: string(comp.ComparisonMode),
 		Summary:        summary,
 		ComponentDiffs: componentDiffs,
-		Extensions:     extensions,
+		Extensions:     wrapped,
 	}
 }
 
@@ -1178,7 +1182,8 @@ func outputSystemDiffTable(result systemDiffResult, oldFile, newFile string) {
 }
 
 // outputDataFlowDetails prints individual data flow changes when present.
-func outputDataFlowDetails(extensions map[string]interface{}) {
+func outputDataFlowDetails(ext *hdf.Extensions) {
+	extensions := passthroughOf(ext)
 	if extensions == nil {
 		return
 	}
@@ -1229,7 +1234,8 @@ func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) 
 	outputSystemDiffSummary(result.Summary, result.Extensions)
 }
 
-func outputSystemDiffSummary(summary diff.ComparisonSummary, extensions map[string]interface{}) {
+func outputSystemDiffSummary(summary diff.ComparisonSummary, ext *hdf.Extensions) {
+	extensions := passthroughOf(ext)
 	parts := []string{
 		fmt.Sprintf("%d new", summary.New),
 		fmt.Sprintf("%d absent", summary.Absent),

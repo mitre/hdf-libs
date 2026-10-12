@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // ComponentProp maps one HDF component identity field to the HDF-namespaced prop
@@ -317,7 +318,7 @@ func readComponentMap(props []Property, g ComponentGroupProp) map[string]string 
 		if key == nil && value == nil {
 			break
 		}
-		m[strOrEmpty(key)] = strOrEmpty(value)
+		m[hdfutil.Deref(key)] = hdfutil.Deref(value)
 	}
 	if len(m) == 0 {
 		return nil

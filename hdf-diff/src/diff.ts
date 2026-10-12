@@ -1171,7 +1171,8 @@ export function diffSystems(
     componentDiffs,
   };
 
-  // Extensions: system field changes + data flow changes
+  // System-level and data-flow changes are not modeled by hdf-comparison, so
+  // they ride in extensions.passthrough — `extensions` itself is closed.
   const extensions: Record<string, unknown> = {};
   if (systemFieldChanges.length > 0) {
     extensions['systemFieldChanges'] = systemFieldChanges;
@@ -1181,7 +1182,7 @@ export function diffSystems(
     extensions['dataFlowChanges'] = dataFlowChanges;
   }
   if (Object.keys(extensions).length > 0) {
-    comparison.extensions = extensions;
+    comparison.extensions = { passthrough: extensions };
   }
 
   if (options?.validateOutput) {

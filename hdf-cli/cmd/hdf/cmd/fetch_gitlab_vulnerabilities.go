@@ -233,6 +233,26 @@ func renderGitlabVulnerabilities(raw []byte, format string) ([]byte, error) {
 // runGitlabVulnerabilitiesGroup writes one file per project through the shared
 // bulk runner, so a group sweep honours --fail-fast and --json and reports
 // failures the same way bulk convert does.
+// groupOutputTarget names the output file for one project of a group fetch,
+// confined to outDir. The path is the server's, so a listing that names `..`
+// or a separator the Join would honour is refused rather than written beside
+// or above the directory the user chose.
+func groupOutputTarget(outDir, fullPath string) (string, error) {
+	if fullPath == "" || strings.ContainsAny(fullPath, `\`) {
+		return "", fmt.Errorf("project path %q is not a usable file name", fullPath)
+	}
+	for _, seg := range strings.Split(fullPath, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return "", fmt.Errorf("project path %q is not a usable file name", fullPath)
+		}
+	}
+	target := filepath.Join(outDir, strings.ReplaceAll(fullPath, "/", "__"))
+	if filepath.Dir(target) != filepath.Clean(outDir) {
+		return "", fmt.Errorf("project path %q would write outside %s", fullPath, outDir)
+	}
+	return target, nil
+}
+
 func runGitlabVulnerabilitiesGroup(cmd *cobra.Command, f *gitlabvuln.GitLabVulnerabilitiesFetcher, format, outDir string) error {
 	results, err := f.FetchGroup(cmd.Context())
 	if err != nil {
@@ -256,7 +276,10 @@ func runGitlabVulnerabilitiesGroup(cmd *cobra.Command, f *gitlabvuln.GitLabVulne
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(outDir, strings.ReplaceAll(fullPath, "/", "__"))
+		target, err := groupOutputTarget(outDir, fullPath)
+		if err != nil {
+			return err
+		}
 		if format == fetchFormatRaw {
 			return writeConvertOutput(output, target+".json")
 		}

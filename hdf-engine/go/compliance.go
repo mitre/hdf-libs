@@ -125,7 +125,13 @@ func (b *ThresholdBound) UnmarshalYAML(node *yaml.Node) error {
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i]
 		switch key.Value {
-		case "min", "max", "controls":
+		case "min", "max":
+			// Decode would read 1.5 into an int; a bound is a whole number of
+			// controls, so anything but an integer scalar is refused here.
+			if v := node.Content[i+1]; v.Kind != yaml.ScalarNode || v.Tag != "!!int" {
+				return fmt.Errorf("line %d: %s must be a whole number of controls, got %s", v.Line, key.Value, v.Value)
+			}
+		case "controls":
 		case "<<":
 			// go-yaml expands a merge key before the value reaches the struct, so
 			// refusing it here would reject legitimate YAML — and a repetitive
@@ -211,6 +217,13 @@ func CountControlsByStatusSeverity(results hdf.HDFResults) *StatusCounts {
 // the engine binding to any one status convention (the same injection pattern as
 // Filter's StatusOf).
 func CountControlsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) *StatusCounts {
+	return CountControlsByStatusAt(results, statusOf, time.Time{})
+}
+
+// CountControlsByStatusAt is CountControlsByStatus as of ref: an impact
+// override's expiry is judged against ref rather than the wall clock, so a
+// threshold evaluated at a recorded instant counts what governed then.
+func CountControlsByStatusAt(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string, ref time.Time) *StatusCounts {
 	counts := &StatusCounts{}
 	for _, baseline := range results.Baselines {
 		for i := range baseline.Requirements {
@@ -224,7 +237,7 @@ func CountControlsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 			// already resolves STATUS through the injected resolver; deriving
 			// severity from the raw impact counted one post-adjudication and the
 			// other pre-adjudication.
-			addCount(counts, hdf.ResultStatus(status), DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity))
+			addCount(counts, hdf.ResultStatus(status), DeriveSeverity(EffectiveImpactOf(req, ref), req.Severity))
 		}
 	}
 	return counts
@@ -260,7 +273,7 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 				ID:       req.ID,
 				Status:   statusToThresholdKey(status),
 				Severity: SeverityBucket(sev),
-				Title:    requirementTitle(req),
+				Title:    hdfutil.Deref(req.Title),
 			})
 		}
 	}
@@ -274,6 +287,11 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 // resolver yields all-skipped. Callers use this for effective-status control
 // listings (the same injection pattern as CountControlsByStatus).
 func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) []ControlIDMapping {
+	return MapControlIDsByStatusAt(results, statusOf, time.Time{})
+}
+
+// MapControlIDsByStatusAt is MapControlIDsByStatus as of ref (see CountControlsByStatusAt).
+func MapControlIDsByStatusAt(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string, ref time.Time) []ControlIDMapping {
 	var mappings []ControlIDMapping
 	for _, baseline := range results.Baselines {
 		for i := range baseline.Requirements {
@@ -287,21 +305,12 @@ func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 				Status: statusToThresholdKey(hdf.ResultStatus(status)),
 				// Effective impact, matching CountControlsByStatus, so a control
 				// listing and the counts it is listed alongside cannot disagree.
-				Severity: SeverityBucket(DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity)),
-				Title:    requirementTitle(req),
+				Severity: SeverityBucket(DeriveSeverity(EffectiveImpactOf(req, ref), req.Severity)),
+				Title:    hdfutil.Deref(req.Title),
 			})
 		}
 	}
 	return mappings
-}
-
-// requirementTitle is the requirement's title, or empty when it has none —
-// title is optional on the schema.
-func requirementTitle(req hdf.EvaluatedRequirement) string {
-	if req.Title == nil {
-		return ""
-	}
-	return *req.Title
 }
 
 // thresholdKeyToStatus is statusToThresholdKey's inverse, for reporting a
@@ -417,6 +426,61 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	default:
 		sc.Informational++
 	}
+}
+
+// statusBuckets lists a count set's five status buckets, so a bucket-wise
+// operation is written once and cannot miss one.
+func statusBuckets(counts *StatusCounts) [5]*SeverityCounts {
+	return [5]*SeverityCounts{&counts.Passed, &counts.Failed, &counts.Skipped, &counts.Error, &counts.NoImpact}
+}
+
+func addSeverities(dst, src *SeverityCounts) {
+	dst.Critical += src.Critical
+	dst.High += src.High
+	dst.Medium += src.Medium
+	dst.Low += src.Low
+	dst.Informational += src.Informational
+	dst.Total += src.Total
+}
+
+// AddCounts sums count sets bucket by bucket and severity by severity, returning
+// a new set and leaving its arguments untouched — a caller that reports the parts
+// beside the whole is summing the very objects it still has to print. Each
+// bucket's Total is added, never recomputed from the severity fields.
+//
+// The counting functions above measure one document at a time, so a caller that
+// composes documents — the HTML report rolling baselines into a source and
+// sources into a whole, each evaluated as of its own assessment time — needs this
+// rather than a second counting pass. Combining whole DOCUMENTS is Merge's job,
+// not this function's (ADR-0016 §1).
+func AddCounts(counts ...*StatusCounts) *StatusCounts {
+	out := &StatusCounts{}
+	dst := statusBuckets(out)
+	for _, c := range counts {
+		if c == nil {
+			continue
+		}
+		src := statusBuckets(c)
+		for i := range dst {
+			addSeverities(dst[i], src[i])
+		}
+	}
+	return out
+}
+
+// SeverityTotals projects a count set onto severity alone, summing each severity
+// across every status — so Total is the whole set's requirement count. A severity
+// breakdown answers "how much risk is in this document", which is a question
+// about all of it, not about its failures.
+func SeverityTotals(counts *StatusCounts) SeverityCounts {
+	var out SeverityCounts
+	if counts == nil {
+		return out
+	}
+	for _, bucket := range statusBuckets(counts) {
+		addSeverities(&out, bucket)
+	}
+	return out
 }
 
 // CalculateCompliance returns the compliance percentage, rounded to two decimals.

@@ -50,6 +50,22 @@ describe('exit code constants', () => {
 
 // ── computeExitCode (basic/GNU diff mode) ───────────────────────────────
 
+// Characterization, not red-first: computeExitCode already never returns
+// EXIT_ERROR. The test exists so the doc comment saying so cannot rot silently.
+describe('computeExitCode never returns EXIT_ERROR', () => {
+  it.each([
+    ['identical', {}],
+    ['fixed', { fixed: 3, unchanged: 7 }],
+    ['regressed', { regressed: 3, unchanged: 7 }],
+    ['new', { new: 3, unchanged: 7 }],
+    ['absent', { absent: 3, unchanged: 7 }],
+    ['updated', { updated: 3, unchanged: 7 }],
+    ['empty', { total: 0, unchanged: 0 }],
+  ])('%s', (_name, overrides) => {
+    expect(computeExitCode(makeSummary(overrides))).not.toBe(EXIT_ERROR);
+  });
+});
+
 describe('computeExitCode', () => {
   it('should return 0 when all requirements are unchanged (identical)', () => {
     const summary = makeSummary();

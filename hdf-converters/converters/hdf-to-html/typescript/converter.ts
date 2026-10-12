@@ -5,25 +5,20 @@
  * and is pinned by the shared goldens.
  */
 
+import { canonicalJson, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
 import {
-  canonicalJson,
-  computeEffectiveStatus,
-  formatTimestamp,
-  governingStatusOverrideIndex,
-  parseTimestamp,
-  worstStatus,
-  type StatusOverrideInput,
-} from '@mitre/hdf-utilities';
-import {
+  addCounts,
   calculateCompliance,
   countControlsByStatus,
   deriveSeverity,
-  type SeverityCounts,
+  severityTotals,
   type StatusCounts,
+  severityBucket,
 } from '@mitre/hdf-engine';
-import type { EvaluatedBaseline, HDFResults, Severity } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import { byCodePoint } from '../../../shared/typescript/exportmap.js';
+import { requirementEffectiveImpact, requirementDisposition } from '../../../shared/typescript/status.js';
 import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 
 const CONVERTER_NAME = 'hdf-to-html';
@@ -201,12 +196,10 @@ function formatTime(value: unknown): string {
   return parsed ? formatTimestamp(parsed) : '';
 }
 
-/** Go's zero time (0001-01-01T00:00:00Z), which the legacy converters write when a source has no time. It is not a time. */
-const GO_ZERO_TIME = -62135596800000;
 
 function toDate(value: unknown): Date | null {
   const parsed = parsedDate(value);
-  return parsed && parsed.getTime() !== GO_ZERO_TIME ? parsed : null;
+  return parsed && !isGoZeroTime(parsed) ? parsed : null;
 }
 
 function parsedDate(value: unknown): Date | null {
@@ -247,42 +240,6 @@ function latestStart(baselines: Json[]): Date | null {
   return latest;
 }
 
-function emptyCounts(): StatusCounts {
-  const bucket = (): SeverityCounts => ({ critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 });
-  return { passed: bucket(), failed: bucket(), skipped: bucket(), error: bucket(), noImpact: bucket() };
-}
-
-/** A count set's five status buckets in the order the report's columns and stat lists use them. */
-function statusBuckets(c: StatusCounts): SeverityCounts[] {
-  return [c.passed, c.failed, c.skipped, c.noImpact, c.error];
-}
-
-function addSeverities(dst: SeverityCounts, src: SeverityCounts): void {
-  dst.critical += src.critical;
-  dst.high += src.high;
-  dst.medium += src.medium;
-  dst.low += src.low;
-  dst.informational += src.informational;
-  dst.total += src.total;
-}
-
-/** Rolls `src` into `dst`: the engine counts one document at a time, and the report rolls baselines up into sources and sources into a whole. */
-function addCounts(dst: StatusCounts, src: StatusCounts): void {
-  const to = statusBuckets(dst);
-  statusBuckets(src).forEach((bucket, i) => addSeverities(to[i]!, bucket));
-}
-
-function countTotal(c: StatusCounts): number {
-  return statusBuckets(c).reduce((n, bucket) => n + bucket.total, 0);
-}
-
-/** Sums each severity across the statuses: the severity panel counts every requirement, whatever its status. */
-function severityTotals(c: StatusCounts): SeverityCounts {
-  const out: SeverityCounts = { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 };
-  for (const bucket of statusBuckets(c)) addSeverities(out, bucket);
-  return out;
-}
-
 /**
  * The compliance percentage hdf-engine computes, to two places, so the report
  * never disagrees with `hdf validate threshold` in the last digit. The Go peer
@@ -297,8 +254,8 @@ export function compliance(c: StatusCounts): string {
 }
 
 /** The requirement's severity through the engine, exactly as its tally derives it. */
-function requirementSeverity(req: Json): string {
-  return deriveSeverity(numeric(req.impact), (req.severity ?? null) as Severity | null);
+function requirementSeverity(req: Json, now?: string): string {
+  return deriveSeverity(requirementEffectiveImpact(req as unknown as EvaluatedRequirement, now), (req.severity ?? null) as Severity | null);
 }
 
 /**
@@ -326,7 +283,9 @@ function complianceLevel(pct: number): readonly [cls: string, label: string] {
 
 /** Maps a severity onto the fixed set the stylesheet knows; an informational, absent or unrecognized one is 'none'. */
 export function severityClass(severity: string): string {
-  return severity === 'critical' || severity === 'high' || severity === 'medium' || severity === 'low' ? severity : 'none';
+  // The engine's bucket rule; its informational catch-all is the stylesheet's 'none'.
+  const bucket = severityBucket(severity);
+  return bucket === 'informational' ? 'none' : bucket;
 }
 
 export function severityLabel(severity: string): string {
@@ -697,15 +656,11 @@ class Renderer {
   }
 
   private status(): void {
-    const all = emptyCounts();
     // Individual results, worded as the Heimdall report words them. A requirement
     // passed by an override keeps its failed checks out of the passed tally.
     const checks = { underPassed: 0, passedUnderFailed: 0, failedUnderFailed: 0, total: 0 };
-    const perSource: StatusCounts[] = [];
     const perBaseline = this.sources.map((src) => {
       this.src = src;
-      const sourceCounts = emptyCounts();
-      perSource.push(sourceCounts);
       return src.baselines.map((baseline) => {
         const requirements = list(baseline.requirements).map(obj);
         for (const req of requirements) {
@@ -722,21 +677,21 @@ class Renderer {
         // are the ones the threshold gate and the MCP tools report. It is handed
         // the normalized requirements because a null array member reaches it
         // otherwise, where Go's typed decode had already made one a zero struct.
-        const counts = countControlsByStatus(
+        return countControlsByStatus(
           { baselines: [{ requirements } as unknown as EvaluatedBaseline] } as HDFResults,
           (req) => this.effectiveStatus(req as unknown as Json),
+          this.src.ref.stamp,
         );
-        addCounts(sourceCounts, counts);
-        addCounts(all, counts);
-        return counts;
       });
     });
+    const perSource: StatusCounts[] = perBaseline.map((counts) => addCounts(...counts));
+    const all = addCounts(...perSource);
     const severities = severityTotals(all);
     const anyRef = this.sources.some((src) => src.ref.known);
 
     this.line('<section id="status" class="card" aria-labelledby="status-heading">');
     this.line('<h2 id="status-heading">Status</h2>');
-    if (countTotal(all) > 0 && anyRef) {
+    if (severities.total > 0 && anyRef) {
       if (this.aggregated) {
         this.line(
           '<p class="as-of">Effective status evaluated for each source as of its own assessment time. ' +
@@ -768,7 +723,7 @@ class Renderer {
     this.line(stat('not-applicable', all.noImpact.total, 'Not Applicable', ''));
     this.line(stat('not-reviewed', all.skipped.total, 'Not Reviewed', ''));
     this.line(stat('error', all.error.total, 'Error', ''));
-    this.line(`<li class="stat stat-total"><span class="num">${countTotal(all)}</span><span class="lbl">Total</span></li>`);
+    this.line(`<li class="stat stat-total"><span class="num">${severities.total}</span><span class="lbl">Total</span></li>`);
     this.line('</ul>');
     this.line(
       bar('Requirements by status', [
@@ -927,7 +882,7 @@ class Renderer {
   private requirement(req: Json): void {
     const effective = this.effectiveStatus(req);
     const results = list(req.results).map(obj);
-    const severity = requirementSeverity(req);
+    const severity = requirementSeverity(req, this.src.ref.stamp);
     const tags = obj(req.tags);
     const nist = tagItems(tags, 'nist');
     const cci = tagItems(tags, 'cci');
@@ -979,8 +934,10 @@ class Renderer {
       ['Title', text(req.title)],
       ['Severity', severity],
       ['Impact', impact.toFixed(2)],
-      ['Effective impact', typeof req.effectiveImpact === 'number' ? req.effectiveImpact.toFixed(2) : ''],
-      ['Disposition', text(req.disposition)],
+      // Through the ladder, never the stored cache: the summary table this page
+      // also shows already counts the ladder, and the cache may be stale or absent.
+      ['Effective impact', requirementEffectiveImpact(req as unknown as EvaluatedRequirement, this.src.ref.stamp).toFixed(2)],
+      ['Disposition', requirementDisposition(req as unknown as EvaluatedRequirement, this.src.ref.stamp)],
       ['Control type', text(req.controlType)],
       ['Verification method', text(req.verificationMethod)],
       ['Applicability', text(req.applicability)],
@@ -1458,7 +1415,7 @@ function identity(value: unknown): string {
 
 /** A summary table row; `name` is already HTML. */
 function summaryRow(name: string, c: StatusCounts): string {
-  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.noImpact.total, c.error.total, countTotal(c)]
+  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.noImpact.total, c.error.total, severityTotals(c).total]
     .map((n) => `<td>${n}</td>`)
     .join('');
   return `<tr><th scope="row">${name}</th>${cells}<td>${compliance(c)}</td></tr>`;

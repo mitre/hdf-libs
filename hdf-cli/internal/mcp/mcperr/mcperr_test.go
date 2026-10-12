@@ -20,21 +20,22 @@ func TestError_EachCodeNamesNextCall(t *testing.T) {
 	}
 }
 
-// The closed set is exactly these nine — no more, no fewer.
+// The closed set is exactly the codes listed here — no more, no fewer.
 func TestClosedSet_Exhaustive(t *testing.T) {
 	want := map[Code]bool{
-		DocumentNotFound: true,
-		PathDenied:       true,
-		TooLarge:         true,
-		WrongDocType:     true,
-		SchemaInvalid:    true,
-		HandleStale:      true,
-		NoConverter:      true,
-		Truncated:        true,
-		AmbiguousFormat:  true,
-		OutputExists:     true,
-		WriteFailed:      true,
-		CacheMiss:        true,
+		DocumentNotFound:  true,
+		PathDenied:        true,
+		TooLarge:          true,
+		WrongDocType:      true,
+		SchemaInvalid:     true,
+		HandleStale:       true,
+		NoConverter:       true,
+		Truncated:         true,
+		AmbiguousFormat:   true,
+		OutputExists:      true,
+		WriteFailed:       true,
+		CacheMiss:         true,
+		NoOverrideMatched: true,
 	}
 	if len(Codes) != len(want) {
 		t.Fatalf("Codes has %d entries, want %d", len(Codes), len(want))

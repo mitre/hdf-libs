@@ -370,6 +370,39 @@ func TestLabelSet_ComponentId(t *testing.T) {
 	})
 }
 
+// A document with nothing to stamp is refused before the write, so the command
+// can never report "Labels updated" over a file it rewrote without stamping.
+func TestLabelSet_ComponentIDRejectsDocumentWithNoComponents(t *testing.T) {
+	docs := map[string]string{
+		"empty components":    `{"baselines": [], "statistics": {"duration": 0.1}, "components": []}`,
+		"no components field": `{"baselines": [], "statistics": {"duration": 0.1}}`,
+	}
+	flags := map[string][]string{
+		"--component-id":          {"--component-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"},
+		"--generate-component-id": {"--generate-component-id"},
+	}
+	for docName, doc := range docs {
+		for flagName, flag := range flags {
+			t.Run(docName+"/"+flagName, func(t *testing.T) {
+				path := filepath.Join(t.TempDir(), "in.json")
+				require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+				_, _, err := executeCommand(append([]string{"label", "set", path}, flag...)...)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "no components")
+				after, readErr := os.ReadFile(path)
+				require.NoError(t, readErr)
+				assert.Equal(t, doc, string(after), "a refused stamp writes nothing")
+
+				out := filepath.Join(t.TempDir(), "out.json")
+				_, _, err = executeCommand(append([]string{"label", "set", path, "-o", out}, flag...)...)
+				require.Error(t, err)
+				assert.NoFileExists(t, out)
+			})
+		}
+	}
+}
+
 func readComponents(t *testing.T, path string) []map[string]interface{} {
 	t.Helper()
 	data, err := os.ReadFile(path)

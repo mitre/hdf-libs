@@ -41,6 +41,28 @@ func TestConstants_BasicExitCodes(t *testing.T) {
 	})
 }
 
+// Characterization, not red-first: ComputeBasicExitCode already never returns
+// Error. The test exists so the doc comment saying so cannot rot silently.
+func TestComputeBasicExitCode_NeverReturnsError(t *testing.T) {
+	for name, overrides := range map[string]func(*ComparisonSummary){
+		"identical": func(s *ComparisonSummary) {},
+		"fixed":     func(s *ComparisonSummary) { s.Fixed, s.Unchanged = 3, 7 },
+		"regressed": func(s *ComparisonSummary) { s.Regressed, s.Unchanged = 3, 7 },
+		"new":       func(s *ComparisonSummary) { s.New, s.Unchanged = 3, 7 },
+		"absent":    func(s *ComparisonSummary) { s.Absent, s.Unchanged = 3, 7 },
+		"updated":   func(s *ComparisonSummary) { s.Updated, s.Unchanged = 3, 7 },
+		"nothing at all": func(s *ComparisonSummary) {
+			*s = ComparisonSummary{}
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := ComputeBasicExitCode(makeSummary(overrides)); got == Error {
+				t.Errorf("ComputeBasicExitCode returned Error (%d); a summary cannot describe a failed run", got)
+			}
+		})
+	}
+}
+
 func TestConstants_DetailedExitCodes(t *testing.T) {
 	t.Run("detailed exit code constants have correct values", func(t *testing.T) {
 		if FixesOnly != 10 {

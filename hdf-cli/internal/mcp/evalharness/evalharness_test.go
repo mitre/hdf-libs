@@ -246,6 +246,19 @@ func TestReplay_NilAssert(t *testing.T) {
 // review rather than silently consuming headroom.
 func TestToolsList_MatchesGolden(t *testing.T) {
 	live := driveToolsList(t)
+	// Same switch as the evals golden: the surface changed on purpose, so write
+	// what the server says and let review read the diff.
+	if os.Getenv("REGEN_GOLDEN") != "" {
+		var pretty bytes.Buffer
+		if err := json.Indent(&pretty, []byte(live), "", "  "); err != nil {
+			t.Fatal(err)
+		}
+		pretty.WriteByte('\n')
+		if err := os.WriteFile(filepath.Join("testdata", "tools-list.golden.json"), pretty.Bytes(), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		t.Skip("regenerated tools-list golden")
+	}
 	golden := readTestdata(t, "tools-list.golden.json")
 
 	if normalizeJSON(t, live) != normalizeJSON(t, golden) {
