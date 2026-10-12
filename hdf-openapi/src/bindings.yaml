@@ -215,6 +215,16 @@ synthetic:
     class: admin
     scopes:
       - hdf:admin
+    # Declared, not derived: a synthetic operation raises no mcperr code, and the two 409
+    # conditions are service concerns — a citing document restricting the delete (ADR-0009
+    # §5) and a legal hold (ADR-0013) — that the MCP has no equivalent for.
+    success: 204
+    problems:
+      '409':
+        - delete-restricted
+        - held
+      '412':
+        - handle-stale
 
   # Served by the authorization server rather than a service route, so documentOnly: it
   # appears in this document and is absent from the service's own emitted inventory.

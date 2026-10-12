@@ -354,8 +354,11 @@ describe('every operation advertises its rate-limit budget', () => {
     const missing: string[] = [];
     for (const [path, item] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(item)) {
-        const ok = op.responses?.['200'] as { headers?: Record<string, unknown> } | undefined;
-        if (ok?.headers?.[header] === undefined) missing.push(`${method.toUpperCase()} ${path}`);
+        // The success status is not always 200 — a delete declares 204 — so find it
+        // rather than naming it, or this passes by looking at a response that is absent.
+        const [, ok] = Object.entries(op.responses ?? {}).find(([status]) => Number(status) < 400) ?? [];
+        const headers = (ok as { headers?: Record<string, unknown> } | undefined)?.headers;
+        if (headers?.[header] === undefined) missing.push(`${method.toUpperCase()} ${path}`);
       }
     }
     expect(missing).toEqual([]);
@@ -1040,6 +1043,83 @@ describe('the synthetic operations declare an error surface too', () => {
         expect(statuses, `${binding.method} ${binding.path} lacks ${required}`).toContain(required);
       }
     }
+  });
+});
+
+// §2 states DELETE /documents/{id}'s surface — 204, a delete-restricted 409 and a legal-hold
+// 409 — and none of it is derivable: a synthetic operation raises no mcperr code, and the
+// two 409 conditions are ADR-0009/ADR-0013 service concerns the MCP has no equivalent for.
+// So §2's grammar declares them and the generator reads the declaration.
+describe("a synthetic operation's declared statuses reach the document", () => {
+  const declaring = Object.entries(table.synthetic ?? {}).filter(
+    ([, b]) => b.success !== undefined || b.problems !== undefined,
+  );
+
+  it('the table declares statuses somewhere, so the cases below are not empty', () => {
+    expect(declaring.length).toBeGreaterThan(0);
+  });
+
+  it.each(declaring.map(([name, b]) => [name, b] as const))(
+    '%s emits its declared success status and no other',
+    (_name, binding) => {
+      const statuses = Object.keys(doc.paths[binding.path!]![binding.method!]!.responses);
+      const success = statuses.filter((s) => Number(s) < 400);
+      expect(success).toEqual([String(binding.success ?? 200)]);
+    },
+  );
+
+  it.each(declaring.map(([name, b]) => [name, b] as const))(
+    '%s emits every problem status it declares, with the declared types',
+    (_name, binding) => {
+      const op = doc.paths[binding.path!]![binding.method!]!;
+      for (const [status, types] of Object.entries(binding.problems ?? {})) {
+        const response = op.responses[status] as
+          | { content: Record<string, { examples: Record<string, unknown> }> }
+          | undefined;
+        expect(response, `${binding.method} ${binding.path} declares ${status} and emits none`).toBeDefined();
+        const emitted = Object.keys(response!.content['application/problem+json']!.examples);
+        expect(emitted.sort()).toEqual([...types].sort());
+      }
+    },
+  );
+
+  it('a 204 carries no response body', () => {
+    const op = doc.paths['/documents/{id}']!.delete!;
+    expect(op.responses['200']).toBeUndefined();
+    expect((op.responses['204'] as { content?: unknown }).content).toBeUndefined();
+  });
+
+  // §2 scopes If-Match to writes addressing a document, and a delete is one. It was absent
+  // only because no MCP tool raises HANDLE_STALE for a delete, there being no MCP delete.
+  // A declared type the taxonomy already owns must agree with it, or the document would
+  // carry one type URI under two statuses and a client could not branch on either.
+  it('refuses a declared type whose status contradicts ADR-0010 §6', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: {
+            probe: {
+              method: 'delete',
+              path: '/documents/{id}',
+              class: 'admin',
+              scopes: ['hdf:admin'],
+              problems: { '409': ['handle-stale'] },
+            },
+          },
+        },
+      }),
+    ).toThrow(/handle-stale is 409 in the binding table and 412 in ADR-0010/);
+  });
+
+  it('the conditional delete requires If-Match', () => {
+    const op = doc.paths['/documents/{id}']!.delete!;
+    const header = (op.parameters ?? []).find(
+      (p) => (p as { name: string }).name === 'If-Match',
+    ) as { required: boolean; in: string } | undefined;
+    expect(header, 'DELETE /documents/{id} declares a 412 and no If-Match').toBeDefined();
+    expect(header!.in).toBe('header');
+    expect(header!.required).toBe(true);
+    expect(Object.keys(op.responses)).toContain('412');
   });
 });
 

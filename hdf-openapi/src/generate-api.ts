@@ -176,6 +176,7 @@ export const ALLOWED_FORMATS = new Set(['uuid', 'date-time', 'date', 'email', 'u
 export const STRIPPED_OUTPUT_FIELDS = new Set([
   'page',
   'nextPage',
+  'notice',
   'handle',
   'fromHandle',
   'toHandle',
@@ -384,31 +385,66 @@ function scopesFor(cls: string): string[] {
  * So the response carries one named example per code a client can actually meet, which is
  * also what stops a 422 reading as if only one thing could have gone wrong.
  */
-function problemResponseFor(status: number, codes: string[]): Record<string, unknown> {
+interface ProblemRef {
+  /** The kebab-case type name, which is what RFC 9457 discriminates on. */
+  type: string;
+  title: string;
+}
+
+function problemResponseForRefs(status: number, refs: ProblemRef[]): Record<string, unknown> {
   const schema =
     status === 422
       ? { $ref: '#/components/schemas/ValidationProblem' }
       : { $ref: '#/components/schemas/Problem' };
   const examples: Record<string, unknown> = {};
-  for (const code of codes) {
+  for (const ref of refs) {
     const value: Record<string, unknown> = {
-      type: `${PROBLEM_BASE}/${PROBLEM_TYPES[code]!.type}`,
-      title: code,
+      type: `${PROBLEM_BASE}/${ref.type}`,
+      title: ref.title,
       status,
     };
     // §3 gives SCHEMA_INVALID an `errors[]`, so the example a client copies shows one.
     // Without it the member exists in the schema and in no example.
-    if (code === 'SCHEMA_INVALID') {
+    if (ref.title === 'SCHEMA_INVALID') {
       value.errors = [
         { path: '/baselines/0/requirements/3/impact', line: 142, message: 'must be <= 1' },
       ];
     }
-    examples[PROBLEM_TYPES[code]!.type] = { summary: code, value };
+    examples[ref.type] = { summary: ref.title, value };
   }
   return {
-    description: codes.join(' | '),
+    description: refs.map((r) => r.title).join(' | '),
     content: { 'application/problem+json': { schema, examples } },
   };
+}
+
+function problemResponseFor(status: number, codes: string[]): Record<string, unknown> {
+  return problemResponseForRefs(
+    status,
+    codes.map((code) => ({ type: PROBLEM_TYPES[code]!.type, title: code })),
+  );
+}
+
+/** Type name -> the mcperr code that owns it, for resolving a declared problem type. */
+const CODE_BY_TYPE = new Map(Object.entries(PROBLEM_TYPES).map(([code, m]) => [m.type, code]));
+
+/**
+ * Resolves one name from a `problems` declaration. A name the taxonomy owns must agree with
+ * it on the status; anything else is a service-owned condition the MCP cannot raise, whose
+ * title is the screaming-snake form of its type.
+ */
+function declaredProblemRef(status: number, type: string): ProblemRef {
+  const code = CODE_BY_TYPE.get(type);
+  if (code === undefined) {
+    return { type, title: type.toUpperCase().replace(/-/g, '_') };
+  }
+  const mapped = PROBLEM_TYPES[code]!.status;
+  if (mapped !== status) {
+    throw new Error(
+      `declared problem type ${type} is ${status} in the binding table and ${mapped} in ADR-0010 §6`,
+    );
+  }
+  return { type, title: code };
 }
 
 function problemResponse(code: string): Record<string, unknown> {
@@ -693,8 +729,15 @@ function operationFor(
   const bodyFields = fields.filter(([, f]) => f.placement === 'body');
   const hasBody = bodyFields.length > 0 || binding.bodyRef !== undefined;
 
+  // A declared success status replaces the default 200, and 204 carries no body at all:
+  // a 200 on a delete would promise a response document that does not exist.
+  const success = binding.success ?? 200;
+  const successResponse =
+    success === 204
+      ? { description: 'No content', headers: rateLimitHeaders() }
+      : { ...okResponse(binding, capture), headers: rateLimitHeaders() };
   const responses: Record<string, unknown> = {
-    '200': { ...okResponse(binding, capture), headers: rateLimitHeaders() },
+    [String(success)]: successResponse,
     ...conventionalResponses(hasBody),
   };
 
@@ -706,7 +749,7 @@ function operationFor(
   // /requirements and /comparisons — and keying 422 on "has a document body" would have put
   // one on /validations, where an invalid document is a successful validation rather than
   // an error.
-  const byStatus = new Map<number, string[]>();
+  const byStatus = new Map<number, ProblemRef[]>();
   for (const code of raisableCodes) {
     const mapped = PROBLEM_TYPES[code];
     if (mapped === undefined) continue;
@@ -719,10 +762,25 @@ function operationFor(
     // MCP can raise HANDLE_STALE on a read, but a read carries no If-Match, so a 412 there
     // would describe a response that cannot occur.
     if (mapped.status === 412 && !(writes && binding.path?.includes('{id}'))) continue;
-    byStatus.set(mapped.status, [...(byStatus.get(mapped.status) ?? []), code]);
+    byStatus.set(mapped.status, [
+      ...(byStatus.get(mapped.status) ?? []),
+      { type: mapped.type, title: code },
+    ]);
   }
-  for (const [status, codes] of byStatus) {
-    responses[String(status)] = problemResponseFor(status, codes.sort());
+  // §2's grammar declares the statuses a synthetic operation has, since nothing derives
+  // them. Unioned with the derivation rather than replacing it.
+  for (const [status, types] of Object.entries(binding.problems ?? {})) {
+    const code = Number(status);
+    byStatus.set(code, [
+      ...(byStatus.get(code) ?? []),
+      ...types.map((type) => declaredProblemRef(code, type)),
+    ]);
+  }
+  for (const [status, refs] of byStatus) {
+    responses[String(status)] = problemResponseForRefs(
+      status,
+      [...refs].sort((a, b) => a.type.localeCompare(b.type)),
+    );
   }
   // A floor the derivation does not replace: an operation addressing a document by id can
   // always fail to find it, and a SYNTHETIC operation has no MCP tool and therefore no

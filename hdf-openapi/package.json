@@ -15,7 +15,8 @@
     },
     "./hdf-components.oas.json": "./dist/hdf-components.oas.json",
     "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml",
-    "./hdf-api.oas.json": "./dist/hdf-api.oas.json"
+    "./hdf-api.oas.json": "./dist/hdf-api.oas.json",
+    "./problems.json": "./dist/problems.json"
   },
   "files": [
     "dist"

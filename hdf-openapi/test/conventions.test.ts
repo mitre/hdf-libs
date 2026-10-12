@@ -85,6 +85,38 @@ describe('the synthetic operations', () => {
     expect(faults).toContain('synthetic ingest: no scopes, which are hand-set here');
   });
 
+  // The status declaration is a source only where nothing derives one. These guards are
+  // what keeps it from becoming a per-tool waiver over the derived error codes.
+  it.each(['success', 'problems'] as const)('faults a real tool declaring %s', (key) => {
+    const name = toolsList.tools[0]!.name;
+    const planted = {
+      ...table,
+      tools: { ...table.tools, [name]: { ...table.tools![name], [key]: key === 'success' ? 204 : { '409': ['x'] } } },
+    };
+    expect(bindingFaults(planted, surface)).toContain(
+      `${name}: declares ${key}, which only a synthetic operation may do`,
+    );
+  });
+
+  it('faults a declared success status that is not one', () => {
+    const planted = { ...table, synthetic: { probe: { class: 'write', scopes: [], success: 418 } } };
+    expect(bindingFaults(planted, surface)).toContain('probe: success 418 is not a success status');
+  });
+
+  it('faults a problem status outside 4xx and 5xx', () => {
+    const planted = { ...table, synthetic: { probe: { class: 'write', scopes: [], problems: { '204': ['x'] } } } };
+    expect(bindingFaults(planted, surface)).toContain(
+      'probe: problems declares 204, which is not a 4xx or 5xx status',
+    );
+  });
+
+  it('faults a problem status declaring no type', () => {
+    const planted = { ...table, synthetic: { probe: { class: 'write', scopes: [], problems: { '409': [] } } } };
+    expect(bindingFaults(planted, surface)).toContain(
+      'probe: problems declares 409 with no problem type',
+    );
+  });
+
   it('the four operations ADR-0008 §2 names are all present', () => {
     expect(Object.keys(table.synthetic ?? {}).sort()).toEqual([
       'delete',

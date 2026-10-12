@@ -35,6 +35,8 @@ export const CLOSED_KEYS = new Set([
   'field',
   'class',
   'scopes',
+  'success',
+  'problems',
 ]);
 
 /** Keys that would make the table carry a schema instead of naming one. */
@@ -81,6 +83,10 @@ export interface ToolBinding {
   items?: string;
   fullResponse?: string | string[];
   class?: string;
+  /** Success status, where it is not 200. Synthetic operations only. */
+  success?: number;
+  /** Problem statuses this operation declares, each naming its problem types. */
+  problems?: Record<string, string[]>;
 }
 
 export interface BindingTable {
@@ -129,7 +135,7 @@ export function unknownKeys(raw: unknown, path = '', parentIsNameMap = false): s
   if (raw === null || typeof raw !== 'object') return found;
   for (const [key, value] of Object.entries(raw)) {
     if (!parentIsNameMap && !CLOSED_KEYS.has(key)) found.push(`${path}/${key}`);
-    const isNameMap = ['tools', 'resources', 'synthetic', 'fields'].includes(key);
+    const isNameMap = ['tools', 'resources', 'synthetic', 'fields', 'problems'].includes(key);
     found.push(...unknownKeys(value, `${path}/${key}`, isNameMap));
   }
   return found;
@@ -179,6 +185,20 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
   // response the MCP produces.
   const shapeNames = new Set([...fullShapes, ...(surface.conventions ?? [])]);
 
+  for (const [name, binding] of Object.entries(table.synthetic ?? {})) {
+    if (binding.success !== undefined && !(binding.success >= 200 && binding.success < 400)) {
+      faults.push(`${name}: success ${binding.success} is not a success status`);
+    }
+    for (const status of Object.keys(binding.problems ?? {})) {
+      if (!/^[45]\d\d$/.test(status)) {
+        faults.push(`${name}: problems declares ${status}, which is not a 4xx or 5xx status`);
+      }
+      if ((binding.problems![status] ?? []).length === 0) {
+        faults.push(`${name}: problems declares ${status} with no problem type`);
+      }
+    }
+  }
+
   for (const tool of surface.toolsList.tools) {
     const binding = table.tools?.[tool.name];
     if (!binding) {
@@ -187,6 +207,13 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
     }
     if (binding.class !== undefined) {
       faults.push(`${tool.name}: declares class, which must derive from readOnlyHint`);
+    }
+    // §2 hand-sets a status surface only where nothing derives one. On a real tool the
+    // per-tool error codes do, so a declaration here would be a waiver, not a source.
+    for (const key of ['success', 'problems'] as const) {
+      if (binding[key] !== undefined) {
+        faults.push(`${tool.name}: declares ${key}, which only a synthetic operation may do`);
+      }
     }
     for (const named of [binding.fullResponse ?? []].flat()) {
       if (!fullShapes.has(named)) {

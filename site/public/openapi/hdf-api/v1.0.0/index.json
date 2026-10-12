@@ -120,11 +120,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Success",
+          "204": {
+            "description": "No content",
             "headers": {
               "RateLimit": {
                 "description": "Remaining quota for the active window, as a structured field.",
@@ -162,6 +171,54 @@
                       "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
                       "title": "DOCUMENT_NOT_FOUND",
                       "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DELETE_RESTRICTED | HELD",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "delete-restricted": {
+                    "summary": "DELETE_RESTRICTED",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/delete-restricted",
+                      "title": "DELETE_RESTRICTED",
+                      "status": 409
+                    }
+                  },
+                  "held": {
+                    "summary": "HELD",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/held",
+                      "title": "HELD",
+                      "status": 409
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "HANDLE_STALE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "handle-stale": {
+                    "summary": "HANDLE_STALE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/handle-stale",
+                      "title": "HANDLE_STALE",
+                      "status": 412
                     }
                   }
                 }
@@ -10784,9 +10841,6 @@
             "type": "string"
           },
           "code": {
-            "type": "string"
-          },
-          "notice": {
             "type": "string"
           }
         },
