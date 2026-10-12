@@ -34,12 +34,23 @@ export interface EvidenceContent {
    * absent checksum is simply not a claim. Optional so an omitted field behaves
    * like Go's zero-valued bool. */
   checksumRecorded?: boolean;
+  /** Set for an `externalEvidence[]` entry and absent for a `contents[]` one;
+   * `type` is the reverse. The schema gives the two arrays different fields — a
+   * content entry records a Content_Type, an external entry records a native
+   * Native_Format — so they are kept apart rather than collapsed into `type`,
+   * which would put 'raw-log' in a field whose vocabulary is the seven document
+   * types. Optional so an omitted field behaves like Go's zero-valued string. */
+  format?: string;
 }
 
 /** The verification outcome for one content entry. */
 export interface ChecksumResult {
   uri: string;
   type: string;
+  /** Mirrors `EvidenceContent.format`: set for an `externalEvidence[]` entry,
+   * absent for a `contents[]` one, so a caller can report what an artifact is
+   * without reading `type`'s Content_Type vocabulary onto it. */
+  format?: string;
   /** The algorithm this entry's checksum is recorded under, with an unstated one
    * reported as the sha256 it defaults to. Absent for a skipped entry — one with no
    * checksum VALUE to verify, whether it carries no checksum at all or one whose
@@ -119,6 +130,30 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
   return { planRef: str(doc.planRef), contents };
 }
 
+/** Returns the `externalEvidence[]` entries as the same shape `contents[]` parses
+ * to, so ONE verification pass covers both arrays. It exists because verify
+ * examined `contents[]` only, and a wrong checksum in the other array passed at
+ * exit 0 while bundle refused the same package — the two commands disagreeing
+ * about one document.
+ *
+ * Additive on purpose: `verifyChecksums` is reused unchanged on what this returns,
+ * so the hashing has one implementation rather than one per array. */
+export function parseExternalEvidence(pkg: string): EvidenceContent[] {
+  const doc = parseDocument(pkg, 'evidence package');
+  return objectArray(doc.externalEvidence, 'evidence package', 'externalEvidence').map((e) => {
+    const checksum = e.checksum;
+    const isObject = typeof checksum === 'object' && checksum !== null;
+    return {
+      uri: str(e.uri),
+      type: '',
+      format: str(e.format),
+      checksum: isObject ? str((checksum as RawObject).value) : '',
+      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
+      checksumRecorded: isObject,
+    };
+  });
+}
+
 /** Verifies each content entry against fetch(uri) using the algorithm the entry
  * recorded, preserving entry order. No checksum → skipped; an algorithm this
  * build cannot compute → unsupported, never mismatch (that would say their evidence
@@ -127,6 +162,9 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
 export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): ChecksumResult[] {
   return contents.map((c) => {
     const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
+    if (c.format !== undefined && c.format !== '') {
+      r.format = c.format;
+    }
     if (c.checksum === '') {
       return r;
     }

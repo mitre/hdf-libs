@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createHash } from 'node:crypto';
 import {
   parseEvidencePackage,
+  parseExternalEvidence,
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,
@@ -37,6 +38,36 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     const comp = completeness(['RHEL9-STIG', 'PostgreSQL-STIG'], ['RHEL9-STIG']);
     expect(comp.complete).toBe(false);
     expect(comp.missing).toEqual(['PostgreSQL-STIG']);
+  });
+
+  it('parses externalEvidence preserving all three checksum distinctions (same as Go)', () => {
+    const entries = parseExternalEvidence(readText('package.json'));
+    expect(entries).toHaveLength(4);
+    // The last entry has an EMPTY uri, which is schema-valid (uri is required but has
+    // no minLength) and must SURVIVE the parse rather than be dropped, so a caller can
+    // report an entry that names nothing to carry.
+    expect(entries.map((e) => [e.uri, e.format])).toEqual([
+      ['rhel-results.json', 'raw-log'],
+      ['agent-results.json', 'ecs'],
+      ['plan.json', 'ocsf'],
+      ['', 'spdx'],
+    ]);
+    // A recorded checksum, a recorded-but-BLANK value, and no checksum object: a blank
+    // value is unverifiable, an absent one is not a claim at all.
+    expect(entries.map((e) => [e.checksum, e.checksumRecorded])).toEqual([
+      ['128300c53536f190fe8f9f1161d55965142e7621de9223fe49ce7fe082b77282', true],
+      ['', true],
+      ['', false],
+      ['', false],
+    ]);
+    // type belongs to contents[]; an external entry must not borrow it.
+    expect(entries.map((e) => e.type)).toEqual(['', '', '', '']);
+    // And the SAME verifier runs on them — one implementation of the hashing.
+    const verified = verifyChecksums(entries, fetch);
+    expect(verified.map((r) => r.status)).toEqual(['match', 'skipped', 'skipped', 'skipped']);
+    // Carried through, not dropped: a caller reporting the result needs to know what
+    // the artifact is without reading `type`'s vocabulary onto it.
+    expect(verified.map((r) => r.format)).toEqual(['raw-log', 'ecs', 'ocsf', 'spdx']);
   });
 
   it('aggregates covered baselines and agent overrides across the package (same as Go)', () => {

@@ -68,6 +68,71 @@ func TestEvidence_CrossLanguageParity(t *testing.T) {
 	}
 }
 
+// ParseExternalEvidence joins the parity contract: the shared package fixture carries
+// three externalEvidence shapes — a recorded checksum, a recorded-but-BLANK value, and
+// no checksum object — and both languages must preserve all three distinctions, because
+// a blank value is unverifiable while an absent one is not a claim at all. The same
+// assertions run in test/evidence.test.ts against the same fixture.
+func TestExternalEvidence_CrossLanguageParity(t *testing.T) {
+	dir := filepath.Join("..", "testdata", "evidence")
+	pkg, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		t.Fatalf("read package.json: %v", err)
+	}
+	entries, err := ParseExternalEvidence(pkg)
+	if err != nil {
+		t.Fatalf("ParseExternalEvidence: %v", err)
+	}
+	if len(entries) != 4 {
+		t.Fatalf("got %d externalEvidence entries, want 4", len(entries))
+	}
+
+	want := []struct {
+		uri, format, checksum string
+		recorded              bool
+	}{
+		{"rhel-results.json", "raw-log", "128300c53536f190fe8f9f1161d55965142e7621de9223fe49ce7fe082b77282", true},
+		{"agent-results.json", "ecs", "", true},
+		{"plan.json", "ocsf", "", false},
+		// An EMPTY uri is schema-valid (uri is required but has no minLength) and must
+		// SURVIVE the parse rather than be dropped, so a caller can report an entry that
+		// names nothing to carry. That property used to live in the CLI; it moved here
+		// when bundle's own parse became an adapter over this function, so it needs a
+		// test in this module rather than relying on one in another.
+		{"", "spdx", "", false},
+	}
+	for i, w := range want {
+		got := entries[i]
+		if got.URI != w.uri || got.Format != w.format {
+			t.Errorf("entry[%d] = {%s %s}, want {%s %s}", i, got.URI, got.Format, w.uri, w.format)
+		}
+		if got.Checksum != w.checksum || got.ChecksumRecorded != w.recorded {
+			t.Errorf("entry[%d] checksum = %q recorded=%t, want %q recorded=%t",
+				i, got.Checksum, got.ChecksumRecorded, w.checksum, w.recorded)
+		}
+		// Type belongs to contents[]; an external entry must not borrow it.
+		if got.Type != "" {
+			t.Errorf("entry[%d] Type = %q, want empty — externalEvidence records a format, not a Content_Type", i, got.Type)
+		}
+	}
+
+	// And the SAME verifier runs on them: one implementation of the hashing, not one
+	// per array. The three shapes classify as match / skipped / skipped.
+	fetch := func(uri string) ([]byte, error) { return os.ReadFile(filepath.Join(dir, uri)) }
+	results := VerifyChecksums(entries, fetch)
+	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumSkipped, ChecksumSkipped, ChecksumSkipped}
+	for i, w := range wantStatus {
+		if results[i].Status != w {
+			t.Errorf("externalEvidence[%d] status = %s, want %s", i, results[i].Status, w)
+		}
+		// Carried through, not dropped: a caller reporting the result needs to know
+		// what the artifact is without reading Type's vocabulary onto it.
+		if results[i].Format != want[i].format {
+			t.Errorf("externalEvidence[%d] result Format = %q, want %q", i, results[i].Format, want[i].format)
+		}
+	}
+}
+
 // The package-level aggregators walk the same shared package fixture in both languages:
 // every hdf-results entry is fetched and parsed and the per-document results are
 // concatenated in entry order. The skip-an-unreadable-entry path is NOT exercised here —

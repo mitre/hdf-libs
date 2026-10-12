@@ -62,6 +62,7 @@ export { load, detectFormat, type InputFormat, type LoadResult } from './loader.
 // Evidence-verify engine (peer of hdf-engine/go/evidence.go).
 export {
   parseEvidencePackage,
+  parseExternalEvidence,
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,

@@ -1844,12 +1844,31 @@ func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T
 	assert.NotContains(t, help, "Every one of them is named on stderr",
 		"the two travelling kinds are counted, not named")
 	// Fourth strengthening-into-falsehood in this paragraph, and the one that finally
-	// shows the shape of the habit: an unqualified cross-command claim. verify names each
-	// CONTENT entry but reports no externalEvidence at all (52n0c.36), and bundle's count
-	// spans both arrays — so "names each entry individually" was false for part of the
-	// population the sentence it followed had just counted.
-	assert.NotContains(t, help, "names each entry individually",
-		"verify names each CONTENT entry; it does not report externalEvidence")
+	// showed the shape of the habit: an unqualified cross-command claim. When .16 shipped,
+	// verify named each CONTENT entry and reported no externalEvidence at all, so "names
+	// each entry individually" was false for part of the population the sentence it
+	// followed had just counted.
+	//
+	// THE GUARD ON THAT PHRASE IS NOW GONE, DELIBERATELY. 52n0c.36 made verify report
+	// externalEvidence, so the unqualified claim became TRUE and the NotContains was
+	// pointing the lock the wrong way — forbidding the only accurate wording. This is the
+	// forward-dated case: a sentence measured true, and a guard protecting it, both
+	// falsified on a schedule set by a card already filed. What is forbidden now is the
+	// claim .36 retired, which is the qualification itself.
+	assert.NotContains(t, help, "does not report externalEvidence",
+		"verify reports both arrays since 52n0c.36; the qualification is the stale claim now")
+	assert.NotContains(t, help, "an entry verify will not name",
+		"the same retired claim in its other phrasing")
+	assert.Contains(t, help, "in contents[] and in externalEvidence[] alike",
+		"the paragraph must say verify's coverage spans both arrays")
+	// The replacement for the retired claim was ITSELF an unqualified cross-command
+	// claim — "a count here has a named counterpart there" — false for a root
+	// reference field, which this count covers and verify never names. Measured:
+	// adding a planRef or a systemRef moves this count and not verify's.
+	assert.NotContains(t, help, "has a named counterpart there",
+		"bundle counts root reference fields that verify does not name")
+	assert.Contains(t, help, "can still exceed what verify names",
+		"the asymmetry that remains must be stated, not implied away")
 }
 
 // Content_Reference requires type and uri but NOT checksum, so a schema-valid package can

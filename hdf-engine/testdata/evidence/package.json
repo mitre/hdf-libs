@@ -10,5 +10,13 @@
      "checksum": {"algorithm": "sha256", "value": "651e8f83291553986888187f0d7a6a350bf7fd98c8ad463001ca2ba524890edd"}},
     {"type": "hdf-plan", "uri": "plan.json",
      "checksum": {"algorithm": "blake3", "value": "fcfb76d5583c912dbc10292255d5aec40d67404f4444364f86770139bdad49a8"}}
+  ],
+  "externalEvidence": [
+    {"uri": "rhel-results.json", "format": "raw-log",
+     "checksum": {"algorithm": "sha256", "value": "128300c53536f190fe8f9f1161d55965142e7621de9223fe49ce7fe082b77282"}},
+    {"uri": "agent-results.json", "format": "ecs",
+     "checksum": {"algorithm": "sha256", "value": ""}},
+    {"uri": "plan.json", "format": "ocsf"},
+    {"uri": "", "format": "spdx"}
   ]
 }

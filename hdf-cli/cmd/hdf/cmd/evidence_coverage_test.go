@@ -488,7 +488,9 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
 		require.Error(t, err)
 		assert.Contains(t, stdout, "MISMATCH")
-		assert.Contains(t, err.Error(), "checksum mismatches")
+		// Singular-aware and scoped to what happened; the old wording always printed
+		// both counts, so one mismatch read as "1 checksum mismatches, 0 errors".
+		assert.Contains(t, err.Error(), "1 checksum mismatch(es)")
 	})
 
 	t.Run("skips entries without checksum", func(t *testing.T) {
@@ -535,7 +537,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 
 		_, _, err := executeCommand("evidence", "verify", pkgPath)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "errors")
+		assert.Contains(t, err.Error(), "1 reference(s) could not be read")
 	})
 
 	t.Run("errors when package file missing", func(t *testing.T) {
@@ -623,8 +625,11 @@ func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
 		// how an unverified entry gets reported as verified.
 		{URI: "e", Type: "hdf-results", Status: hdfengine.ChecksumUnsupported, Error: "no md5"},
 	}
-	results, counts := toVerifyResults(in)
+	results, counts := toVerifyResults(in, refFieldContents)
 	require.Len(t, results, 5)
+	// The array each result came from is carried, so a reader can tell a content
+	// document from a native artifact held elsewhere.
+	assert.Equal(t, refFieldContents, results[0].Field)
 	assert.Equal(t, "match", results[0].Status)
 	assert.Equal(t, "y", results[1].Actual)
 	assert.Equal(t, "unsupported", results[4].Status)
@@ -634,7 +639,7 @@ func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
 	assert.Equal(t, 1, counts.errors)
 	assert.Equal(t, 1, counts.unsupported)
 
-	empty, ec := toVerifyResults(nil)
+	empty, ec := toVerifyResults(nil, refFieldExternal)
 	assert.Empty(t, empty)
 	assert.Equal(t, 0, ec.match)
 }

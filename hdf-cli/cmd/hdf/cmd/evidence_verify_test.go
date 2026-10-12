@@ -3,10 +3,12 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
@@ -93,8 +95,13 @@ func TestEvidenceVerify_RejectsOversizeReferencedFile(t *testing.T) {
 
 	_, _, err := executeCommand("evidence", "verify", path, "--checksums-only", "--max-size", "1")
 	require.Error(t, err)
-	// Gated: the read fails outright (an error), rather than hashing 2 MB into a mismatch.
-	assert.Contains(t, err.Error(), "0 checksum mismatches, 1 errors")
+	// Gated: the read fails outright (an error), rather than hashing 2 MB into a
+	// mismatch. The message names only what happened — it used to read "0 checksum
+	// mismatches, 1 errors", which invited the operator to look for a checksum fault
+	// that was not there, the same noise --require-reachable's message avoids.
+	assert.Contains(t, err.Error(), "1 reference(s) could not be read")
+	assert.NotContains(t, err.Error(), "0 checksum mismatches",
+		"a count of zero is not a finding and must not be reported as one")
 }
 
 // The plan a package points at is read through the same boundary.
@@ -566,4 +573,244 @@ func TestEvidenceVerify_FailsAWrongBlake3Checksum(t *testing.T) {
 	require.Error(t, verifyErr, "a wrong blake3 must fail, exactly as a wrong sha256 does")
 	assert.Contains(t, verifyErr.Error(), "mismatch")
 	assert.Contains(t, stdout, "blake3", "and the report names the algorithm it verified with")
+}
+
+// externalEvidenceVerifyPackage builds a package whose contents[] checksum is correct
+// and whose externalEvidence[0] checksum is wrong, which is the shape that made the two
+// commands disagree: bundle refused it while verify reported every checksum valid.
+func externalEvidenceVerifyPackage(t *testing.T, recordedChecksum string) (dir, pkgPath string) {
+	t.Helper()
+	dir, pkgPath = referencePackage(t)
+	artifact := []byte("log\n")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "audit.ndjson"), artifact, 0o600))
+
+	pkg := readPackage(t, pkgPath)
+	entry := map[string]any{"uri": "audit.ndjson", "format": "raw-log"}
+	if recordedChecksum != "" {
+		entry["checksum"] = map[string]any{"algorithm": "sha256", "value": recordedChecksum}
+	}
+	pkg["externalEvidence"] = []any{entry}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+	return dir, pkgPath
+}
+
+// verify examined contents[] only, so a wrong externalEvidence checksum passed at exit 0
+// while `bundle` refused the very same package. The command whose job is verification was
+// the one that missed it.
+func TestEvidenceVerify_VerifiesExternalEvidenceChecksums(t *testing.T) {
+	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
+
+	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.Error(t, err, "a wrong externalEvidence checksum must fail verify, as it already fails bundle")
+	assert.Contains(t, err.Error(), "mismatch")
+	assert.Contains(t, stdout, "audit.ndjson", "the mismatching artifact must be named")
+	assert.Contains(t, stdout, "MISMATCH", "and named as a mismatch, not merely listed")
+	assert.NotContains(t, stdout, "Verified: 3/3 checksums valid",
+		"the package must not be reported as fully verified")
+}
+
+// The correct checksum must still pass, in both arrays — the regression direction.
+func TestEvidenceVerify_CorrectExternalEvidenceChecksumStillPasses(t *testing.T) {
+	sum := sha256.Sum256([]byte("log\n"))
+	_, pkgPath := externalEvidenceVerifyPackage(t, hex.EncodeToString(sum[:]))
+
+	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, err, "a correct externalEvidence checksum must verify")
+	assert.Contains(t, stdout, "audit.ndjson", "a verified external artifact is named like any other")
+	// Two contents[] entries plus the one externalEvidence artifact: the total spans
+	// both arrays, which is the count that has to reconcile with bundle's.
+	assert.Contains(t, stdout, "Verified: 3/3 checksums valid",
+		"both arrays count toward the verdict, so the total spans them")
+}
+
+// The counts must reconcile with bundle's, which is the specific discrepancy
+// hdf-libs-52n0c.16 documented: verify said 1 skipped where bundle said 2, because
+// bundle's count spanned both arrays and verify's spanned one.
+func TestEvidenceVerify_UnchecksummedExternalEvidenceIsCountedLikeBundleCountsIt(t *testing.T) {
+	_, pkgPath := externalEvidenceVerifyPackage(t, "")
+
+	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, err, "an entry recording no checksum is reported, not refused")
+	assert.Contains(t, stdout, "audit.ndjson",
+		"an externalEvidence entry with no checksum must be named, not silently omitted")
+	assert.Contains(t, stdout, "no checksum",
+		"and reported under the same words contents[] uses for the same shape")
+}
+
+// --require-checksums-match defaults TRUE, unlike the other --require-* flags, because
+// a contents[] mismatch already failed before the flag existed: a false default would
+// not have added a valve, it would have stopped a tampered document from failing.
+func TestEvidenceVerify_RequireChecksumsMatchDefaultsToFailing(t *testing.T) {
+	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
+
+	// Default: no flag at all.
+	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.Error(t, err, "the default must fail on a mismatch")
+
+	// And passing it explicitly true is the same thing, not a different mode.
+	_, _, explicitErr := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=true")
+	require.Error(t, explicitErr)
+	assert.Equal(t, err.Error(), explicitErr.Error(), "the default and the explicit true must agree")
+}
+
+// The valve lets a pipeline proceed past known drift — and must not go quiet doing it.
+// A fail-open switch that also suppresses the finding is how a package passes for
+// months without anyone learning the artifact changed.
+func TestEvidenceVerify_RequireChecksumsMatchFalseTolerToleratesButStillReports(t *testing.T) {
+	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
+
+	stdout, stderr, err := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=false")
+	require.NoError(t, err, "the valve must let the run proceed")
+
+	// Named, with the status, exactly as it is when the flag is on.
+	assert.Contains(t, stdout, "audit.ndjson")
+	assert.Contains(t, stdout, "MISMATCH", "a tolerated mismatch is still reported as a mismatch")
+	// Counted in the summary, so the verdict line cannot read as clean.
+	assert.Contains(t, stdout, "1 failed", "the count must stay visible in the summary")
+	assert.NotContains(t, stdout, "Verified: 3/3 checksums valid")
+	// And said outright, so nobody reads exit 0 as intact.
+	assert.Contains(t, stderr, "tolerated")
+	assert.Contains(t, stderr, "NOT intact")
+}
+
+// A fetch error is not a mismatch and the valve does not cover it: the package named an
+// artifact this run could not read at all, which is a different fact from one that was
+// read and disagreed.
+func TestEvidenceVerify_TheValveDoesNotTolerateAnUnreadableArtifact(t *testing.T) {
+	dir, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
+	require.NoError(t, os.Remove(filepath.Join(dir, "audit.ndjson")))
+
+	_, _, err := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=false")
+	require.Error(t, err, "an unreadable artifact still fails, flag or no flag")
+	assert.Contains(t, err.Error(), "could not be read")
+	assert.NotContains(t, err.Error(), "mismatch",
+		"nothing was hashed, so this must not be reported as drift")
+}
+
+// AC: whether --require-reachable covers externalEvidence is ESTABLISHED by measurement
+// rather than assumed. It does. Recorded as a test because the answer is load-bearing
+// for a pipeline: externalEvidence is BY DEFINITION an artifact held elsewhere, so a
+// package using it as designed can never pass that flag — accepted deliberately, and
+// worth failing loudly if it ever changes.
+func TestEvidenceVerify_RequireReachableCoversExternalEvidence(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	_ = dir
+	pkg := readPackage(t, pkgPath)
+	pkg["externalEvidence"] = []any{map[string]any{
+		"uri": "https://logs.example.gov/audit.ndjson", "format": "raw-log",
+		"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)},
+	}}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	// Default: reported, not failed — and NOT hashed, so the wrong checksum beside a
+	// remote URI is never reported as drift in an artifact nobody fetched.
+	stdout, _, defErr := executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, defErr, "a remote external artifact is reported, not refused")
+	assert.Contains(t, stdout, "not reachable here")
+	assert.NotContains(t, stdout, "MISMATCH",
+		"nothing was fetched, so nothing may be called a mismatch")
+
+	// With the flag: it fails, so the flag's reach spans both arrays.
+	_, _, flagErr := executeCommand("evidence", "verify", pkgPath, "--require-reachable")
+	require.Error(t, flagErr, "--require-reachable covers externalEvidence")
+	assert.Contains(t, flagErr.Error(), "could not be resolved")
+}
+
+// The counts must RECONCILE with bundle's, which is the specific discrepancy
+// hdf-libs-52n0c.16 recorded: one unchecksummed entry in each array made verify say
+// 1 skipped and bundle say 2, because bundle's count spanned both arrays and verify's
+// spanned one. Asserted across the two commands on ONE package, because agreement
+// between them is the property — either command alone cannot show it.
+//
+// The package deliberately records NO systemRef, which hdf-libs-52n0c.17 made
+// possible. With one, bundle counts 3 where verify counts 2, because bundle's count
+// includes the root REFERENCE FIELDS and systemRef carries no checksum — the schema
+// gives it no checksum property at all, so it can never have one. That is a separate
+// divergence from the one this card closes, it is pinned in the sub-test below so it
+// cannot change unnoticed, and it is carded.
+func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"system.json", "rhel9-results.json"} {
+		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, name))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), src, 0o600))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "audit.ndjson"), []byte("log\n"), 0o600))
+	pkgPath := filepath.Join(dir, "pkg.json")
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--results", filepath.Join(dir, "rhel9-results.json"), "-o", pkgPath)
+	require.NoError(t, buildErr)
+
+	// One unchecksummed entry in each array: drop the one checksum build wrote, and add
+	// an external entry that records none.
+	pkg := readPackage(t, pkgPath)
+	entries, ok := pkg["contents"].([]any)
+	require.True(t, ok)
+	require.Len(t, entries, 1)
+	first, ok := entries[0].(map[string]any)
+	require.True(t, ok)
+	delete(first, "checksum")
+	pkg["externalEvidence"] = []any{map[string]any{"uri": "audit.ndjson", "format": "raw-log"}}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	verifyOut, _, verifyErr := executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, verifyErr)
+	_, bundleStderr, bundleErr := executeCommand("evidence", "bundle", pkgPath,
+		"-o", filepath.Join(dir, "out.zip"))
+	require.NoError(t, bundleErr)
+
+	assert.Contains(t, verifyOut, "2 skipped", "verify's count must span both arrays")
+	assert.Contains(t, bundleStderr, "2 reference(s) record no checksum",
+		"bundle's count already spanned both arrays; this is the number verify must match")
+	assert.NotContains(t, verifyOut, "1 skipped",
+		"the pre-fix count, which covered contents[] only")
+
+	// The residual divergence, measured and pinned for BOTH root reference fields
+	// rather than left to surprise someone. planRef matters more than systemRef here:
+	// it is the field verify's DEFAULT mode needs, so the only shape where the counts
+	// reconcile is one verify cannot run its primary check on. Carded as 52n0c.40.
+	for _, tc := range []struct{ name, field, value string }{
+		{"a systemRef adds to bundle's count only", "systemRef", "system.json"},
+		{"and so does a planRef, which verify's default mode needs", "planRef", "plan.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			src, rErr := os.ReadFile(filepath.Join(evidenceFixtureDir, "plan.json"))
+			require.NoError(t, rErr)
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "plan.json"), src, 0o600))
+
+			// Built fresh per case so the two fields are measured independently; sharing
+			// one package would leave the second case counting both.
+			withRef := map[string]any{}
+			for k, v := range pkg {
+				withRef[k] = v
+			}
+			withRef[tc.field] = tc.value
+			encoded, mErr := json.MarshalIndent(withRef, "", " ")
+			require.NoError(t, mErr)
+			refPath := filepath.Join(dir, tc.field+".json")
+			require.NoError(t, os.WriteFile(refPath, encoded, 0o600))
+
+			// --checksums-only for both cases, because the variable under measurement is
+			// the unverifiable-CHECKSUM count. Without it the planRef case fails on
+			// completeness against the fixture plan's uncovered baseline — correct
+			// behaviour, and itself the reviewer's point: the shape where the counts
+			// reconcile is one verify cannot run its default check on at all.
+			vOut, _, vErr := executeCommand("evidence", "verify", refPath, "--checksums-only")
+			require.NoError(t, vErr)
+			_, bStderr, bErr := executeCommand("evidence", "bundle", refPath,
+				"-o", filepath.Join(dir, tc.field+".zip"))
+			require.NoError(t, bErr)
+
+			assert.Contains(t, vOut, "2 skipped",
+				"a root reference field is not a checksummed entry, so verify is unmoved")
+			assert.Contains(t, bStderr, "3 reference(s) record no checksum",
+				"bundle counts the root reference field, which the schema gives no checksum property")
+		})
+	}
 }

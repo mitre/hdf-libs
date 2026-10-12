@@ -49,12 +49,22 @@ type EvidenceContent struct {
 	// the difference matters: a recorded-but-blank value is unverifiable, whereas an
 	// absent checksum is simply not a claim.
 	ChecksumRecorded bool `json:"checksumRecorded"`
+	// Format is set for an externalEvidence[] entry and empty for a contents[] one;
+	// Type is the reverse. The schema gives the two arrays different fields — a
+	// content entry records a Content_Type, an external entry records a native
+	// Native_Format — so they are kept apart rather than collapsed into Type, which
+	// would put "raw-log" in a field whose vocabulary is the seven document types.
+	Format string `json:"format,omitempty"`
 }
 
 // ChecksumResult is the verification outcome for one content entry.
 type ChecksumResult struct {
 	URI  string `json:"uri"`
 	Type string `json:"type"`
+	// Format mirrors EvidenceContent.Format: set for an externalEvidence[] entry,
+	// empty for a contents[] one, so a caller can report what an artifact is
+	// without reading Type's Content_Type vocabulary onto it.
+	Format string `json:"format,omitempty"`
 	// Algorithm is the algorithm this entry's checksum is recorded under, with an
 	// unstated one reported as the sha256 it defaults to. It is EMPTY for a skipped
 	// entry — one with no checksum VALUE to verify, whether it carries no checksum at
@@ -110,6 +120,43 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 	return doc.PlanRef, contents, nil
 }
 
+// ParseExternalEvidence returns the externalEvidence[] entries as the same shape
+// contents[] parses to, so ONE verification pass covers both arrays. It exists
+// because verify examined contents[] only, and a wrong checksum in the other array
+// passed at exit 0 while bundle refused the same package — the two commands
+// disagreeing about one document.
+//
+// Additive on purpose: VerifyChecksums is reused unchanged on what this returns, so
+// the hashing has one implementation rather than one per array. Callers that already
+// have the package's contents[] call this alongside ParseEvidencePackage; nothing an
+// existing caller does changes behaviour.
+func ParseExternalEvidence(pkg []byte) ([]EvidenceContent, error) {
+	var doc struct {
+		ExternalEvidence []struct {
+			URI      string `json:"uri"`
+			Format   string `json:"format"`
+			Checksum *struct {
+				Algorithm string `json:"algorithm"`
+				Value     string `json:"value"`
+			} `json:"checksum"`
+		} `json:"externalEvidence"`
+	}
+	if err := json.Unmarshal(pkg, &doc); err != nil {
+		return nil, fmt.Errorf("parse evidence package: %w", err)
+	}
+	out := make([]EvidenceContent, 0, len(doc.ExternalEvidence))
+	for _, e := range doc.ExternalEvidence {
+		ec := EvidenceContent{URI: e.URI, Format: e.Format}
+		if e.Checksum != nil {
+			ec.Checksum = e.Checksum.Value
+			ec.ChecksumAlgorithm = e.Checksum.Algorithm
+			ec.ChecksumRecorded = true
+		}
+		out = append(out, ec)
+	}
+	return out, nil
+}
+
 // VerifyChecksums verifies each content entry against fetch(uri) using the
 // algorithm the entry recorded, preserving entry order. No checksum → skipped;
 // an algorithm this build cannot compute → unsupported, never mismatch (that would
@@ -119,7 +166,7 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResult {
 	out := make([]ChecksumResult, 0, len(contents))
 	for _, c := range contents {
-		r := ChecksumResult{URI: c.URI, Type: c.Type}
+		r := ChecksumResult{URI: c.URI, Type: c.Type, Format: c.Format}
 		if c.Checksum == "" {
 			r.Status = ChecksumSkipped
 			out = append(out, r)

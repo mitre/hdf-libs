@@ -97,9 +97,10 @@ one recording an empty value, and one on a reference that cannot travel, whose b
 to check. The first two DO travel, and are counted separately because the remedy differs — one
 needs a checksum added, the other has one to fill in. The third does not travel at all and is
 reported as not carried. Every one is reported on stderr: the first two as COUNTS, the third
-NAMING the reference. 'hdf evidence verify' names each CONTENT entry individually, which is where
-to look for which ones; it does not report externalEvidence, so a count here can include an entry
-verify will not name. A mismatch or a missing document fails the command and writes no archive —
+NAMING the reference. 'hdf evidence verify' names each entry individually, in contents[] and in
+externalEvidence[] alike, which is where to look for which ones. A count here can still exceed
+what verify names, because this count also covers the root reference FIELDS and the schema gives
+systemRef and planRef no checksum to record. A mismatch or a missing document fails the command and writes no archive —
 a partial bundle is worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
@@ -252,30 +253,26 @@ func externalContextRefs(pkg []byte) []string {
 	return out
 }
 
+// externalEvidenceRefs adapts the engine's parse to the shape bundle's reference
+// enumeration uses. It is an ADAPTER, not a parse: hdf-libs-52n0c.36 added
+// hdfengine.ParseExternalEvidence for verify, and keeping a second near-identical
+// decode of the same array here is the drift this epic keeps paying for — the two
+// would eventually disagree about a shape neither author had in mind.
+//
+// An empty uri is schema-valid (uri is required but has no minLength) and survives
+// the parse rather than being dropped, so the caller can report it. Dropping it was
+// the same silent-skip defect already fixed for contents[], left in place one array
+// over; the engine preserves every entry, which is what keeps that fix in force here.
 func externalEvidenceRefs(pkg []byte) []externalRef {
-	var doc struct {
-		ExternalEvidence []struct {
-			URI      string `json:"uri"`
-			Checksum *struct {
-				Algorithm string `json:"algorithm"`
-				Value     string `json:"value"`
-			} `json:"checksum"`
-		} `json:"externalEvidence"`
-	}
-	if json.Unmarshal(pkg, &doc) != nil {
+	entries, err := hdfengine.ParseExternalEvidence(pkg)
+	if err != nil {
 		return nil
 	}
-	out := make([]externalRef, 0, len(doc.ExternalEvidence))
-	for _, e := range doc.ExternalEvidence {
-		// An empty uri is schema-valid (uri is required but has no minLength) and is
-		// returned rather than dropped, so the caller can report it. Dropping it here
-		// was the same silent-skip defect already fixed for contents[], left in place
-		// one array over.
-		ref := externalRef{uri: e.URI}
-		if e.Checksum != nil {
-			ref.checksum, ref.algorithm, ref.recorded = e.Checksum.Value, e.Checksum.Algorithm, true
-		}
-		out = append(out, ref)
+	out := make([]externalRef, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, externalRef{
+			uri: e.URI, checksum: e.Checksum, algorithm: e.ChecksumAlgorithm, recorded: e.ChecksumRecorded,
+		})
 	}
 	return out
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func newEvidenceVerifyCmd() *cobra.Command {
-	var checksumsOnly, requireReachable bool
+	var checksumsOnly, requireReachable, requireChecksumsMatch bool
 
 	cmd := &cobra.Command{
 		Use:   "verify <package-file>",
@@ -35,6 +35,20 @@ failure: an assessor accepting a package as the evidence of record may need
 it self-contained, but demanding that by default would reject the external
 references the format supports deliberately.
 
+Checksums are verified in BOTH arrays the package records them in — contents[]
+and externalEvidence[] — because a package is as intact as its weakest recorded
+claim, and 'hdf evidence bundle' already refused a package over an
+externalEvidence mismatch that this command passed.
+
+A mismatch fails the command. --require-checksums-match=false reports one
+without failing, for a pipeline that must proceed past known drift; the
+mismatch is still named and counted, so nothing goes quiet. That flag defaults
+to TRUE, unlike --require-reachable, because a mismatch already failed before
+the flag existed and a false default would have loosened that rather than
+added a valve. It governs an entry that WAS verified and disagreed, which is a
+different question from one that records no checksum to verify at all — that
+entry is reported as skipped and does not fail.
+
 If the evidence package has no planRef, falls back to checksum
 verification with a warning.
 
@@ -42,16 +56,26 @@ Examples:
   hdf evidence verify package.json
   hdf evidence verify package.json --checksums-only
   hdf evidence verify package.json --require-reachable
+  hdf evidence verify package.json --require-checksums-match=false
   hdf evidence verify package.json --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runEvidenceVerify(args[0], checksumsOnly, requireReachable)
+			return runEvidenceVerify(args[0], checksumsOnly, requireReachable, requireChecksumsMatch)
 		},
 	}
 
 	cmd.Flags().BoolVar(&checksumsOnly, "checksums-only", false, "Only verify file checksums, skip completeness checking")
 	cmd.Flags().BoolVar(&requireReachable, "require-reachable", false,
 		"Fail if the package records a reference this machine cannot resolve")
+	// The true here is the real default — and it is the OPPOSITE of the other
+	// --require-* flags, deliberately. A contents[] mismatch already failed before
+	// this flag existed, so defaulting it false would not add a valve: it would
+	// quietly stop a tampered document from failing. Three pre-existing tests depend
+	// on that, which is what makes the inversion measurable rather than a matter of
+	// taste.
+	cmd.Flags().BoolVar(&requireChecksumsMatch, "require-checksums-match", true,
+		"Fail if a checksum this run could compute disagrees with the file; "+
+			"pass =false to report a mismatch without failing")
 
 	return cmd
 }
@@ -78,6 +102,14 @@ const (
 type evidenceVerifyResult struct {
 	URI  string `json:"uri"`
 	Type string `json:"type"`
+	// Field is the array the entry came from: "contents" or "externalEvidence". The
+	// two record different things — a Content_Type against a native Native_Format —
+	// so Type stays empty for an external entry rather than carrying "raw-log" in a
+	// field whose vocabulary is the seven document types. A reader needs to know
+	// which array a line is about: a mismatch in contents[] is a document the
+	// package carries, one in externalEvidence[] an artifact held elsewhere.
+	Field  string `json:"field"`
+	Format string `json:"format,omitempty"`
 	// Algorithm is what the entry was verified with, not a fixed sha256: the
 	// package chooses, and the human output names it, so the line cannot claim an
 	// algorithm that was not used.
@@ -97,7 +129,7 @@ type verifyCounts struct {
 	unsupported int
 }
 
-func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) error {
+func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireChecksumsMatch bool) error {
 	data, err := readInputFile(pkgPath) // size-gated read boundary (honors --max-size)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -120,6 +152,10 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) err
 	// absolute systemRef was never examined at all. This cannot ride along with
 	// checksum verification: an entry carrying no checksum is skipped there, so a
 	// reference on such an entry would never be looked at.
+	external, err := hdfengine.ParseExternalEvidence(data)
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
+	}
 	recorded, err := recordedRefs(data, contents)
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
@@ -135,37 +171,34 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) err
 		}
 	}
 
-	// Verify only what resolves. An unreachable entry is reported as such rather
-	// than hashed against nothing and called an error.
-	reachable := make([]hdfengine.EvidenceContent, 0, len(contents))
-	for _, c := range contents {
-		if _, bad := unreachableBy[c.URI]; !bad {
-			reachable = append(reachable, c)
-		}
-	}
 	fetch := confinedFetch(pkgDir, resolvedBy)
-	verified, counts := toVerifyResults(hdfengine.VerifyChecksums(reachable, fetch))
 
-	// Rebuild the per-entry list in the document's own order, so a reader can match
-	// it against contents[] regardless of what resolved.
-	results := make([]evidenceVerifyResult, 0, len(contents))
-	next := 0
-	for _, c := range contents {
-		if reason, bad := unreachableBy[c.URI]; bad {
-			results = append(results, evidenceVerifyResult{
-				URI: c.URI, Type: c.Type, Status: verifyUnreachable, Error: reason,
-			})
-			counts.unreachable++
-			continue
-		}
-		results = append(results, verified[next])
-		next++
-	}
+	// BOTH arrays, through one path. Verifying contents[] alone let a wrong checksum
+	// in externalEvidence[] pass at exit 0 while `bundle` refused the same package —
+	// the command whose job is verification missing what the packaging command caught.
+	results, counts, reachable := verifyRecordedArray(contents, refFieldContents, unreachableBy, fetch)
+	extResults, extCounts, _ := verifyRecordedArray(external, refFieldExternal, unreachableBy, fetch)
+	results = append(results, extResults...)
+	counts.add(extCounts)
 
 	renderVerifyOutput(doc, results, counts, hdfengine.AgentOverridesInPackage(reachable, fetch), refStatus)
 
-	if counts.mismatch > 0 || counts.errors > 0 {
+	// A fetch error always fails: the package named an artifact this run could not
+	// read at all. A MISMATCH is the operator's to govern — it fails by default,
+	// which is what contents[] already did, and --require-checksums-match=false is
+	// the valve. Tolerated mismatches are still named above and counted in the
+	// summary, because a fail-open switch that also goes quiet is how a pipeline
+	// passes for months without anyone learning.
+	switch {
+	case counts.errors > 0 && counts.mismatch > 0 && requireChecksumsMatch:
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
+	case counts.errors > 0:
+		return fmt.Errorf("%d reference(s) could not be read", counts.errors)
+	case counts.mismatch > 0 && requireChecksumsMatch:
+		return fmt.Errorf("%d checksum mismatch(es)", counts.mismatch)
+	case counts.mismatch > 0:
+		fmt.Fprintf(os.Stderr, "Note: %d checksum mismatch(es) tolerated because "+
+			"--require-checksums-match=false; the package is NOT intact\n", counts.mismatch)
 	}
 	if requireReachable && (len(unreachableBy) > 0 || counts.unsupported > 0) {
 		// Only what actually happened is named. Reporting "0 references could not be
@@ -369,14 +402,68 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 	return nil
 }
 
+// The two arrays a package records checksums in. Named constants rather than
+// literals so a reader of a result can match the field to the schema.
+const (
+	refFieldContents = "contents"
+	refFieldExternal = "externalEvidence"
+)
+
+// add folds another array's counts in, so the verdict is over the whole package.
+func (c *verifyCounts) add(o verifyCounts) {
+	c.match += o.match
+	c.mismatch += o.mismatch
+	c.skipped += o.skipped
+	c.errors += o.errors
+	c.unreachable += o.unreachable
+	c.unsupported += o.unsupported
+}
+
+// verifyRecordedArray runs one array of recorded entries through the shared path:
+// skip what the classifier could not resolve, hash the rest through the one fetcher,
+// and rebuild the per-entry list in the document's own order so a reader can match it
+// against the array regardless of what resolved. Both arrays go through here, so
+// neither can be verified under a rule the other does not apply — which is exactly
+// the divergence that let externalEvidence go unchecked. Returns the reachable
+// entries too, for the aggregators that walk results documents.
+func verifyRecordedArray(entries []hdfengine.EvidenceContent, field string,
+	unreachableBy map[string]string, fetch hdfengine.FetchFunc,
+) ([]evidenceVerifyResult, verifyCounts, []hdfengine.EvidenceContent) {
+	reachable := make([]hdfengine.EvidenceContent, 0, len(entries))
+	for _, c := range entries {
+		if _, bad := unreachableBy[c.URI]; !bad {
+			reachable = append(reachable, c)
+		}
+	}
+	verified, counts := toVerifyResults(hdfengine.VerifyChecksums(reachable, fetch), field)
+
+	results := make([]evidenceVerifyResult, 0, len(entries))
+	next := 0
+	for _, c := range entries {
+		if reason, bad := unreachableBy[c.URI]; bad {
+			results = append(results, evidenceVerifyResult{
+				URI: c.URI, Type: c.Type, Format: c.Format, Field: field,
+				Status: verifyUnreachable, Error: reason,
+			})
+			counts.unreachable++
+			continue
+		}
+		results = append(results, verified[next])
+		next++
+	}
+	return results, counts, reachable
+}
+
 // toVerifyResults maps engine checksum results to the CLI's render/count shape.
-func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResult, verifyCounts) {
+func toVerifyResults(checksums []hdfengine.ChecksumResult, field string) ([]evidenceVerifyResult, verifyCounts) {
 	results := make([]evidenceVerifyResult, 0, len(checksums))
 	var counts verifyCounts
 	for _, c := range checksums {
 		results = append(results, evidenceVerifyResult{
 			URI:       c.URI,
 			Type:      c.Type,
+			Field:     field,
+			Format:    c.Format,
 			Algorithm: c.Algorithm,
 			Status:    string(c.Status),
 			Expected:  c.Expected,
