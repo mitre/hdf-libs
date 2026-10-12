@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -503,7 +504,7 @@ func TestExitStatus_NothingToDoIsFour(t *testing.T) {
 	for _, args := range [][]string{
 		{"validate", pattern},
 		{"list", pattern},
-		{"convert", pattern, "-o", t.TempDir() + "/"},
+		{"convert", pattern, "-o", t.TempDir()},
 	} {
 		t.Run(args[0], func(t *testing.T) {
 			_, _, err := executeCommand(args...)
@@ -511,7 +512,9 @@ func TestExitStatus_NothingToDoIsFour(t *testing.T) {
 			code, report := ExitStatus(err)
 			assert.Equal(t, 4, code)
 			assert.True(t, report, "the message must be printed")
-			assert.Contains(t, err.Error(), pattern)
+			// The message quotes the pattern with %q, which escapes a Windows
+			// path's separators, so compare against the formatted form.
+			assert.Contains(t, err.Error(), fmt.Sprintf("%q", pattern))
 		})
 	}
 	t.Run("evidence build with no results files", func(t *testing.T) {
