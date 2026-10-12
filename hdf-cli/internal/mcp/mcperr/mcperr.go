@@ -31,6 +31,8 @@ const (
 	OutputExists     Code = "OUTPUT_EXISTS"
 	WriteFailed      Code = "WRITE_FAILED"
 	CacheMiss        Code = "CACHE_MISS"
+	// NoOverrideMatched: apply ran with requireMatch and no override landed.
+	NoOverrideMatched Code = "NO_OVERRIDE_MATCHED"
 )
 
 // Codes is the exhaustive, closed taxonomy. Every member appears here exactly
@@ -48,24 +50,26 @@ var Codes = []Code{
 	OutputExists,
 	WriteFailed,
 	CacheMiss,
+	NoOverrideMatched,
 }
 
 // defaultNextCall maps each code to the concrete recovery it recommends by
 // default. Every code has an entry; a code without guidance is a defect the
 // tests catch.
 var defaultNextCall = map[Code]string{
-	DocumentNotFound: "verify the path exists and points at a readable document under HDF_MCP_ROOT",
-	PathDenied:       "use a path inside the configured HDF_MCP_ROOT",
-	TooLarge:         "reduce the input size, or ask the deployer to raise the size limit",
-	WrongDocType:     "call hdf_inspect for this document type (hdf_query is results/baseline only)",
-	SchemaInvalid:    "call hdf_validate to see the specific line-numbered schema errors",
-	HandleStale:      "the content changed — re-open the document with hdf_open to mint a fresh handle",
-	NoConverter:      "check the hdf://catalog/converters resource for a supported `from` format",
-	Truncated:        "narrow the result with filters, or fetch the next page with `page`",
-	AmbiguousFormat:  "specify `from` explicitly to disambiguate the source format",
-	OutputExists:     "the output path already exists; pass `overwrite: true` to replace it, or choose a different `output` path",
-	WriteFailed:      "the write failed (e.g. permission denied, no space, or a missing parent directory); check the destination is writable or choose a different `output` path",
-	CacheMiss:        "the authored document expired from the in-memory cache — re-author it, or set `output` to persist it to disk",
+	DocumentNotFound:  "verify the path exists and points at a readable document under HDF_MCP_ROOT",
+	PathDenied:        "use a path inside the configured HDF_MCP_ROOT",
+	TooLarge:          "reduce the input size, or ask the deployer to raise the size limit",
+	WrongDocType:      "call hdf_inspect for this document type (hdf_query is results/baseline only)",
+	SchemaInvalid:     "call hdf_validate to see the specific line-numbered schema errors",
+	HandleStale:       "the content changed — re-open the document with hdf_open to mint a fresh handle",
+	NoConverter:       "check the hdf://catalog/converters resource for a supported `from` format",
+	Truncated:         "narrow the result with filters, or fetch the next page with `page`",
+	AmbiguousFormat:   "specify `from` explicitly to disambiguate the source format",
+	OutputExists:      "the output path already exists; pass `overwrite: true` to replace it, or choose a different `output` path",
+	WriteFailed:       "the write failed (e.g. permission denied, no space, or a missing parent directory); check the destination is writable or choose a different `output` path",
+	CacheMiss:         "the authored document expired from the in-memory cache — re-author it, or set `output` to persist it to disk",
+	NoOverrideMatched: "no override named a requirement this document carries; call hdf_query to see its ids, or omit `requireMatch` when the register is meant to be carried across documents",
 }
 
 // Error is a taxonomy error. It implements the error interface and is recoverable

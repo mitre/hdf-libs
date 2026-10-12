@@ -551,3 +551,39 @@ func TestHdfApplyAmendment_RefusesOverwritingAmendmentsInput(t *testing.T) {
 		t.Errorf("expected PATH_DENIED, got %s", payload)
 	}
 }
+
+// Zero matches is an intended state for a register carried across documents,
+// so the default result is a success with appliedOverrides 0; a caller whose
+// register was written for THIS document sets requireMatch and gets a tool
+// error naming the overrides that landed nowhere.
+func TestApplyAmendment_RequireMatch(t *testing.T) {
+	root, results, _ := applyEnv(t)
+	nomatch := `{"name":"nomatch","overrides":[{"type":"waiver","requirementId":"ZZ-999","status":"passed","reason":"no match","appliedBy":{"type":"email","identifier":"admin@example.com"},"appliedAt":"2026-03-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}`
+	if err := os.WriteFile(filepath.Join(root, "nomatch.json"), []byte(nomatch), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Run("default: a success reporting 0 of 1", func(t *testing.T) {
+		res, out := callApply(t, applyInput(results, "nomatch.json", "merged.json", true))
+		if res != nil {
+			t.Fatalf("expected a successful apply, got an error result")
+		}
+		if out.AppliedOverrides != 0 || out.TotalOverrides != 1 {
+			t.Fatalf("expected applied 0 of 1, got %d of %d", out.AppliedOverrides, out.TotalOverrides)
+		}
+	})
+	t.Run("requireMatch: a tool error naming the unmatched override", func(t *testing.T) {
+		in := applyInput(results, "nomatch.json", "merged.json", true)
+		in.RequireMatch = true
+		res, _ := callApply(t, in)
+		if res == nil || !res.IsError {
+			t.Fatalf("expected a tool error, got success")
+		}
+		text := ""
+		if tc, ok := res.Content[0].(*sdkmcp.TextContent); ok {
+			text = tc.Text
+		}
+		if !strings.Contains(text, "ZZ-999") {
+			t.Fatalf("the error must name the unmatched override; got %q", text)
+		}
+	})
+}

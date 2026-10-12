@@ -1,8 +1,20 @@
+/**
+ * GNU diff compatible and detailed exit codes for HDF comparison operations.
+ * Basic codes are 0 for identical and 1 for differences; EXIT_ERROR is GNU
+ * diff's trouble code, which this repo's own CLI does not use. Detailed codes
+ * (10-14) communicate nuanced security outcomes such as fixes, regressions,
+ * baseline changes, and metadata drift.
+ */
 import type { ComparisonSummary } from './types.js';
 
 /** GNU diff compatible exit codes (--exit-code mode) */
 export const EXIT_IDENTICAL = 0;
 export const EXIT_DIFFERENCES = 1;
+/**
+ * GNU diff's trouble code. The hdf CLI does not return it: a diff that fails to
+ * run exits 1 like any failed operation, and 2 there means a usage error. Kept
+ * for a caller that wants GNU's convention instead.
+ */
 export const EXIT_ERROR = 2;
 
 /** Detailed exit codes (--detailed-exitcode mode) */
@@ -21,8 +33,8 @@ export const EXIT_DETAILED_DRIFT_ONLY = 14;
  *   0 = identical (no differences found)
  *   1 = differences found (any kind)
  *
- * Note: error (exit code 2) is not computed from the summary — callers
- * should return EXIT_ERROR directly when I/O or parse errors occur.
+ * Never EXIT_ERROR: a summary cannot describe a run that failed to produce one.
+ * A caller that follows the hdf CLI returns 1 for such a failure, not EXIT_ERROR.
  */
 export function computeExitCode(summary: ComparisonSummary): number {
   if (hasDifferences(summary)) {
@@ -42,8 +54,8 @@ export function computeExitCode(summary: ComparisonSummary): number {
  *   13 = differences found, only new/absent controls (baseline changed)
  *   14 = differences found, only metadata drift (no status changes)
  *
- * Note: error (exit code 1) is not computed from the summary — callers
- * should return EXIT_DETAILED_ERROR directly when I/O or parse errors occur.
+ * Never EXIT_DETAILED_ERROR: callers return that themselves when a diff fails
+ * to run, which matches the hdf CLI's 1 for a failed operation.
  *
  * Priority order: mixed(12) > regressions(11) > fixes(10) > baseline(13) > drift(14)
  */

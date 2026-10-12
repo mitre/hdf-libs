@@ -56,7 +56,9 @@ const (
 	// description had to say a governing POA&M counts too; measured 5617.
 	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
 	// measured 5669.
-	ToolsListTotalBudget = 5700
+	// Raised to 5720 (owner decision 2026-10-11) for hdf_apply_amendment's
+	// requireMatch; measured 5710 after two shortenings of its description.
+	ToolsListTotalBudget = 5720
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600

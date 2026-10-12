@@ -723,7 +723,7 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
 
 		outPath := filepath.Join(dir, "out.json")
-		err := runAmendApply(nil, resultsPath, path, outPath)
+		err := runAmendApply(nil, resultsPath, path, outPath, false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "expired")
 		assert.NoFileExists(t, outPath, "a refused apply must not write output")
@@ -743,7 +743,7 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 		tamperedPath := filepath.Join(dir, "tampered.json")
 		require.NoError(t, os.WriteFile(tamperedPath, tampered, 0o600))
 
-		err := runAmendApply(nil, resultsPath, tamperedPath, filepath.Join(dir, "out.json"))
+		err := runAmendApply(nil, resultsPath, tamperedPath, filepath.Join(dir, "out.json"), false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "chain")
 	})
@@ -764,7 +764,7 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 		}`
 		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
 
-		err := runAmendApply(nil, resultsPath, path, filepath.Join(dir, "out.json"))
+		err := runAmendApply(nil, resultsPath, path, filepath.Join(dir, "out.json"), false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid")
 	})
@@ -791,7 +791,7 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 		require.NoError(t, verifyErr)
 
 		outPath := filepath.Join(dir, "out.json")
-		require.NoError(t, runAmendApply(nil, resultsPath, path, outPath))
+		require.NoError(t, runAmendApply(nil, resultsPath, path, outPath, false))
 		assert.FileExists(t, outPath)
 	})
 }
@@ -830,6 +830,43 @@ func TestAmendApplyReportsAppliedCount(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, stderr, "Applied 0 of 1 override(s)")
 	})
+
+	// Zero matches is an intended state for a register carried across
+	// documents, so the default stays exit 0; a caller whose register was
+	// written for THIS document opts into the failure and gets the ids.
+	t.Run("--require-match turns a zero-match apply into a failure naming the ids", func(t *testing.T) {
+		resultsPath, _ := createAmendTestFixtures(t)
+		dir := t.TempDir()
+		amendPath := filepath.Join(dir, "nomatch.json")
+		nomatch := `{
+			"name": "nomatch",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "ZZ-999",
+				"status": "passed",
+				"reason": "no match",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(amendPath, []byte(nomatch), 0o600))
+		out := filepath.Join(dir, "merged.json")
+		_, stderr, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", amendPath, "-o", out, "--require-match")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ZZ-999")
+		assert.Contains(t, stderr, "Applied 0 of 1 override(s)")
+		assert.NoFileExists(t, out, "a refused apply writes nothing")
+	})
+
+	t.Run("--require-match is satisfied by one match", func(t *testing.T) {
+		resultsPath, amendmentsPath := createAmendTestFixtures(t)
+		out := filepath.Join(t.TempDir(), "merged.json")
+		_, stderr, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", amendmentsPath, "-o", out, "--require-match")
+		require.NoError(t, err)
+		assert.Contains(t, stderr, "Applied 1 of 1 override(s)")
+		assert.FileExists(t, out)
+	})
 }
 
 // TestAmendApplyGatesResultsInput: the RESULTS input is gated at the
@@ -858,7 +895,7 @@ func TestAmendApplyGatesResultsInput(t *testing.T) {
 		amendPath := filepath.Join(dir, "amend.json")
 		require.NoError(t, os.WriteFile(amendPath, []byte(validAmendments), 0o600))
 		outPath := filepath.Join(dir, "out.json")
-		err := runAmendApply(nil, resultsPath, amendPath, outPath)
+		err := runAmendApply(nil, resultsPath, amendPath, outPath, false)
 		return outPath, err
 	}
 
@@ -974,7 +1011,7 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
 		amendPath := writeAmendments(t, dir, "esc.json", "AC-"+esc)
 
-		err := runAmendApply(nil, resultsPath, amendPath, filepath.Join(dir, "out.json"))
+		err := runAmendApply(nil, resultsPath, amendPath, filepath.Join(dir, "out.json"), false)
 		require.Error(t, err)
 		assert.NotContains(t, err.Error(), "\x1b", "refusal must not carry escape sequences")
 		assert.Contains(t, err.Error(), "RED", "the identifier itself is still reported")

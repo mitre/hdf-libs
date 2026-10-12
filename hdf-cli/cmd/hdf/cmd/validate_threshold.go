@@ -89,10 +89,11 @@ Designed for CI/CD compliance gates.`,
 				// that instead of collapsing it to the first line of the error.
 				// Without it the same command read two ways depending on how many
 				// files were passed, and a CI loop over per-tool thresholds got
-				// the shape that says least.
+				// the shape that says least. withFailClosed: a gate is 1 when any
+				// document failed it, never "partial".
 				return runBulk(files, "threshold validation", "passed thresholds", func(file string) error {
 					return runValidateThresholdFile(cmd.Context(), file, specs)
-				}, withFailureDetail())
+				}, withFailureDetail(), withFailClosed())
 			}
 			return runValidateThresholdFile(cmd.Context(), files[0], specs)
 		},
