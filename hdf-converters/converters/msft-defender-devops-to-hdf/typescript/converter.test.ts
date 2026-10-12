@@ -268,7 +268,7 @@ describe('msft-defender-devops-to-hdf', () => {
   // ---- Delegates base SARIF ----
 
   describe('base SARIF delegation', () => {
-    it('should preserve standard SARIF tags (nist, severity)', async () => {
+    it('should preserve standard SARIF tags (nist, sarif-level)', async () => {
       const input = loadFixture('input/minimal.sarif');
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
@@ -276,7 +276,7 @@ describe('msft-defender-devops-to-hdf', () => {
       const tags = req.tags as Record<string, unknown>;
 
       expect(tags.nist).toBeDefined();
-      expect(tags.severity).toBeDefined();
+      expect(tags['sarif-level']).toBeDefined();
     });
   });
 });

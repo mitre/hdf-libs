@@ -48,7 +48,7 @@ type Converter interface {
 }
 
 // VersionedConverter is an optional interface for converters that support
-// multiple input format versions (e.g. SARIF 2.0 vs 2.1). Single-version
+// multiple input format versions (e.g. legacy HDF 2 vs 3). Single-version
 // converters need not implement this — they are unaffected.
 type VersionedConverter interface {
 	Converter

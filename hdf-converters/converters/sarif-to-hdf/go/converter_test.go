@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -52,7 +54,7 @@ func TestConvertSarifToHDF_SarifInput(t *testing.T) {
 	assert.Equal(t, "buffer/gets", *ff1014.Title)
 	assert.Contains(t, ff1014.Descriptions[0].Data, "Does not check for buffer overflows")
 	assert.Equal(t, 0.7, ff1014.Impact)
-	assert.Equal(t, "error", ff1014.Tags["severity"])
+	assert.Equal(t, "error", ff1014.Tags["sarif-level"])
 	cwe1, ok := ff1014.Tags["cwe"].([]string)
 	require.True(t, ok, "CWE should be string slice")
 	assert.Contains(t, cwe1, "CWE-120")
@@ -121,6 +123,52 @@ func TestConvertSarifToHDF_EmptyResultsFixture(t *testing.T) {
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 	assert.Contains(t, req.Results[0].CodeDesc, "ExampleAnalyzer")
 	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
+// The fixture can only carry the absent form, since a literal null fails the
+// vendored schema. Pin literal null against the fixture's own output so the
+// golden covers both spellings rather than only one.
+func TestConvertSarifToHDF_ResultsNullMatchesAbsentFixture(t *testing.T) {
+	absentData, err := os.ReadFile(fixturePath("results-absent.sarif"))
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(absentData, &doc))
+	runs := doc["runs"].([]interface{})
+	runs[0].(map[string]interface{})["results"] = nil
+	nullData, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	fromAbsent, err := ConvertSarifToHDF(absentData, testConverterVersion)
+	require.NoError(t, err)
+	fromNull, err := ConvertSarifToHDF(nullData, testConverterVersion)
+	require.NoError(t, err)
+
+	a := fromAbsent.Baselines[0].Requirements[0]
+	n := fromNull.Baselines[0].Requirements[0]
+	assert.Equal(t, a.ID, n.ID)
+	assert.Equal(t, a.Title, n.Title)
+	assert.Equal(t, a.Impact, n.Impact)
+	require.Len(t, n.Results, 1)
+	assert.Equal(t, a.Results[0].Status, n.Results[0].Status)
+	assert.Equal(t, a.Results[0].CodeDesc, n.Results[0].CodeDesc)
+}
+
+func TestConvertSarifToHDF_ResultsAbsentFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("results-absent.sarif"))
+	require.NoError(t, err, "Failed to read results-absent.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "ExampleAnalyzer-not-analyzed", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"a run that reported no result set analyzed nothing; passed would assert a clean scan")
+	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 func TestConvertSarifToHDF_EmptyResultsFallbackTarget(t *testing.T) {
@@ -248,11 +296,12 @@ func TestInvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid SARIF JSON")
 }
 
+// An ABSENT runs field is an error; an EMPTY one is conformant (§3.13.4) and converts.
 func TestMissingRuns(t *testing.T) {
 	input := `{ "version": "2.1.0" }`
 	_, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "missing or empty runs field")
+	assert.Contains(t, err.Error(), "missing runs field")
 }
 
 // --- Level resolution tests ---
@@ -331,7 +380,7 @@ func TestLevelFallbackToRuleDefault(t *testing.T) {
 
 	req := result.Baselines[0].Requirements[0]
 	assert.Equal(t, 0.7, req.Impact, "Should use rule default level 'error' → 0.7")
-	assert.Equal(t, "error", req.Tags["severity"])
+	assert.Equal(t, "error", req.Tags["sarif-level"])
 }
 
 // --- CWE extraction tests ---
@@ -1376,7 +1425,7 @@ func TestConvertSarifToHDF_RichFixture(t *testing.T) {
 	assert.Equal(t, "SEC-002", sec002.ID)
 	assert.Equal(t, "WeakCrypto", *sec002.Title)
 	assert.Equal(t, 0.5, sec002.Impact)
-	assert.Equal(t, "warning", sec002.Tags["severity"])
+	assert.Equal(t, "warning", sec002.Tags["sarif-level"])
 	require.Len(t, sec002.Results, 1)
 	assert.Equal(t, hdf.Failed, sec002.Results[0].Status)
 
@@ -1525,7 +1574,7 @@ func TestConvertSarifToHDF_SpotBugsFixture(t *testing.T) {
 	// All SpotBugs results are "note" level → 0.3 impact
 	for _, req := range baseline.Requirements {
 		assert.Equal(t, 0.3, req.Impact, "SpotBugs rule %s should have note-level impact", req.ID)
-		assert.Equal(t, "note", req.Tags["severity"])
+		assert.Equal(t, "note", req.Tags["sarif-level"])
 	}
 
 	// NM_METHOD_NAMING_CONVENTION — heaviest grouping: 33 results
@@ -1660,6 +1709,17 @@ func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
 		"spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)")
 }
 
+// WHAT THIS GUARANTEE DOES NOT COVER. A golden-based parity test can only discriminate
+// shapes the corpus actually contains, so it is silent on every conformant construct no
+// fixture carries. Four Go/TypeScript divergences were found by reading the two
+// implementations against the spec, not by this test, and it stayed green through all of
+// them: an empty runs array, a SARIF 2.0 resources.rules block, an artifactLocation with
+// no uri, and a host-zone timestamp. Two of them now have fixtures; the 2.0 shape
+// cannot have one, because the only vendored schema admits 2.1.0 alone, so it is
+// covered by inline documents in both languages instead. The conformance
+// surface is much larger than the corpus (SARIF defines 30 result properties alone), so a
+// divergence in an uncovered construct will not be caught here. Add a fixture when a
+// conformant shape matters, rather than trusting this to find it.
 func TestSnapshots(t *testing.T) {
 	// SARIF fixtures carry no run start time; conversion-time fallback. Suppression
 	// overrides likewise carry no owner/date, so appliedAt/expiresAt are conversion-
@@ -1766,94 +1826,6 @@ func TestConvertSarifToHDF_ExplicitVersion(t *testing.T) {
 		assert.Equal(t, len(resultDefault.Baselines[i].Requirements),
 			len(resultExplicit.Baselines[i].Requirements),
 			"baseline %d requirement count should match", i)
-	}
-}
-
-func TestNormalizeSarifVersion_21Passthrough(t *testing.T) {
-	input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"test","rules":[{"id":"R1"}]}},"results":[]}]}`)
-	output, err := normalizeSarifVersion(input, "")
-	require.NoError(t, err)
-	// 2.1 input should pass through unchanged
-	assert.Equal(t, input, output)
-}
-
-func TestNormalizeSarifVersion_20ResourcesRules(t *testing.T) {
-	// SARIF 2.0 has resources.rules instead of tool.driver.rules
-	input := []byte(`{
-		"version": "2.0.0",
-		"runs": [{
-			"tool": {"driver": {"name": "test"}},
-			"resources": {"rules": [{"id": "R1", "name": "TestRule"}]},
-			"results": []
-		}]
-	}`)
-
-	output, err := normalizeSarifVersion(input, "")
-	require.NoError(t, err)
-
-	var doc map[string]any
-	require.NoError(t, json.Unmarshal(output, &doc))
-
-	// Version should be upgraded to 2.1.0
-	assert.Equal(t, "2.1.0", doc["version"])
-
-	// resources should be removed, rules should be in tool.driver.rules
-	runs := doc["runs"].([]any)
-	run := runs[0].(map[string]any)
-	_, hasResources := run["resources"]
-	assert.False(t, hasResources, "resources field should be removed")
-
-	tool := run["tool"].(map[string]any)
-	driver := tool["driver"].(map[string]any)
-	rules, hasRules := driver["rules"].([]any)
-	assert.True(t, hasRules, "tool.driver.rules should exist")
-	assert.Len(t, rules, 1)
-	assert.Equal(t, "R1", rules[0].(map[string]any)["id"])
-}
-
-func TestNormalizeSarifVersion_ExplicitVersionOverride(t *testing.T) {
-	// Document says 2.1.0 but explicit version says 2.0 — trust explicit
-	input := []byte(`{
-		"version": "2.1.0",
-		"runs": [{
-			"tool": {"driver": {"name": "test"}},
-			"resources": {"rules": [{"id": "R1"}]},
-			"results": []
-		}]
-	}`)
-
-	output, err := normalizeSarifVersion(input, "2.0.0")
-	require.NoError(t, err)
-
-	var doc map[string]any
-	require.NoError(t, json.Unmarshal(output, &doc))
-
-	// resources.rules should be moved even though doc version says 2.1
-	tool := doc["runs"].([]any)[0].(map[string]any)["tool"].(map[string]any)
-	driver := tool["driver"].(map[string]any)
-	_, hasRules := driver["rules"]
-	assert.True(t, hasRules, "should normalize when explicit version is 2.0")
-}
-
-func TestIsSarif20(t *testing.T) {
-	tests := []struct {
-		name     string
-		version  string
-		docVer   string
-		expected bool
-	}{
-		{"explicit 2.0.0", "2.0.0", "2.1.0", true},
-		{"explicit 2.0.0-csd", "2.0.0-csd.2", "2.1.0", true},
-		{"explicit 2.1.0", "2.1.0", "2.0.0", false},
-		{"empty explicit, doc 2.0", "", "2.0.0", true},
-		{"empty explicit, doc 2.1", "", "2.1.0", false},
-		{"empty both", "", "", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			doc := []byte(`{"version":"` + tt.docVer + `"}`)
-			assert.Equal(t, tt.expected, isSarif20(doc, tt.version))
-		})
 	}
 }
 
@@ -2126,16 +2098,20 @@ func TestConvertSarifToHDF_MalformedSecuritySeverityFallsBackToLevel(t *testing.
 	}
 }
 
-// CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
-// converter's existing zero-impact floor still applies, because a reported
-// finding must never be silently notApplicable.
-func TestConvertSarifToHDF_ZeroSecuritySeverityKeepsTheExistingFloor(t *testing.T) {
+// security-severity is GitHub's property, so GitHub's reading of it governs, and it
+// documents that "a value of 0.0 or any other value outside the given range is
+// regarded as having no security severity" — not as a severity of none. So 0.0 is an
+// absent rating and the level mapping applies. This replaces an earlier reading that
+// treated 0.0 as a CVSS "none" rating which won and was then floored to 0.1; falling
+// back to the level serves that reading's own concern better, since the finding lands
+// on its real severity instead of the floor.
+func TestConvertSarifToHDF_ZeroSecuritySeverityFallsBackToLevel(t *testing.T) {
 	result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", "0.0"), testConverterVersion)
 	require.NoError(t, err)
 	req := result.Baselines[0].Requirements[0]
-	assert.Equal(t, 0.1, req.Impact, "CVSS 0.0 wins over level, then hits the existing 0.1 floor")
+	assert.Equal(t, 0.7, req.Impact, "0.0 carries no security severity, so level error applies")
 	require.NotNil(t, req.Severity)
-	assert.Equal(t, hdf.SeverityLow, *req.Severity)
+	assert.Equal(t, hdf.SeverityHigh, *req.Severity)
 }
 
 // Producers conventionally emit the score as a string, but a JSON number is
@@ -2306,4 +2282,912 @@ func TestConvertSarifToHDF_ExtensionRuleSuppliesHelpURI(t *testing.T) {
 		"helpUri must populate from a rule defined only on an extension")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "defined only by the extension", *req.Title)
+}
+
+// §3.14.23 makes null the default for an absent results array, and Appendix I gives
+// that null a meaning: the tool "either failed to start or failed to begin its
+// analysis". An empty array is the opposite — the tool ran and found nothing. Go
+// decoded both to a nil slice, so a failed scan reported as a clean pass.
+func TestConvertSarifToHDF_ResultsNullIsNotAPass(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "TestTool", "version": "1.0.0" } },
+			"invocations": [ { "executionSuccessful": false } ],
+			"results": null
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err, "a run that did not analyze is still a convertible document")
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"a tool that failed to start reviewed nothing; passed would assert a clean scan that never happened")
+	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings",
+		"the text must not claim the tool reported anything")
+}
+
+// Absent and null are the same case per §3.14.23, so they must convert the same way.
+func TestConvertSarifToHDF_ResultsAbsentMatchesResultsNull(t *testing.T) {
+	absent := `{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"TestTool"}}}]}`
+	null := `{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"TestTool"}},"results":null}]}`
+
+	a, err := ConvertSarifToHDF([]byte(absent), testConverterVersion)
+	require.NoError(t, err)
+	n, err := ConvertSarifToHDF([]byte(null), testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, n.Baselines[0].Requirements[0].Results[0].Status,
+		a.Baselines[0].Requirements[0].Results[0].Status,
+		"§3.14.23: an absent results array defaults to null, so the two inputs are one case")
+	assert.Equal(t, hdf.NotReviewed, a.Baselines[0].Requirements[0].Results[0].Status)
+}
+
+// The contrast is the point of the fix: these two inputs differ only in null versus
+// empty, and they must not produce the same status.
+func TestConvertSarifToHDF_NullAndEmptyResultsAreDistinguished(t *testing.T) {
+	tool := `"tool": { "driver": { "name": "TestTool" } }`
+	ranClean := `{"version":"2.1.0","runs":[{` + tool + `,"results":[]}]}`
+	neverRan := `{"version":"2.1.0","runs":[{` + tool + `,"results":null}]}`
+
+	clean, err := ConvertSarifToHDF([]byte(ranClean), testConverterVersion)
+	require.NoError(t, err)
+	never, err := ConvertSarifToHDF([]byte(neverRan), testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, hdf.Passed, clean.Baselines[0].Requirements[0].Results[0].Status,
+		"an empty results array means the tool ran and found nothing")
+	assert.Equal(t, hdf.NotReviewed, never.Baselines[0].Requirements[0].Results[0].Status)
+	assert.NotEqual(t,
+		clean.Baselines[0].Requirements[0].Results[0].Status,
+		never.Baselines[0].Requirements[0].Results[0].Status,
+		"if these match, the two SARIF states are indistinguishable after conversion")
+}
+
+// --- Severity resolution (§3.27.9, §3.27.10, §3.50.3) ---
+
+// §3.27.10: a rule's defaultConfiguration.level applies only to a result "which
+// does not itself specify a level property". The rule default previously won
+// outright, so a rule's note beat a result's explicit error.
+func TestConvertSarifToHDF_ResultLevelOutranksRuleDefault(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","level":"error","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"the result's own error level must outrank the rule's note default")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+}
+
+// GitHub documents that a security-severity of 0.0, and any value outside
+// 0.0-10.0, is treated as having no security severity — so the level mapping
+// applies. The impact floor masked this: it produced 0.1 while the level said error.
+func TestConvertSarifToHDF_SecuritySeverityZeroFallsBackToLevel(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1",
+			"defaultConfiguration":{"level":"error"},"properties":{"security-severity":"0.0"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"security-severity 0.0 carries no severity, so the error level applies")
+}
+
+// §3.27.10: level "none" means "the concept of severity does not apply". It
+// previously resolved to warning/0.5, inventing a middling severity for a finding
+// explicitly marked as having none.
+func TestConvertSarifToHDF_LevelNoneMeansSeverityDoesNotApply(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"informational","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Zero(t, req.Impact, "level none means severity does not apply, so impact is 0")
+	assert.Equal(t, "none", req.Tags["sarif-level"])
+}
+
+// tags.severity held the SARIF level string while impact could derive from
+// GitHub's security-severity, so one name carried two contradictory values.
+func TestConvertSarifToHDF_SarifLevelTagReplacesSeverity(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	tags := result.Baselines[0].Requirements[0].Tags
+	assert.Equal(t, "note", tags["sarif-level"])
+	assert.NotContains(t, tags, "severity",
+		"severity must mean the impact-derived band only; the SARIF level is sarif-level")
+}
+
+// A consumer cannot otherwise tell whether an impact came from GitHub's
+// security-severity, a result's level, the rule default, or the fallback.
+func TestConvertSarifToHDF_SeverityProvenanceIsRecoverable(t *testing.T) {
+	cases := []struct{ name, rules, result, want string }{
+		{"security-severity", `{"id":"R1","properties":{"security-severity":"8.6"}}`, `"kind":"fail"`, "security-severity"},
+		{"result level", `{"id":"R1"}`, `"level":"error","kind":"fail"`, "result-level"},
+		{"rule default", `{"id":"R1","defaultConfiguration":{"level":"note"}}`, `"kind":"fail"`, "rule-default"},
+		{"fallback", `{"id":"R1"}`, `"kind":"fail"`, "fallback"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{
+				"tool":{"driver":{"name":"T","rules":[` + tc.rules + `]}},
+				"results":[{"ruleId":"R1",` + tc.result + `,"message":{"text":"m"},
+					"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, result.Baselines[0].Requirements[0].Tags["sarif-severity-source"])
+		})
+	}
+}
+
+// A rule group mixing levels took the FIRST fail-kind result's level, so an error
+// reported after a note was presented as a note. The worst level in the group is
+// the only safe requirement-level summary while HDF has no per-result severity field.
+func TestConvertSarifToHDF_MixedLevelGroupTakesTheWorst(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[
+			{"ruleId":"R1","level":"note","kind":"fail","message":{"text":"low"},
+				"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","level":"error","kind":"fail","message":{"text":"high"},
+				"locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"a note listed before an error must not hide the error")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+}
+
+// §3.27.10 forces level "none" on any non-failing result, so a none carried by a
+// passing result is spec compliance rather than a severity statement and must not
+// discard the rule's own declared level.
+func TestConvertSarifToHDF_RuleDefaultBeatsNoneOnAPassingResult(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"pass","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.3, req.Impact, 0.0001, "the rule's declared note must survive")
+	assert.Equal(t, "note", req.Tags["sarif-level"])
+}
+
+// §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
+// "none" on a failing result contradicts the definition and must not be honoured.
+// Honouring it would put a reported failure at impact 0, which the effective-status
+// ladder reads as notApplicable — dropping a real finding out of the denominator.
+func TestConvertSarifToHDF_NoneOnAFailingResultIsNotHonoured(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001, "the rule's error default applies; impact must not be 0")
+	assert.NotZero(t, req.Impact, "a reported failure must never land at impact 0")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+}
+
+// The companion to the test above, and the one that actually guards the hazard: with
+// NO rule default to fall back on, honouring a failing result's "none" would resolve
+// the group to none and put a reported failure at impact 0. The rule-default branch
+// masks that, so a case without one is required to pin it.
+func TestConvertSarifToHDF_NoneOnAFailingResultWithNoRuleDefault(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotZero(t, req.Impact, "a reported failure must never land at impact 0")
+	assert.InDelta(t, 0.5, req.Impact, 0.0001, "falls through to the SARIF default level")
+	assert.Equal(t, "warning", req.Tags["sarif-level"])
+	assert.Equal(t, "fallback", req.Tags["sarif-severity-source"])
+}
+
+// --- Per-result carriage (§3.27.2, §3.27.12, §3.27.16) ---
+
+// Results sharing a ruleId become one requirement, and everything past the first was
+// dropped. Fingerprints are the identity mechanism cross-run correlation depends on,
+// so losing them is the loss most destructive to trend analysis over SARIF input.
+func TestConvertSarifToHDF_EveryResultsFingerprintsSurvive(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"a"},
+			 "partialFingerprints":{"h":"first"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"b"},
+			 "partialFingerprints":{"h":"second"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 2)
+
+	per, ok := req.Tags["sarif-results"].([]map[string]interface{})
+	require.True(t, ok, "sarif-results must carry one entry per HDF result")
+	require.Len(t, per, 2)
+
+	got := make([]string, 0, 2)
+	for _, entry := range per {
+		fp, ok := entry["partialFingerprints"].(map[string]string)
+		require.True(t, ok, "entry must carry partialFingerprints")
+		got = append(got, fp["h"])
+	}
+	assert.ElementsMatch(t, []string{"first", "second"}, got,
+		"the second result's fingerprint must not be discarded")
+}
+
+// A group whose results disagree on kind previously reported only the first one's,
+// claiming a single kind the group does not have.
+func TestConvertSarifToHDF_MixedKindGroupDoesNotClaimOneKind(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[
+			{"ruleId":"R1","kind":"pass","message":{"text":"a"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","kind":"fail","message":{"text":"b"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	assert.NotContains(t, req.Tags, "kind",
+		"a mixed group must not publish one kind; the per-result entries carry them")
+
+	per := req.Tags["sarif-results"].([]map[string]interface{})
+	require.Len(t, per, 2)
+	kinds := make([]string, 0, 2)
+	for _, e := range per {
+		k, ok := e["kind"].(string)
+		require.True(t, ok, "each entry must carry a kind")
+		kinds = append(kinds, k)
+	}
+	assert.ElementsMatch(t, []string{"pass", "fail"}, kinds)
+}
+
+// A uniform group keeps the aggregate, because it is accurate there.
+func TestConvertSarifToHDF_UniformKindGroupKeepsTheAggregate(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"a"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"b"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "fail", result.Baselines[0].Requirements[0].Tags["kind"])
+}
+
+// ADR-0017 scoped rawSourceRecord to the result precisely because records merged onto
+// a requirement collide and one has to be discarded — which is this defect.
+func TestConvertSarifToHDF_EachResultCarriesItsRawSourceRecord(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"alpha"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"beta"},
+			 "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 2)
+
+	for i, want := range []string{"alpha", "beta"} {
+		rec := req.Results[i].RawSourceRecord
+		require.NotNil(t, rec, "result %d must carry its own native record", i)
+		assert.Equal(t, "application/json", rec.MediaType)
+		assert.Contains(t, rec.Content, want, "the record must be THIS result, verbatim")
+		// It must round-trip as JSON, not be a lossy rendering.
+		var back map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(rec.Content), &back))
+		assert.Equal(t, "R1", back["ruleId"])
+		require.NotNil(t, rec.Pointer)
+		assert.Equal(t, "/runs/0/results/"+strconv.Itoa(i), *rec.Pointer)
+	}
+}
+
+// §3.27.12: "The locations array SHALL NOT be used to specify distinct occurrences of
+// the same result." The importer expands one result per location anyway, so the
+// original result count has to be recoverable or cardinality is lost.
+func TestConvertSarifToHDF_SourceResultCountIsRecoverable(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","kind":"fail","level":"error","message":{"text":"a"},
+			"locations":[
+				{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}},
+				{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}},
+				{"physicalLocation":{"artifactLocation":{"uri":"c.c"},"region":{"startLine":3}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Len(t, req.Results, 3, "one HDF result per location, as today")
+	assert.EqualValues(t, 1, req.Tags["sarif-source-result-count"],
+		"one SARIF result produced those three, and that must stay recoverable")
+}
+
+// tags["kind"] carries what the tool WROTE, like tags["sarif-level"]. §3.27.9 defaults
+// an absent kind to "fail", but publishing that derived value under the same key would
+// silently change the tag's meaning from "the tool said this" to "the spec implies
+// this" — and the effective value is already in the per-result entries.
+func TestConvertSarifToHDF_AbsentKindIsNotPublishedAsAnAggregate(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	assert.NotContains(t, req.Tags, "kind",
+		"the tool stated no kind, so no aggregate kind may be published")
+
+	per, ok := req.Tags["sarif-results"].([]map[string]interface{})
+	require.True(t, ok)
+	require.Len(t, per, 1)
+	assert.Equal(t, "fail", per[0]["kind"],
+		"the per-result entry is where the §3.27.9 default belongs")
+}
+
+// A record re-marshalled from the typed struct would silently drop every SARIF
+// property the struct does not declare — 17 of the 30 the spec defines, including the
+// cross-run correlation fields this carriage exists to preserve. No fixture carries
+// them, so only a named test pins it.
+func TestConvertSarifToHDF_RawSourceRecordKeepsUnmodeledProperties(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"guid":"11111111-2222-3333-4444-555555555555",
+			"correlationGuid":"66666666-7777-8888-9999-000000000000",
+			"baselineState":"unchanged","rank":42.5,
+			"hostedViewerUri":"https://example.test/v/1",
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	rec := result.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	assert.Equal(t, hdf.UTF8, rec.Encoding)
+
+	var back map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(rec.Content), &back))
+	for _, k := range []string{"guid", "correlationGuid", "baselineState", "rank", "hostedViewerUri"} {
+		assert.Contains(t, back, k, "SarifResult does not declare %q, so only an untyped record keeps it", k)
+	}
+	assert.Equal(t, "unchanged", back["baselineState"])
+}
+
+// Go HTML-escapes <, > and & by default and JavaScript does not, so a record holding
+// any of them would differ between the languages. The corpus happens to cover this
+// through one fixture's C snippet; this pins it directly so trimming that fixture
+// cannot remove the guard silently.
+func TestConvertSarifToHDF_RawSourceRecordDoesNotHTMLEscape(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"a && b < c > d"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	rec := result.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	// The positive form is the whole guard: had Go escaped them, the content would
+	// hold \u0026 and so could not hold the raw text.
+	assert.Contains(t, rec.Content, "a && b < c > d")
+	escaped := "\\" + "u00"
+	assert.NotContains(t, rec.Content, escaped, "no character may be \\u00XX-escaped")
+}
+
+// --- Go/TypeScript conformance parity (§3.13.4, §3.4.5) ---
+
+// §3.13.4 makes an empty runs array conformant. Go rejected it while TypeScript
+// converted it, so one language refused a file the other accepted. A zero-baseline
+// HDF document is schema-valid (baselines has no minItems), so accepting is the
+// answer: refusing a conformant document is the worse failure.
+func TestConvertSarifToHDF_EmptyRunsIsAccepted(t *testing.T) {
+	result, err := ConvertSarifToHDF([]byte(`{"version":"2.1.0","runs":[]}`), testConverterVersion)
+	require.NoError(t, err, "an empty runs array is conformant SARIF and must convert")
+	assert.Empty(t, result.Baselines, "no runs means no baselines, not an error")
+	require.NotNil(t, result.Generator)
+}
+
+// §3.4.5 permits an artifactLocation with no uri, because region — which carries the
+// line and column — is a SIBLING of artifactLocation, not inside it. So the position
+// is known even when the file is not, and discarding it loses data we have because of
+// data we do not.
+func TestConvertSarifToHDF_UriLessLocationKeepsItsRegion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":5,"startColumn":7}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+
+	cd := req.Results[0].CodeDesc
+	assert.Contains(t, cd, "LINE : 5", "the line is known and must survive")
+	assert.Contains(t, cd, "COLUMN : 7")
+	assert.NotContains(t, cd, "URL :", "no uri is known, so no empty URL slot may be published")
+
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Line)
+	assert.EqualValues(t, 5, *req.SourceLocation.Line)
+	assert.Nil(t, req.SourceLocation.Ref, "there is no ref to report")
+}
+
+// A bare time.Now() carries the host's zone, so the same input produced a different
+// document in a different TZ — and diverged from TypeScript, which always emits Z.
+// The canonical HDF form is trimmed-UTC RFC3339.
+func TestConvertSarifToHDF_TimestampsAreUTCRegardlessOfHostZone(t *testing.T) {
+	// Pin a non-UTC Local for the duration: asserting a zero offset would otherwise
+	// pass under TZ=UTC whether or not the converter normalizes, and TZ=UTC is how
+	// this suite normally runs — so the test would be vacuous exactly where it runs.
+	saved := time.Local
+	time.Local = time.FixedZone("TEST+09", 9*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	_, offset := result.Timestamp.Zone()
+	assert.Zero(t, offset, "the document timestamp must carry a zero offset, not the host's")
+	_, resultOffset := result.Baselines[0].Requirements[0].Results[0].StartTime.Zone()
+	assert.Zero(t, resultOffset, "a result's startTime must carry a zero offset")
+}
+
+// SARIF 2.0 support is removed: it was never reachable for a real 2.0 document,
+// because the normalization required tool.driver, which 2.1 introduced. Both
+// languages now treat such a document the same way — resources.rules is simply not a
+// place rules are looked for.
+func TestConvertSarifToHDF_SarifTwoZeroResourcesRulesAreNotNormalized(t *testing.T) {
+	input := []byte(`{"version":"2.0.0","runs":[{"tool":{"driver":{"name":"T"}},
+		"resources":{"rules":[{"id":"R1","name":"RuleOne","defaultConfiguration":{"level":"error"}}]},
+		"results":[{"ruleId":"R1","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "m", *req.Title, "the rule is not found, so the message is the title")
+	assert.InDelta(t, 0.5, req.Impact, 0.0001, "no rule means the fallback level")
+}
+
+// Canonical HDF time is UTC at MILLISECOND precision — hdfutil.NormalizeTimestamp
+// exists so Go output is byte-identical to the TypeScript peer. A bare time.Now()
+// carried the host's zone, and .UTC() alone would have left Go emitting microseconds
+// where JavaScript emits milliseconds, so the fraction length is asserted too.
+func TestConvertSarifToHDF_TimestampsAreCanonicalMillisecondUTC(t *testing.T) {
+	saved := time.Local
+	time.Local = time.FixedZone("TEST+09", 9*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	for name, ts := range map[string]time.Time{
+		"document timestamp": *result.Timestamp,
+		"result startTime":   result.Baselines[0].Requirements[0].Results[0].StartTime,
+	} {
+		_, offset := ts.Zone()
+		assert.Zero(t, offset, "%s must carry a zero offset, not the host's", name)
+		assert.Zero(t, ts.Nanosecond()%1_000_000,
+			"%s must be truncated to milliseconds, which is what JavaScript emits", name)
+	}
+}
+
+// Refusing an unsupported explicit version is the one new user-visible behaviour in
+// dropping SARIF 2.0, and it has to be asserted: without this, replacing the guard call
+// with a no-op passes the whole package, and the CLI would silently accept
+// --from sarif@2.0 again while doing nothing with it.
+func TestConvertSarifToHDF_RefusesAnUnsupportedExplicitVersion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"T"}},"results":[]}]}`)
+
+	for _, requested := range []string{"2.0.0", "2.0", "1.0.0", "3.0.0"} {
+		t.Run(requested, func(t *testing.T) {
+			_, err := ConvertSarifToHDF(input, testConverterVersion, requested)
+			require.Error(t, err, "an explicit %q must be refused, not ignored", requested)
+			assert.Contains(t, err.Error(), "unsupported input version")
+			assert.Contains(t, err.Error(), requested, "the error must name the version asked for")
+
+			// ExpectedRequirementCount shares the guard, so it must refuse identically —
+			// the two exist to accept and reject exactly the same inputs.
+			_, _, countErr := ExpectedRequirementCount(input, requested)
+			require.Error(t, countErr, "the count path must refuse %q too", requested)
+		})
+	}
+}
+
+// The supported version, and an omitted one, both convert.
+func TestConvertSarifToHDF_AcceptsTheSupportedExplicitVersion(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	for _, requested := range []string{"", "2.1.0", "2.1"} {
+		_, err := ConvertSarifToHDF(input, testConverterVersion, requested)
+		require.NoError(t, err, "%q must be accepted", requested)
+	}
+}
+
+// --- artifactLocation.index resolution (§3.4.5) ---
+
+// sarifWithIndexedLocation builds a run whose single result is addressed by index.
+// loc is the raw artifactLocation JSON, so a test can omit index entirely.
+func sarifWithIndexedLocation(t *testing.T, artifacts, loc string) []byte {
+	t.Helper()
+	return []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"artifacts":` + artifacts + `,
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":` + loc + `,
+				"region":{"startLine":42,"startColumn":9}}}]}]}]}`)
+}
+
+// §3.4.5 guarantees an index when uri is absent, so the path IS recoverable.
+func TestConvertSarifToHDF_IndexResolvesToTheArtifactPath(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/indexed.c"}},{"location":{"uri":"src/other.c"}}]`,
+		`{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "src/indexed.c", *req.SourceLocation.Ref)
+	assert.Contains(t, req.Results[0].CodeDesc, "URL : src/indexed.c")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// The index must select the artifact it names, not simply the first.
+func TestConvertSarifToHDF_IndexSelectsTheNamedArtifact(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/first.c"}},{"location":{"uri":"src/second.c"}}]`,
+		`{"index":1}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "src/second.c", *result.Baselines[0].Requirements[0].SourceLocation.Ref)
+}
+
+// THE TYPING HAZARD. The schema gives index `default: -1`, so decoding it into a plain
+// int makes an ABSENT index arrive as 0 — which would resolve every uri-less location
+// to artifacts[0] and invent a path the document never claimed.
+func TestConvertSarifToHDF_AbsentIndexDoesNotResolveToTheFirstArtifact(t *testing.T) {
+	cases := map[string]string{
+		"index absent":   `{}`,
+		"index -1":       `{"index":-1}`,
+		"out of range":   `{"index":7}`,
+		"negative other": `{"index":-5}`,
+	}
+	for name, loc := range cases {
+		t.Run(name, func(t *testing.T) {
+			input := sarifWithIndexedLocation(t, `[{"location":{"uri":"src/first.c"}}]`, loc)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err, "an unresolvable index must fall back, not fail")
+			req := result.Baselines[0].Requirements[0]
+
+			if req.SourceLocation != nil && req.SourceLocation.Ref != nil {
+				assert.NotEqual(t, "src/first.c", *req.SourceLocation.Ref,
+					"%s must not acquire artifacts[0]'s path", name)
+			}
+			assert.NotContains(t, req.Results[0].CodeDesc, "URL :",
+				"%s resolves to no path, so no URL slot", name)
+			assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42",
+				"the line is still known and must survive")
+		})
+	}
+}
+
+// A run carrying no artifacts table cannot resolve anything.
+func TestConvertSarifToHDF_IndexWithoutAnArtifactsTableFallsBack(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},
+				"region":{"startLine":42,"startColumn":9}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Results[0].CodeDesc, "URL :")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// An explicit uri outranks an index; §3.4.5's index exists for when uri is ABSENT.
+func TestConvertSarifToHDF_ExplicitUriOutranksTheIndex(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/indexed.c"}}]`,
+		`{"uri":"src/explicit.c","index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "src/explicit.c", *result.Baselines[0].Requirements[0].SourceLocation.Ref)
+}
+
+// An artifact whose own location is index-addressed is NOT followed: resolution is one
+// level deep, so a chain cannot loop and a consumer is never handed a path this
+// converter inferred transitively.
+func TestConvertSarifToHDF_ArtifactIndirectionIsNotFollowed(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"index":1}},{"location":{"uri":"src/real.c"}}]`,
+		`{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Results[0].CodeDesc, "URL :",
+		"artifacts[0] has no uri of its own, and its index is not chased")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// The resolved uri must NOT reach the native record: rawSourceRecord is the tool's own
+// record, and a uri this converter inferred from the artifacts table is not something
+// the tool wrote. Go is structurally safe because the record comes from the unparsed
+// bytes, while the TypeScript peer rewrites the parsed object and had to snapshot it
+// first — so this pins the invariant on both sides rather than only where it broke.
+func TestConvertSarifToHDF_ResolvedUriDoesNotReachTheNativeRecord(t *testing.T) {
+	input := sarifWithIndexedLocation(t, `[{"location":{"uri":"src/indexed.c"}}]`, `{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Contains(t, req.Results[0].CodeDesc, "URL : src/indexed.c",
+		"the mapped output resolves the path")
+
+	rec := req.Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	assert.NotContains(t, rec.Content, "src/indexed.c",
+		"the record must report what the tool wrote, not what we inferred")
+
+	var back struct {
+		Locations []struct {
+			PhysicalLocation struct {
+				ArtifactLocation map[string]interface{} `json:"artifactLocation"`
+			} `json:"physicalLocation"`
+		} `json:"locations"`
+	}
+	// Decoded into a typed shape rather than chained interface assertions: a regression
+	// that drops locations would panic and abort the binary instead of failing cleanly.
+	require.NoError(t, json.Unmarshal([]byte(rec.Content), &back))
+	require.Len(t, back.Locations, 1)
+	al := back.Locations[0].PhysicalLocation.ArtifactLocation
+	assert.NotContains(t, al, "uri", "the source record carried only an index")
+	assert.EqualValues(t, 0, al["index"])
+}
+
+// extractBacktrace reads code-flow step locations for their uri, and those steps may be
+// index-addressed too. Resolving only a result's own locations left a backtrace entry as
+// ":7" — an empty path with a bare line, the exact loss index resolution exists to
+// prevent — and CodeQL, the heaviest code-flow producer, is the family that hits it.
+func TestConvertSarifToHDF_CodeFlowStepsResolveTheirIndex(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"artifacts":[{"location":{"uri":"src/sink.c"}},{"location":{"uri":"src/flow.c"}}],
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":42}}}],
+			"codeFlows":[{"threadFlows":[{"locations":[
+				{"location":{"physicalLocation":{"artifactLocation":{"index":1},"region":{"startLine":7}}}}]}]}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	assert.Contains(t, req.Results[0].CodeDesc, "URL : src/sink.c",
+		"the result's own location resolves")
+	require.NotEmpty(t, req.Results[0].Backtrace, "the code flow produces a backtrace")
+	assert.Contains(t, req.Results[0].Backtrace[0], "src/flow.c",
+		"a code-flow step addressed by index must resolve too, not land as \":7\"")
+	assert.NotEqual(t, ":7", req.Results[0].Backtrace[0])
+}
+
+// §3.27.10 resolves a level PER FAILING RESULT -- the result's own level, else the
+// rule default, else warning -- and only then does worst-wins rank them. Ranking the
+// raw result levels instead lets an explicitly low level outrank a higher one a
+// level-less result inherited from the rule.
+func TestResolveRuleLevel_WorstWinsAcrossInheritedLevels(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		ruleLevel  string
+		results    []SarifResult
+		wantLevel  string
+		wantSource string
+	}{
+		{
+			name:      "level-less failing result inherits a higher rule default",
+			ruleLevel: "error",
+			results:   []SarifResult{{Level: "note"}, {Level: ""}},
+			// The level-less result inherits error, which outranks the explicit note.
+			wantLevel: "error", wantSource: severitySourceRuleDefault,
+		},
+		{
+			name:      "an explicit level still wins when it outranks the default",
+			ruleLevel: "note",
+			results:   []SarifResult{{Level: "error"}, {Level: ""}},
+			wantLevel: "error", wantSource: severitySourceResultLevel,
+		},
+		{
+			name:      "no rule default: a level-less failing result falls back to warning",
+			ruleLevel: "",
+			results:   []SarifResult{{Level: "note"}, {Level: ""}},
+			wantLevel: "warning", wantSource: severitySourceFallback,
+		},
+		{
+			name:      "every failing result level-less: the rule default governs",
+			ruleLevel: "error",
+			results:   []SarifResult{{Level: ""}, {Level: ""}},
+			wantLevel: "error", wantSource: severitySourceRuleDefault,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var rule *ReportingDescriptor
+			if tc.ruleLevel != "" {
+				rule = &ReportingDescriptor{DefaultConfiguration: &ReportingConfiguration{Level: tc.ruleLevel}}
+			}
+			gotLevel, gotSource := resolveRuleLevel(rule, tc.results)
+			assert.Equal(t, tc.wantLevel, gotLevel, "level")
+			assert.Equal(t, tc.wantSource, gotSource, "severity source")
+		})
+	}
+}
+
+// SupportedVersions() advertises exactly "2.1.0", so the guard must refuse everything
+// else. A prefix test accepted 2.10 and 2.1-beta -- versions the vendored schema's own
+// version enum does not admit -- so the advertised contract and the enforcement
+// disagreed.
+func TestAssertSupportedVersion_AcceptsOnlyTheAdvertisedVersion(t *testing.T) {
+	// "2.1" names the same format as "2.1.0" — the minor series has one member — so a
+	// caller spelling it either way is being specific and both are accepted.
+	for _, v := range []string{"", "2.1.0", "2.1"} {
+		assert.NoError(t, assertSupportedVersion(v), "must accept %q", v)
+	}
+	// None of these designates SARIF 2.1.0. "2" is ambiguous while the unsupported 2.0
+	// committee draft exists; the rest are what a prefix match wrongly let through.
+	for _, v := range []string{"2.10", "2.1-beta", "2.1garbage", "2.1.1", "2.0.0", "2", "3.0"} {
+		assert.Error(t, assertSupportedVersion(v), "must refuse %q", v)
+	}
+}
+
+// The vendored schema's physicalLocation.anyOf is [{required:[address]},
+// {required:[artifactLocation]}], so a conformant location may carry an address and no
+// artifactLocation. Gating on artifactLocation alone discarded the region's line, which
+// IS representable; gating on physicalLocation alone invented "LINE : 0 COLUMN : 0" for
+// an address with no region, which is not. Keep a location when there is something to
+// say about it.
+func TestConvertSarifToHDF_AddressLocationsKeepOnlyWhatIsRepresentable(t *testing.T) {
+	doc := func(physical string) []byte {
+		return []byte(`{"version":"2.1.0","runs":[{
+			"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+			"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},
+				"locations":[{"physicalLocation":` + physical + `}]}]}]}`)
+	}
+	for _, tc := range []struct {
+		name     string
+		physical string
+		want     string
+	}{
+		{
+			name:     "address with a region keeps the position",
+			physical: `{"address":{"absoluteAddress":4198400},"region":{"startLine":42,"startColumn":7}}`,
+			want:     "LINE : 42 COLUMN : 7",
+		},
+		{
+			name:     "address with no region has nothing to report",
+			physical: `{"address":{"absoluteAddress":4198400}}`,
+			want:     "No source location",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertSarifToHDF(doc(tc.physical), testConverterVersion, "")
+			require.NoError(t, err)
+			require.Len(t, out.Baselines[0].Requirements[0].Results, 1)
+			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Results[0].CodeDesc)
+		})
+	}
+}
+
+// Decoding into interface{} makes every number a float64, which rounds any integer
+// above 2^53 — the record would then report a value the source never contained. The
+// tokens below are also the ones where Go and JavaScript disagree if either side
+// re-formats: 1.0, 1e5 and -0 all survive a json.Number round trip and all change
+// under String()/strconv.
+func TestRawSourceRecord_PreservesNumericTokensExactly(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},
+			"properties":{"big":9007199254740993,"flt":1.0,"exp":1e5,"negz":-0,"tiny":0.1}}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	rec := out.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	for _, want := range []string{
+		`"big":9007199254740993`,
+		`"exp":1e5`,
+		`"flt":1.0`,
+		`"negz":-0`,
+		`"tiny":0.1`,
+	} {
+		assert.Contains(t, rec.Content, want)
+	}
+	assert.NotContains(t, rec.Content, "9007199254740992", "the integer must not be rounded")
+}
+
+// One SARIF result with several locations expands to several HDF results, but they
+// share ONE source record, so exactly one of them carries it. Copying it onto each
+// made the output grow with the square of the location count, because the record
+// itself contains the locations array.
+func TestRawSourceRecord_CarriedOncePerSourceResult(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},"locations":[
+			{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}},
+			{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}},
+			{"physicalLocation":{"artifactLocation":{"uri":"c.c"},"region":{"startLine":3}}}]}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	rows := out.Baselines[0].Requirements[0].Results
+	require.Len(t, rows, 3, "one HDF result per location")
+
+	withRecord := 0
+	for _, r := range rows {
+		if r.RawSourceRecord != nil {
+			withRecord++
+		}
+	}
+	assert.Equal(t, 1, withRecord, "exactly one result carries the shared record")
+	require.NotNil(t, rows[0].RawSourceRecord, "it is the first")
+	assert.Equal(t, "/runs/0/results/0", *rows[0].RawSourceRecord.Pointer)
 }

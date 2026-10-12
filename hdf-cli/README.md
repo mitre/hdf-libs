@@ -1248,7 +1248,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
 | `hdf-amendments` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 
-Both `--from` and `--to` accept `format@version` when a format has more than one schema version: `--to hdf@2` writes the legacy Heimdall schema, `--to hdf@3` (the default) writes the modern one, and `--from hdf@2` reads a legacy document back. The same syntax selects an input schema version elsewhere, as in `--from sarif@2.0`. Note that `hdf@1` is not a distinct schema — for raw InSpec output use `--from inspec`.
+Both `--from` and `--to` accept `format@version` when a format has more than one schema version: `--to hdf@2` writes the legacy Heimdall schema, `--to hdf@3` (the default) writes the modern one, and `--from hdf@2` reads a legacy document back. Note that `hdf@1` is not a distinct schema — for raw InSpec output use `--from inspec`.
 
 ## Credential Handling
 

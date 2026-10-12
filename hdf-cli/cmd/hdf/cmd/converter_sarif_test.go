@@ -36,11 +36,10 @@ func TestSarifConverter_VersionedConverter(t *testing.T) {
 	vc, ok := converter.(VersionedConverter)
 	require.True(t, ok, "SARIF converter should implement VersionedConverter")
 
-	t.Run("SupportedVersions returns versions latest first", func(t *testing.T) {
+	t.Run("SupportedVersions reports only the version the converter can process", func(t *testing.T) {
 		versions := vc.SupportedVersions()
-		require.NotEmpty(t, versions)
-		assert.Equal(t, "2.1.0", versions[0], "latest version should be first")
-		assert.Contains(t, versions, "2.0.0")
+		assert.Equal(t, []string{"2.1.0"}, versions,
+			"2.0 was advertised while the converter could not process it, so a consumer was told it worked and then refused")
 	})
 
 	t.Run("SetInputVersion does not error", func(t *testing.T) {

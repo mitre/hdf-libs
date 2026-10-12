@@ -56,7 +56,7 @@ func TestExpectedRequirementCount_RealProducers(t *testing.T) {
 		require.NoError(t, err)
 		var file SarifFile
 		require.NoError(t, json.Unmarshal(data, &file))
-		require.Equal(t, c.results, len(file.Runs[0].Results), "fixture drifted: %s", c.fixture)
+		require.Equal(t, c.results, len(file.Runs[0].resultList()), "fixture drifted: %s", c.fixture)
 		expected, _, err := ExpectedRequirementCount(data)
 		require.NoError(t, err)
 		require.Equal(t, c.expected, expected, c.fixture)

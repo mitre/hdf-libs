@@ -16,7 +16,13 @@
           "results": [
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "rawSourceRecord": {
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d\",\"gdnPrimarySignature\":\"ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -59,7 +65,20 @@
               "RA-5"
             ],
             "rank": 94,
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "HashCode": "K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=",
+                  "gdnAlternativeSignature0": "471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d",
+                  "gdnPrimarySignature": "ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "title": "X.509 Certificate Private Key",
           "verificationMethod": "automated"
@@ -85,7 +104,13 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"fingerprints\":{\"gdnAlternativeSignature0\":\"b638b75acb82e58442ebe3ecff85569f7009ac136ba3db701680ba599b613c84\",\"gdnPrimarySignature\":\"d575ad4cda6d50d0a5b22693f2455c3705f7c36bb4b15adc9192690133bf9374\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/Dockerfile\"},\"region\":{\"endLine\":2,\"snippet\":{\"text\":\"FROM alpine:3.14.0\\nRUN echo \\\"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\\\" \u003e\u003e /etc/passwd \u0026\u0026 echo \\\"testuser::18761:0:99999:7:::\\\" \u003e\u003e /etc/shadow\\n\"},\"startLine\":1}}}],\"message\":{\"text\":\"Ensure that HEALTHCHECK instructions have been added to container images\"},\"ruleId\":\"CKV_DOCKER_2\",\"ruleIndex\":42}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/1/results/0"
+              },
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -114,7 +139,19 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "gdnAlternativeSignature0": "b638b75acb82e58442ebe3ecff85569f7009ac136ba3db701680ba599b613c84",
+                  "gdnPrimarySignature": "d575ad4cda6d50d0a5b22693f2455c3705f7c36bb4b15adc9192690133bf9374"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "code": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
           "title": "Ensure that HEALTHCHECK instructions have been added to container images",
@@ -130,7 +167,13 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"fingerprints\":{\"gdnAlternativeSignature0\":\"81662655dc607bf53d1554c1d9b11df48d1d564eac1529173b8d0a2e61969e63\",\"gdnPrimarySignature\":\"1242a262a0e0dc6e681ad67a81a121ae66f0b2562d1d669a066233daaa7a615a\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/Dockerfile\"},\"region\":{\"endLine\":2,\"snippet\":{\"text\":\"FROM alpine:3.14.0\\nRUN echo \\\"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\\\" \u003e\u003e /etc/passwd \u0026\u0026 echo \\\"testuser::18761:0:99999:7:::\\\" \u003e\u003e /etc/shadow\\n\"},\"startLine\":1}}}],\"message\":{\"text\":\"Ensure that a user for the container has been created\"},\"ruleId\":\"CKV_DOCKER_3\",\"ruleIndex\":43}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/1/results/1"
+              },
+              "startTime": "2026-10-11T00:55:33.788Z",
               "status": "failed"
             }
           ],
@@ -159,7 +202,19 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "gdnAlternativeSignature0": "81662655dc607bf53d1554c1d9b11df48d1d564eac1529173b8d0a2e61969e63",
+                  "gdnPrimarySignature": "1242a262a0e0dc6e681ad67a81a121ae66f0b2562d1d669a066233daaa7a615a"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "code": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
           "title": "Ensure that a user for the container has been created",
@@ -188,7 +243,7 @@
     "name": "msft-defender-devops-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:40.225842-04:00",
+  "timestamp": "2026-10-11T00:55:33.788Z",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",
