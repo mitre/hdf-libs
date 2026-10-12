@@ -1,5 +1,5 @@
-// Evidence-verify engine — the pure, filesystem-agnostic core of `hdf evidence
-// verify` (ADR-0007 §11), shared by the CLI and the MCP so exactly one
+// Evidence-verify engine — the pure, filesystem-agnostic core of
+// `hdf evidence info --verify` (ADR-0007 §11), shared by the CLI and the MCP so exactly one
 // implementation exists. It classifies content-checksum matches and computes
 // plan/results completeness; all filesystem IO and path confinement stay in the
 // caller, injected as a FetchFunc. Kept at behavioural parity with the TS peer

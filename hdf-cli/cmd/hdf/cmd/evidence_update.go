@@ -46,7 +46,7 @@ References are compared after normalisation on BOTH sides — the path given and
 already recorded — so ./scans/x.json and scans/../scans/x.json name the same entry whichever
 side they appear on. An absolute path GIVEN on the command line resolves to its
 package-relative form too; an absolute path already RECORDED in the package does not, because
-such a reference is out of contract and 'hdf evidence verify' refuses it outright.
+such a reference is out of contract and 'hdf evidence info --verify' refuses it outright.
 
 Two scans covering one baseline are told apart by their own content — a results
 document's timestamp and the components it targeted. Both are optional in HDF, so when
@@ -174,8 +174,8 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 		// Fingerprinted, not taken on the flag's word. The type was hardcoded from the
 		// flag name, so --results on a system document filed it as results — weaker than
-		// the filename guess this repo already forbids, and `evidence verify` reads these
-		// types to judge completeness, so a mistyped entry yields a confident wrong verdict.
+		// the filename guess this repo already forbids, and `evidence info --verify` reads
+		// these types to judge completeness, so a mistyped entry yields a confident wrong verdict.
 		if err := requireDetectedType(data, path, "results", "results"); err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 // a stored "./scans/x.json" invisible to both the replacement match and the type-conflict
 // guard: the same file could be declared twice under different types, and a genuine refresh
 // added a second entry while the first kept a stale checksum, so the package failed its own
-// `evidence verify`.
+// verification.
 func normalizedRef(uri string) string {
 	if uri == "" {
 		return ""
@@ -413,7 +413,7 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 		// carrying a top-level baselines array, so a bom entry pointing at such JSON would
 		// mint the green verdict this command otherwise refuses to mint. It also keeps a
 		// non-results entry's uri from being resolved at all, so an escaping one is left to
-		// `evidence verify` rather than failing an update that has nothing to do with it.
+		// `evidence info --verify` rather than failing an update that has nothing to do with it.
 		if docType, _ := entry["type"].(string); docType != "hdf-results" {
 			continue
 		}

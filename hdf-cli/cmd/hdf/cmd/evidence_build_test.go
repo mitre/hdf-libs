@@ -56,7 +56,7 @@ func TestEvidenceBuild_ReferencesPlanAndBaseline(t *testing.T) {
 	assert.Contains(t, types, "hdf-plan", "the plan must be listed in contents")
 	assert.Contains(t, types, "hdf-baseline", "the baseline must be listed in contents")
 
-	// planRef is what `hdf evidence verify` reads to check completeness; build
+	// planRef is what `hdf evidence info --verify` reads to check completeness; build
 	// must set it so no separate `evidence set --plan-ref` step is needed.
 	assert.Equal(t, "plan.json", pkg["planRef"],
 		"build must set root planRef from --plan")
@@ -297,7 +297,7 @@ func TestEvidenceBuild_BaselineBomAndComparisonAreRepeatable(t *testing.T) {
 	assert.Equal(t, 2, counts["hdf-comparison"], "both comparisons must be listed")
 }
 
-// The point of build setting planRef: `evidence verify` is documented as
+// The point of build setting planRef: `evidence info --verify` is documented as
 // verifying a package against its assessment plan, and planRef is what it reads.
 // Before this card that needed a second command (`evidence set --plan-ref`), so a
 // one-command build produced a package verify could not fully check.
@@ -324,7 +324,7 @@ func TestEvidenceBuild_VerifiesAgainstThePlanWithoutEvidenceSet(t *testing.T) {
 	require.Equal(t, "plan.json", pkg["planRef"],
 		"precondition: build must have set planRef itself")
 
-	_, _, verifyErr := executeCommand("evidence", "verify", outputPath)
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", outputPath)
 	require.NoError(t, verifyErr,
 		"verify must succeed against a package built in one command")
 }
@@ -345,7 +345,7 @@ func TestEvidenceBuild_PlanRefIsActuallyReadByVerify(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	_, _, verifyErr := executeCommand("evidence", "verify", outputPath)
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", outputPath)
 	require.Error(t, verifyErr,
 		"verify must detect the plan baseline that has no results")
 	assert.Contains(t, verifyErr.Error(), "PostgreSQL-STIG",
@@ -436,7 +436,7 @@ func TestEvidenceBuild_RefsArePackageRelativeNotBasenames(t *testing.T) {
 	assert.Equal(t, "meta/plan.json", pkg["planRef"], "planRef must be package-relative")
 
 	// The point of the ref being right: the package must actually verify.
-	_, _, verifyErr := executeCommand("evidence", "verify", outputPath)
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", outputPath)
 	require.NoError(t, verifyErr,
 		"a package whose documents sit in subdirectories must verify")
 }
@@ -473,7 +473,7 @@ func TestEvidenceBuild_RefusesDocumentOutsideThePackageTree(t *testing.T) {
 }
 
 // Regression guard for a false rejection this card introduced and fixed: the
-// reference must be computed with symlinks resolved, because `evidence verify`
+// reference must be computed with symlinks resolved, because `evidence info --verify`
 // confines through SafePath, which resolves them. Comparing lexically made two
 // spellings of ONE directory look like different directories — on macOS /tmp
 // versus /private/tmp — and refused a document plainly inside the package's
@@ -515,7 +515,7 @@ func TestEvidenceBuild_SymlinkedSpellingIsNotOutsideTheTree(t *testing.T) {
 		assert.NotContains(t, uri, "..", "a same-directory document must not produce a traversing reference")
 	}
 
-	_, _, verifyErr := executeCommand("evidence", "verify", outputPath, "--checksums-only")
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", outputPath, "--checksums-only")
 	require.NoError(t, verifyErr, "the package build produced must verify")
 }
 
@@ -593,7 +593,7 @@ func TestEvidenceBuild_DanglingSymlinkDocumentSurfacesTheFailure(t *testing.T) {
 	assert.NoFileExists(t, outputPath)
 }
 
-// evidence verify reads contents[].type to judge completeness, so a document
+// evidence info --verify reads contents[].type to judge completeness, so a document
 // filed under the wrong Content_Type produces a confident wrong verdict rather
 // than an error. --plan and --baseline have always refused a mistyped document;
 // --amendments and --comparison accepted anything readable, because card .1 made
@@ -1030,7 +1030,7 @@ func TestEvidenceVerify_SystemlessPackageIsNotAFailure(t *testing.T) {
 		"--results", p["results.json"], "-o", pkgPath)
 	require.NoError(t, buildErr)
 
-	_, stderr, err := executeCommand("evidence", "verify", pkgPath)
+	_, stderr, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, err, "a package recording no system must not fail verify")
 	assert.Contains(t, stderr, "no planRef in evidence package",
 		"what was skipped must be named, and it is the plan that is missing — not the system")
@@ -1045,7 +1045,7 @@ func TestEvidenceVerify_SystemlessPackageIsNotAFailure(t *testing.T) {
 		"--results", covering, "--plan", p["plan.json"],
 		"--baseline", p["baseline.json"], "-o", withPlan)
 	require.NoError(t, planBuildErr)
-	_, planStderr, planVerifyErr := executeCommand("evidence", "verify", withPlan)
+	_, planStderr, planVerifyErr := executeCommand("evidence", "info", "--verify", withPlan)
 	require.NoError(t, planVerifyErr,
 		"completeness is checked against the plan, so it reaches a verdict without a system")
 	assert.Contains(t, planStderr, "Completeness check passed: all 1 planned baselines have results",

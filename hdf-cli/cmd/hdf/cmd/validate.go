@@ -14,7 +14,7 @@ import (
 )
 
 // agentOverrideReadout is the §3 detective line surfaced by the validate,
-// validate threshold, and evidence verify readouts: the count of overrides an AI
+// validate threshold, and `evidence info --verify` readouts: the count of overrides an AI
 // agent applied (appliedBy.type=="agent"), which auditors scrutinize separately
 // from deterministic system/human overrides. Read directly from the applied
 // results — the attribution survives the apply step and is never back-traced to

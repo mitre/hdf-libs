@@ -19,7 +19,7 @@ import (
 const evidenceFixtureDir = "testdata/evidence-verify"
 
 func TestEvidenceVerify_ChecksumsPass(t *testing.T) {
-	_, _, err := executeCommand("evidence", "verify",
+	_, _, err := executeCommand("evidence", "info", "--verify",
 		filepath.Join(evidenceFixtureDir, "evidence.json"), "--checksums-only")
 	require.NoError(t, err)
 }
@@ -27,7 +27,7 @@ func TestEvidenceVerify_ChecksumsPass(t *testing.T) {
 func TestEvidenceVerify_CompletenessPass(t *testing.T) {
 	// Default mode: plan has RHEL9-STIG and PostgreSQL-STIG,
 	// evidence package has results for both.
-	_, _, err := executeCommand("evidence", "verify",
+	_, _, err := executeCommand("evidence", "info", "--verify",
 		filepath.Join(evidenceFixtureDir, "evidence.json"))
 	require.NoError(t, err)
 }
@@ -46,7 +46,7 @@ func TestEvidenceVerify_CompletenessFail(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(incomplete), 0o644))
 	t.Cleanup(func() { _ = os.Remove(path) })
 
-	_, _, err := executeCommand("evidence", "verify", path)
+	_, _, err := executeCommand("evidence", "info", "--verify", path)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "PostgreSQL-STIG")
 }
@@ -63,7 +63,7 @@ func TestEvidenceVerify_NoPlanRef(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(noPlan), 0o644))
 	t.Cleanup(func() { _ = os.Remove(path) })
 
-	_, stderr, err := executeCommand("evidence", "verify", path)
+	_, stderr, err := executeCommand("evidence", "info", "--verify", path)
 	require.NoError(t, err)
 	assert.Contains(t, stderr, "no planRef")
 }
@@ -73,7 +73,7 @@ func TestEvidenceVerify_NoPlanRef(t *testing.T) {
 func TestEvidenceVerify_RejectsOversizeInput(t *testing.T) {
 	pkg := filepath.Join(t.TempDir(), "big.json")
 	require.NoError(t, os.WriteFile(pkg, make([]byte, 2*1024*1024), 0o600)) // 2 MB
-	_, _, err := executeCommand("evidence", "verify", pkg, "--max-size", "1")
+	_, _, err := executeCommand("evidence", "info", "--verify", pkg, "--max-size", "1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "too large")
 }
@@ -93,7 +93,7 @@ func TestEvidenceVerify_RejectsOversizeReferencedFile(t *testing.T) {
 	path := filepath.Join(dir, "evidence.json")
 	require.NoError(t, os.WriteFile(path, []byte(pkg), 0o600))
 
-	_, _, err := executeCommand("evidence", "verify", path, "--checksums-only", "--max-size", "1")
+	_, _, err := executeCommand("evidence", "info", "--verify", path, "--checksums-only", "--max-size", "1")
 	require.Error(t, err)
 	// Gated: the read fails outright (an error), rather than hashing 2 MB into a
 	// mismatch. The message names only what happened — it used to read "0 checksum
@@ -118,7 +118,7 @@ func TestEvidenceVerify_RejectsOversizePlan(t *testing.T) {
 	path := filepath.Join(dir, "evidence.json")
 	require.NoError(t, os.WriteFile(path, []byte(pkg), 0o600))
 
-	_, _, err := executeCommand("evidence", "verify", path, "--max-size", "1")
+	_, _, err := executeCommand("evidence", "info", "--verify", path, "--max-size", "1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read plan")
 	assert.Contains(t, err.Error(), "too large")
@@ -193,7 +193,7 @@ func TestEvidenceVerify_ReportsAnUnreachableReferenceWithoutReadingIt(t *testing
 			pkgPath := filepath.Join(dir, "pkg.json")
 			require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
 
-			stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
+			stdout, _, verifyErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only", "--json")
 			require.NoError(t, verifyErr, "an unreachable reference is reported, not a package-level refusal")
 
 			var parsed struct {
@@ -229,10 +229,10 @@ func TestEvidenceVerify_RequireReachableFailsOnAnUnreachableReference(t *testing
 	pkgPath := filepath.Join(dir, "pkg.json")
 	require.NoError(t, os.WriteFile(pkgPath, []byte(pkg), 0o600))
 
-	_, _, err := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	_, _, err := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
 	require.NoError(t, err, "the default reports and succeeds")
 
-	_, _, strictErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--require-reachable")
+	_, _, strictErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only", "--require-reachable")
 	require.Error(t, strictErr, "--require-reachable must fail on the same package")
 	assert.Contains(t, strictErr.Error(), "--require-reachable",
 		"the error must name the flag that caused the failure")
@@ -272,7 +272,7 @@ func TestEvidenceVerify_AllowsRemoteExternalEvidenceAndDocumentRefs(t *testing.T
 		]
 	}`), 0o600))
 
-	_, _, verifyErr := executeCommand("evidence", "verify", pkg, "--checksums-only")
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", pkg, "--checksums-only")
 	require.NoError(t, verifyErr,
 		"remote externalEvidence and a document's own externalReferences must not be refused")
 }
@@ -320,7 +320,7 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 	require.NoError(t, marshalErr)
 	pkgPath := write("pkg.json", string(body))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "(sha512 match)", "the line must name the algorithm the entry recorded")
 	assert.Contains(t, stdout, "(sha384 match)")
@@ -328,7 +328,7 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 	assert.NotContains(t, stdout, "(sha256 match)",
 		"neither entry recorded sha256, so no line may claim it")
 
-	jsonOut, _, jsonErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
+	jsonOut, _, jsonErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only", "--json")
 	require.NoError(t, jsonErr)
 	var parsed struct {
 		Results []struct {
@@ -429,7 +429,7 @@ func TestEvidence_BundleAndVerifyAgreeOnTheSamePackage(t *testing.T) {
 				// could not see it. The default run carries a planRef whose plan names two
 				// baselines, both covered by the two results documents above, so the only
 				// thing that can fail it is reference handling.
-				_, _, checksumErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+				_, _, checksumErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
 				_, _, bundleErr := executeCommand("evidence", "bundle", pkgPath,
 					"-o", filepath.Join(dir, "out.tar.gz"))
 				assert.NoError(t, checksumErr, "verify --checksums-only refused a legitimate shape")
@@ -444,7 +444,7 @@ func TestEvidence_BundleAndVerifyAgreeOnTheSamePackage(t *testing.T) {
 					planPath := filepath.Join(dir, "with-plan.json")
 					require.NoError(t, os.WriteFile(planPath, withPlan, 0o600))
 
-					_, _, fullErr := executeCommand("evidence", "verify", planPath)
+					_, _, fullErr := executeCommand("evidence", "info", "--verify", planPath)
 					_, _, fullBundleErr := executeCommand("evidence", "bundle", planPath,
 						"-o", filepath.Join(dir, "with-plan.tar.gz"))
 					assert.NoError(t, fullErr,
@@ -486,7 +486,7 @@ func TestEvidenceVerify_CompletenessNeverCreditsAnUnreachableDocument(t *testing
 	pkgPath := filepath.Join(dir, "pkg.json")
 	require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
 
-	stdout, stderr, verifyErr := executeCommand("evidence", "verify", pkgPath)
+	stdout, stderr, verifyErr := executeCommand("evidence", "info", "--verify", pkgPath)
 
 	// RHEL9-STIG is planned, and its only results document is unreachable, so
 	// completeness must FAIL rather than pass on a file the reference never named.
@@ -526,7 +526,7 @@ func TestEvidenceVerify_RefusesAnOffSchemaChecksumAlgorithm(t *testing.T) {
 	pkgPath := filepath.Join(dir, "pkg.json")
 	require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
 
-	_, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
 	require.Error(t, verifyErr, "an off-schema algorithm is refused, not silently carried")
 	// The validator names the ADMITTED SET rather than the offending value, so that is
 	// what is asserted. blake3 appearing in it is the load-bearing part here: the set the
@@ -569,7 +569,7 @@ func TestEvidenceVerify_FailsAWrongBlake3Checksum(t *testing.T) {
 	pkgPath := filepath.Join(dir, "pkg.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
 
-	stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	stdout, _, verifyErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
 	require.Error(t, verifyErr, "a wrong blake3 must fail, exactly as a wrong sha256 does")
 	assert.Contains(t, verifyErr.Error(), "mismatch")
 	assert.Contains(t, stdout, "blake3", "and the report names the algorithm it verified with")
@@ -602,7 +602,7 @@ func externalEvidenceVerifyPackage(t *testing.T, recordedChecksum string) (dir, 
 func TestEvidenceVerify_VerifiesExternalEvidenceChecksums(t *testing.T) {
 	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err, "a wrong externalEvidence checksum must fail verify, as it already fails bundle")
 	assert.Contains(t, err.Error(), "mismatch")
 	assert.Contains(t, stdout, "audit.ndjson", "the mismatching artifact must be named")
@@ -616,7 +616,7 @@ func TestEvidenceVerify_CorrectExternalEvidenceChecksumStillPasses(t *testing.T)
 	sum := sha256.Sum256([]byte("log\n"))
 	_, pkgPath := externalEvidenceVerifyPackage(t, hex.EncodeToString(sum[:]))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, err, "a correct externalEvidence checksum must verify")
 	assert.Contains(t, stdout, "audit.ndjson", "a verified external artifact is named like any other")
 	// Two contents[] entries plus the one externalEvidence artifact: the total spans
@@ -631,7 +631,7 @@ func TestEvidenceVerify_CorrectExternalEvidenceChecksumStillPasses(t *testing.T)
 func TestEvidenceVerify_UnchecksummedExternalEvidenceIsCountedLikeBundleCountsIt(t *testing.T) {
 	_, pkgPath := externalEvidenceVerifyPackage(t, "")
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, err, "an entry recording no checksum is reported, not refused")
 	assert.Contains(t, stdout, "audit.ndjson",
 		"an externalEvidence entry with no checksum must be named, not silently omitted")
@@ -646,11 +646,11 @@ func TestEvidenceVerify_RequireChecksumsMatchDefaultsToFailing(t *testing.T) {
 	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
 
 	// Default: no flag at all.
-	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err, "the default must fail on a mismatch")
 
 	// And passing it explicitly true is the same thing, not a different mode.
-	_, _, explicitErr := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=true")
+	_, _, explicitErr := executeCommand("evidence", "info", "--verify", pkgPath, "--require-checksums-match=true")
 	require.Error(t, explicitErr)
 	assert.Equal(t, err.Error(), explicitErr.Error(), "the default and the explicit true must agree")
 }
@@ -661,7 +661,7 @@ func TestEvidenceVerify_RequireChecksumsMatchDefaultsToFailing(t *testing.T) {
 func TestEvidenceVerify_RequireChecksumsMatchFalseTolerToleratesButStillReports(t *testing.T) {
 	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
 
-	stdout, stderr, err := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=false")
+	stdout, stderr, err := executeCommand("evidence", "info", "--verify", pkgPath, "--require-checksums-match=false")
 	require.NoError(t, err, "the valve must let the run proceed")
 
 	// Named, with the status, exactly as it is when the flag is on.
@@ -682,7 +682,7 @@ func TestEvidenceVerify_TheValveDoesNotTolerateAnUnreadableArtifact(t *testing.T
 	dir, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
 	require.NoError(t, os.Remove(filepath.Join(dir, "audit.ndjson")))
 
-	_, _, err := executeCommand("evidence", "verify", pkgPath, "--require-checksums-match=false")
+	_, _, err := executeCommand("evidence", "info", "--verify", pkgPath, "--require-checksums-match=false")
 	require.Error(t, err, "an unreadable artifact still fails, flag or no flag")
 	assert.Contains(t, err.Error(), "could not be read")
 	assert.NotContains(t, err.Error(), "mismatch",
@@ -708,14 +708,14 @@ func TestEvidenceVerify_RequireReachableCoversExternalEvidence(t *testing.T) {
 
 	// Default: reported, not failed — and NOT hashed, so the wrong checksum beside a
 	// remote URI is never reported as drift in an artifact nobody fetched.
-	stdout, _, defErr := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, defErr := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, defErr, "a remote external artifact is reported, not refused")
 	assert.Contains(t, stdout, "not reachable here")
 	assert.NotContains(t, stdout, "MISMATCH",
 		"nothing was fetched, so nothing may be called a mismatch")
 
 	// With the flag: it fails, so the flag's reach spans both arrays.
-	_, _, flagErr := executeCommand("evidence", "verify", pkgPath, "--require-reachable")
+	_, _, flagErr := executeCommand("evidence", "info", "--verify", pkgPath, "--require-reachable")
 	require.Error(t, flagErr, "--require-reachable covers externalEvidence")
 	assert.Contains(t, flagErr.Error(), "could not be resolved")
 }
@@ -759,7 +759,7 @@ func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
 
-	verifyOut, _, verifyErr := executeCommand("evidence", "verify", pkgPath)
+	verifyOut, _, verifyErr := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, verifyErr)
 	_, bundleStderr, bundleErr := executeCommand("evidence", "bundle", pkgPath,
 		"-o", filepath.Join(dir, "out.zip"))
@@ -801,7 +801,7 @@ func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
 			// completeness against the fixture plan's uncovered baseline — correct
 			// behaviour, and itself the reviewer's point: the shape where the counts
 			// reconcile is one verify cannot run its default check on at all.
-			vOut, _, vErr := executeCommand("evidence", "verify", refPath, "--checksums-only")
+			vOut, _, vErr := executeCommand("evidence", "info", "--verify", refPath, "--checksums-only")
 			require.NoError(t, vErr)
 			_, bStderr, bErr := executeCommand("evidence", "bundle", refPath,
 				"-o", filepath.Join(dir, tc.field+".zip"))
@@ -813,4 +813,157 @@ func TestEvidenceVerifyAndBundle_CountUnverifiableEntriesTheSame(t *testing.T) {
 				"bundle counts the root reference field, which the schema gives no checksum property")
 		})
 	}
+}
+
+// 'hdf evidence verify' is REMOVED, not deprecated to an alias (maintainer decision
+// 2026-10-11, recorded on 52n0c.39): 'hdf evidence info --verify' is the only surface.
+// Asserted on the command's absence rather than on a deprecation warning, because the
+// decision was removal and a surviving alias would be the opposite of it.
+func TestEvidenceVerify_CommandIsRemoved(t *testing.T) {
+	_, pkgPath := referencePackage(t)
+
+	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.Error(t, err, "the verify subcommand must no longer verify anything")
+	// BOTH names, pinned separately. A blanket sweep of the removed name across the tree
+	// rewrote this message to say the NEW name had been removed and replaced by itself,
+	// and the weaker assertions here passed through it unchanged: "has been removed" and
+	// "info --verify" both survived the corruption. The message has to name what the
+	// operator typed AND what to type instead, and those are different strings.
+	assert.Contains(t, err.Error(), "'hdf evidence verify' has been removed",
+		"the message must name the command the operator actually ran")
+	assert.Contains(t, err.Error(), "it is now 'hdf evidence info --verify",
+		"and the surface that replaced it")
+	assert.Contains(t, err.Error(), pkgPath, "and echo the operator's own argument")
+
+	// A NON-ZERO exit is the load-bearing part, and deleting the command outright did
+	// not give it: cobra answers an unknown subcommand by printing the parent's help and
+	// exiting ZERO, so a pipeline calling the old name would have gone green on a package
+	// nobody checked. That is why a refusing tombstone exists rather than nothing.
+	assert.NotContains(t, err.Error(), "Commands for viewing and managing",
+		"the parent's help is not an answer to a removed command")
+
+	// WITH THE FLAGS THE OLD COMMAND TOOK, which is how a pipeline called it. The flags
+	// are not declared on the tombstone, so cobra rejected them before RunE ran and the
+	// caller got "unknown flag" instead of the removal notice — the message's own promise
+	// about those flags unreachable in exactly the case it was written for. Closed by
+	// FParseErrWhitelist, and NOTHING TESTED IT: deleting that one line left the whole
+	// package green, which is the same untested-gate class as the refusal below.
+	for _, flag := range []string{"--checksums-only", "--require-reachable",
+		"--require-checksums-match=false", "--bogus-not-a-flag"} {
+		t.Run("with "+flag, func(t *testing.T) {
+			_, _, flagErr := executeCommand("evidence", "verify", pkgPath, flag)
+			require.Error(t, flagErr)
+			assert.Contains(t, flagErr.Error(), "'hdf evidence verify' has been removed",
+				"the removal notice must reach a caller who passed a flag, not 'unknown flag'")
+			assert.NotContains(t, flagErr.Error(), "unknown flag",
+				"cobra must not reject the flag before the notice is delivered")
+		})
+	}
+}
+
+// The replacement surface. --verify makes info do the full crawl and reach a verdict;
+// without it info stays a single-document read.
+func TestEvidenceInfo_VerifyFlagReachesAVerdict(t *testing.T) {
+	_, pkgPath := externalEvidenceVerifyPackage(t, strings.Repeat("0", 64))
+
+	_, _, err := executeCommand("evidence", "info", pkgPath, "--verify")
+	require.Error(t, err, "a wrong checksum must fail info --verify")
+	assert.Contains(t, err.Error(), "mismatch")
+}
+
+// AC: info WITHOUT verification stays a single-document read — no referenced artifact is
+// opened. Proven by making every reference unreadable and still getting a summary: if the
+// default path touched them, this could not succeed.
+func TestEvidenceInfo_DefaultPathOpensNoReferencedArtifact(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	for _, name := range []string{"system.json", "rhel9-results.json"} {
+		require.NoError(t, os.Remove(filepath.Join(dir, name)))
+	}
+
+	stdout, _, err := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, err, "the summary must not depend on reading what the package references")
+	assert.Contains(t, stdout, "system.json", "the entries are still listed from the document itself")
+}
+
+// AC: info --verify renders the per-entry state vocabulary, asserted over every state
+// REACHABLE through the CLI rather than a subset — and with the one that is not reachable
+// named and covered where it is, instead of being quietly dropped from the claim.
+//
+// Five of the six are reachable here. The sixth, "not verified here" (an algorithm this
+// build cannot compute), is structurally unreachable through any command: Hash_Algorithm's
+// enum is exactly [sha256, sha384, sha512, blake3], the engine computes all four, and
+// schema validation refuses anything else before a checksum is read. evidence_verify.go
+// says so at the --require-reachable branch it is retained for. It is asserted at the
+// ENGINE level below, which is the only layer that can produce it.
+func TestEvidenceInfoVerify_RendersEveryReachableState(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	good, err := os.ReadFile(filepath.Join(dir, "rhel9-results.json"))
+	require.NoError(t, err)
+	goodSum := sha256.Sum256(good)
+
+	// unreadable.json is NAMED by the package and absent from disk: it resolves inside
+	// the package directory, so it is not "unreachable" — the fetch fails, which is the
+	// error state. Distinct from the remote URI below, which is never fetched at all.
+	pkg := map[string]any{
+		"name": "every-state",
+		"contents": []any{
+			map[string]any{"type": "hdf-results", "uri": "rhel9-results.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": hex.EncodeToString(goodSum[:])}},
+			map[string]any{"type": "hdf-system", "uri": "system.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)}},
+			map[string]any{"type": "hdf-plan", "uri": "noplan.json"},
+			map[string]any{"type": "hdf-results", "uri": "unreadable.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("1", 64)}},
+		},
+		"externalEvidence": []any{
+			map[string]any{"uri": "https://logs.example.gov/x.ndjson", "format": "raw-log",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("2", 64)}},
+		},
+	}
+	out, mErr := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, mErr)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	stdout, _, runErr := executeCommand("evidence", "info", "--verify", "--checksums-only", pkgPath)
+	require.Error(t, runErr, "a mismatch and an unreadable reference both fail")
+
+	for state, want := range map[string]string{
+		"match":              "✓ rhel9-results.json (sha256 match)",
+		"mismatch":           "✗ system.json (sha256 MISMATCH)",
+		"no checksum":        "- noplan.json (no checksum)",
+		"error":              "! unreadable.json (error:",
+		"not reachable here": "? https://logs.example.gov/x.ndjson (not reachable here:",
+	} {
+		assert.Contains(t, stdout, want, "the %q state must be rendered", state)
+	}
+
+	// --json must carry the same states, so a pipeline is not told less than a reader.
+	jsonOut, _, _ := executeCommand("evidence", "info", "--verify", "--checksums-only", "--json", pkgPath)
+	var parsed struct {
+		Results []struct{ URI, Status, Field string } `json:"results"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(jsonOut), &parsed))
+	byURI := map[string]string{}
+	for _, r := range parsed.Results {
+		byURI[r.URI] = r.Status
+	}
+	assert.Equal(t, "match", byURI["rhel9-results.json"])
+	assert.Equal(t, "mismatch", byURI["system.json"])
+	assert.Equal(t, "skipped", byURI["noplan.json"])
+	assert.Equal(t, "error", byURI["unreadable.json"])
+	assert.Equal(t, "unreachable", byURI["https://logs.example.gov/x.ndjson"])
+}
+
+// The sixth state, at the only layer that can produce it. Asserted rather than claimed
+// unreachable-and-therefore-untested: the vocabulary is complete, and if an algorithm is
+// ever added to Hash_Algorithm before the tooling implements it, this is the behaviour
+// the CLI will start surfacing.
+func TestEvidenceVerify_TheSixthStateExistsInTheEngine(t *testing.T) {
+	results := hdfengine.VerifyChecksums([]hdfengine.EvidenceContent{
+		{URI: "x.json", Type: "hdf-results", Checksum: "deadbeef", ChecksumAlgorithm: "md5", ChecksumRecorded: true},
+	}, func(string) ([]byte, error) { return []byte("x"), nil })
+	require.Len(t, results, 1)
+	assert.Equal(t, hdfengine.ChecksumUnsupported, results[0].Status,
+		"an algorithm the build cannot compute is unsupported, never a mismatch — a mismatch "+
+			"would say their evidence changed when nothing was hashed")
 }

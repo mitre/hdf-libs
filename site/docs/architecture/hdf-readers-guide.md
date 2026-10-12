@@ -431,10 +431,10 @@ hdf evidence info portal-ato-evidence-q1-2026.json
 # package. Add --checksums-only to skip that and verify referenced-file SHA-256s alone.
 # Note: this does NOT check signatures or amendment chains -- run `hdf amend verify`
 # on the amendments document for the chain.
-hdf evidence verify portal-ato-evidence-q1-2026.json
+hdf evidence info --verify portal-ato-evidence-q1-2026.json
 ```
 
-`hdf evidence info` summarizes what's in the package and surfaces the `completenessCheck` content. `hdf evidence verify` performs the cryptographic checks: each referenced document still resolves at its URI, its checksum matches what the package declared, and any signature on the package itself validates.
+`hdf evidence info` summarizes what's in the package and surfaces the `completenessCheck` the package recorded, without opening anything it references. Adding `--verify` performs the cryptographic checks: each referenced document still resolves at its URI, its checksum matches what the package declared, and any signature on the package itself validates.
 
 ---
 

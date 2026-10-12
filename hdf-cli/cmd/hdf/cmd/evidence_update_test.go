@@ -589,7 +589,7 @@ func TestEvidenceUpdate_NormalisesTheStoredReferenceToo(t *testing.T) {
 		assert.Equal(t, 1, count, "one slot, not two — a duplicate leaves the old entry with a stale checksum")
 
 		// The real proof: the package still verifies, which it cannot with a stale entry.
-		_, _, err = executeCommand("evidence", "verify", out)
+		_, _, err = executeCommand("evidence", "info", "--verify", out)
 		require.NoError(t, err, "a duplicated slot would leave a stale checksum and fail verify")
 	})
 
@@ -614,7 +614,7 @@ func TestEvidenceUpdate_NormalisesTheStoredReferenceToo(t *testing.T) {
 // The recorded checksum must be the file's sha256. The only checksum assertion in this file
 // pinned that it CHANGED, never that it was CORRECT — so a reimplementation of
 // contentEntryFromBytes recording any other value passed the whole suite, and the output
-// failed its own evidence verify.
+// failed its own verification.
 func TestEvidenceUpdate_RecordsTheRealChecksum(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := writeScan(t, dir, "postgres-results.json", "pg.json")
@@ -635,7 +635,7 @@ func TestEvidenceUpdate_RecordsTheRealChecksum(t *testing.T) {
 		"the recorded digest must be the file's real sha256, not merely a different value")
 
 	// And the end-to-end consequence: a wrong digest makes the package fail its own verify.
-	_, _, err = executeCommand("evidence", "verify", out)
+	_, _, err = executeCommand("evidence", "info", "--verify", out)
 	require.NoError(t, err, "the updated package must verify against its own recorded checksums")
 }
 
@@ -787,7 +787,7 @@ func TestEvidenceUpdate_SaysWhenItCannotReadTheDistinguishingFacts(t *testing.T)
 
 // A package can reference a results document that has since been deleted, and can carry an
 // entry with an empty uri (schema-valid — uri has no minLength). Neither should stop an
-// update that has nothing to do with them: the missing document is `evidence verify`'s to
+// update that has nothing to do with them: the missing document is `evidence info --verify`'s to
 // report, and an entry naming nothing names nothing. This also exercises the skip paths in
 // baselinesByRef, resultsPathsInPackage and normalizedRef, which the card's >90% coverage
 // requirement otherwise leaves short.
@@ -945,7 +945,7 @@ func caseInsensitiveFS(t *testing.T, dir string) bool {
 // case-insensitive filesystem, so a refresh must refresh that entry rather than adding a
 // second one. Two entries for one file is not merely untidy: the next update refreshes
 // only the spelling it matched, the other keeps a stale checksum, and the package then
-// fails its own `evidence verify` — which is verbatim the failure hdf-libs-52n0c.5's AC
+// fails its own verification — which is verbatim the failure hdf-libs-52n0c.5's AC
 // was written to eliminate.
 //
 // Matching is by filesystem identity (os.SameFile via samePath), which is correct on BOTH

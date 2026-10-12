@@ -74,12 +74,13 @@ documents and in-tree external evidence. That is reported here and never repaire
 the package: 'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
 (externalEvidence) record such a reference relatively at authoring time.
 
-Bundle and verify resolve references identically, and neither refuses a package for the shape of
-one: a reference to something the package does not contain — an absolute path elsewhere, a parent
-traversal, or a URI on another system — is reported by both. Verify additionally checks
-completeness, which bundle does not, so verify can still fail a package bundle accepts — for
-instance when a planned baseline's only results document is one of those unreachable references. Both honour the
-checksum algorithm the package records. Nothing outside the package directory is read: such a
+Bundle and 'hdf evidence info --verify' resolve references identically, and neither refuses
+a package for the shape of one: a reference to something the package does not contain — an
+absolute path elsewhere, a parent traversal, or a URI on another system — is reported by
+both. Verification additionally checks completeness, which bundle does not, so it can still
+fail a package bundle accepts — for instance when a planned baseline's only results document
+is one of those unreachable references. Both honour the checksum algorithm the package
+records. Nothing outside the package directory is read: such a
 reference is never resolved into a path, and a symlink that leaves the package is refused at the
 read boundary.
 
@@ -97,9 +98,9 @@ one recording an empty value, and one on a reference that cannot travel, whose b
 to check. The first two DO travel, and are counted separately because the remedy differs — one
 needs a checksum added, the other has one to fill in. The third does not travel at all and is
 reported as not carried. Every one is reported on stderr: the first two as COUNTS, the third
-NAMING the reference. 'hdf evidence verify' names each entry individually, in contents[] and in
+NAMING the reference. 'hdf evidence info --verify' names each entry individually, in contents[] and in
 externalEvidence[] alike, which is where to look for which ones. A count here can still exceed
-what verify names, because this count also covers the root reference FIELDS and the schema gives
+what that command names, because this count also covers the root reference FIELDS and the schema gives
 systemRef and planRef no checksum to record. A mismatch or a missing document fails the command and writes no archive —
 a partial bundle is worse than none, because it looks complete.
 
@@ -448,7 +449,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			// Counted either way. checksumRecorded used to gate this, so an entry
 			// recording NO checksum object fell through silently and its document
 			// travelled under the extent claim with nothing vouching for it, while
-			// `evidence verify` reported the same entry as skipped — the two commands
+			// verification reported the same entry as skipped — the two commands
 			// disagreed about whether the operator should be told. The two shapes stay
 			// separate because the remedy differs: one has a checksum to fill in, the
 			// other needs one added.
@@ -477,7 +478,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		return nil
 	}
 
-	// planRef and systemRef are carried because `evidence verify` reads the plan for
+	// planRef and systemRef are carried because `evidence info --verify` reads the plan for
 	// its completeness check: an archive omitting it would verify in the original tree
 	// and fail on the extracted copy.
 	var noURI, noExtURI, documentsDropped int
@@ -529,7 +530,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		// Resolved, so an absolute path landing inside the package is carried and one
 		// outside it is reported rather than refused. contents[] used to be special-cased
 		// through the strict shape check and refusing it made bundle reject packages
-		// `evidence verify` accepts. The schema now describes the package-relative form as
+		// `evidence info --verify` accepts. The schema now describes the package-relative form as
 		// the one the tooling resolves, and says in the same breath that another shape is
 		// schema-valid and reported — so that description is not a licence to refuse one.
 		ref, inTree := packageSubtreeRef(pkgDir, r.uri)

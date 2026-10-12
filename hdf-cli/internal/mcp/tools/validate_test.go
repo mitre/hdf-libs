@@ -398,7 +398,7 @@ func TestSchemaTypeForDoc_CoversEngineKnownTypes(t *testing.T) {
 // "valid" about bytes nobody verified. It is NOT an error (the bytes may be intact), so it
 // belongs in the notice, not in errors. Reached here with an OFF-SCHEMA algorithm, which
 // is the only way left now that every algorithm the enum admits is computed — and unlike
-// `hdf evidence verify`, this path reports such a document rather than refusing it.
+// `hdf evidence info --verify`, this path reports such a document rather than refusing it.
 func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
 	results := fixtures.Results.Minimal
 	pkg := evidencePkg("", map[string]any{

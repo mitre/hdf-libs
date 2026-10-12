@@ -111,7 +111,7 @@ func TestEvidenceBundle_ExtractedArchiveVerifiesUnchanged(t *testing.T) {
 		require.NoError(t, os.WriteFile(target, data, 0o600))
 	}
 
-	_, _, verifyErr := executeCommand("evidence", "verify", filepath.Join(dest, "pkg.json"))
+	_, _, verifyErr := executeCommand("evidence", "info", "--verify", filepath.Join(dest, "pkg.json"))
 	require.NoError(t, verifyErr,
 		"an extracted archive must verify without any path rewriting")
 }
@@ -648,7 +648,7 @@ func TestEvidenceBundle_DistinguishesAnHonestOutsidePathFromAnEscapingSymlink(t 
 // add-evidence records a sha256 for every local artifact, so an externalEvidence
 // checksum is a real integrity record and must be verified against the bytes that
 // travel. It was discarded at read time, so a tampered in-tree artifact entered the
-// archive with exit 0 under the claim "nothing else" — and `evidence verify` does
+// archive with exit 0 under the claim "nothing else" — and `evidence info --verify` does
 // not check external evidence either, so bundle is the only place those bytes are
 // ever captured.
 func TestEvidenceBundle_VerifiesExternalEvidenceChecksums(t *testing.T) {
@@ -825,7 +825,7 @@ func TestEvidenceBundle_ReportsAContentEntryWithNoURI(t *testing.T) {
 }
 
 // Checksum.value has no minLength, so a schema-valid package can record a checksum
-// with nothing in it. There is nothing to verify against, and `evidence verify`
+// with nothing in it. There is nothing to verify against, and `evidence info --verify`
 // already tells the operator such an entry was skipped — so bundle must say so too,
 // rather than printing an absolute extent claim over an unverified document.
 func TestEvidenceBundle_ReportsAnEmptyChecksumValue(t *testing.T) {
@@ -1180,7 +1180,7 @@ func TestEvidenceBundle_CoversEverySchemaReferenceField(t *testing.T) {
 	}, got, "every reference field the schema declares must reach recordedRefs")
 }
 
-// An archive must be self-sufficient: `evidence verify` reads planRef for its
+// An archive must be self-sufficient: `evidence info --verify` reads planRef for its
 // completeness check, so a package whose planRef is NOT duplicated in contents[] used
 // to verify in the original tree and fail on the extracted copy. The plan was silently
 // absent, with no "not carried" line, under the claim "nothing else".
@@ -1234,7 +1234,7 @@ func TestEvidenceBundle_CarriesPlanAndSystemRefsNotListedInContents(t *testing.T
 		require.NoError(t, os.MkdirAll(filepath.Dir(dest), 0o750))
 		require.NoError(t, os.WriteFile(dest, data, 0o600))
 	}
-	_, _, err = executeCommand("evidence", "verify", filepath.Join(extracted, "pkg.json"))
+	_, _, err = executeCommand("evidence", "info", "--verify", filepath.Join(extracted, "pkg.json"))
 	require.NoError(t, err, "the extracted archive must verify with no path rewriting")
 }
 
@@ -1753,7 +1753,7 @@ func TestEvidenceBundle_TheExtractedPackageResolvesItsOwnReferences(t *testing.T
 	assert.Equal(t, "plan.json", readEvidenceDoc(t, extracted)["planRef"],
 		"the extracted package names the carried file, not a path on the producing machine")
 
-	_, stderr, verifyErr := executeCommand("evidence", "verify", extracted)
+	_, stderr, verifyErr := executeCommand("evidence", "info", "--verify", extracted)
 	require.NoError(t, verifyErr, "the extracted copy verifies where it was extracted")
 	// Positive and negative: the absence alone cannot tell a check that RAN from a line the
 	// code simply stopped printing.
@@ -1867,12 +1867,76 @@ func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T
 	// adding a planRef or a systemRef moves this count and not verify's.
 	assert.NotContains(t, help, "has a named counterpart there",
 		"bundle counts root reference fields that verify does not name")
-	assert.Contains(t, help, "can still exceed what verify names",
+	// The sentence survives; only the name in it changed, because `hdf evidence verify`
+	// was removed (52n0c.39) and printed help may not cite a command that exits 1.
+	assert.Contains(t, help, "can still exceed what that command names",
 		"the asymmetry that remains must be stated, not implied away")
+	// WIDENED, because the version of this guard that pinned only the two-word form was
+	// GREEN while the help it had just read said "Verify additionally checks …" — the
+	// message asserted a claim the check could not enforce. Three hand sweeps each missed
+	// what their own query could not see (a bare subject, a capitalised one, a name split
+	// across a line break); a regexp over the RENDERED help is what stops a fourth.
+	//
+	// Legitimate forms are the flag (--verify) and inflections (verified, verifies,
+	// verification). What is forbidden is the bare command name in any case, which is the
+	// only shape that tells a reader to run something that exits 1.
+	// THE SENTENCES THEMSELVES, not just the absence of a word. The regexp below holds
+	// "no bare command name"; the defect class in this paragraph is "the sentence became
+	// false or broken", and those are not the same set. Proof: fixing a bare command name
+	// here made the replacement 26 characters longer, "for the shape of" was dropped to
+	// hold the line width, and the help shipped reading "neither refuses a package one:" —
+	// inside the class the guard was built for and outside the class it checks. A long
+	// prose paragraph in a raw-string literal, hand-edited under a width constraint, eats
+	// adjacent phrases.
+	//
+	// WHAT THIS HOLDS, stated exactly, because a check whose message claims more than it
+	// enforces is the defect it replaced: one anchor at the OPENING of each sentence and
+	// one at the TAIL. The openings alone were not enough — a width-driven trim lands at
+	// a LINE boundary, which is in the tail, and a review mutant deleted "— is reported by
+	// both" at exactly such a boundary with all four opening anchors still green. The tail
+	// anchors are the clauses that carry each sentence's actual claim: that BOTH commands
+	// report an out-of-package reference, the bundle-versus-verification asymmetry that
+	// 52n0c.16 and .36 were each filed over, and the second of the two guards behind
+	// "nothing outside the package directory is read", which is a security claim.
+	//
+	// It still does not hold the whole class — only these eight points. The layout change
+	// that removes the mechanism rather than narrowing the window is carded separately,
+	// deliberately NOT folded in here: this paragraph has been edited five times under
+	// review pressure, and a sixth edit in the same commit as its own fix is how the
+	// "package one:" break happened.
+	for _, claim := range []string{
+		// Openings.
+		"neither refuses a package for the shape of one",
+		"Verification additionally checks completeness, which bundle does not",
+		"Both honour the checksum algorithm the package records",
+		"Nothing outside the package directory is read",
+		// Tails — where the trims actually land.
+		"is reported by both",
+		"so it can still fail a package bundle accepts",
+		"a symlink that leaves the package is refused at the read boundary",
+	} {
+		assert.Contains(t, help, claim,
+			"a claim this paragraph must carry went missing — check for a phrase eaten by a reflow")
+	}
+
+	bareVerify := regexp.MustCompile(`(?i)(^|[^-\w])verify\b`)
+	if loc := bareVerify.FindStringIndex(help); loc != nil {
+		start := loc[0] - 60
+		if start < 0 {
+			start = 0
+		}
+		end := loc[1] + 60
+		if end > len(help) {
+			end = len(help)
+		}
+		t.Errorf("printed help names the removed command as a bare word: ...%s...\n"+
+			"Use the flag (--verify) or an inflection (verified/verifies/verification); "+
+			"`hdf evidence verify` exits 1.", help[start:end])
+	}
 }
 
 // Content_Reference requires type and uri but NOT checksum, so a schema-valid package can
-// carry a document nothing vouches for. `evidence verify` already says so — "- <uri> (no
+// carry a document nothing vouches for. `evidence info --verify` already says so — "- <uri> (no
 // checksum)" and a skipped count — while bundle carried it under an absolute extent claim
 // and said nothing, so the two commands disagreed about whether the operator should be
 // told. The maintainer's decision is REPORT: the archive is still written, because refusing

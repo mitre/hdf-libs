@@ -1,3 +1,6 @@
+// The verified read path for an evidence package. It defines no command: `hdf evidence
+// verify` was REMOVED in favour of `hdf evidence info --verify` (52n0c.39), so this is
+// the machinery that flag runs, and the only renderer of a per-entry verification state.
 package cmd
 
 import (
@@ -9,76 +12,7 @@ import (
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
-	"github.com/spf13/cobra"
 )
-
-func newEvidenceVerifyCmd() *cobra.Command {
-	var checksumsOnly, requireReachable, requireChecksumsMatch bool
-
-	cmd := &cobra.Command{
-		Use:   "verify <package-file>",
-		Short: "Verify an evidence package against its assessment plan",
-		Long: `Verify an HDF evidence package. By default, checks completeness:
-every baseline in the referenced plan must have a corresponding results
-document in the evidence package.
-
-Use --checksums-only to skip completeness checking and only verify the
-checksums of referenced files, each under the algorithm its entry records.
-
-A package may reference artifacts it does not contain — an absolute local
-path, a parent traversal, or a URI on another system. Carrying copies is
-expected but not required, so a reference this machine cannot reach is
-reported and skipped, not treated as a malformed package. A planned baseline
-whose only results document is unreachable counts as NOT covered, so
-completeness never credits a document that was not read. --require-reachable turns that into a
-failure: an assessor accepting a package as the evidence of record may need
-it self-contained, but demanding that by default would reject the external
-references the format supports deliberately.
-
-Checksums are verified in BOTH arrays the package records them in — contents[]
-and externalEvidence[] — because a package is as intact as its weakest recorded
-claim, and 'hdf evidence bundle' already refused a package over an
-externalEvidence mismatch that this command passed.
-
-A mismatch fails the command. --require-checksums-match=false reports one
-without failing, for a pipeline that must proceed past known drift; the
-mismatch is still named and counted, so nothing goes quiet. That flag defaults
-to TRUE, unlike --require-reachable, because a mismatch already failed before
-the flag existed and a false default would have loosened that rather than
-added a valve. It governs an entry that WAS verified and disagreed, which is a
-different question from one that records no checksum to verify at all — that
-entry is reported as skipped and does not fail.
-
-If the evidence package has no planRef, falls back to checksum
-verification with a warning.
-
-Examples:
-  hdf evidence verify package.json
-  hdf evidence verify package.json --checksums-only
-  hdf evidence verify package.json --require-reachable
-  hdf evidence verify package.json --require-checksums-match=false
-  hdf evidence verify package.json --json`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runEvidenceVerify(args[0], checksumsOnly, requireReachable, requireChecksumsMatch)
-		},
-	}
-
-	cmd.Flags().BoolVar(&checksumsOnly, "checksums-only", false, "Only verify file checksums, skip completeness checking")
-	cmd.Flags().BoolVar(&requireReachable, "require-reachable", false,
-		"Fail if the package records a reference this machine cannot resolve")
-	// The true here is the real default — and it is the OPPOSITE of the other
-	// --require-* flags, deliberately. A contents[] mismatch already failed before
-	// this flag existed, so defaulting it false would not add a valve: it would
-	// quietly stop a tampered document from failing. Three pre-existing tests depend
-	// on that, which is what makes the inversion measurable rather than a matter of
-	// taste.
-	cmd.Flags().BoolVar(&requireChecksumsMatch, "require-checksums-match", true,
-		"Fail if a checksum this run could compute disagrees with the file; "+
-			"pass =false to report a mismatch without failing")
-
-	return cmd
-}
 
 // Verification status constants.
 const (

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,8 +23,8 @@ Examples:
 	}
 
 	cmd.AddCommand(newEvidenceInfoCmd())
+	cmd.AddCommand(newEvidenceVerifyRemovedCmd())
 	cmd.AddCommand(newEvidenceBuildCmd())
-	cmd.AddCommand(newEvidenceVerifyCmd())
 	cmd.AddCommand(newEvidenceExportCmd())
 	cmd.AddCommand(newEvidenceSetCmd())
 	cmd.AddCommand(newEvidenceAddEvidenceCmd())
@@ -34,22 +35,150 @@ Examples:
 	return cmd
 }
 
-func newEvidenceInfoCmd() *cobra.Command {
+// newEvidenceVerifyRemovedCmd is a TOMBSTONE, not an alias: it does no verification and
+// always fails. `hdf evidence verify` was removed in favour of `hdf evidence info
+// --verify`, and simply deleting the command was not enough — measured, cobra answers an
+// unknown subcommand by printing the parent's help and exiting ZERO, so every pipeline
+// still calling the old name would have gone green on a package nobody checked. A removal
+// has to be louder than the thing it removed, so this exits non-zero and names the
+// replacement. cobra.NoArgs on the parent does NOT do this; it is inert without a Run.
+func newEvidenceVerifyRemovedCmd() *cobra.Command {
 	return &cobra.Command{
+		Use:    "verify <package-file>",
+		Short:  "Removed — use 'hdf evidence info --verify'",
+		Hidden: true,
+		Args:   cobra.ArbitraryArgs,
+		// The flags the removed command took are not declared here, so cobra would
+		// reject them before RunE ran — meaning a pipeline calling the old name WITH a
+		// flag, which is how CI called it, saw "unknown flag" and never the removal
+		// notice. Whitelisting unknown flags lets the message through for exactly the
+		// invocation it was written for.
+		FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
+		RunE: func(_ *cobra.Command, args []string) error {
+			target := "<package-file>"
+			if len(args) > 0 {
+				target = args[0]
+			}
+			// CAREFUL: this message is the one place that must name the OLD command. A
+			// blanket sweep of the removed name across the tree rewrote it to say the
+			// NEW name had been removed and replaced by itself — and the test passed,
+			// because it only checked that the message contained "has been removed" and
+			// "info --verify", both of which survived the corruption. The test now pins
+			// both names separately.
+			return fmt.Errorf("'hdf evidence verify' has been removed; it is now "+
+				"'hdf evidence info --verify %s'. Every flag it took still works there "+
+				"(--checksums-only, --require-reachable, --require-checksums-match)", target)
+		},
+	}
+}
+
+// strayVerifyFlags names the --verify-only flags the caller actually set, so the refusal
+// lists what they typed instead of a fixed pair. Keyed on Changed(), not on the value: a
+// flag that defaults true is indistinguishable from an explicit setting by value alone.
+func strayVerifyFlags(c *cobra.Command) []string {
+	stray := make([]string, 0, 3)
+	for _, name := range []string{"checksums-only", "require-reachable", "require-checksums-match"} {
+		if c.Flags().Changed(name) {
+			stray = append(stray, "--"+name)
+		}
+	}
+	return stray
+}
+
+func newEvidenceInfoCmd() *cobra.Command {
+	var verify, checksumsOnly, requireReachable, requireChecksumsMatch bool
+
+	cmd := &cobra.Command{
 		Use:   "info <file>",
-		Short: "Display summary information about an HDF evidence package",
-		Long: `Display summary information about an HDF evidence package including:
-- Package name, preparer, timestamp, and system reference
-- Contents with document types and checksum status
-- Completeness check summary
+		Short: "Summarize an HDF evidence package, and optionally verify it",
+		Long: `Summarize an HDF evidence package: its name, preparer, timestamp and system
+reference, what it carries, and what it records about its own completeness.
+
+By default this READS ONE DOCUMENT and opens nothing it references, so it stays
+cheap on a package carrying gigabytes of evidence. What it shows is therefore
+what the package RECORDS, not what was checked: an entry is reported as
+recording a checksum, recording an empty one, or recording none. Nothing is
+hashed, so nothing is called verified.
+
+--verify opens every reference and checks it. That is the full crawl, and it is
+where a verdict comes from: each entry is reported as matching, MISMATCHING,
+carrying no checksum to check, unreadable, unreachable from here, or recorded
+under an algorithm this build cannot compute. Completeness is computed against
+the plan the package names rather than read from the stored summary, which the
+schema itself calls informational and not authoritative. A mismatch fails the
+command.
 
 Examples:
   hdf evidence info q1-2026.hdf-evidence-package.json
-  hdf evidence info q1-2026.hdf-evidence-package.json --json`,
+  hdf evidence info q1-2026.hdf-evidence-package.json --json
+  hdf evidence info q1-2026.hdf-evidence-package.json --verify
+  hdf evidence info q1-2026.hdf-evidence-package.json --verify --checksums-only
+  hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-reachable`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
+			if verify {
+				return runEvidenceVerify(args[0], checksumsOnly, requireReachable, requireChecksumsMatch)
+			}
+			// Refused rather than ignored: a flag that silently does nothing is how an
+			// operator comes to believe a check ran. --require-checksums-match is included
+			// via Changed() rather than by its value, because it DEFAULTS true — testing
+			// the value cannot tell the default apart from an explicit =false, and an
+			// operator who typed =false asked for something this path cannot give.
+			if stray := strayVerifyFlags(c); len(stray) > 0 {
+				return fmt.Errorf("%s only mean(s) something with --verify, which is what opens "+
+					"the referenced documents; pass --verify", strings.Join(stray, " and "))
+			}
 			return runDocInfo(args[0], "hdf evidence info", []string{"evidence-package"}, outputEvidenceInfoHuman)
 		},
+	}
+
+	cmd.Flags().BoolVar(&verify, "verify", false,
+		"Open every referenced document and check it; without this, nothing is read or hashed")
+	cmd.Flags().BoolVar(&checksumsOnly, "checksums-only", false,
+		"With --verify: check checksums only, skipping the completeness check")
+	cmd.Flags().BoolVar(&requireReachable, "require-reachable", false,
+		"With --verify: fail if the package records a reference this machine cannot resolve")
+	// The true here is the real default, and it is the OPPOSITE of --require-reachable
+	// above, deliberately. A contents[] mismatch failed before this flag existed, so
+	// defaulting it false would not add a valve: it would quietly stop a tampered
+	// document from failing.
+	cmd.Flags().BoolVar(&requireChecksumsMatch, "require-checksums-match", true,
+		"With --verify: fail if a checksum this run could compute disagrees with the file; "+
+			"pass =false to report a mismatch without failing")
+
+	return cmd
+}
+
+// recordedChecksumState says what the DOCUMENT records about an entry's checksum, which
+// is all the default path can know: it opens nothing and hashes nothing. The tick glyph
+// is deliberately absent — it is reserved for a computed match under --verify, and this
+// used to print it on the mere PRESENCE of the checksum key, so an entry recording a
+// BLANK value and one naming a remote URI nobody fetched both displayed as checked.
+//
+// A blank value is schema-valid (Checksum.value has no minLength), and the two cases need
+// different remedies: one has a checksum to fill in, the other has none to begin with —
+// the same distinction `evidence bundle` counts separately.
+//
+// Defensive on shape because runDocInfo does NOT schema-validate: it checks the document
+// type and unmarshals, so a hand-edited package can arrive with a checksum that is not an
+// object, or a value that is not a string.
+func recordedChecksumState(entry map[string]interface{}) string {
+	raw, present := entry["checksum"]
+	if !present {
+		return "no checksum recorded"
+	}
+	cs, ok := raw.(map[string]interface{})
+	if !ok {
+		return "checksum unreadable"
+	}
+	value, isString := cs["value"].(string)
+	switch {
+	case !isString && cs["value"] != nil:
+		return "checksum unreadable"
+	case strings.TrimSpace(value) == "":
+		return "checksum recorded but empty"
+	default:
+		return "checksum recorded"
 	}
 }
 
@@ -87,12 +216,8 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 			docType, _ := entry["type"].(string)
 			uri, _ := entry["uri"].(string)
 
-			checksumStr := ""
-			if _, hasChecksum := entry["checksum"]; hasChecksum {
-				checksumStr = "  \u2713 checksum"
-			}
-
-			fmt.Printf("  %-16s %s%s\n", sanitizeOutput(docType), sanitizeOutput(uri), checksumStr)
+			fmt.Printf("  %-16s %s  %s\n", sanitizeOutput(docType), sanitizeOutput(uri),
+				recordedChecksumState(entry))
 		}
 	}
 
@@ -107,18 +232,19 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 			format, _ := entry["format"].(string)
 			uri, _ := entry["uri"].(string)
 
-			checksumStr := ""
-			if _, hasChecksum := entry["checksum"]; hasChecksum {
-				checksumStr = "  ✓ checksum"
-			}
-
-			fmt.Printf("  %-16s %s%s\n", sanitizeOutput(format), sanitizeOutput(uri), checksumStr)
+			fmt.Printf("  %-16s %s  %s\n", sanitizeOutput(format), sanitizeOutput(uri),
+				recordedChecksumState(entry))
 		}
 	}
 
 	// Completeness check
 	if cc, ok := doc["completenessCheck"].(map[string]interface{}); ok {
-		fmt.Printf("\nCompleteness:\n")
+		// Attributed to the document, not to this command. The schema calls this block
+		// "Not authoritative — tools should compute these from the referenced documents",
+		// so printing it under a bare "Completeness:" heading would present a claim this
+		// path never established — the same defect as the presence-tick above, one field
+		// over. --verify computes it instead of reading it.
+		fmt.Printf("\nCompleteness, as recorded by the package (not computed here — use --verify):\n")
 
 		if v, ok := cc["allBaselinesAssessed"].(bool); ok {
 			fmt.Printf("  All baselines assessed: %s\n", boolYesNo(v))

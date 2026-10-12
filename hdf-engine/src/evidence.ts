@@ -1,5 +1,5 @@
 // Evidence-verify engine — the TypeScript peer of hdf-engine/go/evidence.go.
-// Pure, filesystem-agnostic core of `hdf evidence verify` (ADR-0007 §11):
+// Pure, filesystem-agnostic core of `hdf evidence info --verify` (ADR-0007 §11):
 // content-checksum classification and plan/results completeness. All filesystem
 // IO and path confinement stay in the caller, injected as a FetchFn. Kept at
 // behavioural parity with the Go implementation (see test/evidence.test.ts,

@@ -908,7 +908,7 @@ func TestEvidenceAddReference_EmbeddedReferenceValidatesVerifiesAndNeverTravels(
 
 	_, _, err = executeCommand("validate", pkgPath)
 	require.NoError(t, err, "a package carrying embedded references must validate")
-	_, _, err = executeCommand("evidence", "verify", pkgPath)
+	_, _, err = executeCommand("evidence", "info", "--verify", pkgPath)
 	require.NoError(t, err, "embedded references are inert and must not affect verification")
 
 	archive := filepath.Join(dir, "bundle.tar.gz")

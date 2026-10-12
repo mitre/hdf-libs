@@ -363,7 +363,7 @@ hdf evidence info portal-evidence.json
 # (allBaselinesAssessed, allComponentsCovered, expiredWaivers,
 #  unresolvedPoams, compliancePercent, sbomCoverage).
 
-hdf evidence verify portal-evidence.json
+hdf evidence info --verify portal-evidence.json
 # Re-reads every content reference, recomputes its checksum, and
 # reports mismatches. Also verifies the document-level signature
 # (when present) and the amendment chain on referenced amendments.

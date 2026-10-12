@@ -182,7 +182,7 @@ func dropEmpty(paths []string) []string {
 // resolvedAbs returns a path's symlink-resolved absolute form, falling back to
 // the lexical absolute form for a path not yet on disk.
 //
-// Resolving matters: `hdf evidence verify` confines references through
+// Resolving matters: `hdf evidence info --verify` confines references through
 // hdfutil.SafePath, which resolves symlinks, so a reference written by comparing
 // paths lexically disagrees with the reader. On macOS /tmp is a symlink to
 // /private/tmp, so a pipeline mixing $TMPDIR-derived and realpath-derived paths
@@ -323,8 +323,8 @@ type evidenceBuildOpts struct {
 }
 
 // requireDetectedType rejects a document whose fingerprint is not what the flag
-// promised. Mistyping a content entry is worse than refusing it: `evidence
-// verify` reads these types to judge completeness, so a plan filed as a
+// promised. Mistyping a content entry is worse than refusing it:
+// `evidence info --verify` reads these types to judge completeness, so a plan filed as a
 // baseline yields a confident wrong verdict. Build is deliberately not a full
 // validation gate for its inputs (see computeCompleteness), so this checks the
 // fingerprint only.
@@ -427,7 +427,7 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	var err error
 
 	// Optional: plan. Its presence also sets the package's planRef, which is
-	// what `evidence verify` reads to check completeness against the plan.
+	// what `evidence info --verify` reads to check completeness against the plan.
 	planPaths := make([]string, 0, 1+len(opts.extraPlanPaths))
 	if opts.planPath != "" {
 		planPaths = append(planPaths, opts.planPath)

@@ -378,7 +378,7 @@ describe('Content_Reference.uri describes what the toolchain actually does', () 
     expect(examples?.length).toBeGreaterThan(0);
     // An ALLOWLIST, not a list of remote shapes to reject: enumerating schemes let
     // protocol-relative `//host/path` and schemeless opaque uris through, and `mailto:a@b.c`
-    // is the shape `hdf evidence verify` turns into a hard error at exit 1 rather than a
+    // is the shape `hdf evidence info --verify` turns into a hard error at exit 1 rather than a
     // report. Requiring a package-relative path admits only what the tooling resolves.
     for (const e of examples ?? []) {
       expect(e.uri, `example uri ${e.uri} is not a package-relative path`).toMatch(

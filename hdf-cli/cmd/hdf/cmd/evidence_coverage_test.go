@@ -426,7 +426,7 @@ func TestBuildContentEntry(t *testing.T) {
 	})
 }
 
-// --- evidence verify tests ---
+// --- evidence info --verify tests ---
 
 func TestEvidenceVerifyCommand(t *testing.T) {
 	t.Run("verifies matching checksums successfully", func(t *testing.T) {
@@ -456,7 +456,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "sha256 match")
 		assert.Contains(t, stdout, "test-package")
@@ -485,7 +485,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
 		assert.Contains(t, stdout, "MISMATCH")
 		// Singular-aware and scoped to what happened; the old wording always printed
@@ -509,7 +509,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "no checksum")
 		assert.Contains(t, stdout, "skipped")
@@ -535,13 +535,13 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		_, _, err := executeCommand("evidence", "verify", pkgPath)
+		_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "1 reference(s) could not be read")
 	})
 
 	t.Run("errors when package file missing", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "verify", "/nonexistent/package.json")
+		_, _, err := executeCommand("evidence", "info", "--verify", "/nonexistent/package.json")
 		require.Error(t, err)
 	})
 
@@ -550,14 +550,14 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "bad.json")
 		require.NoError(t, os.WriteFile(pkgPath, []byte("not json"), 0o600))
 
-		_, _, err := executeCommand("evidence", "verify", pkgPath)
+		_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
 		// The load gate now rejects non-HDF-shaped input before json.Unmarshal.
 		assert.Contains(t, err.Error(), "not a recognized HDF document")
 	})
 
 	t.Run("requires exactly one argument", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "verify")
+		_, _, err := executeCommand("evidence", "info", "--verify")
 		require.Error(t, err)
 	})
 }
@@ -594,7 +594,7 @@ func TestEvidenceVerifyJSON(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	stdout, _, err := executeCommand("evidence", "verify", "--json", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", "--json", pkgPath)
 	require.NoError(t, err)
 
 	var out map[string]interface{}
@@ -834,7 +834,7 @@ func TestEvidenceExportCommand(t *testing.T) {
 	})
 }
 
-// --- evidence verify with multiple documents ---
+// --- evidence info --verify with multiple documents ---
 
 func TestEvidenceVerifyMultipleDocuments(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -875,7 +875,7 @@ func TestEvidenceVerifyMultipleDocuments(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, stdout, "sha256 match")
 	assert.Contains(t, stdout, "MISMATCH")
@@ -904,7 +904,7 @@ func TestEvidenceVerifyRejectsNoPackageName(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "schema validation")
 	assert.Contains(t, err.Error(), "name")
@@ -934,7 +934,7 @@ func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify — checksums should match since files haven't changed
-	stdout, _, err := executeCommand("evidence", "verify", outputPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", outputPath)
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "sha256 match")
 	assert.Contains(t, stdout, "2/2 checksums valid")
