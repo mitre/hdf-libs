@@ -38,7 +38,7 @@
     "lint:spectral": "node scripts/spectral-lint.mjs dist/hdf-api.oas.json",
     "matrix": "node scripts/openapi-matrix.mjs",
     "matrix:update": "node scripts/openapi-matrix.mjs --update",
-    "contract:update": "node scripts/update-contract-baseline.mjs"
+    "contract:update": "node --import tsx scripts/update-contract-baseline.mjs"
   },
   "repository": {
     "type": "git",

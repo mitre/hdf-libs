@@ -6,8 +6,10 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// From src, through tsx, as build:components and build:api do — the generator's inputs
+// (the binding table, the goldens, the conventions, problems.yaml) are not in dist.
 const { generateApiDocument, contractDigest, API_VERSION } = await import(
-  join(HERE, '..', 'dist', 'index.js')
+  join(HERE, '..', 'src', 'generate-api.ts')
 );
 
 const target = join(HERE, '..', 'test', 'baseline', 'contract.json');

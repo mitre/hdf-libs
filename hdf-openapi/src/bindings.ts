@@ -5,6 +5,7 @@
 // legal table is.
 
 import { parse as parseYaml } from 'yaml';
+import { scopesFor } from './generate-api.js';
 
 /**
  * Every key the table may use. ADR-0008 §2 defines the grammar; anything outside this set
@@ -90,6 +91,8 @@ export interface ToolBinding {
   problems?: Record<string, string[]>;
   /** Whether the success response issues the document's ETag. */
   etag?: boolean;
+  /** Hand-set scopes, which §2 allows only on a synthetic operation. */
+  scopes?: string[];
 }
 
 export interface BindingTable {
@@ -189,6 +192,19 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
   const shapeNames = new Set([...fullShapes, ...(surface.conventions ?? [])]);
 
   for (const [name, binding] of Object.entries(table.synthetic ?? {})) {
+    // The hand-set scopes reach the document, so a value disagreeing with what its class
+    // means would silently widen or narrow the operation. Checked against the derivation
+    // rather than trusted or recomputed.
+    if (binding.class !== undefined && binding.scopes !== undefined) {
+      const derived = scopesFor(binding.class);
+      const declared = [...binding.scopes].sort().join(', ');
+      if (declared !== [...derived].sort().join(', ')) {
+        faults.push(
+          `synthetic ${name}: scopes [${declared}] disagree with class ${binding.class}, ` +
+            `which means [${[...derived].sort().join(', ')}]`,
+        );
+      }
+    }
     if (binding.success !== undefined && !(binding.success >= 200 && binding.success < 400)) {
       faults.push(`${name}: success ${binding.success} is not a success status`);
     }

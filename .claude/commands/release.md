@@ -230,7 +230,16 @@ ls site/public/schemas/*/v$NEW/index.json
 git add 'site/public/schemas/*/v$NEW/'
 ```
 
-If you forget this step, the archive 404s as soon as the next release ships and the rendered v$NEW snapshot is missing from the docs site. The site `pnpm exec vitepress build` smoke job in `ci.yml` won't catch this (it builds whatever's on disk locally) — only the post-deploy archive coverage suffers. Treat it as a release-time checklist item.
+**A released version's archive is immutable.** Before tagging, confirm that no `site/public/openapi/*/v*/` or `site/public/schemas/*/v*/` entry for an ALREADY-RELEASED version has changed in this release's diff — a consumer fetching a pinned `$id` or a pinned OpenAPI version must get the same bytes forever. Only the version being released may be added or rewritten:
+
+```bash
+# Versions whose archive changed since the last release tag; each one must be this release's.
+git diff --name-only "$(git describe --tags --abbrev=0)"..HEAD -- 'site/public/*/*/v*/index.json'
+```
+
+The generator cannot enforce this: it has no way to know which versions are released, and refusing every overwrite blocks iterating on an unreleased one. What it does enforce is that two different contracts cannot share a version — `hdf-openapi/test/baseline/contract.json` records the reference API's digest and fails when it moves under an unchanged `API_VERSION`. Re-recording with `pnpm run contract:update` is correct while that version is unreleased and wrong once it has shipped, which is what this step checks.
+
+If you forget the archive step, the archive 404s as soon as the next release ships and the rendered v$NEW snapshot is missing from the docs site. The site `pnpm exec vitepress build` smoke job in `ci.yml` won't catch this (it builds whatever's on disk locally) — only the post-deploy archive coverage suffers. Treat it as a release-time checklist item.
 
 ### Phase 3 — Current-version doc sweep *(minor/major only)*
 

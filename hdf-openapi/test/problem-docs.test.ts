@@ -89,17 +89,17 @@ describe('every problem type the API declares is documented', () => {
 
 describe('the problem-type table refuses a malformed entry', () => {
   const broken: [string, string, string][] = [
-    ['a missing field', 'x:\n  status: 404\n  owner: taxonomy\n  cause: c\n', 'expected cause,owner,remedy,status'],
-    ['a status outside 4xx/5xx', 'x:\n  status: 204\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'not a 4xx or 5xx'],
-    ['an unknown owner', 'x:\n  status: 404\n  owner: nobody\n  cause: c\n  remedy: r\n', 'has owner nobody'],
-    ['empty prose', 'x:\n  status: 404\n  owner: taxonomy\n  cause: "  "\n  remedy: r\n', 'has no cause'],
+    ['a missing field', 'x:\n  title: T\n  status: 404\n  owner: taxonomy\n  cause: c\n', 'expected cause,owner,remedy,status,title'],
+    ['a status outside 4xx/5xx', 'x:\n  title: T\n  status: 204\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'not a 4xx or 5xx'],
+    ['an unknown owner', 'x:\n  title: T\n  status: 404\n  owner: nobody\n  cause: c\n  remedy: r\n', 'has owner nobody'],
+    ['empty prose', 'x:\n  title: T\n  status: 404\n  owner: taxonomy\n  cause: "  "\n  remedy: r\n', 'has no cause'],
     ['a list instead of a mapping', '- one\n- two\n', 'did not parse to a mapping'],
     ['an entry that is not a mapping', 'x: 3\n', 'x is not a mapping'],
     // The key becomes a path segment in the site generator, so its SHAPE is as
     // load-bearing as its contents. Every value was validated here and the key was not.
-    ['a traversal key', '../../etc/x:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
-    ['an absolute key', '/etc/x:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
-    ['a key that is not kebab-case', 'Not_Kebab:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
+    ['a traversal key', '../../etc/x:\n  title: T\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
+    ['an absolute key', '/etc/x:\n  title: T\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
+    ['a key that is not kebab-case', 'Not_Kebab:\n  title: T\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
   ];
 
   it.each(broken)('refuses %s', (_label, yaml, message) => {

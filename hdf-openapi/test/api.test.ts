@@ -366,10 +366,16 @@ describe('the generator hard-fails rather than emitting a bad document', () => {
 });
 
 describe('the scope-failure responses carry what RFC 6750 and §3 require', () => {
-  it('the 403 is the insufficient-scope shape with the WWW-Authenticate header', () => {
+  // Two convention-owned types share 403, and RFC 9457 discriminates on `type`, so both are
+  // declared — no-active-organization was in the published table and in no operation, which
+  // left a client to read a tenancy failure as "ask for a wider scope".
+  it('the 403 declares both convention-owned types and the challenge header', () => {
     const r = (doc.components as { responses: Record<string, Record<string, unknown>> })
-      .responses.InsufficientScope!;
-    expect(JSON.stringify(r)).toContain('problems/insufficient-scope');
+      .responses.Forbidden!;
+    const examples = (r.content as Record<string, { examples: Record<string, unknown> }>)[
+      'application/problem+json'
+    ]!.examples;
+    expect(Object.keys(examples).sort()).toEqual(['insufficient-scope', 'no-active-organization']);
     expect(r.headers).toHaveProperty('WWW-Authenticate');
   });
 

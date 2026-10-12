@@ -3,95 +3,112 @@
 # dereference to human-readable documentation, and ADR-0008 §3 chose site-hosted URIs over
 # about:blank for that reason, so these pages are part of the contract rather than a nicety.
 #
-# `status` is cross-checked against the emitted document and ADR-0010 §6 by a test.
+# `title` is RFC 9457 §3.1.2's short human-readable summary — prose, not the machine code,
+# which `type` already carries. `status` is cross-checked against the emitted document and
+# ADR-0010 §6 by a test.
 # `remedy` is HTTP-facing on purpose: mcperr's own nextCall strings name MCP tools and
 # HDF_MCP_ROOT, which §2's rewrite map keeps off this surface entirely.
 
 ambiguous-format:
+  title: Ambiguous source format
   status: 422
   owner: taxonomy
   cause: The submitted document matched more than one source format, so no converter could be chosen for it.
   remedy: Re-submit with `from` set to the source format you intend. `GET /catalog/converters` lists the accepted values.
 
 delete-restricted:
+  title: Delete restricted by a citing document
   status: 409
   owner: service
   cause: Another stored document cites this one, and deleting it would leave that citation unresolvable.
   remedy: Remove or amend the citing documents first. The response details name them.
 
 document-not-found:
+  title: Document not found
   status: 404
   owner: taxonomy
   cause: No document is stored under the id the request addresses.
   remedy: Check the id. A deleted document stays absent, so re-create it with `POST /documents` if it should exist.
 
 handle-stale:
+  title: Stale document validator
   status: 412
   owner: taxonomy
   cause: The document changed after the ETag given in `If-Match` was issued, so the write was refused rather than applied over content the caller has not seen.
   remedy: Re-read the document, take the ETag from that response, and retry the write with it.
 
 held:
+  title: Document under legal hold
   status: 409
   owner: service
   cause: The document is under a legal hold, which forbids deletion while the hold stands.
   remedy: None is available to the caller. The hold is released by whoever placed it.
 
 insufficient-scope:
+  title: Insufficient scope
   status: 403
   owner: convention
   cause: The access token is valid, but carries none of the scopes the operation requires.
   remedy: Obtain a token with the scope named in the response and retry. Each operation's required scopes are declared in its `security` block.
 
 internal-error:
+  title: Internal error
   status: 500
   owner: taxonomy
   cause: The service failed in a way it does not attribute to the request.
   remedy: Retry once. If it persists, report it with the `instance` value from the response body, which identifies the failed request.
 
 no-active-organization:
+  title: No active organization
   status: 403
   owner: convention
   cause: The token authenticates a caller who has no organization selected, so the request cannot be scoped to one. This type carries no `WWW-Authenticate` header.
   remedy: Select an organization for the session and retry.
 
 no-converter:
+  title: No converter for that format
   status: 422
   owner: taxonomy
   cause: No converter is registered for the `from` format the request named.
   remedy: Choose a format listed by `GET /catalog/converters`.
 
 payload-too-large:
+  title: Payload too large
   status: 413
   owner: taxonomy
   cause: The request body is larger than the service accepts.
   remedy: Submit a smaller document, or ask the deployer to raise the configured limit.
 
 quota-exceeded:
+  title: Quota exceeded
   status: 429
   owner: taxonomy
   cause: The caller has exhausted a rate-limit or storage budget.
   remedy: Wait the interval given in `Retry-After`. The `RateLimit` headers on every response report the remaining budget.
 
 schema-invalid:
+  title: Document fails its schema
   status: 422
   owner: taxonomy
   cause: The body is well-formed JSON but does not satisfy the HDF schema for its document type.
   remedy: Read `errors[]` in the response, which gives a JSON Pointer, a line number and a message for each failing location, and correct the document.
 
 store-unavailable:
+  title: Document store unavailable
   status: 503
   owner: taxonomy
   cause: The document store is unreachable, so the request cannot be answered either way.
   remedy: Retry after the interval in `Retry-After`. Nothing was written.
 
 unsupported-media-type:
+  title: Unsupported media type
   status: 415
   owner: taxonomy
   cause: The request's `Content-Type` is not one the operation accepts.
   remedy: Send the media type the operation's `requestBody` declares.
 
 wrong-doc-type:
+  title: Wrong document type
   status: 422
   owner: taxonomy
   cause: The body is a valid HDF document, but of a type this operation does not accept.

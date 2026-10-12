@@ -9,6 +9,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 export type ProblemOwner = 'taxonomy' | 'convention' | 'service';
 
 export interface ProblemDoc {
+  title: string;
   status: number;
   owner: ProblemOwner;
   cause: string;
@@ -40,8 +41,8 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
     }
     const entry = value as Record<string, unknown>;
     const keys = Object.keys(entry).sort().join(',');
-    if (keys !== 'cause,owner,remedy,status') {
-      throw new Error(`problems.yaml: ${type} declares ${keys}, expected cause,owner,remedy,status`);
+    if (keys !== 'cause,owner,remedy,status,title') {
+      throw new Error(`problems.yaml: ${type} declares ${keys}, expected cause,owner,remedy,status,title`);
     }
     if (typeof entry.status !== 'number' || entry.status < 400 || entry.status > 599) {
       throw new Error(`problems.yaml: ${type} has status ${String(entry.status)}, not a 4xx or 5xx`);
@@ -49,7 +50,7 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
     if (typeof entry.owner !== 'string' || !OWNERS.has(entry.owner)) {
       throw new Error(`problems.yaml: ${type} has owner ${String(entry.owner)}`);
     }
-    for (const prose of ['cause', 'remedy'] as const) {
+    for (const prose of ['cause', 'remedy', 'title'] as const) {
       if (typeof entry[prose] !== 'string' || (entry[prose] as string).trim() === '') {
         throw new Error(`problems.yaml: ${type} has no ${prose}`);
       }

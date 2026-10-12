@@ -98,6 +98,26 @@ describe('the synthetic operations', () => {
     );
   });
 
+  // The hand-set value is what reaches the document now, so a disagreement with the class
+  // would widen or narrow an operation while the file still looked right.
+  it('faults hand-set scopes that disagree with the class', () => {
+    const planted = {
+      ...table,
+      synthetic: { probe: { class: 'admin', scopes: ['hdf:admin'] } },
+    };
+    expect(bindingFaults(planted, surface)).toContain(
+      'synthetic probe: scopes [hdf:admin] disagree with class admin, which means [hdf:admin, hdf:read, hdf:write]',
+    );
+  });
+
+  it('accepts hand-set scopes that agree with the class', () => {
+    const planted = {
+      ...table,
+      synthetic: { probe: { class: 'write', scopes: ['hdf:write', 'hdf:read'] } },
+    };
+    expect(bindingFaults(planted, surface).filter((f) => f.includes('scopes'))).toEqual([]);
+  });
+
   it('faults a declared success status that is not one', () => {
     const planted = { ...table, synthetic: { probe: { class: 'write', scopes: [], success: 418 } } };
     expect(bindingFaults(planted, surface)).toContain('probe: success 418 is not a success status');

@@ -209,6 +209,7 @@ synthetic:
     etag: true
     class: write
     scopes:
+      - hdf:read
       - hdf:write
     bodyRef: IngestRequest
     fullResponse: DocumentCreated
@@ -218,6 +219,8 @@ synthetic:
     path: /documents/{id}
     class: admin
     scopes:
+      - hdf:read
+      - hdf:write
       - hdf:admin
     # Declared, not derived: a synthetic operation raises no mcperr code, and the two 409
     # conditions are service concerns — a citing document restricting the delete (ADR-0009

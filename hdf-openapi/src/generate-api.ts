@@ -13,7 +13,9 @@ import { writeArtifact } from './write-artifact.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { FILESYSTEM_FIELDS, loadBindings, type BindingTable, type ToolBinding } from './bindings.js';
+import { DIALECT } from './components.js';
 import { loadConventions } from './conventions.js';
+import { loadProblemDocs } from './problems.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = join(HERE, '..', 'dist');
@@ -109,7 +111,8 @@ export const STRICTNESS_EXEMPT: Record<string, string> = {
   ValidationProblem: 'Problem plus §3\'s errors[]; it inherits RFC 9457\'s openness',
 };
 
-function problemRef(title: string, status: number, type: string): Record<string, unknown> {
+function problemRef(fallback: string, status: number, type: string): Record<string, unknown> {
+  const title = titleFor(type, fallback);
   return {
     description: title,
     content: {
@@ -143,8 +146,15 @@ function sharedResponses(): Record<string, unknown> {
         },
       },
     },
-    InsufficientScope: {
-      ...problemRef('Insufficient scope', 403, 'insufficient-scope'),
+    // Two types share this status, and RFC 9457 discriminates on `type`, so both are
+    // declared. no-active-organization is named by §3 and appeared in no operation, which
+    // left a generated client to fold a tenancy failure into insufficient-scope — whose
+    // published remedy is "obtain a token with the scope named in the response".
+    Forbidden: {
+      ...problemResponseForRefs(403, [
+        { type: 'insufficient-scope', title: 'insufficient-scope' },
+        { type: 'no-active-organization', title: 'no-active-organization' },
+      ]),
       headers: {
         'WWW-Authenticate': {
           schema: { type: 'string' },
@@ -382,12 +392,14 @@ interface Operation {
  */
 const CLASSES = new Set(['read', 'write', 'admin', 'documentOnly']);
 
-function scopesFor(cls: string): string[] {
+export function scopesFor(cls: string): string[] {
   if (!CLASSES.has(cls)) {
     throw new Error(`class ${cls} is not one of ${[...CLASSES].sort().join(', ')}`);
   }
+  // §3 makes them cumulative: a write requires hdf:write AS WELL AS hdf:read.
   if (cls === 'admin') return ['hdf:read', 'hdf:write', 'hdf:admin'];
   if (cls === 'write') return ['hdf:read', 'hdf:write'];
+  if (cls === 'documentOnly') return [];
   return ['hdf:read'];
 }
 
@@ -414,12 +426,12 @@ function problemResponseForRefs(status: number, refs: ProblemRef[]): Record<stri
   for (const ref of refs) {
     const value: Record<string, unknown> = {
       type: `${PROBLEM_BASE}/${ref.type}`,
-      title: ref.title,
+      title: titleFor(ref.type, ref.title),
       status,
     };
     // §3 gives SCHEMA_INVALID an `errors[]`, so the example a client copies shows one.
     // Without it the member exists in the schema and in no example.
-    if (ref.title === 'SCHEMA_INVALID') {
+    if (ref.type === 'schema-invalid') {
       value.errors = [
         { path: '/baselines/0/requirements/3/impact', line: 142, message: 'must be <= 1' },
       ];
@@ -438,6 +450,23 @@ function problemResponseFor(status: number, codes: string[]): Record<string, unk
     status,
     codes.map((code) => ({ type: PROBLEM_TYPES[code]!.type, title: code })),
   );
+}
+
+/**
+ * RFC 9457 §3.1.2 wants `title` to be a short human-readable summary that does not change
+ * from occurrence to occurrence. The derived path used the mcperr code, which is neither
+ * readable nor localizable and which `type` already carries, so the document shipped
+ * DOCUMENT_NOT_FOUND beside hand-authored prose for the conventional responses.
+ */
+let problemTitles: Record<string, string> | undefined;
+
+function titleFor(type: string, fallback: string): string {
+  // Read on first use, not at module load: the table is a build input that does not ship
+  // in dist, and importing this module must not depend on it being there.
+  problemTitles ??= Object.fromEntries(
+    Object.entries(loadProblemDocs()).map(([name, entry]) => [name, entry.title]),
+  );
+  return problemTitles[type] ?? fallback;
 }
 
 /** Type name -> the mcperr code that owns it, for resolving a declared problem type. */
@@ -470,7 +499,11 @@ function problemResponse(code: string): Record<string, unknown> {
     content: {
       'application/problem+json': {
         schema: { $ref: '#/components/schemas/Problem' },
-        example: { type: `${PROBLEM_BASE}/${type}`, title: code, status: PROBLEM_TYPES[code]!.status },
+        example: {
+          type: `${PROBLEM_BASE}/${type}`,
+          title: titleFor(type, code),
+          status: PROBLEM_TYPES[code]!.status,
+        },
       },
     },
   };
@@ -552,7 +585,7 @@ function retryAfterHeaders(): Record<string, unknown> {
 function conventionalResponses(hasBody: boolean): Record<string, unknown> {
   const responses: Record<string, unknown> = {
     '401': { $ref: '#/components/responses/Unauthorized' },
-    '403': { $ref: '#/components/responses/InsufficientScope' },
+    '403': { $ref: '#/components/responses/Forbidden' },
     '429': { $ref: '#/components/responses/TooManyRequests' },
     '500': { $ref: '#/components/responses/InternalError' },
     '503': { $ref: '#/components/responses/StoreUnavailable' },
@@ -1008,12 +1041,18 @@ function operationFor(
     parameters: parameters.length > 0 ? parameters : undefined,
     requestBody: requestBodyFor(binding, bodyFields, schemas, inputProperties),
     responses,
-    security: cls === 'documentOnly' ? [] : [{ bearerAuth: scopesFor(cls) }],
+    // §2 hand-sets scopes on a synthetic operation, so the hand-set value is what travels.
+    // It was computed from `class` and the declaration was never read, so the file looked
+    // authoritative while an operator narrowing it would have seen no change. bindingFaults
+    // holds it to scopesFor(class), so it is used and checked rather than one or neither.
+    security: cls === 'documentOnly' ? [] : [{ bearerAuth: binding.scopes ?? scopesFor(cls) }],
   };
 }
 
 export interface ApiDocument {
   openapi: string;
+  jsonSchemaDialect?: string;
+  servers?: { url: string; variables?: Record<string, { default: string; description?: string }> }[];
   info: Record<string, string>;
   paths: Record<string, Record<string, Operation>>;
   components: Record<string, unknown>;
@@ -1042,7 +1081,14 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
 
   const documentSchemas = new Set(Object.keys(componentsDoc.components.schemas));
   const schemas: Record<string, unknown> = { ...componentsDoc.components.schemas };
-  for (const c of conventions) schemas[c.name] = c.schema;
+  // The source files declare their dialect so an editor validates them, but the document
+  // states it once in jsonSchemaDialect — leaving $schema on five components had them
+  // declaring plain 2020-12 while the other 121 used the OpenAPI base dialect.
+  for (const c of conventions) {
+    schemas[c.name] = Object.fromEntries(
+      Object.entries(c.schema).filter(([key]) => key !== '$schema'),
+    );
+  }
   schemas.Problem = PROBLEM_SCHEMA;
   schemas.ValidationProblem = VALIDATION_PROBLEM_SCHEMA;
   // The reflected response shapes the table names, with the rewrite map applied so no MCP
@@ -1293,6 +1339,10 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
 
   const document: ApiDocument = {
     openapi: '3.1.1',
+    // Stated once, as the components document does. Without it the schemas here use the
+    // OpenAPI base dialect by default while five conventions components declared plain
+    // 2020-12 on themselves — two vocabulary sets inside one document.
+    jsonSchemaDialect: DIALECT,
     info: {
       title: 'HDF Reference API',
       version: API_VERSION,
