@@ -1091,6 +1091,18 @@ describe("a synthetic operation's declared statuses reach the document", () => {
 
   // §2 scopes If-Match to writes addressing a document, and a delete is one. It was absent
   // only because no MCP tool raises HANDLE_STALE for a delete, there being no MCP delete.
+  // scopesFor returned hdf:read for anything it did not recognise, so a mistyped class
+  // emitted a read-only scope on a write and suppressed If-Match with it.
+  it('refuses a class outside the declared vocabulary', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: {
+          synthetic: { probe: { method: 'delete', path: '/documents/{id}', class: 'writes', scopes: ['hdf:write'] } },
+        },
+      }),
+    ).toThrow(/class writes is not one of/);
+  });
+
   // A declared type the taxonomy already owns must agree with it, or the document would
   // carry one type URI under two statuses and a client could not branch on either.
   it('refuses a declared type whose status contradicts ADR-0010 §6', () => {

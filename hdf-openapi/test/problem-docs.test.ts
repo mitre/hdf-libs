@@ -95,6 +95,11 @@ describe('the problem-type table refuses a malformed entry', () => {
     ['empty prose', 'x:\n  status: 404\n  owner: taxonomy\n  cause: "  "\n  remedy: r\n', 'has no cause'],
     ['a list instead of a mapping', '- one\n- two\n', 'did not parse to a mapping'],
     ['an entry that is not a mapping', 'x: 3\n', 'x is not a mapping'],
+    // The key becomes a path segment in the site generator, so its SHAPE is as
+    // load-bearing as its contents. Every value was validated here and the key was not.
+    ['a traversal key', '../../etc/x:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
+    ['an absolute key', '/etc/x:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
+    ['a key that is not kebab-case', 'Not_Kebab:\n  status: 404\n  owner: taxonomy\n  cause: c\n  remedy: r\n', 'is not a problem type name'],
   ];
 
   it.each(broken)('refuses %s', (_label, yaml, message) => {

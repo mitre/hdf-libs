@@ -371,7 +371,17 @@ interface Operation {
 }
 
 /** Scopes for a class. Read-only tools never acquire a write scope. */
+/**
+ * The classes §3 defines. Closed rather than defaulting: `read` was the fallback for
+ * anything unrecognised, so a mistyped class emitted a read-only scope on a write — and
+ * suppressed If-Match with it, since `writes` derives from this same answer.
+ */
+const CLASSES = new Set(['read', 'write', 'admin', 'documentOnly']);
+
 function scopesFor(cls: string): string[] {
+  if (!CLASSES.has(cls)) {
+    throw new Error(`class ${cls} is not one of ${[...CLASSES].sort().join(', ')}`);
+  }
   if (cls === 'admin') return ['hdf:read', 'hdf:write', 'hdf:admin'];
   if (cls === 'write') return ['hdf:read', 'hdf:write'];
   return ['hdf:read'];

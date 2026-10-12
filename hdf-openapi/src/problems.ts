@@ -17,6 +17,13 @@ export interface ProblemDoc {
 
 const OWNERS = new Set<string>(['taxonomy', 'convention', 'service']);
 
+/**
+ * The site generator turns each key into a path segment, so a key that is not a bare
+ * kebab-case name would write outside the pages directory. Also the shape RFC 9457 type
+ * URIs are built from.
+ */
+const TYPE_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
 /** Loads the problem-type documentation, refusing a malformed or incomplete entry. */
 export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<string, ProblemDoc> {
   const parsed = parseYaml(readFileSync(file, 'utf-8')) as Record<string, unknown> | null;
@@ -27,6 +34,9 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
   for (const [type, value] of Object.entries(parsed)) {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
       throw new Error(`problems.yaml: ${type} is not a mapping`);
+    }
+    if (!TYPE_NAME.test(type)) {
+      throw new Error(`problems.yaml: ${JSON.stringify(type)} is not a problem type name`);
     }
     const entry = value as Record<string, unknown>;
     const keys = Object.keys(entry).sort().join(',');
