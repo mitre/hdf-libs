@@ -87,6 +87,10 @@ site/public/openapi/**
 !site/public/openapi/*/v*/
 !site/public/openapi/*/v*/**
 
+# The render test plants this to prove it no longer deletes a frozen archive. Re-ignored
+# after the negations above, which would otherwise make it a tracked-tree side effect.
+site/public/openapi/*/v0.0.0-frozen-archive-probe/
+
 # Claude Code — track commands and project rules, but not local machine settings
 .claude/settings.local.json
 
