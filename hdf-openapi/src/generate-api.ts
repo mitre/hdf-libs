@@ -8,7 +8,8 @@
 // ADR-0008 §2/§3 and ADR-0010 §6, consumed rather than reinterpreted.
 
 import { createHash } from 'crypto';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, mkdirSync } from 'fs';
+import { writeArtifact } from './write-artifact.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { FILESYSTEM_FIELDS, loadBindings, type BindingTable, type ToolBinding } from './bindings.js';
@@ -1007,7 +1008,7 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
 export function main(): void {
   const doc = generateApiDocument();
   mkdirSync(DIST, { recursive: true });
-  writeFileSync(join(DIST, 'hdf-api.oas.json'), `${JSON.stringify(doc, null, 2)}\n`);
+  writeArtifact(join(DIST, 'hdf-api.oas.json'), `${JSON.stringify(doc, null, 2)}\n`);
   process.stdout.write(
     `hdf-api.oas.json: ${Object.keys(doc.paths).length} paths at schema v${doc.info['x-hdf-schema-version']}\n`,
   );
