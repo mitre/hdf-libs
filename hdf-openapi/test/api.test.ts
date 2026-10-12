@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, ENVELOPE_EXAMPLE_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
+import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, ENVELOPE_EXAMPLE_EXEMPT, PROBLEM_TYPES, RESPONSE_SHAPE_EXEMPT, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
 import { bindingFaults, FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
 import { loadConventions } from '../src/conventions.js';
 
@@ -269,20 +269,36 @@ describe('the rewrite map strips MCP transport state from responses', () => {
   // Non-vacuity first: this check is worthless unless operations actually carry response
   // schemas. Before fullResponse was wired every operation declared a bare 200, and the
   // field scan below passed by having nothing to scan.
-  it('operations carry real response schemas to scan', () => {
-    const withSchema = Object.values(doc.paths)
+  // Read out of the DOCUMENT and compared to the exemption record, not counted from the
+  // binding table the generator also reads — that version decremented on both sides when a
+  // fullResponse was dropped and stayed green while the document lost a response shape.
+  it('every operation either describes its success body or is recorded as unable to', () => {
+    const shapeless = Object.values(doc.paths)
       .flatMap((item) => Object.values(item))
       .filter((op) => {
-        const ok = op.responses?.['200'] as { content?: Record<string, { schema?: unknown }> };
-        return ok?.content?.['application/json']?.schema !== undefined;
-      });
-    // Derived from the table rather than a literal: every binding that names a
-    // fullResponse must produce a schema, and a magic number would drift the moment the
-    // table changed — as it did when compliance and aggregate stopped naming one.
-    const expected = [...Object.values(table.tools ?? {}), ...Object.values(table.synthetic ?? {})]
-      .filter((b) => b.fullResponse !== undefined).length;
-    expect(expected).toBeGreaterThan(4);
-    expect(withSchema.length).toBe(expected);
+        const success = Object.entries(op.responses as Record<string, { content?: Record<string, { schema?: unknown }> }>)
+          .find(([status]) => Number(status) < 400);
+        if (success === undefined || success[0] === '204') return false;
+        return success[1].content?.['application/json']?.schema === undefined;
+      })
+      .map((op) => op.operationId)
+      .sort();
+    expect(shapeless).toEqual(Object.keys(RESPONSE_SHAPE_EXEMPT).sort());
+  });
+
+  // OpenAPI 3.1.1 §4.8.17: an absent `content` asserts an EMPTY body. Ten operations said
+  // that, so a generated client had `void` for the majority of the API.
+  it('no operation asserts an empty success body', () => {
+    const asserted = Object.entries(doc.paths).flatMap(([path, item]) =>
+      Object.entries(item)
+        .filter(([, op]) => {
+          const success = Object.entries(op.responses as Record<string, { content?: unknown }>)
+            .find(([status]) => Number(status) < 400);
+          return success !== undefined && success[0] !== '204' && success[1].content === undefined;
+        })
+        .map(([method]) => `${method.toUpperCase()} ${path}`),
+    );
+    expect(asserted).toEqual([]);
   });
 
   it.each(FORBIDDEN_OUTPUT_FIELDS)('no response shape exposes %s', (field) => {
@@ -547,19 +563,46 @@ describe('pagination is bounded, and the applied limit is echoed', () => {
   // and no fullResponse — it is paged with no registered row type — so it has no envelope
   // to echo into. That is a real gap, recorded on the card rather than papered over with
   // an untyped items array, which would itself be an unlisted open leaf.
-  it('the paged envelope echoes the limit it applied, per AIP-158', () => {
+  // AIP-158 is about echoing the limit the server APPLIED, so it only binds where a limit
+  // can be asked for. Only hdf_query exposes one upstream; emitting the member regardless
+  // advertised a page size no caller could set, and on hdf_convert a cursor it could never
+  // send back. The invariant is the biconditional, enforced at build time as well.
+  it('an envelope declares next and limit exactly where the operation accepts them', () => {
     const paged = Object.entries({ ...table.tools, ...table.synthetic }).filter(
       ([, b]) => b.items !== undefined && b.fullResponse !== undefined,
     );
     expect(paged.length).toBeGreaterThan(1);
     for (const [, binding] of paged) {
+      const op = doc.paths[binding.path!]![binding.method!]!;
       const schema = (
-        doc.paths[binding.path!]?.[binding.method!]?.responses['200'] as {
+        op.responses['200'] as {
           content: Record<string, { schema: { properties?: Record<string, unknown> } }>;
         }
       ).content['application/json']!.schema;
-      expect(Object.keys(schema.properties ?? {})).toContain('limit');
+      const members = Object.keys(schema.properties ?? {});
+      const query = (op.parameters ?? [])
+        .map((p) => resolveParam(p as Record<string, unknown>))
+        .filter((p) => p.in === 'query')
+        .map((p) => p.name);
+      for (const member of ['next', 'limit']) {
+        expect(members.includes(member), `${binding.path} ${member}`).toBe(query.includes(member));
+      }
     }
+  });
+
+  it('a paged operation that takes a limit still bounds it', () => {
+    const bounded = Object.values(doc.paths)
+      .flatMap((item) => Object.values(item))
+      .map((op) => {
+        // Not every operation has a 200 — the delete's success is 204.
+        const ok = op.responses['200'] as
+          | { content?: Record<string, { schema?: { properties?: Record<string, { maximum?: number }> } }> }
+          | undefined;
+        return ok?.content?.['application/json']?.schema?.properties?.limit;
+      })
+      .filter((limit): limit is { maximum?: number } => limit !== undefined);
+    expect(bounded.length, 'no envelope declares a limit, so this could not fail').toBeGreaterThan(0);
+    for (const limit of bounded) expect(limit.maximum).toBe(MAX_PAGE_SIZE);
   });
 });
 
@@ -1065,6 +1108,53 @@ describe('the synthetic operations declare an error surface too', () => {
 // callable, and problems.json told callers to read a header nothing sent. These assert the
 // general property rather than the two instances, so a third conditional operation cannot
 // repeat it.
+// Every fullShapes entry is registered as a component, so a shape the MCP exposes but no
+// operation references ships as dead weight. The two that do are the parts of the
+// compliance reply its exemption names, kept because they are what a whole-response shape
+// for it would be built from — named here so a third cannot appear quietly.
+describe('the document carries no component it does not use', () => {
+  const UNREFERENCED_BY_DESIGN = ['engine.statusCounts', 'engine.thresholdConfig'];
+
+  it('only the shapes recorded as parts of an undescribed reply are unreferenced', () => {
+    const referenced = new Set(
+      [...JSON.stringify(doc).matchAll(/#\/components\/schemas\/([^"]+)/g)].map((m) => m[1]!),
+    );
+    const names = Object.keys((doc.components as { schemas: Record<string, unknown> }).schemas);
+    expect(names.length).toBeGreaterThan(100);
+    expect(names.filter((n) => !referenced.has(n)).sort()).toEqual([...UNREFERENCED_BY_DESIGN].sort());
+  });
+
+  it.each(UNREFERENCED_BY_DESIGN)('%s is a part of the reply hdf_compliance cannot describe', (name) => {
+    expect(RESPONSE_SHAPE_EXEMPT.hdf_compliance).toContain(name);
+  });
+});
+
+describe('the response-shape exemptions are reasoned and load-bearing', () => {
+  const entries = Object.entries(RESPONSE_SHAPE_EXEMPT);
+
+  it('there are exemptions to check', () => {
+    expect(entries.length).toBeGreaterThan(4);
+  });
+
+  it.each(entries)('%s gives a reason', (_name, reason) => {
+    expect(reason.length).toBeGreaterThan(20);
+  });
+
+  // The same shape as STRICTNESS_EXEMPT's guard: delete the entry and the generator must
+  // refuse, so an exemption that stopped being needed fails instead of lingering.
+  it.each(Object.keys(RESPONSE_SHAPE_EXEMPT))('%s is load-bearing — removing it refuses', (name) => {
+    const saved = RESPONSE_SHAPE_EXEMPT[name]!;
+    delete RESPONSE_SHAPE_EXEMPT[name];
+    try {
+      expect(() => generateApiDocument()).toThrow(
+        new RegExp(`\\(${name}\\) publishes a success body with no schema`),
+      );
+    } finally {
+      RESPONSE_SHAPE_EXEMPT[name] = saved;
+    }
+  });
+});
+
 describe('a conditional write can obtain the validator it requires', () => {
   const conditional = Object.entries(doc.paths).flatMap(([path, item]) =>
     Object.entries(item)

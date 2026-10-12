@@ -576,6 +576,29 @@ function conventionalResponses(hasBody: boolean): Record<string, unknown> {
 export const MAX_PAGE_SIZE = 1000;
 
 /**
+ * Operations whose success body this document cannot describe, each with the reason.
+ *
+ * Recorded here rather than left to a comment in the binding table, because every other
+ * deliberate omission in this generator carries a typed entry, a reason and a reachability
+ * test — and this one is the largest. An operation that emits no response schema and is
+ * absent from this map fails the build.
+ */
+export const RESPONSE_SHAPE_EXEMPT: Record<string, string> = {
+  hdf_compliance:
+    'the MCP registers engine.statusCounts and engine.thresholdConfig, which are parts of the reply rather than the reply',
+  hdf_aggregate:
+    'the MCP registers no whole-response shape for the cross-document aggregate',
+  hdf_inspect: 'the MCP registers no whole-response shape for the structure walk',
+  hdf_validate: 'the MCP registers no whole-response shape for a validation report',
+  hdf_author: 'the MCP registers no whole-response shape for an authored document',
+  hdf_apply_amendment: 'the MCP registers no whole-response shape for an amended document',
+  'hdf-converter-catalog': 'a resource binding names a method and a path only, so the grammar cannot carry a shape',
+  'hdf-enum': 'a resource binding names a method and a path only, so the grammar cannot carry a shape',
+  'hdf-schema-whole': 'a resource binding names a method and a path only, so the grammar cannot carry a shape',
+  'hdf-schema-slice': 'a resource binding names a method and a path only, so the grammar cannot carry a shape',
+};
+
+/**
  * One query or path parameter, with the fixed rewrite map applied.
  *
  * `page` becomes the opaque cursor `next`; a document reference placed in the path becomes
@@ -659,7 +682,15 @@ function envelopeExample(
 
 function okResponse(binding: ToolBinding, capture?: Record<string, unknown>): Record<string, unknown> {
   const named = [binding.fullResponse ?? []].flat();
-  if (named.length === 0) return { description: 'Success' };
+  if (named.length === 0) {
+    // An absent `content` ASSERTS an empty body (OpenAPI 3.1.1 §4.8.17) — the format has
+    // no third "shape not described yet" state. A media type with no schema makes the
+    // weaker claim that is true, and a consumer generates `unknown` rather than `void`.
+    return {
+      description: 'Success. The body is JSON whose shape this document does not yet describe.',
+      content: { 'application/json': {} },
+    };
+  }
   // One name is the shape; several are the set the table records — mode x verbosity for
   // diff, docType for open.
   //
@@ -680,17 +711,26 @@ function okResponse(binding: ToolBinding, capture?: Record<string, unknown>): Re
 
   // The envelope: the named row shape under `items`, with the cursor the rewrite map
   // substitutes for the MCP's page index.
+  //
+  // `next` and `limit` appear only where the tool actually exposes the input behind them.
+  // Emitting them unconditionally advertised paging that does not exist: hdf_convert has
+  // neither a page index nor a limit and was given both, so the document promised a cursor
+  // no operation accepts; hdf_diff pages but takes no limit, so it advertised a page size
+  // that cannot be asked for. Only hdf_query exposes a limit upstream.
+  const fields = binding.fields ?? {};
+  const pages = fields.page !== undefined;
+  const bounded = fields.limit !== undefined;
   const envelope = {
     type: 'object',
     additionalProperties: false,
     required: [items],
     properties: {
       [items]: { type: 'array', items: schema },
-      next: { type: 'string', description: 'Cursor for the following page.' },
+      ...(pages ? { next: { type: 'string', description: 'Cursor for the following page.' } } : {}),
       total: { type: 'integer' },
       // AIP-158: the server echoes the limit it actually applied, which may be
       // lower than the one asked for.
-      limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE },
+      ...(bounded ? { limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE } } : {}),
       // A comparison-level rollup, where the tool returns one. It is envelope
       // data rather than a row, and the envelope closes itself, so without a
       // declared member the response could not carry it at all. Three of its ten
@@ -977,6 +1017,59 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
   }
 
   // ---- hard-fails. Each is a refusal to emit, not a warning to ignore. ----
+
+  // Paging the document advertises must be paging a caller can drive. An envelope member
+  // with no matching input is a capability that does not exist; an input with no member is
+  // a cursor the caller can never receive back.
+  for (const [path, item] of Object.entries(paths)) {
+    for (const [method, op] of Object.entries(item)) {
+      const query = new Set(
+        (op.parameters ?? [])
+          .map((p) => p as { name?: string; in?: string })
+          .filter((p) => p.in === 'query')
+          .map((p) => p.name),
+      );
+      const success = Object.entries(op.responses as Record<string, { content?: Record<string, { schema?: { properties?: Record<string, unknown> } }> }>)
+        .find(([status]) => Number(status) < 400);
+      const properties = success?.[1].content?.['application/json']?.schema?.properties;
+      if (properties === undefined) continue;
+      for (const member of ['next', 'limit'] as const) {
+        const declared = properties[member] !== undefined;
+        if (declared !== query.has(member)) {
+          throw new Error(
+            `${method.toUpperCase()} ${path} (${op.operationId}) ${declared ? 'returns' : 'accepts'} ` +
+              `${member} and does not ${declared ? 'accept' : 'return'} it`,
+          );
+        }
+      }
+      // §3 requires the page size to carry a ceiling, and the only non-vacuous place to
+      // check it is where a limit actually exists.
+      const limit = properties.limit as { maximum?: number } | undefined;
+      if (limit !== undefined && typeof limit.maximum !== 'number') {
+        throw new Error(`${op.operationId}: limit carries no maximum, which §3 requires`);
+      }
+    }
+  }
+
+  // An operation publishing a success body with no schema, not recorded as exempt. The
+  // document would promise a shape it never names and nothing would say so.
+  for (const [path, item] of Object.entries(paths)) {
+    for (const [method, op] of Object.entries(item)) {
+      const success = Object.entries(op.responses as Record<string, { content?: Record<string, { schema?: unknown }> }>)
+        .find(([status]) => Number(status) < 400);
+      if (success === undefined) continue;
+      const [status, response] = success;
+      if (status === '204') continue;
+      const described = response.content?.['application/json']?.schema !== undefined;
+      if (described) continue;
+      if (RESPONSE_SHAPE_EXEMPT[op.operationId] === undefined) {
+        throw new Error(
+          `${method.toUpperCase()} ${path} (${op.operationId}) publishes a success body with no schema ` +
+            'and is not in RESPONSE_SHAPE_EXEMPT; name the shape or record why it has none',
+        );
+      }
+    }
+  }
 
   // An MCP filesystem input that reached a placement rather than a drop.
   for (const [tool, binding] of Object.entries(table.tools ?? {})) {

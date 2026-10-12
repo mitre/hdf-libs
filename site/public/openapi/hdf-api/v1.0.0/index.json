@@ -781,7 +781,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -956,7 +959,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -1107,7 +1113,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -1263,11 +1272,6 @@
                     "total": {
                       "type": "integer"
                     },
-                    "limit": {
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 1000
-                    },
                     "summary": {
                       "$ref": "#/components/schemas/diff.summary"
                     }
@@ -1305,7 +1309,6 @@
                     }
                   ],
                   "total": 2,
-                  "limit": 2,
                   "summary": {
                     "absent": 0,
                     "fixed": 1,
@@ -1482,7 +1485,10 @@
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -1654,17 +1660,8 @@
                         "$ref": "#/components/schemas/convert.batch.entry"
                       }
                     },
-                    "next": {
-                      "type": "string",
-                      "description": "Cursor for the following page."
-                    },
                     "total": {
                       "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 1000
                     }
                   }
                 }
@@ -1865,7 +1862,10 @@
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "ETag": {
                 "$ref": "#/components/headers/ETag"
@@ -2035,7 +2035,10 @@
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "ETag": {
                 "$ref": "#/components/headers/ETag"
@@ -2449,7 +2452,10 @@
         "summary": "GET /catalog/converters",
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -2500,7 +2506,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -2551,7 +2560,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
@@ -2610,7 +2622,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Success. The body is JSON whose shape this document does not yet describe.",
+            "content": {
+              "application/json": {}
+            },
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"
