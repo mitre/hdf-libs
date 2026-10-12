@@ -276,14 +276,23 @@
             "name": "sources",
             "in": "query",
             "required": false,
+            "description": "instead of source: several results documents combined as one set, each {id}",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "status",
             "in": "query",
             "required": false,
+            "description": "result statuses to match (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {
@@ -302,6 +311,9 @@
             "name": "severity",
             "in": "query",
             "required": false,
+            "description": "severities to match (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {
@@ -320,6 +332,7 @@
             "name": "verbosity",
             "in": "query",
             "required": false,
+            "description": "how much detail each row carries",
             "schema": {
               "type": "string",
               "enum": [
@@ -332,6 +345,9 @@
             "name": "fields",
             "in": "query",
             "required": false,
+            "description": "opt-in correlation fields to add per row",
+            "style": "form",
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {
@@ -349,6 +365,7 @@
             "name": "baseline",
             "in": "query",
             "required": false,
+            "description": "baseline name, glob allowed",
             "schema": {
               "type": "string"
             }
@@ -357,22 +374,34 @@
             "name": "baselineLabel",
             "in": "query",
             "required": false,
+            "description": "baseline labels as key:value, glob on value (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "cci",
             "in": "query",
             "required": false,
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "cvss",
             "in": "query",
             "required": false,
+            "description": "CVSS score, computed else base, highest entry; e.g. >=7",
             "schema": {
               "type": "string"
             }
@@ -381,22 +410,35 @@
             "name": "cwe",
             "in": "query",
             "required": false,
+            "description": "CWE ids (OR); reads cwe[] only, not tags",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "disposition",
             "in": "query",
             "required": false,
+            "description": "governing override or POA&M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "epss",
             "in": "query",
             "required": false,
+            "description": "EPSS exploit probability (not percentile); e.g. >=0.5",
             "schema": {
               "type": "string"
             }
@@ -405,6 +447,7 @@
             "name": "id",
             "in": "query",
             "required": false,
+            "description": "requirement/STIG ID, GID, or group title; exact by default, a * or ? wildcard globs",
             "schema": {
               "type": "string"
             }
@@ -413,6 +456,7 @@
             "name": "impact",
             "in": "query",
             "required": false,
+            "description": "effective impact (after overrides); e.g. >0.5, =0",
             "schema": {
               "type": "string"
             }
@@ -421,6 +465,7 @@
             "name": "kev",
             "in": "query",
             "required": false,
+            "description": "CISA known-exploited: true | false (false includes no KEV data)",
             "schema": {
               "type": "string"
             }
@@ -440,15 +485,21 @@
             "name": "nist",
             "in": "query",
             "required": false,
+            "description": "NIST controls, globs allowed (AC-*)",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "next",
             "in": "query",
             "required": false,
-            "description": "Opaque cursor from a previous response. Replaces the MCP page index.",
+            "description": "Opaque cursor from a previous response. Omit it to read the first page.",
             "schema": {
               "type": "string"
             }
@@ -457,14 +508,21 @@
             "name": "poamType",
             "in": "query",
             "required": false,
+            "description": "kind of the governing POA&M: remediation|mitigation|riskAcceptance|vendorDependency (OR); disposition reports every plan as poam",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "poams",
             "in": "query",
             "required": false,
+            "description": "valid | none-valid (none, empty, or lapsed)",
             "schema": {
               "type": "string"
             }
@@ -473,6 +531,7 @@
             "name": "rawImpact",
             "in": "query",
             "required": false,
+            "description": "impact before overrides; same grammar",
             "schema": {
               "type": "string"
             }
@@ -481,6 +540,7 @@
             "name": "search",
             "in": "query",
             "required": false,
+            "description": "text match over id/title/descriptions",
             "schema": {
               "type": "string"
             }
@@ -489,8 +549,14 @@
             "name": "tag",
             "in": "query",
             "required": false,
+            "description": "key:value (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           }
         ],
@@ -751,14 +817,21 @@
             "name": "sources",
             "in": "query",
             "required": false,
+            "description": "instead of source: several results documents combined as one set, each {id}",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "groupBy",
             "in": "query",
             "required": false,
+            "description": "bucketing dimension for the breakdown",
             "schema": {
               "type": "string",
               "enum": [
@@ -774,8 +847,17 @@
             "name": "threshold",
             "in": "query",
             "required": false,
+            "description": "threshold spec: {id} to a YAML/JSON file, or {inline} object",
             "schema": {
-              "type": "string"
+              "additionalProperties": false,
+              "properties": {
+                "inline": {
+                  "additionalProperties": true,
+                  "description": "inline threshold spec (compliance/passed/failed/... bounds)",
+                  "type": "object"
+                }
+              },
+              "type": "object"
             }
           }
         ],
@@ -899,14 +981,23 @@
             "name": "sources",
             "in": "query",
             "required": false,
+            "description": "documents to aggregate, each {id}",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "status",
             "in": "query",
             "required": false,
+            "description": "result statuses to match (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {
@@ -925,6 +1016,9 @@
             "name": "severity",
             "in": "query",
             "required": false,
+            "description": "severities to match (OR)",
+            "style": "form",
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {
@@ -943,15 +1037,21 @@
             "name": "nist",
             "in": "query",
             "required": false,
+            "description": "NIST controls, globs allowed (AC-*)",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "name": "next",
             "in": "query",
             "required": false,
-            "description": "Opaque cursor from a previous response. Replaces the MCP page index.",
+            "description": "Opaque cursor from a previous response. Omit it to read the first page.",
             "schema": {
               "type": "string"
             }
@@ -1085,6 +1185,7 @@
             "name": "section",
             "in": "query",
             "required": false,
+            "description": "one structural section (validity depends on doc type)",
             "schema": {
               "type": "string"
             }
@@ -1093,6 +1194,7 @@
             "name": "verbosity",
             "in": "query",
             "required": false,
+            "description": "how much detail the summary carries",
             "schema": {
               "type": "string",
               "enum": [
@@ -1105,7 +1207,7 @@
             "name": "next",
             "in": "query",
             "required": false,
-            "description": "Opaque cursor from a previous response. Replaces the MCP page index.",
+            "description": "Opaque cursor from a previous response. Omit it to read the first page.",
             "schema": {
               "type": "string"
             }
@@ -1188,6 +1290,7 @@
             "name": "from",
             "in": "query",
             "required": false,
+            "description": "the 'before' document as {id}",
             "schema": {
               "type": "string"
             }
@@ -1196,6 +1299,7 @@
             "name": "to",
             "in": "query",
             "required": false,
+            "description": "the 'after' document as {id}",
             "schema": {
               "type": "string"
             }
@@ -1204,6 +1308,7 @@
             "name": "mode",
             "in": "query",
             "required": false,
+            "description": "which document pair to compare",
             "schema": {
               "type": "string",
               "enum": [
@@ -1216,6 +1321,7 @@
             "name": "verbosity",
             "in": "query",
             "required": false,
+            "description": "how much detail each change carries",
             "schema": {
               "type": "string",
               "enum": [
@@ -1228,7 +1334,7 @@
             "name": "next",
             "in": "query",
             "required": false,
-            "description": "Opaque cursor from a previous response. Replaces the MCP page index.",
+            "description": "Opaque cursor from a previous response. Omit it to read the first page.",
             "schema": {
               "type": "string"
             }
@@ -1438,6 +1544,7 @@
             "name": "mode",
             "in": "query",
             "required": false,
+            "description": "which check to run",
             "schema": {
               "type": "string",
               "enum": [
@@ -1451,6 +1558,7 @@
             "name": "docType",
             "in": "query",
             "required": false,
+            "description": "optional document type to validate against in schema mode (e.g. hdf-results); defaults to the detected type",
             "schema": {
               "type": "string"
             }
@@ -1586,6 +1694,7 @@
             "name": "from",
             "in": "query",
             "required": false,
+            "description": "source format (e.g. nessus, gosec); auto-detected when omitted",
             "schema": {
               "type": "string"
             }

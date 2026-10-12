@@ -611,6 +611,24 @@ export const RESPONSE_SHAPE_EXEMPT: Record<string, string> = {
  * none to copy: prerequisite (a) left `hdf_convert.from` a bare string, so the
  * converter-catalog resource is the only vocabulary this document can point at.
  */
+/**
+ * A query parameter carries scalars, so a document reference the rewrite map has reduced to
+ * a lone `id` becomes that id. `?sources=<id>&sources=<id>` is the serialisable form; an
+ * array of one-member objects is not.
+ */
+function inQueryPosition(shape: Record<string, unknown>): Record<string, unknown> {
+  const properties = shape.properties as Record<string, unknown> | undefined;
+  if (properties !== undefined && Object.keys(properties).length === 1 && properties.id !== undefined) {
+    const id = properties.id as Record<string, unknown>;
+    return { ...id, ...(shape.description !== undefined ? { description: shape.description } : {}) };
+  }
+  const items = shape.items as Record<string, unknown> | undefined;
+  if (items !== undefined && !Array.isArray(items)) {
+    return { ...shape, items: inQueryPosition(items) };
+  }
+  return shape;
+}
+
 function parameterFor(
   field: string,
   placement: string,
@@ -619,10 +637,25 @@ function parameterFor(
 ): Record<string, unknown> {
   const name = placement === 'path' ? 'id' : field === 'page' ? 'next' : field;
 
-  let schema: Record<string, unknown> = { type: 'string' };
-  let description: string | undefined;
+  // The declared shape, carried through the rewrite map's input half, rather than a bare
+  // string: `sources` is an array of document references upstream and was emitted as
+  // `string` on the parameter naming WHICH DOCUMENTS ARE READ, and the descriptions that
+  // held the only grammar these filters have — `>=7`, `valid | none-valid` — were dropped.
+  // rewriteInputShape is declared over `unknown` because it walks arbitrary schema nodes;
+  // a parameter's declared schema is always an object, and an empty one falls through to
+  // the string default below.
+  const rewritten = rewriteInputShape(declared);
+  let schema: Record<string, unknown> = inQueryPosition(
+    rewritten !== null && typeof rewritten === 'object' && !Array.isArray(rewritten)
+      ? { ...(rewritten as Record<string, unknown>) }
+      : {},
+  );
+  let description = typeof schema.description === 'string' ? schema.description : undefined;
+  delete schema.description;
+  if (Object.keys(schema).length === 0) schema = { type: 'string' };
   if (field === 'page') {
-    description = 'Opaque cursor from a previous response. Replaces the MCP page index.';
+    schema = { type: 'string' };
+    description = 'Opaque cursor from a previous response. Omit it to read the first page.';
   } else if (field === 'limit') {
     schema = { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE };
     description = `Page size. An over-limit value is coerced down to ${MAX_PAGE_SIZE} and the effective limit echoed in the response.`;
@@ -642,6 +675,9 @@ function parameterFor(
     in: placement === 'path' ? 'path' : 'query',
     required: placement === 'path',
     ...(description ? { description } : {}),
+    // Stated rather than defaulted, so a generated client serialises a repeated filter the
+    // way the service reads it.
+    ...(schema.type === 'array' ? { style: 'form', explode: true } : {}),
     schema,
   };
 }

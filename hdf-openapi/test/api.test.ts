@@ -1112,6 +1112,36 @@ describe('the synthetic operations declare an error surface too', () => {
 // operation references ships as dead weight. The two that do are the parts of the
 // compliance reply its exemption names, kept because they are what a whole-response shape
 // for it would be built from — named here so a third cannot appear quietly.
+// §2's rewrite map keeps MCP vocabulary off the HTTP surface. Parameter descriptions now
+// come from the MCP's own input schemas, so the rule has to cover prose and not only
+// property names, which propertyNamesIn already guards.
+describe('no description names the transport it was derived from', () => {
+  const descriptions: [string, string][] = [];
+  const walk = (node: unknown, where: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((v, i) => walk(v, `${where}/${i}`));
+      return;
+    }
+    if (node === null || typeof node !== 'object') return;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'description' && typeof value === 'string') descriptions.push([where, value]);
+      else walk(value, `${where}/${key}`);
+    }
+  };
+  walk(doc, '');
+
+  it('there are descriptions to check', () => {
+    expect(descriptions.length).toBeGreaterThan(50);
+  });
+
+  it('none names an MCP tool, an MCP environment variable, or the MCP itself', () => {
+    const leaks = descriptions
+      .filter(([, text]) => /HDF_MCP_|\bhdf_[a-z_]+|\bMCP\b/.test(text))
+      .map(([where, text]) => `${where}: ${text}`);
+    expect(leaks).toEqual([]);
+  });
+});
+
 describe('the document carries no component it does not use', () => {
   const UNREFERENCED_BY_DESIGN = ['engine.statusCounts', 'engine.thresholdConfig'];
 
