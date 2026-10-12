@@ -573,6 +573,34 @@ function conventionalResponses(hasBody: boolean): Record<string, unknown> {
  * own `limit` is unbounded, with 0 meaning all — so nothing upstream is being quoted.
  * Raise it here and the generated document changes in one place.
  */
+/**
+ * The reference API's own semver. ADR-0008 §6 gives this document a version independent of
+ * the schema release train, and §4 says what moves it. It is a reviewed value, not a
+ * derived one — a digest can tell you the contract changed, never whether the change was
+ * breaking — so the test baseline refuses a changed digest under an unchanged version.
+ */
+export const API_VERSION = '2.0.0';
+
+/** The contract's identity: everything but `info`, which carries this value. */
+export function contractDigest(document: ApiDocument): string {
+  const rest = Object.fromEntries(
+    Object.entries(document).filter(([key]) => key !== 'info'),
+  );
+  return createHash('sha256').update(stableStringify(rest)).digest('hex');
+}
+
+/** Key-sorted JSON, so a reordering in the generator is not a contract change. */
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, inner: unknown) => {
+    if (inner !== null && typeof inner === 'object' && !Array.isArray(inner)) {
+      return Object.fromEntries(
+        Object.entries(inner as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)),
+      );
+    }
+    return inner;
+  });
+}
+
 export const MAX_PAGE_SIZE = 1000;
 
 /**
@@ -1263,14 +1291,20 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     }
   }
 
-  return {
+  const document: ApiDocument = {
     openapi: '3.1.1',
     info: {
       title: 'HDF Reference API',
-      version: '1.0.0',
+      version: API_VERSION,
       license: { name: 'Apache-2.0', identifier: 'Apache-2.0' },
       'x-hdf-schema-version': componentsDoc.info.version,
       'x-hdf-mcp-golden-sha': createHash('sha256').update(contractRaw).digest('hex'),
+      // Over the whole document with `info` excluded. The two shas above cover two of the
+      // three inputs — the components document and the MCP golden — and neither covers the
+      // third, the binding table and the hand-authored conventions, which is where every
+      // breaking change in revisions 17 to 19 came from. This also moves when the generator
+      // changes, which no input sha can see.
+      'x-hdf-contract-digest': '',
     } as unknown as Record<string, string>,
     paths,
     components: {
@@ -1294,6 +1328,11 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       },
     },
   };
+
+  // Filled after the fact: the digest covers the document it describes, so it cannot be
+  // one of its own inputs.
+  (document.info as Record<string, string>)['x-hdf-contract-digest'] = contractDigest(document);
+  return document;
 }
 
 export function main(): void {

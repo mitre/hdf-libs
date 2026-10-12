@@ -155,9 +155,20 @@ export function generateOpenapiDocs() {
     }
 
     // Same shape as the schema archive: <name>/v<version>/index.json.
+    // The archive is one frozen document per released version, and the key is the
+    // document's own info.version — so a changed contract under an unchanged version
+    // silently overwrote the frozen copy of the earlier one. Refuse instead.
     const archiveDir = path.join(PUBLIC_DIR, document.name, `v${version}`);
+    const archived = path.join(archiveDir, 'index.json');
+    if (fs.existsSync(archived) && fs.readFileSync(archived, 'utf-8') !== raw) {
+      throw new Error(
+        `${document.name} v${version} is already archived with different content. The archive ` +
+          'freezes one document per version: bump the document\'s version rather than ' +
+          'replacing a published one.',
+      );
+    }
     fs.mkdirSync(archiveDir, { recursive: true });
-    fs.writeFileSync(path.join(archiveDir, 'index.json'), raw);
+    fs.writeFileSync(archived, raw);
 
     const base = '/hdf-libs/openapi';
     fs.writeFileSync(
