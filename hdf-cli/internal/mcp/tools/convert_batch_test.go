@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -43,9 +44,15 @@ func asEntries(t *testing.T, ms []map[string]any) []fileConvertSummary {
 
 // writeInRootPath stages a fixture at a (possibly nested) path under
 // HDF_MCP_ROOT, creating parent directories as needed.
-func writeInRootPath(t *testing.T, rel string, content []byte) {
+func writeInRootPath(t testing.TB, rel string, content []byte) {
 	t.Helper()
-	full := filepath.Join(os.Getenv("HDF_MCP_ROOT"), rel)
+	// Same precondition as writeInRoot: with no root, MkdirAll would build the
+	// tree relative to the package source directory.
+	root := os.Getenv("HDF_MCP_ROOT")
+	if root == "" {
+		t.Fatalf("writeInRootPath(%s): HDF_MCP_ROOT is unset — set it first", rel)
+	}
+	full := filepath.Join(root, rel)
 	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
 		t.Fatalf("mkdir for %s: %v", rel, err)
 	}
@@ -494,5 +501,34 @@ func TestHdfConvertBatch_UnretainedEntryCarriesNotice(t *testing.T) {
 		if !strings.Contains(e.Notice, "output") {
 			t.Errorf("entry %s: expected a persist-the-document notice, got %q", e.InputPath, e.Notice)
 		}
+	}
+}
+
+// The sibling of TestWriteInRoot_FailsWhenRootUnset. Both helpers MkdirAll the
+// parent, so the defect is the same shape in both.
+func TestWriteInRootPath_FailsWhenRootUnset(t *testing.T) {
+	const probeDir = "writeinrootpath-guard-probe"
+	rel := filepath.Join(probeDir, "host1", "in.json")
+	t.Setenv("HDF_MCP_ROOT", "")
+	t.Cleanup(func() { _ = os.RemoveAll(probeDir) })
+
+	rec := &fatalTB{TB: t}
+	rec.run(func() { writeInRootPath(rec, rel, []byte("{}")) })
+
+	if _, err := os.Stat(probeDir); !errors.Is(err, fs.ErrNotExist) {
+		wd, _ := os.Getwd()
+		t.Errorf("writeInRootPath created %s/ inside the working directory %s (stat: %v)", probeDir, wd, err)
+	}
+	if !rec.fired {
+		t.Error("writeInRootPath with no HDF_MCP_ROOT must fail the test, not pick a location")
+	}
+	// rec.fired alone cannot tell the guard's Fatalf from the mkdir or write one,
+	// so assert the cause. The paren mirrors writeInRoot's assertion, where it IS
+	// load-bearing: that name is a prefix of this one.
+	if !strings.Contains(rec.msg, "HDF_MCP_ROOT") {
+		t.Errorf("the failure must name the missing precondition, got %q", rec.msg)
+	}
+	if !strings.Contains(rec.msg, "writeInRootPath(") {
+		t.Errorf("the failure must name the helper, got %q", rec.msg)
 	}
 }
