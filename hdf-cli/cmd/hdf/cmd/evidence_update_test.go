@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -1300,4 +1301,379 @@ func TestEvidenceUpdate_RetypeRefusalNamesTheStoredSpelling(t *testing.T) {
 	assert.Contains(t, err.Error(), "System.json is already recorded",
 		"the refusal names the stored spelling, which is the entry to remove")
 	assert.NoFileExists(t, out)
+}
+
+// update REPORTS that the incoming file is already named by a reference it deliberately
+// did not match. Two different names for one file — a hardlink, or an absolute reference
+// beside a relative one — are two references the operator recorded, and merging them
+// would discard one; that stays settled and is guarded by
+// TestEvidenceUpdate_TwoNamesForOneFileStaySeparateReferences.
+//
+// What was wrong was the SILENCE. update appended a second entry, left the first carrying
+// a stale checksum, and exited 0; the operator found out one command later when
+// verification failed and bundle refused the package, with nothing pointing at the cause.
+// Reported at update time, while they can still act on it.
+func TestEvidenceUpdate_ReportsAnotherReferenceNamingTheSameFile(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	// The package records the ABSOLUTE spelling, which is what build writes when handed a
+	// --results outside the package directory. packageRelativeRef turns the incoming path
+	// into "scans/rhel9.json", so the two are one file under two names.
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	// The scan is re-run, so the recorded checksum on the absolute entry goes stale.
+	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":1}`), 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err, "reported, not refused: the schema admits a package naming one file twice")
+
+	assert.Contains(t, stderr, stored,
+		"the report must name the OTHER reference, which is the entry the operator has to fix")
+	// The CONSEQUENCE, not the mechanism. This assertion used to look for the word
+	// "stale", which stopped being the right word once the report learned to measure:
+	// an uppercase-but-correct digest is not stale, yet verification still fails it.
+	// "verification will fail" is the claim an operator acts on and the one the report
+	// is accountable for.
+	assert.Contains(t, stderr, "verification will fail on it",
+		"and state the consequence, which is why this is worth saying at all")
+
+	// And the two stay separate, which is the settled decision this card does not reopen.
+	contents, _ := updatedPackage(t, out)["contents"].([]any)
+	spellings := make([]string, 0, len(contents))
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if docType, _ := entry["type"].(string); docType == "hdf-results" {
+			uri, _ := entry["uri"].(string)
+			spellings = append(spellings, uri)
+		}
+	}
+	assert.Contains(t, spellings, stored, "the absolute entry survives under its own spelling")
+	assert.Contains(t, spellings, filepath.ToSlash(filepath.Join("scans", "rhel9.json")),
+		"and the incoming one is added rather than merged into it")
+}
+
+// The report does NOT fire for a case or normalization difference: that pair IS matched
+// and refreshed in place, so no entry is left stale and there is nothing to warn about.
+// Firing there would train an operator to ignore the message.
+func TestEvidenceUpdate_DoesNotReportTheCaseDifferingPairItRefreshes(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+	rewriteStoredRef(t, pkgPath, "rhel9.json", "RHEL9.json")
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":2}`), 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "already names this same file",
+		"a spelling difference is refreshed in place, so no entry is left stale")
+}
+
+// A HARDLINK pair reports the same way, because it is the same condition reached by a
+// different route: two names, one inode, so samePath says one file while the names differ.
+// Tested separately from the absolute-versus-relative case because a fix proven on one
+// spelling difference says nothing about the other — samePath's inode comparison is what
+// both rely on, and only a hardlink exercises it where the strings share no suffix.
+func TestEvidenceUpdate_ReportsAHardlinkNamingTheSameFile(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	linked := filepath.Join(dir, "scans", "other-name.json")
+	if err := os.Link(scan, linked); err != nil {
+		t.Skipf("filesystem does not support hard links: %v", err)
+	}
+	// The package records the LINK; the command is given the original. Two names, one
+	// inode, and no shared suffix for a string comparison to fall back on.
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"),
+		filepath.ToSlash(filepath.Join("scans", "other-name.json")))
+	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":3}`), 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr, stored, "the hard-linked spelling must be named")
+	assert.Contains(t, stderr, "verification will fail on it",
+		"with the same consequence stated as for an absolute-versus-relative pair")
+}
+
+// The warning must not fire for an entry THIS invocation just added. Two spellings of one
+// file given in one command — here a hardlink pair, neither recorded before — both get
+// appended with fresh checksums, so nothing is stale and verification passes. Warning
+// about it would be a false claim, and the card's own reasoning says a warning that cries
+// wolf is worse than silence.
+//
+// The cause was already recorded in this file for the spelling-pair case: contents is
+// mutated in-loop, so the second argument sees the FIRST argument's own append and cannot
+// tell it from an entry the package held when the command started. I reintroduced that
+// exact trap in a new form, and a reviewer found it by running the CLI rather than by any
+// assertion here — which is why this test exists at all.
+func TestEvidenceUpdate_DoesNotCallAnEntryItJustAddedStale(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	src, err := os.ReadFile(filepath.Join(dir, "scans", "rhel9.json"))
+	require.NoError(t, err)
+	fresh := filepath.Join(dir, "scans", "new.json")
+	require.NoError(t, os.WriteFile(fresh, src, 0o600))
+	linked := filepath.Join(dir, "scans", "new-link.json")
+	if err := os.Link(fresh, linked); err != nil {
+		t.Skipf("filesystem does not support hard links: %v", err)
+	}
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath,
+		"--results", fresh, "--results", linked, "-o", out)
+	require.NoError(t, err)
+
+	// NOT a search for "stale": t.TempDir() embeds the test's NAME in the path, the path
+	// is printed, and this test's name contains the word — so that assertion matched its
+	// own directory and failed against correct output. The warning's own sentence is the
+	// thing to look for, and no path can contain it.
+	assert.NotContains(t, stderr, "already names this same file",
+		"both entries were added in this run with fresh checksums; neither is stale")
+
+	// And the claim the warning WOULD have made is false here, asserted by running the
+	// thing it predicts rather than by reading the message.
+	verifyOut, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr, "verification must pass, which is what makes the warning false")
+	assert.Contains(t, verifyOut, "checksums valid")
+}
+
+// Nor may it call an entry stale that it REFRESHED earlier in this same invocation. A
+// pre-existing entry matched by the first --results keeps its index when replaced, so a
+// positional "did this exist before the run" test cannot tell it from one still carrying
+// its old checksum — and a later argument naming the same file under another spelling
+// re-flagged it as stale when it had just been rewritten.
+//
+// The first fix guarded "added this run" and missed "replaced this run", because I
+// reasoned about WHERE an entry sits rather than WHAT happened to it. The predicate is
+// now the fact itself: has this entry already been given a fresh checksum here.
+func TestEvidenceUpdate_DoesNotCallAnEntryItJustRefreshedStale(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	linked := filepath.Join(dir, "scans", "hard.json")
+	if err := os.Link(scan, linked); err != nil {
+		t.Skipf("filesystem does not support hard links: %v", err)
+	}
+	// The package records only the hard-linked name, which shares no suffix with the other
+	// — so the two are one file under two names, matched by inode and nothing else.
+	rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"),
+		filepath.ToSlash(filepath.Join("scans", "hard.json")))
+
+	out := filepath.Join(dir, "updated.json")
+	// The first argument refreshes the recorded entry in place; the second names the same
+	// file under the other spelling and is added.
+	_, stderr, err := executeCommand("evidence", "update", pkgPath,
+		"--results", linked, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.NotContains(t, stderr, "already names this same file",
+		"the recorded entry was refreshed by the first argument, so it is not stale")
+
+	// Asserted on the PREDICTION, not the wording: what made the warning wrong is that
+	// the failure it forecasts does not happen.
+	verifyOut, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr, "verification must pass, which is what makes the warning false")
+	assert.Contains(t, verifyOut, "checksums valid")
+}
+
+// And it may not call an untouched entry stale when the bytes never changed. Re-running
+// update on an unmodified file, or adding a second name for one, leaves the other-named
+// entry's recorded checksum CORRECT — it was computed over bytes that still exist.
+//
+// This is the third false positive on this one warning and the only one that was not a
+// bookkeeping error. The first two had the code wrong about whether an entry had been
+// touched this run; this one had it right and drew a false conclusion from it. "Not
+// refreshed here" means stale only if the bytes diverged, and the bytes are in hand — so
+// the warning now compares them instead of inferring, under the entry's OWN recorded
+// algorithm, which is also what verification will use.
+func TestEvidenceUpdate_DoesNotCallAnUnchangedEntryStale(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	// The package records the absolute spelling; the file is NOT modified.
+	rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.NotContains(t, stderr, "already names this same file",
+		"the other entry's checksum is of bytes that never changed, so it is not stale")
+
+	verifyOut, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr, "verification passes, which is what makes the warning false")
+	assert.Contains(t, verifyOut, "checksums valid")
+}
+
+// An other-named entry recording a BLANK checksum value is not stale either: there is
+// nothing recorded to have gone stale, and verification reports such an entry as SKIPPED
+// rather than failed — so claiming "verification will fail on it" would overclaim in a
+// fourth way. Written because a mutant removing this branch killed no test: I had the
+// behaviour right and nothing pinned it.
+func TestEvidenceUpdate_DoesNotCallABlankChecksumStale(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	// Blank the recorded value on that absolute entry, which the schema permits
+	// (Checksum.value has no minLength), and change the bytes so only the blank value
+	// stands between this and a measured divergence.
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == stored {
+			entry["checksum"] = map[string]any{"algorithm": evidenceDigestAlgo, "value": ""}
+		}
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":7}`), 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.NotContains(t, stderr, "already names this same file",
+		"a blank recorded value has nothing to go stale")
+
+	// And the prediction the warning would have made is false: verification SKIPS it.
+	verifyOut, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr, "an unverifiable entry is reported, not failed")
+	assert.Contains(t, verifyOut, "skipped")
+}
+
+// The warning must agree with VERIFICATION, which compares the recorded checksum
+// EXACTLY. hdfengine.VerifyChecksums uses actual == recorded against a lowercase hex
+// digest, so an uppercase-but-mathematically-correct value FAILS there — and this report
+// exists to predict that failure. Comparing case-insensitively here made the prediction
+// disagree with the thing it predicts: update went silent while 'info --verify' exited 1.
+//
+// The invariant is that one comparison mirrors the other. That is what this test pins,
+// not a preference about hex casing.
+func TestEvidenceUpdate_AgreesWithVerificationOnCasedHex(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	// The recorded value is the CORRECT digest, uppercased. The file is never modified.
+	src, err := os.ReadFile(scan)
+	require.NoError(t, err)
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == stored {
+			entry["checksum"] = map[string]any{
+				"algorithm": evidenceDigestAlgo,
+				"value":     strings.ToUpper(evidenceDigestHex(src)),
+			}
+		}
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	// Verification is the authority. Whatever it does, the warning must have predicted.
+	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	warned := strings.Contains(stderr, "already names this same file")
+	if verr != nil {
+		assert.True(t, warned,
+			"verification fails on this entry, so update had to say so — it stayed silent, "+
+				"which is the prediction disagreeing with the thing predicted")
+	} else {
+		assert.False(t, warned, "verification passes, so the warning would be a false claim")
+	}
+}
+
+// The other half of mirroring verification: the comparison uses the ENTRY'S OWN recorded
+// algorithm, not the one this build writes. An older package records sha256 while
+// authoring now writes sha512 (52n0c.30), so computing under the default would find a
+// difference where verification — which reads each entry's algorithm — finds a match, and
+// the report would warn about an entry that verifies perfectly.
+//
+// Written because a mutant replacing the entry's algorithm with the default killed NO
+// test: the behaviour was right and nothing held it there. Second branch on this card
+// found that way rather than by a reviewer.
+func TestEvidenceUpdate_ComparesUnderTheEntrysOwnAlgorithm(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	// A correct sha256 digest — what a package authored before 52n0c.30 carries. The file
+	// is never modified, so verification will match it and the report must stay silent.
+	src, err := os.ReadFile(scan)
+	require.NoError(t, err)
+	legacy := sha256.Sum256(src)
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == stored {
+			entry["checksum"] = map[string]any{
+				"algorithm": "sha256", "value": hex.EncodeToString(legacy[:]),
+			}
+		}
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.NotContains(t, stderr, "already names this same file",
+		"a correct sha256 entry is not divergent; only computing under the wrong algorithm "+
+			"would make it look that way")
+
+	// And verification agrees, which is the authority this report answers to.
+	verifyOut, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr)
+	assert.Contains(t, verifyOut, "sha256 match",
+		"verification reads the entry's own algorithm too, which is the invariant")
+}
+
+// A WHITESPACE-ONLY recorded value is not "nothing to diverge". VerifyChecksums skips
+// only an exactly-empty checksum (c.Checksum == ""), so "   " is fetched, hashed and
+// reported as a MISMATCH — while this report trimmed it, called it blank, and stayed
+// silent. The same disagreement as the fold-versus-exact one, on the blank branch.
+//
+// Schema-valid, so reachable: Checksum.value carries no pattern and no minLength.
+func TestEvidenceUpdate_AgreesWithVerificationOnAWhitespaceChecksum(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == stored {
+			entry["checksum"] = map[string]any{"algorithm": evidenceDigestAlgo, "value": "   "}
+		}
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	// Verification is the authority; the report must have predicted whatever it does.
+	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	warned := strings.Contains(stderr, "already names this same file")
+	if verr != nil {
+		assert.True(t, warned,
+			"verification fails this entry, so update had to say so")
+	} else {
+		assert.False(t, warned, "verification passes, so the warning would be a false claim")
+	}
 }

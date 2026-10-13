@@ -141,6 +141,9 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	var spelledDifferently [][2]string
 	// Pairs of (count, reference) where more than one recorded entry named one file.
 	var multiRef [][2]string
+	// Pairs of (other recorded spelling, the incoming reference) naming one file under two
+	// DIFFERENT names, which stay separate entries and so leave the other one stale.
+	var alsoNamed [][2]string
 	for _, path := range resultsPaths {
 		ref, refErr := packageRelativeRef(pkgDir, path)
 		if refErr != nil {
@@ -181,7 +184,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 
 		sourceOf[ref] = path
-		matched, conflictType, conflictRef, storedSpellings := indexesOfResultsRef(pkgDir, contents, ref)
+		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, ref, data)
 		if conflictType != "" {
 			// Names the STORED spelling, which is the entry the operator has to find and
 			// remove. Naming the incoming spelling told them to remove a reference that does
@@ -193,6 +196,9 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 		for _, stored := range storedSpellings {
 			spelledDifferently = append(spelledDifferently, [2]string{stored, ref})
+		}
+		for _, other := range otherNames {
+			alsoNamed = append(alsoNamed, [2]string{other, ref})
 		}
 		if len(matched) > 0 {
 			// Each matched entry keeps ITS OWN recorded spelling and gains the fresh
@@ -249,7 +255,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	doc["completenessCheck"] = completeness
 	doc["preparedAt"] = time.Now().UTC().Format(time.RFC3339)
 
-	reportUpdate(replaced, added, spelledDifferently, multiRef, coveredBefore, sourceOf)
+	reportUpdate(replaced, added, spelledDifferently, multiRef, alsoNamed, coveredBefore, sourceOf)
 
 	output, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
@@ -293,11 +299,10 @@ func normalizedRef(uri string) string {
 // The reference is the only replacement key. Keying on baseline name would delete one
 // component's evidence when another component assessed against the same baseline is
 // recorded.
-func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string) ([]int, string, string, []string) {
+func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, data []byte,
+) (matched []int, conflictType, conflictRef string, storedSpellings, otherNames []string) {
 	wantNorm := normalizedRef(ref)
 	wantPath := refPath(pkgDir, ref)
-	var matched []int
-	var storedSpellings []string
 	for i, e := range contents {
 		entry, ok := e.(map[string]interface{})
 		if !ok {
@@ -315,10 +320,27 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string) ([]i
 		sameName := !exact && sameNameDifferentSpelling(norm, wantNorm) &&
 			samePath(wantPath, refPath(pkgDir, uri))
 		if !exact && !sameName {
+			// One file under a DIFFERENT name — a hardlink, or an absolute reference
+			// beside a relative one. Deliberately not matched, because those are two
+			// references the operator recorded and merging them would discard one. But
+			// not merged is not the same as not mentioned: this entry keeps whatever
+			// checksum it had, which the incoming bytes have just made stale, and saying
+			// nothing is what left the operator to discover it when verification failed.
+			// MEASURED, not inferred, and that is the whole predicate. This warning made
+			// three false claims before it: twice because it tracked which entries THIS
+			// RUN had rewritten and got the bookkeeping wrong, and once because it had
+			// the bookkeeping right and still concluded staleness from non-participation
+			// alone. Comparing the recorded checksum against the bytes in hand answers
+			// the question directly, and it subsumes all of that tracking — a samePath
+			// pair names ONE file, so an entry this run just rewrote cannot diverge from
+			// a later argument's reading of it.
+			if samePath(wantPath, refPath(pkgDir, uri)) && checksumDivergesFrom(entry, data) {
+				otherNames = append(otherNames, uri)
+			}
 			continue
 		}
 		if docType, _ := entry["type"].(string); docType != "hdf-results" {
-			return nil, docType, uri, nil
+			return nil, docType, uri, nil, nil
 		}
 		// EVERY entry naming the file, not just the first: a package the previous release
 		// wrote can hold two, and refreshing one left the other with a stale checksum, so
@@ -328,7 +350,49 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string) ([]i
 			storedSpellings = append(storedSpellings, uri)
 		}
 	}
-	return matched, "", "", storedSpellings
+	return matched, "", "", storedSpellings, otherNames
+}
+
+// checksumDivergesFrom reports whether an entry's RECORDED checksum disagrees with these
+// bytes AS VERIFICATION COMPARES THEM — which is what makes "verification will fail on
+// it" a statement rather than a guess.
+//
+// Mirrors hdfengine.VerifyChecksums in all three of ITS decisions, each of which was a
+// separate disagreement before it was matched: the algorithm is the ENTRY'S OWN, not the
+// one this build writes; the comparison is EXACT, not case-folded; and "nothing recorded"
+// means exactly empty, not whitespace-trimmed. The invariant is that these are the SAME
+// tests, so if verification's ever change, this must change with them.
+//
+// AND ONE HALF IS NOT MIRRORED HERE, stated rather than implied away: whether the bytes
+// in hand are the bytes verification will fetch. This is fed by readInputFile, which
+// strips a UTF-8 BOM, while verification re-reads through readFromFile, which does not —
+// so for a BOM-carrying source the two hash different bytes and this prediction cannot
+// hold whatever it compares. That inconsistency is in the shared read paths, not here,
+// and is carded separately.
+//
+// An entry recording no checksum, or one this build cannot compute, is NOT divergent —
+// there is nothing recorded to disagree, and saying otherwise would send an operator
+// after a checksum that was never claimed.
+func checksumDivergesFrom(entry map[string]interface{}, data []byte) bool {
+	cs, ok := entry["checksum"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	recorded, _ := cs["value"].(string)
+	// EXACTLY empty, not trimmed — because that is VerifyChecksums' own test. A
+	// whitespace-only value is schema-valid (Checksum.value has no pattern or minLength)
+	// and verification does NOT skip it: it fetches, hashes, and reports a mismatch,
+	// since a hex digest never equals "   ". Trimming here called that blank and stayed
+	// silent on an entry verification fails.
+	if recorded == "" {
+		return false
+	}
+	algorithm, _ := cs["algorithm"].(string)
+	actual, err := hdfengine.ChecksumHex(algorithm, data)
+	if err != nil {
+		return false
+	}
+	return actual != recorded
 }
 
 // sameNameDifferentSpelling reports whether two references are the SAME NAME written
@@ -482,7 +546,7 @@ func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]
 // package already covered, what distinguishes the two. A results document's timestamp
 // and components are both OPTIONAL in HDF, so their absence is stated rather than
 // papered over — two indistinguishable scans are still both retained.
-func reportUpdate(replaced, added []string, spelledDifferently, multiRef [][2]string, coveredBefore map[string][]string, sourceOf map[string]string) {
+func reportUpdate(replaced, added []string, spelledDifferently, multiRef, alsoNamed [][2]string, coveredBefore map[string][]string, sourceOf map[string]string) {
 	// Reported BEFORE the per-reference lines, so the explanation precedes the line it
 	// explains: the entry was refreshed under the spelling the package already records.
 	// Which of the two spellings names the file on a filesystem that distinguishes them is
@@ -493,6 +557,24 @@ func reportUpdate(replaced, added []string, spelledDifferently, multiRef [][2]st
 			"one name written differently (case or Unicode normalization); they name one file on "+
 			"this filesystem, so the entry was refreshed in place and the reference was left as "+
 			"recorded\n", sanitizeOutput(pair[0]), sanitizeOutput(pair[1]))
+	}
+	// A WARNING, not a note: the two notes above describe something that was handled,
+	// while this one describes something the operator still has to do. The package now
+	// names one file twice and only one of the two entries was refreshed, so the other
+	// records a checksum verification will not accept for these bytes — which 'hdf evidence info
+	// --verify' will fail on and 'bundle' will refuse. Said here because this is the last
+	// moment it is cheap to fix; before this it surfaced two commands later with nothing
+	// pointing at the cause.
+	//
+	// Neither spelling is called the wrong one. They are two references the operator
+	// recorded, merging them would discard one, and which of them should survive is a
+	// judgement only they can make.
+	for _, pair := range alsoNamed {
+		fmt.Fprintf(os.Stderr, "  WARNING: %s already names this same file under a different "+
+			"name, and stays a separate reference — so the checksum it records DOES NOT MATCH "+
+			"these bytes and verification will fail on it. Re-run update with that spelling "+
+			"too, or remove whichever of the two the package should not keep.\n",
+			sanitizeOutput(pair[0]))
 	}
 	for _, pair := range multiRef {
 		fmt.Fprintf(os.Stderr, "  note: %s recorded references name one file (%s); all were refreshed\n",
