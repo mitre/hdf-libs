@@ -1677,3 +1677,73 @@ func TestEvidenceUpdate_AgreesWithVerificationOnAWhitespaceChecksum(t *testing.T
 		assert.False(t, warned, "verification passes, so the warning would be a false claim")
 	}
 }
+
+// 52n0c.29's other-name report compares against the bytes verification will fetch, which
+// for a BOM-carrying document it did not until 52n0c.42: it was fed BOM-stripped bytes
+// while verification re-reads raw, so the comparison could not be right whatever it
+// compared. Pinned here because it is the one half of that mirroring this file could not
+// fix from inside itself.
+func TestEvidenceUpdate_ComparesTheBytesVerificationWillFetch(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+
+	// A BOM-carrying document, with the other entry recording the correct digest of the
+	// bytes ON DISK. Nothing is stale, so the report must stay silent — and it will only
+	// agree if it hashes the same bytes verification does.
+	src, err := os.ReadFile(scan)
+	require.NoError(t, err)
+	raw := append([]byte{0xEF, 0xBB, 0xBF}, src...)
+	require.NoError(t, os.WriteFile(scan, raw, 0o600))
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == stored {
+			entry["checksum"] = map[string]any{
+				"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(raw),
+			}
+		}
+	}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	warned := strings.Contains(stderr, "already names this same file")
+	if verr != nil {
+		assert.True(t, warned, "verification fails this entry, so update had to say so")
+	} else {
+		assert.False(t, warned, "verification passes, so the warning would be a false claim")
+	}
+}
+
+// update records the digest of the bytes ON DISK. Pinned on the recorded value rather
+// than on whether verification passes, because a mutant that makes update hash the
+// stripped bytes ALSO makes verification fail — so a test that only asks "did the report
+// agree with verification" flips both sides at once and still passes. That is exactly
+// how TestEvidenceUpdate_ComparesTheBytesVerificationWillFetch passed under that mutant,
+// and why this test asserts the bytes themselves.
+func TestEvidenceUpdate_RecordsTheDigestOfTheBytesOnDisk(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	src, err := os.ReadFile(scan)
+	require.NoError(t, err)
+	raw := append([]byte{0xEF, 0xBB, 0xBF}, src...)
+	require.NoError(t, os.WriteFile(scan, raw, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	assert.Equal(t, evidenceDigestHex(raw),
+		checksumOf(t, updatedPackage(t, out), filepath.ToSlash(filepath.Join("scans", "rhel9.json"))),
+		"the refreshed entry must record the digest of the file as it exists")
+
+	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, verr, "and the updated package verifies")
+}

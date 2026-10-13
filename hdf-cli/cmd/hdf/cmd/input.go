@@ -79,6 +79,11 @@ func readInput(path string, allowEmpty bool) ([]byte, error) {
 	// Strip a leading UTF-8 BOM so every downstream consumer — auto-detect,
 	// converters, schema validation — sees clean bytes regardless of whether
 	// the file was produced on Windows.
+	//
+	// A CHECKSUM must not be taken over these bytes: it would describe an artifact
+	// nobody has, since the file on disk and the copy `evidence bundle` archives both
+	// carry the mark. readInputFileAndRaw returns both forms for a caller that needs to
+	// parse one and hash the other.
 	data = bytes.TrimPrefix(data, utf8BOM)
 	if len(data) == 0 && !allowEmpty {
 		// A file/stdin containing only a BOM passes the upstream non-empty
@@ -87,6 +92,27 @@ func readInput(path string, allowEmpty bool) ([]byte, error) {
 		return nil, fmt.Errorf("no input provided")
 	}
 	return data, nil
+}
+
+// readInputFileAndRaw returns the bytes to PARSE and the bytes as they exist on disk.
+// They differ by a leading UTF-8 BOM, and the distinction is load-bearing for an
+// evidence package: a parser rejects the mark, while a checksum that omits it describes
+// an artifact nobody holds. An assessor runs their own hash over the file they were
+// given, `evidence bundle` archives that file verbatim, and verification re-reads it
+// raw — so the recorded digest has to be of the bytes on disk.
+//
+// Returning both from ONE read rather than offering a second reader: the two values must
+// come from the same bytes, and reading twice is how they could disagree.
+func readInputFileAndRaw(path string) (parse, raw []byte, err error) {
+	raw, err = readFromFile(path, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	parse = bytes.TrimPrefix(raw, utf8BOM)
+	if len(parse) == 0 {
+		return nil, nil, fmt.Errorf("no input provided")
+	}
+	return parse, raw, nil
 }
 
 // readFromStdin reads from stdin with a size limit. When allowEmpty is false,

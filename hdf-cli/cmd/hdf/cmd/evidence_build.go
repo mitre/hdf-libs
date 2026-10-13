@@ -342,10 +342,12 @@ func requireDetectedType(data []byte, path, want, flag string) error {
 // reading twice consumed stdin in the guard and left the second read empty.
 func appendTyped(contents []map[string]interface{}, claims refClaims, baseDir string, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
 	for _, p := range paths {
-		data, err := readInputFile(p)
+		data, raw, err := readInputFileAndRaw(p)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read --%s file %s: %w", flag, p, err)
 		}
+		// Detection parses; the entry below hashes. A BOM must not reach the first and
+		// must not be missing from the second.
 		if err := requireDetectedType(data, p, schemaType, flag); err != nil {
 			return nil, err
 		}
@@ -356,7 +358,7 @@ func appendTyped(contents []map[string]interface{}, claims refClaims, baseDir st
 		if err := claims.claim(ref, p); err != nil {
 			return nil, err
 		}
-		contents = append(contents, contentEntryFromBytes(contentType, ref, data))
+		contents = append(contents, contentEntryFromBytes(contentType, ref, raw))
 	}
 	return contents, nil
 }
@@ -545,11 +547,12 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 // derived here: the same document has different references depending on where
 // the package is written.
 func buildContentEntry(docType, filePath, ref string) (map[string]interface{}, error) {
-	data, err := readInputFile(filePath)
+	_, raw, err := readInputFileAndRaw(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s file %s: %w", docType, filePath, err)
 	}
-	return contentEntryFromBytes(docType, ref, data), nil
+	// The bytes on disk, which is what verification re-reads and what bundle archives.
+	return contentEntryFromBytes(docType, ref, raw), nil
 }
 
 // contentEntryFromBytes is buildContentEntry's body for a caller that has

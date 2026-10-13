@@ -1080,3 +1080,71 @@ func TestEvidenceBuild_FromDirStillResolvesExactlyOneSystem(t *testing.T) {
 	require.Error(t, twoErr, "two scanned systems have no second pointer to live under")
 	assert.Contains(t, twoErr.Error(), "contains 2 HDF system documents")
 }
+
+// bomFixture writes a copy of an evidence fixture with a leading UTF-8 BOM, which is
+// what some Windows tools prepend. Not a fabricated document: the bytes are the real
+// fixture's, with the three-byte mark in front.
+func bomFixture(t *testing.T, dir, name, fixture string) (path string, raw []byte) {
+	t.Helper()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, fixture))
+	require.NoError(t, err)
+	raw = append([]byte{0xEF, 0xBB, 0xBF}, src...)
+	path = filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, raw, 0o600))
+	return path, raw
+}
+
+// A package built from a BOM-carrying document verifies and bundles. It did neither: the
+// write path hashed the bytes with the BOM stripped off (readInputFile strips it so
+// parsers see clean bytes) while verification re-reads the file raw and bundle archives
+// it raw — so a freshly built package failed its own verification and bundle refused it,
+// blaming the operator's evidence for a difference the tooling created.
+//
+// The recorded checksum is of the bytes ON DISK, which is the rule the rest of the
+// pipeline already followed: add-evidence and add-reference hash raw, the archive carries
+// raw, verification hashes raw.
+func TestEvidenceBuild_ABOMCarryingDocumentVerifiesAndBundles(t *testing.T) {
+	dir := t.TempDir()
+	results, raw := bomFixture(t, dir, "rhel9.json", "rhel9-results.json")
+	pkgPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build", "--results", results, "-o", pkgPath)
+	require.NoError(t, err)
+
+	// Keyed on the RECORDED reference, which build writes package-relative — not the
+	// path handed on the command line. Looking it up by the absolute path returned an
+	// empty string and the assertion read as a wrong digest rather than a missed lookup.
+	assert.Equal(t, evidenceDigestHex(raw),
+		checksumOf(t, updatedPackage(t, pkgPath), filepath.Base(results)),
+		"the recorded checksum must be of the bytes on disk, BOM included")
+
+	// And both consumers agree, which is the point rather than a bonus.
+	_, _, verr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
+	require.NoError(t, verr, "a freshly built package must verify")
+
+	_, _, berr := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "out.zip"))
+	require.NoError(t, berr, "and must bundle")
+}
+
+// Every typed document build records goes through appendTyped, not buildContentEntry —
+// --plan, --baseline, --amendments and --comparison. A mutant that made appendTyped hash
+// the stripped bytes killed NO test, so this pins it: the --results path alone was
+// covered, and "every writer uses the chosen rule" was an assertion about four paths
+// backed by one.
+func TestEvidenceBuild_ATypedDocumentIsHashedAsItIsOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	results, _ := bomFixture(t, dir, "rhel9.json", "rhel9-results.json")
+	plan, planRaw := bomFixture(t, dir, "plan.json", "plan.json")
+	pkgPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build",
+		"--results", results, "--plan", plan, "-o", pkgPath)
+	require.NoError(t, err)
+
+	assert.Equal(t, evidenceDigestHex(planRaw),
+		checksumOf(t, updatedPackage(t, pkgPath), filepath.Base(plan)),
+		"a plan document is hashed as it is on disk, like every other typed entry")
+
+	_, _, verr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
+	require.NoError(t, verr, "and the package verifies")
+}

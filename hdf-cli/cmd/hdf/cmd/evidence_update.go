@@ -171,7 +171,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 		seen[ref] = struct{}{}
 
-		data, readErr := readInputFile(path)
+		data, raw, readErr := readInputFileAndRaw(path)
 		if readErr != nil {
 			return fmt.Errorf("failed to read --results file %s: %w", path, readErr)
 		}
@@ -184,7 +184,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 
 		sourceOf[ref] = path
-		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, ref, data)
+		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, ref, raw)
 		if conflictType != "" {
 			// Names the STORED spelling, which is the entry the operator has to find and
 			// remove. Naming the incoming spelling told them to remove a reference that does
@@ -207,7 +207,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 			for _, i := range matched {
 				existing, _ := contents[i].(map[string]interface{})
 				uri, _ := existing["uri"].(string)
-				contents[i] = contentEntryFromBytes("hdf-results", uri, data)
+				contents[i] = contentEntryFromBytes("hdf-results", uri, raw)
 				replaced = append(replaced, uri)
 			}
 			if len(matched) > 1 {
@@ -215,7 +215,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 			}
 			continue
 		}
-		contents = append(contents, contentEntryFromBytes("hdf-results", ref, data))
+		contents = append(contents, contentEntryFromBytes("hdf-results", ref, raw))
 		added = append(added, ref)
 		// Recorded as we go, so a second same-baseline scan added in the SAME invocation is
 		// reported too. A snapshot taken before the loop said nothing about them, which is
@@ -299,7 +299,7 @@ func normalizedRef(uri string) string {
 // The reference is the only replacement key. Keying on baseline name would delete one
 // component's evidence when another component assessed against the same baseline is
 // recorded.
-func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, data []byte,
+func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw []byte,
 ) (matched []int, conflictType, conflictRef string, storedSpellings, otherNames []string) {
 	wantNorm := normalizedRef(ref)
 	wantPath := refPath(pkgDir, ref)
@@ -334,7 +334,7 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, data
 			// the question directly, and it subsumes all of that tracking — a samePath
 			// pair names ONE file, so an entry this run just rewrote cannot diverge from
 			// a later argument's reading of it.
-			if samePath(wantPath, refPath(pkgDir, uri)) && checksumDivergesFrom(entry, data) {
+			if samePath(wantPath, refPath(pkgDir, uri)) && checksumDivergesFrom(entry, raw) {
 				otherNames = append(otherNames, uri)
 			}
 			continue
@@ -363,17 +363,16 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, data
 // means exactly empty, not whitespace-trimmed. The invariant is that these are the SAME
 // tests, so if verification's ever change, this must change with them.
 //
-// AND ONE HALF IS NOT MIRRORED HERE, stated rather than implied away: whether the bytes
-// in hand are the bytes verification will fetch. This is fed by readInputFile, which
-// strips a UTF-8 BOM, while verification re-reads through readFromFile, which does not —
-// so for a BOM-carrying source the two hash different bytes and this prediction cannot
-// hold whatever it compares. That inconsistency is in the shared read paths, not here,
-// and is carded separately.
+// The fourth half — whether the bytes in hand are the bytes verification will fetch — is
+// mirrored too, as of 52n0c.42. It was not: this was fed through readInputFile, which
+// strips a UTF-8 BOM, while verification re-reads raw, so for a BOM-carrying source the
+// two hashed different bytes and no comparison here could have been right. The caller now
+// passes the bytes as read from disk, which is why this parameter is named raw.
 //
 // An entry recording no checksum, or one this build cannot compute, is NOT divergent —
 // there is nothing recorded to disagree, and saying otherwise would send an operator
 // after a checksum that was never claimed.
-func checksumDivergesFrom(entry map[string]interface{}, data []byte) bool {
+func checksumDivergesFrom(entry map[string]interface{}, raw []byte) bool {
 	cs, ok := entry["checksum"].(map[string]interface{})
 	if !ok {
 		return false
@@ -388,7 +387,7 @@ func checksumDivergesFrom(entry map[string]interface{}, data []byte) bool {
 		return false
 	}
 	algorithm, _ := cs["algorithm"].(string)
-	actual, err := hdfengine.ChecksumHex(algorithm, data)
+	actual, err := hdfengine.ChecksumHex(algorithm, raw)
 	if err != nil {
 		return false
 	}

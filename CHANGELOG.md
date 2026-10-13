@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A document carrying a UTF-8 BOM no longer produces a package that fails its own verification.** `hdf evidence build` and `hdf evidence update` read through a helper that strips a leading BOM so parsers see clean bytes — and then hashed those stripped bytes, while `hdf evidence info --verify` re-reads the file raw and `hdf evidence bundle` archives it raw. A freshly built package therefore reported `0/1 checksums valid` and bundle refused it with `the package records 490e841c… but the file hashes to 7179a599…`, blaming the operator's evidence for a difference the tooling had created. Nothing had changed; the package was wrong the moment it was written.
+
+  A recorded checksum is now of **the bytes on disk**, which is the rule the rest of the pipeline already followed: `add-evidence` and `add-reference` hash raw, the archive carries raw, and verification re-hashes raw — `build` and `update` were the only two paths disagreeing, and they were disagreeing with everything else. The stripping stays where it belongs: documents are still parsed with the mark removed, because a JSON parser rejects it. One read now yields both forms so the two cannot drift. The practical test is the one that matters to an assessor: the digest the package records is the digest they get by hashing the artifact they were handed. (hdf-libs-52n0c.42)
+
 ### Changed
 
 - **BREAKING: `--checksum` on `hdf evidence add-evidence` and `add-reference` now requires `<algorithm>:<hex>`, and the authoring commands compute SHA-512 rather than SHA-256.** Two changes with one cause: a digest's length cannot identify its algorithm. A BLAKE3-256 digest is 64 hex characters, exactly like SHA-256, so the old length check passed a correct BLAKE3 digest and stamped `algorithm: sha256` on it at exit 0. The operator's own evidence was then unbundlable: `hdf evidence bundle` hashed the file as SHA-256, got a different value, and refused with a message accusing their evidence of having changed — the same wrong answer, a verification tool reporting drift that did not happen, that `hdf-libs-52n0c.15` and `.21` were each written to eliminate.
