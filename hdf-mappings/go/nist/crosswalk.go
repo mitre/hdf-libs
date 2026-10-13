@@ -3,6 +3,7 @@ package nist
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strconv"
 	"sync"
@@ -48,9 +49,10 @@ type crosswalkEdge struct {
 }
 
 var (
-	xwRosters map[int]map[string]bool
-	xwEdges   map[int]map[string]*crosswalkEdge
-	xwOnce    sync.Once
+	xwRosters    map[int]map[string]bool
+	xwEdges      map[int]map[string]*crosswalkEdge
+	xwOnce       sync.Once
+	errCrosswalk error
 )
 
 func loadCrosswalk() {
@@ -59,11 +61,12 @@ func loadCrosswalk() {
 			Rosters map[string][]string `json:"rosters"`
 			Edges   []crosswalkEdge     `json:"edges"`
 		}
-		xwRosters = make(map[int]map[string]bool)
-		xwEdges = make(map[int]map[string]*crosswalkEdge)
 		if err := json.Unmarshal(crosswalkData, &file); err != nil {
+			errCrosswalk = fmt.Errorf("parse embedded nist-revision-crosswalk.json: %w", err)
 			return
 		}
+		xwRosters = make(map[int]map[string]bool)
+		xwEdges = make(map[int]map[string]*crosswalkEdge)
 		for revStr, ids := range file.Rosters {
 			rev, err := strconv.Atoi(revStr)
 			if err != nil {
@@ -82,6 +85,10 @@ func loadCrosswalk() {
 			xwEdges[e.From][e.Control] = e
 		}
 	})
+	// Keep failed initialization visible even if a caller recovers the panic.
+	if errCrosswalk != nil {
+		panic(errCrosswalk)
+	}
 }
 
 // A trailing single-letter statement part, e.g. "AC-2(j)".
