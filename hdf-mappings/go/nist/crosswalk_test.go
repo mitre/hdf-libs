@@ -1,9 +1,40 @@
 package nist
 
 import (
+	"os"
+	"os/exec"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
+
+func TestCrosswalkParseFailure(t *testing.T) {
+	if raw := os.Getenv("HDF_TEST_CROSSWALK_DATA"); raw != "" {
+		crosswalkData = []byte(raw)
+		message := os.Getenv("HDF_TEST_CROSSWALK_ERROR")
+		require.PanicsWithError(t, message, func() { RosterSize(4) })
+		require.PanicsWithError(t, message, func() { Translate("AC-1", 4, 5) })
+		require.PanicsWithError(t, message, func() { AtRevision([]string{"AC-1"}, 4, 5) })
+		return
+	}
+
+	for _, tc := range []struct{ name, raw, cause string }{
+		{"malformed JSON", "{", "unexpected end of JSON input"},
+		{"invalid field type", `{"rosters":[]}`, "json: cannot unmarshal array into Go struct field .rosters of type map[string][]string"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// A fresh process isolates the embedded bytes and the one-time loader.
+			binary, err := os.Executable()
+			require.NoError(t, err)
+			cmd := exec.CommandContext(t.Context(), binary, "-test.run=^TestCrosswalkParseFailure$")
+			cmd.Env = append(os.Environ(), "HDF_TEST_CROSSWALK_DATA="+tc.raw,
+				"HDF_TEST_CROSSWALK_ERROR=parse embedded nist-revision-crosswalk.json: "+tc.cause)
+			output, err := cmd.CombinedOutput()
+			require.NoError(t, err, "%s", output)
+		})
+	}
+}
 
 func TestTranslateIdentity(t *testing.T) {
 	for _, id := range []string{"AC-1", "AC-2", "IA-2(1)", "SC-7(5)"} {
