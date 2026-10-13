@@ -127,7 +127,7 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
 describe('the measurement helpers', () => {
   it('redacts a Windows path too, since matrix:update can be run there', () => {
     const redacted = stableError(
-      'error loading spec in D:\\a\\hdf-libs\\hdf-libs\\hdf-openapi-components\\dist\\doc.oas.json : failed to unmarshal bool',
+      'error loading spec in D:\\a\\hdf-libs\\hdf-libs\\hdf-openapi\\dist\\doc.oas.json : failed to unmarshal bool',
     );
     expect(redacted).not.toMatch(/[A-Za-z]:\\/);
     expect(redacted).toContain('<document>');

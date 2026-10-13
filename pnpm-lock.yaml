@@ -169,7 +169,7 @@ importers:
         specifier: ^9.5.1
         version: 9.5.1(@stryker-mutator/core@9.5.1(@types/node@26.6.2))(vitest@5.0.1)
 
-  hdf-openapi-components:
+  hdf-openapi:
     dependencies:
       ajv:
         specifier: ^8.18.0

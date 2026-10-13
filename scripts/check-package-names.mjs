@@ -1,9 +1,7 @@
 // Every publishable workspace package's name is `@mitre/` plus its directory.
 //
-// The convention held for 12 of 13 and then did not: when the reference API moved to the
-// sibling repository and took the bare `@mitre/hdf-openapi` name with it, this package's
-// manifest was renamed and its directory was not — leaving a directory named after a
-// package that lives in another repository. That is the class this checks.
+// A manifest renamed without its directory, or the reverse, leaves a published name that
+// disagrees with where the code lives, and nothing else notices.
 //
 // `site` is the one deliberate exception: it is private, never published, and its name
 // describes what it builds rather than where it sits.

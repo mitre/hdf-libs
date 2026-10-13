@@ -1,5 +1,5 @@
 {
-  "name": "@mitre/hdf-openapi-components",
+  "name": "@mitre/hdf-openapi",
   "version": "3.7.2",
   "description": "OpenAPI 3.1 components for HDF, generated from the HDF JSON Schema 2020-12 bundles",
   "publishConfig": {
@@ -37,7 +37,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/mitre/hdf-libs.git",
-    "directory": "hdf-openapi-components"
+    "directory": "hdf-openapi"
   },
   "author": "MITRE Corporation",
   "license": "Apache-2.0",

@@ -1,6 +1,6 @@
 // Generate the VitePress page and the published archive for the OpenAPI documents.
 //
-// Reads the BUILT components document from hdf-openapi-components/dist/ and the tracked
+// Reads the BUILT components document from hdf-openapi/dist/ and the tracked
 // tooling baseline, then produces:
 //
 // - openapi/index.md — the reference page (rendered view, downloads, the
@@ -22,8 +22,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 // Repo-relative so a test can resolve the same artifacts without restating them.
-export const COMPONENTS_DOCUMENT = 'hdf-openapi-components/dist/hdf-components.oas.json';
-const BASELINE = 'hdf-openapi-components/test/baseline/keywords.json';
+export const COMPONENTS_DOCUMENT = 'hdf-openapi/dist/hdf-components.oas.json';
+const BASELINE = 'hdf-openapi/test/baseline/keywords.json';
 
 /**
  * The documents this publishes. Derived rather than hardcoded: ADR-0008 ships two, and the
@@ -38,8 +38,8 @@ export const DOCUMENTS = [
   {
     name: 'hdf-components',
     title: 'Components',
-    json: 'hdf-openapi-components/dist/hdf-components.oas.json',
-    yaml: 'hdf-openapi-components/dist/hdf-components.oas.yaml',
+    json: 'hdf-openapi/dist/hdf-components.oas.json',
+    yaml: 'hdf-openapi/dist/hdf-components.oas.yaml',
     required: true,
     blurb:
       'The data types, generated from the HDF schema bundles. Components-only: it describes the documents, not an API surface.',
@@ -132,7 +132,7 @@ export function generateOpenapiDocs() {
     if (!fs.existsSync(jsonPath)) {
       if (document.required) {
         throw new Error(
-          `${document.json} is missing — build it first with \`pnpm --filter @mitre/hdf-openapi-components run build\``,
+          `${document.json} is missing — build it first with \`pnpm --filter @mitre/hdf-openapi run build\``,
         );
       }
       skipped.push(document);
@@ -150,7 +150,7 @@ export function generateOpenapiDocs() {
     // The archive freezes one document per RELEASED version, and only the release knows
     // which those are — refusing every overwrite here blocked iterating on an unreleased
     // version, which is the ordinary case. The immutability check is a release step; what
-    // stops two different contracts sharing a version is hdf-openapi-components's contract digest.
+    // stops two different contracts sharing a version is hdf-openapi's contract digest.
     const archiveDir = path.join(PUBLIC_DIR, document.name, `v${version}`);
     fs.mkdirSync(archiveDir, { recursive: true });
     fs.writeFileSync(path.join(archiveDir, 'index.json'), raw);

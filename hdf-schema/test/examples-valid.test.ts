@@ -38,7 +38,7 @@ function sourceSchemas(): string[] {
 }
 
 // Every document ROOT carries a root-level `examples` array. The root example is
-// the document a consumer copies first, and hdf-openapi-components's conformance suite drives
+// the document a consumer copies first, and hdf-openapi's conformance suite drives
 // its per-root negatives from it — a root without one drops out of that coverage
 // with nothing to say so, which is why it is asserted here rather than tracked.
 describe('document roots', () => {

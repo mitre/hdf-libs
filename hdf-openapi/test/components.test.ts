@@ -60,7 +60,7 @@ describe('the embed is the source of truth', () => {
   });
 
   it('fails loudly when the embed is missing a bundle', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'hdf-openapi-components-embed-'));
+    const dir = mkdtempSync(join(tmpdir(), 'hdf-openapi-embed-'));
     try {
       writeFileSync(join(dir, 'hdf-results.schema.json'), '{}');
       expect(() => loadBundles(dir)).toThrow(/MAIN_SCHEMAS/);
@@ -71,7 +71,7 @@ describe('the embed is the source of truth', () => {
   });
 
   it('fails loudly on a bundle the bundler does not produce', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'hdf-openapi-components-embed-'));
+    const dir = mkdtempSync(join(tmpdir(), 'hdf-openapi-embed-'));
     try {
       for (const f of MAIN_SCHEMAS) writeFileSync(join(dir, f), '{}');
       writeFileSync(join(dir, 'hdf-invented.schema.json'), '{}');

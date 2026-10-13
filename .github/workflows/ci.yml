@@ -36,10 +36,10 @@ env:
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
-  # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi-components's matrix
+  # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi's matrix
   # records what it does with the generated OpenAPI components, including that it
   # cannot currently load them. Bumping this is how that record updates, so re-run
-  # `pnpm run matrix:update` in hdf-openapi-components and review the diff in the same PR.
+  # `pnpm run matrix:update` in hdf-openapi and review the diff in the same PR.
   OAPI_CODEGEN_VERSION: 'v2.8.0'
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
@@ -379,7 +379,7 @@ jobs:
         run: pnpm run security:ts
 
   # ── Gate: the OpenAPI tooling matrix ────────────────────────────────────
-  # Separate from check-ts because it needs Go. hdf-openapi-components's vitest suite already
+  # Separate from check-ts because it needs Go. hdf-openapi's vitest suite already
   # re-measures the lints and openapi-typescript, so what this adds is the oapi-codegen
   # half of the baseline — which cannot be a precondition of `pnpm test` without making a
   # Go toolchain a precondition of every contributor's pre-commit hook.
@@ -401,11 +401,11 @@ jobs:
         run: |
           go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$OAPI_CODEGEN_VERSION"
       - name: Generate the components document
-        run: pnpm --filter @mitre/hdf-openapi-components run build:components
+        run: pnpm --filter @mitre/hdf-openapi run build:components
       # Fails on any drift in what the tooling does: lint findings, waiver absorption,
       # keyword inventory, and both generators' per-keyword verdicts.
       - name: Tooling matrix matches the tracked baseline
-        run: pnpm --filter @mitre/hdf-openapi-components run matrix
+        run: pnpm --filter @mitre/hdf-openapi run matrix
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:
@@ -644,7 +644,7 @@ jobs:
         run: |
           for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators \
                      hdf-parsers hdf-converters hdf-generators hdf-diff \
-                     hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi-components; do
+                     hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi; do
             [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist missing"; exit 1; }
           done
       - name: Build Go CLI
@@ -665,7 +665,7 @@ jobs:
             hdf-extension-graph/dist/
             hdf-engine/dist/
             hdf-fixtures/dist/
-            hdf-openapi-components/dist/
+            hdf-openapi/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
@@ -916,7 +916,7 @@ jobs:
           PACKAGES=(
             hdf-schema hdf-utilities hdf-mappings hdf-validators
             hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi-components
+            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi
           )
           for pkg in "${PACKAGES[@]}"; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)

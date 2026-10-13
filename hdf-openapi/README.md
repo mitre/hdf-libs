@@ -1,4 +1,4 @@
-# @mitre/hdf-openapi-components
+# @mitre/hdf-openapi
 
 OpenAPI 3.1 components for the Heimdall Data Format, generated from the HDF JSON Schema 2020-12 bundles.
 
@@ -29,7 +29,7 @@ without re-deriving the mapping.
 ## Installation
 
 ```bash
-npm install @mitre/hdf-openapi-components
+npm install @mitre/hdf-openapi
 ```
 
 ## Usage
@@ -37,7 +37,7 @@ npm install @mitre/hdf-openapi-components
 ### Read the components document
 
 ```ts
-import components from '@mitre/hdf-openapi-components/hdf-components.oas.json' with { type: 'json' };
+import components from '@mitre/hdf-openapi/hdf-components.oas.json' with { type: 'json' };
 
 const results = components.components.schemas.HdfResults;
 ```
@@ -49,7 +49,7 @@ call below works inside this repository and not from an installed copy:
 
 ```ts
 // In-repo only: regenerating from the tracked embed.
-import { buildComponentsDocument, loadBundles, EMBED_DIR } from '@mitre/hdf-openapi-components';
+import { buildComponentsDocument, loadBundles, EMBED_DIR } from '@mitre/hdf-openapi';
 
 const doc = buildComponentsDocument(loadBundles(EMBED_DIR));
 ```
