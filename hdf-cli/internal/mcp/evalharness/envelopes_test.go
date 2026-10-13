@@ -139,7 +139,7 @@ func TestEnvelopeGolden_CaptureIsDeterministic(t *testing.T) {
 }
 
 // Every configured call produced a capture. Which tools NEED one is decided by the
-// binding table, so that accounting lives in hdf-openapi's suite.
+// binding table, so that accounting lives in hdf-openapi-components's suite.
 func TestEnvelopeGolden_EveryCallIsCaptured(t *testing.T) {
 	captures := captureEnvelopes(t)
 	if len(captures) != len(envelopeCalls) {

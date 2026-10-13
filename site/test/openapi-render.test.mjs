@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const PAGES_DIR = path.resolve(__dirname, '../openapi');
 const PUBLIC_DIR = path.resolve(__dirname, '../public/openapi');
-const BASELINE = path.resolve(REPO_ROOT, 'hdf-openapi/test/baseline/keywords.json');
+const BASELINE = path.resolve(REPO_ROOT, 'hdf-openapi-components/test/baseline/keywords.json');
 
 // A version directory this build never writes, standing in for a released
 // version's frozen archive. Planted at module scope so the suite's own setup
@@ -45,7 +45,7 @@ test('generate the openapi pages and archive', () => {
   const built = path.resolve(REPO_ROOT, COMPONENTS_DOCUMENT);
   if (!fs.existsSync(built)) {
     execFileSync('pnpm', ['run', 'build:components'], {
-      cwd: path.resolve(REPO_ROOT, 'hdf-openapi'),
+      cwd: path.resolve(REPO_ROOT, 'hdf-openapi-components'),
       stdio: 'inherit',
     });
   }

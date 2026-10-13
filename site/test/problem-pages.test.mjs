@@ -29,12 +29,12 @@ test('every documented type publishes a page', () => {
   }
 });
 
-// The document-derived half of this chain lives in hdf-openapi/test/problem-docs.test.ts,
+// The document-derived half of this chain lives in hdf-openapi-components/test/problem-docs.test.ts,
 // which asserts every type the API declares has a table entry. It cannot live here: a
-// sibling test in this suite renames hdf-openapi/dist/hdf-components.oas.json aside to
+// sibling test in this suite renames hdf-openapi-components/dist/hdf-components.oas.json aside to
 // prove a missing required document fails loudly, and node:test runs files concurrently, so
 // reading a built document here is an ENOENT waiting to happen (hdf-libs-sp84s). Composed,
-// the two halves are table -> page here and table shape in hdf-openapi; the coverage
+// the two halves are table -> page here and table shape in hdf-openapi-components; the coverage
 // direction against an API's declared types moved to the sibling with the API.
 test('each page states its status and links the RFC', () => {
   for (const [type, entry] of Object.entries(table)) {
@@ -59,10 +59,10 @@ test('the generated pages carry no emoji', () => {
   }
 });
 
-// Pointed at a missing path rather than renaming hdf-openapi/dist/problems.json: that file
+// Pointed at a missing path rather than renaming hdf-openapi-components/dist/problems.json: that file
 // is read at module scope by that package's own suite, and pnpm runs the two concurrently.
 test('an unbuilt table fails loudly rather than publishing nothing', () => {
-  assert.throws(() => generateProblemPages('hdf-openapi/dist/absent.json'), /is not built/);
+  assert.throws(() => generateProblemPages('hdf-openapi-components/dist/absent.json'), /is not built/);
 });
 
 test('a table documenting nothing fails rather than publishing an empty set', () => {
@@ -77,7 +77,7 @@ test('a table documenting nothing fails rather than publishing an empty set', ()
 });
 
 // The one page string not drawn from problems.yaml is the per-owner note, so the rendered
-// page is checked too rather than only the table the MCP-vocabulary guard in hdf-openapi reads.
+// page is checked too rather than only the table the MCP-vocabulary guard in hdf-openapi-components reads.
 test('no rendered page carries MCP vocabulary', () => {
   for (const type of Object.keys(table)) {
     const page = fs.readFileSync(path.join(PAGES_DIR, type, 'index.md'), 'utf-8');

@@ -1,6 +1,6 @@
 // RFC 9457 §3.1.1: a problem type's URI SHOULD dereference to human-readable documentation.
 // ADR-0008 §3 chose site-hosted type URIs over about:blank for exactly that, so these pages
-// are part of the contract. Generated from hdf-openapi's published table, never hand-edited.
+// are part of the contract. Generated from hdf-openapi-components's published table, never hand-edited.
 //
 // One directory per type, because the declared URI carries no extension and GitHub Pages
 // redirects an extensionless path to its directory index (measured: /hdf-libs/schemas 301s
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
-export const PROBLEM_TABLE = 'hdf-openapi/dist/problems.json';
+export const PROBLEM_TABLE = 'hdf-openapi-components/dist/problems.json';
 const PAGES_DIR = path.resolve(__dirname, 'problems');
 
 const OWNER_NOTE = {
@@ -84,7 +84,7 @@ ${rows}
 export function generateProblemPages(table = PROBLEM_TABLE) {
   const source = path.resolve(REPO_ROOT, table);
   if (!fs.existsSync(source)) {
-    throw new Error(`${table} is not built; run hdf-openapi's build first`);
+    throw new Error(`${table} is not built; run hdf-openapi-components's build first`);
   }
   const docs = JSON.parse(fs.readFileSync(source, 'utf-8'));
   const types = Object.keys(docs);

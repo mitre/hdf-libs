@@ -375,7 +375,7 @@ export { stableError, withoutKeyword, BASELINE };
 
 /** Runs `fn` with a scratch directory that is always cleaned up. */
 function withScratch(fn) {
-  const scratch = mkdtempSync(join(tmpdir(), 'hdf-openapi-matrix-'));
+  const scratch = mkdtempSync(join(tmpdir(), 'hdf-openapi-components-matrix-'));
   try {
     return fn(scratch);
   } finally {

@@ -31,7 +31,7 @@ pnpm workspace with 13 packages + a VitePress schema documentation site:
 | `hdf-engine` | Schema-typed read-side engines: document detection, query/filtering, compliance rollups | TS + Go |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
 | `hdf-fixtures` | Shared real-world HDF test data corpus (published; cross-package tests here, and available to consumers) | TS + Go |
-| `hdf-openapi` | OpenAPI 3.1 components generated from the schema bundles, plus the tooling-compatibility matrix | TS |
+| `hdf-openapi-components` | OpenAPI 3.1 components generated from the schema bundles, plus the tooling-compatibility matrix | TS |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
 | `site/` | VitePress schema reference site for GitHub Pages | TS |
 

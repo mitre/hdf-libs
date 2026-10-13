@@ -12,7 +12,7 @@ const ADR = join(
 );
 
 /**
- * ADR-0010 §6 is the single mapping, and it says so: "a test in `hdf-openapi` and one here
+ * ADR-0010 §6 is the single mapping, and it says so: "a test in `hdf-openapi-components` and one here
  * assert agreement". This is that test.
  *
  * It PARSES the table rather than restating it. A test that compared the generator's
