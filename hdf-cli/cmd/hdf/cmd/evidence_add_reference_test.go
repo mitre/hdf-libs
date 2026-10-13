@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -162,8 +160,8 @@ func TestEvidenceAddReference_ChecksumsALocalHrefAndLeavesAURLAlone(t *testing.T
 
 	sum, ok := localEntry["checksum"].(map[string]any)
 	require.True(t, ok, "a local href must be hashed at attach time")
-	assert.Equal(t, "sha256", sum["algorithm"])
-	assert.Equal(t, fmt.Sprintf("%x", sha256.Sum256([]byte(body))), sum["value"],
+	assert.Equal(t, evidenceDigestAlgo, sum["algorithm"])
+	assert.Equal(t, evidenceDigestHex([]byte(body)), sum["value"],
 		"and the digest must be of the real bytes")
 
 	assert.NotContains(t, remoteEntry, "checksum",
@@ -174,7 +172,7 @@ func TestEvidenceAddReference_ChecksumsALocalHrefAndLeavesAURLAlone(t *testing.T
 // meaningless, and the schema says so of mediaType ("Meaningful only with href").
 func TestEvidenceAddReference_RefusesHrefOnlyFlagsWithoutAnHref(t *testing.T) {
 	for _, tc := range []struct{ flag, value, want string }{
-		{"--checksum", strings.Repeat("a", 64), "--checksum records the digest of the artifact at --href"},
+		{"--checksum", "sha256:" + strings.Repeat("a", 64), "--checksum records the digest of the artifact at --href"},
 		{"--media-type", "application/json", "--media-type describes the artifact at --href"},
 	} {
 		t.Run(tc.flag, func(t *testing.T) {
@@ -492,13 +490,16 @@ func TestEvidenceAddReference_RecordsASuppliedChecksumForARemoteHref(t *testing.
 
 	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
 		"--source-name", "nvd", "--href", "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
-		"--checksum", upper, "-o", pkgPath)
+		"--checksum", "sha256:"+upper, "-o", pkgPath)
 	require.NoError(t, err)
 
 	entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
 	sum, ok := entry["checksum"].(map[string]any)
 	require.True(t, ok, "a supplied checksum must be recorded even though the href is remote")
-	assert.Equal(t, "sha256", sum["algorithm"])
+	assert.Equal(t, "sha256", sum["algorithm"],
+		"the algorithm the OPERATOR stated, not the one this command computes with — a "+
+			"blanket rewrite of this file briefly asserted the computed one here, which "+
+			"would have let a supplied digest be relabelled, the defect 52n0c.30 is about")
 	assert.Equal(t, strings.ToLower(upper), sum["value"],
 		"and normalized to lowercase hex by the shared helper")
 }
@@ -558,7 +559,7 @@ func TestEvidenceAddReference_HashesAPackageRelativeHref(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cti"), 0o750))
 	body := []byte("{\"objects\":[]}\n")
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "cti", "bundle.json"), body, 0o600))
-	sum := sha256.Sum256(body)
+	sum := evidenceDigestSum(body)
 
 	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
 		"--source-name", "stix", "--kind", "threat-intel", "--href", "cti/bundle.json")
@@ -583,7 +584,7 @@ func TestEvidenceAddReference_HrefResolutionIsConfinedAndPrefersThePackage(t *te
 		require.NoError(t, os.MkdirAll(filepath.Join(dir, "cti"), 0o750))
 		body := []byte("{\"objects\":[\"beside the package\"]}\n")
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "cti", "bundle.json"), body, 0o600))
-		wantSum := sha256.Sum256(body)
+		wantSum := evidenceDigestSum(body)
 
 		decoyRoot := t.TempDir()
 		require.NoError(t, os.MkdirAll(filepath.Join(decoyRoot, "cti"), 0o750))
@@ -776,7 +777,7 @@ func TestEvidenceAddReference_HashesEmbeddedContentButNotAnEmbeddedDocument(t *t
 		raw := []byte("<Benchmark/>\n")
 		src := filepath.Join(dir, "scan.xml")
 		require.NoError(t, os.WriteFile(src, raw, 0o600))
-		want := sha256.Sum256(raw)
+		want := evidenceDigestSum(raw)
 
 		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
 			"--source-name", "openscap", "--content-file", src, "-o", pkgPath)
@@ -785,7 +786,7 @@ func TestEvidenceAddReference_HashesEmbeddedContentButNotAnEmbeddedDocument(t *t
 		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
 		cs, _ := entry["checksum"].(map[string]any)
 		require.NotNil(t, cs, "embedded bytes are verifiable, so they are hashed")
-		assert.Equal(t, "sha256", cs["algorithm"])
+		assert.Equal(t, evidenceDigestAlgo, cs["algorithm"])
 		assert.Equal(t, hex.EncodeToString(want[:]), cs["value"],
 			"the digest of the source bytes, which the stored copy reproduces exactly")
 	})
@@ -813,7 +814,7 @@ func TestEvidenceAddReference_HashesEmbeddedContentButNotAnEmbeddedDocument(t *t
 		claimed := strings.Repeat("ab", 32)
 
 		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
-			"--source-name", "stix", "--document-file", src, "--checksum", claimed, "-o", pkgPath)
+			"--source-name", "stix", "--document-file", src, "--checksum", "sha256:"+claimed, "-o", pkgPath)
 		require.NoError(t, err, "--checksum is meaningful beside an embedded artifact")
 
 		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
@@ -831,11 +832,11 @@ func TestEvidenceAddReference_ChecksumPrecedenceAcrossEmbedAndHref(t *testing.T)
 		dir, pkgPath := referencePackage(t)
 		src := filepath.Join(dir, "scan.xml")
 		require.NoError(t, os.WriteFile(src, []byte("<Benchmark/>\n"), 0o600))
-		derived := sha256.Sum256([]byte("<Benchmark/>\n"))
+		derived := evidenceDigestSum([]byte("<Benchmark/>\n"))
 		claimed := strings.Repeat("cd", 32)
 
 		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
-			"--source-name", "openscap", "--content-file", src, "--checksum", claimed, "-o", pkgPath)
+			"--source-name", "openscap", "--content-file", src, "--checksum", "sha256:"+claimed, "-o", pkgPath)
 		require.NoError(t, err)
 
 		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
@@ -852,8 +853,8 @@ func TestEvidenceAddReference_ChecksumPrecedenceAcrossEmbedAndHref(t *testing.T)
 		require.NoError(t, os.WriteFile(embed, []byte("<Benchmark/>\n"), 0o600))
 		pointed := filepath.Join(dir, "other.json")
 		require.NoError(t, os.WriteFile(pointed, []byte(`{"a":1}`), 0o600))
-		wantEmbed := sha256.Sum256([]byte("<Benchmark/>\n"))
-		wantPointed := sha256.Sum256([]byte(`{"a":1}`))
+		wantEmbed := evidenceDigestSum([]byte("<Benchmark/>\n"))
+		wantPointed := evidenceDigestSum([]byte(`{"a":1}`))
 
 		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
 			"--source-name", "openscap", "--content-file", embed, "--href", "other.json", "-o", pkgPath)
@@ -953,7 +954,7 @@ func TestEvidenceAddReference_PathFlagsResolveAgainstDifferentBases(t *testing.T
 	require.Len(t, refs, 1)
 	cs, _ := refs[0].(map[string]any)["checksum"].(map[string]any)
 	require.NotNil(t, cs, "--href resolved against the package's directory, so it must be hashed")
-	sum := sha256.Sum256(artifact)
+	sum := evidenceDigestSum(artifact)
 	assert.Equal(t, hex.EncodeToString(sum[:]), cs["value"],
 		"the digest must be of the file beside the PACKAGE, which is the only thing "+
 			"that tells the two candidate bases apart")

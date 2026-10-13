@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: `--checksum` on `hdf evidence add-evidence` and `add-reference` now requires `<algorithm>:<hex>`, and the authoring commands compute SHA-512 rather than SHA-256.** Two changes with one cause: a digest's length cannot identify its algorithm. A BLAKE3-256 digest is 64 hex characters, exactly like SHA-256, so the old length check passed a correct BLAKE3 digest and stamped `algorithm: sha256` on it at exit 0. The operator's own evidence was then unbundlable: `hdf evidence bundle` hashed the file as SHA-256, got a different value, and refused with a message accusing their evidence of having changed — the same wrong answer, a verification tool reporting drift that did not happen, that `hdf-libs-52n0c.15` and `.21` were each written to eliminate.
+
+  A bare digest is now **refused** rather than assumed to be SHA-256, because an unattributed digest cannot be recorded faithfully and guessing is the defect. The remedy is one word and the error states it: `--checksum sha256:<hex>`. An algorithm outside the schema's closed set is refused by name (`algorithm "md5" cannot be recorded: HDF records sha256, sha384, sha512, blake3`), and the length is checked against the algorithm the operator stated, so a 64-character value labelled `sha512` is caught instead of recorded. A digest the operator supplies is recorded under the algorithm they stated; only a digest the command COMPUTES uses the default.
+
+  That default moves to SHA-512 across `build`, `add-evidence`, `add-reference` and `update`, which share one constant so none can record an algorithm another cannot compute. Nothing in a package authored earlier stops verifying — `hdf evidence info --verify` and `bundle` honour the algorithm each entry records, which is what `.24` made true — so this changes what NEW packages contain, not how old ones are read. Deliberate and early: the evidence package is alpha and no accreditation depends on it yet, which makes this the cheap moment to stop emitting SHA-256 from a path that computes a security-relevant hash. (hdf-libs-52n0c.30)
+
 ### Removed
 
 - **BREAKING: `hdf evidence verify` is removed. Use `hdf evidence info --verify`.** The two commands read one document and described it, and five separate fixes in this release were places where they described it differently — what a reference means (`hdf-libs-52n0c.8`), a count bundle reported that verify would not name (`.16`), one package resolving against two bases (`.32`), verify ignoring an array bundle refused over (`.36`), and info ticking a checksum nothing verified (`.37`). Each fix was correct and none removed the cause, which was two independent renderers of the same facts.

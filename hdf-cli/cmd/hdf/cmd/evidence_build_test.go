@@ -122,8 +122,9 @@ func TestEvidenceBuild_ReachesAllSevenContentTypes(t *testing.T) {
 		// defeats the point of listing it.
 		cs, ok := entry["checksum"].(map[string]interface{})
 		require.True(t, ok, "entry %v has no checksum", entry["uri"])
-		assert.Equal(t, "sha256", cs["algorithm"])
-		assert.Len(t, cs["value"], 64, "checksum for %v is not a sha256 hex digest", entry["uri"])
+		assert.Equal(t, evidenceDigestAlgo, cs["algorithm"])
+		assert.Len(t, cs["value"], len(evidenceDigestHex(nil)),
+			"checksum for %v is not a %s hex digest", entry["uri"], evidenceDigestAlgo)
 	}
 
 	for _, want := range []string{

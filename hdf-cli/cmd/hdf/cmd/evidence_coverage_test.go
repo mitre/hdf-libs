@@ -58,10 +58,8 @@ func TestEvidenceBuildBasic(t *testing.T) {
 		assert.Equal(t, "hdf-system", first["type"])
 		assert.Equal(t, "system.json", first["uri"])
 		chk := first["checksum"].(map[string]interface{})
-		assert.Equal(t, "sha256", chk["algorithm"])
-
-		expectedHash := sha256.Sum256([]byte(systemDoc))
-		assert.Equal(t, hex.EncodeToString(expectedHash[:]), chk["value"])
+		assert.Equal(t, evidenceDigestAlgo, chk["algorithm"])
+		assert.Equal(t, evidenceDigestHex([]byte(systemDoc)), chk["value"])
 	})
 
 	t.Run("builds package to stdout when no output flag", func(t *testing.T) {
@@ -400,7 +398,7 @@ func TestComputeCompleteness(t *testing.T) {
 // --- buildContentEntry tests ---
 
 func TestBuildContentEntry(t *testing.T) {
-	t.Run("produces correct entry with sha256 checksum", func(t *testing.T) {
+	t.Run("produces correct entry with a computed checksum", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		content := `{"hello": "world"}`
 		fp := filepath.Join(tmpDir, "doc.json")
@@ -413,10 +411,9 @@ func TestBuildContentEntry(t *testing.T) {
 		assert.Equal(t, "doc.json", entry["uri"])
 
 		chk := entry["checksum"].(map[string]interface{})
-		assert.Equal(t, "sha256", chk["algorithm"])
+		assert.Equal(t, evidenceDigestAlgo, chk["algorithm"])
 
-		h := sha256.Sum256([]byte(content))
-		assert.Equal(t, hex.EncodeToString(h[:]), chk["value"])
+		assert.Equal(t, evidenceDigestHex([]byte(content)), chk["value"])
 	})
 
 	t.Run("returns error for missing file", func(t *testing.T) {
@@ -458,6 +455,10 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 
 		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.NoError(t, err)
+		// sha256 deliberately: this package was PLANTED with a sha256 checksum, and
+		// verification must honour the algorithm the package records rather than the one
+		// the authoring commands now compute with. Keeping it here is what proves the two
+		// are independent.
 		assert.Contains(t, stdout, "sha256 match")
 		assert.Contains(t, stdout, "test-package")
 	})
@@ -933,10 +934,13 @@ func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Verify — checksums should match since files haven't changed
+	// Verify — checksums should match since files haven't changed.
+	// The algorithm build COMPUTED, reported back by verification: the round trip
+	// 52n0c.30 AC 4 asks for, where a package authored under a non-sha256 algorithm must
+	// verify cleanly rather than merely be writable.
 	stdout, _, err := executeCommand("evidence", "info", "--verify", outputPath)
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "sha256 match")
+	assert.Contains(t, stdout, evidenceDigestAlgo+" match")
 	assert.Contains(t, stdout, "2/2 checksums valid")
 }
 

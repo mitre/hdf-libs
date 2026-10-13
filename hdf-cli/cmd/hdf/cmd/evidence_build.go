@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,7 +20,7 @@ func newEvidenceBuildCmd() *cobra.Command {
 		Short: "Bundle HDF documents into an evidence package",
 		Long: `Build an HDF evidence package from component documents.
 
-Computes SHA-256 checksums for each document and populates a
+Computes a checksum for each document and populates a
 completeness check (baselines assessed, components covered,
 compliance percentage).
 
@@ -557,15 +555,17 @@ func buildContentEntry(docType, filePath, ref string) (map[string]interface{}, e
 // contentEntryFromBytes is buildContentEntry's body for a caller that has
 // already read the file. Shared, not forked: both paths produce the same entry.
 func contentEntryFromBytes(docType, ref string, data []byte) map[string]interface{} {
-	hash := sha256.Sum256(data)
-	return map[string]interface{}{
-		"type": docType,
-		"uri":  ref,
-		"checksum": map[string]interface{}{
-			"algorithm": "sha256",
-			"value":     hex.EncodeToString(hash[:]),
-		},
+	// Through the engine so the algorithm build RECORDS is the one it computed with, and
+	// so build cannot drift from what verification can check. The error is unreachable
+	// for evidenceComputedAlgorithm, which this build computes by construction; if that
+	// constant ever names something it cannot, an empty value is better than a digest
+	// under the wrong name.
+	value, algorithm, err := computeEvidenceDigest(data)
+	entry := map[string]interface{}{"type": docType, "uri": ref}
+	if err == nil {
+		entry["checksum"] = map[string]interface{}{"algorithm": algorithm, "value": value}
 	}
+	return entry
 }
 
 // systemlessPackageName is the name of a package that records no system. It describes

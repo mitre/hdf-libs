@@ -1,14 +1,16 @@
 package cmd
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,9 +46,9 @@ func TestEvidenceAddEvidence_LocalFileComputesChecksum(t *testing.T) {
 	entry := ext[0].(map[string]interface{})
 	assert.Equal(t, "ecs", entry["format"])
 
-	sum := sha256.Sum256([]byte(body))
+	sum := evidenceDigestSum([]byte(body))
 	checksum := entry["checksum"].(map[string]interface{})
-	assert.Equal(t, "sha256", checksum["algorithm"])
+	assert.Equal(t, evidenceDigestAlgo, checksum["algorithm"])
 	assert.Equal(t, hex.EncodeToString(sum[:]), checksum["value"])
 }
 
@@ -69,21 +71,27 @@ func TestEvidenceAddEvidence_SuppliedChecksum(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
 		"--uri", "s3://lake/ocsf/q1/", "--format", "ocsf",
-		"--checksum", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+		"--checksum", "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 	require.NoError(t, err)
 
 	entry := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
 	checksum := entry["checksum"].(map[string]interface{})
 	assert.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", checksum["value"])
+	assert.Equal(t, "sha256", checksum["algorithm"],
+		"a supplied digest is recorded under the algorithm the OPERATOR stated, not the "+
+			"one this command computes with")
 }
 
 func TestEvidenceAddEvidence_RejectsInvalidChecksum(t *testing.T) {
-	for _, bad := range []string{"abc", "nothex-nothex-nothex", "e3b0c44298fc1c14"} { // non-hex or wrong length
+	// Each states an algorithm and then fails on its own terms: non-hex, or a length the
+	// stated algorithm cannot have. A BARE digest is a separate refusal with its own test.
+	for _, bad := range []string{"sha256:abc", "sha256:nothex-nothex-nothex", "sha256:e3b0c44298fc1c14"} {
 		pkg := writeTestEvidence(t)
 		_, _, err := executeCommand("evidence", "add-evidence", pkg,
 			"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", bad)
 		require.Error(t, err, "checksum %q should be rejected", bad)
-		assert.Contains(t, err.Error(), "SHA-256")
+		assert.Contains(t, err.Error(), "sha256",
+			"the message names the algorithm the digest claimed to be")
 	}
 }
 
@@ -91,7 +99,7 @@ func TestEvidenceAddEvidence_NormalizesChecksumCase(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	upper := "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
-		"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", upper)
+		"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", "sha256:"+upper)
 	require.NoError(t, err)
 
 	entry := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
@@ -248,7 +256,9 @@ func TestEvidenceAddEvidence_AcceptsMultipleURIsInOneInvocation(t *testing.T) {
 		assert.Equal(t, "ecs", entry["format"], "a single --format applies to every artifact")
 		cs := entry["checksum"].(map[string]interface{})
 		val := cs["value"].(string)
-		assert.Len(t, val, 64)
+		// Against the helper's own algorithm rather than a literal 64, so a policy change
+		// moves this with it instead of leaving a stale width behind.
+		assert.Len(t, val, len(evidenceDigestHex(nil)))
 		assert.False(t, seen[val], "each artifact must be hashed independently, not share a digest")
 		seen[val] = true
 	}
@@ -339,7 +349,7 @@ func TestEvidenceAddEvidence_RefusesChecksumWithMultipleURIs(t *testing.T) {
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
 		"--uri", "https://a.example/x.ndjson", "--uri", "https://b.example/y.ndjson",
 		"--format", "ecs",
-		"--checksum", "0000000000000000000000000000000000000000000000000000000000000000")
+		"--checksum", "sha256:0000000000000000000000000000000000000000000000000000000000000000")
 	require.Error(t, err, "one checksum cannot describe two artifacts")
 	assert.Contains(t, err.Error(), "--checksum")
 }
@@ -511,7 +521,7 @@ func TestEvidenceAddEvidence_ChecksumsAPackageRelativeURIFromAnotherDirectory(t 
 	artifact := filepath.Join(dir, "scans", "audit.ndjson")
 	body := []byte("{\"message\":\"beside the package\"}\n")
 	require.NoError(t, os.WriteFile(artifact, body, 0o600))
-	sum := sha256.Sum256(body)
+	sum := evidenceDigestSum(body)
 
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
 		"--uri", "scans/audit.ndjson", "--format", "ecs")
@@ -547,7 +557,7 @@ func TestEvidenceAddEvidence_NeverHashesAFileTheReferenceDoesNotName(t *testing.
 
 	beside := []byte("{\"message\":\"beside the package\"}\n")
 	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "scans", "audit.ndjson"), beside, 0o600))
-	besideSum := sha256.Sum256(beside)
+	besideSum := evidenceDigestSum(beside)
 
 	// The decoy: same relative spelling, different bytes, reachable from the CWD.
 	require.NoError(t, os.MkdirAll(filepath.Join(root, "scans"), 0o750))
@@ -565,7 +575,7 @@ func TestEvidenceAddEvidence_NeverHashesAFileTheReferenceDoesNotName(t *testing.
 	require.NotNil(t, cs)
 	assert.Equal(t, hex.EncodeToString(besideSum[:]), cs["value"],
 		"the digest must be of the file the reference names, not the decoy under the CWD")
-	decoySum := sha256.Sum256(decoy)
+	decoySum := evidenceDigestSum(decoy)
 	assert.NotEqual(t, hex.EncodeToString(decoySum[:]), cs["value"],
 		"and emphatically not the decoy's")
 }
@@ -593,7 +603,7 @@ func TestEvidenceAddEvidence_AbsoluteURIIsHashedAsGiven(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	body := "{\"message\":\"elsewhere\"}\n"
 	outside := writeEvidenceArtifact(t, body) // its own TempDir, outside the package
-	sum := sha256.Sum256([]byte(body))
+	sum := evidenceDigestSum([]byte(body))
 
 	_, _, err := executeCommand("evidence", "add-evidence", pkg,
 		"--uri", outside, "--format", "ecs")
@@ -668,7 +678,7 @@ func TestEvidenceAddEvidence_ARelativePackagePathResolvesTheSameWay(t *testing.T
 	body := []byte("{\"message\":\"the real in-package artifact\"}\n")
 	require.NoError(t, os.WriteFile(target, body, 0o600))
 	require.NoError(t, os.Symlink(target, filepath.Join(pkgDir, "scans", "audit.ndjson")))
-	wantSum := sha256.Sum256(body)
+	wantSum := evidenceDigestSum(body)
 
 	// A decoy at the same relative spelling, reachable from the CWD.
 	require.NoError(t, os.MkdirAll(filepath.Join(root, "scans"), 0o750))
@@ -750,4 +760,230 @@ func TestEvidenceAddEvidence_InferFailureMessagesAreTrueFromAnyDirectory(t *test
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not a local file", "nothing was there to read")
 	})
+}
+
+// A digest the command cannot attribute to sha256 is never recorded AS sha256. A
+// BLAKE3-256 digest is 64 hex characters, exactly like sha256 — measured: this build
+// computes blake3 at its 32-byte default, the length the BLAKE3 reference vectors
+// compare against — so the old length check passed it and stamped sha256 on it. The
+// operator's correct digest was mislabelled at exit 0, and the cost landed one command
+// later, when bundle hashed the file as sha256 and accused their evidence of drift.
+func TestEvidenceAddEvidence_DoesNotLabelAForeignDigestAsSha256(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	// A real blake3-256 digest of "log line\n", not a sha256 of anything.
+	const blake3Digest = "3f8d5a1a33b2a8e5b64b2d8e47d60c2e91d1e2a7f8c3b6d9e0a1b2c3d4e5f607"
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "s3://lake/audit/", "--format", "raw-log",
+		"--checksum", "blake3:"+blake3Digest)
+	require.NoError(t, err, "a stated algorithm the schema admits must be accepted")
+
+	entry := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	checksum := entry["checksum"].(map[string]interface{})
+	assert.Equal(t, "blake3", checksum["algorithm"],
+		"the algorithm the operator stated, not the one the command assumed")
+	assert.Equal(t, blake3Digest, checksum["value"], "and the digest unaltered")
+}
+
+// A BARE digest is refused rather than assumed to be sha256. This is the card's AC 1
+// read strictly: a digest whose algorithm nobody stated cannot be attributed, because
+// sha256 and blake3 are the same length here. Accepting it as sha256 would keep the
+// defect for every operator who does not know to prefix it. Breaking, deliberately —
+// the remedy is one word and the message says it.
+func TestEvidenceAddEvidence_RefusesADigestWithNoStatedAlgorithm(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "s3://lake/audit/", "--format", "raw-log",
+		"--checksum", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	require.Error(t, err, "a bare digest states no algorithm, so it cannot be recorded faithfully")
+	assert.Contains(t, err.Error(), "sha256:",
+		"the message must show the fix, not just refuse")
+}
+
+// An algorithm the closed Hash_Algorithm enum cannot represent is refused by NAME, not
+// silently downgraded. sha1 and md5 are the cases that matter: both are plausible things
+// for an operator to have on hand, and neither can be recorded.
+func TestEvidenceAddEvidence_RefusesAnAlgorithmTheSchemaCannotRecord(t *testing.T) {
+	for _, bad := range []string{
+		"sha1:da39a3ee5e6b4b0d3255bfef95601890afd80709",
+		"md5:d41d8cd98f00b204e9800998ecf8427e",
+	} {
+		pkg := writeTestEvidence(t)
+		_, _, err := executeCommand("evidence", "add-evidence", pkg,
+			"--uri", "s3://lake/q1/", "--format", "ocsf", "--checksum", bad)
+		require.Error(t, err, "checksum %q names an algorithm the schema cannot record", bad)
+		assert.Contains(t, err.Error(), "sha256, sha384, sha512, blake3",
+			"the message must name what IS recordable")
+	}
+}
+
+// And the length is checked PER ALGORITHM, which the shared digest parser does not do:
+// a sha512 digest is 128 hex characters, so a 64-character value labelled sha512 is a
+// mistake that a single global length check could never catch.
+func TestEvidenceAddEvidence_ChecksTheDigestLengthAgainstItsStatedAlgorithm(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "s3://lake/q1/", "--format", "ocsf",
+		"--checksum", "sha512:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	require.Error(t, err, "64 hex characters is not a sha512 digest")
+	assert.Contains(t, err.Error(), "128")
+}
+
+// What an authoring command records for these bytes, computed with crypto/sha512
+// DIRECTLY rather than through evidenceComputedAlgorithm. Deriving it from the
+// production constant would make every expectation below track the code instead of
+// checking it — flip the constant and a derived expectation flips silently with it.
+// Stated here instead, so a policy change breaks these tests on purpose and somebody
+// has to agree to it.
+const evidenceDigestAlgo = "sha512"
+
+func evidenceDigestSum(data []byte) [sha512.Size]byte { return sha512.Sum512(data) }
+
+func evidenceDigestHex(data []byte) string {
+	sum := sha512.Sum512(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// The algorithm an authoring command computes with is sha512, asserted by NAME on a real
+// package rather than by reading the constant. This is the one test that pins the policy;
+// the others assert which BYTES were hashed and take the algorithm from the helper above.
+func TestEvidenceAuthoring_ComputesSha512AndSaysSo(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	results := filepath.Join(dir, "r.json")
+	require.NoError(t, os.WriteFile(results, src, 0o600))
+	pkgPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err = executeCommand("evidence", "build", "--results", results, "-o", pkgPath)
+	require.NoError(t, err)
+
+	raw, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+	var doc struct {
+		Contents []struct {
+			Checksum struct {
+				Algorithm string `json:"algorithm"`
+				Value     string `json:"value"`
+			} `json:"checksum"`
+		} `json:"contents"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.Len(t, doc.Contents, 1)
+
+	assert.Equal(t, evidenceDigestAlgo, doc.Contents[0].Checksum.Algorithm,
+		"build records the algorithm it computed with")
+	assert.Equal(t, evidenceDigestHex(src), doc.Contents[0].Checksum.Value,
+		"and the value is genuinely that algorithm's digest, not a sha256 relabelled")
+	assert.Len(t, doc.Contents[0].Checksum.Value, 128,
+		"128 hex characters, which a sha256 digest could never be — the length is what "+
+			"makes a relabelled digest visible here")
+}
+
+// No authoring command's help may name an algorithm it does not compute.
+//
+// FIFTH VERSION. Four reviewers' escapes got it here and the pattern in my own failures
+// is the thing worth recording: each round I closed the demonstrated hole by adding a
+// NARROWER CONDITION, and each narrower condition was a context-free shortcut with a new
+// hole of its own.
+//
+//  1. NotContains over four phrasings I had seen be wrong. Green while 'add-reference
+//     --help' said --content-file "sets encoding and a sha256 checksum".
+//  2. Allow-listed contexts — but the detector named three algorithms, so "computes MD5"
+//     was invisible, and the allow-list was stripped by substring from anywhere, so a
+//     false sentence could use an allowed phrase as its backbone.
+//  3. Shape detector plus a positional exemption gated on a verb blocklist: "the digest
+//     produced is md5" used no listed verb, and the region was a substring match on
+//     "--checksum", so any prose line name-dropping it inherited the exemption.
+//  4. Exact permitted set inside a cobra-derived region — but I added a colon shortcut
+//     for the <algorithm>:<hex> form, and "computes md5: the fast but insecure digest"
+//     walked through it.
+//
+// So there are now NO shape shortcuts, no verb list and no colon rule. There is one
+// invariant, applied uniformly: an algorithm name may appear ONLY as one of the four
+// --checksum accepts, and ONLY in the flag's own usage or in a command invocation —
+// anywhere else, only the algorithm this command computes. Both exempt regions are
+// identified by what they ARE (a cobra flag's Usage; a line the user would type) rather
+// than by a character pattern that prose can imitate, and both permit the same four
+// names, so there is no second rule to find a hole in.
+func TestEvidenceAuthoring_HelpNamesNoAlgorithmItDoesNotCompute(t *testing.T) {
+	// Hash-algorithm-shaped tokens. The numeric families are a shape; the word-like names
+	// are a list, which is the one bound that remains — a digest named by a word absent
+	// here would not be detected.
+	hashName := regexp.MustCompile(`(?i)\b(md\d|sha-?\d+|sha\d-\d+|blake\d?[bs]?|` +
+		`crc-?\d+|ripemd\d*|whirlpool|xxh\w+|keccak|skein|adler-?\d*|tiger|gost|` +
+		`siphash|murmur\w*|fnv\w*)\b`)
+	// What --checksum PARSES: the schema's closed enum, and nothing else, in EITHER
+	// exempt region.
+	accepted := map[string]bool{"sha256": true, "sha384": true, "sha512": true, "blake3": true}
+
+	for _, tc := range []struct {
+		command string
+		build   func() *cobra.Command
+	}{
+		{"build", newEvidenceBuildCmd},
+		{"add-evidence", newEvidenceAddEvidenceCmd},
+		{"add-reference", newEvidenceAddReferenceCmd},
+	} {
+		help, _, err := executeCommand("evidence", tc.command, "--help")
+		require.NoError(t, err)
+
+		// Region one: the flag's own usage, taken from the command object so it is the
+		// exact text cobra renders and cannot be approximated.
+		vocabulary := ""
+		if f := tc.build().Flags().Lookup("checksum"); f != nil {
+			vocabulary = f.Usage
+		}
+
+		for i, line := range strings.Split(help, "\n") {
+			// Region two: a command invocation. A line the user would type is syntax, not
+			// a claim about behaviour — but it may still only name what --checksum parses,
+			// or it would be advertising an algorithm the command rejects.
+			invocation := strings.HasPrefix(strings.TrimSpace(line), "hdf ")
+			// A line carrying the flag's usage text, whole or wrapped onto it.
+			inVocabulary := vocabulary != "" && lineCarriesUsage(line, vocabulary)
+
+			for _, m := range hashName.FindAllString(line, -1) {
+				switch {
+				case strings.EqualFold(m, evidenceComputedAlgorithm):
+					continue
+				case (invocation || inVocabulary) && accepted[strings.ToLower(m)]:
+					continue
+				}
+				where := "in prose"
+				if invocation {
+					where = "in a command invocation, which may only show an algorithm --checksum parses"
+				} else if inVocabulary {
+					where = "in the --checksum usage, which may only name the four it parses"
+				}
+				t.Errorf("evidence %s --help names %q %s — it computes %s:\n  %s",
+					tc.command, m, where, evidenceComputedAlgorithm, strings.TrimSpace(line))
+				_ = i
+			}
+		}
+
+		if tc.command == "add-reference" {
+			assert.Contains(t, help, evidenceComputedAlgorithm+" checksum",
+				"add-reference --help must name the algorithm it actually computes")
+		}
+	}
+}
+
+// lineCarriesUsage reports whether a rendered help line is part of the flag's usage text.
+// Cobra wraps a long usage across lines, so the whole string rarely appears on one; the
+// test is whether a run of words from this line appears in the usage, which a prose
+// sentence elsewhere cannot satisfy without quoting the usage verbatim — and quoting it
+// verbatim only ever reproduces the four accepted names, which is all this region
+// permits anyway.
+func lineCarriesUsage(line, usage string) bool {
+	words := strings.Fields(line)
+	if len(words) < 4 {
+		return false
+	}
+	flat := strings.Join(strings.Fields(usage), " ")
+	for i := 0; i+4 <= len(words); i++ {
+		if strings.Contains(flat, strings.Join(words[i:i+4], " ")) {
+			return true
+		}
+	}
+	return false
 }

@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,9 +14,12 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
+	"lukechampine.com/blake3"
 )
 
 // externalEvidenceFormatConstraints derives the allowed --format vocabulary from
@@ -138,7 +143,7 @@ external by design and rewriting it would claim the artifact is somewhere it is 
 Because the URI is normalized before the duplicate check, two spellings of the same
 artifact are recognized as the same artifact and the second is refused.
 
-If --uri is a local file, its SHA-256 checksum is computed automatically. If --uri
+If --uri is a local file, its checksum is computed automatically. If --uri
 is a URL (the artifact is referenced, not fetched), pass --checksum to record a
 precomputed hash, or omit it; --checksum names one artifact and is refused with
 several --uri values. Format is an open set: reserved ecs | ocsf | cyclonedx |
@@ -148,7 +153,7 @@ reference their export instead).
 
 Examples:
   hdf evidence add-evidence pkg.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
-  hdf evidence add-evidence pkg.json --uri https://lake/ocsf/q1/ --format ocsf --checksum <sha256>
+  hdf evidence add-evidence pkg.json --uri https://lake/ocsf/q1/ --format ocsf --checksum sha256:<hex>
   hdf evidence add-evidence pkg.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
   hdf evidence add-evidence pkg.json --uri sbom.cdx.json --infer`,
 		Args: cobra.ExactArgs(1),
@@ -162,7 +167,11 @@ Examples:
 		"Format: ecs | ocsf | cyclonedx | spdx | raw-log | x-<custom>. Give one for all artifacts, or one per --uri in order")
 	cmd.Flags().BoolVar(&opts.infer, "infer", false,
 		"Accept a format inferred from an artifact's own content discriminator when --format is absent")
-	cmd.Flags().StringVar(&opts.checksum, "checksum", "", "Precomputed SHA-256 hex (for a URL/remote artifact; local files are hashed automatically)")
+	cmd.Flags().StringVar(&opts.checksum, "checksum", "",
+		"Precomputed digest as <algorithm>:<hex> — sha256, sha384, sha512 or blake3 "+
+			"(for a URL/remote artifact; local files are hashed automatically). The "+
+			"algorithm must be stated: a digest's length cannot identify it, since "+
+			"sha256 and blake3 are both 64 hex characters")
 	cmd.Flags().StringVar(&opts.mediaType, "media-type", "", "IANA media type of the serialization (e.g. application/x-ndjson)")
 	cmd.Flags().StringVar(&opts.formatVersion, "format-version", "", "Producer-declared format version (e.g. ECS 9.4.0)")
 	cmd.Flags().StringVar(&opts.description, "description", "", "Human-readable description of this evidence")
@@ -331,12 +340,12 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 			"uri":    normalized,
 			"format": formats[i],
 		}
-		checksum, csErr := resolveEvidenceChecksum(pkgDir, uri, opts.checksum)
+		checksum, algorithm, csErr := resolveEvidenceChecksum(pkgDir, uri, opts.checksum)
 		if csErr != nil {
 			return csErr
 		}
 		if checksum != "" {
-			ref["checksum"] = map[string]interface{}{"algorithm": "sha256", "value": checksum}
+			ref["checksum"] = map[string]interface{}{"algorithm": algorithm, "value": checksum}
 		}
 		if opts.mediaType != "" {
 			ref["mediaType"] = opts.mediaType
@@ -390,11 +399,46 @@ func recordedEvidenceURIs(existing []interface{}) map[string]struct{} {
 	return seen
 }
 
-// resolveEvidenceChecksum returns the sha256 hex for the reference: a supplied
-// value wins; otherwise a local-file URI is hashed; a URL is left unhashed.
-func resolveEvidenceChecksum(pkgDir, uri, supplied string) (string, error) {
+// evidenceComputedAlgorithm is the algorithm every authoring command uses when IT
+// computes a digest. One constant because the three — add-evidence, add-reference and
+// build — must agree: one of them recording an algorithm another cannot is the
+// inconsistency 52n0c.30 exists to remove.
+//
+// sha512 by maintainer decision, a deliberate behaviour change from sha256 flagged in
+// the CHANGELOG. A new path computing a security-relevant hash emits sha512, and no
+// command is hardlocked to one algorithm for a digest the OPERATOR supplies — that
+// comes through ParseDigest, which records whatever the schema admits.
+const evidenceComputedAlgorithm = "sha512"
+
+// computeEvidenceDigest hashes bytes and returns the value WITH the algorithm that
+// produced it. One function because the two must never be chosen separately: while
+// fixing 52n0c.30 I relabelled an embedded artifact's digest as sha512 while the code
+// beside it still computed sha256 — the very mislabelling the card exists to remove,
+// reintroduced inside the fix, because the value came from one place and the name from
+// another. A caller that gets both from here cannot make that mistake.
+func computeEvidenceDigest(data []byte) (value, algorithm string, err error) {
+	v, err := hdfengine.ChecksumHex(evidenceComputedAlgorithm, data)
+	if err != nil {
+		return "", "", err
+	}
+	return v, evidenceComputedAlgorithm, nil
+}
+
+// resolveEvidenceChecksum returns the digest AND the algorithm it is under: a supplied
+// "<algo>:<hex>" wins and is recorded as stated; otherwise a local-file URI is hashed
+// with the algorithm this command computes; a URL is left unhashed.
+//
+// The algorithm is returned rather than assumed by the caller. It used to be hardcoded
+// at the record site, so a stated blake3 digest — the same 64 hex characters as a
+// sha256 one — was written down as sha256, and `bundle` then hashed the file as sha256
+// and accused the operator's own evidence of having changed.
+func resolveEvidenceChecksum(pkgDir, uri, supplied string) (value, algorithm string, err error) {
 	if supplied != "" {
-		return normalizeSHA256Hex(supplied)
+		parsed, perr := shared.ParseDigest(supplied)
+		if perr != nil {
+			return "", "", fmt.Errorf("--checksum %w", perr)
+		}
+		return parsed.Value, string(parsed.Algorithm), nil
 	}
 	// Resolved against the PACKAGE's directory, which is what the reference means:
 	// bundle and verify both read it that way. Reading it against the process CWD
@@ -409,21 +453,21 @@ func resolveEvidenceChecksum(pkgDir, uri, supplied string) (string, error) {
 		// worse than no digest at all.
 		fmt.Fprintf(os.Stderr, "Note: %q does not resolve inside the package's directory, "+
 			"so it was not hashed; checksum omitted (pass --checksum to record one).\n", uri)
-		return "", nil
+		return "", "", nil
 	}
 	// A local-path URI is hashed only when the file is actually present at attach
 	// time; a URL, a directory, or a path with no local copy is left unhashed
 	// (a reference-only entry, not an error).
 	if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
-		sum, err := fileChecksumHex(path)
+		sum, algorithm, err := fileChecksumHex(path)
 		if err != nil {
-			return "", fmt.Errorf("failed to read local artifact %q to checksum it: %w", path, err)
+			return "", "", fmt.Errorf("failed to read local artifact %q to checksum it: %w", path, err)
 		}
-		return sum, nil
+		return sum, algorithm, nil
 	}
 	// The path actually tried, not the uri as typed, so an operator can see where it looked.
 	fmt.Fprintf(os.Stderr, "Note: no local file to hash at %q; checksum omitted (pass --checksum to record one).\n", path)
-	return "", nil
+	return "", "", nil
 }
 
 // localArtifactPath is where a --uri is read from to hash it, and ("", false) when it
@@ -460,36 +504,50 @@ func localArtifactPath(pkgDir, uri string) (string, bool) {
 	return resolved, true
 }
 
-// normalizeSHA256Hex validates that a user-supplied checksum is a 32-byte
-// SHA-256 digest and returns it lowercased, so we never stamp algorithm:sha256
-// on a value that isn't actually one.
-func normalizeSHA256Hex(s string) (string, error) {
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		return "", fmt.Errorf("--checksum must be a hex-encoded SHA-256 digest: %w", err)
-	}
-	if len(b) != sha256.Size {
-		return "", fmt.Errorf("--checksum must be a 32-byte (64 hex-character) SHA-256 digest, got %d bytes", len(b))
-	}
-	return hex.EncodeToString(b), nil
-}
-
-// fileChecksumHex streams the file through SHA-256 so a large corpus is not
+// fileChecksumHex streams the file through evidenceComputedAlgorithm so a large corpus is not
 // loaded into memory. It is deliberately NOT subject to the --max-size input
 // cap: the cap guards against loading untrusted input into memory, and this
 // read is constant-memory by construction, so capping it would only reject
 // large evidence artifacts (logs, packet captures, images) for no safety gain.
-func fileChecksumHex(path string) (string, error) {
+// streamingHasher returns a streaming hash for one of the algorithms Hash_Algorithm
+// admits. Separate from hdfengine.ChecksumHex, which takes the whole []byte: an evidence
+// corpus can be large, and the point of hashing it here is to never hold it in memory.
+// The algorithms are the same set, so a value recorded by one verifies under the other.
+func streamingHasher(algorithm string) (hash.Hash, error) {
+	switch algorithm {
+	case "", "sha256":
+		return sha256.New(), nil
+	case "sha384":
+		return sha512.New384(), nil
+	case "sha512":
+		return sha512.New(), nil
+	case "blake3":
+		// 32 bytes, no key: the default-length digest ChecksumHex computes and the one the
+		// BLAKE3 reference vectors compare against. A different length here would hash the
+		// same bytes to a value verification could never reproduce.
+		return blake3.New(32, nil), nil
+	default:
+		return nil, fmt.Errorf("cannot compute %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
+	}
+}
+
+func fileChecksumHex(path string) (value, algorithm string, err error) {
 	f, err := os.Open(path) // #nosec G304 -- CLI reads user-provided file path; streamed, not slurped
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer f.Close() //nolint:errcheck // read-only handle
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
+	h, hErr := streamingHasher(evidenceComputedAlgorithm)
+	if hErr != nil {
+		return "", "", hErr
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	if _, err := io.Copy(h, f); err != nil {
+		return "", "", err
+	}
+	// Both facts from one return, like computeEvidenceDigest: a caller that took the
+	// value here and the name from elsewhere is how a sha256 digest got labelled sha512
+	// while 52n0c.30 was being fixed.
+	return hex.EncodeToString(h.Sum(nil)), evidenceComputedAlgorithm, nil
 }
 
 // buildEvidenceMetadata assembles the optional metadata object, or nil if empty.

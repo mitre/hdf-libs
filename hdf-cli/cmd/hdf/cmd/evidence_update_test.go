@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -611,7 +610,7 @@ func TestEvidenceUpdate_NormalisesTheStoredReferenceToo(t *testing.T) {
 	})
 }
 
-// The recorded checksum must be the file's sha256. The only checksum assertion in this file
+// The recorded checksum must be the file's real digest. The only checksum assertion in this file
 // pinned that it CHANGED, never that it was CORRECT — so a reimplementation of
 // contentEntryFromBytes recording any other value passed the whole suite, and the output
 // failed its own verification.
@@ -631,8 +630,8 @@ func TestEvidenceUpdate_RecordsTheRealChecksum(t *testing.T) {
 			recorded = entry["checksum"].(map[string]any)["value"].(string)
 		}
 	}
-	assert.Equal(t, fmt.Sprintf("%x", sha256.Sum256(body)), recorded,
-		"the recorded digest must be the file's real sha256, not merely a different value")
+	assert.Equal(t, evidenceDigestHex(body), recorded,
+		"the recorded digest must be the file's real digest, not merely a different value")
 
 	// And the end-to-end consequence: a wrong digest makes the package fail its own verify.
 	_, _, err = executeCommand("evidence", "info", "--verify", out)
@@ -1040,7 +1039,7 @@ func TestEvidenceUpdate_RefreshesTheChecksumOfACaseDifferingMatch(t *testing.T) 
 	after := checksumOf(t, updatedPackage(t, out), stored)
 	require.NotEmpty(t, after, "the entry survives under its stored spelling")
 	assert.NotEqual(t, before, after, "and its checksum is REFRESHED, not left stale")
-	sum := sha256.Sum256(rewritten)
+	sum := evidenceDigestSum(rewritten)
 	assert.Equal(t, hex.EncodeToString(sum[:]), after, "to the digest of the new bytes")
 }
 
@@ -1093,7 +1092,7 @@ func TestEvidenceUpdate_RefreshesEveryEntryNamingTheSameFile(t *testing.T) {
 	upper := checksumOf(t, updated, "scans/RHEL9.json")
 	require.NotEmpty(t, lower)
 	require.NotEmpty(t, upper)
-	sum := sha256.Sum256(body)
+	sum := evidenceDigestSum(body)
 	want := hex.EncodeToString(sum[:])
 	assert.Equal(t, want, lower, "the matched entry carries the new digest")
 	assert.Equal(t, want, upper, "and so does the OTHER entry naming the same file")
@@ -1178,7 +1177,7 @@ func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInUnicodeNormalization(t *
 	uris := contentURIs(t, updated)
 	assert.Contains(t, uris, stored, "the stored NFD spelling survives")
 	assert.NotContains(t, uris, "scans/"+nfc, "and no second entry is appended for one file")
-	sum := sha256.Sum256(src)
+	sum := evidenceDigestSum(src)
 	assert.Equal(t, hex.EncodeToString(sum[:]), checksumOf(t, updated, stored),
 		"and its checksum is refreshed, so the package does not fail its own verify")
 }

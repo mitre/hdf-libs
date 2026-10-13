@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -201,7 +200,7 @@ is the branch for artifacts document cannot hold (XML, CSV, NDJSON, text, or
 bytes that are not text at all). encoding is DERIVED from the bytes — utf-8
 when they are valid UTF-8, base64 otherwise — because an embedded copy whose
 encoding a consumer has to guess is not lossless. Carriage is byte-exact, so
-the bytes ARE hashed: content gets a sha256 of the file as read, which a
+the bytes ARE hashed: content gets a sha512 of the file as read, which a
 consumer can verify against the stored copy.
 
 The two kinds of path differ, and it is worth knowing which is which: --href names
@@ -244,9 +243,19 @@ Examples:
 	cmd.Flags().StringVar(&opts.mediaType, "media-type", "",
 		"IANA media type of the referenced artifact; meaningful only with --href, --content-file or --document-file")
 	cmd.Flags().StringVar(&opts.checksum, "checksum", "",
-		"Precomputed SHA-256 hex for a remote --href or an embedded artifact; a local --href and --content-file bytes are hashed automatically")
+		"Precomputed digest as <algorithm>:<hex> — sha256, sha384, sha512 or blake3 — "+
+			"for a remote --href or an embedded artifact; a local --href and "+
+			"--content-file bytes are hashed automatically. The algorithm must be "+
+			"stated, because a digest's length cannot identify it")
 	cmd.Flags().StringVar(&opts.contentFile, "content-file", "",
-		"Embed this file's bytes verbatim in content, for artifacts document cannot hold (XML, CSV, text, binary); sets encoding and a sha256 checksum")
+		// DERIVED from the constant that decides it, not a literal. This string said
+		// "a sha256 checksum" for one review round after the command had moved to
+		// sha512 — and the phrase-matching guard beside it could not see a wording it
+		// had not been told about. A claim built from the thing it describes cannot
+		// drift from it.
+		fmt.Sprintf("Embed this file's bytes verbatim in content, for artifacts document "+
+			"cannot hold (XML, CSV, text, binary); sets encoding and a %s checksum",
+			evidenceComputedAlgorithm))
 	cmd.Flags().StringVar(&opts.documentFile, "document-file", "",
 		"Embed this file's JSON object verbatim in document, e.g. a STIX object; not hashed, since a parsed object cannot reproduce the source bytes")
 	cmd.Flags().StringVar(&opts.encoding, "encoding", "",
@@ -257,15 +266,16 @@ Examples:
 }
 
 // embedReferenceContent reads an artifact's bytes for the content branch and returns the
-// string to store, the encoding that describes it, and a sha256 of the bytes as read.
+// string to store, the encoding that describes it, and a digest of the bytes as read
+// under evidenceComputedAlgorithm.
 //
 // readFromFile rather than readInputFile: the latter strips a UTF-8 BOM, and content is
 // carried verbatim, so a BOM must survive — stripping it would both alter the artifact and
 // leave the recorded digest unverifiable against the stored copy.
-func embedReferenceContent(path, override string) (content, encoding, checksum string, err error) {
+func embedReferenceContent(path, override string) (content, encoding, checksum, algorithm string, err error) {
 	raw, err := readFromFile(path, false) // size-gated, symlink-aware, empty refused
 	if err != nil {
-		return "", "", "", fmt.Errorf("--content-file: %w", err)
+		return "", "", "", "", fmt.Errorf("--content-file: %w", err)
 	}
 	// Derived from the bytes, because a guess is exactly what encoding exists to prevent.
 	encoding = override
@@ -281,7 +291,7 @@ func embedReferenceContent(path, override string) (content, encoding, checksum s
 		// Refused rather than written: JSON encoding replaces invalid UTF-8 with U+FFFD,
 		// which would silently corrupt the artifact and void the digest beside it.
 		if !utf8.Valid(raw) {
-			return "", "", "", fmt.Errorf("--encoding utf-8 but %s is not valid UTF-8; "+
+			return "", "", "", "", fmt.Errorf("--encoding utf-8 but %s is not valid UTF-8; "+
 				"use base64, or omit --encoding to have it derived from the bytes", path)
 		}
 		content = string(raw)
@@ -289,10 +299,15 @@ func embedReferenceContent(path, override string) (content, encoding, checksum s
 		content = base64.StdEncoding.EncodeToString(raw)
 	default:
 		// Unreachable: the boundary check rejects anything outside the schema's enum.
-		return "", "", "", fmt.Errorf("--encoding %q is not supported", encoding)
+		return "", "", "", "", fmt.Errorf("--encoding %q is not supported", encoding)
 	}
-	sum := sha256.Sum256(raw)
-	return content, encoding, hex.EncodeToString(sum[:]), nil
+	// Value and algorithm from one call, so the recorded name always describes the
+	// computation that produced the value beside it.
+	value, algo, hErr := computeEvidenceDigest(raw)
+	if hErr != nil {
+		return "", "", "", "", hErr
+	}
+	return content, encoding, value, algo, nil
 }
 
 // embedReferenceDocument reads a JSON object for the document branch. Objects only: the
@@ -429,15 +444,15 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 
 	// Embedded first, because the digest of bytes carried IN the package is the one a
 	// consumer can verify, and it therefore wins over hashing whatever --href points at.
-	var embeddedChecksum string
+	var embeddedChecksum, embeddedAlgorithm string
 	if opts.contentFile != "" {
-		content, encoding, sum, cErr := embedReferenceContent(opts.contentFile, opts.encoding)
+		content, encoding, sum, algo, cErr := embedReferenceContent(opts.contentFile, opts.encoding)
 		if cErr != nil {
 			return cErr
 		}
 		ref["content"] = content
 		ref["encoding"] = encoding
-		embeddedChecksum = sum
+		embeddedChecksum, embeddedAlgorithm = sum, algo
 	}
 	if opts.documentFile != "" {
 		embedded, dErr := embedReferenceDocument(opts.documentFile)
@@ -458,29 +473,29 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	//     the source bytes for a digest to be verified against;
 	//  2. embedded content's own bytes — verifiable against the copy stored in the package;
 	//  3. a local --href, hashed from beside the package.
-	checksumHex := ""
+	checksumHex, checksumAlgorithm := "", ""
 	switch {
 	case opts.checksum != "":
-		normalized, nErr := normalizeSHA256Hex(opts.checksum)
+		parsed, nErr := shared.ParseDigest(opts.checksum)
 		if nErr != nil {
-			return nErr
+			return fmt.Errorf("--checksum %w", nErr)
 		}
-		checksumHex = normalized
+		checksumHex, checksumAlgorithm = parsed.Value, string(parsed.Algorithm)
 	case embeddedChecksum != "":
-		checksumHex = embeddedChecksum
+		checksumHex, checksumAlgorithm = embeddedChecksum, embeddedAlgorithm
 	case opts.href != "":
 		// Reuses add-evidence's resolver so a local file is hashed and a URL is left
 		// unhashed by exactly the same rule, rather than a second implementation of it —
 		// which means it also shares the package-relative resolution: an href is read from
 		// beside the PACKAGE, not from the process CWD.
-		resolved, csErr := resolveEvidenceChecksum(filepath.Dir(file), opts.href, "")
+		resolved, algorithm, csErr := resolveEvidenceChecksum(filepath.Dir(file), opts.href, "")
 		if csErr != nil {
 			return csErr
 		}
-		checksumHex = resolved
+		checksumHex, checksumAlgorithm = resolved, algorithm
 	}
 	if checksumHex != "" {
-		ref["checksum"] = map[string]interface{}{"algorithm": "sha256", "value": checksumHex}
+		ref["checksum"] = map[string]interface{}{"algorithm": checksumAlgorithm, "value": checksumHex}
 	}
 	for key, value := range map[string]string{
 		"externalId":  opts.externalID,
