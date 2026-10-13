@@ -59,17 +59,27 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 	}
 
 	pkgDir := filepath.Dir(pkgPath)
+	refs, err := evidenceref.Collect(data)
+	if err != nil {
+		return err
+	}
 	contents, _ := doc["contents"].([]interface{})
 	exported := 0
 
-	for _, cRaw := range contents {
+	for i, cRaw := range contents {
 		entry, ok := cRaw.(map[string]interface{})
 		if !ok {
 			continue
 		}
 
+		// The type is this command's own concern; the reference comes from the
+		// seam, already decoded once.
 		docType, _ := entry["type"].(string)
-		uri, _ := entry["uri"].(string)
+		rec, found := refs.At("contents", i)
+		if !found {
+			continue
+		}
+		uri := rec.Stored
 
 		var converterSource, converterDest, outputName string
 		switch docType {
@@ -85,14 +95,10 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 			continue // Skip non-convertible types
 		}
 
-		// Resolve the reference the same way verify and bundle do, and NEVER hand
-		// SafePath the raw one: SafePath JOINS, so a root-anchored "/results.json"
-		// re-roots to <pkgDir>/results.json — a different file, which export then
-		// converted and reported under the reference it had not opened.
-		decoded, decErr := evidenceref.Decode(uri)
-		if decErr != nil {
+		if rec.Err != nil {
 			continue
 		}
+		decoded := rec.Decoded
 		ref, inTree := packageSubtreeRef(pkgDir, decoded)
 		if !inTree {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: it does not resolve inside the package's directory\n", uri)

@@ -20,6 +20,7 @@ var referenceFields = map[string]bool{
 	"contents":           true,
 	"externalEvidence":   true,
 	"externalReferences": true,
+	"rawSourceArtifacts": true,
 	"systemRef":          true,
 	"planRef":            true,
 }
@@ -40,8 +41,8 @@ var referenceFields = map[string]bool{
 // WHAT IS PERMITTED IS AN EXACT SET, NOT AN ALLOW-LIST OF FILES. hdf-libs-52n0c.30 took
 // five attempts because each fix excluded the case just demonstrated and grew a new hole;
 // the shape that finally held was permitting one thing and rejecting everything else. So
-// one file may do this, and a new bypass anywhere fails here NAMING ITS LINE — it does not
-// have to be anticipated to be caught.
+// this package may do this, and a new bypass anywhere fails here NAMING ITS LINE — it
+// does not have to be anticipated to be caught.
 func TestNoConsumerResolvesAReferenceOutsideTheSeam(t *testing.T) {
 	root := filepath.Join("..", "..")
 	const seam = "internal/evidenceref"
@@ -155,8 +156,14 @@ func TestNoConsumerResolvesAReferenceOutsideTheSeam(t *testing.T) {
 	// completeness was wrong: it asks whether a function that resolves a reference ALSO
 	// goes through the seam. A function doing both — seam for one reference, raw for
 	// another — satisfies it. That is narrower than "no reference is ever resolved raw",
-	// and the honest claim is that a NEW function resolving references without the seam
-	// at all cannot be added silently.
+	// and the honest claim is narrower still: a new function that reads a reference
+	// field BY ITS MAP SPELLING and resolves it cannot be added silently.
+	//
+	// What it does NOT catch, measured by planting one: a function taking a reference
+	// off hdf-engine's typed parse — hdfengine.EvidenceContent.URI — and resolving
+	// that. The detector keys on indexing a map with a reference-field name, and a
+	// struct field access is neither. evidence_verify.go and internal/mcp already
+	// receive references that way, so this is the likely shape of the next bypass.
 	//
 	// A pass must not mean the walk read nothing.
 	if inspected < 100 {

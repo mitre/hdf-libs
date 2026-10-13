@@ -128,7 +128,14 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	pkgDir := filepath.Dir(pkgPath)
 
 	contents, _ := doc["contents"].([]interface{})
-	coveredBefore := baselinesByRef(pkgDir, contents)
+	// The enumeration as the package stands NOW. It is re-collected twice below —
+	// inside the --results loop, and again after the document is updated — because
+	// this command mutates contents and a stale enumeration silently misses entries.
+	refs, err := evidenceref.Collect(pkgData)
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
+	}
+	coveredBefore := baselinesByRef(pkgDir, contents, refs)
 
 	// ref -> source path, built once as the refs are derived. Recomputing them later to
 	// build a lookup map would be a second derivation of the same value, which is exactly
@@ -192,7 +199,24 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 
 		sourceOf[ref] = path
-		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, ref, raw)
+		// Enumerated from the CURRENT contents, not the snapshot taken before the
+		// loop: this loop appends, so from the second --results onward the snapshot
+		// is short by this run's own entries and the lookup below would skip them.
+		//
+		// No test fails if this reverts to the snapshot, and that is measured, not
+		// assumed: an entry this run appended is already caught by the dupKey guard
+		// above, and the only other path needs checksumDivergesFrom, which cannot
+		// fire for bytes this run just hashed. So the staleness is unobservable
+		// today and the correctness here is structural.
+		loopData, loopMarshalErr := contentsAsDocument(contents)
+		if loopMarshalErr != nil {
+			return loopMarshalErr
+		}
+		loopRefs, loopErr := evidenceref.Collect(loopData)
+		if loopErr != nil {
+			return loopErr
+		}
+		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, loopRefs, ref, raw)
 		if conflictType != "" {
 			// Names the STORED spelling, which is the entry the operator has to find and
 			// remove. Naming the incoming spelling told them to remove a reference that does
@@ -213,10 +237,12 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 			// checksum: a recorded reference is part of an attestation and is not rewritten
 			// silently, so the stored form survives and the difference is reported instead.
 			for _, i := range matched {
-				existing, _ := contents[i].(map[string]interface{})
-				uri, _ := existing["uri"].(string)
-				contents[i] = contentEntryFromBytes("hdf-results", uri, raw)
-				replaced = append(replaced, uri)
+				rec, found := loopRefs.At("contents", i)
+				if !found {
+					return fmt.Errorf("contents[%d] matched but is not in the package's own enumeration", i)
+				}
+				contents[i] = contentEntryFromBytes("hdf-results", rec.Stored, raw)
+				replaced = append(replaced, rec.Stored)
 			}
 			if len(matched) > 1 {
 				multiRef = append(multiRef, [2]string{fmt.Sprint(len(matched)), ref})
@@ -234,14 +260,31 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	}
 	doc["contents"] = contents
 
+	// Re-collected, NOT the snapshot taken above: this run appends entries, so the
+	// earlier enumeration is short by exactly the documents whose coverage is about
+	// to be recomputed. Everything below this line reads the updated enumeration.
+	updatedData, marshalErr := json.Marshal(doc)
+	if marshalErr != nil {
+		return fmt.Errorf("re-read the updated package's references: %w", marshalErr)
+	}
+	updatedRefs, collectErr := evidenceref.Collect(updatedData)
+	if collectErr != nil {
+		return collectErr
+	}
+
 	// Recomputed from the POST-update content, never carried forward: a package that
 	// claims coverage it no longer has is worse than one that fails validation. Reuses
 	// build's computeCompleteness rather than a second implementation of it.
-	sysDoc, haveSystem, unresolvedRef, sysErr := systemDocForPackage(pkgDir, doc)
+	//
+	// Fed the updated enumeration for ordering discipline rather than necessity —
+	// this command never writes systemRef, so the two enumerations agree on it, and
+	// no test distinguishes them. Everything after the re-collect reads the updated
+	// one so that stops being a fact anyone has to re-derive.
+	sysDoc, haveSystem, unresolvedRef, sysErr := systemDocForPackage(pkgDir, updatedRefs)
 	if sysErr != nil {
 		return sysErr
 	}
-	allResults, resErr := resultsPathsInPackage(pkgDir, contents)
+	allResults, resErr := resultsPathsInPackage(pkgDir, contents, updatedRefs)
 	if resErr != nil {
 		return resErr
 	}
@@ -307,7 +350,7 @@ func normalizedRef(uri string) string {
 // The reference is the only replacement key. Keying on baseline name would delete one
 // component's evidence when another component assessed against the same baseline is
 // recorded.
-func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw []byte,
+func indexesOfResultsRef(pkgDir string, contents []interface{}, refs evidenceref.References, ref string, raw []byte,
 ) (matched []int, conflictType, conflictRef string, storedSpellings, otherNames []string) {
 	// COMPARED ON THE DECODED FORMS, both sides. The incoming ref is minted encoded
 	// (packageRelativeRef records a uri-reference), while a stored one carries whatever
@@ -322,8 +365,12 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw 
 		if !ok {
 			continue
 		}
-		uri, _ := entry["uri"].(string)
-		entryDecoded, _ := evidenceref.Decode(uri)
+		rec, found := refs.At("contents", i)
+		if !found {
+			continue
+		}
+		uri := rec.Stored
+		entryDecoded := rec.Decoded
 		norm := normalizedRef(string(entryDecoded))
 		exact := norm == wantNorm
 		// Narrowed to ONE NAME SPELLED DIFFERENTLY — a case difference, a Unicode
@@ -440,9 +487,9 @@ func refPath(pkgDir, uri string) string {
 
 // baselinesByRef maps each results reference to the baselines it covers, for reporting
 // which incoming document lands beside an existing one.
-func baselinesByRef(pkgDir string, contents []interface{}) map[string][]string {
+func baselinesByRef(pkgDir string, contents []interface{}, refs evidenceref.References) map[string][]string {
 	covered := map[string][]string{}
-	for _, e := range contents {
+	for i, e := range contents {
 		entry, ok := e.(map[string]interface{})
 		if !ok {
 			continue
@@ -450,10 +497,11 @@ func baselinesByRef(pkgDir string, contents []interface{}) map[string][]string {
 		if docType, _ := entry["type"].(string); docType != "hdf-results" {
 			continue
 		}
-		uri, _ := entry["uri"].(string)
-		if uri == "" {
+		rec, found := refs.At("contents", i)
+		if !found || rec.Stored == "" {
 			continue
 		}
+		uri := rec.Stored
 		// Classified first: SafePath JOINS, so a root-anchored reference re-roots onto a
 		// same-basename file inside the package and this scan would credit coverage to a
 		// document the package never named.
@@ -484,9 +532,9 @@ func baselinesByRef(pkgDir string, contents []interface{}) map[string][]string {
 
 // resultsPathsInPackage resolves every results reference to a readable path, for
 // recomputing completeness over the post-update content.
-func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, error) {
+func resultsPathsInPackage(pkgDir string, contents []interface{}, refs evidenceref.References) ([]string, error) {
 	paths := make([]string, 0, len(contents))
-	for _, e := range contents {
+	for i, e := range contents {
 		entry, ok := e.(map[string]interface{})
 		if !ok {
 			continue
@@ -499,11 +547,12 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 		if docType, _ := entry["type"].(string); docType != "hdf-results" {
 			continue
 		}
-		uri, _ := entry["uri"].(string)
-		if uri == "" {
+		rec, found := refs.At("contents", i)
+		if !found || rec.Stored == "" {
 			continue
 		}
-		decoded, decErr := evidenceref.Decode(uri)
+		uri := rec.Stored
+		decoded, decErr := rec.Decoded, rec.Err
 		if decErr != nil {
 			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, decErr)
 		}
@@ -519,6 +568,18 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 		paths = append(paths, path)
 	}
 	return paths, nil
+}
+
+// contentsAsDocument wraps the contents being assembled back into a document shape
+// so the seam can enumerate them. The error is returned rather than absorbed: an
+// empty fallback would make every lookup miss, and an entry that should be
+// refreshed in place would be appended instead.
+func contentsAsDocument(contents []interface{}) ([]byte, error) {
+	b, err := json.Marshal(map[string]interface{}{"contents": contents})
+	if err != nil {
+		return nil, fmt.Errorf("re-read the package's contents: %w", err)
+	}
+	return b, nil
 }
 
 // systemDocForPackage reads the system document the package references, so completeness
@@ -540,16 +601,16 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 // indistinguishable from one the package never recorded, and a rejected one used to
 // abort the run by name. A remote systemRef is still reported as no system document,
 // since it is recorded but was never a candidate to resolve.
-func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]interface{}, bool, string, error) {
-	ref, _ := doc["systemRef"].(string)
-	if ref == "" || isRemoteURI(ref) {
+func systemDocForPackage(pkgDir string, refs evidenceref.References) (map[string]interface{}, bool, string, error) {
+	rec, found := refs.At("systemRef", -1)
+	ref := rec.Stored
+	if !found || ref == "" || isRemoteURI(ref) {
 		return map[string]interface{}{}, false, "", nil
 	}
-	decoded, decErr := evidenceref.Decode(ref)
-	if decErr != nil {
-		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, decErr)
+	if rec.Err != nil {
+		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, rec.Err)
 	}
-	resolved, inTree := packageSubtreeRef(pkgDir, decoded)
+	resolved, inTree := packageSubtreeRef(pkgDir, rec.Decoded)
 	if !inTree {
 		return map[string]interface{}{}, false, ref, nil
 	}

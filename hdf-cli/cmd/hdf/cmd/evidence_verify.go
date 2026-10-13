@@ -89,7 +89,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireC
 	}
 
 	// Classify EVERY reference the package records, deriving them from the one place
-	// that knows all five fields rather than re-enumerating them here — the
+	// that knows all six fields rather than re-enumerating them here — the
 	// hand-enumeration this replaces covered planRef and contents[] only, so an
 	// absolute systemRef was never examined at all. This cannot ride along with
 	// checksum verification: an entry carrying no checksum is skipped there, so a

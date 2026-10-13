@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -234,9 +233,9 @@ func reportUnverifiable(uris []string, recorded bool, summary string) {
 // not bury the rest of the report.
 const maxNamedUnverifiable = 50
 
-// recordedRefs returns EVERY reference the document makes. Every consumer of "what does
-// this package point at" derives from here rather than enumerating fields at its own
-// call site, because hand-enumeration made the same data-loss bug recur four times, once
+// recordedRefs returns EVERY reference the document makes, with the per-entry checksum
+// data bundle and verify report. The enumeration itself comes from evidenceref.Collect,
+// because hand-enumeration at each call site made the same data-loss bug recur four times, once
 // per reference field nobody remembered to add. The schema declares six: systemRef,
 // planRef, contents[].uri, externalEvidence[].uri, externalReferences[].href and
 // extensions.rawSourceArtifacts[].href — the last two being inert context that never
@@ -244,107 +243,70 @@ const maxNamedUnverifiable = 50
 // TestEvidenceBundle_CoversEverySchemaReferenceField walks the schema and fails if that
 // set changes, so the schema is the authority rather than this comment.
 func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recordedRef, error) {
-	var doc struct {
-		SystemRef string `json:"systemRef"`
-		PlanRef   string `json:"planRef"`
+	collected, err := evidenceref.Collect(pkgData)
+	if err != nil {
+		return nil, err
 	}
-	if err := json.Unmarshal(pkgData, &doc); err != nil {
-		return nil, fmt.Errorf("read the package's references: %w", err)
+	external := externalEvidenceRefs(pkgData)
+
+	// Label and kind are this command's presentation concerns, so they live here
+	// rather than in the seam. Keyed by field, not by position in the list.
+	meta := map[string]struct {
+		label string
+		kind  refKind
+	}{
+		"systemRef":                     {"system reference", refDocument},
+		"planRef":                       {"plan reference", refDocument},
+		"contents":                      {"content reference", refDocument},
+		"externalEvidence":              {"external evidence", refExternal},
+		"externalReferences":            {"external reference", refContext},
+		"extensions.rawSourceArtifacts": {"raw source artifact", refContext},
 	}
-	refs := make([]recordedRef, 0, len(contents)+4)
-	refs = append(refs,
-		recordedRef{uri: doc.SystemRef, label: "system reference", field: "systemRef", kind: refDocument},
-		recordedRef{uri: doc.PlanRef, label: "plan reference", field: "planRef", kind: refDocument})
-	for _, c := range contents {
-		refs = append(refs, recordedRef{
-			uri: c.URI, label: "content reference", field: "contents", kind: refDocument,
-			checksum: c.Checksum, algorithm: c.ChecksumAlgorithm, checksumRecorded: c.ChecksumRecorded,
-			canRecordChecksum: true,
-		})
-	}
-	for _, e := range externalEvidenceRefs(pkgData) {
-		refs = append(refs, recordedRef{
-			uri: e.uri, label: "external evidence", field: "externalEvidence", kind: refExternal,
-			checksum: e.checksum, algorithm: e.algorithm, checksumRecorded: e.recorded,
-			canRecordChecksum: true,
-		})
-	}
-	for _, c := range externalContextRefs(pkgData) {
-		refs = append(refs, recordedRef{
-			// External_Reference DOES declare a checksum, so the schema fact is true here
-			// even though nothing reads it: a context reference is inert and never
-			// reaches the collector, which is decided by kind, not by this flag. The two
-			// stay separate so each comes from one source.
-			uri: c, label: "external reference", field: "externalReferences", kind: refContext,
-			canRecordChecksum: true,
-		})
-	}
-	for _, c := range rawSourceArtifactRefs(pkgData) {
-		refs = append(refs, recordedRef{
-			// Raw_Source_Artifact is allOf over External_Reference, so it declares a
-			// checksum — "of the exact bytes the converter read", in the schema's own
-			// words. Inert all the same, decided by kind, like externalReferences.
-			uri: c, label: "raw source artifact", field: "extensions.rawSourceArtifacts", kind: refContext,
-			canRecordChecksum: true,
-		})
-	}
-	// One pass over the assembled list rather than a field set at each construction
-	// site: a new reference field added above cannot forget to decode.
-	for i := range refs {
-		if refs[i].uri == "" {
-			continue
+
+	refs := make([]recordedRef, 0, len(collected))
+	for _, c := range collected {
+		m, known := meta[c.Field]
+		if !known {
+			return nil, fmt.Errorf("reference field %q has no label here: the seam enumerates a field this command does not report", c.Field)
 		}
-		decoded, err := evidenceref.Decode(refs[i].uri)
-		if err != nil {
-			refs[i].decodeErr = err
-			continue
+		r := recordedRef{
+			uri: c.Stored, label: m.label, field: c.Field, kind: m.kind,
+			decoded: c.Decoded, decodeErr: c.Err,
 		}
-		refs[i].decoded = decoded
+		// Per-entry checksum data is re-attached by (field, index). The spelling is
+		// compared rather than trusted, because pairing a checksum with the wrong
+		// reference is silent and the index is the only thing joining them.
+		//
+		// Both refusals below are defensive and unreachable today: hdf-engine parses
+		// the same bytes with the same walk and no filtering or reordering, so the
+		// two enumerations cannot diverge. They exist because that is a property of
+		// today's parser, not of this function's contract. Untested for the same
+		// reason — a test would have to break the parser to reach them.
+		switch c.Field {
+		case "contents":
+			if c.Index < 0 || c.Index >= len(contents) || contents[c.Index].URI != c.Stored {
+				return nil, fmt.Errorf("contents[%d] does not line up with the package's own parse (%q): refusing to attach a checksum to the wrong reference", c.Index, c.Stored)
+			}
+			e := contents[c.Index]
+			r.checksum, r.algorithm, r.checksumRecorded = e.Checksum, e.ChecksumAlgorithm, e.ChecksumRecorded
+			r.canRecordChecksum = true
+		case "externalEvidence":
+			if c.Index < 0 || c.Index >= len(external) || external[c.Index].uri != c.Stored {
+				return nil, fmt.Errorf("externalEvidence[%d] does not line up with the package's own parse (%q): refusing to attach a checksum to the wrong reference", c.Index, c.Stored)
+			}
+			e := external[c.Index]
+			r.checksum, r.algorithm, r.checksumRecorded = e.checksum, e.algorithm, e.recorded
+			r.canRecordChecksum = true
+		case "externalReferences", "extensions.rawSourceArtifacts":
+			// Both declare a checksum in the schema, so the flag is true even
+			// though nothing reads it: whether a reference is fetched is decided
+			// by kind, not by this flag, and the two stay separate so each comes
+			// from one source.
+			r.canRecordChecksum = true
+		}
+		refs = append(refs, r)
 	}
 	return refs, nil
-}
-
-// rawSourceArtifactRefs reads extensions.rawSourceArtifacts[].href — the sixth reference
-// field. refContext, and the schema is what decides that: a Raw_Source_Artifact carries the
-// converter's input BYTES inline in content+encoding, and its href "appears only when the
-// caller supplied a location that means something to a reader, never a producer's local
-// filesystem path". So there is no file here for the archive to carry, which is the same
-// position externalReferences[] holds. It is still enumerated, because the -o guard covers
-// every reference the document makes rather than the subset that travels.
-func rawSourceArtifactRefs(pkg []byte) []string {
-	var doc struct {
-		Extensions struct {
-			RawSourceArtifacts []struct {
-				Href string `json:"href"`
-			} `json:"rawSourceArtifacts"`
-		} `json:"extensions"`
-	}
-	if json.Unmarshal(pkg, &doc) != nil {
-		return nil
-	}
-	out := make([]string, 0, len(doc.Extensions.RawSourceArtifacts))
-	for _, r := range doc.Extensions.RawSourceArtifacts {
-		out = append(out, r.Href)
-	}
-	return out
-}
-
-// externalContextRefs reads externalReferences[].href — the fifth reference field, and
-// the one a hand-written list of four missed.
-func externalContextRefs(pkg []byte) []string {
-	var doc struct {
-		ExternalReferences []struct {
-			Href string `json:"href"`
-		} `json:"externalReferences"`
-	}
-	if json.Unmarshal(pkg, &doc) != nil {
-		return nil
-	}
-	out := make([]string, 0, len(doc.ExternalReferences))
-	for _, r := range doc.ExternalReferences {
-		out = append(out, r.Href)
-	}
-	return out
 }
 
 // externalEvidenceRefs adapts the engine's parse to the shape bundle's reference
@@ -442,7 +404,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// DOCUMENT is read (the package itself must be read first — refs derive from it), and
 	// over recordedRefs — every reference the document makes, not the
 	// subset that travels and not a hand-written list of fields. Scoping this to what
-	// travels, then to two of its five reference fields, let the command destroy an
+	// travels, then to two of its then-five reference fields, let the command destroy an
 	// irreplaceable artifact three separate times; deriving it is what stops a fourth.
 	refs, err := recordedRefs(pkgData, contents)
 	if err != nil {

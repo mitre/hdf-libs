@@ -1828,3 +1828,32 @@ func countMatching(uris []string, prefix string) int {
 	}
 	return n
 }
+
+// Why the decode-error branches in THESE commands are defensive rather than dead:
+// the schema's uri-reference format REFUSES a malformed escape at the boundary,
+// and every CLI evidence command validates before it resolves. This pins that
+// gate, because the comments calling those branches unreachable hold only while
+// it does.
+//
+// It does NOT hold for the MCP, which is why the claim is scoped to the CLI here:
+// requireEvidencePackage gates on the document TYPE and never reads load.Valid,
+// so checksum mode proceeds on a document it has already judged invalid and does
+// reach the seam's decode path.
+func TestEvidenceUpdate_AMalformedReferenceIsRefusedAtTheSchemaBoundary(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+
+	doc := updatedPackage(t, pkgPath)
+	doc["systemRef"] = "sys%2.json"
+	poisoned, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, poisoned, 0o600))
+
+	scan := writeScan(t, dir, "postgres-results.json", "pg.json")
+	out := filepath.Join(dir, "updated.json")
+	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.Error(t, err, "a malformed percent-escape must not be accepted")
+	assert.Contains(t, err.Error(), "systemRef",
+		"the refusal names the field, so an operator can find the entry")
+	assert.Contains(t, err.Error(), "uri-reference",
+		"and names the format it violates, which is what makes the deeper decode paths defensive")
+}

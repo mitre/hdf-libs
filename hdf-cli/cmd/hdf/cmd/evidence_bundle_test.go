@@ -1131,8 +1131,8 @@ func TestEvidenceBundle_CoversEverySchemaReferenceField(t *testing.T) {
 		".planRef",
 		".systemRef",
 	}, paths,
-		"the schema's reference fields changed. Add the new one to recordedRefs (which the "+
-			"-o guard and the collection loop both derive from) and to this list, then add it "+
+		"the schema's reference fields changed. Add the new one to evidenceref.Collect (which recordedRefs, "+
+			"the -o guard and the collection loop all derive from) and to this list, then add it "+
 			"to the package built below so its coverage is actually proven")
 
 	// Every one of those fields, populated, must come back from recordedRefs.

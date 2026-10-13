@@ -320,7 +320,10 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	}
 
 	existing, _ := doc["externalEvidence"].([]interface{})
-	recorded := recordedEvidenceURIs(existing)
+	recorded, err := recordedEvidenceURIs(data)
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", file, err)
+	}
 
 	// An in-package artifact IS carried into a bundled archive, under an entry name
 	// relative to the package, so recording a machine-local absolute path leaves the
@@ -409,26 +412,25 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 // A second, inconsistent entry was then added for one file, one of them without a
 // checksum, splitting its attestation across two records. The command's help has always
 // promised the opposite.
-func recordedEvidenceURIs(existing []interface{}) map[string]string {
-	seen := make(map[string]string, len(existing))
-	for _, e := range existing {
-		entry, ok := e.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		uri, ok := entry["uri"].(string)
-		if !ok {
+func recordedEvidenceURIs(pkgData []byte) (map[string]string, error) {
+	refs, err := evidenceref.Collect(pkgData)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]string, len(refs))
+	for _, r := range refs {
+		if r.Field != "externalEvidence" || r.Stored == "" {
 			continue
 		}
 		// An undecodable reference is keyed as recorded: it identifies nothing, but a
 		// package carrying one must not silently lose it from the guard either.
-		if decoded, err := evidenceref.Decode(uri); err == nil {
-			seen[string(decoded)] = uri
+		if r.Err != nil {
+			seen[r.Stored] = r.Stored
 			continue
 		}
-		seen[uri] = uri
+		seen[string(r.Decoded)] = r.Stored
 	}
-	return seen
+	return seen, nil
 }
 
 // evidenceComputedAlgorithm is the algorithm every authoring command uses when IT
