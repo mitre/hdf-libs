@@ -9,6 +9,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 export type ProblemOwner = 'taxonomy' | 'convention' | 'service';
 
 export interface ProblemDoc {
+  /** The mcperr code this type maps, where one does (ADR-0010 §6). */
+  code?: string;
   title: string;
   status: number;
   owner: ProblemOwner;
@@ -40,9 +42,17 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
       throw new Error(`problems.yaml: ${JSON.stringify(type)} is not a problem type name`);
     }
     const entry = value as Record<string, unknown>;
-    const keys = Object.keys(entry).sort().join(',');
-    if (keys !== 'cause,owner,remedy,status,title') {
-      throw new Error(`problems.yaml: ${type} declares ${keys}, expected cause,owner,remedy,status,title`);
+    const required = ['cause', 'owner', 'remedy', 'status', 'title'];
+    const keys = Object.keys(entry).sort();
+    const unexpected = keys.filter((key) => !required.includes(key) && key !== 'code');
+    const missing = required.filter((key) => !keys.includes(key));
+    if (unexpected.length > 0 || missing.length > 0) {
+      throw new Error(
+        `problems.yaml: ${type} declares ${keys.join(',')}, expected ${required.join(',')} and an optional code`,
+      );
+    }
+    if (entry.code !== undefined && (typeof entry.code !== 'string' || !/^[A-Z][A-Z_]*$/.test(entry.code))) {
+      throw new Error(`problems.yaml: ${type} has code ${String(entry.code)}, which is not an mcperr code`);
     }
     if (typeof entry.status !== 'number' || entry.status < 400 || entry.status > 599) {
       throw new Error(`problems.yaml: ${type} has status ${String(entry.status)}, not a 4xx or 5xx`);
@@ -59,3 +69,31 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
   }
   return out;
 }
+
+/** Where the hosted problem-type pages live, which every `type` value dereferences to. */
+export const PROBLEM_BASE = 'https://mitre.github.io/hdf-libs/problems';
+
+/**
+ * ADR-0010 §6's code-to-status-and-type mapping, derived from the table rather than
+ * restated beside it — §6 says the mapping exists exactly once. A test parses that section
+ * out of the ADR and compares it to this.
+ */
+export function problemTypes(docs = loadProblemDocs()): Record<string, { status: number; type: string }> {
+  const mapped: Record<string, { status: number; type: string }> = {};
+  for (const [type, entry] of Object.entries(docs)) {
+    if (entry.code !== undefined) mapped[entry.code] = { status: entry.status, type };
+  }
+  return mapped;
+}
+
+/**
+ * The codes ADR-0010 §6 marks `never`. Recorded rather than silently dropped: each is a
+ * `file`-adapter concern with no HTTP surface, and TRUNCATED is dead in the MCP too.
+ */
+export const UNMAPPED_CODES = [
+  'CACHE_MISS',
+  'OUTPUT_EXISTS',
+  'PATH_DENIED',
+  'WRITE_FAILED',
+  'TRUNCATED',
+];

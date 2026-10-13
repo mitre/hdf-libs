@@ -2,10 +2,13 @@
 
 OpenAPI 3.1 components for the Heimdall Data Format, generated from the HDF JSON Schema 2020-12 bundles.
 
-> **Status:** both documents ship. `hdf-components.oas.json` carries the components generated from the
-> schema bundles; `hdf-api.oas.json` is the reference API generated from the HDF MCP server's contract and a
-> closed-grammar binding table (ADR-0008 §2), published alongside `problems.json`, the documentation for every
-> RFC 9457 problem type it declares.
+> **Status:** this package publishes the schema components document, `hdf-components.oas.json`, and
+> `problems.json` — the documentation for every RFC 9457 problem type the HDF taxonomy defines.
+>
+> **The reference API document moved to `hdf-data-platform` on 2026-10-13** and is no longer built here. It
+> was generated from the HDF MCP server's tool contract; it is now written there as route declarations with
+> the document generated from them. If you are looking for the API's OpenAPI document, it is published by
+> that repository, not this one.
 
 ## Why this exists
 
@@ -17,10 +20,11 @@ So this package generates the components instead. Nothing here is hand-authored 
 schema embed. The only thing in this repository that reads this package is the docs site, whose generators
 publish both documents, their per-version archives and a page per problem type from `dist/`.
 
-The reference API is generated the same way, from the MCP contract golden plus a closed-grammar binding table
-mechanically prevented from containing API fragments (ADR-0008 §2). The shared components it applies to every
-operation — identity and `ETag`, the problem details mapped onto the `mcperr` taxonomy, the pagination
-envelope, limits, security scopes — are the one hand-authored input, and §2 fixes what they may contain.
+`problems.json` is the other published artifact: ADR-0010 §6's single code-to-status mapping, plus a title, a
+cause and a client-facing remedy per problem type. It stays here because the taxonomy it documents is the MCP
+server's, and because the type URIs it describes are hosted on this repository's site, where RFC 9457 §3.1.1
+expects them to dereference. Anything serving HDF over HTTP can build a conforming problem body from it
+without re-deriving the mapping.
 
 ## Installation
 
@@ -88,8 +92,6 @@ Every other definition is hoisted to `#/components/schemas/<Name>` under its own
 - **Which keywords the document uses**, with counts, so a schema change that introduces a keyword nothing in the matrix supports is a failing diff rather than a consumer's discovery.
 - **Redocly at zero findings, every severity** — *and* the per-rule counts its waivers are absorbing, measured by re-running with every waiver stripped. A waiver can therefore never quietly grow to cover a new finding. Every waiver in `redocly.yaml` carries the reason it does not apply to a document schema, and because those counts mix suppressed false positives with any future genuine finding, movement in them needs human triage rather than a blind re-record.
 
-- **Spectral at zero errors**, over the core `oas` ruleset loaded through Spectral's library rather than its CLI (`scripts/spectral-lint.mjs`). **The OWASP API Security ruleset is not loaded**, and that is measured rather than an oversight: the reasons, with the dates they were re-checked, live in `.spectral.mjs` beside the ruleset they explain. The short version is that every way of loading it carries either an unfixable advisory or a bundler that cannot import it, and the library packages used here carry neither of the offending dependencies at all.
-
 - **Whether each generator can consume the document at all.** `openapi-typescript` can. **`oapi-codegen` 2.8.0 cannot:** its parser (kin-openapi) rejects a boolean subschema, which HDF uses to express the three-tier BOM rule (`properties: { model: false }` on a non-`ai-model` BOM). The refusal and its trigger are recorded rather than worked around, because the construct is a real constraint and dropping it would weaken the schema to suit one tool.
 - **Per keyword, whether a generator's output depends on it** — measured differentially: generate from a probe schema carrying the keyword, generate again with that one keyword deleted, compare the bytes. Both generators honour the structural keywords (`$ref`, `properties`, `required`, `items`, `type`, `enum`, `allOf`/`anyOf`/`oneOf`, `format`) and **both discard every validation constraint**: `minimum`, `maximum`, `minLength`, `minItems`, `pattern`, `contains`, `not`, `dependentRequired`, `if`/`then`/`else` and `unevaluatedProperties`. Generated types are shape-only. Anything that must actually enforce the schema has to run a validator — which is why ADR-0008 §7 derives Zod from this document rather than trusting generated types.
 
@@ -113,14 +115,10 @@ Conformance is checked separately and more strictly than any linter manages: `te
 The components document's `info.version` tracks the schema `$id` version, read from the bundle rather than
 from this package's version — the two axes are independent and have already diverged.
 
-The reference API carries its own semver (`API_VERSION` in `src/generate-api.ts`), and ADR-0008 §4 says which
-digit moves: a components minor is an API minor, a components major is an API major, a change to the MCP
-golden bumps the API document. Because none of those covers a change to the binding table or the conventions
-— where the breaking changes have in practice come from — `info` also carries `x-hdf-contract-digest` over the
-whole document except `info` itself, and `test/baseline/contract.json` fails when that digest moves under an
-unchanged version. The digest detects; the version still has to be bumped deliberately, because only a human
-can say whether a change is breaking. Re-record with `pnpm run contract:update`, which is correct while a
-version is unreleased and wrong once it has shipped.
+The reference API's versioning, and the contract digest that enforced it, moved with the document. What stays
+here cannot drift the same way: this document's version is *read from* the schema bundle rather than hand-set,
+so it cannot disagree with its own content, and `EXPECTED_DEFINITIONS` fails the build when the content
+changes without review.
 
 ## Design
 

@@ -31,10 +31,11 @@ test('every documented type publishes a page', () => {
 
 // The document-derived half of this chain lives in hdf-openapi/test/problem-docs.test.ts,
 // which asserts every type the API declares has a table entry. It cannot live here: a
-// sibling test in this suite renames hdf-openapi/dist/hdf-api.oas.json aside to exercise an
-// optional-document path, and node:test runs files concurrently, so reading it here is an
-// ENOENT waiting to happen (hdf-libs-sp84s). Composed, the two halves are document -> table
-// -> page; this file owns the second.
+// sibling test in this suite renames hdf-openapi/dist/hdf-components.oas.json aside to
+// prove a missing required document fails loudly, and node:test runs files concurrently, so
+// reading a built document here is an ENOENT waiting to happen (hdf-libs-sp84s). Composed,
+// the two halves are table -> page here and table shape in hdf-openapi; the coverage
+// direction against an API's declared types moved to the sibling with the API.
 test('each page states its status and links the RFC', () => {
   for (const [type, entry] of Object.entries(table)) {
     const page = fs.readFileSync(path.join(PAGES_DIR, type, 'index.md'), 'utf-8');

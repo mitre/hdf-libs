@@ -44,14 +44,6 @@ export const DOCUMENTS = [
     blurb:
       'The data types, generated from the HDF schema bundles. Components-only: it describes the documents, not an API surface.',
   },
-  {
-    name: 'hdf-api',
-    title: 'Reference API',
-    json: 'hdf-openapi/dist/hdf-api.oas.json',
-    required: false,
-    blurb:
-      'The HTTP surface, generated from the MCP contract and the binding table. Every operation, parameter and response shape is derived; none is hand-authored.',
-  },
 ];
 
 const PAGES_DIR = path.resolve(__dirname, 'openapi');

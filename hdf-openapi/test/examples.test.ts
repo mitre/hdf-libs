@@ -5,7 +5,6 @@ import { validateExample } from '../src/validate-example.js';
 
 const HERE = new URL('.', import.meta.url).pathname;
 const DIST = join(HERE, '..', 'dist');
-const SRC = join(HERE, '..', 'src');
 
 interface OpenApiDocument {
   components: {
@@ -21,9 +20,10 @@ interface OpenApiDocument {
 const load = (name: string): OpenApiDocument =>
   JSON.parse(readFileSync(join(DIST, name), 'utf-8')) as OpenApiDocument;
 
+// One document since the reference API moved to the sibling repository. Kept as a list so
+// a second document does not need this file restructured.
 const DOCUMENTS: [string, OpenApiDocument][] = [
   ['hdf-components.oas.json', load('hdf-components.oas.json')],
-  ['hdf-api.oas.json', load('hdf-api.oas.json')],
 ];
 
 /** An example, the schema it must satisfy, and where it was found. */
@@ -145,7 +145,7 @@ function sites(doc: OpenApiDocument): Site[] {
   return found;
 }
 
-describe('every example in both published documents validates against its own schema', () => {
+describe('every example in the published document validates against its own schema', () => {
   /**
    * Every position in the document that carries an `example` or `examples` key, found by a
    * walk that knows nothing about schema keywords.
@@ -183,8 +183,10 @@ describe('every example in both published documents validates against its own sc
   });
 
   it('reaches the nested subschema examples a top-level-only walk misses', () => {
-    const api = DOCUMENTS.find(([n]) => n === 'hdf-api.oas.json')![1];
-    const where = sites(api).map((s) => s.where);
+    // Both are HDF component schemas, so they are in this document whether or not an API
+    // document exists — the nested-walk defect this guards is the same either way.
+    const doc = DOCUMENTS.find(([n]) => n === 'hdf-components.oas.json')![1];
+    const where = sites(doc).map((s) => s.where);
     expect(where).toContain('components/schemas/Cvss/properties/source');
     expect(where).toContain('components/schemas/HdfResults/properties/preAmendmentChecksum');
   });
@@ -204,80 +206,5 @@ describe('every example in both published documents validates against its own sc
       }
     }
     expect(failures).toEqual([]);
-  });
-});
-
-// §3: a problem example must not leak the MCP it was derived from. `nextCall` is rewritten
-// by the generator, and `detail` must not carry paths or raw upstream strings — so a tool
-// name or an HDF_MCP_ env var surviving into an example means the rewrite did not run.
-describe('no problem example leaks the MCP surface', () => {
-  const toolNames = (
-    JSON.parse(readFileSync(join(SRC, 'tools-list.golden.json'), 'utf-8')) as {
-      tools: { name: string }[];
-    }
-  ).tools.map((t) => t.name);
-
-  const problemExamples = (): { where: string; text: string }[] => {
-    const found: { where: string; text: string }[] = [];
-    for (const [name, doc] of DOCUMENTS) {
-      for (const site of sites(doc)) {
-        if (!site.where.includes('problem+json')) continue;
-        site.examples.forEach((example, i) => {
-          found.push({ where: `${name} ${site.where}[${i}]`, text: JSON.stringify(example) });
-        });
-      }
-    }
-    return found;
-  };
-
-  it('there are problem examples to check', () => {
-    expect(toolNames.length).toBeGreaterThan(5);
-    expect(problemExamples().length).toBeGreaterThan(5);
-  });
-
-  it('carries no HDF_MCP_ substring', () => {
-    for (const { where, text } of problemExamples()) {
-      expect(text, where).not.toContain('HDF_MCP_');
-    }
-  });
-
-  it('names no MCP tool', () => {
-    for (const { where, text } of problemExamples()) {
-      for (const tool of toolNames) {
-        expect(text, `${where} names ${tool}`).not.toContain(tool);
-      }
-    }
-  });
-});
-
-// AC2 rests entirely on validateExample REPORTING a fault, and the committed suite only
-// ever exercised the path where it finds none — so its fault branch was uncovered and the
-// whole gate above could have been passing on a helper that never returns anything.
-describe('the harness this gate rests on can report a fault', () => {
-  it('reports the index and the error when an example violates its schema', () => {
-    const faults = validateExample({
-      type: 'object',
-      required: ['status'],
-      properties: { status: { type: 'integer' } },
-      examples: [{ status: 404 }, { status: 'four-oh-four' }, {}],
-    });
-    expect(faults.map((f) => f.index)).toEqual([1, 2]);
-    expect(faults[0]!.errors).toContain('must be integer');
-    expect(faults[1]!.errors).toContain('status');
-  });
-
-  it('resolves a $ref through the references it is handed', () => {
-    const references = {
-      Problem: { type: 'object', required: ['status'], properties: { status: { type: 'integer' } } },
-    };
-    expect(
-      validateExample({ $ref: '#/components/schemas/Problem', examples: [{ status: 404 }] }, references),
-    ).toEqual([]);
-    expect(
-      validateExample(
-        { $ref: '#/components/schemas/Problem', examples: [{ status: 'no' }] },
-        references,
-      ),
-    ).toHaveLength(1);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { PROBLEM_TYPES, UNMAPPED_CODES } from '../src/generate-api.js';
+import { UNMAPPED_CODES, problemTypes } from '../src/problems.js';
 
 const ADR = join(
   new URL('.', import.meta.url).pathname,
@@ -42,7 +42,7 @@ describe('the problem-type table agrees with ADR-0010 §6', () => {
     expect(adr.has('DOCUMENT_NOT_FOUND')).toBe(true);
   });
 
-  it.each([...Object.entries(PROBLEM_TYPES)])(
+  it.each([...Object.entries(problemTypes())])(
     '%s maps to the status and type the ADR gives it',
     (code, mapping) => {
       const row = adr.get(code);
@@ -58,17 +58,19 @@ describe('the problem-type table agrees with ADR-0010 §6', () => {
     },
   );
 
-  it('every code the ADR gives an HTTP status is mapped, and no other', () => {
-    const withStatus = [...adr.entries()]
-      .filter(([, r]) => /^\d{3}/.test(r.status))
-      .map(([code]) => code);
-    const contract = JSON.parse(
-      readFileSync(join(new URL('.', import.meta.url).pathname, '..', 'src', 'mcp-contract.golden.json'), 'utf-8'),
-    ) as { errorCodes: string[] };
-    // Scoped to what the contract actually carries: §6 also covers codes this generator
-    // never sees, which belong to the data layer rather than the MCP surface.
-    const relevant = withStatus.filter((c) => contract.errorCodes.includes(c)).sort();
-    expect(Object.keys(PROBLEM_TYPES).sort()).toEqual(relevant);
+  // The completeness direction — "every code that reaches HTTP is mapped here" — needed the
+  // MCP contract golden to say which codes reach HTTP at all, and that question moved to
+  // the sibling repository with the API document: its operations are what declare a status.
+  // What remains checkable here is the converse, which is the one that matters for a table
+  // claiming to BE the mapping: nothing in it contradicts §6.
+  it('no mapped code is one the ADR says never reaches HTTP', () => {
+    const mapped = Object.keys(problemTypes());
+    expect(mapped.length).toBeGreaterThan(5);
+    for (const code of mapped) {
+      const row = adr.get(code);
+      expect(row, `${code} is mapped here and has no row in ADR-0010 §6`).toBeDefined();
+      expect(row!.status, `${code} is mapped to a status and §6 says never`).toMatch(/^\d{3}/);
+    }
   });
 
   it('every unmapped code is one the ADR marks as never reaching HTTP', () => {

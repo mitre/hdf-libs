@@ -406,16 +406,6 @@ jobs:
       # keyword inventory, and both generators' per-keyword verdicts.
       - name: Tooling matrix matches the tracked baseline
         run: pnpm --filter @mitre/hdf-openapi run matrix
-      # The contract goldens are tracked copies of hdf-cli's, because the generator must
-      # run from the published tarball. --check reports drift without writing.
-      - name: Contract goldens are in sync with hdf-cli
-        run: pnpm --filter @mitre/hdf-openapi exec node scripts/sync-mcp-golden.mjs --check
-      - name: Generate the reference API document
-        run: pnpm --filter @mitre/hdf-openapi run build:api
-      - name: Redocly accepts the reference API document
-        run: pnpm --filter @mitre/hdf-openapi run lint:api
-      - name: Spectral accepts the reference API document
-        run: pnpm --filter @mitre/hdf-openapi run lint:spectral
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:

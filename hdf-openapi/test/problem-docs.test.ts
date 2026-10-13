@@ -2,88 +2,51 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { loadProblemDocs } from '../src/problems.js';
-import { generateApiDocument } from '../src/generate-api.js';
+import { PROBLEM_BASE, loadProblemDocs, problemTypes } from '../src/problems.js';
 
 const docs = loadProblemDocs();
-const api = generateApiDocument();
-
-/** Every problem type the emitted document declares, read back out of it. */
-function declaredTypes(): Set<string> {
-  const found = new Set<string>();
-  const walk = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
-    }
-    if (node === null || typeof node !== 'object') return;
-    const value = (node as { type?: unknown }).type;
-    if (typeof value === 'string' && value.includes('/problems/')) {
-      found.add(value.slice(value.lastIndexOf('/') + 1));
-    }
-    Object.values(node).forEach(walk);
-  };
-  walk(api);
-  return found;
-}
 
 /**
- * Each declared problem type paired with the status the document states for it. Read from
- * the example's own `status` member, not from the response key: the conventional responses
- * live in components.responses behind a $ref, so walking operations alone found 9 of 14.
+ * The problem-type table, after the reference API moved to the sibling repository.
+ *
+ * What it can no longer check: that the table covers every type an API declares. That
+ * needed a document with operations in it, and the operations are the sibling's now — so
+ * the coverage direction is asserted there, against its own document. Recorded here so the
+ * next reader does not take this file's silence for the absence of the question.
+ *
+ * What it still checks is what makes the table usable: the shape of every entry, agreement
+ * with ADR-0010 §6 where an entry names a code, prose written for HTTP rather than for the
+ * MCP, and that the published JSON is the table the build produced.
  */
-function declaredWithStatus(): [string, number][] {
-  const pairs = new Map<string, number>();
-  const walk = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      node.forEach(walk);
-      return;
+describe('the problem-type table is well formed and HTTP-facing', () => {
+  it('there are entries to check', () => {
+    expect(Object.keys(docs).length).toBeGreaterThan(10);
+  });
+
+  it.each(Object.entries(docs))('%s carries a hosted type URI that is its own key', (type) => {
+    expect(`${PROBLEM_BASE}/${type}`).toMatch(/^https:\/\/mitre\.github\.io\/hdf-libs\/problems\/[a-z][a-z0-9-]*$/);
+  });
+
+  it.each(Object.entries(docs))('%s declares an owner the vocabulary admits', (_type, entry) => {
+    expect(['taxonomy', 'convention', 'service']).toContain(entry.owner);
+  });
+
+  // An entry naming a code is making a claim about ADR-0010 §6, which test/problem-types.test.ts
+  // checks against the ADR text. Here we only assert the two views agree with each other.
+  it('every coded entry appears in the derived mapping with the same status', () => {
+    const mapping = problemTypes();
+    const coded = Object.entries(docs).filter(([, entry]) => entry.code !== undefined);
+    expect(coded.length).toBeGreaterThan(5);
+    for (const [type, entry] of coded) {
+      expect(mapping[entry.code!]).toEqual({ status: entry.status, type });
     }
-    if (node === null || typeof node !== 'object') return;
-    const { type, status } = node as { type?: unknown; status?: unknown };
-    if (typeof type === 'string' && type.includes('/problems/') && typeof status === 'number') {
-      pairs.set(type.slice(type.lastIndexOf('/') + 1), status);
-    }
-    Object.values(node).forEach(walk);
-  };
-  walk(api);
-  return [...pairs];
-}
-
-describe('every problem type the API declares is documented', () => {
-  const declared = declaredTypes();
-
-  it('the document declares some, so the comparisons below cannot pass vacuously', () => {
-    expect(declared.size).toBeGreaterThan(10);
   });
 
-  it.each([...declared])('%s has a documentation entry', (type) => {
-    expect(Object.keys(docs), `${type} dereferences to nothing`).toContain(type);
-  });
-
-  // ADR-0008 §3 names two convention-owned types. One of them is raised before the store by
-  // ADR-0011 and so appears in no operation here, which is why coverage is not symmetric.
-  it.each(Object.keys(docs))('%s is declared by the document or owned by a convention', (type) => {
-    if (declared.has(type)) return;
-    expect(docs[type]!.owner).toBe('convention');
-  });
-
-  // Read back out of the document rather than compared to PROBLEM_TYPES, which maps only
-  // the seven mcperr-derived types: the other eight statuses would have gone unchecked, and
-  // a page advertising a status the API does not return is worse than no page.
-  it.each([...declaredWithStatus()])(
-    '%s is documented with the status the document returns it under',
-    (type, status) => {
-      expect(docs[type]!.status).toBe(status);
-    },
-  );
-
-  // §2's rewrite map keeps MCP vocabulary off the HTTP surface, and card .7 carries an AC
-  // forbidding it in any problem example. mcperr's own nextCall strings would violate both,
-  // which is why this prose is written for HTTP rather than copied from there.
+  // §2's rewrite map kept MCP vocabulary off the HTTP surface, and this prose is the last
+  // of that surface left in this repository. mcperr's own recovery strings name tools and
+  // HDF_MCP_ROOT, which is why this prose was written separately rather than copied.
   it.each(Object.entries(docs))('%s names no MCP tool or environment variable', (_type, entry) => {
-    const prose = `${entry.cause} ${entry.remedy}`;
-    expect(prose).not.toMatch(/HDF_MCP_|\bhdf_[a-z]+/);
+    expect(`${entry.cause} ${entry.remedy} ${entry.title}`).not.toMatch(/HDF_MCP_|\bhdf_[a-z]+/);
   });
 });
 

@@ -3,6 +3,9 @@
 # dereference to human-readable documentation, and ADR-0008 §3 chose site-hosted URIs over
 # about:blank for that reason, so these pages are part of the contract rather than a nicety.
 #
+# `code` is the mcperr code this type maps, where one does — ADR-0010 §6's mapping, which
+# that section says exists exactly once, so it lives here and nowhere else. A type with no
+# code is raised by a convention or by the service rather than by the document taxonomy.
 # `title` is RFC 9457 §3.1.2's short human-readable summary — prose, not the machine code,
 # which `type` already carries. `status` is cross-checked against the emitted document and
 # ADR-0010 §6 by a test.
@@ -10,6 +13,7 @@
 # HDF_MCP_ROOT, which §2's rewrite map keeps off this surface entirely.
 
 ambiguous-format:
+  code: AMBIGUOUS_FORMAT
   title: Ambiguous source format
   status: 422
   owner: taxonomy
@@ -24,6 +28,7 @@ delete-restricted:
   remedy: Remove or amend the citing documents first. The response details name them.
 
 document-not-found:
+  code: DOCUMENT_NOT_FOUND
   title: Document not found
   status: 404
   owner: taxonomy
@@ -31,6 +36,7 @@ document-not-found:
   remedy: Check the id. A deleted document stays absent, so re-create it with `POST /documents` if it should exist.
 
 handle-stale:
+  code: HANDLE_STALE
   title: Stale document validator
   status: 412
   owner: taxonomy
@@ -66,6 +72,7 @@ no-active-organization:
   remedy: Select an organization for the session and retry.
 
 no-converter:
+  code: NO_CONVERTER
   title: No converter for that format
   status: 422
   owner: taxonomy
@@ -73,6 +80,7 @@ no-converter:
   remedy: Choose a format listed by `GET /catalog/converters`.
 
 payload-too-large:
+  code: TOO_LARGE
   title: Payload too large
   status: 413
   owner: taxonomy
@@ -87,6 +95,7 @@ quota-exceeded:
   remedy: Wait the interval given in `Retry-After`. The `RateLimit` headers on every response report the remaining budget.
 
 schema-invalid:
+  code: SCHEMA_INVALID
   title: Document fails its schema
   status: 422
   owner: taxonomy
@@ -108,6 +117,7 @@ unsupported-media-type:
   remedy: Send the media type the operation's `requestBody` declares.
 
 wrong-doc-type:
+  code: WRONG_DOC_TYPE
   title: Wrong document type
   status: 422
   owner: taxonomy

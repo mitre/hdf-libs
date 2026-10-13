@@ -111,12 +111,13 @@ test('the generated page carries no emoji', () => {
   assert.deepEqual(emoji, [], `generated page contains emoji: ${emoji.join(' ')}`);
 });
 
-// ADR-0008 ships two documents, and the first version of this generator carried one
-// document's name as a constant — which is what made adding the second a rewrite rather
-// than a row. These derive from the generator's own list so a third needs no test edit.
+// The generator's first version carried one document's name as a constant, which is what
+// made adding a second a rewrite rather than a row. These still derive from its list, so a
+// second document returning needs no test edit — the reference API left for the sibling
+// repository, and the components document is what remains.
 test('every published document is archived and rendered', () => {
   const built = DOCUMENTS.filter((d) => fs.existsSync(path.resolve(REPO_ROOT, d.json)));
-  assert.ok(built.length >= 2, `expected both documents built, got ${built.length}`);
+  assert.ok(built.length >= 1, `expected the components document built, got ${built.length}`);
 
   const page = fs.readFileSync(path.join(PAGES_DIR, 'index.md'), 'utf-8');
   for (const document of built) {
@@ -129,26 +130,6 @@ test('every published document is archived and rendered', () => {
       `${document.name} has no rendered view`,
     );
     assert.match(page, new RegExp(`## ${document.title}`), `the page has no ${document.title} section`);
-  }
-});
-
-// The reference API document arrives with Phase 2, so the components document must still
-// publish on its own — a required/optional distinction that only matters if it is tested.
-test('an unbuilt optional document is skipped rather than failing the build', () => {
-  const optional = DOCUMENTS.find((d) => d.required === false);
-  assert.ok(optional, 'no optional document to exercise the skip path');
-  const target = path.resolve(REPO_ROOT, optional.json);
-  const stashed = `${target}.stashed`;
-  fs.renameSync(target, stashed);
-  try {
-    fs.rmSync(PAGES_DIR, { recursive: true, force: true });
-    generateOpenapiDocs();
-    const page = fs.readFileSync(path.join(PAGES_DIR, 'index.md'), 'utf-8');
-    assert.doesNotMatch(page, new RegExp(`## ${optional.title}`));
-    assert.match(page, /## Components/);
-  } finally {
-    fs.renameSync(stashed, target);
-    generateOpenapiDocs();
   }
 });
 

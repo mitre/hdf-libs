@@ -15,17 +15,14 @@
     },
     "./hdf-components.oas.json": "./dist/hdf-components.oas.json",
     "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml",
-    "./hdf-api.oas.json": "./dist/hdf-api.oas.json",
     "./problems.json": "./dist/problems.json"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm run clean && pnpm run build:components && pnpm run build:api && tsdown",
+    "build": "pnpm run clean && pnpm run build:components && tsdown",
     "build:components": "node --import tsx src/generate-components.ts",
-    "build:api": "node --import tsx src/generate-api.ts",
-    "sync:golden": "node scripts/sync-mcp-golden.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src test scripts",
     "test": "pnpm run test:ts",
@@ -34,11 +31,8 @@
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
     "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-components.oas.json",
-    "lint:api": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-api.oas.json",
-    "lint:spectral": "node scripts/spectral-lint.mjs dist/hdf-api.oas.json",
     "matrix": "node scripts/openapi-matrix.mjs",
-    "matrix:update": "node scripts/openapi-matrix.mjs --update",
-    "contract:update": "node --import tsx scripts/update-contract-baseline.mjs"
+    "matrix:update": "node scripts/openapi-matrix.mjs --update"
   },
   "repository": {
     "type": "git",
@@ -52,12 +46,8 @@
     "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "0.99.0",
     "@mitre/hdf-fixtures": "workspace:^",
     "@redocly/cli": "^2.54.3",
-    "@stoplight/spectral-core": "^1.24.0",
-    "@stoplight/spectral-parsers": "^1.0.5",
-    "@stoplight/spectral-rulesets": "^1.23.0",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.20.6",
     "yaml": "^2.8.1",

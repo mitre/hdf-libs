@@ -7,22 +7,14 @@ export {
 export type { BuildOptions, ComponentsDocument, JsonSchema } from './components.js';
 export { EMBED_DIR, loadBundles } from './embed.js';
 export { extractStandaloneSchema } from './extract.js';
-// The reference API document and the rules it enforces, so a consumer can regenerate it
-// rather than only read the published artifact.
+// The problem-type table: ADR-0010 §6's one code-to-status mapping, the prose each type
+// dereferences to, and the codes §6 marks as never reaching HTTP.
 export {
-  ALLOWED_FORMATS,
-  OPEN_LEAF_EXEMPT,
-  PROBLEM_TYPES,
-  STRICTNESS_EXEMPT,
-  STRIPPED_OUTPUT_FIELDS,
+  PROBLEM_BASE,
   UNMAPPED_CODES,
-  generateApiDocument as apiSpec,
-} from './generate-api.js';
-export type { ApiDocument, GenerateOptions } from './generate-api.js';
-// The binding table's grammar, and the conventions privilege's conditions.
-export { CLOSED_KEYS, FILESYSTEM_FIELDS, bindingFaults, loadBindings, resourceNames } from './bindings.js';
-export type { BindingTable, ToolBinding } from './bindings.js';
-export { CONVENTIONS_DIR, componentName, loadConventions } from './conventions.js';
-export type { ConventionComponent } from './conventions.js';
+  loadProblemDocs,
+  problemTypes,
+} from './problems.js';
+export type { ProblemDoc, ProblemOwner } from './problems.js';
 export { validateExample } from './validate-example.js';
 export type { ExampleFault } from './validate-example.js';
