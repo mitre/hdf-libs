@@ -319,14 +319,20 @@ func TestEvidenceUpdate_RequiresResults(t *testing.T) {
 // The updated package must validate before it is written, as every evidence subcommand
 // guarantees. Driven from a VALID package whose write makes it invalid — the input gate
 // and the pre-write gate mask each other otherwise, which is the trap card .9 fell into.
-func TestEvidenceUpdate_RefusesToWriteAnInvalidPackage(t *testing.T) {
+// A filename that needs escaping is RECORDED ESCAPED, and the package stays valid.
+//
+// This test used to assert the opposite: that "bad%zzname.json" "cannot be expressed in
+// contents[]", and that the pre-write gate therefore refused the write. That premise died
+// with 52n0c.31 — the field is a uri-reference, so such a name IS expressible, as
+// "bad%25zzname.json", and refusing it was the tooling declining to write a reference it
+// simply had not escaped. The pre-write gate itself is still pinned, by
+// TestEvidenceAddReference_RefusesToWriteAnInvalidPackage, whose trigger is a malformed
+// href rather than an unescaped name.
+func TestEvidenceUpdate_RecordsAnEscapedReferenceForAnAwkwardName(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	_, _, err := executeCommand("validate", pkgPath)
-	require.NoError(t, err, "the input must be valid, or this pins the wrong gate")
+	require.NoError(t, err, "the input must be valid, or this pins the wrong thing")
 
-	// A results document whose package-relative reference is not a valid uri-reference
-	// cannot be expressed in contents[], so the write invalidates a package that was
-	// valid when read. A malformed percent-escape is the least exotic way to get there.
 	odd := filepath.Join(dir, "scans", "bad%zzname.json")
 	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "postgres-results.json"))
 	require.NoError(t, err)
@@ -334,10 +340,20 @@ func TestEvidenceUpdate_RefusesToWriteAnInvalidPackage(t *testing.T) {
 
 	out := filepath.Join(dir, "written.json")
 	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", odd, "-o", out)
-	require.Error(t, err, "a reference the schema cannot express must not be written")
-	assert.Contains(t, err.Error(), "failed validation before write",
-		"the PRE-WRITE gate must be what refuses — an input-gate refusal would pin the wrong thing")
-	assert.NoFileExists(t, out, "and nothing may be written")
+	require.NoError(t, err, "an escapable name is expressible, so the write must succeed")
+
+	uris := contentURIs(t, updatedPackage(t, out))
+	assert.Contains(t, uris, "scans/bad%25zzname.json",
+		"the percent is escaped, which is the only legal way to record this name")
+	assert.NotContains(t, uris, "scans/bad%zzname.json",
+		"the raw spelling is not a valid uri-reference and must never be recorded")
+
+	// The written package is valid, and resolves back to the file it names.
+	_, _, err = executeCommand("validate", out)
+	require.NoError(t, err, "what was written must be schema-valid")
+	vOut, _, vErr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
+	require.NoError(t, vErr, "and must verify, which means the escape resolved back")
+	assert.Contains(t, vOut, "checksums valid")
 }
 
 // The type was asserted from the FLAG NAME, so --results on a system document overwrote
@@ -452,16 +468,30 @@ func TestEvidenceUpdate_DryRunIsAPreviewOfTheRealRun(t *testing.T) {
 		assert.Contains(t, err.Error(), "pass one")
 	})
 
+	// The property is that a dry run and a real run agree about refusing, so the trigger
+	// only has to be something update genuinely refuses. It used to be a filename with an
+	// unescaped percent, which 52n0c.31 made expressible — the reference is a
+	// uri-reference, so such a name is recorded escaped and the write succeeds. A results
+	// document outside the package's directory is still refused, by both paths, and the
+	// pre-write gate keeps its own coverage in
+	// TestEvidenceAddReference_RefusesToWriteAnInvalidPackage.
 	t.Run("it refuses what the real run would refuse", func(t *testing.T) {
-		odd := filepath.Join(dir, "scans", "bad%zzname.json")
+		elsewhere := filepath.Join(t.TempDir(), "outside-results.json")
 		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "postgres-results.json"))
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(odd, src, 0o600))
+		require.NoError(t, os.WriteFile(elsewhere, src, 0o600))
 
-		_, _, err = executeCommand("evidence", "update", pkgPath, "--results", odd,
+		_, _, dryErr := executeCommand("evidence", "update", pkgPath, "--results", elsewhere,
 			"-o", filepath.Join(dir, "y.json"), "--dry-run")
-		require.Error(t, err, "a dry run must not report a change the real run would reject")
-		assert.Contains(t, err.Error(), "failed validation before write")
+		require.Error(t, dryErr, "a dry run must not report a change the real run would reject")
+
+		_, _, realErr := executeCommand("evidence", "update", pkgPath, "--results", elsewhere,
+			"-o", filepath.Join(dir, "z.json"))
+		require.Error(t, realErr, "and the real run refuses it too")
+		assert.Equal(t, realErr.Error(), dryErr.Error(),
+			"the two must refuse for the SAME stated reason, which is the whole property")
+		assert.NoFileExists(t, filepath.Join(dir, "y.json"))
+		assert.NoFileExists(t, filepath.Join(dir, "z.json"))
 	})
 }
 
@@ -1746,4 +1776,55 @@ func TestEvidenceUpdate_RecordsTheDigestOfTheBytesOnDisk(t *testing.T) {
 
 	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
 	require.NoError(t, verr, "and the updated package verifies")
+}
+
+// Naming ONE file twice in one invocation is detected even when the reference needs
+// escaping. The within-invocation duplicate check compared references with refPath
+// WITHOUT decoding, while every other comparison in this file decodes first — so for any
+// path containing a space, a # or a %, the two spellings stopped resolving to one file
+// and each argument was treated as new. The second then matched the first's own
+// just-appended entry, producing "replaced ... refreshed in place" AND "added" for one
+// file: exactly the falsehood the comment above that loop says it exists to prevent,
+// reintroduced for precisely the character class 52n0c.31 is about.
+//
+// Found by an AC reviewer after I had enumerated nineteen call sites and missed the
+// twentieth — in the same function I had just edited.
+func TestEvidenceUpdate_DedupesOneFileNamedTwiceWhenTheRefNeedsEscaping(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "my scans"), 0o750))
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "postgres-results.json"))
+	require.NoError(t, err)
+	scan := filepath.Join(dir, "my scans", "q4.json")
+	require.NoError(t, os.WriteFile(scan, src, 0o600))
+
+	// The same file, named twice, under spellings that differ only in case — which the
+	// filesystem resolves to one file and an undecoded comparison does not.
+	_, stderr, err := executeCommand("evidence", "update", pkgPath,
+		"--results", scan,
+		"--results", filepath.Join(dir, "my scans", "Q4.JSON"),
+		"-o", filepath.Join(dir, "out.json"))
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr, "named more than once; recorded once",
+		"one file given twice is one reference, whatever its spelling needs escaped")
+	assert.NotContains(t, stderr, "refreshed in place",
+		"nothing was refreshed: neither spelling was in the package when the command started")
+
+	uris := contentURIs(t, updatedPackage(t, filepath.Join(dir, "out.json")))
+	assert.Equal(t, 1, countMatching(uris, "my%20scans/"),
+		"exactly one entry for one file, recorded escaped")
+}
+
+// countMatching counts how many of uris have the given prefix.
+func countMatching(uris []string, prefix string) int {
+	n := 0
+	for _, u := range uris {
+		if strings.HasPrefix(u, prefix) {
+			n++
+		}
+	}
+	return n
 }

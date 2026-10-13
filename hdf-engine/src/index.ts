@@ -63,6 +63,7 @@ export { load, detectFormat, type InputFormat, type LoadResult } from './loader.
 export {
   parseEvidencePackage,
   parseExternalEvidence,
+  decodeReference,
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,

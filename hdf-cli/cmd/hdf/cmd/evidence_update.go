@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/unicode/norm"
 )
@@ -157,10 +157,18 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		// Keyed on the file, not on the reference string: two spellings of one name evaded
 		// a string key, so the same entry was reported twice and an entry THIS run appended
 		// was reported as refreshed in place — exactly the falsehood described above.
+		// COMPARED DECODED, like every other reference comparison in this file. This loop
+		// compared the encoded forms, so for any path needing escapes — a space, a #, a %
+		// — the two spellings stopped resolving to one file, each argument was treated as
+		// new, and the second then matched the first's own just-appended entry. The result
+		// was "replaced ... refreshed in place" AND "added" for one file given twice:
+		// precisely the falsehood the comment above says this mechanism prevents.
+		refDecoded, _ := evidenceref.Decode(ref)
 		dupKey := ref
 		for prior := range seen {
-			if sameNameDifferentSpelling(normalizedRef(prior), normalizedRef(ref)) &&
-				samePath(refPath(pkgDir, prior), refPath(pkgDir, ref)) {
+			priorDecoded, _ := evidenceref.Decode(prior)
+			if sameNameDifferentSpelling(normalizedRef(string(priorDecoded)), normalizedRef(string(refDecoded))) &&
+				samePath(refPath(pkgDir, string(priorDecoded)), refPath(pkgDir, string(refDecoded))) {
 				dupKey = prior
 				break
 			}
@@ -301,15 +309,22 @@ func normalizedRef(uri string) string {
 // recorded.
 func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw []byte,
 ) (matched []int, conflictType, conflictRef string, storedSpellings, otherNames []string) {
-	wantNorm := normalizedRef(ref)
-	wantPath := refPath(pkgDir, ref)
+	// COMPARED ON THE DECODED FORMS, both sides. The incoming ref is minted encoded
+	// (packageRelativeRef records a uri-reference), while a stored one carries whatever
+	// spelling its author used — so comparing raw strings made an NFD filename stop
+	// matching its own entry the moment minting started escaping non-ASCII bytes. What
+	// two references mean is what decides whether they are the same reference.
+	wantDecoded, _ := evidenceref.Decode(ref)
+	wantNorm := normalizedRef(string(wantDecoded))
+	wantPath := refPath(pkgDir, string(wantDecoded))
 	for i, e := range contents {
 		entry, ok := e.(map[string]interface{})
 		if !ok {
 			continue
 		}
 		uri, _ := entry["uri"].(string)
-		norm := normalizedRef(uri)
+		entryDecoded, _ := evidenceref.Decode(uri)
+		norm := normalizedRef(string(entryDecoded))
 		exact := norm == wantNorm
 		// Narrowed to ONE NAME SPELLED DIFFERENTLY — a case difference, a Unicode
 		// normalization difference, or both. samePath compares inodes, so on its own it also
@@ -318,7 +333,7 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw 
 		// taken here. samePath is still what decides, so on a case-sensitive filesystem the
 		// two spellings are different files and nothing matches.
 		sameName := !exact && sameNameDifferentSpelling(norm, wantNorm) &&
-			samePath(wantPath, refPath(pkgDir, uri))
+			samePath(wantPath, refPath(pkgDir, string(entryDecoded)))
 		if !exact && !sameName {
 			// One file under a DIFFERENT name — a hardlink, or an absolute reference
 			// beside a relative one. Deliberately not matched, because those are two
@@ -334,7 +349,7 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string, raw 
 			// the question directly, and it subsumes all of that tracking — a samePath
 			// pair names ONE file, so an entry this run just rewrote cannot diverge from
 			// a later argument's reading of it.
-			if samePath(wantPath, refPath(pkgDir, uri)) && checksumDivergesFrom(entry, raw) {
+			if samePath(wantPath, refPath(pkgDir, string(entryDecoded))) && checksumDivergesFrom(entry, raw) {
 				otherNames = append(otherNames, uri)
 			}
 			continue
@@ -442,11 +457,15 @@ func baselinesByRef(pkgDir string, contents []interface{}) map[string][]string {
 		// Classified first: SafePath JOINS, so a root-anchored reference re-roots onto a
 		// same-basename file inside the package and this scan would credit coverage to a
 		// document the package never named.
-		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		decoded, decErr := evidenceref.Decode(uri)
+		if decErr != nil {
+			continue
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
 		if !inTree {
 			continue
 		}
-		path, err := hdfutil.SafePath(pkgDir, ref)
+		path, err := evidenceref.Path(pkgDir, ref)
 		if err != nil {
 			continue
 		}
@@ -484,12 +503,16 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 		if uri == "" {
 			continue
 		}
-		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		decoded, decErr := evidenceref.Decode(uri)
+		if decErr != nil {
+			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, decErr)
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
 		if !inTree {
 			return nil, fmt.Errorf("results reference %q cannot be resolved: it is outside the package's "+
 				"directory", uri)
 		}
-		path, err := hdfutil.SafePath(pkgDir, ref)
+		path, err := evidenceref.Path(pkgDir, ref)
 		if err != nil {
 			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, err)
 		}
@@ -522,11 +545,15 @@ func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]
 	if ref == "" || isRemoteURI(ref) {
 		return map[string]interface{}{}, false, "", nil
 	}
-	resolved, inTree := packageSubtreeRef(pkgDir, ref)
+	decoded, decErr := evidenceref.Decode(ref)
+	if decErr != nil {
+		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, decErr)
+	}
+	resolved, inTree := packageSubtreeRef(pkgDir, decoded)
 	if !inTree {
 		return map[string]interface{}{}, false, ref, nil
 	}
-	path, err := hdfutil.SafePath(pkgDir, resolved)
+	path, err := evidenceref.Path(pkgDir, resolved)
 	if err != nil {
 		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
 	}

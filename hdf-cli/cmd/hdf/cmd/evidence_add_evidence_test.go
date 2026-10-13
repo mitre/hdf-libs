@@ -987,3 +987,49 @@ func lineCarriesUsage(line, usage string) bool {
 	}
 	return false
 }
+
+// The duplicate-add guard recognises one artifact under two spellings — which this
+// command's own help has always claimed: "Because the URI is normalized before the
+// duplicate check, two spellings of the same artifact are recognized as the same artifact
+// and the second is refused."
+//
+// That claim was false for a package whose existing entry is not already canonically
+// percent-encoded, which is every package written before 52n0c.31 and any written by a
+// producer that does not escape. recordedEvidenceURIs keyed on the RAW recorded string
+// while the incoming reference is canonicalised, so the two sides carried different
+// spellings of one file and a second, inconsistent entry was added — one of them without
+// a checksum. The attestation then holds two records for one artifact.
+//
+// Found by an AC reviewer on the second completeness sweep of this card. My own prose
+// review had audited the claims the diff ADDED and not the pre-existing claim the change
+// interacts with, which is the gap worth remembering.
+func TestEvidenceAddEvidence_RefusesADuplicateUnderAnotherSpelling(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "my scans"), 0o750))
+	artifact := filepath.Join(dir, "my scans", "q4.json")
+	require.NoError(t, os.WriteFile(artifact, []byte("log\n"), 0o600))
+
+	// A legacy entry: the literal unescaped spelling a pre-52n0c.31 package carries.
+	pkg, err := json.Marshal(map[string]any{
+		"name":             "legacy",
+		"contents":         []map[string]any{{"type": "hdf-results", "uri": "r.json"}},
+		"externalEvidence": []map[string]any{{"uri": "my scans/q4.json", "format": "raw-log"}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	out := filepath.Join(dir, "out.json")
+	_, _, err = executeCommand("evidence", "add-evidence", pkgPath,
+		"--uri", artifact, "--format", "raw-log", "-o", out)
+	// REFUSED, which is this command's established contract for a duplicate: a second add
+	// at one URI usually means the artifact changed, and a package must not absorb that
+	// silently. My first version of this test expected a report and was wrong about the
+	// contract, not about the defect.
+	require.Error(t, err, "one artifact under two spellings is one artifact, which the help promises")
+	assert.Contains(t, err.Error(), "my scans/q4.json",
+		"and the refusal names the STORED spelling, which is the entry to find and remove")
+	assert.NotContains(t, err.Error(), "my%20scans/q4.json",
+		"not the incoming one, which appears nowhere in their package")
+	assert.NoFileExists(t, out, "and nothing is written")
+}

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	"github.com/spf13/cobra"
 )
 
@@ -89,12 +89,16 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		// SafePath the raw one: SafePath JOINS, so a root-anchored "/results.json"
 		// re-roots to <pkgDir>/results.json — a different file, which export then
 		// converted and reported under the reference it had not opened.
-		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		decoded, decErr := evidenceref.Decode(uri)
+		if decErr != nil {
+			continue
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
 		if !inTree {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: it does not resolve inside the package's directory\n", uri)
 			continue
 		}
-		refPath, pathErr := hdfutil.SafePath(pkgDir, ref)
+		refPath, pathErr := evidenceref.Path(pkgDir, ref)
 		if pathErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
 			continue

@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // Verification status constants.
@@ -103,7 +103,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireC
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 	refStatus := classifyReferences(pkgDir, recorded)
-	resolvedBy := make(map[string]string, len(refStatus))
+	resolvedBy := make(map[string]evidenceref.Decoded, len(refStatus))
 	unreachableBy := make(map[string]string, len(refStatus))
 	for _, st := range refStatus {
 		if st.Reachable {
@@ -216,7 +216,7 @@ type referenceStatus struct {
 	Reason   string `json:"reason,omitempty"`
 	// resolved is the package-relative path to read, unexported because it is this
 	// machine's answer and means nothing to a reader of the JSON.
-	resolved  string
+	resolved  evidenceref.Decoded
 	Reachable bool `json:"reachable"`
 }
 
@@ -243,7 +243,13 @@ func classifyReferences(pkgDir string, refs []recordedRef) []referenceStatus {
 			continue
 		}
 		st := referenceStatus{Field: r.field, Recorded: r.uri}
-		switch resolved, ok := packageSubtreeRef(pkgDir, r.uri); {
+		// Resolved from the DECODED form, reported under the recorded one. A malformed
+		// reference gets its own reason rather than being called "outside the package":
+		// it names nothing at all, and sending an operator to look outside their package
+		// for it would be a wrong answer dressed as a specific one.
+		switch resolved, ok := packageSubtreeRef(pkgDir, r.decoded); {
+		case r.decodeErr != nil:
+			st.Reason = "not a valid uri-reference"
 		case isRemoteURI(r.uri):
 			st.Reason = "remote"
 		case ok:
@@ -282,16 +288,24 @@ func checkContentRefShape(uri, label string) error {
 // boundary as the package itself — a referenced file is untrusted input too.
 // SafePath and read failures both surface as errors, which VerifyChecksums
 // classifies as an error status.
-func confinedFetch(pkgDir string, resolvedBy map[string]string) hdfengine.FetchFunc {
+func confinedFetch(pkgDir string, resolvedBy map[string]evidenceref.Decoded) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
 		// The classifier already reduced a recorded reference to a package-relative
 		// path; SafePath is handed that, never the raw reference, so an absolute one
 		// cannot be silently re-rooted under the package directory.
-		target := uri
-		if resolved, ok := resolvedBy[uri]; ok {
-			target = resolved
+		// A reference the classifier already resolved comes back DECODED; one it did not
+		// see is still raw and decodes here. Keeping the two apart is what the type is
+		// for: handing an already-decoded value to the decoder turned "100%25done.json",
+		// the only legal way to write a percent in a name, into an error.
+		target, resolved := resolvedBy[uri]
+		if !resolved {
+			decoded, decErr := evidenceref.Decode(uri)
+			if decErr != nil {
+				return nil, decErr
+			}
+			target = decoded
 		}
-		path, err := hdfutil.SafePath(pkgDir, target)
+		path, err := evidenceref.Path(pkgDir, target)
 		if err != nil {
 			return nil, err
 		}
@@ -302,10 +316,11 @@ func confinedFetch(pkgDir string, resolvedBy map[string]string) hdfengine.FetchF
 // verifyCompleteness checks that every baseline in the plan has a corresponding
 // results document in the package. The planned/covered extraction and the diff
 // are the engine's; path confinement and schema-validation warnings stay here.
-func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceContent,
-	resolvedBy map[string]string,
+func verifyCompleteness(pkgDir string, planRef evidenceref.Decoded,
+	contents []hdfengine.EvidenceContent, resolvedBy map[string]evidenceref.Decoded,
 ) error {
-	planPath, err := hdfutil.SafePath(pkgDir, planRef)
+	// Already decoded by the classifier, so it is confined and not decoded again.
+	planPath, err := evidenceref.Path(pkgDir, planRef)
 	if err != nil {
 		return fmt.Errorf("invalid plan reference: %w", err)
 	}
@@ -333,7 +348,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 		if !resolved {
 			continue
 		}
-		resultsPath, pathErr := hdfutil.SafePath(pkgDir, resultsRef)
+		resultsPath, pathErr := evidenceref.Path(pkgDir, resultsRef)
 		if pathErr != nil {
 			return fmt.Errorf("invalid results URI %q: %w", c.URI, pathErr)
 		}

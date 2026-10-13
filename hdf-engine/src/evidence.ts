@@ -311,6 +311,40 @@ export function checksumHex(algorithm: string | undefined, data: Uint8Array): st
     .digest('hex');
 }
 
+/**
+ * Turns a recorded evidence reference into the path it names.
+ *
+ * A reference is a uri-reference — the schema says so on both `contents[].uri` and
+ * `externalEvidence[].uri` — so its percent-escapes are part of the encoding, not part of
+ * the name. The DECODED form is what the reference means. Before this, every consumer
+ * treated the value as opaque bytes, so the legal spelling of a filename containing a
+ * space failed while the illegal spelling worked: a producer following the declared
+ * format wrote a package this toolchain could not read.
+ *
+ * ORDERING MATTERS AND THE CALLER OWNS IT. Decoding can CREATE a parent traversal —
+ * `%2e%2e/x` becomes `../x` and `a%2Fb` gains a separator — so the decoded form, never the
+ * raw one, is what a caller must put through its containment check.
+ *
+ * A value whose percent is not a valid escape cannot be decoded, and that throws rather
+ * than being guessed at: falling back to the raw bytes would make resolution depend on
+ * whether a filename happens to contain a `%`.
+ *
+ * Present here even though no TypeScript consumer resolves a reference to a filesystem
+ * today — what a reference MEANS is language-independent, and a consumer that starts
+ * resolving must not be free to disagree with Go. Pinned across both by
+ * `testdata/reference-decode-vectors.json`.
+ */
+export function decodeReference(uri: string): string {
+  if (uri === '') return '';
+  // decodeURIComponent throws URIError on a malformed escape, which is the reporting
+  // this contract wants; Go's url.PathUnescape returns an error for the same inputs.
+  try {
+    return decodeURIComponent(uri);
+  } catch {
+    throw new Error(`reference ${JSON.stringify(uri)} is not a valid uri-reference`);
+  }
+}
+
 function dedupe(input: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

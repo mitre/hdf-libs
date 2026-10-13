@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
@@ -463,7 +464,12 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	}
 
 	if opts.href != "" {
-		ref["href"] = filepath.ToSlash(opts.href)
+		// ENCODED, like every other command that records a reference.
+		// externalReferences[].href is the same uri-reference primitive as
+		// contents[].uri, so an unescaped name here is the same contract violation —
+		// and this was the one write path that still wrote the raw value while build,
+		// set, add-evidence and update all encoded.
+		ref["href"] = evidenceref.Encode(filepath.ToSlash(opts.href))
 	}
 
 	// checksum describes ONE artifact, so the precedence is stated here rather than left

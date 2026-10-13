@@ -2326,13 +2326,17 @@ type ContentReference struct {
 	Description                                                                                 *string     `json:"description,omitempty"`
 	// The type of HDF document being referenced.                                                           
 	Type                                                                                        ContentType `json:"type"`
-	// Interpreted as a path relative to the package document's own directory — that is what the            
-	// reference MEANS, independently of any one consumer. It is never fetched: there is no                 
-	// network retrieval anywhere in evidence handling. `uri-reference` admits shapes other than            
-	// a relative path and they stay schema-valid; how a consumer resolves one, and what it does            
-	// when it cannot, is that consumer's own contract. An artifact deliberately held elsewhere             
-	// belongs in externalEvidence[], which references it by URI and checksum without retrieving            
-	// it.                                                                                                  
+	// A uri-reference whose DECODED form is a path relative to the package document's own                  
+	// directory — that is what the reference MEANS, independently of any one consumer.                     
+	// Percent-escapes are part of the encoding, not the name: `my%20scans/q4.json` and `my                 
+	// scans/q4.json` name the same file, and the escaped spelling is the one this field's                  
+	// format admits. A consumer decodes before it resolves, never after, because decoding can              
+	// produce a parent traversal that containment must then see. It is never fetched: there is             
+	// no network retrieval anywhere in evidence handling. `uri-reference` admits shapes other              
+	// than a relative path and they stay schema-valid; how a consumer resolves one, and what it            
+	// does when it cannot, is that consumer's own contract. An artifact deliberately held                  
+	// elsewhere belongs in externalEvidence[], which references it by URI and checksum without             
+	// retrieving it.                                                                                       
 	URI                                                                                         string      `json:"uri"`
 }
 

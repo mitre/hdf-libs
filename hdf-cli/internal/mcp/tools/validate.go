@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -292,7 +293,12 @@ func unresolvableFetch(why string) hdfengine.FetchFunc {
 // SafePath so a traversal-escaping reference is rejected rather than read.
 func confinedFetchAt(base string) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
-		p, err := hdfutil.SafePath(base, uri)
+		// Through the same contract the CLI uses, which is the point: hdf_validate is the
+		// third consumer 52n0c.31's AC names, and a resolver that disagreed with verify
+		// and bundle about what a reference means is the defect class .8 and .32 each hit.
+		// Decoding here also means an encoded traversal meets this containment check,
+		// rather than passing it as a literal directory name.
+		p, err := evidenceref.PathFromRecorded(base, uri)
 		if err != nil {
 			return nil, fmt.Errorf("referenced file %q is outside the evidence package root", uri)
 		}

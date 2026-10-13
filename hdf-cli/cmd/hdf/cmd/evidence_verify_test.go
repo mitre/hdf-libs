@@ -1209,3 +1209,75 @@ func TestEvidenceSurfaces_DescribeTheTwoUnverifiableKindsIdentically(t *testing.
 		assert.Contains(t, bundled, phrase, "and bundle's report")
 	}
 }
+
+// A reference is a URI reference, so its percent-escapes decode and the DECODED form is
+// the package-relative path. The legal spelling of a filename containing a space failed
+// while the illegal one — a literal space, which uri-reference does not admit — worked.
+// A producer following the declared format wrote a package this toolchain could not read.
+func TestEvidenceVerify_ResolvesAPercentEncodedReference(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "my scans"), 0o750))
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "my scans", "q4.json"), src, 0o600))
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "encoded",
+		"contents": []map[string]any{{
+			"type": "hdf-results",
+			// The legal encoding of "my scans/q4.json".
+			"uri":      "my%20scans/q4.json",
+			"checksum": map[string]any{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(src)},
+		}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	out, _, err := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
+	require.NoError(t, err, "the legal URI spelling must resolve")
+	assert.Contains(t, out, "1/1 checksums valid")
+}
+
+// And decoding must not become an escape hatch. A reference whose escapes decode to a
+// parent traversal gets the same treatment as a literal one — reported as outside the
+// package, never read — because the decode happens BEFORE containment is checked. Nothing
+// escapes today only because nothing decodes; this is the risk the fix introduces.
+//
+// Two things this test had to get right, both of which it got wrong first:
+// the entry RECORDS a checksum, so verification actually attempts a fetch — without one
+// it skips the entry and the containment check is never reached; and the leak marker is
+// in the outside file's CONTENT, not its name, because a name appearing in the reference
+// also appears in the output and the assertion matched itself.
+func TestEvidenceVerify_APercentEncodedTraversalIsStillContained(t *testing.T) {
+	dir := t.TempDir()
+	const marker = "LEAKEDFROMOUTSIDE"
+	outside := filepath.Join(dir, "elsewhere.json")
+	require.NoError(t, os.WriteFile(outside, []byte(`{"m":"`+marker+`"}`), 0o600))
+	body, err := os.ReadFile(outside)
+	require.NoError(t, err)
+
+	pkgDir := filepath.Join(dir, "pkg")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o750))
+	for _, encoded := range []string{"%2e%2e/elsewhere.json", "..%2felsewhere.json"} {
+		pkg, mErr := json.Marshal(map[string]any{
+			"name": "traversal",
+			"contents": []map[string]any{{
+				"type": "hdf-results", "uri": encoded,
+				// A real checksum of the outside file, so a successful read would
+				// report a MATCH — the loudest possible signal that it was read.
+				"checksum": map[string]any{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(body)},
+			}},
+		})
+		require.NoError(t, mErr)
+		pkgPath := filepath.Join(pkgDir, "pkg.json")
+		require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+		out, _, vErr := executeCommand("evidence", "info", "--verify", pkgPath, "--checksums-only")
+		require.NoError(t, vErr, "reported, not refused, per the standing contract")
+		assert.NotContains(t, out, "match",
+			"%s decodes to a parent traversal; a match would mean it was read", encoded)
+		assert.Contains(t, out, "not reachable here",
+			"%s must be reported as outside the package", encoded)
+	}
+}

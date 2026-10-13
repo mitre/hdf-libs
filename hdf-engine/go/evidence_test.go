@@ -432,3 +432,47 @@ func TestChecksumHex_StillRefusesAnOffSchemaAlgorithm(t *testing.T) {
 		t.Errorf("message = %q, want %q (the TypeScript peer asserts this same string)", err.Error(), want)
 	}
 }
+
+// The SHARED table, read rather than restated, so Go and TypeScript cannot drift: both
+// read testdata/reference-decode-vectors.json and a divergence fails on one side.
+func TestDecodeReference_MatchesTheSharedVectors(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "reference-decode-vectors.json"))
+	if err != nil {
+		t.Fatalf("the shared table is the contract; without it this test proves nothing: %v", err)
+	}
+	var table struct {
+		Vectors []struct {
+			Why       string `json:"why"`
+			URI       string `json:"uri"`
+			Decoded   string `json:"decoded"`
+			Malformed bool   `json:"malformed"`
+		} `json:"vectors"`
+	}
+	if err := json.Unmarshal(raw, &table); err != nil {
+		t.Fatalf("read the shared table: %v", err)
+	}
+	if len(table.Vectors) <= 5 {
+		t.Fatalf("a pass must not mean an empty table: got %d vectors", len(table.Vectors))
+	}
+
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			got, decErr := DecodeReference(v.URI)
+			if v.Malformed {
+				if decErr == nil {
+					t.Fatalf("%q is malformed and must be reported, not guessed at; got %q", v.URI, got)
+				}
+				if !strings.Contains(decErr.Error(), "not a valid uri-reference") {
+					t.Errorf("the error must name the contract it breaks: %v", decErr)
+				}
+				return
+			}
+			if decErr != nil {
+				t.Fatalf("decode %q: %v", v.URI, decErr)
+			}
+			if got != v.Decoded {
+				t.Errorf("decode %q = %q, want %q", v.URI, got, v.Decoded)
+			}
+		})
+	}
+}

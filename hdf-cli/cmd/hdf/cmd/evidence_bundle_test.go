@@ -2683,3 +2683,44 @@ func TestEvidenceBundleAndInfo_DescribeAnUnchecksummedEntryConsistently(t *testi
 		assert.Contains(t, infoOut, want, "and info must use the same one for the same entry")
 	}
 }
+
+// -o refuses to overwrite a referenced document even when the reference is ESCAPED.
+//
+// The guard built its candidate path from the RAW reference, so for "my%20scans/q4.json"
+// it compared against a path no file occupies and let the archive be written over the
+// evidence. DATA LOSS, not a wrong message: the file was replaced by a zip. --overwrite
+// is required to get past the separate exists-check, and bundle's own help says
+// --overwrite does not lift the refusals above it — so this was that promise failing for
+// any reference needing a percent-escape.
+//
+// Found by auditing every comparison primitive after a reviewer showed my first
+// enumeration had missed one; this was the twenty-first site, and the only one with
+// consequences beyond a misleading report.
+func TestEvidenceBundle_RefusesOutputOverAnEscapedReference(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "my scans"), 0o750))
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	evidence := filepath.Join(dir, "my scans", "q4.json")
+	require.NoError(t, os.WriteFile(evidence, src, 0o600))
+
+	pkg, err := json.Marshal(map[string]any{
+		"name": "guard",
+		"contents": []map[string]any{{
+			"type": "hdf-results", "uri": "my%20scans/q4.json",
+			"checksum": map[string]any{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(src)},
+		}},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	// --overwrite deliberately: it lifts the exists-check and must NOT lift this one.
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", evidence, "--overwrite")
+	require.Error(t, err, "bundling must not destroy the evidence it is packaging")
+	assert.Contains(t, err.Error(), "the content reference this package records")
+
+	after, err := os.ReadFile(evidence)
+	require.NoError(t, err)
+	assert.Equal(t, src, after, "and the evidence file must be byte-identical afterwards")
+}

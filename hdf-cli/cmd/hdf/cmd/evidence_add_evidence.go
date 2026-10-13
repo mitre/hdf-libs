@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 	"lukechampine.com/blake3"
@@ -138,6 +138,10 @@ rather than absorbed in silence. Remove the existing entry first.
 A --uri naming an artifact INSIDE the package's directory is recorded relative to the
 package, because such an artifact travels in a bundled archive under that relative name
 and a machine-local absolute path would leave the extracted copy unable to resolve it.
+An ABSOLUTE --uri is treated as a path on this machine, so a name needing escapes is
+escaped for you; a RELATIVE one is treated as a reference already and recorded as you
+wrote it — the same split 'hdf evidence set' documents, because both commands record
+through one function.
 An artifact outside the package, or a remote URL, is recorded exactly as given: it is
 external by design and rewriting it would claim the artifact is somewhere it is not.
 Because the URI is normalized before the duplicate check, two spellings of the same
@@ -328,13 +332,24 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	added := make([]interface{}, 0, len(opts.uris))
 	for i, uri := range opts.uris {
 		normalized := filepath.ToSlash(packageRelativeIfInside(pkgDir, uri))
+		// Asked in the same terms the map is keyed in. packageRelativeIfInside returns a
+		// uri-reference, so the lookup decodes it back to the artifact it names.
+		lookup := normalized
+		if decoded, err := evidenceref.Decode(normalized); err == nil {
+			lookup = string(decoded)
+		}
 		// Refused, not ignored: a second add at the same URI usually means the
 		// artifact CHANGED, and an evidence package must not absorb that silently.
-		if _, dup := recorded[normalized]; dup {
+		if stored, dup := recorded[lookup]; dup {
+			// Names the STORED spelling, which is the entry the operator has to find and
+			// remove. Naming the incoming one sent them looking for a string their
+			// package does not contain, because a duplicate can be reached by a different
+			// spelling of the same artifact — the same correction 52n0c.29 made to
+			// update's type-conflict refusal.
 			return fmt.Errorf("%s is already referenced in %s; remove that entry first if the "+
-				"artifact changed, so the new checksum is recorded deliberately", normalized, file)
+				"artifact changed, so the new checksum is recorded deliberately", stored, file)
 		}
-		recorded[normalized] = struct{}{}
+		recorded[lookup] = normalized
 
 		ref := map[string]interface{}{
 			"uri":    normalized,
@@ -387,14 +402,31 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 }
 
 // recordedEvidenceURIs indexes the URIs a package already references.
-func recordedEvidenceURIs(existing []interface{}) map[string]struct{} {
-	seen := make(map[string]struct{}, len(existing))
+// KEYED ON THE DECODED FORM, because that is what identifies the artifact. Keyed on the
+// raw recorded string, this guard failed for any entry not already canonically
+// percent-encoded — every package written before 52n0c.31, and any written by a producer
+// that does not escape — since the incoming reference is canonicalised before the lookup.
+// A second, inconsistent entry was then added for one file, one of them without a
+// checksum, splitting its attestation across two records. The command's help has always
+// promised the opposite.
+func recordedEvidenceURIs(existing []interface{}) map[string]string {
+	seen := make(map[string]string, len(existing))
 	for _, e := range existing {
-		if entry, ok := e.(map[string]interface{}); ok {
-			if uri, ok := entry["uri"].(string); ok {
-				seen[uri] = struct{}{}
-			}
+		entry, ok := e.(map[string]interface{})
+		if !ok {
+			continue
 		}
+		uri, ok := entry["uri"].(string)
+		if !ok {
+			continue
+		}
+		// An undecodable reference is keyed as recorded: it identifies nothing, but a
+		// package carrying one must not silently lose it from the guard either.
+		if decoded, err := evidenceref.Decode(uri); err == nil {
+			seen[string(decoded)] = uri
+			continue
+		}
+		seen[uri] = uri
 	}
 	return seen
 }
@@ -472,8 +504,15 @@ func resolveEvidenceChecksum(pkgDir, uri, supplied string) (value, algorithm str
 
 // localArtifactPath is where a --uri is read from to hash it, and ("", false) when it
 // must not be read at all. A remote uri and an absolute path are taken as given; a
-// relative one is resolved inside the package through hdfutil.SafePath, the same boundary
-// the read side uses.
+// relative one is resolved inside the package through evidenceref.PathFromRecorded, the
+// same boundary the read side uses — which DECODES before it confines, because a reference
+// is a uri-reference and a decoded "%2e%2e/" must meet containment rather than pass it as
+// a literal name.
+//
+// This comment named hdfutil.SafePath for four rounds after the call beneath it changed,
+// and a prose review driven by behavioural vocabulary did not catch it: the claim asserts
+// a fact by naming a FUNCTION, not by describing behaviour. When a change swaps which
+// function performs a resolution, grep for the old identifier too.
 //
 // The base is made absolute FIRST. SafePath resolves symlinks on both sides and then
 // relates them, so a relative base against an absolute symlink target makes filepath.Rel
@@ -497,7 +536,9 @@ func localArtifactPath(pkgDir, uri string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	resolved, err := hdfutil.SafePath(base, uri)
+	// --uri is raw operator input, so it decodes here: an operator who writes the legal
+	// encoding of a filename must find that file.
+	resolved, err := evidenceref.PathFromRecorded(base, uri)
 	if err != nil {
 		return "", false
 	}

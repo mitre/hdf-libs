@@ -991,3 +991,123 @@ func TestEvidenceAddReference_RefusesAnEmptyContentFile(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
+
+// EVERY command that records a reference encodes it, enumerated as a table rather than
+// trusted to recall. Three completeness misses on 52n0c.31 were all a site built by hand
+// that forgot to go through evidenceref, and the method that kept failing was enumerating
+// by the names I remembered. A table asks the question once per command.
+//
+// add-reference was the one that failed this: it wrote filepath.ToSlash(opts.href)
+// verbatim while build, set, add-evidence and update all encode. externalReferences[].href
+// is the same uri-reference primitive, so an unescaped name there is the same contract
+// violation — found by an AC reviewer reading the write paths after I had audited the
+// read paths.
+func TestEvidenceRecording_EveryCommandEncodesTheReferenceItWrites(t *testing.T) {
+	const awkward = "my scans/q4.json"
+
+	for _, tc := range []struct {
+		command string
+		// field is where the recorded reference lands.
+		field string
+		run   func(t *testing.T, dir, pkgPath, artifact string) string
+	}{
+		{"build", "contents", func(t *testing.T, dir, _, artifact string) string {
+			out := filepath.Join(dir, "built.json")
+			_, _, err := executeCommand("evidence", "build", "--results", artifact, "-o", out)
+			require.NoError(t, err)
+			return out
+		}},
+		{"add-evidence", "externalEvidence", func(t *testing.T, dir, pkgPath, artifact string) string {
+			out := filepath.Join(dir, "added.json")
+			_, _, err := executeCommand("evidence", "add-evidence", pkgPath,
+				"--uri", artifact, "--format", "raw-log", "-o", out)
+			require.NoError(t, err)
+			return out
+		}},
+		// set with an ABSOLUTE value, which is its path-semantics branch. Its relative
+		// branch deliberately does NOT encode — see
+		// TestEvidenceSet_RelativeReferenceIsRecordedAsGiven — so a naive row here would
+		// assert the opposite of the documented contract.
+		{"set (absolute)", "", func(t *testing.T, dir, pkgPath, artifact string) string {
+			out := filepath.Join(dir, "set.json")
+			_, _, err := executeCommand("evidence", "set", pkgPath, "--system-ref", artifact, "-o", out)
+			require.NoError(t, err)
+			return out
+		}},
+		{"add-reference", "externalReferences", func(t *testing.T, dir, pkgPath, artifact string) string {
+			out := filepath.Join(dir, "referenced.json")
+			_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+				"--source-name", "stix", "--href", artifact, "-o", out)
+			require.NoError(t, err)
+			return out
+		}},
+	} {
+		t.Run(tc.command, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "my scans"), 0o750))
+			src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+			require.NoError(t, err)
+			artifact := filepath.Join(dir, awkward)
+			require.NoError(t, os.WriteFile(artifact, src, 0o600))
+
+			// A package to add to, for the commands that need one.
+			pkgPath := filepath.Join(dir, "pkg.json")
+			base, err := json.Marshal(map[string]any{
+				"name":     "recording",
+				"contents": []map[string]any{{"type": "hdf-results", "uri": "seed.json"}},
+			})
+			require.NoError(t, err)
+			require.NoError(t, os.WriteFile(pkgPath, base, 0o600))
+
+			out := tc.run(t, dir, pkgPath, artifact)
+
+			// The FIELD's own value, extracted — not a substring of the whole document.
+			// Matching the body passed for two wrong reasons at once: the seed package
+			// already contained the encoded string, and an absolute reference does not
+			// contain the bare relative spelling the raw-check looked for. Both made
+			// add-reference's unescaped write look correct.
+			recorded := recordedReferenceValues(t, out, tc.field)
+			require.NotEmpty(t, recorded, "%s recorded nothing in %s", tc.command, tc.field)
+			for _, got := range recorded {
+				assert.NotContains(t, got, " ",
+					"%s recorded %q in %s; a space is not a valid uri-reference and must be escaped",
+					tc.command, got, tc.field)
+			}
+
+			// And what it wrote is schema-valid, which is the consequence that matters.
+			_, _, vErr := executeCommand("validate", out)
+			require.NoError(t, vErr, "%s wrote a package the schema rejects", tc.command)
+		})
+	}
+}
+
+// recordedReferenceValues pulls the reference strings out of one array of a written
+// package, so an assertion is about the field rather than about the file's bytes.
+func recordedReferenceValues(t *testing.T, path, field string) []string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	if field == "" {
+		// The root reference fields, which are strings rather than an array.
+		out := make([]string, 0, 2)
+		for _, key := range []string{"systemRef", "planRef"} {
+			if v, ok := doc[key].(string); ok && v != "" {
+				out = append(out, v)
+			}
+		}
+		return out
+	}
+	entries, _ := doc[field].([]any)
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		entry, _ := e.(map[string]any)
+		for _, key := range []string{"uri", "href"} {
+			if v, ok := entry[key].(string); ok && v != "" {
+				out = append(out, v)
+			}
+		}
+	}
+	return out
+}

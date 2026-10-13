@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +35,12 @@ relative to the package, exactly as 'hdf evidence build' records one. A referenc
 the package does not contain — an absolute path elsewhere, a parent traversal, or a remote URI —
 is recorded exactly as given, because rewriting it would claim the artifact is somewhere it is
 not.
+
+An ABSOLUTE value is treated as a path on this machine and recorded as a uri-reference, so a
+name needing escapes is escaped for you. A RELATIVE value is treated as a reference already
+and recorded as you wrote it — so write it the way the format admits ('my%20scans/sys.json',
+not 'my scans/sys.json'). Both resolve, but only the escaped spelling is a legal
+uri-reference.
 
 Examples:
   hdf evidence set evidence.json --name "Q2 2026 Evidence"
@@ -87,12 +94,45 @@ var requiredEvidenceFields = map[string]bool{
 // external reference by standing decision and is recorded exactly as given: rewriting it
 // would claim the artifact is somewhere it is not. Resolution goes through
 // packageSubtreeRef, the one predicate bundle and verify already use.
+// THE SPLIT IS THE CONTRACT, decided deliberately (maintainer, 2026-10-13): an ABSOLUTE
+// value is a path on this machine, so it is resolved, relativized and ENCODED into a
+// uri-reference; a RELATIVE value is already a reference and is recorded as given.
+//
+// Why not encode a relative value too, which would make every recorded reference
+// schema-perfect: an operator who correctly passes "my%20scans/sys.json" would get
+// "my%2520scans/sys.json", a double-encode and a worse defect than the one it fixes.
+// Telling a raw path from an encoded reference requires inferring from whether the value
+// contains a %, which 52n0c.31's anti-patterns forbid outright — it would make what is
+// recorded depend on the filename. Refusing an unescaped relative value was the third
+// option and was declined because it breaks usage that works today: measured, all three
+// shapes verify, since decoding leaves a literal space alone.
+//
+// So the cost accepted here is that a relative value containing a character
+// uri-reference does not admit is recorded as the operator wrote it. It RESOLVES
+// correctly — that is measured — but it is not a spelling the format admits, and the
+// operator owns that because they supplied a reference rather than a path.
 func packageRelativeIfInside(pkgDir, ref string) string {
 	if ref == "" || isRemoteURI(ref) || !filepath.IsAbs(ref) {
 		return ref
 	}
-	if resolved, ok := packageSubtreeRef(pkgDir, ref); ok {
-		return resolved
+	// Decoded before resolving and re-encoded by nothing: what this returns is a
+	// reference to RECORD, and recording the decoded form would write a value the schema
+	// calls malformed if the name contains a character uri-reference does not admit.
+	// So a reference that resolves inside the package is rewritten to its relative form
+	// only when that form needs no escaping — otherwise the absolute spelling stands,
+	// which the caller already reports.
+	decoded, decErr := evidenceref.Decode(ref)
+	if decErr != nil {
+		return ref
+	}
+	if resolved, ok := packageSubtreeRef(pkgDir, decoded); ok {
+		// RE-ENCODED, because what this returns is a reference to RECORD and the field is
+		// a uri-reference: writing the decoded form would store a value the schema calls
+		// malformed the moment the name contains a space. Per SEGMENT, since PathEscape
+		// escapes a separator too — escaping the whole path turned every ordinary
+		// "scans/x.json" into "scans%2Fx.json", which is why the first attempt at this
+		// guard silently stopped normalizing anything.
+		return evidenceref.Encode(string(resolved))
 	}
 	return ref
 }

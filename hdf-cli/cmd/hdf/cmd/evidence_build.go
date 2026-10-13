@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	"github.com/spf13/cobra"
 )
 
@@ -230,7 +231,11 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 		return "", fmt.Errorf("%s is outside the evidence package's directory (%s); "+
 			"move it under that directory, or record it with `hdf evidence add-evidence`", docPath, absBase)
 	}
-	return filepath.ToSlash(rel), nil
+	// ENCODED, because the value returned here is RECORDED in contents[].uri, which the
+	// schema declares a uri-reference. Returning the raw path wrote a reference the
+	// schema calls malformed as soon as a filename contained a space or a percent — and
+	// it is also what made such a file look inexpressible when it is merely unescaped.
+	return evidenceref.Encode(filepath.ToSlash(rel)), nil
 }
 
 // documentRef is the one definition of what a content reference is. With a
@@ -239,7 +244,7 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 // survive a subdirectory.
 func documentRef(baseDir, path string) (string, error) {
 	if baseDir == "" {
-		return filepath.Base(path), nil
+		return evidenceref.Encode(filepath.Base(path)), nil
 	}
 	return packageRelativeRef(baseDir, path)
 }

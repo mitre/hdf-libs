@@ -153,3 +153,34 @@ func TestEvidenceSet_OutputPathLeavesTheInputUntouched(t *testing.T) {
 			"the default is to amend in place")
 	})
 }
+
+// A RELATIVE --system-ref is recorded as given, which is the documented contract and not
+// an oversight. Pinned because the alternative — encoding it — would double-encode an
+// operator's correct "my%20scans/sys.json" into "my%2520scans/sys.json", and telling a
+// raw path from an encoded reference requires inferring from whether the value contains a
+// %, which 52n0c.31 forbids. An ABSOLUTE value is a path and IS encoded; that branch is
+// covered by TestEvidenceRecording_EveryCommandEncodesTheReferenceItWrites.
+//
+// Maintainer decision 2026-10-13, after measuring that all three shapes resolve: the cost
+// accepted is that a relative value may be recorded in a spelling uri-reference does not
+// admit, and the operator owns that because they supplied a reference rather than a path.
+func TestEvidenceSet_RelativeReferenceIsRecordedAsGiven(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+
+	for _, given := range []string{"my scans/sys.json", "my%20scans/sys.json"} {
+		out := filepath.Join(dir, "set-out.json")
+		_, _, err := executeCommand("evidence", "set", pkg, "--system-ref", given, "-o", out)
+		require.NoError(t, err)
+
+		raw, err := os.ReadFile(out)
+		require.NoError(t, err)
+		var doc struct {
+			SystemRef string `json:"systemRef"`
+		}
+		require.NoError(t, json.Unmarshal(raw, &doc))
+		assert.Equal(t, given, doc.SystemRef,
+			"a relative value is a reference already and is recorded unchanged — encoding it "+
+				"would turn the correct escaped spelling into a double-encoded one")
+	}
+}

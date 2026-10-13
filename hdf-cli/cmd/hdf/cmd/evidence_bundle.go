@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
@@ -182,6 +183,29 @@ type recordedRef struct {
 	// Set at the same construction sites that set the three fields above, so the two
 	// cannot drift apart.
 	canRecordChecksum bool
+	// decoded is what the reference MEANS: the uri with its percent-escapes resolved. A
+	// recorded reference is a uri-reference, so every consumer that resolves, joins or
+	// compares one must use this and not uri — while uri is what gets REPORTED, because
+	// that is the string an operator has to find in their package.
+	//
+	// Decoded once per reference ON THIS PATH, where the enumeration is built, so the
+	// consumers that read a recordedRef never decode again. Other entry points decode
+	// their own raw input — an operator's --uri, a root reference field read straight off
+	// the document — which is a different reference, not a second decode of this one.
+	// Decoding a reference twice destroys it: "100%25done" means "100%done", and decoding
+	// that again is an error.
+	decoded evidenceref.Decoded
+	// decodeErr is set when the uri is not a valid uri-reference — a bare % that
+	// introduces no escape. Carried rather than returned so one bad reference does not
+	// abort the enumeration, and each consumer decides what an unresolvable reference
+	// means to it.
+	//
+	// DEFENSIVE, not a path the CLI reaches: a package carrying such a value is refused
+	// by schema validation first, with "Does not match format 'uri-reference'" naming the
+	// field. Measured, because an earlier version of this comment claimed the
+	// report-not-refuse contract applied here and it does not. This exists for a caller
+	// that resolves references without validating first.
+	decodeErr error
 }
 
 // reportUnverifiable names each reference of one unverifiable kind, then states the
@@ -264,6 +288,19 @@ func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recor
 			canRecordChecksum: true,
 		})
 	}
+	// One pass over the assembled list rather than a field set at each construction
+	// site: a new reference field added above cannot forget to decode.
+	for i := range refs {
+		if refs[i].uri == "" {
+			continue
+		}
+		decoded, err := evidenceref.Decode(refs[i].uri)
+		if err != nil {
+			refs[i].decodeErr = err
+			continue
+		}
+		refs[i].decoded = decoded
+	}
 	return refs, nil
 }
 
@@ -342,7 +379,7 @@ func isRemoteURI(uri string) bool { return strings.Contains(uri, "://") }
 // externalEvidence URI may legitimately be absolute — add-evidence records
 // whatever the operator typed — so an absolute path inside the tree must still
 // resolve to the reference path the archive uses.
-func packageSubtreeRef(pkgDir, uri string) (string, bool) {
+func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Decoded, bool) {
 	// A RELATIVE uri is package-relative by contract — the same rule contents[]
 	// obeys — so it needs no filesystem comparison at all. Measuring it with
 	// filepath.Abs was wrong twice over: Abs resolves against the process CWD, not
@@ -351,30 +388,31 @@ func packageSubtreeRef(pkgDir, uri string) (string, bool) {
 	// made every symlinked base (on macOS, all of /tmp and every t.TempDir())
 	// report a path plainly inside it as outside. A missing in-tree file must reach
 	// collect and be reported as unreadable, not blamed on containment.
-	if !filepath.IsAbs(uri) {
-		ref := filepath.ToSlash(filepath.Clean(uri))
+	raw := string(uri)
+	if !filepath.IsAbs(raw) {
+		ref := filepath.ToSlash(filepath.Clean(raw))
 		if ref == ".." || strings.HasPrefix(ref, "../") {
 			return "", false
 		}
-		return ref, true
+		return evidenceref.Decoded(ref), true
 	}
-	under := func(base, p string) (string, bool) {
+	under := func(base, p string) (evidenceref.Decoded, bool) {
 		rel, relErr := filepath.Rel(base, p)
 		if relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
 			return "", false
 		}
-		return filepath.ToSlash(rel), true
+		return evidenceref.Decoded(filepath.ToSlash(rel)), true
 	}
 	// An absolute uri is compared against the package directory, with both sides
 	// resolved the SAME way in each attempt. The lexical attempt comes first
 	// because resolvedAbs cannot resolve a path that is not on disk.
 	if base, baseErr := filepath.Abs(pkgDir); baseErr == nil {
-		if rel, ok := under(base, filepath.Clean(uri)); ok {
+		if rel, ok := under(base, filepath.Clean(raw)); ok {
 			return rel, true
 		}
 	}
 	if base, baseErr := resolvedAbs(pkgDir); baseErr == nil {
-		if abs, absErr := resolvedAbs(uri); absErr == nil {
+		if abs, absErr := resolvedAbs(raw); absErr == nil {
 			if rel, ok := under(base, abs); ok {
 				return rel, true
 			}
@@ -440,8 +478,9 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// externalEvidence entry recorded as an absolute path, where quoting the derived
 	// relative ref would name a string that appears nowhere in the package.
 	type target struct {
-		uri, subject, label, checksum, algorithm string
-		checksumRecorded, canRecordChecksum      bool
+		uri                                 evidenceref.Decoded
+		subject, label, checksum, algorithm string
+		checksumRecorded, canRecordChecksum bool
 	}
 	// Counted inside collect so BOTH contents[] and externalEvidence[] are covered by
 	// one path. Incrementing it in the contents loop alone is what left a tampered
@@ -457,7 +496,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		uri, label, checksum := t.uri, t.label, t.checksum
 		subject := t.subject
 		if subject == "" {
-			subject = uri
+			subject = string(uri)
 		}
 		// The entry NAME is sanitized here, separately from the read. SafePath gates
 		// what may be read but says nothing about what name is written, so a crafted
@@ -471,16 +510,16 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		// Checked on the ENTRY NAME, not the recorded subject: an externalEvidence uri
 		// may legitimately be absolute, and packageSubtreeRef has already resolved it to
 		// a relative ref by here. For a contents[] reference the two are the same string.
-		if err := checkContentRefShape(uri, label); err != nil {
+		if err := checkContentRefShape(string(uri), label); err != nil {
 			return fmt.Errorf("cannot bundle: %w", err)
 		}
-		ref := filepath.ToSlash(filepath.Clean(uri))
+		ref := filepath.ToSlash(filepath.Clean(string(uri)))
 		if ref == ".." || strings.HasPrefix(ref, "../") || strings.HasPrefix(ref, "/") {
 			return fmt.Errorf("%s %q cannot be bundled: it would write an archive entry outside the root", label, subject)
 		}
 		data, already := collected[ref]
 		if !already {
-			path, pathErr := hdfutil.SafePath(pkgDir, uri)
+			path, pathErr := evidenceref.Path(pkgDir, uri)
 			if pathErr != nil {
 				return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, pathErr)
 			}
@@ -597,7 +636,11 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		// `evidence info --verify` accepts. The schema now describes the package-relative form as
 		// the one the tooling resolves, and says in the same breath that another shape is
 		// schema-valid and reported — so that description is not a licence to refuse one.
-		ref, inTree := packageSubtreeRef(pkgDir, r.uri)
+		if r.decodeErr != nil {
+			aside("not a valid uri-reference")
+			continue
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, r.decoded)
 		if !inTree {
 			aside("outside the package's directory")
 			continue
@@ -646,7 +689,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		if r.uri == "" || r.kind == refContext || isRemoteURI(r.uri) || !filepath.IsAbs(r.uri) {
 			continue
 		}
-		if resolved, ok := packageSubtreeRef(pkgDir, r.uri); ok {
+		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok {
 			fmt.Fprintf(os.Stderr,
 				"  %s records %s; it is carried as %s, so the extracted package will not resolve it as recorded\n",
 				r.field, sanitizeOutput(r.uri), resolved)
@@ -711,7 +754,13 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 		if r.uri == "" || isRemoteURI(r.uri) {
 			continue
 		}
-		candidate := r.uri
+		// The DECODED reference, because that is the file on disk. Built from the raw one,
+		// this compared against a path nothing occupies whenever a reference carried a
+		// percent-escape — so bundling over "my scans/q4.json" was permitted for a
+		// package recording "my%20scans/q4.json", and the archive replaced the evidence.
+		// The recorded spelling is still what the refusal NAMES, since that is what the
+		// operator has to find.
+		candidate := string(r.decoded)
 		if !filepath.IsAbs(candidate) {
 			candidate = filepath.Join(pkgDir, candidate)
 		}

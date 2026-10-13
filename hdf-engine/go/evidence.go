@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -351,4 +352,33 @@ func dedupe(in []string) []string {
 		}
 	}
 	return out
+}
+
+// DecodeReference turns a recorded evidence reference into the path it names.
+//
+// A reference is a uri-reference — the schema says so on both contents[].uri and
+// externalEvidence[].uri — so its percent-escapes are part of the encoding, not part of
+// the name. The DECODED form is what the reference means. Before this, every consumer
+// treated the value as opaque bytes, so the legal spelling of a filename containing a
+// space failed while the illegal spelling worked: a producer following the declared
+// format wrote a package this toolchain could not read.
+//
+// ORDERING MATTERS AND THE CALLER OWNS IT. Decoding can CREATE a parent traversal —
+// "%2e%2e/x" becomes "../x" and "a%2Fb" gains a separator — so the decoded form, never
+// the raw one, is what a caller must put through its containment check. Nothing escaped
+// before only because nothing decoded.
+//
+// A value whose percent is not a valid escape cannot be decoded, and that is REPORTED
+// rather than guessed at: falling back to the raw bytes would make resolution depend on
+// whether a filename happens to contain a %, which is the one thing a consumer must not
+// do. Pinned across languages by testdata/reference-decode-vectors.json.
+func DecodeReference(uri string) (string, error) {
+	if uri == "" {
+		return "", nil
+	}
+	decoded, err := url.PathUnescape(uri)
+	if err != nil {
+		return "", fmt.Errorf("reference %q is not a valid uri-reference: %w", uri, err)
+	}
+	return decoded, nil
 }
