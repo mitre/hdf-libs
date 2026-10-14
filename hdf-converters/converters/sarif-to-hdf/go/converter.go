@@ -43,8 +43,21 @@ type SarifRun struct {
 	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
 	// Artifacts is the table artifactLocation.index addresses (§3.4.5).
 	Artifacts []SarifArtifact `json:"artifacts,omitempty"`
+	// Invocations carries the run's own account of whether it succeeded. A run can
+	// report its own failure, and a failure says something the results array cannot.
+	Invocations []SarifInvocation `json:"invocations,omitempty"`
 	// Properties is the run-level bag, captured for the passthrough only.
 	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// SarifInvocation is one execution of the tool. executionSuccessful is the only
+// required property of the object, and the only one this converter maps to status;
+// the exit fields are read solely to describe the failure.
+type SarifInvocation struct {
+	ExecutionSuccessful *bool   `json:"executionSuccessful,omitempty"`
+	ExitCode            *int    `json:"exitCode,omitempty"`
+	ExitCodeDescription *string `json:"exitCodeDescription,omitempty"`
+	ExitSignalName      *string `json:"exitSignalName,omitempty"`
 }
 
 // SarifArtifact is one entry of a run's artifacts table. Only its location is read:
@@ -80,6 +93,44 @@ func (r *SarifRun) UnmarshalJSON(data []byte) error {
 // or null — the tool did not analyze; true with an empty slice means it ran and
 // found nothing.
 func (r SarifRun) analyzed() bool { return r.Results != nil }
+
+// executionFailed reports whether the run declared its own execution a failure.
+// Only an explicit false counts: executionSuccessful is required on an invocation
+// the run chose to emit, so its absence means the run said nothing, not that it
+// failed.
+func (r SarifRun) executionFailed() bool {
+	for _, inv := range r.Invocations {
+		if inv.ExecutionSuccessful != nil && !*inv.ExecutionSuccessful {
+			return true
+		}
+	}
+	return false
+}
+
+// invocationFailureDetail renders the exit information of the first failed
+// invocation as a parenthetical suffix, or "" when the run supplied none.
+func (r SarifRun) invocationFailureDetail() string {
+	for _, inv := range r.Invocations {
+		if inv.ExecutionSuccessful == nil || *inv.ExecutionSuccessful {
+			continue
+		}
+		var parts []string
+		if inv.ExitCode != nil {
+			parts = append(parts, fmt.Sprintf("exit code %d", *inv.ExitCode))
+		}
+		if inv.ExitSignalName != nil && *inv.ExitSignalName != "" {
+			parts = append(parts, *inv.ExitSignalName)
+		}
+		if inv.ExitCodeDescription != nil && *inv.ExitCodeDescription != "" {
+			parts = append(parts, *inv.ExitCodeDescription)
+		}
+		if len(parts) == 0 {
+			return ""
+		}
+		return " (" + strings.Join(parts, ": ") + ")"
+	}
+	return ""
+}
 
 // rawList is resultList's unparsed twin; indices line up with resultList.
 func (r SarifRun) rawList() []json.RawMessage {
@@ -485,6 +536,20 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 		}
 	}
 
+	// A run that declared its own failure contributes a requirement of its own,
+	// beside whatever it did report. HDF expresses a partly-failed evaluation as a
+	// set of N results where x < N carry error — the way InSpec does, where a control
+	// that fails to execute yields error without scrubbing the run. The findings
+	// themselves are never restyled: what a failed run tells you is that its coverage
+	// was incomplete, not that what it found is wrong.
+	//
+	// It does NOT go on the baseline. A baseline is a policy document — what was
+	// required — and it must not change in response to the results attached to it, or
+	// the same policy scanned twice would yield two different baselines.
+	if run.executionFailed() {
+		requirements = append(requirements, synthesizeRunFailedRequirement(run, timestamp))
+	}
+
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{
 			synthesizeEmptyRunRequirement(run, timestamp),
@@ -501,10 +566,30 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 	}, bagGroups
 }
 
+// synthesizeRunFailedRequirement is the requirement a run gets for declaring its own
+// execution a failure. Its id and title mark it as this converter's own, the way the
+// not-analyzed placeholder does, so a consumer can tell it from a rule the tool
+// reported.
+func synthesizeRunFailedRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
+	target := "SARIF analyzer"
+	idPrefix := "sarif"
+	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
+		target = run.Tool.Driver.Name
+		idPrefix = run.Tool.Driver.Name
+	}
+	return shared.BuildRunFailedRequirement(
+		idPrefix+"-run-failed",
+		fmt.Sprintf("%s reported that its run did not complete successfully%s.",
+			target, run.invocationFailureDetail()),
+		timestamp,
+	)
+}
+
 // HDF requires requirements.minItems=1, so a run contributing no requirements
-// still needs one. Which placeholder depends on whether the tool analyzed at
-// all: §3.14.23 distinguishes an absent or null results array, which analyzed
-// nothing, from [], which ran and found nothing. ID/target derive from
+// still needs one. Which placeholder depends on whether the tool analyzed at all:
+// §3.14.23 distinguishes an absent or null results array, which analyzed nothing,
+// from [], which ran and found nothing. A run that declared a failure has already
+// contributed a requirement and never reaches here. ID/target derive from
 // run.tool.driver.name so downstream converters that delegate to SARIF can
 // identify and override the placeholder.
 func synthesizeEmptyRunRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
@@ -1645,10 +1730,13 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 
 // ExpectedRequirementCount states how many requirements the input must convert
 // to: one per distinct rule in each run (message text standing in for a
-// missing ruleId), and one no-findings requirement for a run with no results.
+// missing ruleId), plus one for a run that declared its own execution a failure,
+// and one placeholder for a run that contributed nothing at all.
 // Computed from the input alone, through the same grouping the conversion uses.
 func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string, error) {
-	const unit = "distinct SARIF rules"
+	// The unit names rules AND run outcomes because a failed run contributes a
+	// requirement of its own: a document with no rules at all can still convert to one.
+	const unit = "distinct SARIF rules and run outcomes"
 	sarif, err := parseSarif(input, inputVersion...)
 	if err != nil {
 		return 0, unit, err
@@ -1656,7 +1744,12 @@ func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string
 	count := 0
 	for _, run := range shared.LimitSliceWithWarning(sarif.Runs, 0, "run") {
 		order, _ := groupResults(run, buildRuleMap(run))
-		if len(order) == 0 {
+		// A run that declared its own failure contributes one requirement beyond its
+		// rules, so the predicted count has to include it or the CLI under-reports.
+		if run.executionFailed() {
+			count++
+		}
+		if len(order) == 0 && !run.executionFailed() {
 			count++
 			continue
 		}

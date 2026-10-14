@@ -153,6 +153,20 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
 - `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
 - `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.
+- `failed-run.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: eslint (no version in the
+  source). Real published output, trimmed from
+  `../../msft-defender-devops-to-hdf/fixtures/input/sda.sarif` (Microsoft
+  `security-devops-action`). That log has SEVEN runs — antimalware, bandit, credscan,
+  eslint, iacfilescanner, templateanalyzer, checkov. Six whole runs were dropped and
+  run index 3 (eslint, the fourth) was kept; no string inside the kept run was edited,
+  and the top-level `$schema`, `version` and `properties` are the source's unchanged.
+  Run 3 is the only one in that log whose invocation reports
+  `executionSuccessful: false` against an empty `results` array — the shape this
+  converter previously turned into a passing no-findings placeholder. The
+  `file:///D:/source/security-devops-action/...` and `D:\source\security-devops-action`
+  paths are Microsoft's own CI build paths as published, not a contributor's machine.
+  Its 18 `toolConfigurationNotifications` are carried in the fixture but are not mapped
+  by this converter.
 
 ## Schema
 
@@ -163,10 +177,20 @@ Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures then pres
 `no-runs.sarif` and `uriless-location.sarif` (added 2026-10-10) both validate against
 the vendored schema with the same python jsonschema Draft4Validator.
 
-`results-absent.sarif` (added 2026-10-09; validated with python jsonschema 4.26 Draft4Validator,
-and covered by the Go gojsonschema sweep in-tree) validates. Note the schema and the spec prose
+`results-absent.sarif` (added 2026-10-09; validated with python jsonschema 4.26
+Draft4Validator) validates. The earlier claim here that it was "covered by the Go
+gojsonschema sweep in-tree" was wrong and has been removed: no Go test validates
+`sarif-to-hdf/fixtures/input/*.sarif` against a schema. The gojsonschema use in
+`../../hdf-to-sarif/go/schema_validation_test.go` borrows this vendored schema to
+validate EXPORTER OUTPUT, and the tests that do glob these inputs
+(`converter_fuzz_test.go`, `fidelity_test.go`) do not schema-validate. Note the schema and the spec prose
 diverge on how a run says it analyzed nothing: §3.14.23 describes an absent
 `results` as defaulting to null, but `run.properties.results` is `type: array`
 with no null member, so a literal `"results": null` does NOT validate. The
 conformant shape is to omit the property, which is what this fixture does. The
 converters accept both, since a literal null appears in the wild.
+
+`failed-run.sarif` (added 2026-10-13) validates against the vendored schema with
+python jsonschema 4.26 Draft4Validator — the draft the vendored schema declares — with
+0 errors. It also reports 0 errors under Draft7Validator, but Draft4 is the
+authoritative result.

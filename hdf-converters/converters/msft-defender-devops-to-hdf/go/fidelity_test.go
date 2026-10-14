@@ -35,7 +35,7 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 		if convErr != nil {
 			continue
 		}
-		require.Equal(t, "distinct SARIF rules", unit)
+		require.Equal(t, sarifRelationUnit, unit)
 		require.Equal(t, totalRequirements(result), expected, "relation broken for %s", filepath.Base(path))
 	}
 }

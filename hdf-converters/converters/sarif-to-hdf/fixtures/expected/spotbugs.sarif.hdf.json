@@ -1505,6 +1505,25 @@
           },
           "title": "Method names should start with a lower case letter.",
           "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "SpotBugs reported that its run did not complete successfully (exit code 3: ERROR,MISSING CLASS,BUGS FOUND).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "SpotBugs reported that its run did not complete successfully (exit code 3: ERROR,MISSING CLASS,BUGS FOUND).",
+              "startTime": "2026-10-14T01:18:11.536Z",
+              "status": "error"
+            }
+          ],
+          "id": "SpotBugs-run-failed",
+          "impact": 0,
+          "tags": {},
+          "title": "Run failed"
         }
       ],
       "resultsChecksum": {

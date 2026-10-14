@@ -749,6 +749,32 @@ export function buildNotAnalyzedRequirement(
   };
 }
 
+// Synthesized error placeholder for a scan whose own run reported that it failed.
+// Distinct from both siblings: the tool neither ran clean nor declined to analyze,
+// so neither passed nor notReviewed is honest. error is also the one status the
+// canonical ladder ranks above every other rung, including impact 0, so the failure
+// stays visible in a roll-up.
+export function buildRunFailedRequirement(
+  id: string,
+  codeDesc: string,
+  startTime: Date,
+): EvaluatedRequirement {
+  return {
+    id,
+    title: 'Run failed',
+    impact: 0,
+    descriptions: [{ label: 'default', data: codeDesc }],
+    results: [
+      {
+        status: ResultStatus.Error,
+        codeDesc,
+        startTime,
+      },
+    ],
+    tags: {},
+  };
+}
+
 // Synthesized passed placeholder for tools that ran clean. Required because
 // the HDF schema enforces requirements.minItems=1.
 export function buildNoFindingsRequirement(

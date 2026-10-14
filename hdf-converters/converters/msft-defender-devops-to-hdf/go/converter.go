@@ -120,13 +120,18 @@ func parseMsdoSarif(input []byte) (msdoSarif, error) {
 	return raw, nil
 }
 
+// sarifRelationUnit must match the unit sarif.ExpectedRequirementCount returns, since
+// this converter defers to that relation; a literal here drifted once already.
+const sarifRelationUnit = "distinct SARIF rules and run outcomes"
+
 // ExpectedRequirementCount applies the MSDO guards and then defers to the
 // SARIF converter's relation, exactly as the conversion does: one requirement
-// per distinct rule in each run, one no-findings requirement for a run with
-// no results. Enrichment adds tags and components, never requirements.
+// per distinct rule in each run, plus one for a run that reported its own
+// execution a failure, and one placeholder for a run that contributed nothing.
+// Enrichment adds tags and components, never requirements.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
 	if _, err := parseMsdoSarif(input); err != nil {
-		return 0, "distinct SARIF rules", err
+		return 0, sarifRelationUnit, err
 	}
 	count, unit, err := sarif.ExpectedRequirementCount(input)
 	if err != nil {
@@ -259,8 +264,10 @@ func applyEnrichments(result *hdf.HDFResults, targets []hdf.Component, runEnrich
 	}
 }
 
-// HDF requires requirements.minItems=1; SARIF's empty results[] means the
-// scan ran clean (§3.7.2), so synthesize one passed placeholder per baseline.
+// HDF requires requirements.minItems=1; SARIF's empty results[] means the scan
+// ran clean (§3.14.23), so synthesize one passed placeholder per baseline. A run
+// that declared its own failure is handled upstream by the generic SARIF
+// converter, which this one delegates to, and never reaches here.
 func synthesizeNoFindingsPlaceholders(result *hdf.HDFResults) {
 	startTime := time.Now()
 	if result.Timestamp != nil {

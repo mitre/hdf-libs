@@ -376,6 +376,31 @@ func BuildNotAnalyzedRequirement(id, codeDesc string, startTime time.Time) hdf.E
 	}
 }
 
+// BuildRunFailedRequirement synthesizes an error placeholder for a scan whose
+// own run reported that it failed. Distinct from both siblings: the tool neither
+// ran clean nor declined to analyze, so neither passed nor notReviewed is honest.
+// error is also the one status the canonical ladder ranks above every other rung,
+// including impact 0, so the failure stays visible in a roll-up.
+func BuildRunFailedRequirement(id, codeDesc string, startTime time.Time) hdf.EvaluatedRequirement {
+	title := "Run failed"
+	return hdf.EvaluatedRequirement{
+		ID:    id,
+		Title: &title,
+		Descriptions: []hdf.Description{
+			{Label: "default", Data: codeDesc},
+		},
+		Results: []hdf.RequirementResult{
+			{
+				Status:    hdf.Error,
+				CodeDesc:  codeDesc,
+				StartTime: startTime,
+			},
+		},
+		Tags:   map[string]interface{}{},
+		Impact: 0,
+	}
+}
+
 // BuildNoFindingsRequirement synthesizes a passed placeholder for tools that
 // ran clean. Required because the HDF schema enforces requirements.minItems=1.
 func BuildNoFindingsRequirement(id, codeDesc string, startTime time.Time) hdf.EvaluatedRequirement {

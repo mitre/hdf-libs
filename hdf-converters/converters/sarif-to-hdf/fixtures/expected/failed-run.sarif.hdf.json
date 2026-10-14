@@ -1,0 +1,68 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "eslint reported that its run did not complete successfully.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "eslint reported that its run did not complete successfully.",
+              "startTime": "2026-10-14T04:39:59.554Z",
+              "status": "error"
+            }
+          ],
+          "id": "eslint-run-failed",
+          "impact": 0,
+          "tags": {},
+          "title": "Run failed"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "413c6bfbdf42c99b02a63b87721c403548623d8775c1d2b29c6b3e63f062e3ba"
+      },
+      "name": "eslint",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "on": "log",
+            "properties": {
+              "pipelineRunUrl": "Unknown",
+              "producer": "MicrosoftSecurityDevOps",
+              "sourcePipelineId": "Unknown"
+            }
+          },
+          {
+            "baseline": "eslint",
+            "on": "run",
+            "properties": {
+              "toolInfoId": "eslint\u003e\u003e3\u003e\u003e202411062057"
+            }
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-14T04:39:59.554Z",
+  "tool": {
+    "format": "SARIF",
+    "name": "eslint",
+    "version": "8.56.0"
+  }
+}

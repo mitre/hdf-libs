@@ -1,0 +1,562 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "eslint",
+          "version": "8.56.0",
+          "informationUri": "https://eslint.org",
+          "properties": {
+            "RawName": "eslint"
+          }
+        }
+      },
+      "invocations": [
+        {
+          "toolConfigurationNotifications": [
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/gulpfile.js",
+                      "index": 0
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/container-mapping.js",
+                      "index": 1
+                    },
+                    "region": {
+                      "startLine": 36,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/main.js",
+                      "index": 2
+                    },
+                    "region": {
+                      "startLine": 35,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/msdo-helpers.js",
+                      "index": 3
+                    },
+                    "region": {
+                      "startLine": 7,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/msdo.js",
+                      "index": 5
+                    },
+                    "region": {
+                      "startLine": 36,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/post.js",
+                      "index": 6
+                    },
+                    "region": {
+                      "startLine": 35,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/lib/pre.js",
+                      "index": 7
+                    },
+                    "region": {
+                      "startLine": 35,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'const' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/samples/insecure.js",
+                      "index": 8
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 5
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: Unexpected token injection"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/container-mapping.ts",
+                      "index": 9
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/main.ts",
+                      "index": 10
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/msdo-helpers.ts",
+                      "index": 11
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/msdo-interface.ts",
+                      "index": 12
+                    },
+                    "region": {
+                      "startLine": 4,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'export' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/msdo.ts",
+                      "index": 13
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/post.ts",
+                      "index": 14
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/src/pre.ts",
+                      "index": 15
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/test/post.tests.ts",
+                      "index": 16
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/test/pre.tests.ts",
+                      "index": 17
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            },
+            {
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "file:///D:/source/security-devops-action/test/testCommon.ts",
+                      "index": 18
+                    },
+                    "region": {
+                      "startLine": 1,
+                      "startColumn": 1
+                    }
+                  }
+                }
+              ],
+              "message": {
+                "text": "Parsing error: The keyword 'import' is reserved"
+              },
+              "level": "error",
+              "descriptor": {
+                "id": "ESL0999"
+              }
+            }
+          ],
+          "executionSuccessful": false
+        }
+      ],
+      "versionControlProvenance": [
+        {
+          "repositoryUri": "https://github.com/reynoldsa/security-devops-action",
+          "revisionId": "c5bc432f9640469fd713f651b4d18af73867f27a",
+          "branch": "main",
+          "properties": {
+            "RepositoryRoot": "D:\\source\\security-devops-action"
+          }
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/gulpfile.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/container-mapping.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/main.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/msdo-helpers.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/msdo-interface.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/msdo.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/post.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/lib/pre.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/samples/insecure.js"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/container-mapping.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/main.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/msdo-helpers.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/msdo-interface.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/msdo.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/post.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/src/pre.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/test/post.tests.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/test/pre.tests.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///D:/source/security-devops-action/test/testCommon.ts"
+          }
+        }
+      ],
+      "results": [],
+      "columnKind": "utf16CodeUnits",
+      "policies": [
+        {
+          "name": "Microsoft",
+          "version": "2.0.3"
+        }
+      ],
+      "properties": {
+        "toolInfoId": "eslint>>3>>202411062057"
+      }
+    }
+  ],
+  "properties": {
+    "producer": "MicrosoftSecurityDevOps",
+    "pipelineRunUrl": "Unknown",
+    "sourcePipelineId": "Unknown"
+  }
+}

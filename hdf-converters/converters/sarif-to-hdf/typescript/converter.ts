@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, buildRunFailedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
@@ -22,6 +22,16 @@ interface SarifFile {
   properties?: Record<string, unknown>;
 }
 
+// One execution of the tool. executionSuccessful is the only required property of
+// the object, and the only one this converter maps to status; the exit fields are
+// read solely to describe the failure. Mirrors Go's SarifInvocation.
+interface SarifInvocation {
+  executionSuccessful?: boolean;
+  exitCode?: number;
+  exitCodeDescription?: string;
+  exitSignalName?: string;
+}
+
 interface SarifRun {
   // The run-level bag, captured for the passthrough only.
   properties?: Record<string, unknown>;
@@ -35,6 +45,9 @@ interface SarifRun {
   // array the opposite meaning to [] — nothing analyzed, versus a scan that ran
   // and found nothing. Declaring it as a plain array also threw on the null.
   results?: SarifResult[] | null;
+  // The run's own account of whether it succeeded. A run can report its own
+  // failure, and a failure says something the results array cannot.
+  invocations?: SarifInvocation[];
   taxonomies?: SarifTaxonomy[];
   // The table artifactLocation.index addresses (§3.4.5). Only each entry's location
   // is read: an index resolves to that location's uri and no further.
@@ -257,6 +270,30 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 
 // --- Run-level conversion ---
 
+// Whether the run declared its own execution a failure. Only an explicit false
+// counts: executionSuccessful is required on an invocation the run chose to emit,
+// so its absence means the run said nothing, not that it failed. Mirrors Go's
+// executionFailed.
+function executionFailed(run: SarifRun): boolean {
+  return (run.invocations ?? []).some(inv => inv.executionSuccessful === false);
+}
+
+// The exit information of the first failed invocation, as a parenthetical suffix
+// or '' when the run supplied none. Mirrors Go's invocationFailureDetail.
+function invocationFailureDetail(run: SarifRun): string {
+  for (const inv of run.invocations ?? []) {
+    if (inv.executionSuccessful !== false) continue;
+    const parts: string[] = [];
+    // Null as well as undefined: Go's *int reads JSON null as nil and skips it, so
+    // checking only undefined would print "exit code null" in one language alone.
+    if (inv.exitCode !== undefined && inv.exitCode !== null) parts.push(`exit code ${inv.exitCode}`);
+    if (inv.exitSignalName) parts.push(inv.exitSignalName);
+    if (inv.exitCodeDescription) parts.push(inv.exitCodeDescription);
+    return parts.length === 0 ? '' : ` (${parts.join(': ')})`;
+  }
+  return '';
+}
+
 // Fills in the uri an artifactLocation.index addresses. §3.4.5 permits a location to
 // carry only an index into run.artifacts, so the file IS known even where uri is
 // absent — without this the line survives and the path does not.
@@ -350,6 +387,28 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
 
   // Use tool name for baseline name if available
   const baselineName = run.tool?.driver?.name || 'SARIF';
+  const failed = executionFailed(run);
+
+  // A run that declared its own failure contributes a requirement of its own, beside
+  // whatever it did report. HDF expresses a partly-failed evaluation as a set of N
+  // results where x < N carry error — the way InSpec does, where a control that fails
+  // to execute yields error without scrubbing the run. The findings themselves are
+  // never restyled: what a failed run tells you is that its coverage was incomplete,
+  // not that what it found is wrong.
+  //
+  // It does NOT go on the baseline. A baseline is a policy document — what was
+  // required — and it must not change in response to the results attached to it, or
+  // the same policy scanned twice would yield two different baselines.
+  if (failed) {
+    const driverName = run.tool?.driver?.name?.trim() || '';
+    const target = driverName || 'SARIF analyzer';
+    const idPrefix = driverName || 'sarif';
+    requirements.push(buildRunFailedRequirement(
+      `${idPrefix}-run-failed`,
+      `${target} reported that its run did not complete successfully${invocationFailureDetail(run)}.`,
+      timestamp,
+    ));
+  }
 
   if (requirements.length === 0) {
     const driverName = run.tool?.driver?.name?.trim() || '';

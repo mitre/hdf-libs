@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -204,11 +206,21 @@ func resultsByRule(log map[string]interface{}) map[string][]map[string]interface
 // rules are deliberately outside this — a results document represents findings, not
 // a scanner's rule catalog, which is why CodeQL's 149 declared rules become the 13
 // its results actually cite.
+// One ADDITION is by design and is listed per fixture rather than tolerated
+// generally: a run that declared executionSuccessful: false gains a synthesized
+// requirement on import, and that requirement exports as a rule of its own. It is the
+// converter's, not the tool's, which is what its "<driver>-run-failed" id says.
 func TestRoundTrip_SarifToHDFToSarif_PreservesReferencedRuleSet(t *testing.T) {
-	for _, fixture := range []string{"sarif_input.sarif", "rich.sarif", "gosec.sarif", "spotbugs.sarif"} {
+	for fixture, added := range map[string][]string{
+		"sarif_input.sarif": nil,
+		"rich.sarif":        nil,
+		"gosec.sarif":       nil,
+		"spotbugs.sarif":    {"SpotBugs-run-failed"},
+	} {
 		t.Run(fixture, func(t *testing.T) {
 			before, after := sarifToHDFToSarif(t, fixture)
-			wantIDs := referencedRuleIDs(before)
+			wantIDs := append(referencedRuleIDs(before), added...)
+			sort.Strings(wantIDs)
 			gotIDs := referencedRuleIDs(after)
 			assert.Equal(t, wantIDs, gotIDs, "the set of referenced rule ids changed")
 		})
@@ -846,4 +858,75 @@ func TestRoundTrip_HDFToSarifToHDF_RestoresResultResourceFields(t *testing.T) {
 		}
 	}
 	assert.Positive(t, checked, "fixture exercises neither resource nor resourceId")
+}
+
+// A failed invocation reaches HDF as a requirement, and that requirement survives the
+// trip back out as a SARIF result. The invocations array itself does not.
+//
+// sarif-to-hdf reads invocations[].executionSuccessful and turns a declared failure
+// into a synthesized error requirement — N results where x < N carry error, which is
+// how HDF expresses a partly-failed evaluation. The exporter has no source from which
+// to rebuild an invocation object, so it emits none rather than inventing one.
+//
+// Asserting the loss keeps it a regression gate: if a future change does restore
+// invocations, this fails and the decision gets made deliberately.
+func TestRoundTrip_SarifToHDFToSarif_DoesNotRebuildAFailedInvocation(t *testing.T) {
+	before, after := sarifToHDFToSarif(t, "failed-run.sarif")
+
+	beforeRun := before["runs"].([]interface{})[0].(map[string]interface{})
+	invs, ok := beforeRun["invocations"].([]interface{})
+	require.True(t, ok, "fixture precondition: the input run carries invocations")
+	require.Equal(t, false, invs[0].(map[string]interface{})["executionSuccessful"],
+		"fixture precondition: the input invocation declares failure")
+
+	afterRun := after["runs"].([]interface{})[0].(map[string]interface{})
+	assert.NotContains(t, afterRun, "invocations",
+		"the exporter must not synthesize an invocation it cannot source from the document")
+
+	// What does survive: the synthesized requirement, as a result of its own.
+	results, _ := afterRun["results"].([]interface{})
+	var found bool
+	for _, raw := range results {
+		r, _ := raw.(map[string]interface{})
+		if r != nil && r["ruleId"] == "eslint-run-failed" {
+			found = true
+		}
+	}
+	assert.True(t, found, "the run-failed requirement must survive export as a result")
+
+	// And nothing was written to the baseline: a baseline is a policy document.
+	block, ok := afterRun["properties"].(map[string]interface{})["hdf"].(map[string]interface{})
+	require.True(t, ok, "the run must carry an hdf block")
+	assert.NotContains(t, block, "statusMessage",
+		"per-run health must not be recorded on the baseline")
+}
+
+// The requirement survives a full circle but its STATUS does not. HDF "error" exports
+// as SARIF kind "open", and the importer maps "open" back to "failed" — SARIF has no
+// kind that means "the check threw", so the two collapse. Pre-existing and documented
+// on statusKinds in converter.go; this card only made it reachable from a SARIF input.
+// Pinned so that restoring the distinction is a deliberate decision rather than an
+// accident.
+func TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed(t *testing.T) {
+	in := sarifFixture(t, "failed-run.sarif")
+
+	first, err := sarif.ConvertSarifToHDF(in, roundTripVersion, "")
+	require.NoError(t, err, "import leg")
+	require.Len(t, first.Baselines[0].Requirements, 1)
+	require.Equal(t, "eslint-run-failed", first.Baselines[0].Requirements[0].ID)
+	require.Equal(t, hdf.Error, first.Baselines[0].Requirements[0].Results[0].Status,
+		"precondition: the first import records the failure as an error")
+
+	firstBytes, err := json.Marshal(first)
+	require.NoError(t, err)
+	sarifBytes, err := ConvertHDFToSARIF(firstBytes, roundTripVersion)
+	require.NoError(t, err, "export leg")
+	second, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
+	require.NoError(t, err, "re-import leg")
+
+	require.Len(t, second.Baselines[0].Requirements, 1)
+	assert.Equal(t, "eslint-run-failed", second.Baselines[0].Requirements[0].ID,
+		"the requirement itself survives the full circle")
+	assert.Equal(t, hdf.Failed, second.Baselines[0].Requirements[0].Results[0].Status,
+		"error degrades to failed on re-import; if that is fixed, revisit this")
 }

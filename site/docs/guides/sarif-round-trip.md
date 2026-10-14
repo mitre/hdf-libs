@@ -31,6 +31,7 @@ it.
 | `fingerprints` and `partialFingerprints` | preserved | both |
 | Each accepted suppression's justification and kind | preserved | both |
 | Every property bag, on the object it came from | preserved | both |
+| `invocations[].executionSuccessful`, where the run declared failure | becomes a requirement, not rebuilt as an invocation | both |
 | Rules declared but referenced by no result | dropped | — |
 | `taxonomies`, rule `relationships`, `relatedLocations`, driver `informationUri` | dropped | — |
 | `codeFlows`, `threadFlows`, `graphs`, `stacks` | dropped | — |
@@ -39,8 +40,38 @@ it.
 
 A results document represents findings, not a scanner's rule catalog, which is why a
 tool shipping 150 rule definitions and reporting against 13 round-trips as 13. The
-dropped rows below it are structures HDF has no model for; they are not carried and
-are not claimed to be recoverable.
+dropped rows are structures HDF has no model for; they are not carried and are not
+claimed to be recoverable.
+
+`executionSuccessful` is the one row that is neither. A run that declares
+`executionSuccessful: false` gains a synthesized requirement on import, with id
+`<driver>-run-failed`, title `Run failed` and one result at status `error`. Its
+`codeDesc` names the failure and appends the invocation's exit code, signal name and
+exit description where the run supplied any — `failed-run.sarif` supplies none, so its
+text is just `eslint reported that its run did not complete successfully.`
+
+This is how HDF already expresses a partly-failed evaluation: a set of N results where
+x < N carry `error`, the way InSpec does, where a control that fails to execute yields
+`error` without scrubbing the run. So a failed run that *did* report findings keeps
+every one of them exactly as reported — `spotbugs.sarif`'s 56 findings group into 9
+requirements and none is restyled — and gains a tenth requirement for the run's own
+failure. What such a run tells you is that its coverage was incomplete, not that what it
+found is wrong. A run that reported nothing gets the `error` requirement in place of
+whichever placeholder it would otherwise have received: the passing no-findings one when
+`results` was `[]`, and the `notReviewed` not-analyzed one when `results` was absent or
+null.
+
+None of this is written to the baseline. A baseline is a policy document — what was
+required — and it must not change in response to the results attached to it, or the same
+policy scanned twice would produce two different baselines.
+
+The requirement survives the trip back out, as a SARIF result carrying its
+`<driver>-run-failed` rule id. That rule is the converter's own rather than the tool's,
+so round-tripping a failed run yields one rule more than it started with. That is the
+only rule either direction adds, and the round-trip tests name it per fixture, so an
+addition nobody expected still fails them. The `invocations` array is not rebuilt:
+the exporter has no invocation to put back, and synthesizing one would assert structure
+the document never carried.
 
 ## HDF → SARIF → HDF
 
@@ -61,6 +92,10 @@ are not claimed to be recoverable.
 | `statusOverrides`: `type`, `status`, `reason` | derived from the suppression | no |
 | `results[].message` | relocated, not lost | no |
 | `severity` | added where the source had none | no |
+| Baseline `name` | preserved, via the driver | no |
+| Baseline `summary`, `description`, `maintainer`, `copyright`, `license`, `status`, `statusMessage`, `labels` | dropped | no |
+| Baseline `title` and `version` | replaced with invented values | no |
+| A requirement's `error` status | degrades to `failed` | both |
 
 Three of those need the reason stated rather than the outcome alone.
 

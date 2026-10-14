@@ -71,12 +71,18 @@ function bagsByObject(log: Json): Map<string, Json> {
 describe('SARIF -> HDF -> SARIF', () => {
   const fixtures = ['sarif_input.sarif', 'rich.sarif', 'gosec.sarif', 'spotbugs.sarif'];
 
+  // One ADDITION is by design and is listed per fixture rather than tolerated
+  // generally: a run that declared executionSuccessful: false gains a synthesized
+  // requirement on import, and that requirement exports as a rule of its own. Mirrors
+  // the Go peer's table.
+  const addedRules: Record<string, string[]> = {'spotbugs.sarif': ['SpotBugs-run-failed']};
+
   it.each(fixtures)('%s: preserves the referenced rule set', async fixture => {
     const {before, after} = await sarifToHdfToSarif(fixture);
     const ids = (log: Json) => [...resultsByRule(log).keys()].filter(Boolean).sort();
     // Declared-but-unreferenced rules are outside the invariant: a results document
     // represents findings, not a scanner's rule catalog.
-    expect(ids(after)).toEqual(ids(before));
+    expect(ids(after)).toEqual([...ids(before), ...(addedRules[fixture] ?? [])].sort());
   });
 
   it.each(fixtures)('%s: preserves result count, kind and message', async fixture => {
@@ -235,6 +241,52 @@ describe('SARIF -> HDF -> SARIF', () => {
       });
     }
     expect(checked, 'fixture carries no accepted suppression to assert on').toBeGreaterThan(0);
+  });
+
+  // A failed invocation reaches HDF as a requirement, and that requirement survives
+  // the trip back out as a SARIF result. The invocations array itself does not —
+  // the exporter has no source from which to rebuild one, so it emits none rather
+  // than inventing it. Mirrors Go's
+  // TestRoundTrip_SarifToHDFToSarif_DoesNotRebuildAFailedInvocation.
+  it('does not rebuild a failed invocation', async () => {
+    const {before, after} = await sarifToHdfToSarif('failed-run.sarif');
+
+    const beforeRun = (before.runs as Json[])[0]!;
+    const invs = beforeRun.invocations as Json[];
+    expect(invs[0]!.executionSuccessful, 'fixture precondition').toBe(false);
+
+    const afterRun = (after.runs as Json[])[0]!;
+    expect(afterRun.invocations).toBeUndefined();
+
+    // What does survive: the synthesized requirement, as a result of its own.
+    const ids = ((afterRun.results as Json[] | undefined) ?? []).map(r => r.ruleId);
+    expect(ids).toContain('eslint-run-failed');
+
+    // And nothing was written to the baseline: a baseline is a policy document.
+    const block = (afterRun.properties as Json).hdf as Json;
+    expect(block.statusMessage).toBeUndefined();
+  });
+
+  // The requirement survives a full circle but its STATUS does not. HDF 'error'
+  // exports as SARIF kind 'open', and the importer maps 'open' back to 'failed' —
+  // SARIF has no kind meaning "the check threw", so the two collapse. Pre-existing
+  // and documented on statusKinds; pinned so restoring the distinction is a
+  // deliberate decision rather than an accident. Mirrors Go's
+  // TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed.
+  it('degrades the error status to failed on re-import', async () => {
+    const input = sarifFixture('failed-run.sarif');
+
+    const first = JSON.parse(await convertSarifToHdf(input, TEST_VERSION)) as Json;
+    const firstReq = ((first.baselines as Json[])[0]!.requirements as Json[])[0]!;
+    expect(firstReq.id, 'precondition').toBe('eslint-run-failed');
+    expect(((firstReq.results as Json[])[0]!).status, 'precondition').toBe('error');
+
+    const sarifOut = await convertHdfToSarif(JSON.stringify(first), TEST_VERSION);
+    const second = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
+    const secondReq = ((second.baselines as Json[])[0]!.requirements as Json[])[0]!;
+
+    expect(secondReq.id).toBe('eslint-run-failed');
+    expect(((secondReq.results as Json[])[0]!).status).toBe('failed');
   });
 });
 

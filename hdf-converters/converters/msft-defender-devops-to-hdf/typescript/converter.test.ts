@@ -95,14 +95,15 @@ describe('msft-defender-devops-to-hdf', () => {
       const input = loadFixture('input/sda.sarif');
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
-      // Baselines 0/1/3 (antimalware/bandit/eslint) had results: [] in SARIF.
-      // SARIF v2.1.0 §3.7.2 defines empty results as "analysis completed,
-      // no findings" — emit a passed placeholder so HDF's requirements.minItems=1
-      // is satisfied.
+      // Baselines 0/1 (antimalware/bandit) had results: [] in SARIF and an
+      // invocation that reported success, which §3.14.23 makes "analysis
+      // completed, no findings" — emit a passed placeholder so HDF's
+      // requirements.minItems=1 is satisfied. Baseline 3 (eslint) is excluded: its
+      // results array is empty too, but its invocation declared
+      // executionSuccessful: false, so it is asserted separately below.
       const cases = [
         { idx: 0, tool: 'antimalware' },
         { idx: 1, tool: 'bandit' },
-        { idx: 3, tool: 'eslint' },
       ];
 
       for (const { idx, tool } of cases) {
@@ -125,6 +126,17 @@ describe('msft-defender-devops-to-hdf', () => {
         // Run-level enrichment tags should still land on synthesized reqs.
         expect(req.tags).toBeDefined();
       }
+
+      // eslint ran to an empty results array but reported executionSuccessful:
+      // false. A passed placeholder there asserts a clean scan that did not happen.
+      const eslint = result.baselines![3]!;
+      expect(eslint.name).toBe('eslint');
+      expect(eslint.requirements).toHaveLength(1);
+      const failedReq = eslint.requirements[0]!;
+      expect(failedReq.id).toBe('eslint-run-failed');
+      expect(failedReq.results[0]!.status).toBe('error');
+      expect(failedReq.results[0]!.codeDesc).not.toContain('zero findings');
+      expect(eslint.statusMessage).toBeUndefined();
 
       // Non-empty baselines unaffected (no synthesized placeholder injected).
       const credscan = result.baselines![2]!;

@@ -76,13 +76,14 @@ func TestConvert_SynthesizesPlaceholderForEmptyBaselines(t *testing.T) {
 	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Baselines 0/1/3 (antimalware/bandit/eslint) are runs whose SARIF
-	// results array is empty — per SARIF v2.1.0 §3.7.2 that signals
-	// "analysis completed, no findings." The converter must emit a single
-	// `passed` placeholder requirement so the baseline satisfies the HDF
-	// schema's requirements.minItems=1 invariant.
-	emptyBaselineIdxs := []int{0, 1, 3}
-	emptyBaselineNames := []string{"antimalware", "bandit", "eslint"}
+	// Baselines 0/1 (antimalware/bandit) are runs whose SARIF results array is
+	// empty and whose invocation reported success, which is "analysis completed,
+	// no findings" (§3.14.23). The converter must emit a single `passed`
+	// placeholder so the baseline satisfies requirements.minItems=1. Baseline 3
+	// (eslint) is excluded: its results array is empty too, but its invocation
+	// declared executionSuccessful: false, so it is asserted separately below.
+	emptyBaselineIdxs := []int{0, 1}
+	emptyBaselineNames := []string{"antimalware", "bandit"}
 
 	for k, idx := range emptyBaselineIdxs {
 		baseline := result.Baselines[idx]
@@ -111,6 +112,20 @@ func TestConvert_SynthesizesPlaceholderForEmptyBaselines(t *testing.T) {
 		// requirement when the SARIF run carries them.
 		assert.NotNil(t, req.Tags, "synthesized requirement should still be enriched with run tags")
 	}
+
+	// eslint ran to an empty results array but reported executionSuccessful: false.
+	// A passed placeholder there asserts a clean scan that did not happen.
+	eslint := result.Baselines[3]
+	require.Equal(t, "eslint", eslint.Name)
+	require.Len(t, eslint.Requirements, 1)
+	failedReq := eslint.Requirements[0]
+	assert.Equal(t, "eslint-run-failed", failedReq.ID)
+	require.Len(t, failedReq.Results, 1)
+	assert.Equal(t, hdf.Error, failedReq.Results[0].Status,
+		"the run declared itself failed; passed would assert a scan that did not succeed")
+	assert.NotContains(t, failedReq.Results[0].CodeDesc, "zero findings")
+	assert.Nil(t, eslint.StatusMessage,
+		"a baseline is a policy document; per-run health does not belong on it")
 
 	// Non-empty baselines should be untouched (no synthesized placeholder injected).
 	credscan := result.Baselines[2]

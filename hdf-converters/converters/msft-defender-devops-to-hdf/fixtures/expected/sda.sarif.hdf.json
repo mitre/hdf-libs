@@ -503,24 +503,24 @@
         {
           "descriptions": [
             {
-              "data": "eslint ran and reported zero findings.",
+              "data": "eslint reported that its run did not complete successfully.",
               "label": "default"
             }
           ],
           "results": [
             {
-              "codeDesc": "eslint ran and reported zero findings.",
+              "codeDesc": "eslint reported that its run did not complete successfully.",
               "startTime": "2026-10-14T01:18:11.641Z",
-              "status": "passed"
+              "status": "error"
             }
           ],
-          "id": "eslint-no-findings",
+          "id": "eslint-run-failed",
           "impact": 0,
           "tags": {
             "msdo_policy": "Microsoft 2.0.3",
             "msdo_rawName": "eslint"
           },
-          "title": "No findings reported"
+          "title": "Run failed"
         }
       ],
       "resultsChecksum": {
