@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.33.6
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.1
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.1
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.83.0
 	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.2
 	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
 	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.2
