@@ -325,11 +325,11 @@ describe('every definition example validates against its extracted definition', 
   );
 
   it('there are definition examples to check, so this cannot pass vacuously', () => {
-    // The exact count, not a floor. A floor of 20 against an actual 42 would let half the
+    // The exact count, not a floor. A floor of 20 against an actual 45 would let half the
     // definitions lose their examples without the guard noticing — which is precisely the
     // vacuity it exists to prevent. Raise this deliberately when definitions gain examples.
-    expect(withExamples.length).toBe(42);
-    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(120);
+    expect(withExamples.length).toBe(45);
+    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(133);
   });
 
   it.each(withExamples.map(([name]) => name))('%s', (name) => {

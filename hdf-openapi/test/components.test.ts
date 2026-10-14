@@ -112,9 +112,9 @@ describe('roots', () => {
 
 describe('definitions are hoisted and self-contained', () => {
   it('hoists every named definition and adds nothing else', () => {
-    // 115 named definitions across the bundles + 8 roots. Measured against the
+    // 118 named definitions across the bundles + 8 roots. Measured against the
     // tracked embed; a change here is a schema-set change and must be reviewed.
-    expect(Object.keys(schemas)).toHaveLength(115 + 8);
+    expect(Object.keys(schemas)).toHaveLength(118 + 8);
   });
 
   it('emits component keys OpenAPI accepts', () => {
@@ -331,13 +331,13 @@ describe('2020-12 features pass through untouched', () => {
 
   // Pinned absolutely as well: the derived count above proves nothing was lost
   // relative to the input, and these prove the input itself has not drifted
-  // without review. Measured against the tracked embed at schema v3.7.0.
+  // without review. Measured against the tracked embed at schema v3.8.0.
   it('matches the tracked keyword baseline', () => {
     expect({
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 76, if: 8, dependentRequired: 1 });
+    }).toEqual({ unevaluatedProperties: 76, if: 13, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {
@@ -372,7 +372,8 @@ describe('$ref shapes the schemas do not currently use but 2020-12 permits', () 
     return () => buildComponentsDocument(planted);
   }
 
-  const RESULTS_ID = 'https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.7.0';
+  // From the bundle's own $id: a literal here goes stale at every schema minor.
+  const RESULTS_ID = bundles.get('hdf-results.schema.json')?.$id as string;
 
   // Nothing in the embed refs a resource as a whole today, so this path would
   // otherwise be untested code that breaks the first time a schema uses it.

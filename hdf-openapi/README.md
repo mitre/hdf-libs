@@ -105,7 +105,7 @@ Conformance is checked separately and more strictly than any linter manages: `te
 
 ## Versioning
 
-The components document's `info.version` tracks the schema `$id` version — currently 3.7.0, which happens to
+The components document's `info.version` tracks the schema `$id` version — currently 3.8.0, which happens to
 equal this package's version and will not stay that way.
 
 The planned rules for the reference API document, once it exists (ADR-0008 §4): it carries its own semver; a
