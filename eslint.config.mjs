@@ -67,8 +67,18 @@ const ALIAS_GUARDED = [
   'hdf-validators/typescript/**/*.ts',
 ];
 
-// Packages whose entry point must bundle for the browser.
-const BROWSER_SAFE = ['hdf-engine/src/**/*.ts'];
+// Source trees that end up in a browser bundle of hdf-engine. Its entry point
+// is what must bundle, but a Node builtin anywhere it pulls in breaks the build
+// just the same, and hdf-engine/src imports runtime code from @mitre/hdf-parsers
+// and @mitre/hdf-utilities. Guarding only the entry package left those trees
+// free to reintroduce the regression.
+//
+// Split because the trees carry different existing guards: hdf-engine/src and
+// hdf-parsers/typescript are ALIAS_GUARDED, while hdf-utilities/src instead
+// carries the timestamp guard on no-restricted-syntax. Each block has to
+// re-assert what its files already had, or the later block silently drops it.
+const BROWSER_SAFE_ALIAS_GUARDED = ['hdf-engine/src/**/*.ts', 'hdf-parsers/typescript/**/*.ts'];
+const BROWSER_SAFE_TIMESTAMP_GUARDED = ['hdf-utilities/src/**/*.ts'];
 
 // projectService resolves each file against its OWN package's tsconfig. A
 // single root-level `project` cannot: it is one path, and the type-aware rules
@@ -222,9 +232,19 @@ export default [
     },
   },
   deprecatedAliasGuardBlock(tsparser, ALIAS_GUARDED),
-  // Must follow the alias guard: both set no-restricted-imports on hdf-engine/src
-  // and the later block replaces the earlier, so this one carries both.
-  nodeBuiltinGuardBlock(tsparser, BROWSER_SAFE, DEPRECATED_ALIAS_IMPORT_RESTRICTION),
+  // Must follow the alias guard and the timestamp blocks: each pair sets the same
+  // rule on overlapping files and the later block replaces the earlier, so these
+  // carry what they override.
+  // `ignores: TESTS` because a test file is never in the bundle, and the parser
+  // tests legitimately read fixtures with node:fs and node:path.
+  {
+    ...nodeBuiltinGuardBlock(tsparser, BROWSER_SAFE_ALIAS_GUARDED, DEPRECATED_ALIAS_IMPORT_RESTRICTION),
+    ignores: TESTS,
+  },
+  {
+    ...nodeBuiltinGuardBlock(tsparser, BROWSER_SAFE_TIMESTAMP_GUARDED, {}, DATE_GUARD_RULES),
+    ignores: TESTS,
+  },
   {
     // Generator scripts and the test suite: Node ESM. Matched at any depth so a
     // file added in a new subdirectory is linted rather than silently skipped.
