@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
+import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -20,6 +20,7 @@ import {
   TargetType,
   VerificationMethodEnum,
   Ecosystem,
+  ExternalReferenceEncoding,
   createMinimalBaseline,
   createRequirement,
   type Description,
@@ -280,9 +281,8 @@ function formatMessage(vuln: TwistlockVuln): string {
 }
 
 /**
- * Re-serialize the parsed vulnerability into indented JSON for requirement.code
- * (the raw-finding passthrough, Heimdall's CODE tab), so fields with no
- * structured HDF home (link, riskFactors, publishedDate, fixDate, layerTime)
+ * Re-serialize the parsed vulnerability into indented JSON for the result's
+ * rawSourceRecord, so fields with no structured HDF home (link, riskFactors, publishedDate, fixDate, layerTime)
  * are not lost. The projection is byte-identical to the Go projection: field
  * order and the conditional-omission rules (empty string / 0 / empty array
  * dropped, matching Go's `omitempty`) mirror the TwistlockVuln struct, and
@@ -290,7 +290,7 @@ function formatMessage(vuln: TwistlockVuln): string {
  * disabled and a two-space indent. Do not reorder without updating
  * go/converter.go.
  */
-function buildVulnCode(vuln: TwistlockVuln): string {
+function renderVulnRecord(vuln: TwistlockVuln): string {
   const o: Record<string, unknown> = {};
   if (vuln.id) o.id = vuln.id;
   if (vuln.cve) o.cve = vuln.cve;
@@ -325,6 +325,7 @@ function buildRequirement(
   vuln: TwistlockVuln,
   packageTypes: Map<string, string>,
   distro: string | undefined,
+  sourcePointer: string,
 ): EvaluatedRequirement {
   const nist = DEFAULT_REMEDIATION_NIST_TAGS;
   const cciTags = nistToCci(nist);
@@ -347,11 +348,25 @@ function buildRequirement(
   const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
   const instanceId = packageInstanceId(vuln);
+  // The vulnerability record that produced this result, carried on the RESULT
+  // per ADR-0017 §5 — one CVE against two packages is two records, and
+  // roll-up's first-wins on `code` would otherwise discard the second.
+  const record = renderVulnRecord(vuln);
   const results: RequirementResult[] = [
     createResult(ResultStatus.Failed, formatMessage(vuln), {
       codeDesc: formatCodeDesc(vuln),
       startTime,
       ...(instanceId ? { resource: 'package', resourceId: instanceId } : {}),
+      ...(record
+        ? {
+            rawSourceRecord: {
+              content: record,
+              encoding: ExternalReferenceEncoding.UTF8,
+              mediaType: 'application/json',
+              pointer: sourcePointer,
+            },
+          }
+        : {}),
     }),
   ];
 
@@ -370,9 +385,6 @@ function buildRequirement(
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
 
-  const code = buildVulnCode(vuln);
-  if (code) req.code = code;
-
   const cv = buildCvss(vuln);
   if (cv) req.cvss = [cv];
   const cwes = parseCwes(vuln.cwe);
@@ -388,7 +400,8 @@ function buildRequirement(
  */
 function convertSingleResult(
   result: TwistlockResult,
-  resultsChecksum: Checksum
+  resultsChecksum: Checksum,
+  pointerPrefix: string,
 ): EvaluatedBaseline {
   const vulns = result.vulnerabilities ?? [];
   const { items: limitedVulns, truncated } = limitArray(vulns);
@@ -399,8 +412,11 @@ function convertSingleResult(
   }
 
   const packageTypes = buildPackageTypeIndex(result.packages);
-  const requirements: EvaluatedRequirement[] = limitedVulns.map(vuln =>
-    buildRequirement(vuln, packageTypes, result.distro)
+  // One requirement per CVE, one result per affected package.
+  const requirements: EvaluatedRequirement[] = rollUpRequirements(
+    limitedVulns.map((vuln, i) =>
+      buildRequirement(vuln, packageTypes, result.distro, `${pointerPrefix}/vulnerabilities/${i}`)
+    )
   );
 
   if (requirements.length === 0) {
@@ -450,6 +466,9 @@ export async function convertTwistlockToHdf(input: string, converterVersion = '1
   }
 
   let results: TwistlockResult[];
+  // Code-repo scans have no results[] wrapper, so source pointers must not
+  // reference the one synthesized below.
+  let unwrapped = false;
 
   if (Array.isArray((parsed as TwistlockReport).results)) {
     // Container scan with "results" wrapper
@@ -457,14 +476,15 @@ export async function convertTwistlockToHdf(input: string, converterVersion = '1
   } else {
     // Code repo scan — single result object, wrap it
     results = [parsed as TwistlockResult];
+    unwrapped = true;
   }
 
   if (results.length === 0) {
     throw new Error('twistlock: no scan results found');
   }
 
-  const baselines = results.map(result =>
-    convertSingleResult(result, resultsChecksum)
+  const baselines = results.map((result, i) =>
+    convertSingleResult(result, resultsChecksum, unwrapped ? '' : `/results/${i}`)
   );
 
   // Use the first result's name or repository as target name

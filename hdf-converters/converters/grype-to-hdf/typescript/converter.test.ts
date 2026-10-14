@@ -6,7 +6,7 @@ import {runConverterContractTests} from '../../../shared/typescript/converter-co
 import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import {
-  assertRequirementCount,
+  assertResultCount,
   countJsonItemsUnderKey,
 } from '../../../shared/typescript/anchor.js';
 import type {HDFResults} from '@mitre/hdf-schema';
@@ -24,33 +24,40 @@ runConverterContractTests({
 });
 
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts).
-// Grype emits one requirement per matches[] entry (plus ignoredMatches[], which
+// Requirements roll up one-per-CVE, so the count that tracks the input is the
+// RESULT count: one result per matches[] entry (plus ignoredMatches[], which
 // anchore_grype.json has none of).
 describe('grype-to-hdf ground-truth anchor', () => {
-  it('emits one requirement per matches[]', async () => {
+  it('emits one result per matches[]', async () => {
     const input = loadFixture('anchore_grype.json');
-    assertRequirementCount(
+    assertResultCount(
       await convertGrypeToHdf(input),
       countJsonItemsUnderKey(input, 'matches'),
-      'anchore_grype.json: one requirement per matches[] (no ignoredMatches)',
+      'anchore_grype.json: one result per matches[] (no ignoredMatches)',
     );
   });
 });
 
-// Grype carries no literal source snippet, so requirement.code holds the raw
-// match object serialized as indented JSON. Pin that it is set and round-trips
-// back to the source match (Heimdall CODE-tab fidelity; must byte-match the Go
-// twin, enforced by the shared snapshot test).
-describe('grype-to-hdf requirement.code (CODE tab)', () => {
-  it('sets code to the serialized match that round-trips to source', async () => {
+// Grype runs no executable check, so code stays absent and the raw match rides
+// on the result. Pin that every result carries its own match, round-tripping to
+// source and byte-matching the Go twin (the shared snapshot test enforces the
+// bytes). The Heimdall CODE tab is fed by the v2 downgrade, which exists only in
+// Go — that end of the path is pinned by the Go twin of this test.
+describe('grype-to-hdf result.rawSourceRecord (CODE tab source)', () => {
+  it('carries each match on its result and leaves code absent', async () => {
     const input = loadFixture('amazon.json');
     const result = parseJSON<HDFResults>(await convertGrypeToHdf(input));
     const source = parseJSON<{matches: unknown[]}>(input);
     const reqs = result.baselines[0]!.requirements;
+    // amazon.json carries one match per CVE, so roll-up merges nothing here.
     expect(reqs.length).toBe(source.matches.length);
     reqs.forEach((req, i) => {
-      expect(req.code, `requirement ${i}: code should be set`).toBeDefined();
-      expect(JSON.parse(req.code!)).toEqual(source.matches[i]);
+      expect(req.code, `requirement ${i}: code should be absent`).toBeUndefined();
+      const record = req.results[0]!.rawSourceRecord;
+      expect(record, `requirement ${i}: no source record`).toBeDefined();
+      expect(record!.mediaType).toBe('application/json');
+      expect(record!.pointer).toBe(`/matches/${i}`);
+      expect(JSON.parse(record!.content)).toEqual(source.matches[i]);
     });
   });
 });
@@ -564,17 +571,24 @@ describe('unknown-severity convention', () => {
 describe('grype result instance identity', () => {
   it('sets resource and resourceId to the matched package purl', async () => {
     const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(loadFixture('anchore_grype.json')));
-    const ids = hdf.baselines[0]!.requirements
-      .filter((r) => r.id === 'Grype/CVE-2022-48174')
-      .map((r) => {
-        expect(r.results).toHaveLength(1);
-        expect(r.results[0]!.resource).toBe('package');
-        return r.results[0]!.resourceId;
-      });
+    // One CVE against two packages: after roll-up, one requirement whose two
+    // results name the two packages in source order.
+    const group = hdf.baselines[0]!.requirements.filter((r) => r.id === 'Grype/CVE-2022-48174');
+    expect(group).toHaveLength(1);
+    expect(group[0]!.results).toHaveLength(2);
+    const ids = group[0]!.results.map((res) => {
+      expect(res.resource).toBe('package');
+      return res.resourceId;
+    });
 
     expect(ids).toEqual([
       'pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3',
       'pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3',
     ]);
+
+    // affectedPackages is the union across the merged group — first-wins would
+    // discard one of the two packages.
+    const names = (group[0]!.affectedPackages ?? []).map((p) => p.name).sort();
+    expect(names).toEqual(['busybox', 'ssl_client']);
   });
 });
