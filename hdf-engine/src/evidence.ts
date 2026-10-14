@@ -5,7 +5,7 @@
 // behavioural parity with the Go implementation (see test/evidence.test.ts,
 // which runs both over the same fixtures).
 
-import { createHash } from 'node:crypto';
+import { sha256 } from '@mitre/hdf-utilities';
 import { agentOverrideCount } from './compliance.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -96,24 +96,31 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
 /** Verifies each content entry's sha256 against fetch(uri), preserving entry
  * order. No checksum → skipped; a fetch throw → error; hash mismatch → mismatch
  * (carrying expected+actual). */
-export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): ChecksumResult[] {
-  return contents.map((c) => {
-    const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
-    if (c.checksum === '') {
-      return r;
-    }
-    let data: Uint8Array;
-    try {
-      data = fetch(c.uri);
-    } catch (e) {
-      return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
-    }
-    const actual = sha256Hex(data);
-    if (actual === c.checksum) {
-      return { ...r, status: 'match' };
-    }
-    return { ...r, status: 'mismatch', expected: c.checksum, actual };
-  });
+export async function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Promise<ChecksumResult[]> {
+  const results: ChecksumResult[] = [];
+  // One entry at a time, so only one fetched document is held in memory.
+  for (const c of contents) {
+    results.push(await verifyChecksum(c, fetch));
+  }
+  return results;
+}
+
+async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<ChecksumResult> {
+  const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
+  if (c.checksum === '') {
+    return r;
+  }
+  let data: Uint8Array;
+  try {
+    data = fetch(c.uri);
+  } catch (e) {
+    return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
+  }
+  const actual = await sha256(data);
+  if (actual === c.checksum) {
+    return { ...r, status: 'match' };
+  }
+  return { ...r, status: 'mismatch', expected: c.checksum, actual };
 }
 
 /** Extracts assessment baselineRefs from a plan document, deduped in first-seen
@@ -193,10 +200,6 @@ export function completeness(planned: string[], covered: string[]): Completeness
   const coveredSet = new Set(covered);
   const missing = planned.filter((p) => !coveredSet.has(p)).sort();
   return { planned, covered, missing, complete: missing.length === 0 };
-}
-
-function sha256Hex(data: Uint8Array): string {
-  return createHash('sha256').update(data).digest('hex');
 }
 
 function dedupe(input: string[]): string[] {
