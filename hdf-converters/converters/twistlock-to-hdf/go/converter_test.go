@@ -440,7 +440,7 @@ func TestConvertTwistlock_RawSourceRecordCarriesUnmappedFields(t *testing.T) {
 	assert.Contains(t, rec.Content, "\"layerTime\":")
 }
 
-func TestConvertTwistlock_BuildVulnCode_OrderAndOmission(t *testing.T) {
+func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
 	code := renderVulnRecord(TwistlockVuln{
 		ID:             "CVE-X",
 		Status:         "affected",
