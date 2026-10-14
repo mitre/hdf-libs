@@ -925,3 +925,100 @@ func TestScalarValueParity_SPDX3(t *testing.T) {
 		assert.Equal(t, c.expected, *model.Hyperparameters[i].Value)
 	}
 }
+
+// bomFormat is a format NAME, and the CLI's own matcher compared it
+// case-insensitively until hdf-libs-52n0c.11 delegated to this package and
+// inherited the exact compare. The cost is not a missed BOM: a document this
+// detector declines is handed to HDF document detection, which reaches components after five more specific keys — so a lowercase SBOM became a second
+// system document and refused the whole build.
+//
+// The vectors live in a table the TypeScript suite reads too, so the two
+// languages cannot drift on which spellings count.
+func TestDetectCycloneDX_ToleratesFormatCasing(t *testing.T) {
+	var table struct {
+		Vectors []struct {
+			BomFormat string `json:"bomFormat"`
+			Detect    bool   `json:"detect"`
+			Why       string `json:"why"`
+		} `json:"vectors"`
+	}
+	require.NoError(t, json.Unmarshal(loadFixture(t, "cyclonedx-format-casing-vectors.json"), &table))
+	require.NotEmpty(t, table.Vectors, "an empty table would assert nothing")
+
+	for _, v := range table.Vectors {
+		t.Run(v.BomFormat+" ("+v.Why+")", func(t *testing.T) {
+			doc := map[string]any{
+				"bomFormat":   v.BomFormat,
+				"specVersion": "1.5",
+				"version":     1.0,
+				"components": []any{map[string]any{
+					"type": "library", "name": "openssl", "version": "3.0.2",
+				}},
+			}
+			got := DetectCycloneDX(doc) > 0
+			assert.Equal(t, v.Detect, got, "DetectCycloneDX: %s", v.Why)
+
+			// The ML detector gates on the same field, so it must agree about
+			// the format and keep deciding the ML part on its own.
+			mlDoc := map[string]any{
+				"bomFormat":   v.BomFormat,
+				"specVersion": "1.5",
+				"version":     1.0,
+				"components": []any{map[string]any{
+					"type": "machine-learning-model", "name": "resnet", "version": "1",
+				}},
+			}
+			assert.Equal(t, v.Detect, DetectCycloneDXML(mlDoc) > 0,
+				"DetectCycloneDXML must agree about the format: %s", v.Why)
+		})
+	}
+}
+
+// Routing is a WIDER question than parsing, and asking the narrow one is what let
+// a plain SPDX 3 software-profile SBOM fall through: DetectFormat answers which
+// format ParseBom can normalize, and of the SPDX-3 profiles that is the AI/dataset
+// one only.
+// An evidence package records a reference and never parses, so it needs "is this
+// a BOM document at all". Vectors shared with the TypeScript suite.
+func TestIsBOMDocument_RecognizesSPDX3ByItsContextValue(t *testing.T) {
+	var table struct {
+		Vectors []struct {
+			// any, not string: JSON-LD admits a string, an array or an object.
+			Context any    `json:"context"`
+			IsSPDX3 bool   `json:"isSPDX3"`
+			Why     string `json:"why"`
+		} `json:"vectors"`
+	}
+	require.NoError(t, json.Unmarshal(loadFixture(t, "spdx3-context-vectors.json"), &table))
+	require.NotEmpty(t, table.Vectors)
+
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			// The SOFTWARE profile only: no ai_AIPackage, no dataset_DatasetPackage,
+			// no VEX relationship — so nothing but the context can classify it.
+			doc := map[string]any{
+				"@context": v.Context,
+				"@graph": []any{
+					map[string]any{"type": "SpdxDocument", "spdxId": "urn:a"},
+					map[string]any{"type": "software_Sbom", "spdxId": "urn:b"},
+					map[string]any{"type": "software_Package", "name": "openssl"},
+				},
+			}
+			assert.Equal(t, v.IsSPDX3, IsBOMDocument(doc), "IsBOMDocument: %s", v.Why)
+		})
+	}
+}
+
+// What IsBOMDocument must keep answering, so widening it for SPDX 3 cannot cost
+// the formats that already routed.
+func TestIsBOMDocument_StillAnswersTheFormatsDetectFormatKnows(t *testing.T) {
+	for _, name := range []string{"cyclonedx-sbom.json", "spdx-sbom.json", "spdx-ai-model-1.json"} {
+		t.Run(name, func(t *testing.T) {
+			assert.True(t, IsBOMDocument(parseJSONObject(t, loadFixture(t, name))),
+				"a real BOM fixture must classify as one")
+		})
+	}
+	// And a document no detector knows must still be declined.
+	assert.False(t, IsBOMDocument(map[string]any{"version": 4.0, "terraform_version": "1.7.5"}),
+		"a document no detector recognizes is not a BOM")
+}

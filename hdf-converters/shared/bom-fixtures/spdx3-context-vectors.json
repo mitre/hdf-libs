@@ -1,0 +1,445 @@
+{
+  "comment": "@context values and whether a document carrying one is an SPDX 3 BOM. Both languages' isSPDX3Context read this table, so a divergence fails a test rather than shipping. A row whose `why` begins CLAUSE: turns on that clause alone, so mutating the clause flips the row; one whose `why` begins PINNED BY MUTANT has a clause no single row can isolate. The rest are shapes worth covering. Which clauses are mutation-verified is recorded on hdf-libs-52n0c.11.",
+  "vectors": [
+    {
+      "context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "the value every real fixture in this repo carries"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "an earlier 3.x patch release"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "version-tolerant: a future 3.x must not need a code change"
+    },
+    {
+      "context": "http://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "scheme is not the discriminator"
+    },
+    {
+      "context": "https://spdx.org/rdf/2.3/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "SPDX 2.x is detected by its top-level spdxVersion, not by a context"
+    },
+    {
+      "context": "https://www.w3.org/ns/activitystreams",
+      "isSPDX3": false,
+      "why": "an unrelated JSON-LD vocabulary"
+    },
+    {
+      "context": "https://in-toto.io/Statement/v1",
+      "isSPDX3": false,
+      "why": "another unrelated vocabulary"
+    },
+    {
+      "context": "",
+      "isSPDX3": false,
+      "why": "no vocabulary named"
+    },
+    {
+      "context": [
+        "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
+      ],
+      "isSPDX3": true,
+      "why": "array form, which JSON-LD permits and an SPDX extension context requires"
+    },
+    {
+      "context": [
+        "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+        {
+          "ex": "https://example.test/ns#"
+        }
+      ],
+      "isSPDX3": true,
+      "why": "array with an inline extension object alongside the SPDX vocabulary"
+    },
+    {
+      "context": [
+        "https://www.w3.org/ns/activitystreams"
+      ],
+      "isSPDX3": false,
+      "why": "array naming only unrelated vocabularies"
+    },
+    {
+      "context": {
+        "@vocab": "https://spdx.org/rdf/3.0.1/terms/"
+      },
+      "isSPDX3": true,
+      "why": "inline object whose mapping names the SPDX vocabulary"
+    },
+    {
+      "context": {
+        "ex": "https://example.test/ns#"
+      },
+      "isSPDX3": false,
+      "why": "inline object naming nothing SPDX"
+    },
+    {
+      "context": "https://notspdx.org/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "a host merely ENDING in spdx.org is a different host"
+    },
+    {
+      "context": "https://evil.example/spdx.org/rdf/3.0.1/x",
+      "isSPDX3": false,
+      "why": "the SPDX path under an unrelated host is not the SPDX vocabulary"
+    },
+    {
+      "context": "https://spdx.org/rdf/4.0.0/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "a future major version is not SPDX 3"
+    },
+    {
+      "context": "https://evil.example//spdx.org/rdf/3.0.1/x",
+      "isSPDX3": false,
+      "why": "a doubled slash mid-path does not make the host the vocabulary's"
+    },
+    {
+      "context": "https://evil.example/?x=//spdx.org/rdf/3.0.1/",
+      "isSPDX3": false,
+      "why": "the vocabulary URL inside a query string is not the host"
+    },
+    {
+      "context": "https://spdx.org/rdf/30.0/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "version 30.0 is not a 3.x release"
+    },
+    {
+      "context": "https://spdx.org/rdf/3abc/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "a version that merely starts with the digit 3"
+    },
+    {
+      "context": "https://spdx.org/rdf/3",
+      "isSPDX3": true,
+      "why": "the bare major, with no trailing component"
+    },
+    {
+      "context": "HTTPS://SPDX.ORG/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "a host is case-insensitive per RFC 3986"
+    },
+    {
+      "context": "https://spdx.org:443/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "an explicit port names the same host"
+    },
+    {
+      "context": "https://spdx.org@evil.example/rdf/3.0.1/x",
+      "isSPDX3": false,
+      "why": "userinfo is not the host"
+    },
+    {
+      "context": "//spdx.org/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "scheme-relative: a scheme is required, and net/url would read this as an authority where WHATWG throws"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/../../evil",
+      "isSPDX3": false,
+      "why": "a dot segment is refused rather than resolved — net/url leaves it, WHATWG normalizes it away"
+    },
+    {
+      "context": "https://spdx.org/a/../rdf/3.0.1/x",
+      "isSPDX3": false,
+      "why": "the same, in the other direction: WHATWG would resolve this INTO a match"
+    },
+    {
+      "context": "https://spdx.org/%72df/3.0.1/",
+      "isSPDX3": false,
+      "why": "a percent-escape is refused rather than decoded — net/url decodes Path, WHATWG does not"
+    },
+    {
+      "context": " https://spdx.org/rdf/3.0.1/",
+      "isSPDX3": false,
+      "why": "leading space: WHATWG strips it, net/url does not"
+    },
+    {
+      "context": "https://spdx.org\trdf/3.0.1/",
+      "isSPDX3": false,
+      "why": "an embedded tab: WHATWG removes control characters anywhere, net/url does not"
+    },
+    {
+      "context": "https:\\\\spdx.org\\rdf\\3.0.1\\x",
+      "isSPDX3": false,
+      "why": "backslashes: WHATWG rewrites them to slashes for special schemes, net/url does not"
+    },
+    {
+      "context": "https://spdx.org:99999999/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": true,
+      "why": "an out-of-range port is ignored with the rest of the port, where WHATWG would reject the URL"
+    },
+    {
+      "context": "https://spdx.org/RDF/3.0.1/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "the path is case-SENSITIVE per RFC 3986, unlike the host"
+    },
+    {
+      "context": "foo://SPDX.ORG/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "only http and https are recognized, so a non-special scheme cannot smuggle an uppercase host in"
+    },
+    {
+      "context": [
+        [
+          [
+            [
+              [
+                [
+                  [
+                    [
+                      [
+                        [
+                          [
+                            [
+                              [
+                                [
+                                  [
+                                    [
+                                      [
+                                        [
+                                          [
+                                            [
+                                              [
+                                                [
+                                                  [
+                                                    [
+                                                      [
+                                                        [
+                                                          [
+                                                            [
+                                                              [
+                                                                [
+                                                                  [
+                                                                    "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
+                                                                  ]
+                                                                ]
+                                                              ]
+                                                            ]
+                                                          ]
+                                                        ]
+                                                      ]
+                                                    ]
+                                                  ]
+                                                ]
+                                              ]
+                                            ]
+                                          ]
+                                        ]
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "isSPDX3": true,
+      "why": "nesting below the depth bound"
+    },
+    {
+      "context": [
+        [
+          [
+            [
+              [
+                [
+                  [
+                    [
+                      [
+                        [
+                          [
+                            [
+                              [
+                                [
+                                  [
+                                    [
+                                      [
+                                        [
+                                          [
+                                            [
+                                              [
+                                                [
+                                                  [
+                                                    [
+                                                      [
+                                                        [
+                                                          [
+                                                            [
+                                                              [
+                                                                [
+                                                                  [
+                                                                    [
+                                                                      [
+                                                                        "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
+                                                                      ]
+                                                                    ]
+                                                                  ]
+                                                                ]
+                                                              ]
+                                                            ]
+                                                          ]
+                                                        ]
+                                                      ]
+                                                    ]
+                                                  ]
+                                                ]
+                                              ]
+                                            ]
+                                          ]
+                                        ]
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "isSPDX3": false,
+      "why": "nesting just beyond the depth bound, which both languages must refuse alike"
+    },
+    {
+      "context": "https://ſpdx.org/rdf/3.0.1/spdx-context.jsonld",
+      "isSPDX3": false,
+      "why": "CLAUSE: ASCII-only host fold. U+017F long s folds with 's' under EqualFold but not toLowerCase, so a Unicode fold here makes the two languages disagree"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x y",
+      "isSPDX3": false,
+      "why": "CLAUSE: the space in the refusal set — host, scheme and path prefix are all valid, so only that clause makes this false"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x\ty",
+      "isSPDX3": false,
+      "why": "CLAUSE: the tab in the refusal set, with everything else valid"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x\ny",
+      "isSPDX3": false,
+      "why": "CLAUSE: the newline in the refusal set, with everything else valid"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x\ry",
+      "isSPDX3": false,
+      "why": "CLAUSE: the carriage return in the refusal set, with everything else valid"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x\\y",
+      "isSPDX3": false,
+      "why": "CLAUSE: the backslash in the refusal set, with everything else valid"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/x%20y",
+      "isSPDX3": false,
+      "why": "CLAUSE: the percent in the refusal set, with everything else valid"
+    },
+    {
+      "context": "https://spdx.org/rdf/3.0.1/a..b",
+      "isSPDX3": false,
+      "why": "CLAUSE: the doubled dot, refused ANYWHERE and not only as a path segment — which is what the code does, so the comment must not say 'dot segment'"
+    },
+    {
+      "context": [
+        [
+          [
+            [
+              [
+                [
+                  [
+                    [
+                      [
+                        [
+                          [
+                            [
+                              [
+                                [
+                                  [
+                                    [
+                                      [
+                                        [
+                                          [
+                                            [
+                                              [
+                                                [
+                                                  [
+                                                    [
+                                                      [
+                                                        [
+                                                          [
+                                                            [
+                                                              [
+                                                                [
+                                                                  [
+                                                                    [
+                                                                      "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
+                                                                    ]
+                                                                  ]
+                                                                ]
+                                                              ]
+                                                            ]
+                                                          ]
+                                                        ]
+                                                      ]
+                                                    ]
+                                                  ]
+                                                ]
+                                              ]
+                                            ]
+                                          ]
+                                        ]
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "isSPDX3": true,
+      "why": "CLAUSE: the depth bound's VALUE. 32 is the last accepted depth, so an off-by-one in either language flips this row"
+    },
+    {
+      "context": "https://spdx.org",
+      "isSPDX3": false,
+      "why": "PINNED BY MUTANT, not by single-reason failure: the authority must be followed by a path. No row can fail on that clause alone — a value with no path necessarily also lacks /rdf/ and the version — so the clause is held by mutating it to accept, which this row and the next then refuse. Correct host and scheme, so the mutant's reach is visible."
+    },
+    {
+      "context": "https://evil.example",
+      "isSPDX3": false,
+      "why": "PINNED BY MUTANT, paired with the row above: a wrong host, so dropping the no-path clause is shown to skip the host check entirely and accept an arbitrary host as the SPDX vocabulary. Fails for several reasons by construction; see the row above."
+    }
+  ]
+}

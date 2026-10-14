@@ -66,7 +66,7 @@ func TestEvidenceBuild_FromDirClassifiesEveryHDFType(t *testing.T) {
 	assert.Equal(t, "meta/plan.json", pkg["planRef"], "a scanned plan still sets planRef")
 }
 
-// The collision that matters most here. hdfengine.Detect classifies ANY root
+// The collision that matters most here. hdfengine.Detect classifies a root
 // `components` key as an HDF system, and components[] is CycloneDX's primary
 // field — so a blind Detect files real SBOMs as system documents, which then
 // collide with the real one. Routing must consult the BOM discriminator first.
@@ -204,10 +204,11 @@ func TestEvidenceBuild_FromDirDoesNotFollowSymlinksOutOfTheTree(t *testing.T) {
 	}
 }
 
-// The skip-set and the scanned paths must normalize the same way. filepath.
-// EvalSymlinks does not absolutize, so a relative --from-dir with an absolute
-// explicit path (or the reverse) previously failed to match and listed the
-// document twice. Exercises the mixed form the earlier test could not.
+// One document named in a different PATH FORM from the one the walk produces is
+// still listed once. This was written when the skip-set compared normalized path
+// strings, where mixing relative and absolute forms made it miss; the set now
+// compares filesystem identity, so the path form cannot matter in principle —
+// which is exactly why the case is worth keeping asserted rather than assumed.
 func TestEvidenceBuild_FromDirSkipsExplicitFilesAcrossPathForms(t *testing.T) {
 	dir := scanTree(t)
 	cwd, err := os.Getwd()
@@ -239,9 +240,8 @@ func TestEvidenceBuild_FromDirSkipsExplicitFilesAcrossPathForms(t *testing.T) {
 }
 
 // The report must be readable and its suggestion copy-pasteable: paths are
-// absolute internally so the skip-set matches any form the caller typed, but a
-// full /private/tmp/... path in the printed add-evidence command is not something
-// anyone can use.
+// absolute internally, but a full /private/tmp/... path in the printed
+// add-evidence command is not something anyone can use.
 func TestEvidenceBuild_FromDirReportsRelativePaths(t *testing.T) {
 	dir := scanTree(t)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "corpus.ndjson"),
@@ -366,4 +366,282 @@ func TestEvidenceBuild_FromDirNamesTheSymlinkNotItsTarget(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stderr, "Skipped alias-results.json",
 		"the link's own name, not the target it points at")
+}
+
+// One document reached by two paths must be listed once. A HARDLINK is the
+// portable way to reproduce this: it gives two different path strings for one
+// inode on every filesystem, where the card's original reproduction — the same
+// file named in two letter-cases — only reproduces on a case-insensitive volume
+// and would be a no-op on the Linux CI leg. Both land on the same cause: the
+// skip-set compared resolved path STRINGS, which two spellings of one file do
+// not share.
+func TestEvidenceBuild_FromDirListsOneDocumentOnceWhenNamedByAnotherPath(t *testing.T) {
+	dir := scanTree(t)
+	original := filepath.Join(dir, "scans", "rhel9-results.json")
+	alias := filepath.Join(dir, "scans", "rhel9-results-alias.json")
+	if err := os.Link(original, alias); err != nil {
+		t.Skipf("filesystem does not support hard links: %v", err)
+	}
+
+	outputPath := filepath.Join(dir, "pkg.json")
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "--results", alias, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+
+	var listed []string
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		if e["type"] == "hdf-results" {
+			listed = append(listed, e["uri"].(string))
+		}
+	}
+	assert.Len(t, listed, 1,
+		"the explicitly named path and the scanned one are the same file; it must be recorded once, got %v", listed)
+}
+
+// The card's own reproduction, which only exists on a case-insensitive volume
+// (APFS, NTFS) — so the filesystem is PROBED rather than assumed from runtime.GOOS,
+// because a case-sensitive APFS volume and a case-insensitive ext4 mount both exist.
+// On a case-sensitive volume the two names are genuinely two files and there is
+// nothing to deduplicate, which is why the identity key must not be a lower-cased
+// string. The portable cousin of this test is the hard-link one above.
+func TestEvidenceBuild_FromDirListsOneDocumentOnceWhenNamedInAnotherCase(t *testing.T) {
+	dir := scanTree(t)
+	original := filepath.Join(dir, "scans", "rhel9-results.json")
+	miscased := filepath.Join(dir, "scans", "RHEL9-results.json")
+	if _, err := os.Stat(miscased); err != nil {
+		t.Skipf("filesystem is case-sensitive, so %s is not the same file: %v",
+			filepath.Base(miscased), err)
+	}
+	// The probe said they are one file; confirm it by identity before relying on it.
+	a, errA := os.Stat(original)
+	b, errB := os.Stat(miscased)
+	require.NoError(t, errA)
+	require.NoError(t, errB)
+	require.True(t, os.SameFile(a, b), "the probe claimed one file; os.SameFile disagrees")
+
+	outputPath := filepath.Join(dir, "pkg.json")
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "--results", miscased, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+
+	var listed []string
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		if e["type"] == "hdf-results" {
+			listed = append(listed, e["uri"].(string))
+		}
+	}
+	assert.Len(t, listed, 1,
+		"one document named in two letter-cases must be recorded once, got %v", listed)
+}
+
+// An SPDX 3.x SBOM is JSON-LD: { "@context", "@graph" } with NO top-level
+// spdxVersion, so a matcher keyed on that field classifies a real SBOM foreign.
+// The discriminator was confirmed by reading the fixtures themselves — all three
+// carry "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld" — rather
+// than by guessing at the spec, and both SPDX generations are asserted here so
+// recognizing the new one cannot quietly cost the old one.
+func TestEvidenceBuild_FromDirRoutesBothSPDXGenerationsToBom(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		fixture string
+	}{
+		{"SPDX 2.x, by its top-level spdxVersion", "spdx-sbom.json"},
+		{"SPDX 3.x JSON-LD, by its @context", "spdx-ai-model-1.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := scanTree(t)
+			src, readErr := os.ReadFile(bomFixturePath(t, tc.fixture))
+			require.NoError(t, readErr)
+			// Named so nothing can route it by filename, which AC 3 forbids.
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "inventory.json"), src, 0o600))
+			outputPath := filepath.Join(dir, "pkg.json")
+
+			_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+			require.NoError(t, err)
+
+			data, _ := os.ReadFile(outputPath)
+			var pkg map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &pkg))
+
+			byType := map[string]string{}
+			for _, c := range pkg["contents"].([]interface{}) {
+				e := c.(map[string]interface{})
+				byType[e["type"].(string)] = e["uri"].(string)
+			}
+			assert.Equal(t, "inventory.json", byType["bom"],
+				"a real SBOM belongs under the bom content type, not reported as foreign")
+		})
+	}
+}
+
+// AC 5, and the risk the wider detector introduces: the previous matcher read two
+// named fields, so it could only ever over-reject. Delegating asks a detector that
+// knows five formats, so the question becomes whether it over-ACCEPTS. The existing
+// foreign-artifact test asserts only that the path is REPORTED on stderr; this one
+// pins absence from contents[] directly, for a document the wider detector could
+// plausibly claim.
+func TestEvidenceBuild_FromDirStillReportsAForeignJSONObjectAsForeign(t *testing.T) {
+	dir := scanTree(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "terraform.tfstate.json"),
+		[]byte(`{"version":4,"terraform_version":"1.7.5","serial":12,
+			"resources":[{"mode":"managed","type":"aws_s3_bucket","name":"evidence"}]}`), 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, stderr, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, _ := os.ReadFile(outputPath)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		assert.NotEqual(t, "terraform.tfstate.json", e["uri"],
+			"a document no detector recognizes must not be recorded as %v", e["type"])
+	}
+	assert.Contains(t, stderr, "terraform.tfstate.json",
+		"and it must be reported rather than dropped in silence")
+}
+
+// The regression 52n0c.11 introduced and 52n0c.46 fixed, pinned at the level where
+// it hurt. A declined BOM is not merely "reported foreign": hdfengine.Detect reaches components after five more specific keys, so a CycloneDX SBOM spelling its
+// bomFormat in lower case became a SECOND system document and --from-dir refused the
+// whole build. The existing routing test uses the exact-case spelling, so it could
+// not catch this.
+func TestEvidenceBuild_FromDirRoutesACycloneDXSBOMWhateverItsFormatCasing(t *testing.T) {
+	for _, spelling := range []string{"CycloneDX", "cyclonedx", "CYCLONEDX"} {
+		t.Run(spelling, func(t *testing.T) {
+			dir := scanTree(t)
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "inventory.json"),
+				[]byte(`{"bomFormat":"`+spelling+`","specVersion":"1.5","version":1,
+					"components":[{"type":"library","name":"openssl","version":"3.0.2"}]}`), 0o600))
+			outputPath := filepath.Join(dir, "pkg.json")
+
+			_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+			require.NoError(t, err,
+				"a CycloneDX SBOM must not be promoted to a second system document")
+
+			data, _ := os.ReadFile(outputPath)
+			var pkg map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &pkg))
+			systems, boms := 0, ""
+			for _, c := range pkg["contents"].([]interface{}) {
+				e := c.(map[string]interface{})
+				switch e["type"] {
+				case "hdf-system":
+					systems++
+				case "bom":
+					boms = e["uri"].(string)
+				}
+			}
+			assert.Equal(t, 1, systems, "exactly the real system document")
+			assert.Equal(t, "inventory.json", boms, "the SBOM belongs under the bom content type")
+		})
+	}
+}
+
+// The commonest SPDX 3 document, and the one the first attempt at this card
+// missed: the SOFTWARE profile. bom.DetectFormat declines it, because it answers
+// which format can be normalized, and of the SPDX-3 profiles only the AI/dataset
+// one can be — so the
+// three fixtures in this repo routed for the wrong reason, each carrying an
+// ai_AIPackage OR a dataset_DatasetPackage — spdx-ai-dataset-1.json carries none
+// of the former. A document with no AI package, no dataset package and no
+// VEX relationship has nothing but its @context to classify it.
+//
+// Built from a real fixture by dropping WHOLE elements, which is the permitted
+// trim; no string inside a kept element is edited.
+func TestEvidenceBuild_FromDirRoutesAnSPDX3SoftwareProfileSBOM(t *testing.T) {
+	raw, readErr := os.ReadFile(bomFixturePath(t, "spdx-ai-model-1.json"))
+	require.NoError(t, readErr)
+	var src map[string]any
+	require.NoError(t, json.Unmarshal(raw, &src))
+
+	graph, ok := src["@graph"].([]any)
+	require.True(t, ok, "the fixture must carry a @graph")
+	kept := make([]any, 0, len(graph))
+	dropped := 0
+	for _, el := range graph {
+		m, isMap := el.(map[string]any)
+		if isMap {
+			switch m["type"] {
+			case "ai_AIPackage", "dataset_DatasetPackage":
+				dropped++
+				continue
+			}
+		}
+		kept = append(kept, el)
+	}
+	require.Positive(t, dropped, "the fixture must have carried the elements this test removes")
+	trimmed, marshalErr := json.Marshal(map[string]any{"@context": src["@context"], "@graph": kept})
+	require.NoError(t, marshalErr)
+
+	dir := scanTree(t)
+	// Named so nothing can route it by filename.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "inventory.json"), trimmed, 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, _ := os.ReadFile(outputPath)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	byType := map[string]string{}
+	systems := 0
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		byType[e["type"].(string)] = e["uri"].(string)
+		if e["type"] == "hdf-system" {
+			systems++
+		}
+	}
+	assert.Equal(t, "inventory.json", byType["bom"],
+		"an SPDX 3 software-profile SBOM is a BOM, whatever ParseBom can normalize")
+	assert.Equal(t, 1, systems, "and it must not be promoted to a second system document")
+}
+
+// add() stats rather than lstats, so naming a SYMLINK explicitly skips its TARGET
+// in the scan — one document, once. It is recorded under the target's path, not
+// the link's, because resolvedAbs resolves symlinks before anything is recorded.
+//
+// Under lstat the set records the link's own inode, the scan stops skipping the
+// target, and the build is REFUSED by the downstream same-document guard rather
+// than listing both. Either way the property was unpinned until now, and a
+// mutation run proved it.
+func TestEvidenceBuild_FromDirNamingASymlinkSkipsItsTarget(t *testing.T) {
+	dir := scanTree(t)
+	target := filepath.Join(dir, "scans", "rhel9-results.json")
+	link := filepath.Join(dir, "scans", "rhel9-results-link.json")
+	require.NoError(t, os.Symlink(target, link))
+
+	outputPath := filepath.Join(dir, "pkg.json")
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "--results", link, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+
+	var listed []string
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		if e["type"] == "hdf-results" {
+			listed = append(listed, e["uri"].(string))
+		}
+	}
+	require.Len(t, listed, 1,
+		"the named symlink and the scanned target are one document; got %v", listed)
+	assert.Equal(t, "scans/rhel9-results.json", listed[0],
+		"recorded under the resolved target, which is what resolvedAbs produces")
 }

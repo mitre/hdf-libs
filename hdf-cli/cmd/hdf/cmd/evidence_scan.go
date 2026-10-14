@@ -11,6 +11,8 @@ import (
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
+
+	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 )
 
 // scanResult is what a directory scan found, already routed. Paths are absolute.
@@ -38,20 +40,20 @@ func (out *scanResult) skipUnreadable(path string, _ error) error {
 
 // looksLikeBOM reports whether a document carries a BOM's own discriminator.
 //
-// This check MUST precede hdfengine.Detect. Detect classifies any root
-// `components` key as an HDF system, and components[] is CycloneDX's primary
-// field — so a blind Detect files real SBOMs as system documents, where they
-// collide with the actual one and are validated against the wrong schema. The
-// artifact's own bomFormat/spdxVersion settles it.
+// This MUST precede hdfengine.Detect, which falls to `components` after five
+// more specific keys — CycloneDX's primary field, so a blind Detect files real
+// SBOMs as HDF systems and validates them against the wrong schema.
 func looksLikeBOM(data []byte) bool {
-	var head struct {
-		BomFormat   string `json:"bomFormat"`
-		SpdxVersion string `json:"spdxVersion"`
-	}
-	if json.Unmarshal(data, &head) != nil {
+	var doc any
+	if json.Unmarshal(data, &doc) != nil {
 		return false
 	}
-	return strings.EqualFold(head.BomFormat, "CycloneDX") || head.SpdxVersion != ""
+	// IsBOMDocument, not DetectFormat: DetectFormat answers which format can be
+	// NORMALIZED, so it declines a plain SPDX-3 software profile. This command
+	// records a reference and never parses, so the wider question is the right
+	// one — and a BOM it declines falls through to HDF detection, where a root
+	// components key becomes a system document.
+	return bom.IsBOMDocument(doc)
 }
 
 // routeDetected returns the scanResult field a detected type belongs to, and
@@ -77,25 +79,47 @@ func routeDetected(out *scanResult, detected, path string) {
 	}
 }
 
-// DECISION, recorded here because the scan is where it takes effect: two files
-// with IDENTICAL BYTES under different names are BOTH listed. De-duplicating would
-// silently drop a document the operator put in the tree, and refusing would block a
-// layout that is schema-legal (contents[] has no uniqueness constraint). This
-// differs from `add-evidence`, which refuses a duplicate URI — there the URI is the
-// same, so the second add is either a no-op or a changed artifact; here the URIs
-// differ and both entries are true statements about the tree.
-//
+// explicitSkips holds the documents named on the command line, identified by
+// FILESYSTEM IDENTITY rather than path string: a hard link, or the same name in
+// another letter-case on a case-insensitive volume, is one inode under two
+// strings. Lower-casing the key instead would collapse two genuinely distinct
+// files on a case-sensitive volume.
+type explicitSkips struct {
+	infos []os.FileInfo
+}
+
+// add records a path to skip. A path that cannot be stat'd is not recorded: it
+// names nothing the walk can encounter, and the command reports a bad explicit
+// path through its own reading of it rather than here.
+func (e *explicitSkips) add(path string) {
+	if fi, err := os.Stat(path); err == nil {
+		e.infos = append(e.infos, fi)
+	}
+}
+
+// has reports whether info is one of the recorded files. Linear over the explicit
+// paths — one per file NAMED, which a glob makes more than one per flag, since
+// the globs are expanded before the skip-set is built.
+func (e *explicitSkips) has(info os.FileInfo) bool {
+	for _, known := range e.infos {
+		if os.SameFile(known, info) {
+			return true
+		}
+	}
+	return false
+}
+
 // scanEvidenceDir walks baseDir and routes every regular file by its CONTENT.
 //
 // Recursion is deliberate: the base directory is the artifacts folder a CI
-// orchestrator hands from job to job, and those permit subdirectories without
-// requiring them, so a flat-only scan would miss the documents under scans/.
+// orchestrator hands from job to job, and those permit subdirectories.
 //
-// Confinement is os.Root's. Every read goes through the root handle, so a symlink
-// pointing out of the tree is refused by the kernel-level check rather than by a
-// path comparison that a rename could race. skip holds paths named explicitly on
-// the command line, so a document is never listed twice.
-func scanEvidenceDir(baseDir string, skip map[string]struct{}) (*scanResult, error) {
+// Two files with identical bytes under different names are BOTH listed —
+// de-duplicating would drop a document the operator put in the tree, and
+// contents[] has no uniqueness constraint. Confinement is os.Root's, so a
+// symlink out of the tree is refused by the kernel rather than by a path
+// comparison a rename could race. skip holds the explicitly-named documents.
+func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 	root, err := os.OpenRoot(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open --from-dir %s: %w", baseDir, err)
@@ -103,9 +127,9 @@ func scanEvidenceDir(baseDir string, skip map[string]struct{}) (*scanResult, err
 	defer func() { _ = root.Close() }()
 
 	// resolvedAbs, not EvalSymlinks: EvalSymlinks does NOT absolutize, so
-	// `--from-dir .` would yield relative paths while an explicitly-named
-	// `--results /abs/path` is absolute, and the skip-set would never match —
-	// listing that document twice. Both sides must normalize identically.
+	// `--from-dir .` would yield relative paths. The skip-set no longer depends on
+	// this — it compares filesystem identity — but every recorded and displayed
+	// path still does.
 	realBase, err := resolvedAbs(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve --from-dir %s: %w", baseDir, err)
@@ -128,7 +152,15 @@ func scanEvidenceDir(baseDir string, skip map[string]struct{}) (*scanResult, err
 			return nil
 		}
 		abs := filepath.Join(realBase, rel)
-		if _, explicit := skip[abs]; explicit {
+		// d.Info() rather than a second os.Stat. io/fs permits an implementation to
+		// stat lazily here, so this is not a guarantee the interface makes; under
+		// os.Root the entry's info was read eagerly with the directory, which is
+		// what makes it the identity already seen rather than a fresh look.
+		info, infoErr := d.Info()
+		if infoErr != nil {
+			return out.skipUnreadable(abs, infoErr)
+		}
+		if skip.has(info) {
 			return nil
 		}
 		data, readErr := fs.ReadFile(root.FS(), rel)
@@ -161,7 +193,8 @@ func scanEvidenceDir(baseDir string, skip map[string]struct{}) (*scanResult, err
 
 // displayUnderBase renders a path relative to the scanned directory when it sits
 // beneath it, so one stderr stream uses one path convention. Absolute paths are
-// kept internally for the skip-set; only the display is shortened.
+// kept internally; this shortens only what is PRINTED. What a package records is
+// shortened separately, by packageRelativeRef.
 func displayUnderBase(baseDir, p string) string {
 	base, err := resolvedAbs(baseDir)
 	if err != nil {
@@ -191,9 +224,9 @@ func displayUnderBase(baseDir, p string) string {
 // in silence: a foreign artifact gets the exact command that would include it,
 // because inventing a format for it would be fabrication.
 //
-// Paths are absolute internally, so the skip-set matches whatever form the caller
-// typed — but they are DISPLAYED relative to the scanned directory, and the
-// suggested --uri is relative too, so the printed command can be pasted as-is.
+// Paths are absolute internally, but are DISPLAYED relative to the scanned
+// directory, and the suggested --uri is relative too, so the printed command can
+// be pasted as-is.
 func reportScan(out *scanResult, baseDir, pkgPath string) {
 	target := pkgPath
 	if target == "" {

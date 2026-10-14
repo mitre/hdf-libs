@@ -1,0 +1,40 @@
+{
+  "comment": "bomFormat values and whether the CycloneDX detectors must claim them. Read by both language suites so the two cannot drift. The CycloneDX spec requires the exact string CycloneDX, but the field is a format NAME rather than data, and a document declining detection is handed to HDF document detection instead — which reaches components after five more specific keys, a worse answer than 'not a BOM'. See hdf-libs-52n0c.46.",
+  "vectors": [
+    {
+      "bomFormat": "CycloneDX",
+      "detect": true,
+      "why": "the spelling the spec requires"
+    },
+    {
+      "bomFormat": "cyclonedx",
+      "detect": true,
+      "why": "the spelling that regressed: promoted to a system document and refused the build"
+    },
+    {
+      "bomFormat": "CYCLONEDX",
+      "detect": true,
+      "why": "upper case"
+    },
+    {
+      "bomFormat": "CycloneDx",
+      "detect": true,
+      "why": "mixed case"
+    },
+    {
+      "bomFormat": "SPDX",
+      "detect": false,
+      "why": "a different format name is not a casing difference"
+    },
+    {
+      "bomFormat": "CycloneDX ",
+      "detect": false,
+      "why": "trailing space: this card tolerates CASE, not whitespace"
+    },
+    {
+      "bomFormat": "",
+      "detect": false,
+      "why": "no format declared"
+    }
+  ]
+}

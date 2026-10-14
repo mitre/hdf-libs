@@ -192,7 +192,7 @@ func TestEvidenceBuild_RejectsMistypedDocument(t *testing.T) {
 	assert.NoFileExists(t, outputPath, "no package should be written when an input is mistyped")
 }
 
-// --bom must accept a real CycloneDX SBOM. hdfengine.Detect classifies ANY root
+// --bom must accept a real CycloneDX SBOM. hdfengine.Detect classifies a root
 // `components` key as an HDF system, and components[] is CycloneDX's primary
 // field, so any fingerprint guard on --bom rejects the dominant BOM format. This
 // test exists to keep one from being reintroduced.

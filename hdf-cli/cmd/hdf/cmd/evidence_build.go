@@ -94,16 +94,14 @@ Examples:
 // mergeScannedDir folds a directory scan into the explicit flags. Explicit wins:
 // a path named on the command line is skipped by the scan, so it is listed once.
 func mergeScannedDir(opts *evidenceBuildOpts) error {
-	skip := map[string]struct{}{}
+	skip := &explicitSkips{}
 	for _, group := range [][]string{{opts.systemPath, opts.planPath}, opts.resultsPaths,
 		opts.baselinePaths, opts.bomPaths, opts.amendmentsPaths, opts.comparisonPaths} {
 		for _, p := range group {
 			if p == "" {
 				continue
 			}
-			if abs, err := resolvedAbs(p); err == nil {
-				skip[abs] = struct{}{}
-			}
+			skip.add(p)
 		}
 	}
 
@@ -450,10 +448,11 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	}
 
 	// Optional: BOMs. Deliberately NOT fingerprint-checked. A BOM is not one of
-	// the eight HDF document types, and hdfengine.Detect classifies any root
-	// `components` key as an HDF system — which is exactly CycloneDX's primary
-	// field, so a guard here rejects real SBOMs. The schema carries a BOM's kind
-	// in the referenced document's own bomType, not in the Content_Type.
+	// the eight HDF document types, and hdfengine.Detect falls to `components`
+	// after five more specific keys — so a CycloneDX document, whose primary field
+	// that is, gets filed as an HDF system and a guard here would reject real
+	// SBOMs. The schema carries a BOM's kind in the referenced document's own
+	// bomType, not in the Content_Type.
 	for _, bp := range opts.bomPaths {
 		if aerr := addEntry("bom", bp); aerr != nil {
 			return aerr

@@ -15,11 +15,22 @@ type FormatDetection struct {
 	Confidence float64
 }
 
+// isCycloneDXFormat reports whether a bomFormat value names CycloneDX, ASCII
+// case-insensitively. The spec requires the exact spelling, but a document this
+// package declines falls through to HDF document detection, which reaches
+// `components` after five more specific keys — so a CycloneDX SBOM would be
+// filed as an HDF system, a worse answer than "not a BOM". Case only: a value
+// with surrounding whitespace is a different value.
+func isCycloneDXFormat(v any) bool {
+	s, ok := v.(string)
+	return ok && asciiLower(s) == "cyclonedx"
+}
+
 // DetectCycloneDX reports confidence that input is a CycloneDX document
-// (bomFormat === "CycloneDX"). Returns 0 or 1.
+// (bomFormat naming CycloneDX, any casing). Returns 0 or 1.
 func DetectCycloneDX(input any) float64 {
 	obj := asRecord(input)
-	if obj != nil && obj["bomFormat"] == "CycloneDX" {
+	if obj != nil && isCycloneDXFormat(obj["bomFormat"]) {
 		return 1
 	}
 	return 0
@@ -30,7 +41,7 @@ func DetectCycloneDX(input any) float64 {
 // Strictly more specific than plain CycloneDX. Returns 0 or 1.
 func DetectCycloneDXML(input any) float64 {
 	obj := asRecord(input)
-	if obj == nil || obj["bomFormat"] != "CycloneDX" {
+	if obj == nil || !isCycloneDXFormat(obj["bomFormat"]) {
 		return 0
 	}
 	components, ok := obj["components"].([]any)
@@ -112,6 +123,112 @@ func DetectSPDX3Security(input any) float64 {
 // VEX assessment relationship subtypes.
 func isVexAssessmentType(t string) bool {
 	return strings.HasPrefix(t, "security_Vex") && strings.HasSuffix(t, "VulnAssessmentRelationship")
+}
+
+// isSPDX3Context reports whether a JSON-LD @context names an SPDX 3 vocabulary.
+//
+// The value may be a string, an array, or an object whose values are either;
+// an SPDX document adding an extension vocabulary uses the array form, so a
+// string-only check declines a conformant SBOM.
+//
+// Do NOT reach for net/url or strings.EqualFold here. Both were tried and both
+// made the two languages disagree: net/url reads "//host/path" as an authority
+// where the WHATWG parser throws, and EqualFold folds U+017F against "s" where
+// JavaScript's toLowerCase does not. Every clause below is plain byte work,
+// pinned by the shared vector table.
+func isSPDX3Context(v any) bool {
+	return isSPDX3ContextAt(v, 0)
+}
+
+// maxContextDepth bounds the walk. JSON-LD nests contexts a handful deep at most;
+// the bound exists so the two languages agree, since a JavaScript recursion of a
+// few thousand frames throws where Go would not.
+const maxContextDepth = 32
+
+func isSPDX3ContextAt(v any, depth int) bool {
+	if depth > maxContextDepth {
+		return false
+	}
+	switch t := v.(type) {
+	case string:
+		return isSPDX3ContextURL(t)
+	case []any:
+		for _, el := range t {
+			if isSPDX3ContextAt(el, depth+1) {
+				return true
+			}
+		}
+	case map[string]any:
+		for _, el := range t {
+			if isSPDX3ContextAt(el, depth+1) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// asciiLower lowercases A-Z and nothing else. strings.EqualFold applies Unicode
+// simple case folding, which matches U+017F LATIN SMALL LETTER LONG S against
+// "s"; JavaScript's toLowerCase applies Unicode lowercase mapping, which does
+// not. Two stdlib case operations that look equivalent are not, so neither is
+// used — RFC 3986 section 6.2.2.1 specifies ASCII case normalization for the
+// scheme and host, which is what this does.
+func asciiLower(s string) string {
+	b := []byte(s)
+	for i := range b {
+		if b[i] >= 'A' && b[i] <= 'Z' {
+			b[i] += 'a' - 'A'
+		}
+	}
+	return string(b)
+}
+
+func isSPDX3ContextURL(s string) bool {
+	// These exact bytes, not a category: see the doc comment above for what is and
+	// is not covered, and the table for which of them a row isolates.
+	if strings.ContainsAny(s, " \t\r\n\\%") || strings.Contains(s, "..") {
+		return false
+	}
+	rest := ""
+	for _, scheme := range [...]string{"https://", "http://"} {
+		if len(s) >= len(scheme) && asciiLower(s[:len(scheme)]) == scheme {
+			rest = s[len(scheme):]
+			break
+		}
+	}
+	if rest == "" {
+		return false
+	}
+	slash := strings.Index(rest, "/")
+	if slash < 0 {
+		return false
+	}
+	host := rest[:slash]
+	if colon := strings.Index(host, ":"); colon >= 0 {
+		host = host[:colon]
+	}
+	if asciiLower(host) != "spdx.org" {
+		return false
+	}
+	version, ok := strings.CutPrefix(rest[slash:], "/rdf/")
+	return ok && (strings.HasPrefix(version, "3.") || version == "3")
+}
+
+// IsBOMDocument reports whether input is a bill of materials at all. This is a
+// WIDER question than DetectFormat, which answers which format ParseBom can
+// normalize — and of the SPDX-3 profiles it normalizes the AI/dataset one only,
+// so a plain SPDX 3 software-profile SBOM is a real BOM that DetectFormat
+// declines.
+//
+// A caller that RECORDS A REFERENCE and never parses needs this one. Asking the
+// narrower question left such an SBOM classified as foreign.
+func IsBOMDocument(input any) bool {
+	if DetectFormat(input) != nil {
+		return true
+	}
+	obj := asRecord(input)
+	return obj != nil && isSPDX3Context(obj["@context"])
 }
 
 // DetectFormat detects the BOM format of a parsed JSON value. ML wins over plain
