@@ -1,9 +1,10 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 import { validateExample } from '../src/validate-example.js';
 
-const HERE = new URL('.', import.meta.url).pathname;
+const HERE = fileURLToPath(new URL('.', import.meta.url));
 const DIST = join(HERE, '..', 'dist');
 
 interface OpenApiDocument {

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { closeSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { platform, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { writeArtifact } from '../src/write-artifact.js';
@@ -87,11 +87,43 @@ describe('writeArtifact', () => {
   });
 
   // The defect this exists for: sibling suites read these documents in other
-  // vitest workers while one regenerates them.
-  it('is never observed partially written by a concurrent reader', async () => {
+  // vitest workers while one regenerates them. Skipped on Windows for the same
+  // reason as the Go writer's loop-reader test: a reader reopening the file with
+  // no gap can refuse every replacement within the retry budget, so success there
+  // is a race. The Windows outcome is pinned deterministically below.
+  it.skipIf(platform() === 'win32')('is never observed partially written by a concurrent reader', async () => {
     const observed = await observeConcurrentReads(writeArtifact);
     expect(observed.reads, 'the reader never read the file, so this could not fail').toBeGreaterThan(0);
     expect(observed.torn).toBe(0);
+  }, 20000);
+
+  // What the two platforms actually guarantee when a handle is open for the whole
+  // write, which is the one case that is deterministic rather than a race.
+  it('a handle held open through the write never sees a partial file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hdf-artifact-'));
+    let held: number | undefined;
+    try {
+      const target = join(dir, 'doc.json');
+      const before = '{"v":1}\n';
+      const after = `${JSON.stringify({ rows: Array.from({ length: 20000 }, (_, i) => ({ i })) })}\n`;
+      writeArtifact(target, before);
+      held = openSync(target, 'r');
+
+      if (platform() === 'win32') {
+        // MoveFileEx must delete the destination and Node opens without
+        // FILE_SHARE_DELETE, so the retry budget expires and the write reports.
+        expect(() => writeArtifact(target, after)).toThrow();
+        expect(readFileSync(target, 'utf-8')).toBe(before);
+      } else {
+        writeArtifact(target, after);
+        expect(readFileSync(target, 'utf-8')).toBe(after);
+        expect(readFileSync(held, 'utf-8')).toBe(before);
+      }
+      expect(readdirSync(dir)).toEqual(['doc.json']);
+    } finally {
+      if (held !== undefined) closeSync(held);
+      rmSync(dir, { recursive: true, force: true });
+    }
   }, 20000);
 
   // The control. Without it the test above cannot tell "atomic" from "the window was

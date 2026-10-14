@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 import { UNMAPPED_CODES, problemTypes } from '../src/problems.js';
 
 const ADR = join(
-  new URL('.', import.meta.url).pathname,
+  fileURLToPath(new URL('.', import.meta.url)),
   '..',
   '..',
   'dev-docs',

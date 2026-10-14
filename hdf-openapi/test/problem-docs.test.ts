@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 import { PROBLEM_BASE, loadProblemDocs, problemTypes } from '../src/problems.js';
 
 const docs = loadProblemDocs();
@@ -78,7 +79,7 @@ describe('the problem-type table refuses a malformed entry', () => {
 
   it('the shipped table is the one the build published', () => {
     const published = JSON.parse(
-      readFileSync(join(new URL('.', import.meta.url).pathname, '..', 'dist', 'problems.json'), 'utf-8'),
+      readFileSync(join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist', 'problems.json'), 'utf-8'),
     );
     expect(published).toEqual(docs);
   });
