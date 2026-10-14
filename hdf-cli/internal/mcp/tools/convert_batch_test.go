@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -42,32 +41,13 @@ func asEntries(t *testing.T, ms []map[string]any) []fileConvertSummary {
 	return out
 }
 
-// writeInRootPath stages a fixture at a (possibly nested) path under
-// HDF_MCP_ROOT, creating parent directories as needed.
-func writeInRootPath(t testing.TB, rel string, content []byte) {
-	t.Helper()
-	// Same precondition as writeInRoot: with no root, MkdirAll would build the
-	// tree relative to the package source directory.
-	root := os.Getenv("HDF_MCP_ROOT")
-	if root == "" {
-		t.Fatalf("writeInRootPath(%s): HDF_MCP_ROOT is unset — set it first", rel)
-	}
-	full := filepath.Join(root, rel)
-	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
-		t.Fatalf("mkdir for %s: %v", rel, err)
-	}
-	if err := os.WriteFile(full, content, 0o600); err != nil {
-		t.Fatalf("write %s: %v", rel, err)
-	}
-}
-
 // stageMixedBatch stages a gosec and an aws-config fixture (two different source
 // formats, both cleanly auto-detected) under in/ and returns nothing — the batch
 // call auto-detects each file's format.
 func stageMixedBatch(t *testing.T) {
 	t.Helper()
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
-	writeInRootPath(t, "in/aws.json", awsConfigFixture(t))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/aws.json", awsConfigFixture(t))
 }
 
 func TestHdfConvert_Batch_ConvertsDirectory(t *testing.T) {
@@ -139,7 +119,7 @@ func TestHdfConvert_Batch_ContinuesPastFailure(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	stageMixedBatch(t)
-	writeInRootPath(t, "in/junk.json", []byte(`{"totally":"unrecognizable"}`))
+	writeInRoot(t, "in/junk.json", []byte(`{"totally":"unrecognizable"}`))
 
 	res, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out"})
 	if res != nil {
@@ -169,8 +149,8 @@ func TestHdfConvert_Batch_FailFast(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	// junk sorts first (in/aaa-junk.json), so fail-fast stops before the good files.
-	writeInRootPath(t, "in/aaa-junk.json", []byte(`{"totally":"unrecognizable"}`))
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/aaa-junk.json", []byte(`{"totally":"unrecognizable"}`))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 
 	res, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out", FailFast: true})
 	if res != nil {
@@ -314,8 +294,8 @@ func TestHdfConvert_Batch_HandleRejectedInSources(t *testing.T) {
 func TestHdfConvert_Batch_Pattern(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
-	writeInRootPath(t, "in/notes.txt", []byte("ignore me"))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/notes.txt", []byte("ignore me"))
 
 	_, out := callConvert(t, convertInput{Directory: "in", Pattern: "*.json", OutputDir: "out"})
 	if len(out.Batch) != 1 {
@@ -328,14 +308,14 @@ func TestHdfConvert_Batch_Pattern(t *testing.T) {
 
 func TestHdfConvert_Batch_InvalidPattern(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 	res, _ := callConvert(t, convertInput{Directory: "in", Pattern: "[bad"})
 	assertArgError(t, res, "pattern")
 }
 
 func TestHdfConvert_Batch_NoMatch(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 	res, _ := callConvert(t, convertInput{Directory: "in", Pattern: "*.nomatch"})
 	assertArgError(t, res, "no input files matched")
 }
@@ -368,9 +348,9 @@ func TestHdfConvert_Batch_OutputDirDenied(t *testing.T) {
 func TestHdfConvert_Batch_WriteFailureEntry(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 	// Pre-create the derived output so the additive write is refused (no overwrite).
-	writeInRootPath(t, "out/scan.hdf.json", []byte("existing"))
+	writeInRoot(t, "out/scan.hdf.json", []byte("existing"))
 
 	_, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out"})
 	e := asEntry(t, out.Batch[0])
@@ -388,8 +368,8 @@ func TestHdfConvert_Batch_WriteFailureEntry(t *testing.T) {
 func TestHdfConvert_Batch_Overwrite(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
-	writeInRootPath(t, "out/scan.hdf.json", []byte("stale"))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "out/scan.hdf.json", []byte("stale"))
 
 	_, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out", Overwrite: true})
 	e := asEntry(t, out.Batch[0])
@@ -407,8 +387,8 @@ func TestHdfConvert_Batch_SchemaInvalidPerFile(t *testing.T) {
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
 	bad := awsConfigFixture(t)
 	registerSchemaInvalidFake(t, "schema-invalid-fake", bad)
-	writeInRootPath(t, "in/aws.json", bad)
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/aws.json", bad)
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 
 	// One file's output fails schema validation — the batch refuses that file
 	// (no output) and still completes the valid one.
@@ -453,7 +433,7 @@ func TestHdfConvert_Batch_Truncation(t *testing.T) {
 	names := make([]string, 0, n)
 	for i := 0; i < n; i++ {
 		name := "in/" + string(rune('a'+i%26)) + "-" + itoa(i) + ".json"
-		writeInRootPath(t, name, gosecFixture(t))
+		writeInRoot(t, name, gosecFixture(t))
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -501,34 +481,5 @@ func TestHdfConvertBatch_UnretainedEntryCarriesNotice(t *testing.T) {
 		if !strings.Contains(e.Notice, "output") {
 			t.Errorf("entry %s: expected a persist-the-document notice, got %q", e.InputPath, e.Notice)
 		}
-	}
-}
-
-// The sibling of TestWriteInRoot_FailsWhenRootUnset. Both helpers MkdirAll the
-// parent, so the defect is the same shape in both.
-func TestWriteInRootPath_FailsWhenRootUnset(t *testing.T) {
-	const probeDir = "writeinrootpath-guard-probe"
-	rel := filepath.Join(probeDir, "host1", "in.json")
-	t.Setenv("HDF_MCP_ROOT", "")
-	t.Cleanup(func() { _ = os.RemoveAll(probeDir) })
-
-	rec := &fatalTB{TB: t}
-	rec.run(func() { writeInRootPath(rec, rel, []byte("{}")) })
-
-	if _, err := os.Stat(probeDir); !errors.Is(err, fs.ErrNotExist) {
-		wd, _ := os.Getwd()
-		t.Errorf("writeInRootPath created %s/ inside the working directory %s (stat: %v)", probeDir, wd, err)
-	}
-	if !rec.fired {
-		t.Error("writeInRootPath with no HDF_MCP_ROOT must fail the test, not pick a location")
-	}
-	// rec.fired alone cannot tell the guard's Fatalf from the mkdir or write one,
-	// so assert the cause. The paren mirrors writeInRoot's assertion, where it IS
-	// load-bearing: that name is a prefix of this one.
-	if !strings.Contains(rec.msg, "HDF_MCP_ROOT") {
-		t.Errorf("the failure must name the missing precondition, got %q", rec.msg)
-	}
-	if !strings.Contains(rec.msg, "writeInRootPath(") {
-		t.Errorf("the failure must name the helper, got %q", rec.msg)
 	}
 }

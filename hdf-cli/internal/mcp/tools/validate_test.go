@@ -33,21 +33,21 @@ func callValidate(t *testing.T, in validateInput) (*sdkmcp.CallToolResult, valid
 // the test established. The path may name subdirectories, which is what lets a
 // test place a package somewhere other than the root and so tell the two
 // resolution bases apart.
-func writeInRoot(t testing.TB, name string, content []byte) {
+func writeInRoot(t testing.TB, rel string, content []byte) {
 	t.Helper()
 	// No root means filepath.Join would yield a relative path, so the write — and
 	// any parent it needs — would land in the package source directory. There is
 	// no fallback location.
 	root := os.Getenv("HDF_MCP_ROOT")
 	if root == "" {
-		t.Fatalf("writeInRoot(%s): HDF_MCP_ROOT is unset — call writeRoot first", name)
+		t.Fatalf("writeInRoot(%s): HDF_MCP_ROOT is unset — set it first", rel)
 	}
-	full := filepath.Join(root, name)
+	full := filepath.Join(root, rel)
 	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
-		t.Fatalf("mkdir for %s: %v", name, err)
+		t.Fatalf("mkdir for %s: %v", rel, err)
 	}
 	if err := os.WriteFile(full, content, 0o600); err != nil {
-		t.Fatalf("write %s: %v", name, err)
+		t.Fatalf("write %s: %v", rel, err)
 	}
 }
 
@@ -739,17 +739,17 @@ func (f *fatalTB) run(fn func()) {
 	fn()
 }
 
-// With no HDF_MCP_ROOT, filepath.Join("", name) would be a bare relative path
+// With no HDF_MCP_ROOT, filepath.Join("", rel) would be a bare relative path
 // and go test's working directory is this package's source directory, so an
 // unguarded helper would MkdirAll a tree into the repo and still report success.
 func TestWriteInRoot_FailsWhenRootUnset(t *testing.T) {
 	const probeDir = "writeinroot-guard-probe"
-	name := filepath.Join(probeDir, "nested", "pkg.json")
+	rel := filepath.Join(probeDir, "nested", "pkg.json")
 	t.Setenv("HDF_MCP_ROOT", "")
 	t.Cleanup(func() { _ = os.RemoveAll(probeDir) })
 
 	rec := &fatalTB{TB: t}
-	rec.run(func() { writeInRoot(rec, name, []byte("{}")) })
+	rec.run(func() { writeInRoot(rec, rel, []byte("{}")) })
 
 	if _, err := os.Stat(probeDir); !errors.Is(err, fs.ErrNotExist) {
 		wd, _ := os.Getwd()
@@ -759,8 +759,8 @@ func TestWriteInRoot_FailsWhenRootUnset(t *testing.T) {
 		t.Error("writeInRoot with no HDF_MCP_ROOT must fail the test, not pick a location")
 	}
 	// rec.fired alone cannot tell the guard's Fatalf from the mkdir or write one,
-	// so assert the cause. The paren is load-bearing: "writeInRoot" without it is a
-	// substring of the sibling's name and would pass on the wrong helper.
+	// so assert the cause. The paren is load-bearing: without it the match is a
+	// prefix match, satisfied by any longer identifier starting with this name.
 	if !strings.Contains(rec.msg, "HDF_MCP_ROOT") {
 		t.Errorf("the failure must name the missing precondition, got %q", rec.msg)
 	}
