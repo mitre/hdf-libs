@@ -100,6 +100,9 @@ import { sha256, sha512, generateHash, hashObject, verifyHash } from '@mitre/hdf
 const hash = await sha256('content to hash');
 console.log(hash); // hex-encoded hash
 
+// Raw bytes hash as they are; text is hashed as its UTF-8 bytes
+const fileHash = await sha256(new Uint8Array([0x61, 0x62, 0x63]));
+
 // Hash with custom options
 const customHash = await generateHash('data', {
   algorithm: 'sha512',

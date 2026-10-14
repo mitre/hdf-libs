@@ -240,7 +240,7 @@ jobs:
       # covers hdf-schema/dist/go, a tracked go.work module whose generated
       # go.mod carries no requirements; if it ever gains any, narrow the
       # exclusion or the SBOM will silently omit them.
-      - uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+      - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           syft-version: ${{ env.SYFT_VERSION }}
       - name: Dependency SBOM (SPDX JSON; inventory, no verdict)
@@ -876,7 +876,7 @@ jobs:
         id: sonar
         if: env.SONAR_TOKEN != ''
         continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
       # Advisory must not mean invisible.
       - name: Report Sonar scan outcome
         if: always() && steps.sonar.outcome != 'success'

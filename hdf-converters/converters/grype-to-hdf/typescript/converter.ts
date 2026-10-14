@@ -6,6 +6,7 @@ import {
   createMinimalBaseline,
   type Cvss,
   Ecosystem,
+  ExternalReferenceEncoding,
   type Epss,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -16,7 +17,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
-import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
@@ -389,7 +390,7 @@ function buildKev(k?: GrypeKev): Kev | undefined {
   return out;
 }
 
-function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, targetName: string, startTime: Date): EvaluatedRequirement {
+function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, targetName: string, startTime: Date, sourcePointer: string): EvaluatedRequirement {
   const vuln = match.vulnerability;
   const cveId = vuln.id;
   const severity = vuln.severity;
@@ -439,6 +440,17 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
     result.resourceId = instanceId;
   }
 
+  // The match that produced this result, carried on the RESULT per ADR-0017 §5
+  // — one CVE against two packages is two matches, and roll-up's first-wins on
+  // `code` would otherwise discard the second. The rendering matches the Go
+  // twin's json.Indent byte for byte; the twins share goldens.
+  result.rawSourceRecord = {
+    content: JSON.stringify(match, null, 2),
+    encoding: ExternalReferenceEncoding.UTF8,
+    mediaType: 'application/json',
+    pointer: sourcePointer,
+  };
+
   // Get CCI mappings for NIST controls using curated mapping table
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
 
@@ -446,14 +458,12 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
   const tags = buildNistCciTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS, cciTags);
   markUnratedSeverity(tags, severity);
 
-  // Build requirement. Grype carries no literal source snippet, so code holds
-  // the whole match serialized as indented JSON (byte-identical to the Go twin's
-  // json.Indent output — same source key order, same fields).
+  // `code` stays absent — Grype runs no executable check — and the match now
+  // rides on the result. The v2 downgrade reconstructs its CODE tab from there.
   const requirement: EvaluatedRequirement = {
     id: isIgnored ? `Grype-Ignored-Match/${cveId}` : `Grype/${cveId}`,
     title: `Grype found a vulnerability to ${cveId} in ${targetName}`,
     impact,
-    code: JSON.stringify(match, null, 2),
     results: [result],
     tags,
     descriptions: [
@@ -532,7 +542,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
   const grypeData = parseJSON<GrypeReport>(input);
 
   // Build requirements from matches
-  const requirements: EvaluatedRequirement[] = [];
+  let requirements: EvaluatedRequirement[] = [];
 
   // Build baseline name from source.
   const targetName = grypeTargetName(grypeData.source?.target);
@@ -550,8 +560,8 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
     }
-    for (const match of limitedMatches) {
-      requirements.push(convertMatchToRequirement(match, false, targetName, resultStart));
+    for (const [i, match] of limitedMatches.entries()) {
+      requirements.push(convertMatchToRequirement(match, false, targetName, resultStart, `/matches/${i}`));
     }
   }
 
@@ -563,10 +573,13 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);
     }
-    for (const match of limitedIgnored) {
-      requirements.push(convertMatchToRequirement(match, true, targetName, resultStart));
+    for (const [i, match] of limitedIgnored.entries()) {
+      requirements.push(convertMatchToRequirement(match, true, targetName, resultStart, `/ignoredMatches/${i}`));
     }
   }
+
+  // One requirement per CVE, one result per affected package.
+  requirements = rollUpRequirements(requirements);
 
   if (requirements.length === 0) {
     requirements.push(buildNoFindingsRequirement(
