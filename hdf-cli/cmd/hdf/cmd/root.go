@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -193,7 +194,140 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewMCPCmd())
 	cmd.AddCommand(NewVersionCmd())
 
+	// Before the walk below, so the generated completion group is covered too;
+	// ExecuteC calls this again later and returns early.
+	cmd.InitDefaultCompletionCmd()
+	rejectUnknownSubcommands(cmd)
+	markRunErrors(cmd)
 	return cmd
+}
+
+// helpArgName is Cobra's help command, which it registers on the root only.
+const helpArgName = "help"
+
+// rejectUnknownSubcommands gives every group command the unknown-command check
+// Cobra applies only to the root, whose own check tests for a parent
+// (legacyArgs). A command that cannot run returns flag.ErrHelp, which ExecuteC
+// swallows after printing help, so `hdf evidence bogus` exited 0 and a pipeline
+// that typed a subcommand wrong read it as success. Giving the group a run of
+// its own is what lets Cobra reach argument validation at all. The root is left
+// alone so it keeps the suggestions legacyArgs adds.
+func rejectUnknownSubcommands(cmd *cobra.Command) {
+	for _, sub := range cmd.Commands() {
+		rejectUnknownSubcommands(sub)
+	}
+	if !cmd.HasParent() || !cmd.HasSubCommands() || cmd.Runnable() {
+		return
+	}
+	// SuggestionsFor reads this and Cobra only defaults it inside its own
+	// unknown-command helper, which a group never reaches, so without this the
+	// suggestion below could never fire.
+	if cmd.SuggestionsMinimumDistance <= 0 {
+		cmd.SuggestionsMinimumDistance = 2
+	}
+	// Being runnable makes Cobra print a usage line for the group itself. Reduce
+	// it to the bare name: the only thing this run does is print help, so a
+	// placeholder carried in Use (`fetch <source>`) would advertise a form the
+	// validator above rejects.
+	cmd.Use = cmd.Name()
+	cmd.DisableFlagsInUseLine = true
+	cmd.Args = func(c *cobra.Command, args []string) error {
+		if len(args) == 0 || args[0] == helpArgName {
+			return nil
+		}
+		msg := fmt.Sprintf("unknown command %q for %q", args[0], c.CommandPath())
+		if suggestions := c.SuggestionsFor(args[0]); !c.DisableSuggestions && len(suggestions) > 0 {
+			msg += "\n\nDid you mean this?\n\t" + strings.Join(suggestions, "\n\t")
+		}
+		return errors.New(msg)
+	}
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		// Cobra mounts its help command on the root only, so `hdf evidence help`
+		// would otherwise read as a name the group does not have. It is a common
+		// habit and the group's help is exactly what it asks for.
+		if len(args) > 1 && args[0] == helpArgName {
+			if sub, _, err := c.Find(args[1:]); err == nil && sub != c {
+				// Cobra adds this during the subcommand's own execute, which
+				// this path never reaches, so without it the help it prints is
+				// missing its own --help row.
+				sub.InitDefaultHelpFlag()
+				return sub.Help()
+			}
+		}
+		return c.Help()
+	}
+}
+
+// Exit codes a command returns by returning an error; main.go turns them into
+// the process status through ExitStatus. Diff's POSIX and detailed codes are
+// command-local and documented with that command.
+const (
+	exitUsage       = 2
+	exitPartial     = 3
+	exitNothingToDo = 4
+)
+
+// ExitCoder is implemented by errors that carry a specific process exit code.
+// exitCodeError is the only implementation; ExitStatus still falls back to this
+// interface so a future one is printed rather than read as a usage error.
+type ExitCoder interface {
+	error
+	ExitCode() int
+}
+
+// exitCodeError carries a specific exit code. The command has usually already
+// said everything (a diff verdict, a bulk summary, a validation report), so
+// main prints no Error line unless report is set.
+type exitCodeError struct {
+	code    int
+	message string
+	report  bool
+}
+
+func (e *exitCodeError) Error() string { return e.message }
+func (e *exitCodeError) ExitCode() int { return e.code }
+
+// runError marks an error as coming from a command's own run, so ExitStatus
+// can tell it from the errors Cobra raises before a command runs.
+type runError struct{ err error }
+
+func (e *runError) Error() string { return e.err.Error() }
+func (e *runError) Unwrap() error { return e.err }
+
+// markRunErrors wraps every RunE in the tree. Cobra has no hook for the
+// errors it raises itself (unknown flag or command, arity, a missing required
+// flag), so the run side is marked instead and everything unmarked is usage.
+func markRunErrors(cmd *cobra.Command) {
+	if run := cmd.RunE; run != nil {
+		cmd.RunE = func(c *cobra.Command, args []string) error {
+			if err := run(c, args); err != nil {
+				return &runError{err: err}
+			}
+			return nil
+		}
+	}
+	for _, sub := range cmd.Commands() {
+		markRunErrors(sub)
+	}
+}
+
+// ExitStatus maps the error Execute returned to a process exit code and says
+// whether main should print it: an exit-code error's own code (printed only
+// when it asks), 1 for a failed run, 2 for a usage or invocation error.
+func ExitStatus(err error) (code int, report bool) {
+	var ece *exitCodeError
+	if errors.As(err, &ece) {
+		return ece.code, ece.report
+	}
+	var ec ExitCoder
+	if errors.As(err, &ec) {
+		return ec.ExitCode(), true
+	}
+	var rf *runError
+	if errors.As(err, &rf) {
+		return 1, true
+	}
+	return exitUsage, true
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

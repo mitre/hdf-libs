@@ -17,7 +17,7 @@ Additional capabilities:
 - Multiple comparison modes: temporal, baseline, fleet, multi-source
 - Format normalization: InSpec exec-json (legacy HDF v1) to current HDF
 - Output formats: JSON, Markdown, CSV, terminal (ANSI-colored)
-- CI exit codes: GNU diff-compatible (0/1/2) and detailed (10-14)
+- CI exit codes: GNU diff-compatible (0 identical, 1 differences) and detailed (10-14)
 
 ## Relationship to other packages
 

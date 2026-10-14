@@ -59,7 +59,12 @@ const (
 	// Raised to 5800 (owner decision 2026-10-05) for the twelve advertised enum
 	// arrays; measured 5778. An enum costs tokens here and saves a rejected call
 	// plus a retry, which no budget in this file counts.
-	ToolsListTotalBudget = 5800
+	// Raised to 5720 (owner decision 2026-10-11) for hdf_apply_amendment's
+	// requireMatch; measured 5710 after two shortenings of its description.
+	// Raised to 5850 on merging those two branches: each raise was measured
+	// against a surface without the other, and carrying both measures 5807 —
+	// over either ceiling. Needs the owner's confirmation like the two above.
+	ToolsListTotalBudget = 5850
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600

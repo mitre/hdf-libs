@@ -12,12 +12,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 36 COLUMN : 2\n gets(f);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":10,\"snippet\":{\"text\":\" gets(f);\"},\"startColumn\":2,\"startLine\":36}}}],\"message\":{\"text\":\"buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20).\"},\"rank\":1,\"ruleId\":\"FF1014\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 32 COLUMN : 2\n gets(f);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":10,\"snippet\":{\"text\":\" gets(f);\"},\"startColumn\":2,\"startLine\":32}}}],\"message\":{\"text\":\"buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20).\"},\"rank\":1,\"ruleId\":\"FF1014\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/7"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -45,7 +57,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": " gets(f);",
           "controlType": "technical",
@@ -62,32 +92,56 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":76,\"snippet\":{\"text\":\"  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */\"},\"startColumn\":3,\"startLine\":60}}}],\"message\":{\"text\":\"buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1010\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 60 COLUMN : 3\n  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":76,\"snippet\":{\"text\":\"  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */\"},\"startColumn\":3,\"startLine\":60}}}],\"message\":{\"text\":\"buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1010\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/8"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\"  strncat(d,s,10);\"},\"startColumn\":3,\"startLine\":59}}}],\"message\":{\"text\":\"buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1010\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/64"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 59 COLUMN : 3\n  strncat(d,s,10);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\"  strncat(d,s,10);\"},\"startColumn\":3,\"startLine\":59}}}],\"message\":{\"text\":\"buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1010\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/73"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
-          "severity": "low",
+          "severity": "high",
           "sourceLocation": {
             "line": 60,
             "ref": "test/test-patched.c"
           },
           "id": "FF1010",
-          "impact": 0.3,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-001310"
@@ -104,7 +158,39 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 4
           },
           "code": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */",
           "controlType": "technical",
@@ -121,22 +207,34 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":58,\"snippet\":{\"text\":\"  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */\"},\"startColumn\":3,\"startLine\":61}}}],\"message\":{\"text\":\"buffer/_tcsncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1011\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/2"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 61 COLUMN : 3\n  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":58,\"snippet\":{\"text\":\"  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */\"},\"startColumn\":3,\"startLine\":61}}}],\"message\":{\"text\":\"buffer/_tcsncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1011\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/9"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
-          "severity": "low",
+          "severity": "high",
           "sourceLocation": {
             "line": 61,
             "ref": "test/test-patched.c"
           },
           "id": "FF1011",
-          "impact": 0.3,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-001310"
@@ -153,7 +251,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */",
           "controlType": "technical",
@@ -170,52 +286,100 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":75,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));\"},\"startColumn\":3,\"startLine\":64}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/3"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":74,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);\"},\"startColumn\":3,\"startLine\":66}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/4"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 64 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":75,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));\"},\"startColumn\":3,\"startLine\":64}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/10"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 66 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":74,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);\"},\"startColumn\":3,\"startLine\":66}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":1,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/11"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":98,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));\"},\"startColumn\":3,\"startLine\":68}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/66"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":98,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));\"},\"startColumn\":3,\"startLine\":70}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/67"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 68 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":98,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));\"},\"startColumn\":3,\"startLine\":68}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/75"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 70 COLUMN : 3\n  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":98,\"snippet\":{\"text\":\"  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));\"},\"startColumn\":3,\"startLine\":70}}}],\"message\":{\"text\":\"buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1023\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/76"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
-          "severity": "low",
+          "severity": "high",
           "sourceLocation": {
             "line": 64,
             "ref": "test/test-patched.c"
           },
           "id": "FF1023",
-          "impact": 0.3,
+          "impact": 0.7,
           "tags": {
             "cci": [
               "CCI-001310"
@@ -232,7 +396,67 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 8
           },
           "code": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));",
           "controlType": "technical",
@@ -249,22 +473,46 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":50,\"snippet\":{\"text\":\"  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);\"},\"startColumn\":3,\"startLine\":77}}}],\"message\":{\"text\":\"misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732).\"},\"rank\":1,\"ruleId\":\"FF1060\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/5"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":50,\"snippet\":{\"text\":\"  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);\"},\"startColumn\":3,\"startLine\":77}}}],\"message\":{\"text\":\"misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732).\"},\"rank\":1,\"ruleId\":\"FF1060\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/6"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":50,\"snippet\":{\"text\":\"  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);\"},\"startColumn\":3,\"startLine\":77}}}],\"message\":{\"text\":\"misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732).\"},\"rank\":1,\"ruleId\":\"FF1060\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/12"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 77 COLUMN : 3\n  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":50,\"snippet\":{\"text\":\"  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);\"},\"startColumn\":3,\"startLine\":77}}}],\"message\":{\"text\":\"misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732).\"},\"rank\":1,\"ruleId\":\"FF1060\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/13"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -291,7 +539,39 @@
             "nist": [
               "AC-3"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 4
           },
           "code": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);",
           "controlType": "technical",
@@ -308,37 +588,79 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 13 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":15,\"snippet\":{\"text\":\" strcpy(b, a);\"},\"startColumn\":2,\"startLine\":13}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/14"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 21 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":15,\"snippet\":{\"text\":\" strcpy(b, a);\"},\"startColumn\":2,\"startLine\":21}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/15"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 17 COLUMN : 2\n strcpy(b, a);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":15,\"snippet\":{\"text\":\" strcpy(b, a);\"},\"startColumn\":2,\"startLine\":17}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/25"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 20 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":54,\"snippet\":{\"text\":\" strcpy(a, gettext(\\\"Hello there\\\")); // Did this work?\"},\"startColumn\":2,\"startLine\":20}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/43"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 16 COLUMN : 2\n strcpy(a, gettext(\"Hello there\")); // Did this work?",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":54,\"snippet\":{\"text\":\" strcpy(a, gettext(\\\"Hello there\\\")); // Did this work?\"},\"startColumn\":2,\"startLine\":16}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/50"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 19 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":36,\"snippet\":{\"text\":\" strcpy(a, \\\"\\\\n\\\"); // Did this work?\"},\"startColumn\":2,\"startLine\":19}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/59"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 15 COLUMN : 2\n strcpy(a, \"\\n\"); // Did this work?",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":36,\"snippet\":{\"text\":\" strcpy(a, \\\"\\\\n\\\"); // Did this work?\"},\"startColumn\":2,\"startLine\":15}}}],\"message\":{\"text\":\"buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1001\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/68"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -365,7 +687,60 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 7
           },
           "code": " strcpy(b, a);",
           "controlType": "technical",
@@ -382,52 +757,112 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 24 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":30,\"snippet\":{\"text\":\" sprintf(s, \\\"hello %s\\\", bug);\"},\"startColumn\":2,\"startLine\":24}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/16"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 25 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":39,\"snippet\":{\"text\":\" sprintf(s, gettext(\\\"hello %s\\\"), bug);\"},\"startColumn\":2,\"startLine\":25}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/17"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 26 COLUMN : 2\n sprintf(s, unknown, bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":27,\"snippet\":{\"text\":\" sprintf(s, unknown, bug);\"},\"startColumn\":2,\"startLine\":26}}}],\"message\":{\"text\":\"format/sprintf: Potential format string problem (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/18"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 20 COLUMN : 2\n sprintf(s, \"hello %s\", bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":30,\"snippet\":{\"text\":\" sprintf(s, \\\"hello %s\\\", bug);\"},\"startColumn\":2,\"startLine\":20}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/26"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 21 COLUMN : 2\n sprintf(s, gettext(\"hello %s\"), bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":39,\"snippet\":{\"text\":\" sprintf(s, gettext(\\\"hello %s\\\"), bug);\"},\"startColumn\":2,\"startLine\":21}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/27"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 22 COLUMN : 2\n sprintf(s, unknown, bug);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":27,\"snippet\":{\"text\":\" sprintf(s, unknown, bug);\"},\"startColumn\":2,\"startLine\":22}}}],\"message\":{\"text\":\"format/sprintf: Potential format string problem (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/28"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 23 COLUMN : 2\n sprintf(s, \"hello\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":22,\"snippet\":{\"text\":\" sprintf(s, \\\"hello\\\");\"},\"startColumn\":2,\"startLine\":23}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/44"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 19 COLUMN : 2\n sprintf(s, \"hello\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":22,\"snippet\":{\"text\":\" sprintf(s, \\\"hello\\\");\"},\"startColumn\":2,\"startLine\":19}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/51"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 22 COLUMN : 2\n sprintf(s, \"\\n\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\" sprintf(s, \\\"\\\\n\\\");\"},\"startColumn\":2,\"startLine\":22}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/60"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 18 COLUMN : 2\n sprintf(s, \"\\n\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\" sprintf(s, \\\"\\\\n\\\");\"},\"startColumn\":2,\"startLine\":18}}}],\"message\":{\"text\":\"buffer/sprintf: Does not check for buffer overflows (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1015\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/69"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -454,7 +889,81 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 10
           },
           "code": " sprintf(s, \"hello %s\", bug);",
           "controlType": "technical",
@@ -471,12 +980,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 27 COLUMN : 2\n printf(bf, x);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\" printf(bf, x);\"},\"startColumn\":2,\"startLine\":27}}}],\"message\":{\"text\":\"format/printf: If format strings can be influenced by an attacker, they can be exploited (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1016\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/19"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 23 COLUMN : 2\n printf(bf, x);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\" printf(bf, x);\"},\"startColumn\":2,\"startLine\":23}}}],\"message\":{\"text\":\"format/printf: If format strings can be influenced by an attacker, they can be exploited (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1016\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/29"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -503,7 +1024,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": " printf(bf, x);",
           "controlType": "technical",
@@ -520,32 +1059,68 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 29 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\" scanf(\\\"%s\\\", s);\"},\"startColumn\":2,\"startLine\":29}}}],\"message\":{\"text\":\"buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.8,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/20"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 31 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\" scanf(\\\"%s\\\", s);\"},\"startColumn\":2,\"startLine\":31}}}],\"message\":{\"text\":\"buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.8,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/21"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 25 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\" scanf(\\\"%s\\\", s);\"},\"startColumn\":2,\"startLine\":25}}}],\"message\":{\"text\":\"buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.8,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/30"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 27 COLUMN : 2\n scanf(\"%s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\" scanf(\\\"%s\\\", s);\"},\"startColumn\":2,\"startLine\":27}}}],\"message\":{\"text\":\"buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.8,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/31"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 30 COLUMN : 2\n scanf(\"%10s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\" scanf(\\\"%10s\\\", s);\"},\"startColumn\":2,\"startLine\":30}}}],\"message\":{\"text\":\"buffer/scanf: It's unclear if the %s limit in the format string is small enough (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/61"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 26 COLUMN : 2\n scanf(\"%10s\", s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\" scanf(\\\"%10s\\\", s);\"},\"startColumn\":2,\"startLine\":26}}}],\"message\":{\"text\":\"buffer/scanf: It's unclear if the %s limit in the format string is small enough (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1020\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/70"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -573,7 +1148,53 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 6
           },
           "code": " scanf(\"%s\", s);",
           "controlType": "technical",
@@ -590,12 +1211,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 42 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":35,\"snippet\":{\"text\":\" syslog(LOG_ERR, attacker_string);\"},\"startColumn\":2,\"startLine\":42}}}],\"message\":{\"text\":\"format/syslog: If syslog's format strings can be influenced by an attacker, they can be exploited (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1018\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/22"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 38 COLUMN : 2\n syslog(LOG_ERR, attacker_string);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":35,\"snippet\":{\"text\":\" syslog(LOG_ERR, attacker_string);\"},\"startColumn\":2,\"startLine\":38}}}],\"message\":{\"text\":\"format/syslog: If syslog's format strings can be influenced by an attacker, they can be exploited (CWE-134).\"},\"rank\":0.8,\"ruleId\":\"FF1018\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/32"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -622,7 +1255,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": " syslog(LOG_ERR, attacker_string);",
           "controlType": "technical",
@@ -639,12 +1290,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 53 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":74,\"snippet\":{\"text\":\"  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */\"},\"startColumn\":3,\"startLine\":53}}}],\"message\":{\"text\":\"buffer/_mbscpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1003\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/23"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 49 COLUMN : 3\n  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":74,\"snippet\":{\"text\":\"  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */\"},\"startColumn\":3,\"startLine\":49}}}],\"message\":{\"text\":\"buffer/_mbscpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1003\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/33"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -671,7 +1334,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */",
           "controlType": "technical",
@@ -688,12 +1369,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\"  lstrcat(d,s);\"},\"startColumn\":3,\"startLine\":56}}}],\"message\":{\"text\":\"buffer/lstrcat: Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1006\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/24"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 56 COLUMN : 3\n  lstrcat(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\"  lstrcat(d,s);\"},\"startColumn\":3,\"startLine\":56}}}],\"message\":{\"text\":\"buffer/lstrcat: Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120).\"},\"rank\":0.8,\"ruleId\":\"FF1006\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/34"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -720,7 +1413,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340"
+                },
+                "kind": "fail",
+                "level": "error"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340"
+                },
+                "kind": "fail",
+                "level": "error"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  lstrcat(d,s);",
           "controlType": "technical",
@@ -737,22 +1448,46 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":73,\"snippet\":{\"text\":\"  CreateProcess(NULL, \\\"C:\\\\\\\\Program Files\\\\\\\\GoodGuy\\\\\\\\GoodGuy.exe -x\\\", \\\"\\\");\"},\"startColumn\":3,\"startLine\":79}}}],\"message\":{\"text\":\"shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78).\"},\"rank\":0.6,\"ruleId\":\"FF1046\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/35"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":73,\"snippet\":{\"text\":\"  CreateProcess(NULL, \\\"C:\\\\\\\\Program Files\\\\\\\\GoodGuy\\\\\\\\GoodGuy.exe -x\\\", \\\"\\\");\"},\"startColumn\":3,\"startLine\":79}}}],\"message\":{\"text\":\"shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78).\"},\"rank\":0.6,\"ruleId\":\"FF1046\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/36"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":73,\"snippet\":{\"text\":\"  CreateProcess(NULL, \\\"C:\\\\\\\\Program Files\\\\\\\\GoodGuy\\\\\\\\GoodGuy.exe -x\\\", \\\"\\\");\"},\"startColumn\":3,\"startLine\":79}}}],\"message\":{\"text\":\"shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78).\"},\"rank\":0.6,\"ruleId\":\"FF1046\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/38"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 79 COLUMN : 3\n  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":73,\"snippet\":{\"text\":\"  CreateProcess(NULL, \\\"C:\\\\\\\\Program Files\\\\\\\\GoodGuy\\\\\\\\GoodGuy.exe -x\\\", \\\"\\\");\"},\"startColumn\":3,\"startLine\":79}}}],\"message\":{\"text\":\"shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78).\"},\"rank\":0.6,\"ruleId\":\"FF1046\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/39"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -779,7 +1514,35 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
+                },
+                "kind": "fail"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
+                },
+                "kind": "fail"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
+                },
+                "kind": "fail"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
+                },
+                "kind": "fail"
+              }
+            ],
+            "sarif-severity-source": "fallback",
+            "sarif-source-result-count": 4
           },
           "code": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");",
           "controlType": "technical",
@@ -796,12 +1559,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 95 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":76,\"snippet\":{\"text\":\"    while ((optc = getopt_long (argc, argv, \\\"a\\\",longopts, NULL )) != EOF) {\"},\"startColumn\":20,\"startLine\":95}}}],\"message\":{\"text\":\"buffer/getopt_long: Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.6,\"ruleId\":\"FF1027\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/37"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 99 COLUMN : 20\n    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":76,\"snippet\":{\"text\":\"    while ((optc = getopt_long (argc, argv, \\\"a\\\",longopts, NULL )) != EOF) {\"},\"startColumn\":20,\"startLine\":99}}}],\"message\":{\"text\":\"buffer/getopt_long: Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20).\"},\"rank\":0.6,\"ruleId\":\"FF1027\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/41"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -829,7 +1604,23 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24"
+                },
+                "kind": "fail"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24"
+                },
+                "kind": "fail"
+              }
+            ],
+            "sarif-severity-source": "fallback",
+            "sarif-source-result-count": 2
           },
           "code": "    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {",
           "controlType": "technical",
@@ -846,7 +1637,13 @@
           "results": [
             {
               "codeDesc": "URL : test/test.c LINE : 81 COLUMN : 10\n  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":74,\"snippet\":{\"text\":\"  (void) LoadLibraryEx(L\\\"user32.dll\\\", nullptr, LOAD_LIBRARY_AS_DATAFILE);\"},\"startColumn\":10,\"startLine\":81}}}],\"message\":{\"text\":\"misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20).\"},\"rank\":0.6,\"ruleId\":\"FF1059\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/40"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -874,7 +1671,17 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9"
+                },
+                "kind": "fail"
+              }
+            ],
+            "sarif-severity-source": "fallback",
+            "sarif-source-result-count": 1
           },
           "code": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);",
           "controlType": "technical",
@@ -891,27 +1698,57 @@
           "results": [
             {
               "codeDesc": "URL : test/no-ending-newline.c LINE : 10 COLUMN : 2\n  char    buf[1024], *s;",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"72a7b06096f811a41e009ddc040210db6d355d9d86fe37309f600ead5f027ef8\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/no-ending-newline.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":25,\"snippet\":{\"text\":\"  char    buf[1024], *s;\"},\"startColumn\":2,\"startLine\":10}}}],\"message\":{\"text\":\"buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1013\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/42"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 49 COLUMN : 3\n  char d[20];",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":14,\"snippet\":{\"text\":\"  char d[20];\"},\"startColumn\":3,\"startLine\":49}}}],\"message\":{\"text\":\"buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1013\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/45"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 50 COLUMN : 3\n  char s[20];",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":14,\"snippet\":{\"text\":\"  char s[20];\"},\"startColumn\":3,\"startLine\":50}}}],\"message\":{\"text\":\"buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1013\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/46"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 45 COLUMN : 3\n  char d[20];",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":14,\"snippet\":{\"text\":\"  char d[20];\"},\"startColumn\":3,\"startLine\":45}}}],\"message\":{\"text\":\"buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1013\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/52"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 46 COLUMN : 3\n  char s[20];",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":14,\"snippet\":{\"text\":\"  char s[20];\"},\"startColumn\":3,\"startLine\":46}}}],\"message\":{\"text\":\"buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1013\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/53"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -939,7 +1776,46 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "72a7b06096f811a41e009ddc040210db6d355d9d86fe37309f600ead5f027ef8"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 5
           },
           "code": "  char    buf[1024], *s;",
           "controlType": "technical",
@@ -956,32 +1832,68 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 54 COLUMN : 3\n  memcpy(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"92c755cad0dde2a75803f34005c0412e084d89ce35f2fe16264702c9bcc3af95\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":15,\"snippet\":{\"text\":\"  memcpy(d,s);\"},\"startColumn\":3,\"startLine\":54}}}],\"message\":{\"text\":\"buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/47"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test-patched.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\"  CopyMemory(d,s);\"},\"startColumn\":3,\"startLine\":55}}}],\"message\":{\"text\":\"buffer/CopyMemory: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/48"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 50 COLUMN : 3\n  memcpy(d,s); // fail - no size",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"e667b352fb0748c67b607b11577b11bad87545779c39923e61839dd04056055f\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":33,\"snippet\":{\"text\":\"  memcpy(d,s); // fail - no size\"},\"startColumn\":3,\"startLine\":50}}}],\"message\":{\"text\":\"buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/54"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 53 COLUMN : 3\n  memcpy(\u0026n,s,sizeof(s)); // fail - sizeof not of destination",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"01bcc2c8ba2d928ac3315b4dcc6593042ea05e62888a10a6d2cf16797a65ed32\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":62,\"snippet\":{\"text\":\"  memcpy(\u0026n,s,sizeof(s)); // fail - sizeof not of destination\"},\"startColumn\":3,\"startLine\":53}}}],\"message\":{\"text\":\"buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/55"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 54 COLUMN : 3\n  memcpy(d,s,n); // fail - size unguessable",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"2517a2fb5981193a6017cca660d16e85aab133706cbec302df97aaa623fc77ef\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":44,\"snippet\":{\"text\":\"  memcpy(d,s,n); // fail - size unguessable\"},\"startColumn\":3,\"startLine\":54}}}],\"message\":{\"text\":\"buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/56"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 55 COLUMN : 3\n  CopyMemory(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":19,\"snippet\":{\"text\":\"  CopyMemory(d,s);\"},\"startColumn\":3,\"startLine\":55}}}],\"message\":{\"text\":\"buffer/CopyMemory: Does not check for buffer overflows when copying to destination (CWE-120).\"},\"rank\":0.4,\"ruleId\":\"FF1004\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/57"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -1008,7 +1920,53 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "92c755cad0dde2a75803f34005c0412e084d89ce35f2fe16264702c9bcc3af95"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "e667b352fb0748c67b607b11577b11bad87545779c39923e61839dd04056055f"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "01bcc2c8ba2d928ac3315b4dcc6593042ea05e62888a10a6d2cf16797a65ed32"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "2517a2fb5981193a6017cca660d16e85aab133706cbec302df97aaa623fc77ef"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 6
           },
           "code": "  memcpy(d,s);",
           "controlType": "technical",
@@ -1025,12 +1983,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 101 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":34,\"snippet\":{\"text\":\"  f = fopen(\\\"/etc/passwd\\\", \\\"r\\\"); \"},\"startColumn\":7,\"startLine\":101}}}],\"message\":{\"text\":\"misc/fopen: Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362).\"},\"rank\":0.4,\"ruleId\":\"FF1040\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/49"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 105 COLUMN : 7\n  f = fopen(\"/etc/passwd\", \"r\"); ",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":34,\"snippet\":{\"text\":\"  f = fopen(\\\"/etc/passwd\\\", \\\"r\\\"); \"},\"startColumn\":7,\"startLine\":105}}}],\"message\":{\"text\":\"misc/fopen: Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362).\"},\"rank\":0.4,\"ruleId\":\"FF1040\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/58"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -1057,7 +2027,25 @@
             "nist": [
               "SC-4"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  f = fopen(\"/etc/passwd\", \"r\"); ",
           "controlType": "technical",
@@ -1074,12 +2062,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\"  strncpy(d,s);\"},\"startColumn\":3,\"startLine\":57}}}],\"message\":{\"text\":\"buffer/strncpy: Easily used incorrectly; doesn't always \\\\0-terminate or check for invalid pointers [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1008\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/62"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 57 COLUMN : 3\n  strncpy(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":16,\"snippet\":{\"text\":\"  strncpy(d,s);\"},\"startColumn\":3,\"startLine\":57}}}],\"message\":{\"text\":\"buffer/strncpy: Easily used incorrectly; doesn't always \\\\0-terminate or check for invalid pointers [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1008\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/71"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -1106,7 +2106,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  strncpy(d,s);",
           "controlType": "technical",
@@ -1123,12 +2141,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\"  _tcsncpy(d,s);\"},\"startColumn\":3,\"startLine\":58}}}],\"message\":{\"text\":\"buffer/_tcsncpy: Easily used incorrectly; doesn't always \\\\0-terminate or check for invalid pointers [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1009\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/63"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 58 COLUMN : 3\n  _tcsncpy(d,s);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\"  _tcsncpy(d,s);\"},\"startColumn\":3,\"startLine\":58}}}],\"message\":{\"text\":\"buffer/_tcsncpy: Easily used incorrectly; doesn't always \\\\0-terminate or check for invalid pointers [MS-banned] (CWE-120).\"},\"rank\":0.2,\"ruleId\":\"FF1009\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/72"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -1155,7 +2185,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  _tcsncpy(d,s);",
           "controlType": "technical",
@@ -1172,12 +2220,24 @@
           "results": [
             {
               "codeDesc": "URL : test/test-patched.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test-patched.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\"  n = strlen(d);\"},\"startColumn\":7,\"startLine\":62}}}],\"message\":{\"text\":\"buffer/strlen: Does not handle strings that are not \\\\0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126).\"},\"rank\":0.2,\"ruleId\":\"FF1022\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/65"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : test/test.c LINE : 62 COLUMN : 7\n  n = strlen(d);",
-              "startTime": "2026-07-12T18:56:41.924649-04:00",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"contextHash/v1\":\"db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6\"},\"level\":\"note\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"test/test.c\",\"uriBaseId\":\"SRCROOT\"},\"region\":{\"endColumn\":17,\"snippet\":{\"text\":\"  n = strlen(d);\"},\"startColumn\":7,\"startLine\":62}}}],\"message\":{\"text\":\"buffer/strlen: Does not handle strings that are not \\\\0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126).\"},\"rank\":0.2,\"ruleId\":\"FF1022\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/74"
+              },
+              "startTime": "2026-10-11T01:15:07.931Z",
               "status": "failed"
             }
           ],
@@ -1204,7 +2264,25 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "contextHash/v1": "db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6"
+                },
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "fingerprints": {
+                  "contextHash/v1": "db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6"
+                },
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "code": "  n = strlen(d);",
           "controlType": "technical",
@@ -1225,7 +2303,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:41.924649-04:00",
+  "timestamp": "2026-10-11T01:15:07.931Z",
   "tool": {
     "format": "SARIF",
     "name": "Flawfinder",

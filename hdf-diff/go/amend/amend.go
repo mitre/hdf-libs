@@ -21,6 +21,9 @@ type MergeResult struct {
 	Output  []byte
 	Applied int
 	Total   int
+	// Unmatched names the overrides that matched no requirement, in document
+	// order, so a caller that expected them to land can say which did not.
+	Unmatched []string
 }
 
 // MergeAmendments applies amendments to an HDF results document.
@@ -68,6 +71,7 @@ func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 
 	// Apply each override to matching requirements.
 	applied := 0
+	var unmatched []string
 	for _, ovRaw := range overrides {
 		ov, ok := ovRaw.(map[string]interface{})
 		if !ok {
@@ -80,6 +84,8 @@ func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 		baselineRef, _ := ov["baselineRef"].(string)
 		if applyOverrideToDoc(doc, ov, reqID, baselineRef) {
 			applied++
+		} else {
+			unmatched = append(unmatched, reqID)
 		}
 	}
 
@@ -89,7 +95,7 @@ func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 	// host it does not mention.
 	if applied == 0 {
 		out, err := json.MarshalIndent(doc, "", "  ")
-		return MergeResult{Output: out, Total: total}, err
+		return MergeResult{Output: out, Total: total, Unmatched: unmatched}, err
 	}
 
 	// Re-stamp per-requirement effective checksums: overrides change the
@@ -108,7 +114,7 @@ func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 	}
 
 	out, err := json.MarshalIndent(doc, "", "  ")
-	return MergeResult{Output: out, Applied: applied, Total: total}, err
+	return MergeResult{Output: out, Applied: applied, Total: total, Unmatched: unmatched}, err
 }
 
 // applyOverrideToDoc finds the matching requirement across all baselines and

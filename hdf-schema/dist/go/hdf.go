@@ -869,50 +869,67 @@ type Reference struct {
 
 // A test within a requirement and its results and findings such as how long it took to run.
 type RequirementResult struct {
-	// The stacktrace/backtrace of the exception if one occurred.                                            
-	Backtrace                                                                               []string         `json:"backtrace,omitempty"`
-	// A description of this test. Example: 'limits.conf * is expected to include ["hard",                   
-	// "maxlogins", "10"]'.                                                                                  
-	CodeDesc                                                                                string           `json:"codeDesc"`
-	// The type of exception if an exception was thrown.                                                     
-	Exception                                                                               *string          `json:"exception,omitempty"`
-	// An explanation of the test result. Typically provided for failed tests, errors, or to                 
-	// explain why a test was not applicable or not reviewed.                                                
-	Message                                                                                 *string          `json:"message,omitempty"`
-	// The source tool's own record for this result, verbatim.                                               
-	RawSourceRecord                                                                         *RawSourceRecord `json:"rawSourceRecord,omitempty"`
-	// The resource used in the test. Example: 'file', 'command', 'service'.                                 
-	Resource                                                                                *string          `json:"resource,omitempty"`
-	// The unique identifier of the resource. Example: '/etc/passwd'.                                        
-	ResourceID                                                                              *string          `json:"resourceId,omitempty"`
-	// The execution time in seconds for the test.                                                           
-	RunTime                                                                                 *float64         `json:"runTime,omitempty"`
-	// The time at which the test started.                                                                   
-	StartTime                                                                               time.Time        `json:"startTime"`
-	// The status of this test within the requirement. Example: 'failed'.                                    
-	Status                                                                                  ResultStatus     `json:"status"`
+	// The stacktrace/backtrace of the exception if one occurred.                                               
+	Backtrace                                                                                  []string         `json:"backtrace,omitempty"`
+	// A description of this test. Example: 'limits.conf * is expected to include ["hard",                      
+	// "maxlogins", "10"]'.                                                                                     
+	CodeDesc                                                                                   string           `json:"codeDesc"`
+	// The type of exception if an exception was thrown.                                                        
+	Exception                                                                                  *string          `json:"exception,omitempty"`
+	// An explanation of the test result. Typically provided for failed tests, errors, or to                    
+	// explain why a test was not applicable or not reviewed.                                                   
+	Message                                                                                    *string          `json:"message,omitempty"`
+	// The source tool's own record for this result, carrying every field the record had.                       
+	// Complete, not necessarily byte-exact: see Raw_Source_Record.content for the producer and                 
+	// consumer obligations, and extensions.rawSourceArtifacts[] when byte-exact carriage is                    
+	// required.                                                                                                
+	RawSourceRecord                                                                            *RawSourceRecord `json:"rawSourceRecord,omitempty"`
+	// The resource used in the test. Example: 'file', 'command', 'service'.                                    
+	Resource                                                                                   *string          `json:"resource,omitempty"`
+	// The unique identifier of the resource. Example: '/etc/passwd'.                                           
+	ResourceID                                                                                 *string          `json:"resourceId,omitempty"`
+	// The execution time in seconds for the test.                                                              
+	RunTime                                                                                    *float64         `json:"runTime,omitempty"`
+	// The time at which the test started.                                                                      
+	StartTime                                                                                  time.Time        `json:"startTime"`
+	// The status of this test within the requirement. Example: 'failed'.                                       
+	Status                                                                                     ResultStatus     `json:"status"`
 }
 
-// The source tool's own record for this result, verbatim — the one entry in the converter's input
-// that produced it. SCOPED TO THE RESULT DELIBERATELY. For a vulnerability scanner the native
-// record is one (vulnerability, package) pair, which is exactly one result: a CVE reported against
-// two packages yields two entries whose records differ only in the package they matched. Held on
-// the requirement instead, those two records would collide, and merging entries that share an id
-// would have to discard one — so the result is not merely an available home but the correct one.
-// Distinct from `extensions.rawSourceArtifacts[]`, which carries whole input artifacts: this
-// carries the one record inside one of them, and `pointer` ties the two together. A consumer that
-// wants the whole input reads the artifact; one that wants provenance for a single finding reads
-// this. Distinct from `code`, which means the code that ran to evaluate the requirement — an InSpec
-// control's source, or a check reference. A serialized finding is not code, and putting one there
-// overloaded a field whose meaning came from InSpec. CLOSED, and deliberately not a passthrough
-// bag: three required members and an optional pointer are the whole of it. Producer data that HDF
-// does not model belongs in `extensions.passthrough`, which is document-scoped and permissive by
-// design; this field is neither. Closed with `additionalProperties` rather than the house
-// `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is
-// a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two
-// validators enforces is not a closure.
+// The source tool's own record for this result — the one entry in the converter's input that
+// produced it, complete though not necessarily byte-for-byte (see `content`). SCOPED TO THE RESULT
+// DELIBERATELY. For a vulnerability scanner the native record is one (vulnerability, package) pair,
+// which is exactly one result: a CVE reported against two packages yields two entries whose records
+// differ only in the package they matched. Held on the requirement instead, those two records would
+// collide, and merging entries that share an id would have to discard one — so the result is not
+// merely an available home but the correct one. Distinct from `extensions.rawSourceArtifacts[]`,
+// which carries whole input artifacts: this carries the one record inside one of them, and
+// `pointer` ties the two together. A consumer that wants the whole input reads the artifact; one
+// that wants provenance for a single finding reads this. Distinct from `code`, which means the code
+// that ran to evaluate the requirement — an InSpec control's source, or a check reference. A
+// serialized finding is not code, and putting one there overloaded a field whose meaning came from
+// InSpec. CLOSED, and deliberately not a passthrough bag: three required members and an optional
+// pointer are the whole of it. Producer data that HDF does not model belongs in
+// `extensions.passthrough`, which is document-scoped and permissive by design; this field is
+// neither. Closed with `additionalProperties` rather than the house `unevaluatedProperties` because
+// this definition composes nothing, and the shipped Go validator is a draft-07 engine that does not
+// implement `unevaluatedProperties` — a closure only one of the two validators enforces is not a
+// closure.
 type RawSourceRecord struct {
-	// The record's bytes, exactly as the source tool wrote them.                                                          
+	// The source tool's own record for this result, carrying every field the record had.                                  
+	//                                                                                                                     
+	// COMPLETE, NOT NECESSARILY BYTE-EXACT. A producer SHOULD write the record's bytes                                    
+	// unchanged where it can. A producer that cannot — notably one implemented in two languages                           
+	// whose JSON serializers disagree on key order, HTML escaping and number rendering, and                               
+	// which therefore MUST canonicalize to stay byte-identical with its twin — MAY write a                                
+	// canonically serialized form instead. Such a form preserves every field and value but not                            
+	// the original key order, insignificant whitespace, or duplicate keys. A consumer MUST                                
+	// therefore compare records by parsing them, not by comparing bytes, and MUST NOT checksum                            
+	// this field and expect the result to match a checksum of the input.                                                  
+	//                                                                                                                     
+	// For carriage that IS byte-exact, use `extensions.rawSourceArtifacts[]`, which forbids a                             
+	// parsed `document` precisely so the bytes and their checksum survive; `pointer` ties this                            
+	// record to its position within that artifact.                                                                        
 	Content                                                                                      string                    `json:"content"`
 	// How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text.                          
 	Encoding                                                                                     ExternalReferenceEncoding `json:"encoding"`

@@ -670,7 +670,7 @@ func TestAmendDraft_E2E_RejectedByApplyUntilCompleted(t *testing.T) {
 	require.NoError(t, readErr)
 
 	// apply must refuse a document still marked _draft.
-	mergeErr := runAmendApply(nil, resultsPath, draftPath, "")
+	mergeErr := runAmendApply(nil, resultsPath, draftPath, "", false)
 	require.Error(t, mergeErr, "apply must refuse a draft document")
 	assert.Contains(t, mergeErr.Error(), "draft")
 
@@ -688,7 +688,7 @@ func TestAmendDraft_E2E_RejectedByApplyUntilCompleted(t *testing.T) {
 	completedPath := filepath.Join(tmp, "completed.json")
 	require.NoError(t, os.WriteFile(completedPath, completed, 0o600))
 
-	require.NoError(t, runAmendApply(nil, resultsPath, completedPath, filepath.Join(tmp, "merged.json")))
+	require.NoError(t, runAmendApply(nil, resultsPath, completedPath, filepath.Join(tmp, "merged.json"), false))
 }
 
 // --- CVSS enrichment on riskAdjustment ---

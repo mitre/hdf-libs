@@ -320,16 +320,28 @@ overrides ajv's `date-time` to match Go.
 
 ---
 
-## Exit Code Conventions
+## CLI exit codes
 
-The `hdf diff` CLI uses a researched exit code scheme. All future HDF CLI commands
-that produce comparison or gate results should follow the same pattern.
+The user-facing table is the "Exit codes" section of `hdf-cli/README.md`; this section is the contributor side of it. One vocabulary for every command: `0` success, `1` the operation failed, `2` the invocation was wrong, `3` a bulk run was partial, `4` there was nothing to do.
 
-### Basic Mode (`--exit-code`)
+### How a command produces a code
 
-GNU diff compatible: 0=identical, 1=differences, 2=error.
+- **Return an error; never call `os.Exit`.** The only `os.Exit` in the CLI is in `cmd/hdf/main.go`, which passes the error `Execute` returned through `ExitStatus` (`cmd/hdf/cmd/root.go`) and exits with what it says. A test asserts a code by calling `ExitStatus` on the error `executeCommand` returned.
+- **A specific code travels as an `exitCodeError`** (`root.go`), which implements `ExitCoder`. A command that returns one has usually already said everything, such as a diff verdict, a bulk summary or a validation report, so `main` prints no `Error:` line for it unless the error sets `report`; the nothing-to-do errors do. Every other error is printed.
+- **A plain error from a command's run is `1`.** `NewRootCmd` wraps every `RunE` in the tree (`markRunErrors` in `root.go`) so the error is marked as coming from a run; `ExitStatus` maps that mark to `1`.
+- **Anything unmarked is `2`.** Cobra raises unknown-flag, unknown-command, arity and required-flag errors before a `RunE` runs and offers no hook for most of them, so the run side is marked instead (`ExitStatus` in `root.go`) and everything else is a usage error. A command that detects a usage mistake itself returns an `exitCodeError` with `exitUsage`. Cobra applies its own unknown-command check to the root only, because that check tests for a parent, and a command that cannot run returns a help sentinel that `ExecuteC` swallows — so `rejectUnknownSubcommands` (`root.go`) gives every group a run of its own and an argument validator, which is what makes a typo'd subcommand a `2` rather than a silent `0`. A new group inherits this; do not add a per-group check.
+- **Bulk commands go through `runBulk`** (`bulk.go`) and inherit `3` for a mixed run and `1` when every file failed. Do not hand-roll a per-file loop or a summary line. A verdict gate (`validate threshold`) or an all-or-nothing batch (`system add-component`) passes `withFailClosed()` so it is never partial.
+- **A command that builds one output from several inputs** (`events fold` and `apply`, `evidence build`) is not bulk: an input it cannot read fails the whole run with `1`, and no partial output is written. What counts as unreadable is each command's own contract, not this rule's — `evidence build` hashes what it is handed and leaves document validity to `hdf validate`, so a results file containing nonsense is packaged and the run exits `0`.
+- **`4` is for an empty input set**: `expandGlobs` (`bulk.go`) returns it when a pattern matches nothing, and `evidence build` when it was given no results files. A command that takes literal paths rather than expanding globs never reaches it: `events fold` reports a non-matching pattern as a missing file, which is a `1`. It is also not for an operation that legitimately found nothing to change; `amend apply` with no matching override exits `0` unless `--require-match` is passed, because a register carried across documents is expected to miss.
+- **Every new code or exception lands in the README table in the same commit**, and every sentence about a code is checked by running the built binary, not recalled.
 
-### Detailed Mode (`--detailed-exitcode`)
+### The one command-local exception: `diff`
+
+`hdf diff` keeps its own verdict codes because they encode the comparison, not the run. A diff that fails to run (an unreadable input, a bad flag) uses the codes above.
+
+**Basic mode (`--exit-code`)**, GNU diff compatible: `0` identical, `1` differences.
+
+**Detailed mode (`--detailed-exitcode`)**:
 
 | Code | Meaning | CI Action |
 |------|---------|-----------|

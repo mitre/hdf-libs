@@ -12,7 +12,8 @@
     "AMBIGUOUS_FORMAT",
     "OUTPUT_EXISTS",
     "WRITE_FAILED",
-    "CACHE_MISS"
+    "CACHE_MISS",
+    "NO_OVERRIDE_MATCHED"
   ],
   "fullShapes": {
     "convert.batch.entry": {
@@ -2257,6 +2258,7 @@
       "CACHE_MISS",
       "DOCUMENT_NOT_FOUND",
       "HANDLE_STALE",
+      "NO_OVERRIDE_MATCHED",
       "OUTPUT_EXISTS",
       "PATH_DENIED",
       "SCHEMA_INVALID",

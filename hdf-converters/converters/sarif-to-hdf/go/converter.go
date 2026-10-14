@@ -1,6 +1,7 @@
 package sarif
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -26,9 +28,68 @@ type SarifFile struct {
 
 // SarifRun represents a single analysis run.
 type SarifRun struct {
-	Tool       *SarifTool      `json:"tool"`
-	Results    []SarifResult   `json:"results"`
-	Taxonomies []SarifTaxonomy `json:"taxonomies,omitempty"`
+	Tool *SarifTool `json:"tool"`
+	// Pointer, not a plain slice: a plain slice decodes null and [] alike, and
+	// §3.14.23 gives them opposite meanings — nothing was analyzed, versus a scan
+	// that ran and found nothing.
+	Results *[]SarifResult `json:"results"`
+	// RawResults is the same array left unparsed, so rawSourceRecord can carry a
+	// result's every property rather than only the ones SarifResult declares.
+	// Parallel to Results; json.Unmarshal fills both from the same input.
+	RawResults *[]json.RawMessage `json:"-"`
+	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
+	// Artifacts is the table artifactLocation.index addresses (§3.4.5).
+	Artifacts []SarifArtifact `json:"artifacts,omitempty"`
+}
+
+// SarifArtifact is one entry of a run's artifacts table. Only its location is read:
+// an index resolves to that location's uri and no further.
+type SarifArtifact struct {
+	Location *ArtifactLocation `json:"location,omitempty"`
+}
+
+// UnmarshalJSON decodes a run twice: once into the typed shape the converter maps
+// from, and once leaving results unparsed so rawSourceRecord can carry a result's
+// every property. Without the second pass a record would be re-marshalled from
+// SarifResult and silently lose every SARIF field this converter does not declare.
+func (r *SarifRun) UnmarshalJSON(data []byte) error {
+	// alias drops the methods, so unmarshalling it does not recurse into this one.
+	type alias SarifRun
+	var typed alias
+	if err := json.Unmarshal(data, &typed); err != nil {
+		return err
+	}
+	*r = SarifRun(typed)
+
+	var probe struct {
+		Results *[]json.RawMessage `json:"results"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
+	r.RawResults = probe.Results
+	return nil
+}
+
+// analyzed reports whether the run carries a result set at all. False means absent
+// or null — the tool did not analyze; true with an empty slice means it ran and
+// found nothing.
+func (r SarifRun) analyzed() bool { return r.Results != nil }
+
+// rawList is resultList's unparsed twin; indices line up with resultList.
+func (r SarifRun) rawList() []json.RawMessage {
+	if r.RawResults == nil {
+		return nil
+	}
+	return *r.RawResults
+}
+
+// resultList is the run's results, empty when it did not analyze.
+func (r SarifRun) resultList() []SarifResult {
+	if r.Results == nil {
+		return nil
+	}
+	return *r.Results
 }
 
 // SarifTool wraps the driver and any extensions. Rules may be defined on either:
@@ -170,6 +231,10 @@ type PhysicalLocation struct {
 // ArtifactLocation identifies a file.
 type ArtifactLocation struct {
 	URI string `json:"uri"`
+	// Pointer, not a plain int: §3.4.5 gives index a default of -1, so an ABSENT index
+	// decodes to 0 in a value field — which would resolve every uri-less location to
+	// artifacts[0] and hand a consumer a path the document never claimed.
+	Index *int `json:"index,omitempty"`
 }
 
 // Region identifies a span within a file.
@@ -186,11 +251,39 @@ type ArtifactContent struct {
 	Text string `json:"text"`
 }
 
+// LevelNone is SARIF's "severity does not apply" level (§3.27.10), distinct from an
+// absent level, which defaults to warning.
+const LevelNone = "none"
+
+// SupportedSARIFVersion is the one SARIF version this converter accepts when a caller
+// states one. The registry's SupportedVersions() returns this same constant, so the
+// version we advertise and the version we enforce cannot drift apart.
+const SupportedSARIFVersion = "2.1.0"
+
+// SupportedSARIFMinor is the minor-series spelling of the same format. SARIF 2.1.0
+// is the only 2.1.x release, so "2.1" names it unambiguously and a caller who writes
+// it is being specific, not vague.
+const SupportedSARIFMinor = "2.1"
+
+// Where a requirement's impact came from, recorded in tags so a consumer can tell a
+// vendor convention from a spec field from a fallback.
+const (
+	severitySourceSecuritySeverity = "security-severity"
+	severitySourceResultLevel      = "result-level"
+	severitySourceRuleDefault      = "rule-default"
+	severitySourceFallback         = "fallback"
+)
+
 // --- Impact mapping ---
-// SARIF uses "error"/"warning"/"note" levels, not standard severity labels.
-// These are used as aliases; unknown levels fall through to 0.0 (then bumped
-// to 0.1 at the call site). This table is the FALLBACK — a rule carrying a
+// SARIF uses "error"/"warning"/"note" levels, not standard severity labels. These are
+// used as aliases; unknown levels fall through to 0.0 and are then bumped to 0.1 at
+// the call site. An explicit "none" is exempt from that floor, because §3.27.10 means
+// severity genuinely does not apply. This table is the FALLBACK — a rule carrying a
 // usable security-severity outranks it; see securitySeverityImpact.
+//
+// SARIF 2.2 (committee draft) renames that property to securitySeverity on a 0-100
+// scale rather than 0-10; nothing here reads that key, so a 2.2 producer falls back to
+// the level mapping.
 
 var sarifAliases = map[string]float64{
 	"error":   0.7,
@@ -202,10 +295,9 @@ var sarifAliases = map[string]float64{
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format.
 // ConvertSarifToHDF converts SARIF input to HDF Results.
-// The optional inputVersion parameter specifies the SARIF schema version
-// (e.g. "2.0.0", "2.1.0"). When omitted or empty, the version is read from
-// the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
-// before processing.
+// The optional inputVersion parameter requests a SARIF schema version. Only 2.1 is
+// supported, so any other explicit value is refused rather than silently ignored;
+// omitting it accepts whatever the document declares on a best-effort basis.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -214,13 +306,19 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		return nil, err
 	}
 
-	timestamp := time.Now()
+	// NormalizeTimestamp, not .UTC(): canonical HDF time is UTC AT MILLISECOND
+	// precision, and the helper exists so converter output is byte-identical to the
+	// TypeScript peer regardless of offset or sub-millisecond digits. A bare
+	// time.Now() carried the host's zone, so the same input produced a different
+	// document under a different TZ; .UTC() alone would fix the zone and leave Go
+	// emitting microseconds where JavaScript emits milliseconds.
+	timestamp := hdfutil.NormalizeTimestamp(time.Now())
 
 	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
 
-	for _, run := range limitedRuns {
-		baseline := convertRun(run, sarif.Version, timestamp, resultsChecksum)
+	for runIdx, run := range limitedRuns {
+		baseline := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
 	}
 
@@ -246,95 +344,101 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 	return hdfResult, nil
 }
 
-// normalizeSarifVersion handles structural differences between SARIF versions.
-// SARIF 2.0 uses "resources.rules" instead of "tool.driver.rules"; this function
-// rewrites 2.0 structure to 2.1 layout so the converter logic can be unified.
-// If the version is not 2.0 or if the input already has 2.1 structure, the
-// input is returned unchanged.
-func normalizeSarifVersion(input []byte, explicitVersion string) ([]byte, error) {
-	// Quick check: only normalize if version indicates 2.0
-	if !isSarif20(input, explicitVersion) {
-		return input, nil
+// assertSupportedVersion rejects an explicitly requested version this converter does
+// not implement. Only SARIF 2.1.0 is supported: it is the OASIS Standard, the vendored
+// schema's version enum admits that value alone, and every fixture in the corpus
+// declares it. The 2.0 committee draft is not supported — a previous normalization
+// claimed to rewrite its resources.rules into tool.driver.rules but required
+// tool.driver to already exist, which 2.1 introduced, so it could never fire on a real
+// 2.0 document. Rejecting an explicit 2.0 request is honest where silently ignoring it
+// was not. A document whose own version field says 2.0 is still converted on a
+// best-effort basis; only an explicit request is refused.
+func assertSupportedVersion(explicitVersion string) error {
+	// Accept the full version, or "2.1" — the minor series has exactly one member,
+	// so spelling it either way designates the same document format and refusing the
+	// short form would be pedantry. What this must NOT do is match on prefix: that
+	// also admitted 2.10, 2.1-beta and 2.1garbage, none of which the vendored
+	// schema's version enum accepts. "2" is refused too, because the unsupported 2.0
+	// committee draft makes it ambiguous.
+	if explicitVersion == "" || explicitVersion == SupportedSARIFVersion || explicitVersion == SupportedSARIFMinor {
+		return nil
 	}
-
-	// Parse into a generic map for structural rewriting
-	var doc map[string]any
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
-	}
-
-	runs, ok := doc["runs"].([]any)
-	if !ok || len(runs) == 0 {
-		return input, nil
-	}
-
-	modified := false
-	for _, runRaw := range runs {
-		run, ok := runRaw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// SARIF 2.0: "resources" → { "rules": [...] }
-		// SARIF 2.1: "tool" → { "driver": { "rules": [...] } }
-		resources, hasResources := run["resources"].(map[string]any)
-		if !hasResources {
-			continue
-		}
-
-		rules, hasRules := resources["rules"]
-		if !hasRules {
-			continue
-		}
-
-		// Move resources.rules → tool.driver.rules (only if tool.driver exists
-		// and doesn't already have rules)
-		tool, _ := run["tool"].(map[string]any)
-		if tool == nil {
-			continue
-		}
-		driver, _ := tool["driver"].(map[string]any)
-		if driver == nil {
-			continue
-		}
-		if _, alreadyHasRules := driver["rules"]; !alreadyHasRules {
-			driver["rules"] = rules
-			modified = true
-		}
-
-		// Clean up the resources field
-		delete(run, "resources")
-	}
-
-	// Update version to 2.1.0 so downstream code doesn't re-normalize
-	if modified {
-		doc["version"] = "2.1.0"
-		return json.Marshal(doc)
-	}
-
-	return input, nil
+	return fmt.Errorf("sarif: unsupported input version %q; only %s is supported", explicitVersion, SupportedSARIFVersion)
 }
 
-// isSarif20 checks if the input is SARIF 2.0 based on the explicit version
-// parameter or the version field in the document. When an explicit version is
-// provided, it takes precedence over the document's version field.
-func isSarif20(input []byte, explicitVersion string) bool {
-	if explicitVersion != "" {
-		return strings.HasPrefix(explicitVersion, "2.0")
+// --- artifact index resolution (§3.4.5) ---
+
+// resolveOneLocation fills in the uri an artifactLocation.index addresses, for a single
+// location. Returns silently when there is nothing to do.
+//
+// ONE LEVEL ONLY, and deliberately. An artifact's own location may itself be
+// index-addressed, so following the chain would need a cycle guard and would hand a
+// consumer a path this converter inferred transitively rather than one the document
+// stated about the finding. An artifact whose location has no uri resolves to nothing.
+//
+// Anything unresolvable leaves the uri empty rather than erroring: a nil index, the
+// schema's -1 default, a negative value, an index past the table, or no table at all.
+// Inventing a path would be worse than reporting the line alone.
+func resolveOneLocation(loc *SarifLocation, artifacts []SarifArtifact) {
+	if loc.PhysicalLocation == nil || loc.PhysicalLocation.ArtifactLocation == nil {
+		return
 	}
-	// No explicit version — check the document's version field
-	var peek struct {
-		Version string `json:"version"`
+	al := loc.PhysicalLocation.ArtifactLocation
+	if al.URI != "" || al.Index == nil {
+		return
 	}
-	if err := json.Unmarshal(input, &peek); err != nil {
-		return false
+	idx := *al.Index
+	if idx < 0 || idx >= len(artifacts) {
+		return
 	}
-	return strings.HasPrefix(peek.Version, "2.0")
+	if artifacts[idx].Location == nil || artifacts[idx].Location.URI == "" {
+		return
+	}
+	al.URI = artifacts[idx].Location.URI
+}
+
+// resolveArtifactIndices fills in every indexed path in a run, so nothing downstream
+// needs to know the artifacts table exists. §3.4.5 permits a location to carry only an
+// index, so the file IS known even where uri is absent.
+//
+// BOTH location kinds are covered: a result's own locations AND the code-flow steps
+// inside codeFlows[].threadFlows[].locations[], which extractBacktrace reads for their
+// uri. Missing the second left a backtrace entry as ":7" — an empty path with a bare
+// line, the exact loss this resolution exists to prevent — and CodeQL, the heaviest
+// code-flow producer, is the family that would hit it.
+//
+// uriBaseId is NOT handled: it names a base-URI symbol resolved against
+// run.originalUriBaseIds, which is separate addressing and tracked on its own card.
+func resolveArtifactIndices(run *SarifRun) {
+	if run.Results == nil || len(run.Artifacts) == 0 {
+		return
+	}
+	results := *run.Results
+	for i := range results {
+		for j := range results[i].Locations {
+			resolveOneLocation(&results[i].Locations[j], run.Artifacts)
+		}
+		for f := range results[i].CodeFlows {
+			for t := range results[i].CodeFlows[f].ThreadFlows {
+				steps := results[i].CodeFlows[f].ThreadFlows[t].Locations
+				for k := range steps {
+					resolveOneLocation(&steps[k].Location, run.Artifacts)
+				}
+			}
+		}
+	}
 }
 
 // --- Run-level conversion ---
 
-func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+	// Fill in every indexed path — a result's own locations and its code-flow steps —
+	// before anything reads one, so the
+	// rest of the conversion needs no knowledge of the artifacts table. The typed
+	// results are rewritten; rawSourceRecord is built from the UNPARSED bytes, so a
+	// record still reports exactly what the tool wrote.
+	resolveArtifactIndices(&run)
+
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
@@ -343,7 +447,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
 		g := groupMap[ruleID]
-		req := convertResultGroup(g.ruleID, g.rule, g.results, timestamp)
+		req := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
 		requirements = append(requirements, req)
 	}
 
@@ -358,7 +462,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{
-			synthesizeNoFindingsRequirement(run, timestamp),
+			synthesizeEmptyRunRequirement(run, timestamp),
 		}
 	}
 
@@ -372,17 +476,25 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	}
 }
 
-// HDF requires requirements.minItems=1; per SARIF v2.1.0 §3.7.2 an empty
-// results array means the analyzer ran clean, so emit one passed placeholder
-// per run-baseline. ID/target derive from run.tool.driver.name so downstream
-// converters that delegate to SARIF (msft-defender-devops, etc.) can identify
-// and override the placeholder when needed.
-func synthesizeNoFindingsRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
+// HDF requires requirements.minItems=1, so a run contributing no requirements
+// still needs one. Which placeholder depends on whether the tool analyzed at
+// all: §3.14.23 distinguishes an absent or null results array, which analyzed
+// nothing, from [], which ran and found nothing. ID/target derive from
+// run.tool.driver.name so downstream converters that delegate to SARIF can
+// identify and override the placeholder.
+func synthesizeEmptyRunRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
 	target := "SARIF analyzer"
 	idPrefix := "sarif"
 	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
 		target = run.Tool.Driver.Name
 		idPrefix = run.Tool.Driver.Name
+	}
+	if !run.analyzed() {
+		return shared.BuildNotAnalyzedRequirement(
+			idPrefix+"-not-analyzed",
+			fmt.Sprintf("%s reported no result set; the run did not analyze.", target),
+			timestamp,
+		)
 	}
 	return shared.BuildNoFindingsRequirement(
 		idPrefix+"-no-findings",
@@ -423,7 +535,7 @@ func lookupRule(ruleMap map[string]ReportingDescriptor, result SarifResult) *Rep
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, timestamp time.Time) hdf.EvaluatedRequirement {
+func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, sourceIndices []int, raws []json.RawMessage, timestamp time.Time) hdf.EvaluatedRequirement {
 	// Derive requirement-level metadata from the rule and first result
 	firstResult := sarifResults[0]
 	title, description := deriveMetadata(firstResult, rule)
@@ -437,20 +549,25 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	nistControls := shared.MapCWEToNIST(cweIds, shared.DefaultStaticAnalysisNIST)
 	cciControls := cci.NISTToCCI(nistControls)
 
-	// Determine requirement-level impact from the rule's inherent severity.
-	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
-	// then to the SARIF default "warning".
-	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	// The rule's security-severity is its CVSS base score and OUTRANKS level:
-	// level is the tool's own triage and several scanners emit one level for
-	// every finding, so preferring it would collapse the CVSS spread that is the
-	// only real severity signal such a document carries. Both are rule-level, so
-	// nothing per-result is discarded. Level remains the fallback.
-	impact, fromCvss := securitySeverityImpact(rule)
-	if !fromCvss {
+	// Determine requirement-level impact from the rule group's resolved level.
+	ruleLevel, severitySource := resolveRuleLevel(rule, sarifResults)
+	// security-severity is a GitHub Code Scanning convention, NOT a SARIF one: the
+	// string appears nowhere in the OASIS 2.1.0 specification or its schema. It
+	// currently OUTRANKS level because it is a 0-10 score rather than one of four
+	// buckets, so it carries severity spread that level cannot, and it is how the
+	// scanners emitting it expect to be read. Whether a vendor convention should
+	// outrank a spec field is an open question recorded on this converter's card.
+	impact, fromSecuritySeverity := securitySeverityImpact(rule)
+	if fromSecuritySeverity {
+		severitySource = severitySourceSecuritySeverity
+	} else {
 		impact = hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
 	}
-	if impact == 0 {
+	// Impact 0 is floored so an unrecognized level does not read as "not
+	// applicable", which is what the effective-status ladder makes of it. An
+	// explicit "none" is exempt: §3.27.10 means severity genuinely does not apply
+	// there, so 0 is the honest value rather than an absent mapping.
+	if impact == 0 && ruleLevel != LevelNone {
 		impact = 0.1
 	}
 	// severity is a schema field consumers read directly, so the converter records
@@ -479,12 +596,50 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		}
 	}
 
-	// Convert each SARIF result into RequirementResult(s)
+	// Convert each SARIF result into RequirementResult(s), and give every one the
+	// native record it came from. §3.27.12 says the locations array is not a list of
+	// distinct occurrences, yet one HDF result per location is what a consumer can
+	// act on, so the expansion stays and the source cardinality is published instead
+	// (see the sarif-source-result-count tag below). All results expanded from one
+	// SARIF result share its record and its pointer, because they share its source.
 	var results []hdf.RequirementResult
-	for _, sr := range sarifResults {
-		results = append(results, convertSarifResultToHDFResults(sr, rule, timestamp)...)
+	perResult := make([]map[string]interface{}, 0, len(sarifResults))
+	for i, sr := range sarifResults {
+		expanded := convertSarifResultToHDFResults(sr, rule, timestamp)
+		srcIdx := i
+		if i < len(sourceIndices) {
+			srcIdx = sourceIndices[i]
+		}
+		var record *hdf.RawSourceRecord
+		if i < len(raws) && raws[i] != nil {
+			record = rawSourceRecordFor(raws[i], runIdx, srcIdx)
+		}
+		for j := range expanded {
+			// The record goes on the FIRST expanded result only. All of them came from
+			// one SARIF result and so share one source record, and that record contains
+			// the whole locations array — so copying it onto each of N expanded results
+			// makes the output grow with the SQUARE of the location count (measured: a
+			// 20KB input with 200 locations produced 4.3MB). One record per SARIF result
+			// is the honest cardinality and keeps ADR-0017's rule intact, since nothing
+			// is merged across SARIF results; the record's own pointer still says which
+			// result it came from, and tags["sarif-source-result-count"] publishes the
+			// source cardinality.
+			if j == 0 {
+				expanded[j].RawSourceRecord = record
+			}
+			perResult = append(perResult, perResultTagEntry(sr))
+		}
+		results = append(results, expanded...)
 	}
 
+	// Title, descriptions, sourceLocation, code and fixes are deliberately derived
+	// from the FIRST result and are a requirement-level SUMMARY, not a per-result
+	// record. HDF scopes these to the requirement — one thing being checked, with a
+	// name, a description and a place it is defined — while SARIF scopes them to each
+	// finding. Synthesizing a merged title or concatenating every snippet would
+	// invent a requirement no tool reported. The per-result detail is not lost: each
+	// HDF result carries its own rawSourceRecord, so a consumer that wants the second
+	// result's own message, location or snippet reads it there.
 	// Build descriptions from rule metadata and first result
 	descriptions := buildDescriptions(description, rule, firstResult)
 
@@ -496,9 +651,18 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		allSuppressions = append(allSuppressions, sr.Suppressions...)
 	}
 
-	// Build tags — rule-level severity, fingerprints from first result, and the
-	// full group suppression record.
-	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions)
+	// Build tags — rule-level severity, the full group suppression record, and the
+	// per-result entries that carry what a requirement-level summary cannot.
+	tags := buildTags(firstResult, rule, ruleLevel, severitySource, cweIds, nistControls, cciControls, allSuppressions)
+	tags["sarif-results"] = perResult
+	tags["sarif-source-result-count"] = len(sarifResults)
+	// An aggregate kind is published only when the group agrees on one. Taking the
+	// first result's kind made a group holding a pass and a fail report just one.
+	if k, uniform := uniformKind(sarifResults); uniform {
+		tags["kind"] = k
+	} else {
+		delete(tags, "kind")
+	}
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
@@ -635,9 +799,9 @@ func packageFromSarifProperties(props map[string]interface{}) *hdf.AffectedPacka
 // rejects. Neither form is a CVSS score, so both languages reject both.
 var decimalScore = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
 
-// securitySeverityImpact reads the rule's security-severity property — the SARIF
-// convention for carrying a CVSS base score, and what GitHub's own ingestion keys
-// on — and scales it to an HDF impact. Reports false when the property is absent
+// securitySeverityImpact reads the rule's security-severity property — a GitHub Code
+// Scanning convention for carrying a CVSS base score, absent from the OASIS SARIF
+// 2.1.0 specification and its schema — and scales it to an HDF impact. Reports false when the property is absent
 // or is not a finite score within 0.0-10.0, so the caller falls back to the level
 // mapping rather than deriving an impact from an unusable value. Producers emit
 // the score as a string; a JSON number is accepted too.
@@ -666,28 +830,185 @@ func securitySeverityImpact(rule *ReportingDescriptor) (float64, bool) {
 	default:
 		return 0, false
 	}
-	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 || score > 10 {
+	// score <= 0, not < 0: GitHub documents 0.0 and out-of-range values alike as
+	// carrying no security severity, so both fall through to the level mapping.
+	if math.IsNaN(score) || math.IsInf(score, 0) || score <= 0 || score > 10 {
 		return 0, false
 	}
 	return hdfutil.RoundImpact(score / 10), true
 }
 
-// resolveRuleLevel determines the inherent severity level for a rule, independent of
-// per-result kind overrides. Priority: rule.defaultConfiguration.level > first fail-kind
-// result's level > SARIF default "warning".
-func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) string {
-	if rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "" {
-		return rule.DefaultConfiguration.Level
+// levelRank orders the SARIF level enum by severity so a rule group reports its
+// worst member. "none" is outside the order: §3.27.10 defines it as severity not
+// applying, so it never competes with a real level.
+var levelRank = map[string]int{"note": 1, "warning": 2, "error": 3}
+
+// isFailing reports whether a result represents a failure. §3.27.9 defaults an absent
+// kind to "fail", so an omitted kind is a failure.
+func isFailing(r SarifResult) bool { return r.Kind == "" || r.Kind == "fail" }
+
+// resolveRuleLevel determines a rule group's level and where it came from.
+//
+// §3.27.10 resolves a level only for a result whose kind is "fail" (§3.27.9 defaults
+// an absent kind to "fail"), in the order: the result's own level, then
+// invocation.ruleConfigurationOverrides, then rule.defaultConfiguration.level, then
+// "warning". The override branch is deliberately not implemented — it needs
+// run.invocations and result.provenance, neither of which is parsed yet.
+//
+// Only a failing result's level is ranked, and a "none" is never ranked at all.
+// §3.27.10 defines "none" as "the concept of severity does not apply to this result
+// because the kind property has a value other than fail", and §3.27.9 requires that
+// any level other than "none" accompany kind "fail". So "none" is not a severity a
+// producer can assert about a failure: on a conformant document it appears only on a
+// non-failing result, where it is the spec-mandated value and carries no information
+// beyond "severity does not apply". A "none" on a failing result contradicts the
+// spec's own definition, so it is ignored rather than honoured — honouring it would
+// put a reported FAILURE at impact 0, which the effective-status ladder reads as
+// notApplicable, dropping a real finding out of the compliance denominator.
+//
+// A group's level is its WORST failing member, not its first. SARIF scopes severity
+// to the result; HDF scopes it to the requirement, and a result says only that a
+// requirement of that severity is in some state. That difference is deliberate on
+// both sides, so the per-result level is summarized onto the requirement rather than
+// HDF's model being bent to mirror SARIF's. Worst-wins is the only summary that
+// cannot under-report: taking the first would let a note listed ahead of an error
+// present the whole group as a note.
+func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string, string) {
+	ruleDefault := ""
+	if rule != nil && rule.DefaultConfiguration != nil {
+		ruleDefault = rule.DefaultConfiguration.Level
 	}
-	// Find first result that represents a failure (kind="" or "fail") with an explicit level
+
+	worst, source, found, sawNone := "", "", false, false
 	for _, r := range results {
-		if r.Kind == "" || r.Kind == "fail" {
-			if r.Level != "" {
-				return r.Level
+		if r.Level == LevelNone {
+			// Only meaningful on a non-failing result, which is the conformant case.
+			if !isFailing(r) {
+				sawNone = true
 			}
+			continue
+		}
+		if !isFailing(r) {
+			continue
+		}
+		// Resolve each failing result SEPARATELY before ranking. A failing result
+		// with no level of its own inherits the rule default, so ranking the raw
+		// levels would let an explicit note outrank the error a level-less sibling
+		// inherited.
+		effective, from := r.Level, severitySourceResultLevel
+		if effective == "" {
+			effective, from = ruleDefault, severitySourceRuleDefault
+		}
+		if effective == "" {
+			effective, from = "warning", severitySourceFallback
+		}
+		if !found || levelRank[effective] > levelRank[worst] {
+			worst, source, found = effective, from, true
 		}
 	}
-	return "warning"
+	switch {
+	case found:
+		return worst, source
+	case ruleDefault != "":
+		return ruleDefault, severitySourceRuleDefault
+	case sawNone:
+		return LevelNone, severitySourceResultLevel
+	default:
+		return "warning", severitySourceFallback
+	}
+}
+
+// rawSourceRecordFor carries one SARIF result, complete, on the HDF result(s) it
+// produced. ADR-0017 scoped this to the result deliberately: records merged onto the
+// requirement collide, and merging entries that share an id has to discard one, which
+// is exactly how the non-first result's metadata used to be lost. Encoding is utf-8
+// rather than base64 because a SARIF result is JSON and therefore valid UTF-8 text;
+// base64 would inflate it by a third and make it unreadable for no gain.
+func rawSourceRecordFor(raw json.RawMessage, runIdx, resultIdx int) *hdf.RawSourceRecord {
+	// Re-marshalled from the UNTYPED result, not from SarifResult: marshalling the
+	// struct would emit only the fields it declares, silently dropping every SARIF
+	// property this converter does not model — the opposite of a verbatim record.
+	// Keys come out sorted because Go sorts map keys, and the TypeScript peer sorts
+	// to match, so the two languages agree byte for byte. Original key order and
+	// whitespace are therefore not preserved; the content is complete, not byte-exact.
+	// UseNumber, not plain Unmarshal: decoding into interface{} turns every number
+	// into a float64, which silently rounds any integer above 2^53 — the record would
+	// then carry a DIFFERENT value than the source, which no reading of "complete"
+	// permits. json.Number keeps the original token and encoding/json re-emits it
+	// literally. The TypeScript peer recovers the same token through its parser's
+	// source access and wraps it in exportmap's RawNumber, so the two still agree.
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var untyped interface{}
+	if err := dec.Decode(&untyped); err != nil {
+		return nil
+	}
+	// exportmap's canonical encoder, not json.Marshal: Go HTML-escapes <, > and & by
+	// default while JavaScript's JSON.stringify does not, so a record holding a C
+	// snippet with an ampersand would differ byte for byte between the two languages.
+	// It also escapes U+2028/U+2029 and normalizes negative zero, which are the other
+	// three places the two disagree.
+	encoded, err := exportmap.EncodeLine(untyped)
+	if err != nil {
+		return nil
+	}
+	content := bytes.TrimRight(encoded, "\n")
+	pointer := fmt.Sprintf("/runs/%d/results/%d", runIdx, resultIdx)
+	return &hdf.RawSourceRecord{
+		Content:   string(content),
+		Encoding:  hdf.UTF8,
+		MediaType: "application/json",
+		Pointer:   &pointer,
+	}
+}
+
+// perResultTagEntry is the queryable half of per-result carriage. rawSourceRecord
+// holds the whole record but as an opaque string, so nothing can filter on what is
+// inside it; fingerprints exist for cross-run correlation, which needs them
+// addressable. Only fields a requirement-level summary cannot represent go here.
+func perResultTagEntry(result SarifResult) map[string]interface{} {
+	entry := map[string]interface{}{}
+	// The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
+	// key, so applying the default here invents no history; tags["kind"] stays
+	// verbatim for the same reason.
+	if result.Kind != "" {
+		entry["kind"] = result.Kind
+	} else {
+		entry["kind"] = "fail"
+	}
+	if result.Level != "" {
+		entry["level"] = result.Level
+	}
+	if len(result.Fingerprints) > 0 {
+		entry["fingerprints"] = result.Fingerprints
+	}
+	if len(result.PartialFingerprints) > 0 {
+		entry["partialFingerprints"] = result.PartialFingerprints
+	}
+	return entry
+}
+
+// uniformKind reports the kind every result in the group STATED, and false when they
+// disagree or when any of them omitted it. Deliberately not defaulting an absent kind
+// to "fail" here, even though §3.27.9 does: tags["kind"] carries what the tool wrote,
+// the way tags["sarif-level"] carries the level verbatim, so publishing a spec-derived
+// value under the same key would silently change what the tag means. The effective
+// kind, with the §3.27.9 default applied, is in the per-result entries instead.
+func uniformKind(results []SarifResult) (string, bool) {
+	kind := ""
+	for i, r := range results {
+		if r.Kind == "" {
+			return "", false
+		}
+		if i == 0 {
+			kind = r.Kind
+			continue
+		}
+		if r.Kind != kind {
+			return "", false
+		}
+	}
+	return kind, kind != ""
 }
 
 // convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
@@ -710,10 +1031,19 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 	// Create results for each location
 	var results []hdf.RequirementResult
 	for _, loc := range result.Locations {
-		if loc.PhysicalLocation != nil && loc.PhysicalLocation.ArtifactLocation != nil {
-			res := createHDFResult(loc, status, timestamp, backtrace)
-			results = append(results, res)
+		// Keep a location when there is something representable in it. The schema's
+		// physicalLocation.anyOf admits an address instead of an artifactLocation, so
+		// requiring artifactLocation discarded a region's line; accepting any
+		// physicalLocation instead reported "LINE : 0 COLUMN : 0" for an address with no
+		// region. region is a sibling of artifactLocation, and either one alone is
+		// enough to say where the finding is.
+		if loc.PhysicalLocation == nil {
+			continue
 		}
+		if loc.PhysicalLocation.ArtifactLocation == nil && loc.PhysicalLocation.Region == nil {
+			continue
+		}
+		results = append(results, createHDFResult(loc, status, timestamp, backtrace))
 	}
 
 	// If no locations, create a location-less result so the finding isn't silently dropped
@@ -1060,10 +1390,13 @@ func buildDescriptions(defaultDesc string, rule *ReportingDescriptor, result Sar
 
 // --- Tag building ---
 
-func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel string, cweIds, nistControls, cciControls []string, allSuppressions []Suppression) map[string]interface{} {
+func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel, severitySource string, cweIds, nistControls, cciControls []string, allSuppressions []Suppression) map[string]interface{} {
 	tags := make(map[string]interface{})
 
-	tags["severity"] = resolvedLevel
+	// The SARIF level verbatim. Not "severity": impact may derive from GitHub's
+	// security-severity instead, so one name would carry two different values.
+	tags["sarif-level"] = resolvedLevel
+	tags["sarif-severity-source"] = severitySource
 	tags["cwe"] = cweIds
 	tags["nist"] = nistControls
 	tags["cci"] = cciControls
@@ -1164,7 +1497,17 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 		}
 	}
 
-	codeDesc := fmt.Sprintf("URL : %s LINE : %d COLUMN : %d", uri, line, column)
+	// The URL slot is omitted when no uri is known rather than left empty. §3.4.5
+	// permits an artifactLocation carrying only an index, and region — which holds the
+	// line and column — is a SIBLING of artifactLocation, so the position is known even
+	// when the file is not. Publishing "URL :  LINE : 5" reads as missing data, and
+	// dropping the whole location would discard a line we have. An index into
+	// run.artifacts is resolved before this point (see resolveArtifactIndices), so a
+	// uri reaching here as empty means the document addressed no resolvable file.
+	codeDesc := fmt.Sprintf("LINE : %d COLUMN : %d", line, column)
+	if uri != "" {
+		codeDesc = fmt.Sprintf("URL : %s %s", uri, codeDesc)
+	}
 	if snippet != "" {
 		codeDesc = fmt.Sprintf("%s\n%s", codeDesc, snippet)
 	}
@@ -1177,8 +1520,8 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 	}
 }
 
-// parseSarif applies the converter's input guards, normalizes SARIF 2.0 to
-// 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
+// parseSarif applies the converter's input guards, refuses an explicitly requested
+// version other than 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
 // they accept and reject exactly the same inputs.
 func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 	if len(input) == 0 {
@@ -1191,16 +1534,17 @@ func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 	if len(inputVersion) > 0 && inputVersion[0] != "" {
 		effectiveVersion = inputVersion[0]
 	}
-	normalized, err := normalizeSarifVersion(input, effectiveVersion)
-	if err != nil {
+	if err := assertSupportedVersion(effectiveVersion); err != nil {
 		return nil, err
 	}
 	var sarif SarifFile
-	if err := json.Unmarshal(normalized, &sarif); err != nil {
+	if err := json.Unmarshal(input, &sarif); err != nil {
 		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
 	}
-	if len(sarif.Runs) == 0 {
-		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
+	// An empty runs array is conformant (§3.13.4) and converts to a document with no
+	// baselines, which hdf-results permits. Only a MISSING runs field is an error.
+	if sarif.Runs == nil {
+		return nil, fmt.Errorf("invalid SARIF structure: missing runs field")
 	}
 	return &sarif, nil
 }
@@ -1208,19 +1552,24 @@ func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 // resultGroup is one requirement's worth of SARIF results: every result that
 // shares a ruleId (or, when ruleId is absent, the same message text).
 type resultGroup struct {
-	ruleID  string
-	rule    *ReportingDescriptor
+	ruleID string
+	rule   *ReportingDescriptor
+	// results and indices are parallel: indices[i] is results[i]'s position in
+	// run.results, which rawSourceRecord.pointer needs to address the source record.
 	results []SarifResult
+	indices []int
+	raws    []json.RawMessage
 }
 
 // groupResults groups a run's results into requirements, in first-seen order.
 // It is the single definition of the input-to-requirement relation: the
 // conversion builds requirements from it and ExpectedRequirementCount counts it.
 func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]string, map[string]*resultGroup) {
-	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
+	limitedResults := shared.LimitSliceWithWarning(run.resultList(), 0, "result")
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
-	for _, result := range limitedResults {
+	rawResults := run.rawList()
+	for srcIdx, result := range limitedResults {
 		groupKey := result.RuleID
 		if groupKey == "" {
 			groupKey = resolveMessageText(result.Message, nil)
@@ -1232,6 +1581,12 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 			groupOrder = append(groupOrder, groupKey)
 		}
 		g.results = append(g.results, result)
+		g.indices = append(g.indices, srcIdx)
+		if srcIdx < len(rawResults) {
+			g.raws = append(g.raws, rawResults[srcIdx])
+		} else {
+			g.raws = append(g.raws, nil)
+		}
 	}
 	return groupOrder, groupMap
 }
