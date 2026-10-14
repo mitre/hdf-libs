@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   EMBED_DIR,
-  EXPECTED_DEFINITIONS,
   MAIN_SCHEMAS,
   ROOT_COMPONENT_NAMES,
   buildComponentsDocument,
@@ -115,7 +114,7 @@ describe('definitions are hoisted and self-contained', () => {
   it('hoists every named definition and adds nothing else', () => {
     // 118 named definitions across the bundles + 8 roots. Measured against the
     // tracked embed; a change here is a schema-set change and must be reviewed.
-    expect(Object.keys(schemas)).toHaveLength(EXPECTED_DEFINITIONS + 8);
+    expect(Object.keys(schemas)).toHaveLength(118 + 8);
   });
 
   it('emits component keys OpenAPI accepts', () => {
