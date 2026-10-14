@@ -307,7 +307,6 @@ func buildResults(
 	carried carriedBags,
 ) []interface{} {
 	rows, _ := exportmap.AsSlice(req["results"])
-	locations := buildLocations(req, baselineName, ruleID, carried)
 	suppressions := buildSuppressions(req)
 
 	out := make([]interface{}, 0, len(rows))
@@ -316,11 +315,14 @@ func buildResults(
 		if !ok {
 			continue
 		}
-		kind := resultKind(req, row)
+		kind := resultKind(req, row, ordinal)
+		// Per result, not per requirement: a rule's results can sit at different
+		// places, and sarif-to-hdf carries each one's own location.
+		locations := buildLocations(req, baselineName, ruleID, carried, ordinal)
 		result := map[string]interface{}{
 			"ruleId":    ruleID,
 			"ruleIndex": ruleIdx,
-			"message":   map[string]interface{}{"text": resultMessage(req, row)},
+			"message":   map[string]interface{}{"text": resultMessage(req, row, ordinal)},
 			"kind":      kind,
 		}
 		// level and kind are orthogonal axes (SARIF §3.27.9/§3.27.10), and for
@@ -328,7 +330,7 @@ func buildResults(
 		// is also the default when level is absent, so it is simply omitted. The
 		// rule's defaultConfiguration.level still carries the severity.
 		if kind == kindFail {
-			result["level"] = ruleLevel(req)
+			result["level"] = resultLevel(req, ordinal)
 		}
 		if len(locations) > 0 {
 			result["locations"] = locations
@@ -336,7 +338,7 @@ func buildResults(
 		if len(suppressions) > 0 {
 			result["suppressions"] = suppressions
 		}
-		if fp, pfp := resultFingerprints(req); len(fp) > 0 || len(pfp) > 0 {
+		if fp, pfp := resultFingerprintsAt(req, ordinal); len(fp) > 0 || len(pfp) > 0 {
 			if len(fp) > 0 {
 				result["fingerprints"] = fp
 			}
@@ -385,6 +387,22 @@ var sarifLevels = map[string]bool{"none": true, "note": true, "warning": true, "
 // impact 0.0 means no impact, not ungraded. Absent that, the level is derived
 // from impact on the repo's own severity bands, which is the inverse of the
 // alias table sarif-to-hdf maps levels through.
+// resultLevel is the level for ONE result, preferring the level sarif-to-hdf
+// carried for it. tags["severity"] is a requirement-level summary, so a rule whose
+// results carried different levels had them all re-emitted at the summary's level
+// and the RESOLVED level (SARIF 3.27.10: the result's own level, else the rule's
+// defaultConfiguration, else warning) came back changed for every result but one.
+//
+// A result the source left level-less carries nothing here, and falls through to
+// the rule level — which is the rule's defaultConfiguration, so the level still
+// resolves to what it resolved to before.
+func resultLevel(req map[string]interface{}, ordinal int) string {
+	if level := carriedResultField(req, ordinal, "level"); sarifLevels[level] {
+		return level
+	}
+	return ruleLevel(req)
+}
+
 func ruleLevel(req map[string]interface{}) string {
 	tags, _ := exportmap.AsMap(req["tags"])
 	if level := exportmap.GetStr(tags, "severity"); sarifLevels[level] {
@@ -432,11 +450,19 @@ var importerKindStatus = map[string]string{
 }
 
 // resultKind resolves the SARIF kind for one HDF result row.
-func resultKind(req, row map[string]interface{}) string {
+func resultKind(req, row map[string]interface{}, ordinal int) string {
 	status := exportmap.GetStr(row, "status")
 	kind, ok := statusKinds[status]
 	if !ok {
 		kind = kindFail // SARIF's own default for an unrecognized verdict
+	}
+	// The PER-RESULT carried kind first. tags["kind"] below is only set when every
+	// result in the group shared one kind, so a rule mixing "open" with
+	// "informational" has no requirement-level value and both would otherwise
+	// collapse onto whatever their HDF status maps to — "open" to fail,
+	// "informational" to notApplicable, neither recoverable.
+	if carried := carriedResultKind(req, ordinal); importerKindStatus[carried] == status && status != "" {
+		return carried
 	}
 	tags, _ := exportmap.AsMap(req["tags"])
 	if carried := exportmap.GetStr(tags, "kind"); importerKindStatus[carried] == status && status != "" {
@@ -445,8 +471,24 @@ func resultKind(req, row map[string]interface{}) string {
 	return kind
 }
 
+// carriedResultKind reads the kind sarif-to-hdf carried for the result at this
+// ordinal. The caller checks it still agrees with the HDF status, so a carried
+// value cannot contradict a status an override has since changed.
+func carriedResultKind(req map[string]interface{}, ordinal int) string {
+	return carriedResultField(req, ordinal, "kind")
+}
+
 // resultMessage resolves result.message.text, which SARIF requires.
-func resultMessage(req, row map[string]interface{}) string {
+//
+// A carried SARIF message wins, because it is what the tool actually said about
+// THIS result. HDF's codeDesc is location prose this converter would otherwise
+// emit as the finding's message — accurate for a natively-authored HDF document
+// and wrong for one imported from SARIF, where the real message sits in
+// tags["sarif-results"][ordinal].message.
+func resultMessage(req, row map[string]interface{}, ordinal int) string {
+	if text := carriedResultMessage(req, ordinal); text != "" {
+		return text
+	}
 	if text := exportmap.GetStr(row, "message"); text != "" {
 		return text
 	}
@@ -454,6 +496,32 @@ func resultMessage(req, row map[string]interface{}) string {
 		return text
 	}
 	return exportmap.DefaultDescription(req)
+}
+
+// carriedResultMessage reads the message sarif-to-hdf carried for the result at
+// this ordinal. Addressed by position WITHIN the requirement, which is the order
+// the importer wrote and this exporter re-emits.
+func carriedResultMessage(req map[string]interface{}, ordinal int) string {
+	return carriedResultField(req, ordinal, "message")
+}
+
+// carriedResultField reads one field of tags["sarif-results"][ordinal]. Addressed
+// by position WITHIN the requirement, which is the order the importer wrote and
+// this exporter re-emits.
+func carriedResultField(req map[string]interface{}, ordinal int, field string) string {
+	tags, ok := exportmap.AsMap(req["tags"])
+	if !ok {
+		return ""
+	}
+	entries, ok := exportmap.AsSlice(tags["sarif-results"])
+	if !ok || ordinal < 0 || ordinal >= len(entries) {
+		return ""
+	}
+	entry, ok := exportmap.AsMap(entries[ordinal])
+	if !ok {
+		return ""
+	}
+	return exportmap.GetStr(entry, field)
 }
 
 // --- descriptions, tags, scores ---
@@ -497,12 +565,23 @@ func ruleTags(req map[string]interface{}) []interface{} {
 	// non-empty, so guarding after concatenation emitted a bare "nist/" for an empty
 	// entry while the TypeScript peer, which guards the element, emitted nothing.
 	// tags is additionalProperties:true, so an empty entry is schema-valid input.
-	for _, cwe := range exportmap.StringSlice(req["cwe"]) {
-		if cwe != "" {
-			add("external/cwe/" + normalizeCWETag(cwe))
+	reqTags, _ := exportmap.AsMap(req["tags"])
+	// Both homes. CWE is a first-class Requirement field, but sarif-to-hdf writes it
+	// to tags["cwe"] instead, so reading only the first-class field meant a
+	// SARIF-sourced document's CWEs never reached the SARIF tags — and the importer,
+	// which recovers CWE from exactly these tags, rebuilt an empty list. The NIST and
+	// CCI tags derive from that list, so they degraded to the static-analysis
+	// fallback too.
+	for _, src := range [][]string{
+		exportmap.StringSlice(req["cwe"]),
+		exportmap.StringSlice(reqTags["cwe"]),
+	} {
+		for _, cwe := range src {
+			if cwe != "" {
+				add("external/cwe/" + normalizeCWETag(cwe))
+			}
 		}
 	}
-	reqTags, _ := exportmap.AsMap(req["tags"])
 	for _, nist := range exportmap.StringSlice(reqTags["nist"]) {
 		if nist != "" {
 			add("nist/" + nist)
@@ -550,6 +629,28 @@ func cvssBaseScore(req map[string]interface{}) (float64, bool) {
 }
 
 // resultFingerprints restores the fingerprint maps sarif-to-hdf parked in tags.
+//
+// The PER-RESULT entry wins. tags["fingerprints"] is a requirement-level summary
+// holding the first result's maps, so a rule whose results have different
+// fingerprints — which is the normal case, since a fingerprint identifies a
+// finding — gave every result the first one's, defeating the cross-run
+// correlation fingerprints exist for.
+func resultFingerprintsAt(req map[string]interface{}, ordinal int) (map[string]interface{}, map[string]interface{}) {
+	tags, ok := exportmap.AsMap(req["tags"])
+	if ok {
+		if entries, ok := exportmap.AsSlice(tags["sarif-results"]); ok && ordinal >= 0 && ordinal < len(entries) {
+			if entry, ok := exportmap.AsMap(entries[ordinal]); ok {
+				fp, _ := exportmap.AsMap(entry["fingerprints"])
+				pfp, _ := exportmap.AsMap(entry["partialFingerprints"])
+				if len(fp) > 0 || len(pfp) > 0 {
+					return fp, pfp
+				}
+			}
+		}
+	}
+	return resultFingerprints(req)
+}
+
 func resultFingerprints(req map[string]interface{}) (map[string]interface{}, map[string]interface{}) {
 	tags, _ := exportmap.AsMap(req["tags"])
 	block, _ := exportmap.AsMap(tags["fingerprints"])

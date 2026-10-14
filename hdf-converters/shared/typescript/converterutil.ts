@@ -481,6 +481,12 @@ export interface HdfResultsOptions {
   timestamp?: Date;
   /** Assessment statistics */
   statistics?: Statistics;
+  /**
+   * Producer data HDF does not model. Optional: omitted leaves the field absent
+   * rather than writing an empty object, because extensions is closed to two
+   * members and an empty one says nothing.
+   */
+  extensions?: Record<string, unknown>;
 }
 
 /**
@@ -511,6 +517,7 @@ export function buildHdfResults(opts: HdfResultsOptions): string {
   if (opts.components) hdf.components = opts.components;
   if (opts.timestamp) hdf.timestamp = opts.timestamp;
   if (opts.statistics) hdf.statistics = opts.statistics;
+  if (opts.extensions) hdf.extensions = opts.extensions;
 
   return serializeHdf(hdf);
 }

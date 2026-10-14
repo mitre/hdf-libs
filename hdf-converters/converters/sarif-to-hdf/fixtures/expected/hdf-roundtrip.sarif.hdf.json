@@ -1,0 +1,765 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "affectedPackages": [
+            {
+              "cpe": "cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*",
+              "ecosystem": "pypi",
+              "fixedInVersion": "2.10.1",
+              "name": "jinja2",
+              "purl": "pkg:pypi/jinja2@2.10",
+              "version": "2.10"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.6,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N",
+              "source": "GHSA-462w-v97r-4m45",
+              "version": "3.0"
+            },
+            {
+              "baseScore": 7.7,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N",
+              "source": "GHSA-462w-v97r-4m45",
+              "version": "4.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Severity: High vulnerability is fixed for versions 2.10.1",
+              "label": "default"
+            },
+            {
+              "data": "Jinja2 sandbox escape via string formatting",
+              "label": "rationale"
+            },
+            {
+              "data": "{\"primary\":[{\"type\":\"Secondary\",\"version\":\"3.0\",\"vector\":\"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\"metrics\":{\"baseScore\":8.6,\"exploitabilityScore\":3.9,\"impactScore\":4},\"vendorMetadata\":{}},{\"type\":\"Secondary\",\"version\":\"4.0\",\"vector\":\"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N\",\"metrics\":{\"baseScore\":7.7},\"vendorMetadata\":{}}],\"related\":[{\"id\":\"CVE-2019-10906\",\"dataSource\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\"cvss\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\"metrics\":{\"baseScore\":8.6,\"exploitabilityScore\":3.9,\"impactScore\":4},\"vendorMetadata\":{}},{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"2.0\",\"vector\":\"AV:N/AC:L/Au:N/C:P/I:N/A:N\",\"metrics\":{\"baseScore\":5,\"exploitabilityScore\":10,\"impactScore\":2.9},\"vendorMetadata\":{}}]}]}",
+              "label": "check"
+            },
+            {
+              "data": "vulnerability is fixed for versions 2.10.1",
+              "label": "fix"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "bbd9899513a584d10923f88c90dd5d1c5a1cc740d815ef11a0aedb57cb2c4565"
+          },
+          "epss": {
+            "date": "2026-09-19",
+            "percentile": 0.89018,
+            "score": 0.03633
+          },
+          "results": [
+            {
+              "codeDesc": "No source location",
+              "rawSourceRecord": {
+                "content": "{\"kind\":\"fail\",\"level\":\"error\",\"message\":{\"text\":\"Severity: High vulnerability is fixed for versions 2.10.1\"},\"properties\":{\"hdf\":{\"result\":{\"codeDesc\":\"Package: jinja2@2.10 | Type: python | Location: /requirements.txt | Match Type: exact-direct-match\",\"message\":\"Severity: High vulnerability is fixed for versions 2.10.1\",\"resource\":\"package\",\"resourceId\":\"pkg:pypi/jinja2@2.10\",\"startTime\":\"2026-09-20T20:02:31.003Z\",\"status\":\"failed\"}}},\"ruleId\":\"Grype/GHSA-462w-v97r-4m45\",\"ruleIndex\":0}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/jinja2@2.10",
+              "startTime": "2026-10-14T01:18:11.518Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "id": "Grype/GHSA-462w-v97r-4m45",
+          "impact": 0.86,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://nvd.nist.gov/vuln/detail/CVE-2019-10906",
+            "kind": "fail",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "sarif-level": "error",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "error",
+                "message": "Severity: High vulnerability is fixed for versions 2.10.1"
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
+          },
+          "code": "{\n  \"vulnerability\": {\n    \"id\": \"GHSA-462w-v97r-4m45\",\n    \"dataSource\": \"https://github.com/advisories/GHSA-462w-v97r-4m45\",\n    \"namespace\": \"github:language:python\",\n    \"severity\": \"High\",\n    \"urls\": [\n      \"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\n      \"https://access.redhat.com/errata/RHSA-2019:1152\",\n      \"https://access.redhat.com/errata/RHSA-2019:1237\",\n      \"https://access.redhat.com/errata/RHSA-2019:1329\",\n      \"https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316@%3Ccommits.airflow.apache.org%3E\",\n      \"https://palletsprojects.com/blog/jinja-2-10-1-released\",\n      \"http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html\",\n      \"http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html\",\n      \"https://usn.ubuntu.com/4011-2\",\n      \"https://usn.ubuntu.com/4011-1\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF\",\n      \"https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2019-217.yaml\"\n    ],\n    \"description\": \"Jinja2 sandbox escape via string formatting\",\n    \"cvss\": [\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"3.0\",\n        \"vector\": \"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\n        \"metrics\": {\n          \"baseScore\": 8.6,\n          \"exploitabilityScore\": 3.9,\n          \"impactScore\": 4\n        },\n        \"vendorMetadata\": {}\n      },\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"4.0\",\n        \"vector\": \"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N\",\n        \"metrics\": {\n          \"baseScore\": 7.7\n        },\n        \"vendorMetadata\": {}\n      }\n    ],\n    \"epss\": [\n      {\n        \"cve\": \"CVE-2019-10906\",\n        \"epss\": 0.03633,\n        \"percentile\": 0.89018,\n        \"date\": \"2026-09-19\"\n      }\n    ],\n    \"fix\": {\n      \"versions\": [\n        \"2.10.1\"\n      ],\n      \"state\": \"fixed\",\n      \"available\": [\n        {\n          \"version\": \"2.10.1\",\n          \"date\": \"2020-07-28\",\n          \"kind\": \"first-observed\"\n        }\n      ]\n    },\n    \"advisories\": [],\n    \"risk\": 2.8428225\n  },\n  \"relatedVulnerabilities\": [\n    {\n      \"id\": \"CVE-2019-10906\",\n      \"dataSource\": \"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\n      \"namespace\": \"nvd:cpe\",\n      \"severity\": \"High\",\n      \"urls\": [\n        \"http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html\",\n        \"http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html\",\n        \"https://access.redhat.com/errata/RHSA-2019:1152\",\n        \"https://access.redhat.com/errata/RHSA-2019:1237\",\n        \"https://access.redhat.com/errata/RHSA-2019:1329\",\n        \"https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF/\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU/\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ/\",\n        \"https://palletsprojects.com/blog/jinja-2-10-1-released\",\n        \"https://usn.ubuntu.com/4011-1/\",\n        \"https://usn.ubuntu.com/4011-2/\"\n      ],\n      \"description\": \"In Pallets Jinja before 2.10.1, str.format_map allows a sandbox escape.\",\n      \"cvss\": [\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\n          \"metrics\": {\n            \"baseScore\": 8.6,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 4\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"2.0\",\n          \"vector\": \"AV:N/AC:L/Au:N/C:P/I:N/A:N\",\n          \"metrics\": {\n            \"baseScore\": 5,\n            \"exploitabilityScore\": 10,\n            \"impactScore\": 2.9\n          },\n          \"vendorMetadata\": {}\n        }\n      ],\n      \"epss\": [\n        {\n          \"cve\": \"CVE-2019-10906\",\n          \"epss\": 0.03633,\n          \"percentile\": 0.89018,\n          \"date\": \"2026-09-19\"\n        }\n      ]\n    }\n  ],\n  \"matchDetails\": [\n    {\n      \"type\": \"exact-direct-match\",\n      \"matcher\": \"python-matcher\",\n      \"searchedBy\": {\n        \"language\": \"python\",\n        \"namespace\": \"github:language:python\",\n        \"package\": {\n          \"name\": \"jinja2\",\n          \"version\": \"2.10\"\n        }\n      },\n      \"found\": {\n        \"vulnerabilityID\": \"GHSA-462w-v97r-4m45\",\n        \"versionConstraint\": \"\u003c2.10.1 (python)\"\n      },\n      \"fix\": {\n        \"suggestedVersion\": \"2.10.1\"\n      }\n    }\n  ],\n  \"artifact\": {\n    \"id\": \"d51e03b7f2a59975\",\n    \"name\": \"jinja2\",\n    \"version\": \"2.10\",\n    \"type\": \"python\",\n    \"locations\": [\n      {\n        \"path\": \"/requirements.txt\",\n        \"accessPath\": \"/requirements.txt\",\n        \"annotations\": {\n          \"evidence\": \"primary\"\n        }\n      }\n    ],\n    \"language\": \"python\",\n    \"licenses\": [],\n    \"cpes\": [\n      \"cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:jinja2:2.10:*:*:*:*:*:*:*\"\n    ],\n    \"purl\": \"pkg:pypi/jinja2@2.10\",\n    \"upstreams\": []\n  }\n}",
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10906"
+            },
+            {
+              "url": "https://access.redhat.com/errata/RHSA-2019:1152"
+            },
+            {
+              "url": "https://access.redhat.com/errata/RHSA-2019:1237"
+            },
+            {
+              "url": "https://access.redhat.com/errata/RHSA-2019:1329"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f@%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac@%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df@%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284@%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02@%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993@%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da@%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316@%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://palletsprojects.com/blog/jinja-2-10-1-released"
+            },
+            {
+              "url": "http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html"
+            },
+            {
+              "url": "http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html"
+            },
+            {
+              "url": "https://usn.ubuntu.com/4011-2"
+            },
+            {
+              "url": "https://usn.ubuntu.com/4011-1"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF"
+            },
+            {
+              "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2019-217.yaml"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f%40%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac%40%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df%40%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284%40%3Cdevnull.infra.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02%40%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993%40%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da%40%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316%40%3Ccommits.airflow.apache.org%3E"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF/"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU/"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ/"
+            },
+            {
+              "url": "https://usn.ubuntu.com/4011-1/"
+            },
+            {
+              "url": "https://usn.ubuntu.com/4011-2/"
+            }
+          ],
+          "title": "Grype found a vulnerability to GHSA-462w-v97r-4m45 in .",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "cpe": "cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*",
+              "ecosystem": "pypi",
+              "fixedInVersion": "2.11.3",
+              "name": "jinja2",
+              "purl": "pkg:pypi/jinja2@2.10",
+              "version": "2.10"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+              "source": "GHSA-g3rq-g295-4j3m",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 6.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+              "source": "GHSA-g3rq-g295-4j3m",
+              "version": "4.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Severity: Medium vulnerability is fixed for versions 2.11.3",
+              "label": "default"
+            },
+            {
+              "data": "Regular Expression Denial of Service (ReDoS) in Jinja2",
+              "label": "rationale"
+            },
+            {
+              "data": "{\"primary\":[{\"type\":\"Secondary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}},{\"type\":\"Secondary\",\"version\":\"4.0\",\"vector\":\"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N\",\"metrics\":{\"baseScore\":6.9},\"vendorMetadata\":{}}],\"related\":[{\"id\":\"CVE-2020-28493\",\"dataSource\":\"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\"cvss\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}},{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"2.0\",\"vector\":\"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\"metrics\":{\"baseScore\":5,\"exploitabilityScore\":10,\"impactScore\":2.9},\"vendorMetadata\":{}},{\"source\":\"report@snyk.io\",\"type\":\"Secondary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}}]}]}",
+              "label": "check"
+            },
+            {
+              "data": "vulnerability is fixed for versions 2.11.3",
+              "label": "fix"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+          },
+          "epss": {
+            "date": "2026-09-19",
+            "percentile": 0.88768,
+            "score": 0.03546
+          },
+          "results": [
+            {
+              "codeDesc": "No source location",
+              "rawSourceRecord": {
+                "content": "{\"kind\":\"fail\",\"level\":\"warning\",\"message\":{\"text\":\"Severity: Medium vulnerability is fixed for versions 2.11.3\"},\"properties\":{\"hdf\":{\"result\":{\"codeDesc\":\"Package: jinja2@2.10 | Type: python | Location: /requirements.txt | Match Type: exact-direct-match\",\"message\":\"Severity: Medium vulnerability is fixed for versions 2.11.3\",\"resource\":\"package\",\"resourceId\":\"pkg:pypi/jinja2@2.10\",\"startTime\":\"2026-09-20T20:02:31.003Z\",\"status\":\"failed\"}}},\"ruleId\":\"Grype/GHSA-g3rq-g295-4j3m\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/jinja2@2.10",
+              "startTime": "2026-10-14T01:18:11.518Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "id": "Grype/GHSA-g3rq-g295-4j3m",
+          "impact": 0.53,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://nvd.nist.gov/vuln/detail/CVE-2020-28493",
+            "kind": "fail",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "sarif-level": "warning",
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "message": "Severity: Medium vulnerability is fixed for versions 2.11.3"
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
+          },
+          "code": "{\n  \"vulnerability\": {\n    \"id\": \"GHSA-g3rq-g295-4j3m\",\n    \"dataSource\": \"https://github.com/advisories/GHSA-g3rq-g295-4j3m\",\n    \"namespace\": \"github:language:python\",\n    \"severity\": \"Medium\",\n    \"urls\": [\n      \"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\n      \"https://github.com/pallets/jinja/pull/1343\",\n      \"https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20\",\n      \"https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994\",\n      \"https://security.gentoo.org/glsa/202107-19\",\n      \"https://github.com/pallets/jinja/commit/15ef8f09b659f9100610583938005a7a10472d4d\",\n      \"https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2021-66.yaml\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4\"\n    ],\n    \"description\": \"Regular Expression Denial of Service (ReDoS) in Jinja2\",\n    \"cvss\": [\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"3.1\",\n        \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n        \"metrics\": {\n          \"baseScore\": 5.3,\n          \"exploitabilityScore\": 3.9,\n          \"impactScore\": 1.5\n        },\n        \"vendorMetadata\": {}\n      },\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"4.0\",\n        \"vector\": \"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N\",\n        \"metrics\": {\n          \"baseScore\": 6.9\n        },\n        \"vendorMetadata\": {}\n      }\n    ],\n    \"epss\": [\n      {\n        \"cve\": \"CVE-2020-28493\",\n        \"epss\": 0.03546,\n        \"percentile\": 0.88768,\n        \"date\": \"2026-09-19\"\n      }\n    ],\n    \"cwes\": [\n      {\n        \"cve\": \"CVE-2020-28493\",\n        \"cwe\": \"CWE-400\",\n        \"source\": \"nvd@nist.gov\",\n        \"type\": \"Primary\"\n      }\n    ],\n    \"fix\": {\n      \"versions\": [\n        \"2.11.3\"\n      ],\n      \"state\": \"fixed\",\n      \"available\": [\n        {\n          \"version\": \"2.11.3\",\n          \"date\": \"2021-03-20\",\n          \"kind\": \"first-observed\"\n        }\n      ]\n    },\n    \"advisories\": [],\n    \"risk\": 1.9680299999999997\n  },\n  \"relatedVulnerabilities\": [\n    {\n      \"id\": \"CVE-2020-28493\",\n      \"dataSource\": \"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\n      \"namespace\": \"nvd:cpe\",\n      \"severity\": \"Medium\",\n      \"urls\": [\n        \"https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20\",\n        \"https://github.com/pallets/jinja/pull/1343\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4/\",\n        \"https://security.gentoo.org/glsa/202107-19\",\n        \"https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994\"\n      ],\n      \"description\": \"This affects the package jinja2 from 0.0.0 and before 2.11.3. The ReDoS vulnerability is mainly due to the `_punctuation_re regex` operator and its use of multiple wildcards. The last wildcard is the most exploitable as it searches for trailing punctuation. This issue can be mitigated by Markdown to format user content instead of the urlize filter, or by implementing request timeouts and limiting process memory.\",\n      \"cvss\": [\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n          \"metrics\": {\n            \"baseScore\": 5.3,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 1.5\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"2.0\",\n          \"vector\": \"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\n          \"metrics\": {\n            \"baseScore\": 5,\n            \"exploitabilityScore\": 10,\n            \"impactScore\": 2.9\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"report@snyk.io\",\n          \"type\": \"Secondary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n          \"metrics\": {\n            \"baseScore\": 5.3,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 1.5\n          },\n          \"vendorMetadata\": {}\n        }\n      ],\n      \"epss\": [\n        {\n          \"cve\": \"CVE-2020-28493\",\n          \"epss\": 0.03546,\n          \"percentile\": 0.88768,\n          \"date\": \"2026-09-19\"\n        }\n      ],\n      \"cwes\": [\n        {\n          \"cve\": \"CVE-2020-28493\",\n          \"cwe\": \"CWE-400\",\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\"\n        }\n      ]\n    }\n  ],\n  \"matchDetails\": [\n    {\n      \"type\": \"exact-direct-match\",\n      \"matcher\": \"python-matcher\",\n      \"searchedBy\": {\n        \"language\": \"python\",\n        \"namespace\": \"github:language:python\",\n        \"package\": {\n          \"name\": \"jinja2\",\n          \"version\": \"2.10\"\n        }\n      },\n      \"found\": {\n        \"vulnerabilityID\": \"GHSA-g3rq-g295-4j3m\",\n        \"versionConstraint\": \"\u003c2.11.3 (python)\"\n      },\n      \"fix\": {\n        \"suggestedVersion\": \"2.11.3\"\n      }\n    }\n  ],\n  \"artifact\": {\n    \"id\": \"d51e03b7f2a59975\",\n    \"name\": \"jinja2\",\n    \"version\": \"2.10\",\n    \"type\": \"python\",\n    \"locations\": [\n      {\n        \"path\": \"/requirements.txt\",\n        \"accessPath\": \"/requirements.txt\",\n        \"annotations\": {\n          \"evidence\": \"primary\"\n        }\n      }\n    ],\n    \"language\": \"python\",\n    \"licenses\": [],\n    \"cpes\": [\n      \"cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:jinja2:2.10:*:*:*:*:*:*:*\"\n    ],\n    \"purl\": \"pkg:pypi/jinja2@2.10\",\n    \"upstreams\": []\n  }\n}",
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-28493"
+            },
+            {
+              "url": "https://github.com/pallets/jinja/pull/1343"
+            },
+            {
+              "url": "https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20"
+            },
+            {
+              "url": "https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994"
+            },
+            {
+              "url": "https://security.gentoo.org/glsa/202107-19"
+            },
+            {
+              "url": "https://github.com/pallets/jinja/commit/15ef8f09b659f9100610583938005a7a10472d4d"
+            },
+            {
+              "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2021-66.yaml"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4"
+            },
+            {
+              "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4/"
+            }
+          ],
+          "title": "Grype found a vulnerability to GHSA-g3rq-g295-4j3m in .",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "d80403afa616efaea7375fabaed83f86cb8d0b3f9a2560cd11fe33336aabf8a6"
+      },
+      "name": "Grype",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "on": "log",
+            "properties": {
+              "hdf": {
+                "components": [
+                  {
+                    "name": ".",
+                    "type": "artifact"
+                  }
+                ],
+                "timestamp": "2026-09-20T20:02:31.003Z"
+              }
+            }
+          },
+          {
+            "baseline": "Grype",
+            "on": "run",
+            "properties": {
+              "hdf": {
+                "generator": {
+                  "name": "grype-to-hdf",
+                  "version": "dev"
+                },
+                "name": ".",
+                "resultsChecksum": {
+                  "algorithm": "sha256",
+                  "value": "53b2afbbec7f8bec2a90765c5694f74d8ab0bc2d1fea4a5609fbd1396329630f"
+                }
+              }
+            }
+          },
+          {
+            "baseline": "Grype",
+            "on": "rule",
+            "properties": {
+              "hdf": {
+                "affected_packages": [
+                  {
+                    "cpe": "cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*",
+                    "ecosystem": "pypi",
+                    "fixedInVersion": "2.10.1",
+                    "name": "jinja2",
+                    "purl": "pkg:pypi/jinja2@2.10",
+                    "version": "2.10"
+                  }
+                ],
+                "baseline": ".",
+                "cci": [
+                  "CCI-001643",
+                  "CCI-003173"
+                ],
+                "code": "{\n  \"vulnerability\": {\n    \"id\": \"GHSA-462w-v97r-4m45\",\n    \"dataSource\": \"https://github.com/advisories/GHSA-462w-v97r-4m45\",\n    \"namespace\": \"github:language:python\",\n    \"severity\": \"High\",\n    \"urls\": [\n      \"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\n      \"https://access.redhat.com/errata/RHSA-2019:1152\",\n      \"https://access.redhat.com/errata/RHSA-2019:1237\",\n      \"https://access.redhat.com/errata/RHSA-2019:1329\",\n      \"https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284@%3Cdevnull.infra.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da@%3Ccommits.airflow.apache.org%3E\",\n      \"https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316@%3Ccommits.airflow.apache.org%3E\",\n      \"https://palletsprojects.com/blog/jinja-2-10-1-released\",\n      \"http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html\",\n      \"http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html\",\n      \"https://usn.ubuntu.com/4011-2\",\n      \"https://usn.ubuntu.com/4011-1\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF\",\n      \"https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2019-217.yaml\"\n    ],\n    \"description\": \"Jinja2 sandbox escape via string formatting\",\n    \"cvss\": [\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"3.0\",\n        \"vector\": \"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\n        \"metrics\": {\n          \"baseScore\": 8.6,\n          \"exploitabilityScore\": 3.9,\n          \"impactScore\": 4\n        },\n        \"vendorMetadata\": {}\n      },\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"4.0\",\n        \"vector\": \"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N\",\n        \"metrics\": {\n          \"baseScore\": 7.7\n        },\n        \"vendorMetadata\": {}\n      }\n    ],\n    \"epss\": [\n      {\n        \"cve\": \"CVE-2019-10906\",\n        \"epss\": 0.03633,\n        \"percentile\": 0.89018,\n        \"date\": \"2026-09-19\"\n      }\n    ],\n    \"fix\": {\n      \"versions\": [\n        \"2.10.1\"\n      ],\n      \"state\": \"fixed\",\n      \"available\": [\n        {\n          \"version\": \"2.10.1\",\n          \"date\": \"2020-07-28\",\n          \"kind\": \"first-observed\"\n        }\n      ]\n    },\n    \"advisories\": [],\n    \"risk\": 2.8428225\n  },\n  \"relatedVulnerabilities\": [\n    {\n      \"id\": \"CVE-2019-10906\",\n      \"dataSource\": \"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\n      \"namespace\": \"nvd:cpe\",\n      \"severity\": \"High\",\n      \"urls\": [\n        \"http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html\",\n        \"http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html\",\n        \"https://access.redhat.com/errata/RHSA-2019:1152\",\n        \"https://access.redhat.com/errata/RHSA-2019:1237\",\n        \"https://access.redhat.com/errata/RHSA-2019:1329\",\n        \"https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284%40%3Cdevnull.infra.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316%40%3Ccommits.airflow.apache.org%3E\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF/\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU/\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ/\",\n        \"https://palletsprojects.com/blog/jinja-2-10-1-released\",\n        \"https://usn.ubuntu.com/4011-1/\",\n        \"https://usn.ubuntu.com/4011-2/\"\n      ],\n      \"description\": \"In Pallets Jinja before 2.10.1, str.format_map allows a sandbox escape.\",\n      \"cvss\": [\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\n          \"metrics\": {\n            \"baseScore\": 8.6,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 4\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"2.0\",\n          \"vector\": \"AV:N/AC:L/Au:N/C:P/I:N/A:N\",\n          \"metrics\": {\n            \"baseScore\": 5,\n            \"exploitabilityScore\": 10,\n            \"impactScore\": 2.9\n          },\n          \"vendorMetadata\": {}\n        }\n      ],\n      \"epss\": [\n        {\n          \"cve\": \"CVE-2019-10906\",\n          \"epss\": 0.03633,\n          \"percentile\": 0.89018,\n          \"date\": \"2026-09-19\"\n        }\n      ]\n    }\n  ],\n  \"matchDetails\": [\n    {\n      \"type\": \"exact-direct-match\",\n      \"matcher\": \"python-matcher\",\n      \"searchedBy\": {\n        \"language\": \"python\",\n        \"namespace\": \"github:language:python\",\n        \"package\": {\n          \"name\": \"jinja2\",\n          \"version\": \"2.10\"\n        }\n      },\n      \"found\": {\n        \"vulnerabilityID\": \"GHSA-462w-v97r-4m45\",\n        \"versionConstraint\": \"\u003c2.10.1 (python)\"\n      },\n      \"fix\": {\n        \"suggestedVersion\": \"2.10.1\"\n      }\n    }\n  ],\n  \"artifact\": {\n    \"id\": \"d51e03b7f2a59975\",\n    \"name\": \"jinja2\",\n    \"version\": \"2.10\",\n    \"type\": \"python\",\n    \"locations\": [\n      {\n        \"path\": \"/requirements.txt\",\n        \"accessPath\": \"/requirements.txt\",\n        \"annotations\": {\n          \"evidence\": \"primary\"\n        }\n      }\n    ],\n    \"language\": \"python\",\n    \"licenses\": [],\n    \"cpes\": [\n      \"cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:jinja2:2.10:*:*:*:*:*:*:*\"\n    ],\n    \"purl\": \"pkg:pypi/jinja2@2.10\",\n    \"upstreams\": []\n  }\n}",
+                "control_id": "Grype/GHSA-462w-v97r-4m45",
+                "cvss": [
+                  {
+                    "baseScore": 8.6,
+                    "baseSeverity": "high",
+                    "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N",
+                    "source": "GHSA-462w-v97r-4m45",
+                    "version": "3.0"
+                  },
+                  {
+                    "baseScore": 7.7,
+                    "baseSeverity": "high",
+                    "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N",
+                    "source": "GHSA-462w-v97r-4m45",
+                    "version": "4.0"
+                  }
+                ],
+                "descriptions": [
+                  {
+                    "data": "Jinja2 sandbox escape via string formatting",
+                    "label": "default"
+                  },
+                  {
+                    "data": "vulnerability is fixed for versions 2.10.1",
+                    "label": "fix"
+                  },
+                  {
+                    "data": "{\"primary\":[{\"type\":\"Secondary\",\"version\":\"3.0\",\"vector\":\"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\"metrics\":{\"baseScore\":8.6,\"exploitabilityScore\":3.9,\"impactScore\":4},\"vendorMetadata\":{}},{\"type\":\"Secondary\",\"version\":\"4.0\",\"vector\":\"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N\",\"metrics\":{\"baseScore\":7.7},\"vendorMetadata\":{}}],\"related\":[{\"id\":\"CVE-2019-10906\",\"dataSource\":\"https://nvd.nist.gov/vuln/detail/CVE-2019-10906\",\"cvss\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N\",\"metrics\":{\"baseScore\":8.6,\"exploitabilityScore\":3.9,\"impactScore\":4},\"vendorMetadata\":{}},{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"2.0\",\"vector\":\"AV:N/AC:L/Au:N/C:P/I:N/A:N\",\"metrics\":{\"baseScore\":5,\"exploitabilityScore\":10,\"impactScore\":2.9},\"vendorMetadata\":{}}]}]}",
+                    "label": "check"
+                  }
+                ],
+                "effective_checksum": {
+                  "algorithm": "sha256",
+                  "value": "bbd9899513a584d10923f88c90dd5d1c5a1cc740d815ef11a0aedb57cb2c4565"
+                },
+                "epss": {
+                  "date": "2026-09-19",
+                  "percentile": 0.89018,
+                  "score": 0.03633
+                },
+                "exporter_version": "dev",
+                "generator": {
+                  "name": "grype-to-hdf",
+                  "version": "dev"
+                },
+                "impact": 0.7,
+                "nist": [
+                  "SA-11",
+                  "RA-5"
+                ],
+                "overridden": false,
+                "refs": [
+                  {
+                    "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10906"
+                  },
+                  {
+                    "url": "https://access.redhat.com/errata/RHSA-2019:1152"
+                  },
+                  {
+                    "url": "https://access.redhat.com/errata/RHSA-2019:1237"
+                  },
+                  {
+                    "url": "https://access.redhat.com/errata/RHSA-2019:1329"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f@%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac@%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df@%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284@%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02@%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993@%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da@%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316@%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://palletsprojects.com/blog/jinja-2-10-1-released"
+                  },
+                  {
+                    "url": "http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00030.html"
+                  },
+                  {
+                    "url": "http://lists.opensuse.org/opensuse-security-announce/2019-06/msg00064.html"
+                  },
+                  {
+                    "url": "https://usn.ubuntu.com/4011-2"
+                  },
+                  {
+                    "url": "https://usn.ubuntu.com/4011-1"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF"
+                  },
+                  {
+                    "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2019-217.yaml"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/09fc842ff444cd43d9d4c510756fec625ef8eb1175f14fd21de2605f%40%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/2b52b9c8b9d6366a4f1b407a8bde6af28d9fc73fdb3b37695fd0d9ac%40%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/320441dccbd9a545320f5f07306d711d4bbd31ba43dc9eebcfc602df%40%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/46c055e173b52d599c648a98199972dbd6a89d2b4c4647b0500f2284%40%3Cdevnull.infra.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/57673a78c4d5c870d3f21465c7e2946b9f8285c7c57e54c2ae552f02%40%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/7f39f01392d320dfb48e4901db68daeece62fd60ef20955966739993%40%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/b2380d147b508bbcb90d2cad443c159e63e12555966ab4f320ee22da%40%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.apache.org/thread.html/f0c4a03418bcfe70c539c5dbaf99c04c98da13bfa1d3266f08564316%40%3Ccommits.airflow.apache.org%3E"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DSW3QZMFVVR7YE3UT4YRQA272TYAL5AF/"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QCDYIS254EJMBNWOG4S5QY6AOTOR4TZU/"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/TS7IVZAJBWOHNRDMFJDIZVFCMRP6YIUQ/"
+                  },
+                  {
+                    "url": "https://usn.ubuntu.com/4011-1/"
+                  },
+                  {
+                    "url": "https://usn.ubuntu.com/4011-2/"
+                  }
+                ],
+                "status": "failed",
+                "suppressed": false,
+                "tags": {
+                  "cci": [
+                    "CCI-001643",
+                    "CCI-003173"
+                  ],
+                  "nist": [
+                    "SA-11",
+                    "RA-5"
+                  ]
+                },
+                "tool": {
+                  "name": "Grype",
+                  "version": "0.117.0"
+                },
+                "verification_method": "automated"
+              },
+              "security-severity": "8.6",
+              "tags": [
+                "cci/CCI-001643",
+                "cci/CCI-003173",
+                "nist/RA-5",
+                "nist/SA-11"
+              ]
+            },
+            "ruleId": "Grype/GHSA-462w-v97r-4m45"
+          },
+          {
+            "baseline": "Grype",
+            "on": "result",
+            "ordinal": 0,
+            "properties": {
+              "hdf": {
+                "result": {
+                  "codeDesc": "Package: jinja2@2.10 | Type: python | Location: /requirements.txt | Match Type: exact-direct-match",
+                  "message": "Severity: High vulnerability is fixed for versions 2.10.1",
+                  "resource": "package",
+                  "resourceId": "pkg:pypi/jinja2@2.10",
+                  "startTime": "2026-09-20T20:02:31.003Z",
+                  "status": "failed"
+                }
+              }
+            },
+            "ruleId": "Grype/GHSA-462w-v97r-4m45"
+          },
+          {
+            "baseline": "Grype",
+            "on": "rule",
+            "properties": {
+              "hdf": {
+                "affected_packages": [
+                  {
+                    "cpe": "cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*",
+                    "ecosystem": "pypi",
+                    "fixedInVersion": "2.11.3",
+                    "name": "jinja2",
+                    "purl": "pkg:pypi/jinja2@2.10",
+                    "version": "2.10"
+                  }
+                ],
+                "baseline": ".",
+                "cci": [
+                  "CCI-001643",
+                  "CCI-003173"
+                ],
+                "code": "{\n  \"vulnerability\": {\n    \"id\": \"GHSA-g3rq-g295-4j3m\",\n    \"dataSource\": \"https://github.com/advisories/GHSA-g3rq-g295-4j3m\",\n    \"namespace\": \"github:language:python\",\n    \"severity\": \"Medium\",\n    \"urls\": [\n      \"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\n      \"https://github.com/pallets/jinja/pull/1343\",\n      \"https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20\",\n      \"https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994\",\n      \"https://security.gentoo.org/glsa/202107-19\",\n      \"https://github.com/pallets/jinja/commit/15ef8f09b659f9100610583938005a7a10472d4d\",\n      \"https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2021-66.yaml\",\n      \"https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4\"\n    ],\n    \"description\": \"Regular Expression Denial of Service (ReDoS) in Jinja2\",\n    \"cvss\": [\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"3.1\",\n        \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n        \"metrics\": {\n          \"baseScore\": 5.3,\n          \"exploitabilityScore\": 3.9,\n          \"impactScore\": 1.5\n        },\n        \"vendorMetadata\": {}\n      },\n      {\n        \"type\": \"Secondary\",\n        \"version\": \"4.0\",\n        \"vector\": \"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N\",\n        \"metrics\": {\n          \"baseScore\": 6.9\n        },\n        \"vendorMetadata\": {}\n      }\n    ],\n    \"epss\": [\n      {\n        \"cve\": \"CVE-2020-28493\",\n        \"epss\": 0.03546,\n        \"percentile\": 0.88768,\n        \"date\": \"2026-09-19\"\n      }\n    ],\n    \"cwes\": [\n      {\n        \"cve\": \"CVE-2020-28493\",\n        \"cwe\": \"CWE-400\",\n        \"source\": \"nvd@nist.gov\",\n        \"type\": \"Primary\"\n      }\n    ],\n    \"fix\": {\n      \"versions\": [\n        \"2.11.3\"\n      ],\n      \"state\": \"fixed\",\n      \"available\": [\n        {\n          \"version\": \"2.11.3\",\n          \"date\": \"2021-03-20\",\n          \"kind\": \"first-observed\"\n        }\n      ]\n    },\n    \"advisories\": [],\n    \"risk\": 1.9680299999999997\n  },\n  \"relatedVulnerabilities\": [\n    {\n      \"id\": \"CVE-2020-28493\",\n      \"dataSource\": \"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\n      \"namespace\": \"nvd:cpe\",\n      \"severity\": \"Medium\",\n      \"urls\": [\n        \"https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20\",\n        \"https://github.com/pallets/jinja/pull/1343\",\n        \"https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4/\",\n        \"https://security.gentoo.org/glsa/202107-19\",\n        \"https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994\"\n      ],\n      \"description\": \"This affects the package jinja2 from 0.0.0 and before 2.11.3. The ReDoS vulnerability is mainly due to the `_punctuation_re regex` operator and its use of multiple wildcards. The last wildcard is the most exploitable as it searches for trailing punctuation. This issue can be mitigated by Markdown to format user content instead of the urlize filter, or by implementing request timeouts and limiting process memory.\",\n      \"cvss\": [\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n          \"metrics\": {\n            \"baseScore\": 5.3,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 1.5\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\",\n          \"version\": \"2.0\",\n          \"vector\": \"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\n          \"metrics\": {\n            \"baseScore\": 5,\n            \"exploitabilityScore\": 10,\n            \"impactScore\": 2.9\n          },\n          \"vendorMetadata\": {}\n        },\n        {\n          \"source\": \"report@snyk.io\",\n          \"type\": \"Secondary\",\n          \"version\": \"3.1\",\n          \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\n          \"metrics\": {\n            \"baseScore\": 5.3,\n            \"exploitabilityScore\": 3.9,\n            \"impactScore\": 1.5\n          },\n          \"vendorMetadata\": {}\n        }\n      ],\n      \"epss\": [\n        {\n          \"cve\": \"CVE-2020-28493\",\n          \"epss\": 0.03546,\n          \"percentile\": 0.88768,\n          \"date\": \"2026-09-19\"\n        }\n      ],\n      \"cwes\": [\n        {\n          \"cve\": \"CVE-2020-28493\",\n          \"cwe\": \"CWE-400\",\n          \"source\": \"nvd@nist.gov\",\n          \"type\": \"Primary\"\n        }\n      ]\n    }\n  ],\n  \"matchDetails\": [\n    {\n      \"type\": \"exact-direct-match\",\n      \"matcher\": \"python-matcher\",\n      \"searchedBy\": {\n        \"language\": \"python\",\n        \"namespace\": \"github:language:python\",\n        \"package\": {\n          \"name\": \"jinja2\",\n          \"version\": \"2.10\"\n        }\n      },\n      \"found\": {\n        \"vulnerabilityID\": \"GHSA-g3rq-g295-4j3m\",\n        \"versionConstraint\": \"\u003c2.11.3 (python)\"\n      },\n      \"fix\": {\n        \"suggestedVersion\": \"2.11.3\"\n      }\n    }\n  ],\n  \"artifact\": {\n    \"id\": \"d51e03b7f2a59975\",\n    \"name\": \"jinja2\",\n    \"version\": \"2.10\",\n    \"type\": \"python\",\n    \"locations\": [\n      {\n        \"path\": \"/requirements.txt\",\n        \"accessPath\": \"/requirements.txt\",\n        \"annotations\": {\n          \"evidence\": \"primary\"\n        }\n      }\n    ],\n    \"language\": \"python\",\n    \"licenses\": [],\n    \"cpes\": [\n      \"cpe:2.3:a:python-jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python-jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python-jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:python_jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python_jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:jinja2:jinja2:2.10:*:*:*:*:*:*:*\",\n      \"cpe:2.3:a:python:jinja2:2.10:*:*:*:*:*:*:*\"\n    ],\n    \"purl\": \"pkg:pypi/jinja2@2.10\",\n    \"upstreams\": []\n  }\n}",
+                "control_id": "Grype/GHSA-g3rq-g295-4j3m",
+                "cvss": [
+                  {
+                    "baseScore": 5.3,
+                    "baseSeverity": "medium",
+                    "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+                    "source": "GHSA-g3rq-g295-4j3m",
+                    "version": "3.1"
+                  },
+                  {
+                    "baseScore": 6.9,
+                    "baseSeverity": "medium",
+                    "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+                    "source": "GHSA-g3rq-g295-4j3m",
+                    "version": "4.0"
+                  }
+                ],
+                "descriptions": [
+                  {
+                    "data": "Regular Expression Denial of Service (ReDoS) in Jinja2",
+                    "label": "default"
+                  },
+                  {
+                    "data": "vulnerability is fixed for versions 2.11.3",
+                    "label": "fix"
+                  },
+                  {
+                    "data": "{\"primary\":[{\"type\":\"Secondary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}},{\"type\":\"Secondary\",\"version\":\"4.0\",\"vector\":\"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N\",\"metrics\":{\"baseScore\":6.9},\"vendorMetadata\":{}}],\"related\":[{\"id\":\"CVE-2020-28493\",\"dataSource\":\"https://nvd.nist.gov/vuln/detail/CVE-2020-28493\",\"cvss\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}},{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"2.0\",\"vector\":\"AV:N/AC:L/Au:N/C:N/I:N/A:P\",\"metrics\":{\"baseScore\":5,\"exploitabilityScore\":10,\"impactScore\":2.9},\"vendorMetadata\":{}},{\"source\":\"report@snyk.io\",\"type\":\"Secondary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L\",\"metrics\":{\"baseScore\":5.3,\"exploitabilityScore\":3.9,\"impactScore\":1.5},\"vendorMetadata\":{}}]}]}",
+                    "label": "check"
+                  }
+                ],
+                "effective_checksum": {
+                  "algorithm": "sha256",
+                  "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+                },
+                "epss": {
+                  "date": "2026-09-19",
+                  "percentile": 0.88768,
+                  "score": 0.03546
+                },
+                "exporter_version": "dev",
+                "generator": {
+                  "name": "grype-to-hdf",
+                  "version": "dev"
+                },
+                "impact": 0.5,
+                "nist": [
+                  "SA-11",
+                  "RA-5"
+                ],
+                "overridden": false,
+                "refs": [
+                  {
+                    "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-28493"
+                  },
+                  {
+                    "url": "https://github.com/pallets/jinja/pull/1343"
+                  },
+                  {
+                    "url": "https://github.com/pallets/jinja/blob/ab81fd9c277900c85da0c322a2ff9d68a235b2e6/src/jinja2/utils.py%23L20"
+                  },
+                  {
+                    "url": "https://snyk.io/vuln/SNYK-PYTHON-JINJA2-1012994"
+                  },
+                  {
+                    "url": "https://security.gentoo.org/glsa/202107-19"
+                  },
+                  {
+                    "url": "https://github.com/pallets/jinja/commit/15ef8f09b659f9100610583938005a7a10472d4d"
+                  },
+                  {
+                    "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2021-66.yaml"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4"
+                  },
+                  {
+                    "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PVAKCOO7VBVUBM3Q6CBBTPBFNP5NDXF4/"
+                  }
+                ],
+                "status": "failed",
+                "suppressed": false,
+                "tags": {
+                  "cci": [
+                    "CCI-001643",
+                    "CCI-003173"
+                  ],
+                  "nist": [
+                    "SA-11",
+                    "RA-5"
+                  ]
+                },
+                "tool": {
+                  "name": "Grype",
+                  "version": "0.117.0"
+                },
+                "verification_method": "automated"
+              },
+              "security-severity": "5.3",
+              "tags": [
+                "cci/CCI-001643",
+                "cci/CCI-003173",
+                "nist/RA-5",
+                "nist/SA-11"
+              ]
+            },
+            "ruleId": "Grype/GHSA-g3rq-g295-4j3m"
+          },
+          {
+            "baseline": "Grype",
+            "on": "result",
+            "ordinal": 0,
+            "properties": {
+              "hdf": {
+                "result": {
+                  "codeDesc": "Package: jinja2@2.10 | Type: python | Location: /requirements.txt | Match Type: exact-direct-match",
+                  "message": "Severity: Medium vulnerability is fixed for versions 2.11.3",
+                  "resource": "package",
+                  "resourceId": "pkg:pypi/jinja2@2.10",
+                  "startTime": "2026-09-20T20:02:31.003Z",
+                  "status": "failed"
+                }
+              }
+            },
+            "ruleId": "Grype/GHSA-g3rq-g295-4j3m"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-14T01:18:11.518Z",
+  "tool": {
+    "format": "SARIF",
+    "name": "Grype",
+    "version": "0.117.0"
+  }
+}

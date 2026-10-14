@@ -18,7 +18,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -29,7 +29,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -64,14 +64,38 @@
                   "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 10,
+                    "snippet": {
+                      "text": " gets(f);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 36
+                  }
+                },
+                "message": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "6a5bb383fb44030b0d9428b17359e94ba3979bc1ce702be450427f85592c649a"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 10,
+                    "snippet": {
+                      "text": " gets(f);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 32
+                  }
+                },
+                "message": "buffer/gets: Does not check for buffer overflows (CWE-120, CWE-20)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -98,7 +122,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -109,7 +133,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/8"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -120,7 +144,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/64"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -131,7 +155,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/73"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -165,28 +189,76 @@
                   "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 76,
+                    "snippet": {
+                      "text": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 60
+                  }
+                },
+                "message": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "cbd19c308547e79af13436d8f7dbcf6c62e49e4f62ba9aee38fbef29e0772f74"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 76,
+                    "snippet": {
+                      "text": "  strncat(d,s,sizeof(d)); /* Misuse - this should be flagged as riskier. */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 60
+                  }
+                },
+                "message": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": "  strncat(d,s,10);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 59
+                  }
+                },
+                "message": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "dd92f996a554bfbc038bea27640ba25dcf298383140a8330dca7cdacf493a701"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": "  strncat(d,s,10);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 59
+                  }
+                },
+                "message": "buffer/strncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -213,7 +285,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -224,7 +296,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/9"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -258,14 +330,38 @@
                   "contextHash/v1": "c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 58,
+                    "snippet": {
+                      "text": "  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 61
+                  }
+                },
+                "message": "buffer/_tcsncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "c3f6ba2c710efc878e66df4578894fd408452cb7cdec7ae6f492a3b1796f8c42"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 58,
+                    "snippet": {
+                      "text": "  _tcsncat(d,s,sizeof(d)); /* Misuse - flag as riskier */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 61
+                  }
+                },
+                "message": "buffer/_tcsncat: Easily used incorrectly (e.g., incorrectly computing the correct maximum size to add) [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -292,7 +388,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -303,7 +399,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -314,7 +410,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/10"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -325,7 +421,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/11"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -336,7 +432,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/66"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -347,7 +443,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/67"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -358,7 +454,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/75"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -369,7 +465,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/76"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -403,56 +499,152 @@
                   "contextHash/v1": "4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 75,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 64
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 74,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 66
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "4f5b73ff337a54d6e1d9a369659ca0ddb4f80e6b7e38a17e5b112f6d3e266e69"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 75,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 64
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "9ecdc1e903acc16a646bf7909a630ae22a7593b70952c39ce6bd9c5a23fad0fd"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 74,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 66
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 98,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 68
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 98,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 70
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "1813fc329227b38abae867d8023a9e29c7517d679fe55c86f8300dde681b6470"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 98,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof(wszUserName)/sizeof(wszUserName[0]));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 68
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "7c6cdcb10ad3a16b8bfd56e3dac84829f9bc3e39d4dde74a2be9bbe000102fc5"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 98,
+                    "snippet": {
+                      "text": "  MultiByteToWideChar(CP_ACP,0,szName,-1,wszUserName,sizeof wszUserName /sizeof(wszUserName[0]));"
+                    },
+                    "startColumn": 3,
+                    "startLine": 70
+                  }
+                },
+                "message": "buffer/MultiByteToWideChar: Requires maximum length in CHARACTERS, not bytes (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -479,7 +671,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -490,7 +682,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -501,7 +693,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/12"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -512,7 +704,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/13"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -546,28 +738,76 @@
                   "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 50,
+                    "snippet": {
+                      "text": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 77
+                  }
+                },
+                "message": "misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 50,
+                    "snippet": {
+                      "text": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 77
+                  }
+                },
+                "message": "misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 50,
+                    "snippet": {
+                      "text": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 77
+                  }
+                },
+                "message": "misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "5fed1e135b593b4c943e66e89a26ff131eba18b83a32a8af37d1c0bd7b01aadb"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 50,
+                    "snippet": {
+                      "text": "  SetSecurityDescriptorDacl(\u0026sd,TRUE,NULL,FALSE);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 77
+                  }
+                },
+                "message": "misc/SetSecurityDescriptorDacl: Never create NULL ACLs; an attacker can set it to Everyone (Deny All Access), which would even forbid administrator access (CWE-732)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -594,7 +834,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/14"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -605,7 +845,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/15"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -616,7 +856,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/25"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -627,7 +867,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/43"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -638,7 +878,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/50"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -649,7 +889,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/59"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -660,7 +900,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/68"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -694,49 +934,133 @@
                   "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 15,
+                    "snippet": {
+                      "text": " strcpy(b, a);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 13
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 15,
+                    "snippet": {
+                      "text": " strcpy(b, a);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 21
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "c01c8472bb53022e912da4da2faebc67d537855da324020c44bfd5e608a79b77"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 15,
+                    "snippet": {
+                      "text": " strcpy(b, a);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 17
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 54,
+                    "snippet": {
+                      "text": " strcpy(a, gettext(\"Hello there\")); // Did this work?"
+                    },
+                    "startColumn": 2,
+                    "startLine": 20
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "d64070fb93ff0bb797fb926f4dddc7212d42f77e288d5ceb0cd30ed2979fa28d"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 54,
+                    "snippet": {
+                      "text": " strcpy(a, gettext(\"Hello there\")); // Did this work?"
+                    },
+                    "startColumn": 2,
+                    "startLine": 16
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 36,
+                    "snippet": {
+                      "text": " strcpy(a, \"\\n\"); // Did this work?"
+                    },
+                    "startColumn": 2,
+                    "startLine": 19
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "0badc5f4c500d17b42794feaca54ee0f49e607a32510af3ed749579001017edb"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 36,
+                    "snippet": {
+                      "text": " strcpy(a, \"\\n\"); // Did this work?"
+                    },
+                    "startColumn": 2,
+                    "startLine": 15
+                  }
+                },
+                "message": "buffer/strcpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -763,7 +1087,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/16"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -774,7 +1098,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/17"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -785,7 +1109,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/18"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -796,7 +1120,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/26"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -807,7 +1131,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/27"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -818,7 +1142,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/28"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -829,7 +1153,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/44"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -840,7 +1164,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/51"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -851,7 +1175,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/60"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -862,7 +1186,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/69"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -896,70 +1220,190 @@
                   "contextHash/v1": "814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 30,
+                    "snippet": {
+                      "text": " sprintf(s, \"hello %s\", bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 24
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 39,
+                    "snippet": {
+                      "text": " sprintf(s, gettext(\"hello %s\"), bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 25
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 27,
+                    "snippet": {
+                      "text": " sprintf(s, unknown, bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 26
+                  }
+                },
+                "message": "format/sprintf: Potential format string problem (CWE-134)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "814237858ab012010f3355a49480dd6fa0a2cb8cf8356a98ac1c17c9febf6521"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 30,
+                    "snippet": {
+                      "text": " sprintf(s, \"hello %s\", bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 20
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "b793f18f143fb2297c49e0639384ad73db86eb01a44377aa4d5d09b44b03d747"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 39,
+                    "snippet": {
+                      "text": " sprintf(s, gettext(\"hello %s\"), bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 21
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "16ebc2ff96ee4bab2695783709e97b597ca9c8b8cc149e33aed859f0fafd3431"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 27,
+                    "snippet": {
+                      "text": " sprintf(s, unknown, bug);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 22
+                  }
+                },
+                "message": "format/sprintf: Potential format string problem (CWE-134)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 22,
+                    "snippet": {
+                      "text": " sprintf(s, \"hello\");"
+                    },
+                    "startColumn": 2,
+                    "startLine": 23
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "907b46be1c3ea7b38f90a4d1b0f43b7751cd8cbe38fae840930ff006b702157d"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 22,
+                    "snippet": {
+                      "text": " sprintf(s, \"hello\");"
+                    },
+                    "startColumn": 2,
+                    "startLine": 19
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": " sprintf(s, \"\\n\");"
+                    },
+                    "startColumn": 2,
+                    "startLine": 22
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "c65fbd60851f3c8ace22332805966606488c0d242c1823493c582e267609b1a7"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": " sprintf(s, \"\\n\");"
+                    },
+                    "startColumn": 2,
+                    "startLine": 18
+                  }
+                },
+                "message": "buffer/sprintf: Does not check for buffer overflows (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -986,7 +1430,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/19"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -997,7 +1441,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/29"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1031,14 +1475,38 @@
                   "contextHash/v1": "46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": " printf(bf, x);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 27
+                  }
+                },
+                "message": "format/printf: If format strings can be influenced by an attacker, they can be exploited (CWE-134)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "46f42896019245d2dffc4caf4fe018b073ce2a58203676eaa28b6374558a5b5d"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": " printf(bf, x);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 23
+                  }
+                },
+                "message": "format/printf: If format strings can be influenced by an attacker, they can be exploited (CWE-134)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1065,7 +1533,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/20"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1076,7 +1544,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/21"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1087,7 +1555,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/30"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1098,7 +1566,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/31"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1109,7 +1577,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/61"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1120,7 +1588,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/70"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1155,42 +1623,114 @@
                   "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": " scanf(\"%s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 29
+                  }
+                },
+                "message": "buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": " scanf(\"%s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 31
+                  }
+                },
+                "message": "buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": " scanf(\"%s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 25
+                  }
+                },
+                "message": "buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3f169dd9fe508f70438f818770a3cb8b0f228e4245ea11a929a5fb0a7839fd5f"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": " scanf(\"%s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 27
+                  }
+                },
+                "message": "buffer/scanf: The scanf() family's %s operation, without a limit specification, permits buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": " scanf(\"%10s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 30
+                  }
+                },
+                "message": "buffer/scanf: It's unclear if the %s limit in the format string is small enough (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "e24c4c801f10acfa93098b2bef58524efe4f88237f2dd8b58be9afa838616afe"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": " scanf(\"%10s\", s);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 26
+                  }
+                },
+                "message": "buffer/scanf: It's unclear if the %s limit in the format string is small enough (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1217,7 +1757,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/22"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1228,7 +1768,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/32"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1262,14 +1802,38 @@
                   "contextHash/v1": "22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 35,
+                    "snippet": {
+                      "text": " syslog(LOG_ERR, attacker_string);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 42
+                  }
+                },
+                "message": "format/syslog: If syslog's format strings can be influenced by an attacker, they can be exploited (CWE-134)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "22e98963d5af7b197a090bd522d2d39b8d8ee7bdf08453fd2008939c92cd9677"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 35,
+                    "snippet": {
+                      "text": " syslog(LOG_ERR, attacker_string);"
+                    },
+                    "startColumn": 2,
+                    "startLine": 38
+                  }
+                },
+                "message": "format/syslog: If syslog's format strings can be influenced by an attacker, they can be exploited (CWE-134)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1296,7 +1860,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/23"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1307,7 +1871,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/33"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1341,14 +1905,38 @@
                   "contextHash/v1": "e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 74,
+                    "snippet": {
+                      "text": "  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 53
+                  }
+                },
+                "message": "buffer/_mbscpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "e00a4a1a0a3603db98a23fcff3c9cdfd9012f5a81826814d9508e0f22089b993"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 74,
+                    "snippet": {
+                      "text": "  _mbscpy(d,s); /* like strcpy, this doesn't check for buffer overflow */"
+                    },
+                    "startColumn": 3,
+                    "startLine": 49
+                  }
+                },
+                "message": "buffer/_mbscpy: Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1375,7 +1963,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/24"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1386,7 +1974,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/34"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1420,14 +2008,38 @@
                   "contextHash/v1": "364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": "  lstrcat(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 56
+                  }
+                },
+                "message": "buffer/lstrcat: Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "364b4c512862fdccbca27d2fa7737995b5d24b637a760976c940ae636218d340"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": "  lstrcat(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 56
+                  }
+                },
+                "message": "buffer/lstrcat: Does not check for buffer overflows when concatenating to destination [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1454,7 +2066,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/35"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1465,7 +2077,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/36"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1476,7 +2088,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/38"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1487,7 +2099,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/39"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1520,25 +2132,73 @@
                 "fingerprints": {
                   "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 73,
+                    "snippet": {
+                      "text": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");"
+                    },
+                    "startColumn": 3,
+                    "startLine": 79
+                  }
+                },
+                "message": "shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 73,
+                    "snippet": {
+                      "text": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");"
+                    },
+                    "startColumn": 3,
+                    "startLine": 79
+                  }
+                },
+                "message": "shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 73,
+                    "snippet": {
+                      "text": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");"
+                    },
+                    "startColumn": 3,
+                    "startLine": 79
+                  }
+                },
+                "message": "shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "3c712b38d0857bde3832d85ad35ac9859be55c5f5f1c20af659a577dd4d0acbf"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 73,
+                    "snippet": {
+                      "text": "  CreateProcess(NULL, \"C:\\\\Program Files\\\\GoodGuy\\\\GoodGuy.exe -x\", \"\");"
+                    },
+                    "startColumn": 3,
+                    "startLine": 79
+                  }
+                },
+                "message": "shell/CreateProcess: This causes a new process to execute and is difficult to use safely (CWE-78)."
               }
             ],
             "sarif-severity-source": "fallback",
@@ -1565,7 +2225,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/37"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1576,7 +2236,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/41"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1610,13 +2270,37 @@
                 "fingerprints": {
                   "contextHash/v1": "5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 76,
+                    "snippet": {
+                      "text": "    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {"
+                    },
+                    "startColumn": 20,
+                    "startLine": 95
+                  }
+                },
+                "message": "buffer/getopt_long: Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "5bedf6e5bccf596008ef191ec4c5d4cc51a32cff0c05ef62d5f10fab93d0cc24"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 76,
+                    "snippet": {
+                      "text": "    while ((optc = getopt_long (argc, argv, \"a\",longopts, NULL )) != EOF) {"
+                    },
+                    "startColumn": 20,
+                    "startLine": 99
+                  }
+                },
+                "message": "buffer/getopt_long: Some older implementations do not protect against internal buffer overflows (CWE-120, CWE-20)."
               }
             ],
             "sarif-severity-source": "fallback",
@@ -1643,7 +2327,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/40"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1677,7 +2361,19 @@
                 "fingerprints": {
                   "contextHash/v1": "b1f99ecaa31e682487d795afbf03282fd56ad9f2aa630d0196219b277d2a68c9"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 74,
+                    "snippet": {
+                      "text": "  (void) LoadLibraryEx(L\"user32.dll\", nullptr, LOAD_LIBRARY_AS_DATAFILE);"
+                    },
+                    "startColumn": 10,
+                    "startLine": 81
+                  }
+                },
+                "message": "misc/LoadLibraryEx: Ensure that the full path to the library is specified, or current directory may be used (CWE-829, CWE-20)."
               }
             ],
             "sarif-severity-source": "fallback",
@@ -1704,7 +2400,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/42"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1715,7 +2411,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/45"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1726,7 +2422,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/46"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1737,7 +2433,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/52"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1748,7 +2444,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/53"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1783,35 +2479,95 @@
                   "contextHash/v1": "72a7b06096f811a41e009ddc040210db6d355d9d86fe37309f600ead5f027ef8"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/no-ending-newline.c",
+                  "region": {
+                    "endColumn": 25,
+                    "snippet": {
+                      "text": "  char    buf[1024], *s;"
+                    },
+                    "startColumn": 2,
+                    "startLine": 10
+                  }
+                },
+                "message": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 14,
+                    "snippet": {
+                      "text": "  char d[20];"
+                    },
+                    "startColumn": 3,
+                    "startLine": 49
+                  }
+                },
+                "message": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 14,
+                    "snippet": {
+                      "text": "  char s[20];"
+                    },
+                    "startColumn": 3,
+                    "startLine": 50
+                  }
+                },
+                "message": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "36c87517700337a59cc3ad3218cfdde56cad37d69cdeccee5a55ab232d5c7946"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 14,
+                    "snippet": {
+                      "text": "  char d[20];"
+                    },
+                    "startColumn": 3,
+                    "startLine": 45
+                  }
+                },
+                "message": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "213de8e8815fc84c423b55fd845fea541f25744718e486234364bb457863b597"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 14,
+                    "snippet": {
+                      "text": "  char s[20];"
+                    },
+                    "startColumn": 3,
+                    "startLine": 46
+                  }
+                },
+                "message": "buffer/char: Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1838,7 +2594,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/47"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1849,7 +2605,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/48"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1860,7 +2616,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/54"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1871,7 +2627,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/55"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1882,7 +2638,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/56"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -1893,7 +2649,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/57"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -1927,42 +2683,114 @@
                   "contextHash/v1": "92c755cad0dde2a75803f34005c0412e084d89ce35f2fe16264702c9bcc3af95"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 15,
+                    "snippet": {
+                      "text": "  memcpy(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 54
+                  }
+                },
+                "message": "buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": "  CopyMemory(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 55
+                  }
+                },
+                "message": "buffer/CopyMemory: Does not check for buffer overflows when copying to destination (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "e667b352fb0748c67b607b11577b11bad87545779c39923e61839dd04056055f"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 33,
+                    "snippet": {
+                      "text": "  memcpy(d,s); // fail - no size"
+                    },
+                    "startColumn": 3,
+                    "startLine": 50
+                  }
+                },
+                "message": "buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "01bcc2c8ba2d928ac3315b4dcc6593042ea05e62888a10a6d2cf16797a65ed32"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 62,
+                    "snippet": {
+                      "text": "  memcpy(\u0026n,s,sizeof(s)); // fail - sizeof not of destination"
+                    },
+                    "startColumn": 3,
+                    "startLine": 53
+                  }
+                },
+                "message": "buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "2517a2fb5981193a6017cca660d16e85aab133706cbec302df97aaa623fc77ef"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 44,
+                    "snippet": {
+                      "text": "  memcpy(d,s,n); // fail - size unguessable"
+                    },
+                    "startColumn": 3,
+                    "startLine": 54
+                  }
+                },
+                "message": "buffer/memcpy: Does not check for buffer overflows when copying to destination (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "977f8c805ddd76ff32e0f7aea08701ba97d9ce6955136e98b308ed4f70eb2e11"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 19,
+                    "snippet": {
+                      "text": "  CopyMemory(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 55
+                  }
+                },
+                "message": "buffer/CopyMemory: Does not check for buffer overflows when copying to destination (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1989,7 +2817,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/49"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -2000,7 +2828,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/58"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -2034,14 +2862,38 @@
                   "contextHash/v1": "2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 34,
+                    "snippet": {
+                      "text": "  f = fopen(\"/etc/passwd\", \"r\"); "
+                    },
+                    "startColumn": 7,
+                    "startLine": 101
+                  }
+                },
+                "message": "misc/fopen: Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "2ec6928c77a8b54caa61d0459f367c4394ee1f5e6f488753f587bfa9c780bad8"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 34,
+                    "snippet": {
+                      "text": "  f = fopen(\"/etc/passwd\", \"r\"); "
+                    },
+                    "startColumn": 7,
+                    "startLine": 105
+                  }
+                },
+                "message": "misc/fopen: Check when opening files - can an attacker redirect it (via symlinks), force the opening of special file type (e.g., device files), move things around to create a race condition, control its ancestors, or change its contents? (CWE-362)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2068,7 +2920,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/62"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -2079,7 +2931,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/71"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -2113,14 +2965,38 @@
                   "contextHash/v1": "8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": "  strncpy(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 57
+                  }
+                },
+                "message": "buffer/strncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "8fa14bf72393a00f667ffcc06b7b7e5f0b6d2f16d8d67444db06b0deb35b5f5e"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 16,
+                    "snippet": {
+                      "text": "  strncpy(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 57
+                  }
+                },
+                "message": "buffer/strncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2147,7 +3023,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/63"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -2158,7 +3034,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/72"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -2192,14 +3068,38 @@
                   "contextHash/v1": "691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": "  _tcsncpy(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 58
+                  }
+                },
+                "message": "buffer/_tcsncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "691fabd4ca960a00e4c538eee0187ee0fdf59bd43dd71e792c14175150369b8b"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": "  _tcsncpy(d,s);"
+                    },
+                    "startColumn": 3,
+                    "startLine": 58
+                  }
+                },
+                "message": "buffer/_tcsncpy: Easily used incorrectly; doesn't always \\0-terminate or check for invalid pointers [MS-banned] (CWE-120)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2226,7 +3126,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/65"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             },
             {
@@ -2237,7 +3137,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/74"
               },
-              "startTime": "2026-10-11T01:15:07.931Z",
+              "startTime": "2026-10-14T01:18:11.531Z",
               "status": "failed"
             }
           ],
@@ -2271,14 +3171,38 @@
                   "contextHash/v1": "db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test-patched.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": "  n = strlen(d);"
+                    },
+                    "startColumn": 7,
+                    "startLine": 62
+                  }
+                },
+                "message": "buffer/strlen: Does not handle strings that are not \\0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126)."
               },
               {
                 "fingerprints": {
                   "contextHash/v1": "db7201c7df7f543ea76febb060bda167e414e71e3d18095fe1def69f8c47a4f6"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "test/test.c",
+                  "region": {
+                    "endColumn": 17,
+                    "snippet": {
+                      "text": "  n = strlen(d);"
+                    },
+                    "startColumn": 7,
+                    "startLine": 62
+                  }
+                },
+                "message": "buffer/strlen: Does not handle strings that are not \\0-terminated; if given one it may perform an over-read (it could cause a crash if unprotected) (CWE-126)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2303,7 +3227,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.931Z",
+  "timestamp": "2026-10-14T01:18:11.531Z",
   "tool": {
     "format": "SARIF",
     "name": "Flawfinder",

@@ -18,7 +18,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -44,7 +44,13 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 23
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -69,7 +75,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -80,7 +86,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -91,7 +97,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -102,7 +108,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -128,19 +134,43 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 104
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 125
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 84
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 64
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -165,7 +195,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -176,7 +206,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -187,7 +217,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -213,15 +243,33 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 210
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 166
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Boot.java",
+                  "region": {
+                    "startLine": 246
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -246,7 +294,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/8"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -257,7 +305,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/10"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -283,11 +331,23 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Log.java",
+                  "region": {
+                    "startLine": 9
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Match.java",
+                  "region": {
+                    "startLine": 9
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -312,7 +372,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/9"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -323,7 +383,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/11"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -349,11 +409,23 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Log.java",
+                  "region": {
+                    "startLine": 13
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "Match.java",
+                  "region": {
+                    "startLine": 13
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -378,7 +450,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/12"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -404,7 +476,13 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "startLine": 40
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -429,7 +507,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/13"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -440,7 +518,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/14"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -451,7 +529,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/15"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -462,7 +540,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/18"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -473,7 +551,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/19"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -484,7 +562,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/20"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -510,27 +588,63 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "startLine": 536
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "startLine": 68
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "startLine": 44
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 2088
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 74
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 40
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -555,7 +669,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/16"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -566,7 +680,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/17"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -577,7 +691,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/21"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -588,7 +702,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/22"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -614,19 +728,47 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "endLine": 115,
+                    "startLine": 114
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticLexer.java",
+                  "region": {
+                    "endLine": 110,
+                    "startLine": 109
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "endLine": 1023,
+                    "startLine": 928
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "endLine": 468,
+                    "startLine": 333
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -651,7 +793,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/23"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -662,7 +804,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/24"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -673,7 +815,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/25"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -684,7 +826,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/26"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -695,7 +837,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/27"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -706,7 +848,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/28"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -717,7 +859,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/29"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -728,7 +870,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/30"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -739,7 +881,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/31"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -750,7 +892,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/32"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -761,7 +903,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/33"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -772,7 +914,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/34"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -783,7 +925,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/35"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -794,7 +936,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/36"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -805,7 +947,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/37"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -816,7 +958,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/38"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -827,7 +969,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/39"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -838,7 +980,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/40"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -849,7 +991,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/41"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -860,7 +1002,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/42"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -871,7 +1013,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/43"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -882,7 +1024,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/44"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -893,7 +1035,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/45"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -904,7 +1046,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/46"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -915,7 +1057,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/47"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -926,7 +1068,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/48"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -937,7 +1079,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/49"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -948,7 +1090,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/50"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -959,7 +1101,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/51"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -970,7 +1112,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/52"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -981,7 +1123,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/53"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -992,7 +1134,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/54"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             },
             {
@@ -1003,7 +1145,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/55"
               },
-              "startTime": "2026-10-11T01:15:07.934Z",
+              "startTime": "2026-10-14T01:18:11.536Z",
               "status": "failed"
             }
           ],
@@ -1029,135 +1171,333 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1331
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1333
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1386
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1107
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 834
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 836
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 898
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 900
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 722
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 724
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1286
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1191
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1147
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 157
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 159
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1569
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1571
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1617
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1655
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1694
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1696
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1737
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 781
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 783
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 595
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 640
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 642
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 541
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 543
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 488
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 490
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1068
+                  }
+                }
               },
               {
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "XonoticParser.java",
+                  "region": {
+                    "startLine": 1925
+                  }
+                }
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1176,11 +1516,110 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "STYLE"
+              ]
+            },
+            "ruleId": "DMI_HARDCODED_ABSOLUTE_FILENAME"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "I18N"
+              ]
+            },
+            "ruleId": "DM_DEFAULT_ENCODING"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "PERFORMANCE"
+              ]
+            },
+            "ruleId": "WMI_WRONG_MAP_ITERATOR"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "MALICIOUS_CODE"
+              ]
+            },
+            "ruleId": "EI_EXPOSE_REP"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "MALICIOUS_CODE"
+              ]
+            },
+            "ruleId": "EI_EXPOSE_REP2"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "MALICIOUS_CODE"
+              ]
+            },
+            "ruleId": "MS_FINAL_PKGPROTECT"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "MALICIOUS_CODE"
+              ]
+            },
+            "ruleId": "MS_PKGPROTECT"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "STYLE"
+              ]
+            },
+            "ruleId": "SF_SWITCH_NO_DEFAULT"
+          },
+          {
+            "baseline": "SpotBugs",
+            "on": "rule",
+            "properties": {
+              "tags": [
+                "BAD_PRACTICE"
+              ]
+            },
+            "ruleId": "NM_METHOD_NAMING_CONVENTION"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.934Z",
+  "timestamp": "2026-10-14T01:18:11.536Z",
   "tool": {
     "format": "SARIF",
     "name": "SpotBugs",

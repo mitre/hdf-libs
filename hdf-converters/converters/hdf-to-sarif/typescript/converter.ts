@@ -331,28 +331,31 @@ function buildResults(
   carried: CarriedBags,
 ): Obj[] {
   const rows = asArr(req.results) ?? [];
-  const locations = buildLocations(req, baselineName, ruleId, carried);
+
   const suppressions = buildSuppressions(req);
 
   const out: Obj[] = [];
   rows.forEach((raw, ordinal) => {
     const row = asMap(raw);
     if (!row) return;
-    const kind = resultKind(req, row);
+    const kind = resultKind(req, row, ordinal);
+    // Per result, not per requirement: a rule's results can sit at different places,
+    // and sarif-to-hdf carries each one's own location.
+    const locations = buildLocations(req, baselineName, ruleId, carried, ordinal);
     const result: Obj = {
       ruleId,
       ruleIndex: ruleIdx,
-      message: { text: resultMessage(req, row) },
+      message: { text: resultMessage(req, row, ordinal) },
       kind,
     };
     // level and kind are orthogonal axes (SARIF §3.27.9/§3.27.10), and for any
     // kind other than fail the spec allows only the value "none" — which is also
     // the default when level is absent, so it is simply omitted. The rule's
     // defaultConfiguration.level still carries the severity.
-    if (kind === KIND_FAIL) result.level = ruleLevel(req);
+    if (kind === KIND_FAIL) result.level = resultLevel(req, ordinal);
     if (locations.length > 0) result.locations = locations;
     if (suppressions.length > 0) result.suppressions = suppressions;
-    const { fingerprints, partialFingerprints } = resultFingerprints(req);
+    const { fingerprints, partialFingerprints } = resultFingerprintsAt(req, ordinal);
     if (fingerprints) result.fingerprints = fingerprints;
     if (partialFingerprints) result.partialFingerprints = partialFingerprints;
     const props: Obj = {
@@ -402,6 +405,22 @@ const SARIF_LEVELS = new Set(['none', 'note', 'warning', 'error']);
  * from impact on the repo's own severity bands, which is the inverse of the alias
  * table sarif-to-hdf maps levels through.
  */
+/**
+ * The level for ONE result, preferring the level sarif-to-hdf carried for it.
+ * tags["severity"] is a requirement-level summary, so a rule whose results carried
+ * different levels had them all re-emitted at the summary's level and the RESOLVED
+ * level (SARIF 3.27.10) came back changed for every result but one.
+ *
+ * A result the source left level-less carries nothing here and falls through to the
+ * rule level, which is the rule's defaultConfiguration — so the level still resolves
+ * to what it resolved to before. Mirrors Go's resultLevel.
+ */
+function resultLevel(req: Obj, ordinal: number): string {
+  const carried = carriedResultField(req, ordinal, 'level');
+  if (SARIF_LEVELS.has(carried)) return carried;
+  return ruleLevel(req);
+}
+
 function ruleLevel(req: Obj): string {
   const tags = asMap(req.tags);
   const carried = getStr(tags, 'severity');
@@ -450,19 +469,51 @@ const IMPORTER_KIND_STATUS: Record<string, string> = {
 };
 
 /** Resolves the SARIF kind for one HDF result row. */
-function resultKind(req: Obj, row: Obj): string {
+function resultKind(req: Obj, row: Obj, ordinal: number): string {
   const status = getStr(row, 'status');
   // SARIF's own default for an unrecognized verdict.
   const kind = STATUS_KINDS[status] ?? KIND_FAIL;
+  // The PER-RESULT carried kind first. tags["kind"] below is only set when every
+  // result in the group shared one kind, so a rule mixing "open" with
+  // "informational" has no requirement-level value and both would otherwise
+  // collapse onto whatever their HDF status maps to — "open" to fail,
+  // "informational" to notApplicable, neither recoverable.
+  const perResult = carriedResultField(req, ordinal, 'kind');
+  if (status !== '' && IMPORTER_KIND_STATUS[perResult] === status) return perResult;
   const tags = asMap(req.tags);
   const carried = getStr(tags, 'kind');
   if (status !== '' && IMPORTER_KIND_STATUS[carried] === status) return carried;
   return kind;
 }
 
-/** Resolves result.message.text, which SARIF requires. */
-function resultMessage(req: Obj, row: Obj): string {
-  return getStr(row, 'message') || getStr(row, 'codeDesc') || defaultDescription(req);
+/**
+ * Resolves result.message.text, which SARIF requires.
+ *
+ * A carried SARIF message wins, because it is what the tool actually said about
+ * THIS result. HDF's codeDesc is location prose this converter would otherwise
+ * emit as the finding's message — accurate for a natively-authored HDF document
+ * and wrong for one imported from SARIF.
+ */
+function resultMessage(req: Obj, row: Obj, ordinal: number): string {
+  return carriedResultField(req, ordinal, 'message')
+    || getStr(row, 'message')
+    || getStr(row, 'codeDesc')
+    || defaultDescription(req);
+}
+
+/**
+ * Reads one field of tags["sarif-results"][ordinal]. Addressed by position WITHIN
+ * the requirement, which is the order the importer wrote and this exporter
+ * re-emits. Mirrors Go's carriedResultField.
+ */
+function carriedResultField(req: Obj, ordinal: number, field: string): string {
+  const tags = asMap(req.tags);
+  if (!tags) return '';
+  const entries = asArr(tags['sarif-results']);
+  if (!entries || ordinal < 0 || ordinal >= entries.length) return '';
+  const entry = asMap(entries[ordinal]);
+  if (!entry) return '';
+  return getStr(entry, field);
 }
 
 // --- descriptions, tags, scores ---
@@ -491,10 +542,17 @@ function ruleHelpUri(req: Obj): string {
  */
 function ruleTags(req: Obj): string[] {
   const tags = new Set<string>();
-  for (const cwe of stringSlice(req.cwe)) {
-    if (cwe !== '') tags.add(`external/cwe/${cwe.toLowerCase()}`);
-  }
   const reqTags = asMap(req.tags);
+  // Both homes. CWE is a first-class Requirement field, but sarif-to-hdf writes it to
+  // tags["cwe"] instead, so reading only the first-class field meant a SARIF-sourced
+  // document's CWEs never reached the SARIF tags — and the importer, which recovers
+  // CWE from exactly these tags, rebuilt an empty list. The NIST and CCI tags derive
+  // from that list, so they degraded to the static-analysis fallback too.
+  for (const src of [stringSlice(req.cwe), stringSlice(reqTags?.cwe)]) {
+    for (const cwe of src) {
+      if (cwe !== '') tags.add(`external/cwe/${cwe.toLowerCase()}`);
+    }
+  }
   for (const nist of stringSlice(reqTags?.nist)) if (nist !== '') tags.add(`nist/${nist}`);
   for (const cci of stringSlice(reqTags?.cci)) if (cci !== '') tags.add(`cci/${cci}`);
   return [...tags].sort();
@@ -556,9 +614,12 @@ const REGION_INT_FIELDS = [
  * results[] rows carry no location of their own, so every result of a
  * requirement reports at the requirement's location.
  */
-function buildLocations(req: Obj, baselineName: string, ruleId: string, carried: CarriedBags): Obj[] {
-  const source = asMap(req.sourceLocation);
-  const region = buildRegion(req, source);
+function buildLocations(req: Obj, baselineName: string, ruleId: string, carried: CarriedBags, ordinal: number): Obj[] {
+  // A per-result carried location wins. HDF puts sourceLocation on the REQUIREMENT,
+  // so without this every result of a rule reports at the first one's location.
+  const perLoc = carriedResultLocation(req, ordinal);
+  const source = perLoc ?? asMap(req.sourceLocation);
+  const region = buildRegion(req, source, perLoc ? asMap(perLoc.region) : undefined);
   const uri = getStr(source, 'ref');
   const bag = carried.find({ on: 'location', baseline: baselineName, ruleId });
 
@@ -575,14 +636,16 @@ function buildLocations(req: Obj, baselineName: string, ruleId: string, carried:
 }
 
 /**
- * Assembles a SARIF region from the sarif-region tag, with sourceLocation.line
- * supplying startLine when the tag does not.
+ * Assembles a SARIF region, in precedence order: the per-result carried region,
+ * then the requirement-level sarif-region tag, then sourceLocation.line for
+ * startLine. The per-result region is most specific — it is the one the tool
+ * reported for THIS finding — so it wins. Mirrors Go's buildRegion.
  */
-function buildRegion(req: Obj, source: Obj | undefined): Obj {
+function buildRegion(req: Obj, source: Obj | undefined, perResult?: Obj): Obj {
   const carried = asMap(asMap(req.tags)?.[REGION_TAG]);
   const region: Obj = {};
   for (const field of REGION_INT_FIELDS) {
-    const v = wholeNumber(carried?.[field]);
+    const v = wholeNumber(perResult?.[field]) ?? wholeNumber(carried?.[field]);
     if (v !== undefined) region[field] = v;
   }
   if (!('startLine' in region)) {
@@ -590,8 +653,14 @@ function buildRegion(req: Obj, source: Obj | undefined): Obj {
     if (v !== undefined) region.startLine = v;
   }
   setIf(region, 'sourceLanguage', getStr(carried, 'sourceLanguage'));
-  const text = getStr(asMap(carried?.snippet), 'text');
-  if (text !== '') region.snippet = { text };
+  // Per-result snippet first, then the requirement-level sarif-region tag.
+  for (const src of [perResult, carried]) {
+    const text = getStr(asMap(src?.snippet), 'text');
+    if (text !== '') {
+      region.snippet = { text };
+      break;
+    }
+  }
   return region;
 }
 
@@ -658,4 +727,41 @@ function carriedSuppressions(req: Obj): Obj[] {
     out.push(suppression);
   }
   return out;
+}
+
+/**
+ * Reads the location sarif-to-hdf carried for the result at this ordinal, shaped
+ * like a Source_Location so it drops straight into the requirement-level path.
+ * Mirrors Go's carriedResultLocation.
+ */
+function carriedResultLocation(req: Obj, ordinal: number): Obj | undefined {
+  const tags = asMap(req.tags);
+  if (!tags) return undefined;
+  const entries = asArr(tags['sarif-results']);
+  if (!entries || ordinal < 0 || ordinal >= entries.length) return undefined;
+  const entry = asMap(entries[ordinal]);
+  const loc = asMap(entry?.location);
+  return loc && Object.keys(loc).length > 0 ? loc : undefined;
+}
+
+/**
+ * The PER-RESULT fingerprint maps win. tags["fingerprints"] is a requirement-level
+ * summary holding the first result's, so a rule whose results have different
+ * fingerprints — the normal case, since a fingerprint identifies a finding — gave
+ * every result the first one's, defeating the correlation they exist for.
+ * Mirrors Go's resultFingerprintsAt.
+ */
+function resultFingerprintsAt(req: Obj, ordinal: number): { fingerprints?: Obj; partialFingerprints?: Obj } {
+  const tags = asMap(req.tags);
+  const entries = tags ? asArr(tags['sarif-results']) : undefined;
+  if (entries && ordinal >= 0 && ordinal < entries.length) {
+    const entry = asMap(entries[ordinal]);
+    const fingerprints = asMap(entry?.fingerprints);
+    const partialFingerprints = asMap(entry?.partialFingerprints);
+    if ((fingerprints && Object.keys(fingerprints).length > 0)
+      || (partialFingerprints && Object.keys(partialFingerprints).length > 0)) {
+      return {fingerprints, partialFingerprints};
+    }
+  }
+  return resultFingerprints(req);
 }

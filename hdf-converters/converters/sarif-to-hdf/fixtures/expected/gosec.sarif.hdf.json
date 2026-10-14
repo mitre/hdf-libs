@@ -22,7 +22,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.512Z",
               "status": "failed"
             }
           ],
@@ -56,7 +56,20 @@
                   "primaryLocationHash": "gosec-g201-users-34"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "internal/db/users.go",
+                  "region": {
+                    "endColumn": 68,
+                    "endLine": 34,
+                    "snippet": {
+                      "text": "\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)"
+                    },
+                    "startColumn": 2,
+                    "startLine": 34
+                  }
+                },
+                "message": "SQL string formatting"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -90,7 +103,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.512Z",
               "status": "failed"
             }
           ],
@@ -101,12 +114,12 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.926Z",
+              "appliedAt": "2026-10-14T01:18:11.512Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.926Z",
+              "expiresAt": "2027-10-14T01:18:11.512Z",
               "reason": "#nosec G304 -- filePath is validated against allowlist",
               "status": "passed",
               "type": "waiver"
@@ -129,7 +142,20 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "internal/handlers/files.go",
+                  "region": {
+                    "endColumn": 42,
+                    "endLine": 56,
+                    "snippet": {
+                      "text": "\tdata, err := os.ReadFile(filePath)"
+                    },
+                    "startColumn": 15,
+                    "startLine": 56
+                  }
+                },
+                "message": "Potential file inclusion via variable"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -163,7 +189,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.512Z",
               "status": "failed"
             }
           ],
@@ -189,7 +215,18 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "internal/auth/checksum.go",
+                  "region": {
+                    "snippet": {
+                      "text": "\th := md5.New()"
+                    },
+                    "startColumn": 8,
+                    "startLine": 12
+                  }
+                },
+                "message": "Use of weak cryptographic primitive"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -220,7 +257,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.512Z",
               "status": "failed"
             }
           ],
@@ -248,7 +285,18 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "internal/config/constants.go",
+                  "region": {
+                    "snippet": {
+                      "text": "\tdbPassword = \"supersecret123\""
+                    },
+                    "startColumn": 2,
+                    "startLine": 7
+                  }
+                },
+                "message": "Potential hardcoded credentials"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -268,11 +316,33 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "gosec",
+            "on": "rule",
+            "properties": {
+              "precision": "high",
+              "tags": [
+                "security",
+                "credentials",
+                "CWE-798"
+              ]
+            },
+            "ruleId": "G101"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.926Z",
+  "timestamp": "2026-10-14T01:18:11.512Z",
   "tool": {
     "format": "SARIF",
     "name": "gosec",

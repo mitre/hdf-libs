@@ -23,9 +23,19 @@ func buildLocations(
 	req map[string]interface{},
 	baselineName, ruleID string,
 	carried carriedBags,
+	ordinal int,
 ) []interface{} {
+	// A per-result carried location wins. HDF puts sourceLocation on the
+	// REQUIREMENT, so without this every result of a rule reports at the first
+	// one's location — a rule with ten findings in ten places came back claiming
+	// all ten were at the first.
 	source, _ := exportmap.AsMap(req["sourceLocation"])
-	region := buildRegion(req, source)
+	perRegion := map[string]interface{}{}
+	if per := carriedResultLocation(req, ordinal); len(per) > 0 {
+		source = per
+		perRegion, _ = exportmap.AsMap(per["region"])
+	}
+	region := buildRegion(req, source, perRegion)
 	uri := exportmap.GetStr(source, "ref")
 	bag := carried.find(address{On: onLocation, Baseline: baselineName, RuleID: ruleID})
 
@@ -52,14 +62,20 @@ func buildLocations(
 	return []interface{}{location}
 }
 
-// buildRegion assembles a SARIF region from the sarif-region tag, with
-// sourceLocation.line supplying startLine when the tag does not.
-func buildRegion(req, source map[string]interface{}) map[string]interface{} {
+// buildRegion assembles a SARIF region, in precedence order: the per-result
+// carried region, then the requirement-level sarif-region tag, then
+// sourceLocation.line for startLine. The per-result region is most specific —
+// it is the one the tool reported for THIS finding — so it wins.
+func buildRegion(req, source, perResult map[string]interface{}) map[string]interface{} {
 	tags, _ := exportmap.AsMap(req["tags"])
 	carried, _ := exportmap.AsMap(tags[regionTag])
 
 	region := map[string]interface{}{}
 	for _, field := range regionIntFields {
+		if v, ok := wholeNumber(perResult[field]); ok {
+			region[field] = v
+			continue
+		}
 		if v, ok := wholeNumber(carried[field]); ok {
 			region[field] = v
 		}
@@ -70,9 +86,15 @@ func buildRegion(req, source map[string]interface{}) map[string]interface{} {
 		}
 	}
 	exportmap.SetIf(region, "sourceLanguage", exportmap.GetStr(carried, "sourceLanguage"))
-	if snippet, ok := exportmap.AsMap(carried["snippet"]); ok {
+	// Per-result snippet first, then the requirement-level sarif-region tag.
+	for _, src := range []map[string]interface{}{perResult, carried} {
+		snippet, ok := exportmap.AsMap(src["snippet"])
+		if !ok {
+			continue
+		}
 		if text := exportmap.GetStr(snippet, "text"); text != "" {
 			region["snippet"] = map[string]interface{}{"text": text}
+			break
 		}
 	}
 	return region
@@ -155,3 +177,26 @@ func carriedSuppressions(req map[string]interface{}) []interface{} {
 
 // suppressionStatuses is the SARIF review-status enum.
 var suppressionStatuses = map[string]bool{"accepted": true, "underReview": true, "rejected": true}
+
+// carriedResultLocation reads the location sarif-to-hdf carried for the result at
+// this ordinal, shaped like a Source_Location so it drops straight into the
+// requirement-level path: {ref, region}. Returns nil when nothing was carried.
+func carriedResultLocation(req map[string]interface{}, ordinal int) map[string]interface{} {
+	tags, ok := exportmap.AsMap(req["tags"])
+	if !ok {
+		return nil
+	}
+	entries, ok := exportmap.AsSlice(tags["sarif-results"])
+	if !ok || ordinal < 0 || ordinal >= len(entries) {
+		return nil
+	}
+	entry, ok := exportmap.AsMap(entries[ordinal])
+	if !ok {
+		return nil
+	}
+	loc, ok := exportmap.AsMap(entry["location"])
+	if !ok || len(loc) == 0 {
+		return nil
+	}
+	return loc
+}

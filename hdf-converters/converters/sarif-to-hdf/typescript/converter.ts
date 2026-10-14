@@ -7,6 +7,7 @@ import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequi
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, resultBagRow, ruleBag, type BagGroup, type SarifLike } from './passthrough.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -16,9 +17,14 @@ interface SarifFile {
   $schema?: string;
   version: string;
   runs: SarifRun[];
+  // The log-level bag. Captured only so the passthrough can carry it; nothing in
+  // the mapping reads it.
+  properties?: Record<string, unknown>;
 }
 
 interface SarifRun {
+  // The run-level bag, captured for the passthrough only.
+  properties?: Record<string, unknown>;
   // Rules may be defined on the driver or on any extension: modern CodeQL leaves
   // tool.driver.rules empty and puts every rule on an extension.
   tool?: {
@@ -228,14 +234,24 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 
   const timestamp = new Date();
 
+  const converted = limitedRuns.map((run, runIdx) =>
+    convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx]));
+  const baselines = converted.map(c => c.baseline);
+
+  // Carriage last, so it describes the document that was actually built: the
+  // baseline names it addresses runs by are the ones convertRun settled on.
+  const block = buildPassthroughBlock(
+    collectPropertyBags(sarif as SarifLike, baselines.map(b => b.name), converted.map(c => c.bagGroups)));
+
   return buildHdfResults({
     generatorName: 'sarif-to-hdf',
     converterVersion,
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx])),
+    baselines,
     timestamp,
+    ...(block ? {extensions: {passthrough: {sarif: block}}} : {}),
   });
 }
 
@@ -280,7 +296,7 @@ function resolveArtifactIndices(run: SarifRun): void {
   }
 }
 
-function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): EvaluatedBaseline {
+function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): {baseline: EvaluatedBaseline; bagGroups: BagGroup[]} {
   // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
   // the parsed objects in place, and rawSourceRecord is built from them, so without
   // this a record would carry the uri THIS CONVERTER inferred rather than what the
@@ -319,8 +335,16 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
     group.raws.push(rawSnapshots[srcIdx] ?? '');
   }
 
+  // Collected in the same order the requirement's results are built, so a carried
+  // bag's ordinal addresses the result it came from.
+  const bagGroups: BagGroup[] = [];
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
+    bagGroups.push({
+      ruleId,
+      ruleProps: group.rule?.properties,
+      resultProps: group.results.map(r => r.properties),
+    });
     return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
   });
 
@@ -344,11 +368,14 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
         ));
   }
 
-  return createMinimalBaseline(baselineName, requirements, {
-    version,
-    title: 'Static Analysis Results Interchange Format',
-    resultsChecksum,
-  });
+  return {
+    baseline: createMinimalBaseline(baselineName, requirements, {
+      version,
+      title: 'Static Analysis Results Interchange Format',
+      resultsChecksum,
+    }),
+    bagGroups,
+  };
 }
 
 // Indexes every rule a run defines, from the driver and from any extensions.
@@ -426,6 +453,10 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       // and keeps ADR-0017's rule intact, since nothing is merged across SARIF results;
       // the record's own pointer still says which result it came from.
       if (j === 0) r.rawSourceRecord = record;
+      // Result fields SARIF cannot carry, from the row hdf-to-sarif put on this
+      // result's own bag. Every expanded row came from one SARIF result, so they
+      // share its carriage the way they share its record.
+      restoreUnexpressibleResult(r as unknown as Record<string, unknown>, resultBagRow(sr));
       perResult.push(perResultTagEntry(sr));
     }
     results.push(...expanded);
@@ -538,6 +569,12 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       r.disposition = governingDisposition(overrides, effRoll);
     }
   }
+
+  // Last: restore only what SARIF cannot express, from the carried bag if one is
+  // there. Untrusted and optional by design — see restoreUnexpressible.
+  const bag = ruleBag(rule);
+  if (bag) restoreUnexpressible(req as unknown as Record<string, unknown>, bag);
+
   return req;
 }
 
@@ -710,7 +747,48 @@ function perResultTagEntry(result: SarifResult): Record<string, unknown> {
   if (result.partialFingerprints && Object.keys(result.partialFingerprints).length > 0) {
     entry.partialFingerprints = result.partialFingerprints;
   }
+  // The result's OWN message. SARIF scopes a message to the result; HDF's
+  // requirement-level descriptions[default] holds the first one as a summary, so
+  // without this a rule whose results carry different messages keeps only one, and
+  // an exporter re-deriving the message falls back to codeDesc — HDF location prose,
+  // not what the tool said.
+  if (result.message?.text) entry.message = result.message.text;
+  // The result's OWN location. HDF's Source_Location is {ref, line} and closed and
+  // sits on the REQUIREMENT, so a rule with ten results at ten places kept only the
+  // first and an exporter re-emitting them gave all ten that one location. Mirrors
+  // Go's perResultLocation.
+  const loc = perResultLocation(result);
+  if (loc) entry.location = loc;
   return entry;
+}
+
+/**
+ * Carries one result's first location: the uri and the region members SARIF defines
+ * as integers. Only the FIRST — a multi-location result is expanded into several
+ * HDF results on import, so each expanded row carries what it was expanded from.
+ */
+function perResultLocation(result: SarifResult): Record<string, unknown> | undefined {
+  const phys = result.locations?.[0]?.physicalLocation;
+  if (!phys) return undefined;
+  const out: Record<string, unknown> = {};
+  if (phys.artifactLocation?.uri) out.ref = phys.artifactLocation.uri;
+  const r = phys.region;
+  if (r) {
+    const region: Record<string, number> = {};
+    for (const [k, v] of Object.entries({
+      startLine: r.startLine, startColumn: r.startColumn,
+      endLine: r.endLine, endColumn: r.endColumn,
+    })) {
+      if (typeof v === 'number' && v !== 0) region[k] = v;
+    }
+    // The snippet rides here too. It is the one region member with no HDF home at
+    // all — it reaches codeDesc as prose and nothing structured — so without this an
+    // exporter has nothing to rebuild region.snippet from.
+    const snippetText = r.snippet?.text;
+    if (snippetText) (region as Record<string, unknown>).snippet = {text: snippetText};
+    if (Object.keys(region).length > 0) out.region = region;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 // The kind every result in the group STATED, or undefined when they disagree or any

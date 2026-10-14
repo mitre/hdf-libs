@@ -24,6 +24,9 @@ type SarifFile struct {
 	Schema  string     `json:"$schema"`
 	Version string     `json:"version"`
 	Runs    []SarifRun `json:"runs"`
+	// Properties is the log-level bag. Captured only so the passthrough can carry
+	// it; nothing in the mapping reads it.
+	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
 // SarifRun represents a single analysis run.
@@ -40,6 +43,8 @@ type SarifRun struct {
 	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
 	// Artifacts is the table artifactLocation.index addresses (§3.4.5).
 	Artifacts []SarifArtifact `json:"artifacts,omitempty"`
+	// Properties is the run-level bag, captured for the passthrough only.
+	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
 // SarifArtifact is one entry of a run's artifacts table. Only its location is read:
@@ -317,9 +322,13 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
 
+	baselineNames := make([]string, 0, len(limitedRuns))
+	bagGroups := make([][]bagGroup, 0, len(limitedRuns))
 	for runIdx, run := range limitedRuns {
-		baseline := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
+		baseline, groups := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
+		baselineNames = append(baselineNames, baseline.Name)
+		bagGroups = append(bagGroups, groups)
 	}
 
 	toolName := ""
@@ -340,6 +349,10 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		Components:       []hdf.Component{},
 		Timestamp:        &timestamp,
 	})
+
+	// Carriage last, so it describes the document that was actually built: the
+	// baseline names it addresses runs by are the ones convertRun settled on.
+	attachPropertyBags(hdfResult, collectPropertyBags(sarif, baselineNames, bagGroups))
 
 	return hdfResult, nil
 }
@@ -431,7 +444,7 @@ func resolveArtifactIndices(run *SarifRun) {
 
 // --- Run-level conversion ---
 
-func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) (hdf.EvaluatedBaseline, []bagGroup) {
 	// Fill in every indexed path — a result's own locations and its code-flow steps —
 	// before anything reads one, so the
 	// rest of the conversion needs no knowledge of the artifacts table. The typed
@@ -445,10 +458,22 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 	groupOrder, groupMap := groupResults(run, ruleMap)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
+	bagGroups := make([]bagGroup, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
 		g := groupMap[ruleID]
 		req := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
 		requirements = append(requirements, req)
+
+		// Collected in the same order the requirement's results are built, so a
+		// carried bag's ordinal addresses the result it came from.
+		bg := bagGroup{ruleID: g.ruleID}
+		if g.rule != nil {
+			bg.ruleProps = g.rule.Properties
+		}
+		for _, sr := range g.results {
+			bg.resultProps = append(bg.resultProps, sr.Properties)
+		}
+		bagGroups = append(bagGroups, bg)
 	}
 
 	// Use tool name for baseline name if available
@@ -473,7 +498,7 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 		Maintainer:      maintainer,
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
-	}
+	}, bagGroups
 }
 
 // HDF requires requirements.minItems=1, so a run contributing no requirements
@@ -627,6 +652,10 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			if j == 0 {
 				expanded[j].RawSourceRecord = record
 			}
+			// Result fields SARIF cannot carry, from the row hdf-to-sarif put on this
+			// result's own bag. Every expanded row came from one SARIF result, so they
+			// share its carriage the way they share its record.
+			restoreUnexpressibleResult(&expanded[j], resultBagRow(sr))
 			perResult = append(perResult, perResultTagEntry(sr))
 		}
 		results = append(results, expanded...)
@@ -740,6 +769,13 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			req.Disposition = &disp
 		}
 	}
+
+	// Last: restore only what SARIF cannot express, from the carried bag if one is
+	// there. Untrusted and optional by design — see restoreUnexpressible.
+	if bag := ruleBag(rule); bag != nil {
+		restoreUnexpressible(&req, bag)
+	}
+
 	return req
 }
 
@@ -984,6 +1020,22 @@ func perResultTagEntry(result SarifResult) map[string]interface{} {
 	}
 	if len(result.PartialFingerprints) > 0 {
 		entry["partialFingerprints"] = result.PartialFingerprints
+	}
+	// The result's OWN message. SARIF scopes a message to the result; HDF's
+	// requirement-level descriptions[default] holds the first one as a summary, so
+	// without this a rule whose results carry different messages keeps only one,
+	// and an exporter re-deriving the message falls back to codeDesc — HDF location
+	// prose, not what the tool said.
+	if result.Message.Text != "" {
+		entry["message"] = result.Message.Text
+	}
+	// The result's OWN location. HDF's Source_Location is {ref, line} and closed and
+	// sits on the REQUIREMENT, so a rule with ten results at ten places kept only
+	// the first and an exporter re-emitting them gave all ten that one location.
+	// Region members beyond line have no HDF home at all; they ride here under the
+	// documented sarif-region vocabulary hdf-to-sarif already parses.
+	if loc := perResultLocation(result); len(loc) > 0 {
+		entry["location"] = loc
 	}
 	return entry
 }
@@ -1611,4 +1663,46 @@ func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string
 		count += len(order)
 	}
 	return count, unit, nil
+}
+
+// perResultLocation carries one result's first location: the uri and the region
+// members SARIF defines as integers. Only the FIRST — a multi-location result is
+// expanded into several HDF results on import, so each expanded row carries the
+// location it was expanded from.
+func perResultLocation(result SarifResult) map[string]interface{} {
+	if len(result.Locations) == 0 {
+		return nil
+	}
+	phys := result.Locations[0].PhysicalLocation
+	if phys == nil {
+		return nil
+	}
+	out := map[string]interface{}{}
+	if phys.ArtifactLocation != nil && phys.ArtifactLocation.URI != "" {
+		out["ref"] = phys.ArtifactLocation.URI
+	}
+	if r := phys.Region; r != nil {
+		region := map[string]interface{}{}
+		for key, v := range map[string]int{
+			"startLine": r.StartLine, "startColumn": r.StartColumn,
+			"endLine": r.EndLine, "endColumn": r.EndColumn,
+		} {
+			if v != 0 {
+				region[key] = v
+			}
+		}
+		// The snippet rides here too. It is the one region member with no HDF home at
+		// all — it reaches codeDesc as prose and nothing structured — so without this
+		// an exporter has nothing to rebuild region.snippet from.
+		if r.Snippet != nil && r.Snippet.Text != "" {
+			region["snippet"] = map[string]interface{}{"text": r.Snippet.Text}
+		}
+		if len(region) > 0 {
+			out["region"] = region
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

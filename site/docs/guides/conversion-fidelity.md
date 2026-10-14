@@ -38,3 +38,16 @@ The check happens inside `hdf convert`, before anything else touches the documen
 ## What it does not check
 
 This is count fidelity only. A conversion that produces the right number of requirements with the wrong severities, the wrong statuses, or missing evidence passes this check. Content fidelity is a separate property, and a green count check is not proof of it. Converter goldens under `fixtures/expected/` and the TypeScript/Go parity snapshots are where content is held to account.
+
+Two format pairs go further. The HDF ↔ OSCAL POA&M converters share a set of
+round-trip cases read by both languages, with an explicit list of fields excluded
+from the comparison and exact equality required of everything else. The SARIF
+converters are held to a stated round-trip contract — which fields survive
+SARIF → HDF → SARIF and HDF → SARIF → HDF, which do not, and why — likewise asserted
+in both languages; see [SARIF Round-Trip Fidelity](./sarif-round-trip.md).
+
+Several other converters carry narrower content contracts of their own — byte-exact
+prose readback in `hdf-to-xccdf`, and shared text-case files read by both languages
+in `hdf-to-csaf-vex`, `hdf-to-openvex` and `oscal-to-hdf`. There is no single place
+that records which pairs have what, so check a converter's own tests rather than
+assuming the goldens are all there is.

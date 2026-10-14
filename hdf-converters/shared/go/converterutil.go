@@ -463,6 +463,10 @@ type HDFResultsOptions struct {
 	Components       []hdf.Component
 	Timestamp        *time.Time
 	Statistics       *hdf.Statistics
+	// Extensions carries producer data HDF does not model. Optional: a nil value
+	// leaves the field absent rather than writing an empty object, because
+	// extensions is closed to two members and an empty one says nothing.
+	Extensions *hdf.Extensions
 }
 
 // BuildHDFResults assembles an HDFResults struct from the given options.
@@ -478,6 +482,7 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 		Components: opts.Components,
 		Timestamp:  opts.Timestamp,
 		Statistics: opts.Statistics,
+		Extensions: opts.Extensions,
 	}
 
 	if opts.ToolName != "" || opts.ToolVersion != "" || opts.ToolFormat != "" {
