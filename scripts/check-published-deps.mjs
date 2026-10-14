@@ -67,7 +67,7 @@ async function collectDistFiles(distDir) {
  * `offenders` = [{ package, file, specifier, packageName, reason }].
  */
 export async function checkPackage(pkgDir) {
-  await init;
+  await init();
   const pkg = JSON.parse(await readFile(join(pkgDir, 'package.json'), 'utf8'));
   const declared = new Set([
     pkg.name,
@@ -95,8 +95,9 @@ export async function checkPackage(pkgDir) {
       continue;
     }
     for (const imp of imports) {
-      const specifier = imp.n;
-      if (specifier === undefined) continue; // dynamic import with non-literal specifier
+      const specifier = imp.specifier;
+      // Interpolated templates produce glob specifiers, not literal module names.
+      if (specifier === undefined || specifier === null || imp.glob === true) continue;
       if (isRelativeOrAbsolute(specifier) || isBuiltin(specifier)) continue;
       const packageName = packageNameFromSpecifier(specifier);
       if (declared.has(packageName)) continue;
