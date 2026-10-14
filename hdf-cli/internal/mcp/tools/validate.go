@@ -179,6 +179,17 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 	out.Errors = lineNumberedErrors(vr, content)
 }
 
+// carryLoaderVerdict seeds the reply from the load rather than from optimism. A
+// mode that inspects an invalid document must not mint a verdict that outranks
+// the schema's: checksums matching says nothing about the members the document
+// is missing.
+func carryLoaderVerdict(out *validateOutput, load *loader.Result) {
+	out.Valid = load.Valid
+	if !load.Valid {
+		out.Errors = append(out.Errors, fromLoaderErrors(load.Errors)...)
+	}
+}
+
 // validateChecksums fills the verdict for checksums mode: verify each referenced
 // file against the algorithm its own entry records, and report the agent-override
 // count across the package results.
@@ -187,7 +198,7 @@ func validateChecksums(out *validateOutput, content []byte, fetch hdfengine.Fetc
 	if !ok {
 		return
 	}
-	out.Valid = true
+	carryLoaderVerdict(out, load)
 	var unverifiable []string
 	for _, r := range hdfengine.VerifyChecksums(contents, fetch) {
 		switch r.Status {
@@ -226,25 +237,34 @@ func validateCompleteness(out *validateOutput, content []byte, fetch hdfengine.F
 	if !ok {
 		return
 	}
+	carryLoaderVerdict(out, load)
 	planRef, _, _ := hdfengine.ParseEvidencePackage(content)
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 
+	// Every branch below APPENDS and sets Valid false explicitly. Assigning the
+	// error list would discard the loader's, and leaving Valid alone would report
+	// a schema-valid package as complete when completeness was never checked.
 	if planRef == "" {
-		out.Errors = []validateError{{Message: "evidence package has no planRef; cannot check completeness"}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Message: "evidence package has no planRef; cannot check completeness"})
 		return
 	}
 	planData, ferr := fetch(planRef)
 	if ferr != nil {
-		out.Errors = []validateError{{Path: planRef, Message: "cannot read plan: " + ferr.Error()}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "cannot read plan: " + ferr.Error()})
 		return
 	}
 	planned, perr := hdfengine.PlannedBaselineRefs(planData)
 	if perr != nil {
-		out.Errors = []validateError{{Path: planRef, Message: "cannot parse plan: " + perr.Error()}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "cannot parse plan: " + perr.Error()})
 		return
 	}
 	comp := hdfengine.Completeness(planned, hdfengine.CoveredBaselinesInPackage(contents, fetch))
-	out.Valid = comp.Complete
+	// Completeness can only make the verdict worse, never rescue a document the
+	// schema already rejected.
+	out.Valid = out.Valid && comp.Complete
 	for _, m := range comp.Missing {
 		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "missing results for baseline " + m})
 	}
@@ -253,6 +273,12 @@ func validateCompleteness(out *validateOutput, content []byte, fetch hdfengine.F
 // requireEvidencePackage confirms the document is an evidence package and parses
 // its contents, or fills out with an explanatory invalid verdict and returns
 // ok=false.
+// Deliberately does NOT gate on load.Valid, unlike apply_amendment and diff: those
+// two MUTATE, so invalid input must never reach the engine, while these modes only
+// inspect — and an operator reaches for validate precisely because something is
+// wrong, so refusing to look is the least useful answer. Maintainer decision,
+// 2026-10-13. The obligation that comes with proceeding is carrying the loader's
+// verdict through rather than minting a fresh one; see carryLoaderVerdict.
 func requireEvidencePackage(out *validateOutput, content []byte, load *loader.Result) ([]hdfengine.EvidenceContent, bool) {
 	out.DocType = load.DocType
 	if load.DocType != string(validators.TypeEvidencePackage) {
@@ -298,7 +324,15 @@ func confinedFetchAt(base string) hdfengine.FetchFunc {
 		// and bundle about what a reference means is the defect class .8 and .32 each hit.
 		// Decoding here also means an encoded traversal meets this containment check,
 		// rather than passing it as a literal directory name.
-		p, err := evidenceref.PathFromRecorded(base, uri)
+		// Decode and confine as two steps rather than through PathFromRecorded, so
+		// the two failures stay distinguishable: a malformed escape means nothing was
+		// resolved at all, and reporting it as containment sends an operator looking
+		// for a traversal that is not there.
+		decoded, err := evidenceref.Decode(uri)
+		if err != nil {
+			return nil, fmt.Errorf("referenced file %q is not a valid uri-reference and could not be decoded: %w", uri, err)
+		}
+		p, err := evidenceref.Path(base, decoded)
 		if err != nil {
 			return nil, fmt.Errorf("referenced file %q is outside the evidence package root", uri)
 		}

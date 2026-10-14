@@ -57,7 +57,13 @@ func sha256HexT(b []byte) string {
 }
 
 func evidencePkg(planRef string, entries ...map[string]any) []byte {
-	pkg := map[string]any{"contents": entries}
+	// name is required by the schema, and an empty variadic marshals as null
+	// rather than []. Both made fixtures here schema-invalid, which went unnoticed
+	// while these modes minted their own verdict instead of carrying the loader's.
+	if entries == nil {
+		entries = []map[string]any{}
+	}
+	pkg := map[string]any{"name": "test package", "contents": entries}
 	if planRef != "" {
 		pkg["planRef"] = planRef
 	}
@@ -307,24 +313,39 @@ func TestHdfValidate_Completeness_NoPlanRef(t *testing.T) {
 	writeRoot(t, "ev.json", pkg)
 	writeInRoot(t, "rhel.json", rhel)
 	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
-	if out.Valid || len(out.Errors) == 0 || !contains(out.Errors[0].Message, "no planRef") {
+	if out.Valid || !anyErrorContains(out.Errors, "no planRef") {
 		t.Fatalf("missing planRef should be reported: %+v", out.Errors)
 	}
 }
 
+// Scanned rather than indexed: this fixture carries no contents entry, which the
+// schema refuses (minItems 1), so the loader's error arrives alongside the plan
+// one now that completeness mode carries the verdict instead of replacing the
+// error list. Which error lands first is not this test's subject.
 func TestHdfValidate_Completeness_PlanUnreadableAndUnparseable(t *testing.T) {
 	pkg := evidencePkg("plan.json")
 	writeRoot(t, "ev.json", pkg) // plan.json not written → unreadable
 	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
-	if out.Valid || !contains(out.Errors[0].Message, "cannot read plan") {
+	if out.Valid || !anyErrorContains(out.Errors, "cannot read plan") {
 		t.Fatalf("unreadable plan should be reported: %+v", out.Errors)
 	}
 
 	writeInRoot(t, "plan.json", []byte("not json"))
 	_, out2 := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
-	if out2.Valid || !contains(out2.Errors[0].Message, "cannot parse plan") {
+	if out2.Valid || !anyErrorContains(out2.Errors, "cannot parse plan") {
 		t.Fatalf("unparseable plan should be reported: %+v", out2.Errors)
 	}
+}
+
+// anyErrorContains answers "did the reply say this", which is what these tests
+// mean, without pinning WHERE in the list it said it.
+func anyErrorContains(errs []validateError, sub string) bool {
+	for _, e := range errs {
+		if contains(e.Message, sub) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestHdfValidate_BothSourceAndContent(t *testing.T) {
@@ -406,9 +427,15 @@ func TestSchemaTypeForDoc_CoversEngineKnownTypes(t *testing.T) {
 // the engine gained a distinct unsupported status the entry fell through: the package
 // reported valid with no mention that a checksum had gone unchecked, telling a caller
 // "valid" about bytes nobody verified. It is NOT an error (the bytes may be intact), so it
-// belongs in the notice, not in errors. Reached here with an OFF-SCHEMA algorithm, which
-// is the only way left now that every algorithm the enum admits is computed — and unlike
-// `hdf evidence info --verify`, this path reports such a document rather than refusing it.
+// belongs in the notice, not in a CHECKSUM error. Reached here with an OFF-SCHEMA
+// algorithm, which is the only way left now that every algorithm the enum admits is
+// computed — and unlike `hdf evidence info --verify`, this path reports such a document
+// rather than refusing it.
+//
+// The verdict is nonetheless false, and the schema error is reported: an off-schema
+// algorithm violates the schema, and this mode carries the loader's verdict rather
+// than minting one. Maintainer decision 2026-10-13, reversing the earlier notice-only,
+// still-valid shape — which was decided when checksum mode set valid itself.
 func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
 	results := fixtures.Results.Minimal
 	pkg := evidencePkg("", map[string]any{
@@ -428,11 +455,25 @@ func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
 	if errRes != nil && errRes.IsError {
 		t.Fatalf("an unverifiable algorithm is not a tool error: %+v", errRes)
 	}
-	if !out.Valid {
-		t.Errorf("valid = false; an algorithm this build cannot compute does not make the package invalid")
+	if out.Valid {
+		t.Error("valid = true; an off-schema algorithm violates the schema and the verdict must say so")
 	}
-	if len(out.Errors) != 0 {
-		t.Errorf("errors = %+v, want none — this is reported in the notice, not as an error", out.Errors)
+	// The error is the SCHEMA's, naming the offending member — not a checksum error
+	// claiming the bytes failed verification, which is the distinction this test exists
+	// to hold. The bytes may be perfectly intact; nobody checked them.
+	for _, e := range out.Errors {
+		if strings.Contains(e.Message, "mismatch") || strings.Contains(e.Message, "cannot verify checksum") {
+			t.Errorf("an uncomputable algorithm must not be reported as a checksum failure: %q", e.Message)
+		}
+	}
+	var algoNamed bool
+	for _, e := range out.Errors {
+		if strings.Contains(e.Path, "checksum.algorithm") {
+			algoNamed = true
+		}
+	}
+	if !algoNamed {
+		t.Errorf("the schema error must name the offending member, got %+v", out.Errors)
 	}
 	if !strings.Contains(out.Notice, "md5") {
 		t.Errorf("notice = %q, want it to name the algorithm that went unverified", out.Notice)
@@ -725,5 +766,155 @@ func TestWriteInRoot_FailsWhenRootUnset(t *testing.T) {
 	}
 	if !strings.Contains(rec.msg, "writeInRoot(") {
 		t.Errorf("the failure must name the helper, got %q", rec.msg)
+	}
+}
+
+// A malformed percent-escape and a traversal are different failures, and an
+// operator acts on them differently: one is a producer writing an invalid
+// reference, the other is a reference reaching outside the package. Collapsing
+// both into the containment message sends them looking for a traversal that is
+// not there.
+func TestHdfValidate_Checksums_ReportsAMalformedReferenceAsSuch(t *testing.T) {
+	pkg := evidencePkg("", contentEntry("hdf-results", "scans/bad%2.json", "abc"))
+	writeRoot(t, "ev.json", pkg)
+	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
+
+	if len(out.Errors) == 0 {
+		t.Fatal("a malformed reference must surface as an error")
+	}
+	// Scanned rather than indexed: the schema's own uri-reference error arrives
+	// first now that the loader's verdict is carried through, and which error
+	// lands where is not what this test is about.
+	var decodeNamed bool
+	for _, e := range out.Errors {
+		if contains(e.Message, "outside the evidence package root") {
+			t.Errorf("a malformed escape is not a containment failure; nothing was resolved: %q", e.Message)
+		}
+		if contains(e.Message, "scans/bad%2.json") && contains(e.Message, "not a valid uri-reference") {
+			decodeNamed = true
+		}
+	}
+	if !decodeNamed {
+		t.Errorf("one error must name the stored spelling and say it is not a valid uri-reference, got %+v", out.Errors)
+	}
+}
+
+// Checksum mode inspects a schema-invalid package deliberately — an operator
+// calls validate because something is wrong — but it must not REPORT it as
+// valid. Before this was fixed, a package missing required members whose
+// checksums happened to match came back valid:true with zero errors, so the
+// loader's verdict and its schema errors were both discarded and an agent
+// reading the reply would conclude the package was sound.
+func TestHdfValidate_Checksums_KeepsTheLoadersVerdictOnAnInvalidPackage(t *testing.T) {
+	body := []byte("x")
+	// No `name`, which the schema requires — measured against the schema's own
+	// required list rather than guessed; preparedAt and generator are optional.
+	pkg := []byte(`{"hdfVersion":"3.8.0","type":"evidencePackage",
+	  "contents":[{"type":"hdf-results","uri":"r.json","checksum":{"algorithm":"sha256","value":"` + sha256HexT(body) + `"}}]}`)
+	writeRootFiles(t, map[string][]byte{"r.json": body, "ev.json": pkg})
+
+	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
+
+	if out.Valid {
+		t.Error("a schema-invalid package must not be reported valid, however its checksums verify")
+	}
+	if len(out.Errors) == 0 {
+		t.Fatal("the loader's schema errors must survive into the reply")
+	}
+	var named bool
+	for _, e := range out.Errors {
+		if contains(e.Message, "name") {
+			named = true
+		}
+	}
+	if !named {
+		t.Errorf("the reply must name the missing member, got %+v", out.Errors)
+	}
+}
+
+// The two early returns that carryLoaderVerdict does NOT already cover. The
+// plan-unreadable test's fixture carries no contents entry, so the schema has
+// already set the verdict false there and those two assignments go unmeasured —
+// delete either and nothing fails. This package is schema-VALID, so the guard
+// is the only thing that can make the verdict false.
+func TestHdfValidate_Completeness_AnUnreadablePlanInvalidatesAValidPackage(t *testing.T) {
+	rhel := []byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`)
+	pkg := evidencePkg("missing-plan.json",
+		contentEntry("hdf-results", "rhel.json", sha256HexT(rhel)))
+	writeRootFiles(t, map[string][]byte{"ev.json": pkg, "rhel.json": rhel}) // no plan written
+
+	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
+
+	// The premise: nothing BUT the guard can falsify this one.
+	for _, e := range out.Errors {
+		if contains(e.Message, "is required") || contains(e.Message, "must have at least") {
+			t.Fatalf("fixture is not schema-valid, so this cannot measure the guard: %+v", out.Errors)
+		}
+	}
+	if out.Valid {
+		t.Error("completeness could not be checked, so the verdict must not claim it was")
+	}
+	if !anyErrorContains(out.Errors, "cannot read plan") {
+		t.Errorf("the unreadable plan must be named, got %+v", out.Errors)
+	}
+
+	// The sibling branch, which has its own Valid=false and needs its own measure.
+	writeInRoot(t, "missing-plan.json", []byte("not json"))
+	_, out2 := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
+	if out2.Valid {
+		t.Error("an unparseable plan means completeness was not checked; the verdict must not claim it was")
+	}
+	if !anyErrorContains(out2.Errors, "cannot parse plan") {
+		t.Errorf("the unparseable plan must be named, got %+v", out2.Errors)
+	}
+}
+
+// The case the && in `out.Valid = out.Valid && comp.Complete` exists for: a
+// schema-invalid package whose planned baselines ARE all covered. Completeness
+// says complete; the schema says no. Without the &&, completeness would rescue a
+// document the loader rejected — and the no-planRef test cannot reach this line,
+// because it returns early.
+func TestHdfValidate_Completeness_CompleteDoesNotRescueAnInvalidPackage(t *testing.T) {
+	plan := []byte(`{"assessments":[{"baselineRef":"RHEL9-STIG"}]}`)
+	rhel := []byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`)
+	// No `name`, which the schema requires — otherwise a complete, coherent package.
+	pkg := []byte(`{"hdfVersion":"3.8.0","type":"evidencePackage","planRef":"plan.json",
+	  "contents":[{"type":"hdf-results","uri":"rhel.json","checksum":{"algorithm":"sha256","value":"` + sha256HexT(rhel) + `"}}]}`)
+	writeRootFiles(t, map[string][]byte{"ev.json": pkg, "plan.json": plan, "rhel.json": rhel})
+
+	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
+
+	if !anyErrorContains(out.Errors, "name") {
+		t.Fatalf("the loader's schema error must be present, got %+v", out.Errors)
+	}
+	if out.Valid {
+		t.Error("every planned baseline is covered, but the package is schema-invalid: the verdict must stay false")
+	}
+}
+
+// The same obligation as checksum mode, and completeness mode broke it harder:
+// it assigned out.Valid from the completeness result and REPLACED out.Errors in
+// its early returns, so a schema-invalid package whose planned baselines were all
+// covered came back valid with the loader's errors discarded.
+func TestHdfValidate_Completeness_KeepsTheLoadersVerdictOnAnInvalidPackage(t *testing.T) {
+	// No `name`, which the schema requires. No planRef either, so completeness
+	// takes the early return that used to clobber the error list.
+	pkg := []byte(`{"hdfVersion":"3.8.0","type":"evidencePackage",
+	  "contents":[{"type":"hdf-results","uri":"r.json"}]}`)
+	writeRootFiles(t, map[string][]byte{"r.json": []byte("x"), "ev.json": pkg})
+
+	_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "completeness"})
+
+	if out.Valid {
+		t.Error("a schema-invalid package must not be reported valid by completeness mode")
+	}
+	var schemaNamed bool
+	for _, e := range out.Errors {
+		if contains(e.Message, "name") {
+			schemaNamed = true
+		}
+	}
+	if !schemaNamed {
+		t.Errorf("the loader's schema error must survive the early return, got %+v", out.Errors)
 	}
 }
