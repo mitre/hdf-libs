@@ -6,6 +6,7 @@
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
+  RawSourceRecord,
   RequirementResult,
   Checksum,
   Integrity,
@@ -80,6 +81,7 @@ export function createResult(
     exception?: string;
     resource?: string;
     resourceId?: string;
+    rawSourceRecord?: RawSourceRecord;
   }
 ): RequirementResult;
 
