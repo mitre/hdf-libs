@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1032,4 +1033,113 @@ func TestEvidenceAddEvidence_RefusesADuplicateUnderAnotherSpelling(t *testing.T)
 	assert.NotContains(t, err.Error(), "my%20scans/q4.json",
 		"not the incoming one, which appears nowhere in their package")
 	assert.NoFileExists(t, out, "and nothing is written")
+}
+
+// An externalEvidence entry whose uri is "" names nothing, so it is no evidence of
+// anything. Before this refusal the empty string reached the format logic, which
+// emitted "--format is required for ; …" — a message with a blank where the artifact
+// should be, reading as though the tool had lost the argument — and with --format
+// supplied it wrote the empty-uri entry at exit 0.
+func TestEvidenceAddEvidence_RefusesAnEmptyURI(t *testing.T) {
+	for _, tc := range []struct{ name, uri string }{
+		{"empty", ""},
+		{"spaces", "   "},
+		{"tab and newline", "\t\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := writeTestEvidence(t)
+			before, err := os.ReadFile(pkg)
+			require.NoError(t, err)
+
+			_, _, cmdErr := executeCommand("evidence", "add-evidence", pkg, "--uri", tc.uri, "--format", "ecs")
+			require.Error(t, cmdErr, "an entry naming nothing is not evidence of anything")
+			assert.Contains(t, cmdErr.Error(), "--uri", "the refusal has to name the flag at fault")
+			after, err := os.ReadFile(pkg)
+			require.NoError(t, err)
+			assert.Equal(t, string(before), string(after), "and no document is written")
+
+			// Refused BEFORE format resolution, so the blank-artifact message is unreachable.
+			_, _, inferErr := executeCommand("evidence", "add-evidence", pkg, "--uri", tc.uri, "--infer")
+			require.Error(t, inferErr)
+			assert.NotContains(t, inferErr.Error(), "--format is required for",
+				"format resolution must not be reached with a uri that names nothing")
+		})
+	}
+}
+
+// Every kind the refusal can name, since only a fifo is cheap to create for real and a
+// message that says "an irregular file" about a socket is a message that sends the
+// operator looking in the wrong place. A regular file must map to "", because that is
+// what admits it to the read.
+func TestNonRegularKind(t *testing.T) {
+	for _, tc := range []struct {
+		mode os.FileMode
+		want string
+	}{
+		{0o644, ""},
+		{os.ModeNamedPipe | 0o600, "a named pipe"},
+		{os.ModeSocket | 0o600, "a socket"},
+		{os.ModeDevice | os.ModeCharDevice | 0o600, "a character device"},
+		{os.ModeDevice | 0o600, "a block device"},
+		{os.ModeDir | 0o755, "a directory"},
+		{os.ModeIrregular | 0o600, "an irregular file"},
+	} {
+		assert.Equal(t, tc.want, nonRegularKind(tc.mode), "mode %v", tc.mode)
+	}
+}
+
+// A mode-000 artifact IS a discriminator the tool could not read, not an artifact read
+// and found wanting. Reporting the latter makes a false claim about the operator's
+// filesystem and sends them to edit a file whose content is already correct. Run from
+// the parent directory, because the distinction must not depend on where the operator
+// stands.
+func TestEvidenceAddEvidence_ReportsAnUnreadableArtifactAsUnreadable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores the 0o000 mode bit, so the file stays readable")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("running as root bypasses file read permissions")
+	}
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	// Real CycloneDX content, so "no discriminator" would be false twice over.
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "locked.json"),
+		[]byte(`{"bomFormat":"CycloneDX","specVersion":"1.5","version":1}`), 0o000))
+	t.Chdir(root)
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "locked.json", "--infer")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "could not be read", "the read failed; say so")
+	assert.Contains(t, err.Error(), "permission denied", "and name the read error itself")
+	assert.NotContains(t, err.Error(), "no format discriminator",
+		"its content carries one — the tool never got to look")
+	assert.NotContains(t, err.Error(), "not a local file", "it is a local file")
+}
+
+// --checksum supplies the digest, so nothing needs reading: an unreadable artifact is
+// still recordable, and the operator's stated digest is what the package carries.
+func TestEvidenceAddEvidence_UnreadableArtifactIsStillRecordableWithAChecksum(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores the 0o000 mode bit, so the file stays readable")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("running as root bypasses file read permissions")
+	}
+	dir := t.TempDir()
+	pkg := filepath.Join(dir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "locked.json"), []byte(`{}`), 0o000))
+
+	const digest = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "locked.json", "--format", "cyclonedx", "--checksum", "sha256:"+digest)
+	require.NoError(t, err)
+	ext := readEvidenceExternal(t, pkg)
+	require.Len(t, ext, 1)
+	checksum := ext[0].(map[string]interface{})["checksum"].(map[string]interface{})
+	assert.Equal(t, "sha256", checksum["algorithm"])
+	assert.Equal(t, digest, checksum["value"])
 }

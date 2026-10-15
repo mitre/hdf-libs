@@ -147,7 +147,9 @@ external by design and rewriting it would claim the artifact is somewhere it is 
 Because the URI is normalized before the duplicate check, two spellings of the same
 artifact are recognized as the same artifact and the second is refused.
 
-If --uri is a local file, its checksum is computed automatically. If --uri
+If --uri is a regular local file, its checksum is computed automatically; a
+non-regular path (fifo, socket, device node) is refused rather than opened, because
+opening one can block with no timeout. If --uri
 is a URL (the artifact is referenced, not fetched), pass --checksum to record a
 precomputed hash, or omit it; --checksum names one artifact and is refused with
 several --uri values. Format is an open set: reserved ecs | ocsf | cyclonedx |
@@ -208,22 +210,15 @@ func resolveEvidenceFormats(pkgDir string, opts addEvidenceOpts) ([]string, erro
 		inferred := make([]string, len(opts.uris))
 		var receipts []string
 		for i, uri := range opts.uris {
-			guess := inferEvidenceFormat(pkgDir, uri)
+			data, readErr := artifactContent(pkgDir, uri)
+			if readErr != nil {
+				// The reason travels WITH the error. Dropped, every cause of a read
+				// failure surfaced as the no-discriminator message below — a claim
+				// about content that nothing had managed to look at.
+				return nil, fmt.Errorf("--format is required for %s; %w", uri, readErr)
+			}
+			guess := formatFromContent(data)
 			if guess == "" {
-				// Say which it was: these call for different fixes, and the stat has to
-				// use the SAME resolution the content read used. Statting the raw uri
-				// against the process CWD reported an artifact sitting beside the package
-				// as "not a local file", so the accurate message was reachable only when
-				// the operator happened to be standing in the package directory.
-				path, readable := localArtifactPath(pkgDir, uri)
-				switch {
-				case !readable:
-					return nil, fmt.Errorf("--format is required for %s; it does not resolve inside the "+
-						"package's directory, so its format cannot be read from its content", uri)
-				case !isLocalFile(path):
-					return nil, fmt.Errorf("--format is required for %s; it is not a local file, so its "+
-						"format cannot be read from its content", uri)
-				}
 				return nil, fmt.Errorf("--format is required for %s; its content carries no format "+
 					"discriminator this tool recognizes", uri)
 			}
@@ -252,34 +247,65 @@ func resolveEvidenceFormats(pkgDir string, opts addEvidenceOpts) ([]string, erro
 	return opts.formats, nil
 }
 
-// isLocalFile reports whether path names an existing path that is not a directory. It
-// deliberately claims no more than that: the stat establishes neither readability nor
-// regularity, so a mode-000 file and a fifo both pass. Shared so the format message and
-// the inference itself cannot disagree about what is there — they were two separate stats
-// on different paths, which is how they came to disagree.
-func isLocalFile(path string) bool {
-	fi, err := os.Stat(path)
-	return err == nil && !fi.IsDir()
+// nonRegularKind names what a non-regular mode is, or "" for a regular file. A refusal
+// that says only "unusable" leaves the operator guessing; naming the kind points at the
+// one thing they can act on.
+func nonRegularKind(mode os.FileMode) string {
+	switch {
+	case mode&os.ModeNamedPipe != 0:
+		return "a named pipe"
+	case mode&os.ModeSocket != 0:
+		return "a socket"
+	case mode&os.ModeCharDevice != 0:
+		return "a character device"
+	case mode&os.ModeDevice != 0:
+		return "a block device"
+	case mode&os.ModeDir != 0:
+		return "a directory"
+	case !mode.IsRegular():
+		return "an irregular file"
+	}
+	return ""
 }
 
-// inferEvidenceFormat reads an artifact's own discriminator — never its filename,
-// which lies (a *.cdx.json holding SPDX is SPDX). Returns "" when nothing
-// recognizable is found, so the caller can refuse rather than invent.
-func inferEvidenceFormat(pkgDir, uri string) string {
-	// Resolved exactly as hashing resolves it: --infer reads the artifact's own content,
-	// so reading it from the CWD would both miss a package-relative artifact sitting
-	// beside the package and, worse, infer a format from a different file.
-	path, readable := localArtifactPath(pkgDir, uri)
-	if !readable {
-		return ""
+// artifactContent returns the bytes --infer inspects, or an error whose text completes
+// the sentence "--format is required for <uri>; ". Only an actual attempt tells the
+// reasons apart, so the resolution, the stat and the read all live here — kept apart,
+// they described the same artifact differently.
+//
+// The stat GATES the read rather than describing it afterwards: a read of a fifo blocks
+// until a writer appears, with no timeout, so the kind has to be settled before anything
+// opens the path.
+func artifactContent(pkgDir, uri string) ([]byte, error) {
+	path, resolved := localArtifactPath(pkgDir, uri)
+	if !resolved {
+		return nil, fmt.Errorf("it does not resolve inside the package's directory, so its " +
+			"format cannot be read from its content")
 	}
-	if !isLocalFile(path) {
-		return "" // a URL or a directory has no content to read here
+	fi, err := os.Stat(path)
+	if err != nil || fi.IsDir() {
+		// A URL, a directory and an absent path alike: there is no content here to read.
+		return nil, fmt.Errorf("it is not a local file, so its format cannot be read from its content")
+	}
+	if kind := nonRegularKind(fi.Mode()); kind != "" {
+		return nil, fmt.Errorf("it is %s, not a regular file, so its content cannot be read", kind)
+	}
+	if fi.Size() == 0 {
+		// Read fine; there is simply nothing in it to discriminate on, so it belongs
+		// with the no-discriminator case rather than the unreadable one.
+		return nil, nil
 	}
 	data, err := readInputFile(path)
 	if err != nil {
-		return ""
+		return nil, fmt.Errorf("it could not be read: %w", err)
 	}
+	return data, nil
+}
+
+// formatFromContent reads an artifact's own discriminator — never its filename, which
+// lies (a *.cdx.json holding SPDX is SPDX). Returns "" when nothing recognizable is
+// found, so the caller can refuse rather than invent.
+func formatFromContent(data []byte) string {
 	var head struct {
 		BomFormat   string `json:"bomFormat"`
 		SpdxVersion string `json:"spdxVersion"`
@@ -299,6 +325,15 @@ func inferEvidenceFormat(pkgDir, uri string) string {
 func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if len(opts.uris) == 0 {
 		return fmt.Errorf("--uri is required")
+	}
+	// Refused HERE, ahead of any format resolution: the format error for a blank name
+	// reads as a lost argument rather than as a rejected one. Whitespace-only counts as
+	// blank, because it names no artifact either.
+	for i, uri := range opts.uris {
+		if strings.TrimSpace(uri) == "" {
+			return fmt.Errorf("--uri value %d is blank; name the artifact being referenced, "+
+				"because an entry with no uri is evidence of nothing", i+1)
+		}
 	}
 	// A checksum names one artifact's digest, so it cannot be shared.
 	if opts.checksum != "" && len(opts.uris) > 1 {
@@ -493,6 +528,13 @@ func resolveEvidenceChecksum(pkgDir, uri, supplied string) (value, algorithm str
 	// time; a URL, a directory, or a path with no local copy is left unhashed
 	// (a reference-only entry, not an error).
 	if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+		// Refused BEFORE the open, not reported after it: opening a fifo blocks until a
+		// writer appears, so the command waited with no timeout and then hashed whatever
+		// that writer sent — a digest of bytes nobody chose to attest, at exit 0.
+		if kind := nonRegularKind(fi.Mode()); kind != "" {
+			return "", "", fmt.Errorf("%q is %s, not a regular file, so it cannot be hashed; "+
+				"reference a regular file, or pass --checksum to record a digest you computed", uri, kind)
+		}
 		sum, algorithm, err := fileChecksumHex(path)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to read local artifact %q to checksum it: %w", path, err)
