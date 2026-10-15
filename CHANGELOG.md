@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **An unresolvable document path is reported once, not twice.**
+
+  `hdf evidence build` stated the same fault twice — `failed to resolve X: failed to resolve X` — because the caller wrapped an error that already named the operation and the path. The inner message is now surfaced as it is, and the package-directory case adds only its role, so the text reads `package directory: failed to resolve X: ...`. A pipeline grepping stderr for the resolve prefix will see one occurrence where it previously saw two.
+
 - **A directory scan lists a document named in another letter-case once, not twice, and recognizes an SPDX 3.0 SBOM instead of reporting it foreign.**
 
   `hdf evidence build --from-dir` identified the documents named explicitly on the command line by path string, so on a case-insensitive filesystem a document passed to `--results` under one spelling and found on disk under another was recorded twice. Identity is now the filesystem's own (device and inode), which a letter-case difference and a hard link both resolve to correctly; lower-casing the path would have been wrong on a case-sensitive volume holding two genuinely distinct files.

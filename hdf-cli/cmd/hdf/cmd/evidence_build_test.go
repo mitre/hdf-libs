@@ -591,7 +591,44 @@ func TestEvidenceBuild_DanglingSymlinkDocumentSurfacesTheFailure(t *testing.T) {
 	)
 	require.Error(t, err, "an unresolvable document path must fail, not degrade to a lexical reference")
 	assert.Contains(t, err.Error(), "vanished-results.json", "the error must name the document")
+	assert.Contains(t, err.Error(), "no-such-file.json", "and the target it could not resolve")
+	// Counted, not Contains: a message stating the fault twice contains the phrase too.
+	assert.Equal(t, 1, strings.Count(err.Error(), "failed to resolve "+dangling),
+		"one fault must be stated once; got %q", err.Error())
+	assert.Equal(t, 1, strings.Count(err.Error(), dangling),
+		"and names the document once, so a re-wrap naming it again fails whatever "+
+			"wording it uses; got %q", err.Error())
 	assert.NoFileExists(t, outputPath)
+}
+
+// packageRelativeRef resolves two paths, and an unresolvable BASE is the case a
+// document's name would not explain — so the message has to say which of the two
+// failed, and say the resolve failure once. Called directly because no CLI route gets
+// here with an unresolvable base: build stats the output directory first, and update
+// takes the directory of the package file it has just read.
+func TestPackageRelativeRef_StatesAnUnresolvablePackageDirectoryOnce(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink needs elevated privileges on Windows; the resolution logic is OS-independent")
+	}
+	dir := t.TempDir()
+	docPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(docPath, []byte("{}"), 0o600))
+	danglingBase := filepath.Join(dir, "artifacts")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "no-such-dir"), danglingBase))
+
+	_, err := packageRelativeRef(danglingBase, docPath)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "package directory",
+		"the message must say it is the base, not the document, that did not resolve")
+	assert.Contains(t, err.Error(), danglingBase, "and name it")
+	assert.Contains(t, err.Error(), "no-such-dir", "and the target it could not resolve")
+	// Counted, not Contains: a message stating the fault twice contains the phrase too.
+	assert.Equal(t, 1, strings.Count(err.Error(), "failed to resolve"),
+		"one fault must be stated once; got %q", err.Error())
+	assert.Equal(t, 1, strings.Count(err.Error(), danglingBase),
+		"and names the base once, so a re-wrap naming it again fails whatever "+
+			"wording it uses; got %q", err.Error())
 }
 
 // evidence info --verify reads contents[].type to judge completeness, so a document
@@ -889,6 +926,12 @@ func TestEvidenceBuild_SurfacesAnUnresolvableReferenceOnTheStdoutPath(t *testing
 	assert.Contains(t, err.Error(), "dangling.json", "the error must name the document")
 	assert.Contains(t, err.Error(), "no-such-scan.json",
 		"and the target it could not resolve, which a degraded lexical fallback would not")
+	// Counted, not Contains: a message stating the fault twice contains the phrase too.
+	assert.Equal(t, 1, strings.Count(err.Error(), "failed to resolve "+dangling),
+		"one fault must be stated once; got %q", err.Error())
+	assert.Equal(t, 1, strings.Count(err.Error(), dangling),
+		"and names the document once, so a re-wrap naming it again fails whatever "+
+			"wording it uses; got %q", err.Error())
 }
 
 // rhel9ResultsJSON covers a named baseline. noTargetsJSON ({"baselines": []}) does not,

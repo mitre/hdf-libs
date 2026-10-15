@@ -215,11 +215,14 @@ func resolvedAbs(path string) (string, error) {
 func packageRelativeRef(baseDir, docPath string) (string, error) {
 	absBase, err := resolvedAbs(baseDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve package directory %s: %w", baseDir, err)
+		// Only the role is added: resolvedAbs states the operation and the path, so
+		// restating either reads as "failed to resolve X: failed to resolve X". Its
+		// filepath.Abs branch names neither, but nothing has been found to fail it.
+		return "", fmt.Errorf("package directory: %w", err)
 	}
 	absDoc, err := resolvedAbs(docPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve %s: %w", docPath, err)
+		return "", err
 	}
 	rel, err := filepath.Rel(absBase, absDoc)
 	if err != nil {
