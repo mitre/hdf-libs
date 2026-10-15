@@ -2,6 +2,9 @@ packages:
   - 'hdf-*'
   - 'site'
 allowBuilds:
+  # Analytics-on-install from a Redocly CLI transitive dep. Never runs: a lint
+  # tool must not phone home from a dev install.
+  '@scarf/scarf': false
   esbuild: true
 # Supply-chain cooldown: refuse dependency versions published within the last
 # 7 days (10080 min) AT RESOLUTION TIME, so a freshly-published compromised

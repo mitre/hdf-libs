@@ -1,0 +1,47 @@
+# Redocly lint configuration for the generated HDF components document.
+#
+# This artifact is a COMPONENTS LIBRARY: it declares `components.schemas` and no
+# operations. Several `recommended` rules assume an API surface and cannot hold here.
+# Every rule turned off below is recorded with the reason it does not apply; the
+# suppressed finding counts are tracked in test/baseline/keywords.json and a change in
+# them fails `pnpm run matrix`, so nothing silenced here is invisible.
+#
+# Two of the waivers below are RULE-WIDE while their reason is specific to named components.
+# That is deliberate — Redocly has no pointer-scoped override — and it is why the absorbed
+# counts matter: a genuinely invalid example would raise 328, failing the gate. The counts
+# therefore mix false positives with any future real finding, so movement needs human triage
+# rather than a blind `pnpm run matrix:update`.
+extends:
+  - recommended
+
+rules:
+  # An operation-less document has nothing to serve. Phase 2's reference API document
+  # declares servers and this rule applies to it.
+  no-empty-servers: off
+
+  # Every root is "unused" by construction: there are no paths to reference it from.
+  # Being referenced by consumers rather than by this document is the whole point.
+  no-unused-components: off
+
+  # FALSE POSITIVE, reproduced. When a taken `if`/`then`/`else` branch itself carries a
+  # `properties` keyword, Redocly 2.54 replaces the parent's `properties` annotations with
+  # the branch's instead of unioning them, so `unevaluatedProperties: false` then rejects
+  # every property the parent declared. Minimal repro: a schema with
+  # `properties: {a, flag}`, `if: {required: [flag]}`, `else: {properties: {a: false}}`
+  # and the instance `{flag: "off"}` — `flag` is reported unevaluated. Removing the
+  # branch's `properties`, or supplying an instance that does not take the branch, clears
+  # it. This document hits it in `Bom` (three `else` branches gating the BOM type
+  # extensions) and `Evidence` (`if` on `encoding: base64`).
+  # Measured against two spec-complete 2020-12 engines — ajv 8 (ajv/dist/2020) and
+  # @hyperjump/json-schema 1.17 — both of which accept all 24 affected examples.
+  # Example validation is NOT lost: test/conformance.test.ts validates every root example,
+  # every definition example and the hdf-fixtures corpus with a 2020-12 engine.
+  no-invalid-schema-examples: off
+
+  # FALSE POSITIVE. `required` is independent of where a property is declared — 2020-12
+  # permits requiring a name the enclosing schema's `properties` defines, or no
+  # `properties` at all. Redocly resolves the rule within the subschema only, so a `then`
+  # branch requiring a parent-declared property reads as undefined. Hits `Kev`
+  # (then.required: dateAdded, dueDate) and `Standalone_Override`. Both conditionals are
+  # exercised directly by test/conformance.test.ts.
+  no-required-schema-properties-undefined: off
