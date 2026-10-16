@@ -3,7 +3,7 @@ module github.com/mitre/hdf-libs/hdf-cli/v3
 go 1.26.9
 
 require (
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.1
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.83.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/google/jsonschema-go v0.4.3
@@ -96,7 +96,7 @@ require (
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/toon-format/toon-go v0.0.0-20251202084852-7ca0e27c4e8c
+	github.com/toon-format/toon-go v0.1.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect

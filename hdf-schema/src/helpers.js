@@ -125,6 +125,7 @@ export function createResult(status, message, options = {}) {
     exception: options.exception,
     ...(options.resource ? { resource: options.resource } : {}),
     ...(options.resourceId ? { resourceId: options.resourceId } : {}),
+    ...(options.rawSourceRecord ? { rawSourceRecord: options.rawSourceRecord } : {}),
   };
 }
 

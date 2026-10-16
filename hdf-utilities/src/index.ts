@@ -15,6 +15,7 @@ export {
   verifyHash,
   type HashAlgorithm,
   type HashEncoding,
+  type HashInput,
   type HashOptions,
 } from './hash/index.js';
 

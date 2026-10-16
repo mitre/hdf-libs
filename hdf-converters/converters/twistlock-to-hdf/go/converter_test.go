@@ -1,6 +1,7 @@
 package twistlock
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -84,8 +85,14 @@ func TestConvertTwistlock_ContainerScan_RequirementCount(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// sample-1 result[0] has 97 vulnerabilities, each with unique CVE ID
-	assert.Len(t, result.Baselines[0].Requirements, 97)
+	// sample-1 result[0] has 97 vulnerabilities over 58 distinct CVE ids (19 ids
+	// repeat, once per affected package), and roll-up emits one requirement each.
+	assert.Len(t, result.Baselines[0].Requirements, 58)
+	n := 0
+	for _, req := range result.Baselines[0].Requirements {
+		n += len(req.Results)
+	}
+	assert.Equal(t, 97, n, "every vulnerability keeps a result")
 }
 
 func TestConvertTwistlock_ContainerScan_Checksum(t *testing.T) {
@@ -407,24 +414,34 @@ func TestConvertTwistlock_FormatMessage(t *testing.T) {
 		formatMessage(TwistlockVuln{}))
 }
 
-// ---- Raw-finding code passthrough (heimdall2 parity) ----
+// ---- Raw-finding carriage (ADR-0017 §5) ----
 
-func TestConvertTwistlock_CodePassthrough(t *testing.T) {
+// The raw record rides on the result, not on code: Twistlock runs no executable
+// check, and one CVE against several packages is several records.
+func TestConvertTwistlock_RawSourceRecordCarriesUnmappedFields(t *testing.T) {
 	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-44228")
-	require.NotNil(t, req.Code, "expected raw-finding code passthrough")
-	// Otherwise-unmapped fields survive in the code passthrough.
-	assert.Contains(t, *req.Code, "\"link\":")
-	assert.Contains(t, *req.Code, "\"riskFactors\":")
-	assert.Contains(t, *req.Code, "\"publishedDate\":")
-	assert.Contains(t, *req.Code, "\"layerTime\":")
+	assert.Nil(t, req.Code, "code is for an executable check; Twistlock runs none")
+	require.Len(t, req.Results, 1)
+	rec := req.Results[0].RawSourceRecord
+	require.NotNil(t, rec, "expected the raw finding on the result")
+	assert.Equal(t, "application/json", rec.MediaType)
+	assert.Equal(t, hdf.UTF8, rec.Encoding)
+	// An unwrapped code-repo scan has no results[] wrapper to point into.
+	require.NotNil(t, rec.Pointer)
+	assert.Equal(t, "/vulnerabilities/0", *rec.Pointer)
+	// Otherwise-unmapped fields survive in the record.
+	assert.Contains(t, rec.Content, "\"link\":")
+	assert.Contains(t, rec.Content, "\"riskFactors\":")
+	assert.Contains(t, rec.Content, "\"publishedDate\":")
+	assert.Contains(t, rec.Content, "\"layerTime\":")
 }
 
-func TestConvertTwistlock_BuildVulnCode_OrderAndOmission(t *testing.T) {
-	code := buildVulnCode(TwistlockVuln{
+func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
+	code := renderVulnRecord(TwistlockVuln{
 		ID:             "CVE-X",
 		Status:         "affected",
 		CVSS:           7.5,
@@ -474,17 +491,17 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
-// Ground-truth anchor: the converter emits one requirement per results[].
-// vulnerabilities[] entry (no grouping/dedup). The array count is derived
-// independently of the converter's parser, so a silent under-extraction fails
-// even when Go/TS golden parity agrees. twistlock-twistcli-sample-1.json carries
-// 97 vulnerabilities.
+// Ground-truth anchor: requirements roll up one-per-CVE, so the count that
+// tracks the input is the RESULT count — one per results[].vulnerabilities[]
+// entry. The array count is derived independently of the converter's parser, so
+// a silent under-extraction fails even when Go/TS golden parity agrees.
+// twistlock-twistcli-sample-1.json carries 97 vulnerabilities.
 func TestConvertTwistlock_VulnerabilityAnchor(t *testing.T) {
 	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
-	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "vulnerabilities"),
-		"twistlock-twistcli-sample-1.json: one requirement per results[].vulnerabilities[]")
+	shared.AssertResultCount(t, result, shared.CountJSONItemsUnderKey(t, input, "vulnerabilities"),
+		"twistlock-twistcli-sample-1.json: one result per results[].vulnerabilities[]")
 }
 
 // ---- Structured CVE-ecosystem fields (cvss[], cwe[], affectedPackages[]) ----
@@ -600,13 +617,19 @@ func TestConvertTwistlock_AffectedPackagesRpmEcosystem(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// CVE-2021-43529 from sample-1 affects nss-util (os type → rpm via RHEL distro).
+	// CVE-2021-43529 from sample-1 affects nss-util (os type → rpm via RHEL
+	// distro). Five entries share the id, so after roll-up affectedPackages is
+	// their union — first-wins would discard four.
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-43529")
-	require.Len(t, req.AffectedPackages, 1)
-	pkg := req.AffectedPackages[0]
-	require.NotNil(t, pkg.Name)
+	require.Len(t, req.AffectedPackages, 5)
+	var pkg *hdf.AffectedPackage
+	for i := range req.AffectedPackages {
+		if n := req.AffectedPackages[i].Name; n != nil && *n == "nss-util" {
+			pkg = &req.AffectedPackages[i]
+		}
+	}
+	require.NotNil(t, pkg, "nss-util missing from the union")
 	require.NotNil(t, pkg.Ecosystem)
-	assert.Equal(t, "nss-util", *pkg.Name)
 	assert.Equal(t, hdf.RPM, *pkg.Ecosystem)
 }
 
@@ -783,13 +806,11 @@ func TestConvertTwistlock_SetsResultResourceIdentityToPackageNameVersion(t *test
 	result, err := ConvertTwistlockToHDF(loadFixture(t, "input/twistlock-twistcli-sample-1.json"), testVersion)
 	require.NoError(t, err)
 
+	// After roll-up the five entries are five results on ONE requirement.
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2021-43529")
+	require.Len(t, req.Results, 5, "expected one result per vulnerability entry")
 	var got []string
-	for _, req := range result.Baselines[0].Requirements {
-		if req.ID != "CVE-2021-43529" {
-			continue
-		}
-		require.Len(t, req.Results, 1, "expected one result per vulnerability entry")
-		res := req.Results[0]
+	for _, res := range req.Results {
 		require.NotNil(t, res.Resource, "resource is nil")
 		assert.Equal(t, "package", *res.Resource)
 		require.NotNil(t, res.ResourceID, "resourceId is nil — the instance identity lives only in prose")
@@ -803,4 +824,55 @@ func TestConvertTwistlock_SetsResultResourceIdentityToPackageNameVersion(t *test
 		"nss-softokn@3.67.0-7.el8_5",
 		"nss-softokn-freebl@3.67.0-7.el8_5",
 	}, got, "resourceIds for the duplicate-id group")
+}
+
+// The relocation is what makes roll-up non-lossy. Before it, §6's `code`
+// first-wins discarded 39 of sample-1's 97 distinct vulnerability records. Each
+// now rides on its own result, locatable in the input by its pointer. sample-1
+// is the harder case: its largest group is five packages under one CVE, so an
+// implementation that only handles pairs fails here.
+func TestConvertTwistlock_CarriesEveryVulnRecordThroughRollUp(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	out, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	var source struct {
+		Results []struct {
+			Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+		} `json:"results"`
+	}
+	require.NoError(t, json.Unmarshal(input, &source))
+	want := 0
+	for _, r := range source.Results {
+		want += len(r.Vulnerabilities)
+	}
+
+	records := map[string]bool{}
+	pointers := map[string]bool{}
+	biggest := 0
+	for _, b := range out.Baselines {
+		for _, r := range b.Requirements {
+			if n := len(r.Results); n > biggest {
+				biggest = n
+			}
+			for _, res := range r.Results {
+				rec := res.RawSourceRecord
+				require.NotNil(t, rec, "requirement %q: a result carries no source record", r.ID)
+				assert.Equal(t, "application/json", rec.MediaType)
+				assert.Equal(t, hdf.UTF8, rec.Encoding)
+				require.NotNil(t, rec.Pointer, "requirement %q: record has no pointer", r.ID)
+				// A wrapped container scan points through its results[] element.
+				assert.Regexp(t, `^/results/\d+/vulnerabilities/\d+$`, *rec.Pointer)
+				pointers[*rec.Pointer] = true
+				records[rec.Content] = true
+			}
+		}
+	}
+
+	// One distinct record and one distinct pointer per source vulnerability —
+	// nothing merged away. This fails if the relocation is removed and roll-up
+	// runs alone.
+	assert.Equal(t, want, len(records), "distinct source records (none lost to roll-up)")
+	assert.Equal(t, want, len(pointers), "distinct source pointers")
+	assert.Equal(t, 5, biggest, "sample-1's largest roll-up group is five packages under one CVE")
 }

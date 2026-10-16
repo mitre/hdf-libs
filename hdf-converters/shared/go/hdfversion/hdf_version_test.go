@@ -590,3 +590,131 @@ func TestNormalizeVersion(t *testing.T) {
 	assert.Equal(t, LegacyVersion, got)
 	assert.NotEmpty(t, warn, "v1 should warn like 1")
 }
+
+// v2 has no per-result source record, so a requirement that carries its raw
+// payload on results (every converter with no executable check, after the
+// ADR-0017 §5 relocation) would otherwise downgrade with an empty CODE tab.
+func TestDowngradeV3ToV2_ReconstructsCodeFromResultSourceRecord(t *testing.T) {
+	const record = `{"vulnerability":{"id":"CVE-2021-43529"}}`
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "CVE-2021-43529",
+				Impact: 0.9,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Failed,
+					CodeDesc:  "nss is affected",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+					RawSourceRecord: &hdf.RawSourceRecord{
+						Content:   record,
+						Encoding:  hdf.UTF8,
+						MediaType: "application/json",
+					},
+				}},
+			}},
+		}},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	profiles, ok := legacy["profiles"].([]any)
+	require.True(t, ok)
+	controls, ok := profiles[0].(map[string]any)["controls"].([]any)
+	require.True(t, ok)
+	assert.Equal(t, record, controls[0].(map[string]any)["code"],
+		"v2 code is reconstructed from the result's source record")
+}
+
+// A requirement that still populates code keeps it — the fallback must not
+// overwrite a real executable check with a source record.
+func TestDowngradeV3ToV2_ExistingCodeWinsOverSourceRecord(t *testing.T) {
+	code := "describe package('nss') do\n  it { should be_installed }\nend"
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "V-1",
+				Impact: 0.5,
+				Code:   &code,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+					RawSourceRecord: &hdf.RawSourceRecord{
+						Content:   `{"should":"not win"}`,
+						Encoding:  hdf.UTF8,
+						MediaType: "application/json",
+					},
+				}},
+			}},
+		}},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	controls := legacy["profiles"].([]any)[0].(map[string]any)["controls"].([]any)
+	assert.Equal(t, code, controls[0].(map[string]any)["code"])
+}
+
+// The fallback is an N-to-1 projection: v2 has one code field per control, so a
+// rolled-up requirement with several records keeps only the first. Pin that
+// explicitly — the behavior is a deliberate loss, and a future change that
+// started concatenating or picking differently should have to update this test.
+func TestDowngradeV3ToV2_RolledUpRequirementKeepsOnlyTheFirstRecord(t *testing.T) {
+	record := func(pkg string) *hdf.RawSourceRecord {
+		return &hdf.RawSourceRecord{
+			Content:   `{"package":"` + pkg + `"}`,
+			Encoding:  hdf.UTF8,
+			MediaType: "application/json",
+		}
+	}
+	results := make([]hdf.RequirementResult, 0, 3)
+	for _, pkg := range []string{"nss", "nss-util", "nss-softokn"} {
+		results = append(results, hdf.RequirementResult{
+			Status:          hdf.Failed,
+			CodeDesc:        pkg + " is affected",
+			StartTime:       time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+			RawSourceRecord: record(pkg),
+		})
+	}
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:      "CVE-2021-43529",
+				Impact:  0.9,
+				Results: results,
+			}},
+		}},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	controls := legacy["profiles"].([]any)[0].(map[string]any)["controls"].([]any)
+	require.Len(t, controls, 1, "roll-up produced one requirement, so one v2 control")
+	control := controls[0].(map[string]any)
+
+	assert.Equal(t, `{"package":"nss"}`, control["code"],
+		"v2 code is the FIRST record of the three; the other two have no v2 destination")
+
+	// All three survive where they are carried: v2 keeps one result per finding.
+	v2results, ok := control["results"].([]any)
+	require.True(t, ok)
+	assert.Len(t, v2results, 3, "the findings themselves are not collapsed")
+}

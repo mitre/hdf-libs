@@ -112,3 +112,23 @@ test('checkPackage detects re-export (export ... from) specifiers', async () => 
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('checkPackage flags literal dynamic imports and skips nonliteral imports and import.meta', async () => {
+  const dir = await makePackage(
+    { name: '@mitre/hdf-synthetic', type: 'module', dependencies: {} },
+    {
+      'index.js':
+        "const literal = import('undeclared-dynamic');\n" +
+        "const wildcard = import('literal*module');\n" +
+        'const template = import(`undeclared-${packageName}`);\n' +
+        'const variable = import(packageName);\n' +
+        'const url = import.meta.url;\n',
+    },
+  );
+  try {
+    const result = await checkPackage(dir);
+    assert.deepEqual(result.offenders.map((o) => o.packageName), ['undeclared-dynamic', 'literal*module']);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
