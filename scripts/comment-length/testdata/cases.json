@@ -1,0 +1,183 @@
+{
+  "comment": "@context-free corpus for the comment-length check. Both the Go and the TypeScript checker run every case and must report the same violation kinds AND the same kind:count multiset. `expect` lists the kinds the case must produce: doc, inline, line. These rows pin the shapes listed; they are not a proof for shapes they do not list, and which divergence classes have been probed is recorded on hdf-libs-c5pbf rather than claimed here. CRLF is asserted by a unit test instead of a row, because a checked-in CRLF fixture is at the mercy of git line-ending normalization.",
+  "cases": [
+    {
+      "name": "doc at cap (10 lines)",
+      "go": "go/doc_at_cap.go",
+      "ts": "ts/doc_at_cap.ts",
+      "expect": []
+    },
+    {
+      "name": "doc over cap (11 lines)",
+      "go": "go/doc_over_cap.go",
+      "ts": "ts/doc_over_cap.ts",
+      "expect": [
+        "doc"
+      ]
+    },
+    {
+      "name": "inline at cap (5 lines)",
+      "go": "go/inline_at_cap.go",
+      "ts": "ts/inline_at_cap.ts",
+      "expect": []
+    },
+    {
+      "name": "inline over cap (6 lines)",
+      "go": "go/inline_over_cap.go",
+      "ts": "ts/inline_over_cap.ts",
+      "expect": [
+        "inline"
+      ]
+    },
+    {
+      "name": "comment line at cap (90 chars)",
+      "go": "go/line_at_cap.go",
+      "ts": "ts/line_at_cap.ts",
+      "expect": []
+    },
+    {
+      "name": "comment line over cap (91 chars)",
+      "go": "go/line_over_cap.go",
+      "ts": "ts/line_over_cap.ts",
+      "expect": [
+        "line"
+      ]
+    },
+    {
+      "name": "file header over doc cap (11 lines) \u2014 header is judged as doc",
+      "go": "go/header_over_cap.go",
+      "ts": "ts/header_over_cap.ts",
+      "expect": [
+        "doc"
+      ]
+    },
+    {
+      "name": "a // inside a string literal is not a comment",
+      "go": "go/string_not_comment.go",
+      "ts": "ts/string_not_comment.ts",
+      "expect": []
+    },
+    {
+      "name": "clean file",
+      "go": "go/clean.go",
+      "ts": "ts/clean.ts",
+      "expect": []
+    },
+    {
+      "name": "six lines above control flow is inline, not doc",
+      "go": "go/above_if.go",
+      "ts": "ts/above_if.ts",
+      "expect": [
+        "inline"
+      ]
+    },
+    {
+      "name": "six lines above an assignment is inline, not doc",
+      "go": "go/above_assign.go",
+      "ts": "ts/above_assign.ts",
+      "expect": [
+        "inline"
+      ]
+    },
+    {
+      "name": "a // inside a template literal or raw string is not a comment",
+      "go": "go/raw_string.go",
+      "ts": "ts/template_literal.ts",
+      "expect": []
+    },
+    {
+      "name": "a trailing comment after code is measured too",
+      "go": "go/trailing.go",
+      "ts": "ts/trailing.ts",
+      "expect": [
+        "line"
+      ]
+    },
+    {
+      "name": "an indented comment is not charged for its indentation",
+      "go": "go/indented_at_cap.go",
+      "ts": "ts/indented_at_cap.ts",
+      "expect": []
+    },
+    {
+      "name": "a block comment adjacent to line comments is one group",
+      "go": "go/block_then_lines.go",
+      "ts": "ts/block_then_lines.ts",
+      "expect": [
+        "doc"
+      ]
+    },
+    {
+      "name": "six lines above an import is doc, not inline",
+      "go": "go/above_import.go",
+      "ts": "ts/above_import.ts",
+      "expect": []
+    },
+    {
+      "name": "a blank line detaches a group from the declaration below it",
+      "go": "go/detached.go",
+      "ts": "ts/detached.ts",
+      "expect": [
+        "inline"
+      ]
+    },
+    {
+      "name": "a group ADJACENT to the declaration below it is its doc",
+      "go": "go/attached.go",
+      "ts": "ts/attached.ts",
+      "expect": []
+    },
+    {
+      "name": "a // inside a SUBSTITUTION template (TS) or a raw string (Go) is not a comment",
+      "go": "go/subst_raw.go",
+      "ts": "ts/subst_template.ts",
+      "expect": []
+    },
+    {
+      "name": "a // inside a regex literal is not a comment",
+      "go": "go/regexlike.go",
+      "ts": "ts/regex_literal.ts",
+      "expect": []
+    },
+    {
+      "name": "a header is still a header in a file that opens with a shebang",
+      "go": "go/build_tag_header.go",
+      "ts": "ts/shebang_header.ts",
+      "expect": [
+        "doc"
+      ]
+    },
+    {
+      "name": "six lines above an enum member is doc in both",
+      "go": "go/const_spec.go",
+      "ts": "ts/enum_member.ts",
+      "expect": []
+    },
+    {
+      "name": "a /** */ header over the doc cap, with no declaration to rescue it",
+      "go": "go/block_header.go",
+      "ts": "ts/jsdoc_header.ts",
+      "expect": [
+        "doc"
+      ]
+    },
+    {
+      "name": "a /** */ header at the cap is accepted, with no declaration to rescue it",
+      "go": "go/block_header_ok.go",
+      "ts": "ts/jsdoc_header_ok.ts",
+      "expect": []
+    },
+    {
+      "name": "two runs separated by a blank line are two groups, not one",
+      "go": "go/two_runs.go",
+      "ts": "ts/two_runs.ts",
+      "expect": []
+    },
+    {
+      "name": "a file of only comments is a header",
+      "go": "go/only_comments.go",
+      "ts": "ts/only_comments.ts",
+      "expect": []
+    }
+  ]
+}
