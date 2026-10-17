@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`hdf evidence update` names a remote `systemRef` instead of describing it as no reference at all.**
+
+  A package recording `"systemRef": "https://x.example/system.json"` reported `no system document resolved; completeness cannot claim full baseline coverage` — the same line, word for word, as a package recording no `systemRef` at all. The reference the package does hold was never printed, because the remote case short-circuited ahead of the classification that names a rejected local reference. The three non-resolving shapes now read differently: an absent reference keeps `no system document resolved; …`, a remote one reports `systemRef https://x.example/system.json is remote and was not fetched; completeness cannot claim full baseline coverage`, and a rejected local one keeps `systemRef /system.json does not resolve inside the package's directory; …`.
+
+  Nothing is fetched to produce that line: a reference to something the package does not carry is legitimate, and is reported rather than resolved. `completenessCheck.allBaselinesAssessed` stays `false` for all three shapes, so the in-document gate is unchanged, and `update` gains no flag — a pipeline that wants a non-zero exit on a reference this machine cannot resolve runs `hdf evidence info --verify --require-reachable` over the output, which names the remote reference and exits 1. (hdf-libs-52n0c.25)
+
 - **A `--uri` or `--href` naming a directory is refused, like the other kinds that cannot be hashed.**
 
   `hdf evidence add-evidence` and `add-reference` already refused a fifo, a socket and a device node before opening them, but a directory got a notice and a reference-only entry at exit 0. That split was never a decision: it fell out of two early returns that short-circuited before the kind was consulted, so a directory reported `it is not a local file` on the `--infer` path — which it is not. The rule is now one rule. A path that exists but cannot be a document is refused, naming the kind; a path that is simply not here — absent, a dangling symlink, a URL, or one outside the package directory — still produces a notice and a reference-only entry, because that is a legitimate reference to an artifact kept elsewhere. A supplied `--checksum` is unaffected on the hashing path, where nothing is opened; `--infer` must read the content either way and is unchanged by this card. (hdf-libs-52n0c.48)

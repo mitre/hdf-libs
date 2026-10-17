@@ -499,9 +499,15 @@ func TestEvidenceUpdate_DryRunIsAPreviewOfTheRealRun(t *testing.T) {
 // resolved. computeCompleteness sets allBaselinesAssessed from the results alone, so an
 // absent or remote systemRef would mint a green verdict from nothing.
 func TestEvidenceUpdate_WillNotClaimCoverageWithNoSystemDocument(t *testing.T) {
-	for _, tc := range []struct{ name, ref string }{
-		{"absent systemRef", ""},
-		{"remote systemRef, which is never fetched", "https://example.invalid/system.json"},
+	// want is the reason each shape states; the two differ, and
+	// TestEvidenceUpdate_NamesARemoteSystemRef is where that difference is the subject.
+	for _, tc := range []struct{ name, ref, want string }{
+		{"absent systemRef", "", "no system document resolved"},
+		{
+			"remote systemRef, which is never fetched",
+			"https://example.invalid/system.json",
+			"systemRef https://example.invalid/system.json is remote and was not fetched",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir, pkgPath := updatablePackage(t)
@@ -531,7 +537,7 @@ func TestEvidenceUpdate_WillNotClaimCoverageWithNoSystemDocument(t *testing.T) {
 			cc := updatedPackage(t, out)["completenessCheck"].(map[string]any)
 			assert.Equal(t, false, cc["allBaselinesAssessed"],
 				"with no system document there is nothing to assess against, so this cannot be true")
-			assert.Contains(t, stderr, "no system document resolved",
+			assert.Contains(t, stderr, tc.want,
 				"and the operator must be told why")
 		})
 	}
@@ -955,6 +961,95 @@ func TestEvidenceUpdate_DoesNotResolveSystemRefOntoADifferentDocument(t *testing
 			assert.Equal(t, tc.wantAssessed, check["allBaselinesAssessed"],
 				"a systemRef that does not resolve inside the package must not be substituted "+
 					"by a same-basename document that happens to be there")
+		})
+	}
+}
+
+// The three non-resolving systemRef shapes must read differently on stderr. A package
+// recording a REMOTE reference used to produce output identical to one recording no
+// systemRef at all, so the reference it does hold was never printed.
+//
+// The last row is the CONTROL: both planned baselines have results here, so a resolving
+// systemRef yields allBaselinesAssessed=true and the false in every other row means
+// something.
+func TestEvidenceUpdate_NamesARemoteSystemRef(t *testing.T) {
+	type sysRefCase struct {
+		name, systemRef string
+		// marker is the phrase that distinguishes this case from the other two. Each row
+		// asserts its own marker present and every other marker absent, so no two cases
+		// can be made to read alike. The control row has none.
+		marker       string
+		wantNamed    bool
+		wantAssessed bool
+	}
+	cases := []sysRefCase{
+		{name: "absent systemRef", systemRef: "", marker: "no system document resolved"},
+		{
+			name:      "remote systemRef is named and said to be unfetched",
+			systemRef: "https://x.example/system.json",
+			marker:    "is remote and was not fetched",
+			wantNamed: true,
+		},
+		{
+			name:      "rejected local systemRef keeps its own reason",
+			systemRef: "/system.json",
+			marker:    "does not resolve inside the package's directory",
+			wantNamed: true,
+		},
+		{name: "control: a local systemRef resolves", systemRef: "system.json", wantAssessed: true},
+	}
+	allMarkers := []string{}
+	for _, tc := range cases {
+		if tc.marker != "" {
+			allMarkers = append(allMarkers, tc.marker)
+		}
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json"} {
+				body, err := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+			}
+			pkg := map[string]interface{}{
+				"name": "remote-systemref",
+				"contents": []map[string]interface{}{
+					{"type": "hdf-results", "uri": "rhel9-results.json"},
+					{"type": "hdf-results", "uri": "postgres-results.json"},
+				},
+			}
+			if tc.systemRef != "" {
+				pkg["systemRef"] = tc.systemRef
+			}
+			raw, err := json.Marshal(pkg)
+			require.NoError(t, err)
+			pkgPath := filepath.Join(dir, "pkg.json")
+			require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
+			out := filepath.Join(dir, "updated.json")
+
+			_, stderr, updateErr := executeCommand("evidence", "update", pkgPath,
+				"--results", filepath.Join(dir, "rhel9-results.json"), "-o", out)
+			require.NoError(t, updateErr, "a reference the package does not contain is reported, not fatal")
+
+			for _, m := range allMarkers {
+				if m == tc.marker {
+					assert.Contains(t, stderr, m, "this case must state its own reason")
+					continue
+				}
+				assert.NotContains(t, stderr, m,
+					"another case's reason must not appear, or the three are not distinguishable")
+			}
+			if tc.wantNamed {
+				assert.Contains(t, stderr, tc.systemRef,
+					"the reference the package records must be printed, not a generic line")
+			}
+
+			check, ok := updatedPackage(t, out)["completenessCheck"].(map[string]any)
+			require.True(t, ok, "update records a completenessCheck")
+			assert.Equal(t, tc.wantAssessed, check["allBaselinesAssessed"],
+				"a systemRef that yielded no system document must not claim full baseline coverage")
 		})
 	}
 }

@@ -280,7 +280,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	// this command never writes systemRef, so the two enumerations agree on it, and
 	// no test distinguishes them. Everything after the re-collect reads the updated
 	// one so that stops being a fact anyone has to re-derive.
-	sysDoc, haveSystem, unresolvedRef, sysErr := systemDocForPackage(pkgDir, updatedRefs)
+	sysDoc, haveSystem, unresolved, sysErr := systemDocForPackage(pkgDir, updatedRefs)
 	if sysErr != nil {
 		return sysErr
 	}
@@ -293,12 +293,12 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	// package whose systemRef stopped resolving must describe themselves the same way.
 	completeness := completenessForPackage(sysDoc, haveSystem, allResults)
 	if !haveSystem {
-		if unresolvedRef != "" {
-			// Named, because a systemRef the package RECORDS and this run rejected is a
-			// different situation from one it never recorded, and the two used to be
-			// indistinguishable on stderr.
-			fmt.Fprintf(os.Stderr, "  systemRef %s does not resolve inside the package's directory; "+
-				"completeness cannot claim full baseline coverage\n", sanitizeOutput(unresolvedRef))
+		if unresolved.ref != "" {
+			// Named, because a systemRef the package RECORDS is a different situation from
+			// one it never recorded; the reason distinguishes the rejected-local case from
+			// the remote one, which these three used to collapse into two messages.
+			fmt.Fprintf(os.Stderr, "  systemRef %s %s; completeness cannot claim full baseline coverage\n",
+				sanitizeOutput(unresolved.ref), unresolved.reason)
 		} else {
 			fmt.Fprintf(os.Stderr, "  no system document resolved; completeness cannot claim full baseline coverage\n")
 		}
@@ -582,51 +582,61 @@ func contentsAsDocument(contents []interface{}) ([]byte, error) {
 	return b, nil
 }
 
+// unresolvedSystemRef describes a systemRef the package records that yielded no system
+// document: the reference as stored, and the reason, which the caller prints verbatim.
+// Each non-resolving shape carries its own reason: ABSENT and REMOTE read alike until
+// this split them, and the remote reference went unnamed.
+// The zero value means there was nothing to resolve.
+type unresolvedSystemRef struct {
+	ref    string
+	reason string
+}
+
 // systemDocForPackage reads the system document the package references, so completeness
-// can be recomputed against it. It reports whether a document was actually resolved,
-// because computeCompleteness does NOT treat an empty system document as "nothing to
-// check against": it sets allBaselinesAssessed from the results alone, so an unresolvable
-// systemRef would mint a green verdict from nothing. systemRef is optional in the schema,
-// and a remote one is never fetched, so both cases are reachable on valid input.
+// can be recomputed against it. It reports whether a document was resolved, because
+// computeCompleteness does NOT treat an empty system document as "nothing to check
+// against": it sets allBaselinesAssessed from the results alone, so an unresolvable
+// systemRef would mint a green verdict from nothing.
 //
-// A MIS-resolved systemRef is worse than an unresolvable one and was the live defect:
-// SafePath JOINS, so a root-anchored "/system.json" re-rooted to <pkgDir>/system.json
-// and the reference RESOLVED — to a document it did not name — and completeness was
-// asserted from it, so the verdict looked earned. Classified through the same predicate
-// verify and bundle use, a reference that does not resolve inside the package is reported
-// as unresolved rather than substituted.
-// unresolvedSystemRef names a systemRef the package records but this run could not
-// resolve, empty when there was nothing to resolve. It exists so the caller can print
-// the reference: returning only "no system document" made a REJECTED systemRef
-// indistinguishable from one the package never recorded, and a rejected one used to
-// abort the run by name. A remote systemRef is still reported as no system document,
-// since it is recorded but was never a candidate to resolve.
-func systemDocForPackage(pkgDir string, refs evidenceref.References) (map[string]interface{}, bool, string, error) {
+// A MIS-resolved systemRef was the live defect: SafePath JOINS, so a root-anchored
+// "/system.json" re-rooted to <pkgDir>/system.json and RESOLVED — to a document it did
+// not name. Classified through the predicate verify and bundle use, a reference outside
+// the package is reported as unresolved rather than substituted.
+func systemDocForPackage(pkgDir string, refs evidenceref.References) (
+	map[string]interface{}, bool, unresolvedSystemRef, error) {
 	rec, found := refs.At("systemRef", -1)
 	ref := rec.Stored
-	if !found || ref == "" || isRemoteURI(ref) {
-		return map[string]interface{}{}, false, "", nil
+	none := unresolvedSystemRef{}
+	switch {
+	case !found || ref == "":
+		return map[string]interface{}{}, false, none, nil
+	case isRemoteURI(ref):
+		// Recorded and legitimate, but outside the package and never fetched, so it is
+		// named rather than resolved.
+		return map[string]interface{}{}, false,
+			unresolvedSystemRef{ref: ref, reason: "is remote and was not fetched"}, nil
 	}
 	if rec.Err != nil {
-		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, rec.Err)
+		return nil, false, none, fmt.Errorf("systemRef %q cannot be resolved: %w", ref, rec.Err)
 	}
 	resolved, inTree := packageSubtreeRef(pkgDir, rec.Decoded)
 	if !inTree {
-		return map[string]interface{}{}, false, ref, nil
+		return map[string]interface{}{}, false, unresolvedSystemRef{
+			ref: ref, reason: "does not resolve inside the package's directory"}, nil
 	}
 	path, err := evidenceref.Path(pkgDir, resolved)
 	if err != nil {
-		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
+		return nil, false, none, fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
 	}
 	data, err := readFromFile(path, true)
 	if err != nil {
-		return nil, false, "", fmt.Errorf("systemRef %q is referenced but could not be read: %w", ref, err)
+		return nil, false, none, fmt.Errorf("systemRef %q is referenced but could not be read: %w", ref, err)
 	}
 	var sysDoc map[string]interface{}
 	if err := json.Unmarshal(data, &sysDoc); err != nil {
-		return nil, false, "", fmt.Errorf("systemRef %q is not readable JSON: %w", ref, err)
+		return nil, false, none, fmt.Errorf("systemRef %q is not readable JSON: %w", ref, err)
 	}
-	return sysDoc, true, "", nil
+	return sysDoc, true, none, nil
 }
 
 // reportUpdate says what changed, and for an added document covering a baseline the
