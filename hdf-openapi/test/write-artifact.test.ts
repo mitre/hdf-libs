@@ -144,7 +144,10 @@ describe('writeArtifact', () => {
       }
     };
 
-    it('gives up when the refusal outlasts the budget, leaving the old version', () => {
+    // chmod on a directory does not restrict writes on Windows, so these two cannot
+    // provoke a refusal there. The exhaustion path is covered on Windows by the
+    // held-handle test above, where the open handle refuses every attempt.
+    it.skipIf(platform() === 'win32')('gives up when the refusal outlasts the budget, leaving the old version', () => {
       withReadOnlyDir((dir, from, to) => {
         chmodSync(dir, 0o500);
         expect(() => renameWithRetry(from, to, 50)).toThrow();
@@ -152,7 +155,7 @@ describe('writeArtifact', () => {
       });
     });
 
-    it('succeeds when the refusal clears inside the budget', () => {
+    it.skipIf(platform() === 'win32')('succeeds when the refusal clears inside the budget', () => {
       withReadOnlyDir((dir, from, to) => {
         const unlock = join(dir, 'unlock.cjs');
         writeFileSync(unlock, `require('fs').chmodSync(process.argv[2], 0o700);`);
@@ -173,6 +176,7 @@ describe('writeArtifact', () => {
         // ENOENT: a destination directory that does not exist is never retryable.
         expect(() => renameWithRetry(from, join(dir, 'missing', 'doc.json'), 5000)).toThrow();
         expect(Date.now() - started).toBeLessThan(2000);
+        expect(readdirSync(dir), 'a refused rename must leave nothing staged').toEqual([]);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }

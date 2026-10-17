@@ -1,4 +1,4 @@
-import { renameSync, writeFileSync } from 'node:fs';
+import { renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 /**
@@ -28,7 +28,12 @@ export function renameWithRetry(from: string, to: string, budgetMs = RETRY_BUDGE
       return;
     } catch (err) {
       const code = (err as { code?: string }).code;
-      if (code === undefined || !RETRY_CODES.has(code) || Date.now() >= deadline) throw err;
+      if (code === undefined || !RETRY_CODES.has(code) || Date.now() >= deadline) {
+        // A refusal must leave the destination's previous version complete and nothing
+        // staged beside it, which is what the Go writer guarantees for the same case.
+        rmSync(from, { force: true });
+        throw err;
+      }
       // Synchronous by necessity: the callers are module-scope test setup.
       const until = Date.now() + 5;
       while (Date.now() < until) {
