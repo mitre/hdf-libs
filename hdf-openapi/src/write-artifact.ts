@@ -20,8 +20,8 @@ import { dirname, join } from 'node:path';
 const RETRY_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
 const RETRY_BUDGET_MS = 2000;
 
-function renameWithRetry(from: string, to: string): void {
-  const deadline = Date.now() + RETRY_BUDGET_MS;
+export function renameWithRetry(from: string, to: string, budgetMs = RETRY_BUDGET_MS): void {
+  const deadline = Date.now() + budgetMs;
   for (;;) {
     try {
       renameSync(from, to);

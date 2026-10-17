@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
-import { closeSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, closeSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { writeArtifact } from '../src/write-artifact.js';
+import { renameWithRetry, writeArtifact } from '../src/write-artifact.js';
 
 // A reader in another process, parsing the target for a fixed window. Every
 // version written is valid JSON, so a parse failure can only be a partial read.
@@ -125,6 +125,59 @@ describe('writeArtifact', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 20000);
+
+  // The retry exists for Windows, where an open reader makes the replacement fail
+  // rather than tear. A read-only directory reproduces the same refusal on POSIX,
+  // so the three paths through it are reachable without a Windows runner.
+  describe('the rename retry', () => {
+    const withReadOnlyDir = (body: (dir: string, from: string, to: string) => void): void => {
+      const dir = mkdtempSync(join(tmpdir(), 'hdf-artifact-'));
+      const from = join(dir, 'staged.tmp');
+      const to = join(dir, 'doc.json');
+      writeFileSync(from, '{"v":2}\n');
+      writeFileSync(to, '{"v":1}\n');
+      try {
+        body(dir, from, to);
+      } finally {
+        chmodSync(dir, 0o700);
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+
+    it('gives up when the refusal outlasts the budget, leaving the old version', () => {
+      withReadOnlyDir((dir, from, to) => {
+        chmodSync(dir, 0o500);
+        expect(() => renameWithRetry(from, to, 50)).toThrow();
+        expect(readFileSync(to, 'utf-8')).toBe('{"v":1}\n');
+      });
+    });
+
+    it('succeeds when the refusal clears inside the budget', () => {
+      withReadOnlyDir((dir, from, to) => {
+        const unlock = join(dir, 'unlock.cjs');
+        writeFileSync(unlock, `require('fs').chmodSync(process.argv[2], 0o700);`);
+        chmodSync(dir, 0o500);
+        // The retry spins synchronously, so only another process can clear it.
+        spawn(process.execPath, [unlock, dir], { detached: true, stdio: 'ignore' }).unref();
+        renameWithRetry(from, to, 10000);
+        expect(readFileSync(to, 'utf-8')).toBe('{"v":2}\n');
+      });
+    }, 20000);
+
+    it('reports a refusal that is not retryable without waiting out the budget', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'hdf-artifact-'));
+      try {
+        const from = join(dir, 'staged.tmp');
+        writeFileSync(from, '{}\n');
+        const started = Date.now();
+        // ENOENT: a destination directory that does not exist is never retryable.
+        expect(() => renameWithRetry(from, join(dir, 'missing', 'doc.json'), 5000)).toThrow();
+        expect(Date.now() - started).toBeLessThan(2000);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
 
   // The control. Without it the test above cannot tell "atomic" from "the window was
   // never hit", and would pass against the plain write it exists to rule out.
