@@ -1111,3 +1111,19 @@ func recordedReferenceValues(t *testing.T, path, field string) []string {
 	}
 	return out
 }
+
+// add-reference hashes through the same function as add-evidence, so it inherits the
+// refusal. Asserted here so a future change to one cannot silently diverge the other.
+func TestEvidenceAddReference_RefusesAnHrefThatCannotBeHashed(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(filepath.Join(pkgDir, "subdir"), 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	t.Chdir(root)
+
+	_, _, err := executeCommand("evidence", "add-reference", pkg,
+		"--href", "subdir", "--source-name", "x")
+	require.Error(t, err, "a directory cannot be hashed here either")
+	assert.Contains(t, err.Error(), "a directory", "and the kind must be named")
+}

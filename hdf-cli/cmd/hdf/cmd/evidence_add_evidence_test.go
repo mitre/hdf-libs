@@ -1143,3 +1143,103 @@ func TestEvidenceAddEvidence_UnreadableArtifactIsStillRecordableWithAChecksum(t 
 	assert.Equal(t, "sha256", checksum["algorithm"])
 	assert.Equal(t, digest, checksum["value"])
 }
+
+// A directory can no more be hashed than a fifo can, and until this card one was
+// refused while the other got a notice and a reference-only entry. The split fell
+// out of two early returns that short-circuited before nonRegularKind was asked.
+func TestEvidenceAddEvidence_RefusesADirectoryURI(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(filepath.Join(pkgDir, "subdir"), 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	t.Chdir(root)
+
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"the hashing path", []string{"--uri", "subdir", "--format", "raw-log"}},
+		{"the infer path", []string{"--uri", "subdir", "--infer"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Rewritten per subtest: a shared package file would let the first
+			// subtest's write decide whether the second's untouched-check holds.
+			require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+			before, readErr := os.ReadFile(pkg)
+			require.NoError(t, readErr)
+			out := filepath.Join(pkgDir, "out.json")
+			_, _, cmdErr := executeCommand(append([]string{"evidence", "add-evidence", pkg, "-o", out}, tc.args...)...)
+			require.Error(t, cmdErr, "a directory cannot be the artifact")
+			assert.NoFileExists(t, out, "a refusal must not write an output package")
+			assert.Contains(t, cmdErr.Error(), "a directory", "and the message must say which kind it is")
+			assert.NotContains(t, cmdErr.Error(), "not a local file",
+				"a directory IS local; that message is for an absent path")
+			after, afterErr := os.ReadFile(pkg)
+			require.NoError(t, afterErr)
+			assert.Equal(t, string(before), string(after), "a refusal must leave the package untouched")
+		})
+	}
+}
+
+// The contract this card does NOT change: a path that resolves to nothing local is
+// still a notice plus a reference-only entry, because the artifact may exist
+// elsewhere or later. Asserted so the refusal above cannot widen into a reversal.
+func TestEvidenceAddEvidence_StillRecordsAReferenceToWhatIsNotHere(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	require.NoError(t, os.Symlink(filepath.Join(pkgDir, "gone.json"), filepath.Join(pkgDir, "dangling.json")))
+	t.Chdir(root)
+
+	for _, uri := range []string{"absent.json", "dangling.json", "https://x.example/remote.json"} {
+		t.Run(uri, func(t *testing.T) {
+			_, _, cmdErr := executeCommand("evidence", "add-evidence", pkg,
+				"--uri", uri, "--format", "raw-log")
+			require.NoError(t, cmdErr, "a reference to what is not here is legitimate, not fatal")
+			// Read back: the name says RECORDS, so an exit status alone does not show it.
+			entry := externalEvidenceEntry(t, pkg, uri)
+			assert.Equal(t, uri, entry["uri"], "the reference is recorded as typed")
+			assert.Nil(t, entry["checksum"], "and carries no digest, since nothing was hashed")
+		})
+	}
+}
+
+// Consistent with the fifo case: the operator supplied the digest, so nothing is
+// opened and the reference stays recordable.
+func TestEvidenceAddEvidence_DirectoryURIIsStillRecordableWithAChecksum(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(filepath.Join(pkgDir, "subdir"), 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	t.Chdir(root)
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "subdir",
+		"--format", "raw-log", "--checksum", "sha256:"+strings.Repeat("a", 64))
+	require.NoError(t, err, "a supplied digest opens nothing, so the kind does not matter")
+	entry := externalEvidenceEntry(t, pkg, "subdir")
+	checksum, ok := entry["checksum"].(map[string]any)
+	require.True(t, ok, "the operator's digest must be recorded, not just accepted")
+	assert.Equal(t, strings.Repeat("a", 64), checksum["value"])
+}
+
+// externalEvidenceEntry returns the externalEvidence entry recording uri, failing if
+// there is not exactly one — two would mean the write, not the assertion, chose.
+func externalEvidenceEntry(t *testing.T, pkgPath, uri string) map[string]any {
+	t.Helper()
+	raw, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	entries, _ := doc["externalEvidence"].([]any)
+	var found []map[string]any
+	for _, e := range entries {
+		if m, ok := e.(map[string]any); ok && m["uri"] == uri {
+			found = append(found, m)
+		}
+	}
+	require.Len(t, found, 1, "exactly one entry must record %q", uri)
+	return found[0]
+}

@@ -147,9 +147,9 @@ external by design and rewriting it would claim the artifact is somewhere it is 
 Because the URI is normalized before the duplicate check, two spellings of the same
 artifact are recognized as the same artifact and the second is refused.
 
-If --uri is a regular local file, its checksum is computed automatically; a
-non-regular path (fifo, socket, device node) is refused rather than opened, because
-opening one can block with no timeout. If --uri
+If --uri is a regular local file, its checksum is computed automatically; a path
+that is present but is not a regular file is refused rather than opened, naming what
+it found, because opening a fifo can block with no timeout. If --uri
 is a URL (the artifact is referenced, not fetched), pass --checksum to record a
 precomputed hash, or omit it; --checksum names one artifact and is refused with
 several --uri values. Format is an open set: reserved ecs | ocsf | cyclonedx |
@@ -283,8 +283,9 @@ func artifactContent(pkgDir, uri string) ([]byte, error) {
 			"format cannot be read from its content")
 	}
 	fi, err := os.Stat(path)
-	if err != nil || fi.IsDir() {
-		// A URL, a directory and an absent path alike: there is no content here to read.
+	if err != nil {
+		// A URL or an absent path: nothing local to read. A directory IS local, so it
+		// falls through and is named by nonRegularKind below.
 		return nil, fmt.Errorf("it is not a local file, so its format cannot be read from its content")
 	}
 	if kind := nonRegularKind(fi.Mode()); kind != "" {
@@ -524,10 +525,10 @@ func resolveEvidenceChecksum(pkgDir, uri, supplied string) (value, algorithm str
 			"so it was not hashed; checksum omitted (pass --checksum to record one).\n", uri)
 		return "", "", nil
 	}
-	// A local-path URI is hashed only when the file is actually present at attach
-	// time; a URL, a directory, or a path with no local copy is left unhashed
-	// (a reference-only entry, not an error).
-	if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+	// Hashed only when something is actually present at this path; what is present
+	// but cannot be a document is refused just below, and what is absent is left
+	// unhashed by the branch above.
+	if fi, err := os.Stat(path); err == nil {
 		// Refused BEFORE the open, not reported after it: opening a fifo blocks until a
 		// writer appears, so the command waited with no timeout and then hashed whatever
 		// that writer sent — a digest of bytes nobody chose to attest, at exit 0.

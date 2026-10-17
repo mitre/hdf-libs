@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A `--uri` or `--href` naming a directory is refused, like the other kinds that cannot be hashed.**
+
+  `hdf evidence add-evidence` and `add-reference` already refused a fifo, a socket and a device node before opening them, but a directory got a notice and a reference-only entry at exit 0. That split was never a decision: it fell out of two early returns that short-circuited before the kind was consulted, so a directory reported `it is not a local file` on the `--infer` path — which it is not. The rule is now one rule. A path that exists but cannot be a document is refused, naming the kind; a path that is simply not here — absent, a dangling symlink, a URL, or one outside the package directory — still produces a notice and a reference-only entry, because that is a legitimate reference to an artifact kept elsewhere. A supplied `--checksum` is unaffected on the hashing path, where nothing is opened; `--infer` must read the content either way and is unchanged by this card. (hdf-libs-52n0c.48)
+
 - **An unresolvable document path is reported once, not twice.**
 
   `hdf evidence build` stated the same fault twice — `failed to resolve X: failed to resolve X` — because the caller wrapped an error that already named the operation and the path. The inner message is now surfaced as it is, and the package-directory case adds only its role, so the text reads `package directory: failed to resolve X: ...`. A pipeline grepping stderr for the resolve prefix will see one occurrence where it previously saw two.
