@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -76,20 +77,42 @@ func TestHdfOpen_MintsHandle_AndTypeSpecificSummary(t *testing.T) {
 	if out.Summary == nil {
 		t.Fatal("valid results must carry a summary")
 	}
-	if _, ok := out.Summary["baselineCount"]; !ok {
-		t.Error("summary missing baselineCount")
-	}
-	if rc, ok := out.Summary["requirementCount"].(int); !ok || rc <= 0 {
-		t.Errorf("summary requirementCount should be a positive int, got %v", out.Summary["requirementCount"])
-	}
-	sb, ok := out.Summary["statusBreakdown"].(map[string]int)
-	if !ok {
-		t.Fatalf("summary statusBreakdown should be a map[string]int, got %T", out.Summary["statusBreakdown"])
-	}
-	for _, k := range []string{"passed", "failed", "notApplicable", "notReviewed", "error"} {
-		if _, ok := sb[k]; !ok {
-			t.Errorf("statusBreakdown missing key %q", k)
+	// The WIRE key set, asserted as literals. Decoding into resultsOpenSummary instead
+	// would prove nothing about the keys: encoding/json ignores absent fields, and the
+	// producer marshals through that same struct, so renaming a json tag would rename both
+	// sides and this would still pass.
+	for _, key := range []string{"baselineCount", "requirementCount", "statusBreakdown"} {
+		if _, present := out.Summary[key]; !present {
+			t.Errorf("a results summary must carry %q on the wire; got %v", key, mapKeys(out.Summary))
 		}
+	}
+	// map[string]any, not map[string]int: the summary is produced from the typed struct via
+	// structToMap, which round-trips through JSON. That indirection is the point — the wire
+	// value cannot disagree with the struct the contract golden publishes — and these are
+	// the types a client actually receives.
+	breakdown, ok := out.Summary["statusBreakdown"].(map[string]any)
+	if !ok {
+		t.Fatalf("statusBreakdown should be a JSON object, got %T", out.Summary["statusBreakdown"])
+	}
+	for _, status := range []string{"passed", "failed", "notApplicable", "notReviewed", "error"} {
+		if _, present := breakdown[status]; !present {
+			t.Errorf("statusBreakdown must carry %q; got %v", status, breakdown)
+		}
+	}
+
+	// The values still have to agree, which the key check alone does not establish.
+	var sum resultsOpenSummary
+	if err := remarshalInto(out.Summary, &sum); err != nil {
+		t.Fatalf("a results summary must decode as resultsOpenSummary: %v (got %+v)", err, out.Summary)
+	}
+	if sum.BaselineCount <= 0 || sum.RequirementCount <= 0 {
+		t.Errorf("counts should be positive, got baselines=%d requirements=%d",
+			sum.BaselineCount, sum.RequirementCount)
+	}
+	if total := sum.StatusBreakdown.Passed + sum.StatusBreakdown.Failed +
+		sum.StatusBreakdown.NotApplicable + sum.StatusBreakdown.NotReviewed +
+		sum.StatusBreakdown.Error; total != sum.RequirementCount {
+		t.Errorf("the status breakdown sums to %d but there are %d requirements", total, sum.RequirementCount)
 	}
 }
 
@@ -103,8 +126,12 @@ func TestHdfOpen_SystemSummary(t *testing.T) {
 	if out.DocType != "system" {
 		t.Errorf("docType = %q, want system", out.DocType)
 	}
-	if out.Summary == nil || out.Summary["componentCount"] == nil || out.Summary["componentByType"] == nil {
-		t.Errorf("system summary must carry component count by type, got %+v", out.Summary)
+	var sum systemOpenSummary
+	if err := remarshalInto(out.Summary, &sum); err != nil {
+		t.Fatalf("a system summary must decode as systemOpenSummary: %v (got %+v)", err, out.Summary)
+	}
+	if sum.ComponentCount <= 0 || len(sum.ComponentByType) == 0 {
+		t.Errorf("system summary must carry component count by type, got %+v", sum)
 	}
 }
 
@@ -394,4 +421,24 @@ func driveToolsListJSON(t *testing.T, s *sdkmcp.Server) string {
 			return string(b)
 		}
 	}
+}
+
+// remarshalInto decodes a wire summary into the typed struct the contract describes, so a
+// test asserts the shape rather than a set of string keys.
+func remarshalInto(from map[string]any, into any) error {
+	b, err := json.Marshal(from)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, into)
+}
+
+// mapKeys lists a wire map's keys for a failure message.
+func mapKeys(m map[string]any) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }

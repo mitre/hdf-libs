@@ -99,7 +99,7 @@ describe('extraction produces a self-contained 2020-12 schema', () => {
   // Every component, not only the 8 roots and the 42 definitions that carry examples.
   // extractStandaloneSchema throws on a dangling reference, so a broken $defs closure
   // anywhere in the document surfaces here; restricting this to the example-bearing
-  // subset left 73 of 123 components never extracted and never compiled.
+  // subset left 73 of the components never extracted and never compiled.
   it.each(Object.keys(schemas))('%s extracts to a schema that compiles standalone', (name) => {
     const standalone = extractStandaloneSchema(doc, name);
     expect(standalone.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
@@ -111,7 +111,7 @@ describe('extraction produces a self-contained 2020-12 schema', () => {
     const standalone = extractStandaloneSchema(doc, 'Checksum');
     const defs = (standalone.$defs ?? {}) as Record<string, unknown>;
     // The EXACT closure, not an upper bound: `Checksum` references `Hash_Algorithm` and
-    // nothing else. A bound of "fewer than all 123" would still pass if the walk dragged
+    // nothing else. A bound of "fewer than all of them" would still pass if the walk dragged
     // in a hundred unreachable definitions.
     expect(Object.keys(defs).sort()).toEqual(['Checksum', 'Hash_Algorithm']);
   });
@@ -150,18 +150,19 @@ const ROOTS_WITH_EXAMPLES = Object.entries(ROOT_COMPONENT_NAMES).filter(([file])
 
 /**
  * Roots carrying NO root-level example, and therefore absent from every example-driven
- * check below. Tracked rather than filtered silently: a root that loses its example would
- * otherwise drop out of the negatives with nothing to say so. ADR-0008 Phase 4 adds the
- * missing `hdf-comparison` root example, at which point this list empties.
+ * check below. Now empty: every root carries one. Kept rather than deleted because the
+ * assertion below is what notices if a root ever loses its example — it would otherwise
+ * drop out of the negatives silently. hdf-schema's own suite asserts the same property at
+ * the source, so this is the downstream half of that guard.
  */
-const ROOTS_WITHOUT_EXAMPLES = ['HdfComparison'];
+const ROOTS_WITHOUT_EXAMPLES: string[] = [];
 
 /**
  * Roots whose own example carries no value under any closed vocabulary, so no enum can be
  * violated in it without inventing data. `hdf-baseline`'s example omits `severity`,
  * `controlType` and every other enum-bearing field. Tracked for the same reason as
- * [[ROOTS_WITHOUT_EXAMPLES]] — the alternative is a test that quietly checks six roots
- * while claiming seven.
+ * [[ROOTS_WITHOUT_EXAMPLES]] — the alternative is a test that quietly checks fewer roots
+ * than it claims.
  */
 const ROOTS_WITHOUT_REACHABLE_ENUM = ['HdfBaseline'];
 
@@ -325,9 +326,10 @@ describe('every definition example validates against its extracted definition', 
   );
 
   it('there are definition examples to check, so this cannot pass vacuously', () => {
-    // The exact count, not a floor. A floor of 20 against an actual 45 would let half the
+    // The exact count, not a floor. A floor of 20 against an actual 42 would let half the
     // definitions lose their examples without the guard noticing — which is precisely the
     // vacuity it exists to prevent. Raise this deliberately when definitions gain examples.
+    // 45 definitions carrying 133 examples at schema v3.8.0.
     expect(withExamples.length).toBe(45);
     expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(133);
   });

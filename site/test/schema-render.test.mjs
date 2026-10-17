@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
 import { resolveTypeName, anchorId, renderEnumValues, mdCell } from '../schema-render.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('anchorId slugifies type names deterministically (underscore -> hyphen, lowercased)', () => {
   assert.equal(anchorId('Content_Type'), 'content-type');
@@ -118,4 +124,39 @@ test('mdCell escapes backslashes before adding its own, and tolerates an unmatch
   assert.equal(mdCell('a\\b *c*'), 'a\\\\b \\*c\\*');
   // An unmatched backtick must not swallow the rest of the string.
   assert.equal(mdCell('open ` then *x*'), 'open ` then \\*x\\*');
+});
+
+// The schema index states how many document types HDF defines and then lists them.
+// Those two were allowed to disagree: the sentence hardcoded 7 while the list was
+// rendered from the built schemas, so the page contradicted itself. The count is now
+// derived from the same array that builds the list, and this pins them together.
+//
+// The partial-build case — fewer types rendered with a matching lower number, which is
+// self-consistent and still wrong — is handled by building the bundles first, below.
+test('the schema index states the same number of document types that it lists', () => {
+  const siteDir = path.resolve(__dirname, '..');
+  const repoRoot = path.resolve(siteDir, '..');
+  // The generator reads a BUILD DIRECTORY, and a partial one renders fewer types with a
+  // matching lower number — self-consistent, passing, and wrong. Build when the bundles
+  // are missing or short, so this cannot pass locally for the wrong reason. Same reasoning
+  // as the sibling openapi-render test, which builds its artifact when absent.
+  const srcRoots = fs.readdirSync(path.join(repoRoot, 'hdf-schema/src/schemas'))
+    .filter((f) => f.endsWith('.schema.json')).length;
+  const bundled = path.join(repoRoot, 'hdf-schema/dist/schemas');
+  const built = fs.existsSync(bundled)
+    ? fs.readdirSync(bundled).filter((f) => f.endsWith('.schema.json')).length
+    : 0;
+  if (built < srcRoots) {
+    execFileSync('pnpm', ['--filter', '@mitre/hdf-schema', 'run', 'build:schemas'], {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    });
+  }
+  execFileSync('node', ['generate-schema-docs.mjs'], { cwd: siteDir, stdio: 'ignore' });
+  const page = fs.readFileSync(path.join(siteDir, 'schemas', 'index.md'), 'utf-8');
+  const stated = page.match(/defines (\d+) JSON document types/);
+  assert.ok(stated, 'the index no longer states a document-type count');
+  const listed = (page.match(/^### \[/gm) ?? []).length;
+  assert.ok(listed > 0, 'the index lists no document types, so this check could not fail');
+  assert.equal(Number(stated[1]), listed);
 });

@@ -2,21 +2,29 @@
 
 OpenAPI 3.1 components for the Heimdall Data Format, generated from the HDF JSON Schema 2020-12 bundles.
 
-> **Status:** the components document ships today. A second artifact — a *reference API* document generated
-> from the HDF MCP server's contract — is designed but **not yet built**; see ADR-0008 §2. Nothing in this
-> README describes behaviour that does not exist.
+> **Status:** this package publishes the schema components document, `hdf-components.oas.json`, and
+> `problems.json` — the documentation for every RFC 9457 problem type the HDF taxonomy defines.
+>
+> **The reference API document moved to `hdf-data-platform` on 2026-10-13** and is no longer built here. It
+> was generated from the HDF MCP server's tool contract; it is now written there as route declarations with
+> the document generated from them. If you are looking for the API's OpenAPI document, it is published by
+> that repository, not this one.
 
 ## Why this exists
 
 HDF publishes eight document types as JSON Schema 2020-12 bundles. Anyone building an HTTP service over HDF previously hand-translated those schemas into OpenAPI and hand-invented an API to go with them — and both then drifted from the format they were meant to describe.
 
-The bundles are not drop-in OpenAPI components. The bundler embeds each primitive as a URL-keyed resource carrying its own `$id`, so the eight bundles together hold 19 such resource wrappers and 115 named definitions, with hundreds of `$ref`s — some absolute, some local pointers that resolve against the enclosing resource rather than the file. OpenAPI component keys cannot be URLs, and pointer-based code generators resolve by JSON pointer, not by `$id`. Translating that by hand is both tedious and easy to get subtly wrong.
+The bundles are not drop-in OpenAPI components. The bundler embeds each primitive as a URL-keyed resource carrying its own `$id`, so the eight bundles together hold 19 such resource wrappers and well over a hundred named definitions (the exact figure is `EXPECTED_DEFINITIONS` in `src/components.ts`, which the build refuses to disagree with), with hundreds of `$ref`s — some absolute, some local pointers that resolve against the enclosing resource rather than the file. OpenAPI component keys cannot be URLs, and pointer-based code generators resolve by JSON pointer, not by `$id`. Translating that by hand is both tedious and easy to get subtly wrong.
 
 So this package generates the components instead. Nothing here is hand-authored — they come from the tracked
-schema embed. Nothing in this repository imports this package: it is a leaf, published for consumers.
+schema embed. The only thing in this repository that reads this package is the docs site, whose generators
+publish both documents, their per-version archives and a page per problem type from `dist/`.
 
-When the reference API document arrives it will be generated the same way, from the MCP contract golden plus
-a closed-grammar binding table mechanically prevented from containing API fragments (ADR-0008 §2).
+`problems.json` is the other published artifact: ADR-0010 §6's single code-to-status mapping, plus a title, a
+cause and a client-facing remedy per problem type. It stays here because the taxonomy it documents is the MCP
+server's, and because the type URIs it describes are hosted on this repository's site, where RFC 9457 §3.1.1
+expects them to dereference. Anything serving HDF over HTTP can build a conforming problem body from it
+without re-deriving the mapping.
 
 ## Installation
 
@@ -84,7 +92,6 @@ Every other definition is hoisted to `#/components/schemas/<Name>` under its own
 - **Which keywords the document uses**, with counts, so a schema change that introduces a keyword nothing in the matrix supports is a failing diff rather than a consumer's discovery.
 - **Redocly at zero findings, every severity** — *and* the per-rule counts its waivers are absorbing, measured by re-running with every waiver stripped. A waiver can therefore never quietly grow to cover a new finding. Every waiver in `redocly.yaml` carries the reason it does not apply to a document schema, and because those counts mix suppressed false positives with any future genuine finding, movement in them needs human triage rather than a blind re-record.
 
-  **Spectral and the OWASP API Security ruleset are deferred to Phase 2.** ADR-0008 §5 still names both linters for this phase; correcting it is tracked as `hdf-libs-lx1oj.10`, not yet done. Two measurements drove that. Its CLI is the sole carrier of GHSA-vfj7-8cjw-p6xm, and that advisory is structurally unfixable: `braces` is frozen at 3.0.3 against a patched floor of 3.0.4 that was never published, every `fast-glob` depends on `micromatch`, every `micromatch` on `braces`, and every `spectral-cli` release pins `fast-glob ~3.2.12`. Loading the ruleset through Spectral's library instead — whose packages carry no `fast-glob` — fails because the bundler still ships rollup 2.80, which cannot import the OWASP ruleset's CommonJS build; making that work would mean hand-rolling ruleset loading, which is more risk than the advisory. And on a components document Spectral had little to say: of 746 findings, 735 were OWASP API4 request-surface rules that do not apply to stored documents, 9 were operation-less-document rules, one was `info-contact` (fixed), and exactly one was real — `array-items` on `Input_Constraints.allowedValues`, now carried by card `hdf-libs-ztq0b` rather than by any lint, since Redocly has no equivalent rule. The OWASP rules earn their keep against Phase 2's reference API document, where operations and security schemes exist.
 - **Whether each generator can consume the document at all.** `openapi-typescript` can. **`oapi-codegen` 2.8.0 cannot:** its parser (kin-openapi) rejects a boolean subschema, which HDF uses to express the three-tier BOM rule (`properties: { model: false }` on a non-`ai-model` BOM). The refusal and its trigger are recorded rather than worked around, because the construct is a real constraint and dropping it would weaken the schema to suit one tool.
 - **Per keyword, whether a generator's output depends on it** — measured differentially: generate from a probe schema carrying the keyword, generate again with that one keyword deleted, compare the bytes. Both generators honour the structural keywords (`$ref`, `properties`, `required`, `items`, `type`, `enum`, `allOf`/`anyOf`/`oneOf`, `format`) and **both discard every validation constraint**: `minimum`, `maximum`, `minLength`, `minItems`, `pattern`, `contains`, `not`, `dependentRequired`, `if`/`then`/`else` and `unevaluatedProperties`. Generated types are shape-only. Anything that must actually enforce the schema has to run a validator — which is why ADR-0008 §7 derives Zod from this document rather than trusting generated types.
 
@@ -101,16 +108,17 @@ pnpm run lint:openapi    # Redocly alone
 
 With the binary present, `pnpm test` upgrades itself to the full both-generator comparison; without it, the npm half runs and CI covers the rest.
 
-Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **all 123 components** back to standalone 2020-12 schemas and compiles each one, then validates every root example, all 120 definition examples and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. This repository's own validators are draft-07 and ignore `unevaluatedProperties`, so they would accept documents the schema text rejects.
+Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **every component** back to a standalone 2020-12 schema and compiles each one, then validates every root example, every definition example and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. The counts are asserted in that test rather than quoted here, so they cannot rot in two places. This repository's own validators are draft-07 and ignore `unevaluatedProperties`, so they would accept documents the schema text rejects.
 
 ## Versioning
 
-The components document's `info.version` tracks the schema `$id` version — currently 3.8.0, which happens to
-equal this package's version and will not stay that way.
+The components document's `info.version` tracks the schema `$id` version, read from the bundle rather than
+from this package's version — the two axes are independent and have already diverged.
 
-The planned rules for the reference API document, once it exists (ADR-0008 §4): it carries its own semver; a
-components minor is an API minor; a components major is an API major; a change to the MCP golden bumps the API
-document.
+The reference API's versioning, and the contract digest that enforced it, moved with the document. What stays
+here cannot drift the same way: this document's version is *read from* the schema bundle rather than hand-set,
+so it cannot disagree with its own content, and `EXPECTED_DEFINITIONS` fails the build when the content
+changes without review.
 
 ## Design
 

@@ -74,7 +74,7 @@ v2 has an array of polymorphic `components`, each with a `type` discriminator:
 }
 ```
 
-Supported component types: `host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`.
+Supported component types: `host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`, `aiModel`, `dataset`.
 
 ### attributes to inputs (typed)
 
@@ -156,7 +156,7 @@ These fields and concepts are new in v2 and have no v1 equivalent:
 - **Labels** -- `Record<string, string>` on components and baselines for flexible grouping by system, component, environment, region, team, or custom dimensions.
 - **Typed inputs** -- `Input` primitive with type, operator, and constraints. Bridges governance requirements to scanner automation.
 - **systemRef / planRef** -- URI references linking results to hdf-system and hdf-plan documents, establishing provenance.
-- **Multiple component types** -- 11 polymorphic component types (host, container, cloud account, cloud resource, repository, application, artifact, network, database).
+- **Multiple component types** -- 13 polymorphic component types (host, container image, container instance, container platform, cloud account, cloud resource, repository, application, artifact, network, database, AI model, dataset).
 - **hdf-system documents** -- Describe system architecture, authorization boundaries, components with label-based selectors, input overrides, and SBOM references.
 - **hdf-plan documents** -- Assessment plans with resolved inputs, target selectors, runner configuration, and schedules.
 - **hdf-amendments documents** -- Standalone signed waivers, attestations, and POA&Ms that merge into results.

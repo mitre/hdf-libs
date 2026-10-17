@@ -1,0 +1,544 @@
+package evalharness
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/jsonschema-go/jsonschema"
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/contract"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/resources"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/tools"
+)
+
+// The MCP contract golden is the typed source the ADR-0008 API generator reads: tools,
+// resources, templates, the closed error taxonomy and the response shapes. Asserting on
+// the committed file rather than on live reflection is deliberate — the generator consumes
+// the file, so the file is what has to be right.
+func readContractGolden(t *testing.T) map[string]any {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("testdata", "mcp-contract.golden.json"))
+	if err != nil {
+		t.Fatalf("read the contract golden: %v\nregenerate with: go test ./internal/mcp/evalharness -run TestContractGolden -update-contract", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatalf("the contract golden is not valid JSON: %v", err)
+	}
+	return doc
+}
+
+func TestContractGolden_CarriesTheQueryConciseRowShape(t *testing.T) {
+	doc := readContractGolden(t)
+
+	shapes, ok := doc["fullShapes"].(map[string]any)
+	if !ok {
+		t.Fatal("the contract golden carries no fullShapes; the API generator has no typed source for response bodies")
+	}
+	shape, ok := shapes["query.concise"].(map[string]any)
+	if !ok {
+		t.Fatalf("fullShapes has no query.concise entry; it has %v", keysOf(shapes))
+	}
+	props, ok := shape["properties"].(map[string]any)
+	if !ok || len(props) == 0 {
+		t.Fatalf("query.concise carries no properties, so it describes nothing: %v", shape)
+	}
+	// id is the one field every query row must carry — a shape without it is not a row.
+	if _, present := props["id"]; !present {
+		t.Errorf("query.concise must describe an id property; got %v", keysOf(props))
+	}
+}
+
+func keysOf(m map[string]any) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+// updateContract rewrites the committed MCP contract golden instead of asserting against
+// it. Run after a deliberate change to the tool surface, the resources, the error taxonomy
+// or any registered response shape, then review the diff:
+//
+//	go test ./internal/mcp/evalharness -run TestContractGolden_MatchesLive -update-contract
+var updateContract = flag.Bool("update-contract", false,
+	"rewrite testdata/mcp-contract.golden.json from the live server and the registered shapes")
+
+// buildLiveContract assembles the contract from the running server plus the shape registry.
+//
+// The protocol halves are driven over a real transport with the SAME registration
+// production uses, so the golden cannot describe a surface the binary does not serve. The
+// shapes come from the registry, reflected, so a field added to a row reaches the contract
+// without anyone remembering to describe it.
+func buildLiveContract(t *testing.T) map[string]any {
+	t.Helper()
+	shapes, err := contract.Shapes()
+	if err != nil {
+		t.Fatalf("reflecting the registered shapes: %v", err)
+	}
+	return buildContractFrom(t, shapes)
+}
+
+// buildContractFrom assembles the contract from a given shape set, so a test can supply its
+// own shapes instead of registering into the default registry.
+//
+// Required, not tidiness: the planted-change test reuses the name query.concise, and
+// Register panics on a duplicate, so that test is impossible against the default registry.
+// A stray global registration would also be read by TestContractGolden_MatchesLive — one
+// assertion, and only when it runs after the registration, so the hazard is order-dependent
+// rather than general.
+func buildContractFrom(t *testing.T, shapes map[string]*jsonschema.Schema) map[string]any {
+	t.Helper()
+	lists := driveProtocolLists(t, func(s *sdkmcp.Server) {
+		tools.RegisterAll(s)
+		resources.RegisterAll(s)
+	}, []string{"resources/list", "resources/templates/list", "tools/list"})
+
+	// Taken from the LIVE surface, not from the sibling golden: a tool added without
+	// regenerating that golden first would otherwise get no entry, and no entry means no
+	// error responses on its operation.
+	var advertised struct {
+		Tools []struct{ Name string } `json:"tools"`
+	}
+	if err := json.Unmarshal(lists["tools/list"], &advertised); err != nil {
+		t.Fatalf("reading the live tool surface: %v", err)
+	}
+	names := make([]string, 0, len(advertised.Tools))
+	for _, tool := range advertised.Tools {
+		names = append(names, tool.Name)
+	}
+	if len(names) == 0 {
+		t.Fatal("the live tool surface is empty, so every derived code set would be empty")
+	}
+
+	return map[string]any{
+		"$comment": "Generated by TestContractGolden_MatchesLive — regenerate with " +
+			"-update-contract and review the diff. The ADR-0008 API generator reads this " +
+			"for the resources, the closed error taxonomy, which codes each tool can " +
+			"raise, and the reflected response shapes, and tools-list.golden.json beside " +
+			"it for the tool surface. The tool surface is deliberately NOT duplicated " +
+			"here. Nothing is hand-written: toolErrorCodes is derived by walking the " +
+			"tools package, which is where every mcperr code in this repository is raised.",
+		"resources":         lists["resources/list"],
+		"resourceTemplates": lists["resources/templates/list"],
+		"errorCodes":        mcperr.Codes,
+		"toolErrorCodes":    toolErrorCodes(t, names),
+		"fullShapes":        shapes,
+	}
+}
+
+func TestContractGolden_MatchesLive(t *testing.T) {
+	live := buildLiveContract(t)
+	path := filepath.Join("testdata", "mcp-contract.golden.json")
+
+	serialised, err := json.MarshalIndent(live, "", "  ")
+	if err != nil {
+		t.Fatalf("serialising the contract: %v", err)
+	}
+	serialised = append(serialised, '\n')
+
+	if *updateContract {
+		if err := os.WriteFile(path, serialised, 0o600); err != nil {
+			t.Fatalf("writing %s: %v", path, err)
+		}
+		t.Logf("rewrote %s — review the diff", path)
+		return
+	}
+
+	committed, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v\nregenerate with: go test ./internal/mcp/evalharness -run TestContractGolden_MatchesLive -update-contract", path, err)
+	}
+	if string(committed) != string(serialised) {
+		t.Errorf("the live contract differs from the golden. If the surface, the taxonomy or a "+
+			"response shape changed on purpose, regenerate and review the diff:\n"+
+			"  go test ./internal/mcp/evalharness -run TestContractGolden_MatchesLive -update-contract\n"+
+			"  committed %d bytes, live %d bytes", len(committed), len(serialised))
+	}
+}
+
+// protocolRequest is one JSON-RPC call to drive, labelled so several calls to the same
+// method stay distinguishable in the result map.
+type protocolRequest struct {
+	label  string
+	method string
+	params any
+}
+
+// driveRequests runs the server in-process over a pipe transport and returns each
+// request's result, keyed by label.
+//
+// One session for every request, because a per-request session would re-pay the handshake
+// and could, in principle, observe a different surface.
+func driveRequests(t *testing.T, register func(*sdkmcp.Server), requests []protocolRequest) map[string]json.RawMessage {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	reqR, reqW := io.Pipe()
+	respR, respW := io.Pipe()
+	go func() {
+		s := appmcp.NewServer("test-version", appmcp.NewStderrLogger("error"))
+		register(s)
+		_ = s.Run(ctx, &sdkmcp.IOTransport{Reader: reqR, Writer: respW})
+		_ = respW.Close()
+	}()
+
+	reqs := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"contract","version":"1.0.0"}}}` + "\n" +
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}` + "\n"
+	wantByID := map[float64]string{}
+	for i, request := range requests {
+		id := i + 2
+		wantByID[float64(id)] = request.label
+		if request.params == nil {
+			reqs += fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q}`, id, request.method) + "\n"
+			continue
+		}
+		params, err := json.Marshal(request.params)
+		if err != nil {
+			t.Fatalf("marshalling params for %s: %v", request.label, err)
+		}
+		reqs += fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q,"params":%s}`, id, request.method, params) + "\n"
+	}
+	go func() { _, _ = io.WriteString(reqW, reqs) }()
+
+	out := make(map[string]json.RawMessage, len(requests))
+	sc := bufio.NewScanner(respR)
+	sc.Buffer(make([]byte, 0, 1024*1024), 8*1024*1024)
+	for len(out) < len(requests) {
+		if !sc.Scan() {
+			t.Fatalf("server closed after %d of %d results; got %v", len(out), len(requests), keysOfRaw(out))
+		}
+		var frame struct {
+			ID     any             `json:"id"`
+			Result json.RawMessage `json:"result"`
+			Error  json.RawMessage `json:"error"`
+		}
+		if err := json.Unmarshal(sc.Bytes(), &frame); err != nil {
+			continue // not a JSON-RPC frame we care about
+		}
+		id, ok := frame.ID.(float64)
+		if !ok {
+			continue
+		}
+		label, wanted := wantByID[id]
+		if !wanted {
+			continue
+		}
+		if frame.Error != nil {
+			t.Fatalf("%s returned an error: %s", label, frame.Error)
+		}
+		out[label] = frame.Result
+	}
+	return out
+}
+
+// driveProtocolLists drives several parameterless methods, keyed by method name.
+func driveProtocolLists(t *testing.T, register func(*sdkmcp.Server), methods []string) map[string]json.RawMessage {
+	t.Helper()
+	requests := make([]protocolRequest, 0, len(methods))
+	for _, method := range methods {
+		requests = append(requests, protocolRequest{label: method, method: method})
+	}
+	return driveRequests(t, register, requests)
+}
+
+func keysOfRaw(m map[string]json.RawMessage) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+// The registration hook must let a package that owns a type contribute its shape, and that
+// shape must reach the contract document. Proven with a local registry so the assertion
+// does not depend on, or disturb, what the default registry holds.
+func TestRegistrationHook_AShapeReachesTheContract(t *testing.T) {
+	type downstreamRow struct {
+		Ref      string `json:"ref"`
+		Verdict  string `json:"verdict"`
+		Attempts int    `json:"attempts"`
+	}
+
+	reg := contract.NewRegistry()
+	reg.Register("downstream.row", downstreamRow{})
+	shapes, err := reg.Shapes()
+	if err != nil {
+		t.Fatalf("reflecting the registered shape: %v", err)
+	}
+
+	doc := buildContractFrom(t, shapes)
+	serialised, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		t.Fatalf("serialising: %v", err)
+	}
+
+	var round map[string]any
+	if err := json.Unmarshal(serialised, &round); err != nil {
+		t.Fatalf("round-tripping: %v", err)
+	}
+	got, ok := round["fullShapes"].(map[string]any)
+	if !ok {
+		t.Fatal("the contract carries no fullShapes")
+	}
+	shape, ok := got["downstream.row"].(map[string]any)
+	if !ok {
+		t.Fatalf("a registered shape must reach the contract; fullShapes has %v", keysOf(got))
+	}
+	props, ok := shape["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("the registered shape reached the contract without properties: %v", shape)
+	}
+	// Its fields must be described, not just its name — a name with no shape is no use to
+	// a generator.
+	for _, want := range []string{"ref", "verdict", "attempts"} {
+		if _, present := props[want]; !present {
+			t.Errorf("the registered shape must describe %q; got %v", want, keysOf(props))
+		}
+	}
+}
+
+// A changed response shape must fail the golden diff. Without this the contract could drift
+// from the structs it claims to describe, and the generator would emit a body the server
+// never returns.
+func TestContractGolden_APlantedShapeChangeFailsTheDiff(t *testing.T) {
+	committed, err := os.ReadFile(filepath.Join("testdata", "mcp-contract.golden.json"))
+	if err != nil {
+		t.Fatalf("read the contract golden: %v", err)
+	}
+
+	// Same shape NAMES as the real registry, one of them given an extra field — the shape
+	// of a field added to a row without regenerating.
+	type queryConciseWithExtra struct {
+		ID       string `json:"id"`
+		Surprise string `json:"surprise"`
+	}
+	reg := contract.NewRegistry()
+	reg.Register("query.concise", queryConciseWithExtra{})
+	shapes, err := reg.Shapes()
+	if err != nil {
+		t.Fatalf("reflecting: %v", err)
+	}
+
+	planted, err := json.MarshalIndent(buildContractFrom(t, shapes), "", "  ")
+	if err != nil {
+		t.Fatalf("serialising: %v", err)
+	}
+	planted = append(planted, '\n')
+
+	if string(planted) == string(committed) {
+		t.Error("a changed query.concise shape produced a contract identical to the golden, so the " +
+			"diff cannot detect a shape change at all")
+	}
+	if !strings.Contains(string(planted), "surprise") {
+		t.Error("the planted field did not reach the serialised contract, so this test proves nothing")
+	}
+}
+
+// The contract must carry the closed error taxonomy exactly. Asserted against mcperr.Codes
+// rather than a literal, so adding a thirteenth code without regenerating fails here.
+func TestContractGolden_CarriesTheClosedErrorTaxonomy(t *testing.T) {
+	doc := readContractGolden(t)
+
+	raw, ok := doc["errorCodes"].([]any)
+	if !ok {
+		t.Fatal("the contract golden carries no errorCodes")
+	}
+	got := make([]string, 0, len(raw))
+	for _, v := range raw {
+		s, _ := v.(string)
+		got = append(got, s)
+	}
+	want := make([]string, 0, len(mcperr.Codes))
+	for _, c := range mcperr.Codes {
+		want = append(want, string(c))
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("the contract records %d codes %v; the taxonomy is %d codes %v",
+			len(got), got, len(want), want)
+	}
+}
+
+// knownUntypedLeaves are the positions in fullShapes that reflect to a bare `true` — any
+// JSON value — each with the reason it genuinely cannot be typed.
+//
+// The contract must not carry an unexplained untyped blob, so this list is the record and
+// the test below fails on anything not in it. The wire has the same guard at the tool level
+// (TestToolsList_NoBareBooleanSchemas); this is its equivalent for response shapes, which
+// otherwise had none.
+var knownUntypedLeaves = map[string]string{
+	"fullShapes/diff.temporal.full/properties/fieldChanges/items/properties/oldValue":     "a field change can be on any requirement field, so the value is whatever that field holds",
+	"fullShapes/diff.temporal.full/properties/fieldChanges/items/properties/newValue":     "as oldValue",
+	"fullShapes/diff.system-drift.full/properties/fieldChanges/items/properties/oldValue": "a field change can be on any component field; same reason as the temporal pair",
+	"fullShapes/diff.system-drift.full/properties/fieldChanges/items/properties/newValue": "as oldValue",
+	"fullShapes/query.full/properties/tags/additionalProperties":                          "the HDF schema declares tags additionalProperties:true as tool-specific metadata, so constraining it here would misdescribe the document",
+}
+
+func TestContractGolden_NoUnrecordedUntypedLeaf(t *testing.T) {
+	doc := readContractGolden(t)
+	shapes, ok := doc["fullShapes"].(map[string]any)
+	if !ok {
+		t.Fatal("the contract golden carries no fullShapes")
+	}
+
+	var found []string
+	var walk func(node any, path string)
+	walk = func(node any, path string) {
+		if node == true {
+			found = append(found, path)
+			return
+		}
+		// Arrays as well as objects: reflection produces none today (the only arrays are
+		// `required` and `type`, which never hold schemas), but anyOf/oneOf/prefixItems
+		// would, and a bare `true` inside one must not hide from this guard.
+		if arr, ok := node.([]any); ok {
+			for i, v := range arr {
+				walk(v, fmt.Sprintf("%s/%d", path, i))
+			}
+			return
+		}
+		obj, ok := node.(map[string]any)
+		if !ok {
+			return
+		}
+		for k, v := range obj {
+			walk(v, path+"/"+k)
+		}
+	}
+	for name, shape := range shapes {
+		walk(shape, "fullShapes/"+name)
+		// A shape with no properties describes nothing and is an untyped blob by another
+		// route, which the card's anti-patterns forbid just as much.
+		s, _ := shape.(map[string]any)
+		if props, _ := s["properties"].(map[string]any); len(props) == 0 {
+			t.Errorf("%s carries no properties, so it describes nothing", name)
+		}
+	}
+
+	if len(knownUntypedLeaves) == 0 {
+		t.Fatal("the known-leaf list is empty, so this test could not distinguish a new blob")
+	}
+	for _, path := range found {
+		if _, recorded := knownUntypedLeaves[path]; !recorded {
+			t.Errorf("%s reflects to a bare `true` and is not recorded in knownUntypedLeaves; "+
+				"type it, or add it with the reason it genuinely accepts any JSON value", path)
+		}
+	}
+	for path := range knownUntypedLeaves {
+		if !slices.Contains(found, path) {
+			t.Errorf("knownUntypedLeaves records %s but the contract no longer has an untyped "+
+				"leaf there; delete the entry", path)
+		}
+	}
+}
+
+// The API generator needs to know which taxonomy codes each tool can actually raise, so
+// it can declare the matching HTTP responses per operation rather than on every operation
+// or on none. ADR-0008 §3 gives the code -> status -> type mapping and says nothing about
+// which operation declares which, and a hand-kept list per tool is the "API in disguise"
+// §2's closed grammar exists to prevent. Every mcperr code in this repo is raised inside
+// one package, so the answer is derivable here and recorded in the golden.
+func TestContractGolden_CarriesPerToolErrorCodes(t *testing.T) {
+	contract := readContractGolden(t)
+
+	raw, ok := contract["toolErrorCodes"]
+	if !ok {
+		t.Fatalf("the golden has no toolErrorCodes member; regenerate with -update-contract")
+	}
+	perTool, ok := raw.(map[string]any)
+	if !ok {
+		t.Fatalf("toolErrorCodes is %T, want an object keyed by tool name", raw)
+	}
+
+	// Measured facts the generator depends on. Each is a code that must land on SOME
+	// operations and not others, so a derivation that collapsed to "all" or "none" would
+	// satisfy a weaker assertion than this.
+	for _, c := range []struct {
+		code  string
+		on    []string
+		notOn []string
+	}{
+		{"NO_CONVERTER", []string{"hdf_convert"}, []string{"hdf_query", "hdf_validate", "hdf_diff"}},
+		{"AMBIGUOUS_FORMAT", []string{"hdf_convert"}, []string{"hdf_query", "hdf_validate", "hdf_diff"}},
+		{"WRONG_DOC_TYPE", []string{"hdf_query", "hdf_diff", "hdf_compliance"}, []string{"hdf_validate"}},
+	} {
+		for _, tool := range c.on {
+			if !toolRaises(t, perTool, tool, c.code) {
+				t.Errorf("%s must be recorded as raising %s", tool, c.code)
+			}
+		}
+		for _, tool := range c.notOn {
+			if toolRaises(t, perTool, tool, c.code) {
+				t.Errorf("%s must NOT be recorded as raising %s", tool, c.code)
+			}
+		}
+	}
+
+	// The record is FAITHFUL to the MCP, not pre-filtered for HTTP. PATH_DENIED is raised
+	// by the shared source resolver and reaches nearly every tool, and ADR-0008 §3 lists it
+	// among the codes intentionally absent from HTTP — so it belongs here and is dropped by
+	// the generator, which already holds that mapping. Filtering in Go would put the HTTP
+	// taxonomy in two languages.
+	if !toolRaises(t, perTool, "hdf_query", "PATH_DENIED") {
+		t.Error("hdf_query must record PATH_DENIED: the shared source resolver raises it, and " +
+			"this golden records what the MCP can raise rather than what HTTP can express")
+	}
+
+	// Every tool in the surface is accounted for, so a new tool cannot arrive with no
+	// entry and silently get no error responses.
+	for _, tool := range toolNamesFromGolden(t) {
+		if _, ok := perTool[tool]; !ok {
+			t.Errorf("tool %s has no toolErrorCodes entry", tool)
+		}
+	}
+}
+
+func toolRaises(t *testing.T, perTool map[string]any, tool, code string) bool {
+	t.Helper()
+	codes, ok := perTool[tool].([]any)
+	if !ok {
+		return false
+	}
+	for _, c := range codes {
+		if s, ok := c.(string); ok && s == code {
+			return true
+		}
+	}
+	return false
+}
+
+// toolNamesFromGolden reads the advertised tool surface from its own golden, which is
+// where the tool list lives — the contract golden deliberately does not duplicate it.
+func toolNamesFromGolden(t *testing.T) []string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("testdata", "tools-list.golden.json"))
+	if err != nil {
+		t.Fatalf("read the tools-list golden: %v", err)
+	}
+	var doc struct {
+		Tools []struct{ Name string } `json:"tools"`
+	}
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatalf("the tools-list golden is not valid JSON: %v", err)
+	}
+	names := make([]string, 0, len(doc.Tools))
+	for _, tool := range doc.Tools {
+		names = append(names, tool.Name)
+	}
+	return names
+}
