@@ -74,9 +74,8 @@ export function loadProblemDocs(file = join(HERE, 'problems.yaml')): Record<stri
 export const PROBLEM_BASE = 'https://mitre.github.io/hdf-libs/problems';
 
 /**
- * ADR-0010 §6's code-to-status-and-type mapping, derived from the table rather than
- * restated beside it — §6 says the mapping exists exactly once. A test parses that section
- * out of the ADR and compares it to this.
+ * ADR-0010 §6's code-to-status-and-type mapping, derived from problems.yaml rather than
+ * restated beside it — §6 says the mapping exists exactly once, and that file is where.
  */
 export function problemTypes(docs = loadProblemDocs()): Record<string, { status: number; type: string }> {
   const mapped: Record<string, { status: number; type: string }> = {};

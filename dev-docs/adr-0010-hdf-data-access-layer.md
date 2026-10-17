@@ -68,7 +68,7 @@ Constraints inherited from the repo: dual-language with shared-fixture parity wh
 - **`hdf-serve`** (TS, ADR-0011): every route calls `hdf-data` and nothing else for storage; the guard in §1 makes a direct `hdf-db-schema` import in the service a lint failure; the service constructs the database handle (§1) and refuses `HDF_STORE=file` and `http`.
 
 ### 6. Errors — the one table
-`hdfdata.Code` is closed and **this table is the single mapping** ADR-0008's conventions and the MCP consume (a test in `hdf-openapi` and one here assert agreement):
+`hdfdata.Code` is closed and **this table is the single mapping** ADR-0008's conventions and the MCP consume. `hdf-openapi/src/problems.yaml` carries it in machine-readable form and is what ships as `problems.json`; the table below is this record's copy for readers, and the YAML is authoritative where they differ:
 
 | Code | Raised by | HTTP status | RFC 9457 `type` | `mcperr` |
 |---|---|---|---|---|

@@ -32,8 +32,8 @@ describe('the problem-type table is well formed and HTTP-facing', () => {
     expect(['taxonomy', 'convention', 'service']).toContain(entry.owner);
   });
 
-  // An entry naming a code is making a claim about ADR-0010 §6, which test/problem-types.test.ts
-  // checks against the ADR text. Here we only assert the two views agree with each other.
+  // An entry naming a code is making a claim about ADR-0010 §6. The two views of this one
+  // table have to agree; test/problem-types.test.ts checks the mapping's own invariants.
   it('every coded entry appears in the derived mapping with the same status', () => {
     const mapping = problemTypes();
     const coded = Object.entries(docs).filter(([, entry]) => entry.code !== undefined);
