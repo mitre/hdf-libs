@@ -148,7 +148,7 @@ jobs:
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
         run: bash scripts/check-release-version.test.sh
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-workflows
           path: scan-artifacts/
@@ -218,7 +218,7 @@ jobs:
           got=$(grep -c 'file and found' osv.log)
           [ "$got" -eq "$want" ] \
             || { echo "::error::OSV extracted $got of $want named manifests — something went unscanned"; exit 1; }
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-deps
           path: scan-artifacts/
@@ -262,7 +262,7 @@ jobs:
           echo "inventory: golang=$go npm=$npm"
           [ "$go" -gt 0 ] && [ "$npm" -gt 0 ] \
             || { echo "::error::SBOM covers golang=$go npm=$npm — an ecosystem went uninventoried"; exit 1; }
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
           path: sbom/
@@ -330,7 +330,7 @@ jobs:
           echo "scanned: go=$go ts=$ts"
           [ "$go" -gt 0 ] && [ "$ts" -gt 0 ] \
             || { echo "::error::semgrep scanned go=$go ts=$ts — a language went unscanned"; exit 1; }
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-code
           path: scan-artifacts/
@@ -368,7 +368,7 @@ jobs:
           pnpm exec eslint . \
             --format node_modules/@microsoft/eslint-formatter-sarif/sarif.js \
             --output-file scan-artifacts/eslint.sarif || [ "$?" -eq 1 ]
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-ts
           path: scan-artifacts/
@@ -491,7 +491,7 @@ jobs:
             (cd "$dir" && govulncheck -format sarif ./... \
               > "$GITHUB_WORKSPACE/scan-artifacts/govulncheck-$name.sarif")
           done
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-go
           path: scan-artifacts/
@@ -517,7 +517,7 @@ jobs:
           echo "${HDF_CLI_SHA256}  $RUNNER_TEMP/hdf-cli.tar.gz" | sha256sum -c -
           tar xzf "$RUNNER_TEMP/hdf-cli.tar.gz" -C "$RUNNER_TEMP" hdf
           "$RUNNER_TEMP/hdf" version
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate-cli
           path: ${{ runner.temp }}/hdf
@@ -619,7 +619,7 @@ jobs:
           done
       - name: Upload normalized HDF
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hdf-normalized-scans
           path: hdf-scans/
@@ -650,7 +650,7 @@ jobs:
       - name: Build Go CLI
         run: pnpm build:go
       - name: Upload build artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-artifacts
           path: |
@@ -702,7 +702,7 @@ jobs:
         env:
           OS_TAG: ${{ matrix.os }}
         run: .github/scripts/collect-junit-ts.sh
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-results-ts-${{ matrix.os }}
@@ -710,7 +710,7 @@ jobs:
           retention-days: 7
       - name: Upload coverage reports
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-reports-ts
           path: '**/coverage'
@@ -749,7 +749,7 @@ jobs:
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-results-go-${{ matrix.os }}
@@ -757,7 +757,7 @@ jobs:
           retention-days: 7
       - name: Upload coverage reports
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-reports-go
           path: '**/coverage.out'
@@ -819,7 +819,7 @@ jobs:
         run: hdf validate threshold hdf-tests/*.hdf.json -T .github/hdf-thresholds/tests.yaml
       - name: Upload normalized HDF (tests)
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hdf-normalized-tests
           path: hdf-tests/
