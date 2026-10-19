@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { createAjvWithPrimitives } from './setup';
 
@@ -36,6 +36,26 @@ function sourceSchemas(): string[] {
   walk(join(here, '..', 'src', 'schemas'));
   return found.sort();
 }
+
+// Every document ROOT carries a root-level `examples` array. The root example is
+// the document a consumer copies first, and hdf-openapi's conformance suite drives
+// its per-root negatives from it — a root without one drops out of that coverage
+// with nothing to say so, which is why it is asserted here rather than tracked.
+describe('document roots', () => {
+  const roots = sourceSchemas().filter((f) => basename(f).startsWith('hdf-'));
+
+  it('finds every document root, so a filter failure cannot read as a pass', () => {
+    expect(roots.map((f) => basename(f))).toHaveLength(8);
+  });
+
+  it.each(roots.map((f) => [basename(f), f] as const))(
+    '%s carries a root example',
+    (_name, file) => {
+      const schema = JSON.parse(readFileSync(file, 'utf-8')) as Node;
+      expect(Array.isArray(schema.examples) ? schema.examples.length : 0).toBeGreaterThan(0);
+    },
+  );
+});
 
 describe('schema examples', () => {
   const files = sourceSchemas();

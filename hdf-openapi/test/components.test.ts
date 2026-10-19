@@ -332,6 +332,10 @@ describe('2020-12 features pass through untouched', () => {
   // Pinned absolutely as well: the derived count above proves nothing was lost
   // relative to the input, and these prove the input itself has not drifted
   // without review. Measured against the tracked embed at schema v3.8.0.
+  //
+  // dependentRequired is 0 because ADR-0017 re-expressed Integrity's
+  // algorithm/checksum pairing as two if/then members of an allOf. Equivalent
+  // constraint, which is why `if` rose by the same change.
   it('matches the tracked keyword baseline', () => {
     expect({
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
@@ -372,8 +376,9 @@ describe('$ref shapes the schemas do not currently use but 2020-12 permits', () 
     return () => buildComponentsDocument(planted);
   }
 
-  // From the bundle's own $id: a literal here goes stale at every schema minor.
-  const RESULTS_ID = bundles.get('hdf-results.schema.json')?.$id as string;
+  // Read from the bundle the generator reads: a hardcoded version rots at every
+  // schema minor, which is how it broke on the v3.8.0 bump.
+  const RESULTS_ID = (bundles.get('hdf-results.schema.json') as JsonSchema).$id as string;
 
   // Nothing in the embed refs a resource as a whole today, so this path would
   // otherwise be untested code that breaks the first time a schema uses it.

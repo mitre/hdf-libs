@@ -108,6 +108,7 @@ jobs:
             hdf-extension-graph
             hdf-engine
             hdf-fixtures
+            hdf-openapi
           )
 
           # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
@@ -385,6 +386,7 @@ jobs:
           npm install @mitre/hdf-engine        # detection, query, compliance rollups
           npm install @mitre/hdf-generators    # InSpec profile generation
           npm install @mitre/hdf-extension-graph  # profile/baseline extension chains
+          npm install @mitre/hdf-openapi   # OpenAPI 3.1 components for the HDF schemas
 
           # Go libraries — hdf-converters pulls in schema, parsers, utilities,
           # mappings and validators; the rest are independent modules. hdf-cli is

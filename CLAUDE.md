@@ -16,11 +16,11 @@ pnpm security         # pnpm audit + govulncheck
 
 ## Monorepo Layout
 
-pnpm workspace with 11 packages + a VitePress schema documentation site:
+pnpm workspace with 13 packages + a VitePress schema documentation site:
 
 | Package | Purpose | Language |
 |---------|---------|----------|
-| `hdf-schema` | 7 JSON schemas + TS/Go type generation | TS |
+| `hdf-schema` | 8 JSON schemas + TS/Go type generation | TS |
 | `hdf-utilities` | XML, CSV, hash, string helpers | TS |
 | `hdf-mappings` | CCI, NIST, CWE, OWASP control mappings | TS + Go |
 | `hdf-validators` | Schema validation with embedded schemas | TS + Go |
@@ -31,6 +31,7 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 | `hdf-engine` | Schema-typed read-side engines: document detection, query/filtering, compliance rollups | TS + Go |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
 | `hdf-fixtures` | Shared real-world HDF test data corpus (published; cross-package tests here, and available to consumers) | TS + Go |
+| `hdf-openapi` | OpenAPI 3.1 components generated from the schema bundles, plus the tooling-compatibility matrix | TS |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
 | `site/` | VitePress schema reference site for GitHub Pages | TS |
 
@@ -65,7 +66,7 @@ cd site && pnpm generate && pnpm exec vitepress dev  # Local preview
 
 ## Schema Architecture
 
-7 document types, all JSON Schema 2020-12:
+8 document types, all JSON Schema 2020-12:
 
 - **hdf-results** — Assessment findings (the primary converter output)
 - **hdf-baseline** — Requirement definitions without results
@@ -74,13 +75,14 @@ cd site && pnpm generate && pnpm exec vitepress dev  # Local preview
 - **hdf-amendments** — Waivers, attestations, POA&Ms
 - **hdf-evidence-package** — Bundle of references to all documents
 - **hdf-comparison** — Differential analysis (v1.0.0; others are v2.0.0)
+- **hdf-requirement-change-event** — Continuous-monitoring wire events: one requirement's posture change on one component, the streaming increment of a systemDrift comparison
 
 Source schemas: `hdf-schema/src/schemas/` (modular, with `primitives/` subdirectory)
 Bundled schemas: `hdf-schema/dist/schemas/` (self-contained, all `$ref`s embedded)
 Hosted at: `https://mitre.github.io/hdf-libs/schemas/`
 
 ### Key schema fields
-- `components[]` — polymorphic array (11 types: host, containerImage, cloudAccount, etc.) with UUID `componentId`
+- `components[]` — polymorphic array (13 types: host, containerImage, cloudAccount, aiModel, dataset, etc.) with UUID `componentId`
 - `tool` — source security tool metadata (name, version, format). Aligns with SARIF/OSCAL/CycloneDX.
 - `generator` — converter that produced the HDF file (required: name + version)
 - `integrity` — root-level hash + optional signature (Integrity type)
