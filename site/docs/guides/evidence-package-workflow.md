@@ -320,8 +320,8 @@ Exit 1, and the two misses teach different lessons. `Nessus Scan` is missing bec
 ## Seal it and hand it over
 
 ```console
-$ hdf evidence bundle juice-shop.hdf-evidence-package.json -o ../juice-shop-build-4821.tar.gz
-Archive written to ../juice-shop-build-4821.tar.gz (10 file(s))
+$ hdf evidence bundle juice-shop.hdf-evidence-package.json -o ../juice-shop-build-4821.zip
+Archive written to ../juice-shop-build-4821.zip (10 file(s))
 Contains exactly the package, every document it references, in-tree external evidence — nothing else.
   not carried: vendor-vex.json (context, not evidence) — recorded in externalReferences
 ```
@@ -331,7 +331,7 @@ Ten files: the package and the nine things it carries. The VEX is named as not c
 The archive root *is* the package's own directory, so it reproduces that layout wherever it is extracted:
 
 ```console
-$ tar -tzf ../juice-shop-build-4821.tar.gz
+$ unzip -Z1 ../juice-shop-build-4821.zip
 adjudications.json
 deps.hdf.json
 fs.hdf.json
@@ -350,7 +350,7 @@ The recipient's check is the same command, run somewhere else entirely:
 
 ```console
 $ mkdir -p /tmp/assessor
-$ tar -xzf ../juice-shop-build-4821.tar.gz -C /tmp/assessor
+$ unzip -q ../juice-shop-build-4821.zip -d /tmp/assessor
 $ cd /tmp/assessor
 $ hdf evidence info juice-shop.hdf-evidence-package.json --verify
 # abridged — the banner and the same nine checksum lines
