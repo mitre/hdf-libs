@@ -147,10 +147,17 @@ test('the schema index states the same number of document types that it lists', 
     ? fs.readdirSync(bundled).filter((f) => f.endsWith('.schema.json')).length
     : 0;
   if (built < srcRoots) {
-    execFileSync('pnpm', ['--filter', '@mitre/hdf-schema', 'run', 'build:schemas'], {
-      cwd: repoRoot,
-      stdio: 'inherit',
-    });
+    // node, not pnpm: pnpm is a .cmd shim on Windows and a bare-name spawn cannot find
+    // it. build:schemas is two plain node invocations, asserted so this cannot go stale.
+    const schemaDir = path.join(repoRoot, 'hdf-schema');
+    const pkg = JSON.parse(fs.readFileSync(path.join(schemaDir, 'package.json'), 'utf-8'));
+    assert.equal(
+      pkg.scripts['build:schemas'],
+      'node --import tsx src/bundle-schemas.ts && node --import tsx src/sync-validator-schemas.ts',
+    );
+    for (const entry of ['src/bundle-schemas.ts', 'src/sync-validator-schemas.ts']) {
+      execFileSync('node', ['--import', 'tsx', entry], { cwd: schemaDir, stdio: 'inherit' });
+    }
   }
   execFileSync('node', ['generate-schema-docs.mjs'], { cwd: siteDir, stdio: 'ignore' });
   const page = fs.readFileSync(path.join(siteDir, 'schemas', 'index.md'), 'utf-8');

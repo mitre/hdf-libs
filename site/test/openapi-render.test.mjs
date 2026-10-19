@@ -44,7 +44,11 @@ function rewrittenByThisRun() {
 test('generate the openapi pages and archive', () => {
   const built = path.resolve(REPO_ROOT, COMPONENTS_DOCUMENT);
   if (!fs.existsSync(built)) {
-    execFileSync('pnpm', ['run', 'build:components'], {
+    // node, not pnpm: pnpm is a .cmd shim on Windows and a bare-name spawn cannot find
+    // it. build:components is a plain node invocation, asserted so this cannot go stale.
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(REPO_ROOT, 'hdf-openapi/package.json'), 'utf-8'));
+    assert.equal(pkg.scripts['build:components'], 'node --import tsx src/generate-components.ts');
+    execFileSync('node', ['--import', 'tsx', 'src/generate-components.ts'], {
       cwd: path.resolve(REPO_ROOT, 'hdf-openapi'),
       stdio: 'inherit',
     });
