@@ -44,8 +44,8 @@ var envelopeCalls = []struct {
 
 // captureEnvelopes drives each paged tool and returns its RAW structuredContent.
 //
-// Raw on purpose: ADR-0008 §2's rewrite map lives in the API generator, and applying it
-// here would put the projection in two languages.
+// Raw on purpose: the envelope is captured as the MCP emits it. ADR-0008 §2's rewrite map
+// was withdrawn with the API generator, so there is no projection left to apply here.
 func captureEnvelopes(t *testing.T) map[string]any {
 	t.Helper()
 	root, err := filepath.Abs(filepath.Join("..", "..", "..", ".."))
