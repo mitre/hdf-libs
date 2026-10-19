@@ -81,7 +81,7 @@ the document never carried.
 | Descriptions by label, except `default` | preserved | both |
 | Per-result status | preserved | both |
 | `results[].resource`, `results[].resourceId`, `results[].startTime` | restored from the bag; a timestamp returns as the same instant in canonical spelling, so `.100Z` reads back `.1Z` in both languages | both |
-| `cvss`, `epss`, `refs`, `affectedPackages`, `code`, `effectiveChecksum` | restored from the bag; a member the schema permits but this build does not declare is dropped by Go and kept by TypeScript | both |
+| `cvss`, `epss`, `refs`, `affectedPackages`, `code`, `effectiveChecksum` | restored from the bag; a member this build does not declare is dropped by Go and kept by TypeScript, and the value itself survives either way | both |
 | `verificationMethod` | restored from the bag | both |
 | `statusOverrides`: `appliedBy`, `appliedAt`, `expiresAt` | restored from the bag | both |
 | `tags.cwe`, and the NIST and CCI tags derived from it | preserved | both |
@@ -127,13 +127,15 @@ Seven of those need the reason stated rather than the outcome alone.
   Interchange Format` and `2.1.0` — so where the bag carries the real ones, those are
   not a neutral default but a false claim about the policy.
 - **A carried member this build does not declare** rides along without costing the value
-  it is attached to. A few carried types are open in the schema — `Reference` is an
-  `anyOf` with no `additionalProperties` — so a `refs` entry may legally carry more than
-  `ref`, `url` and `uri`. The array and its declared members restore either way; whether
-  the extra member itself survives differs by language, because Go decodes into a typed
-  struct and drops it while TypeScript assigns the carried value verbatim and keeps it.
-  Refusing the whole value over such a member would turn a partial restore into a total
-  loss, and would do it again every time the schema gains a field.
+  it is attached to. This is the schema-skew case: a document produced against a newer
+  `hdf-schema` can carry a member the running build has no field for — `External_Reference`
+  gained `content` and `encoding` exactly that way — and the array it rides on must still
+  come back. Refusing the whole value over one unknown member would turn a partial restore
+  into a total loss, and would do it again on every schema addition. The array and its
+  declared members restore either way; whether the unknown member itself survives differs
+  by language, and both answers are defensible — Go decodes into a typed struct and cannot
+  keep a field it has no type for, TypeScript assigns the carried value verbatim and
+  preserves it for a newer consumer.
 - **Baseline `integrity` and `originalChecksum`** are refused even though the bag
   carries them and SARIF cannot express them. Both are tamper-evidence, and a round trip
   is a transformation of the thing they attest to: `Integrity` is defined over "the HDF

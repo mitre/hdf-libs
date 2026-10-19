@@ -461,15 +461,19 @@ describe('HDF -> SARIF -> HDF', () => {
     expect(inputs[0]!.name).toBe('threshold');
   });
 
-  // An undeclared member must not cost the value it rides on — the TypeScript peer of
-  // Go's TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue.
+  // A member this build does not declare must not cost the value it rides on — the
+  // TypeScript peer of Go's
+  // TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue.
   //
-  // Reference is one of the few carried types the HDF schema leaves OPEN, so
-  // {ref, url, title} is a legal refs entry. What each language does with the extra
-  // member differs and is recorded rather than asserted: Go decodes into a typed struct
-  // so it is dropped, this side assigns the carried value verbatim so it is kept. Both
-  // predate this card. What must agree is that the ARRAY and its declared members
-  // survive — a guard that rejected the value over the extra member lost all of them.
+  // This is the SCHEMA SKEW case: a document produced against a newer hdf-schema can
+  // carry a Reference member this build has no field for, and the refs array must still
+  // come back. The member below is not legal in a current document — Reference is closed
+  // — so it stands in for a future one, which is the case validation cannot protect a
+  // build from.
+  //
+  // What each language does with the unknown member differs and is accepted rather than
+  // asserted: Go cannot keep a field it has no type for, this side assigns verbatim so it
+  // survives. What must agree is that the ARRAY and its declared members are never lost.
   it('does not let an undeclared member cost the value it rides on', async () => {
     const raw = readFileSync(
       join(__dirname, '..', '..', 'gitlab-to-hdf', 'fixtures', 'expected', 'minimal-dast.json.hdf.json'), 'utf8');

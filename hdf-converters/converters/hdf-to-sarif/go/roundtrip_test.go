@@ -1191,20 +1191,25 @@ func seededTimestampHDF(t *testing.T, stamp string) []byte {
 	return seeded
 }
 
-// An undeclared member must not cost the value it rides on.
+// A member this build does not declare must not cost the value it rides on.
 //
-// Reference is one of the few carried types the HDF schema leaves OPEN — an anyOf with
-// no additionalProperties and no unevaluatedProperties — so
-// {"ref": …, "url": …, "title": …} is a legal refs entry. A restore guard that rejected
-// a value for carrying a member this build does not declare threw the whole array away,
-// turning a partial restore into a total loss, and would have done it again on every
-// schema addition: External_Reference gained content and encoding in its own right.
+// This is the SCHEMA SKEW case, and it is why the behaviour matters. A document produced
+// against a newer hdf-schema can carry a Reference member this build has no field for —
+// External_Reference gained content and encoding exactly that way — and a build must
+// still return the refs array it was given. A restore guard that rejected the whole value
+// over one unknown member turned a partial restore into a total loss, and would have done
+// it again on every schema addition.
 //
-// What each language does with the extra member differs and is recorded rather than
-// asserted here: Go decodes into a typed struct so an undeclared member is dropped,
-// TypeScript assigns the carried value verbatim so it is kept. Both predate this card.
-// What must agree, and is asserted in both, is that the ARRAY and its declared members
-// survive.
+// The member used here is not legal in a CURRENT document: Reference is closed as of the
+// Reference clean-up, so a present-day producer cannot emit it. It stands in for a future
+// one, which is the case no amount of validation protects a build from.
+//
+// What each language does with the unknown member itself differs, and that is accepted
+// rather than asserted: Go decodes into a typed struct so it cannot keep a field it has no
+// type for, TypeScript assigns the carried value verbatim so it survives. Neither is
+// wrong — a build cannot invent storage for an unknown field, and preserving it when you
+// can is a kindness to a newer consumer. What must agree, and is asserted in both, is that
+// the ARRAY and its declared members are never lost.
 func TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue(t *testing.T) {
 	path := filepath.Join("..", "..", "gitlab-to-hdf", "fixtures", "expected", "minimal-dast.json.hdf.json")
 	raw, err := os.ReadFile(path) // #nosec G304 -- repo-relative fixture
@@ -1217,7 +1222,8 @@ func TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue(t *test
 	req["refs"] = []interface{}{map[string]interface{}{
 		"ref": "NIST SP 800-53 Rev 5",
 		"url": "https://example.invalid/a",
-		// Schema-legal on an open type, and not a member hdf.Reference declares.
+		// Stands in for a member a future schema version adds; not one hdf.Reference
+		// declares, and not legal in a current document now that Reference is closed.
 		"title": "Security and Privacy Controls",
 	}}
 	seeded, err := json.Marshal(doc)

@@ -479,7 +479,33 @@
             }
           ],
           "description": "A reference to an external document.",
-          "title": "Reference"
+          "title": "Reference",
+          "unevaluatedProperties": false,
+          "$comment": "Examples, in order: 1) By-locator: a plain URL, the commonest form by far in practice; 2) By-name: a human-meaningful citation with no locator, as InSpec's `ref 'title'` emits; 3) Both together, since this is an anyOf rather than a oneOf; 4) The ref-as-array form, whose items are deliberately open so a source format's own reference record can be carried verbatim — XCCDF's DPMS target identifiers reach HDF this way; 5) uri, accepted as a synonym of url for documents that spell it that way. The object itself is CLOSED: a member none of the three branches declares is rejected. The openness that matters here is one level down, on the items of the ref array, and it is declared there explicitly. This primitive predates External_Reference, which is the STIX-aligned type a new converter should reach for; refs survives because it is InSpec-inherited and HDF consumes InSpec output.",
+          "examples": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+            },
+            {
+              "ref": "NIST SP 800-53 Rev 5, AC-6"
+            },
+            {
+              "ref": "CIS Benchmark for RHEL 9, 1.1.1",
+              "url": "https://www.cisecurity.org/benchmark/red_hat_linux"
+            },
+            {
+              "ref": [
+                {
+                  "identifier": "2921",
+                  "publisher": "DISA",
+                  "type": "DPMS Target"
+                }
+              ]
+            },
+            {
+              "uri": "https://attack.mitre.org/techniques/T1059/"
+            }
+          ]
         },
         "Source_Location": {
           "type": "object",
