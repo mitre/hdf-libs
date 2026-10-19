@@ -188,6 +188,108 @@ function restoreUnexpressibleDescriptions(req: Record<string, unknown>, bag: Rec
   if (existing.length > 0) req.descriptions = existing;
 }
 
+/** The `hdf` bag a run carries, or undefined. Mirrors Go's runBag. */
+export function runBag(run: {properties?: Record<string, unknown>}): Record<string, unknown> | undefined {
+  const bag = run.properties?.[HDF_BAG_KEY];
+  return bag && typeof bag === 'object' && !Array.isArray(bag) ? bag as Record<string, unknown> : undefined;
+}
+
+// Baseline fields that are plain strings. title and version are absent here because
+// they override rather than fill, and are handled separately below.
+const BASELINE_STRING_FIELDS = [
+  'summary', 'description', 'maintainer', 'copyright', 'copyrightEmail',
+  'license', 'status', 'statusMessage', 'parentBaseline',
+] as const;
+
+// Array fields, with the keys the HDF schema REQUIRES on each element. Go gets this
+// check for free — a decode that drops or invents members is rejected as not being of
+// that type — and TypeScript has no types at runtime, so it is written out. Without it
+// the two languages diverge on exactly the input that is hardest to reason about: Go
+// skips a malformed element, TypeScript would take it verbatim and emit a document
+// that fails the output schema gate.
+//
+// Element types with no required keys (Dependency, Supported_Platform) are still
+// checked for being objects, which is all the schema itself demands of them.
+const BASELINE_ARRAY_FIELDS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['supports', []],
+  ['depends', []],
+  ['groups', ['id', 'requirements']],
+  ['inputs', ['name']],
+  ['externalReferences', ['sourceName']],
+] as const;
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Merges a carried run bag's baseline identity back onto the baseline this run
+ * converted to. Mirrors Go's restoreBaselineFields.
+ *
+ * SARIF's toolComponent describes the SCANNER. A baseline describes the POLICY — what
+ * was required — so SARIF has no way to say any of these, and ruling (c) therefore
+ * permits reading them. The exporter carries 23 keys; five are excluded, in three
+ * groups:
+ *
+ * - `name` and `resultsChecksum` are DERIVED, not read. SARIF does express the name, on
+ *   the driver, and resultsChecksum must be computed over the results actually present
+ *   or it attests to content this document does not contain.
+ * - `integrity` and `originalChecksum` are REFUSED. Both are tamper-evidence, and a
+ *   round trip is a transformation of the thing they cover: Integrity is defined over
+ *   "the HDF file" and carries an optional signature and signedBy, so restoring it
+ *   would re-attach a signature to a document nobody signed.
+ * - `generator` is REFUSED because it names the converter that produced THIS file, and
+ *   this converter produced it. Restoring the upstream one would misattribute the
+ *   document; the original stays readable in the bag.
+ *
+ * Every value is shape-checked before it is taken. The bag is untrusted, and Go's
+ * decode skips an entry whose type does not fit; assigning here without the same check
+ * would put the two languages out of step on exactly the input that is hardest to
+ * reason about.
+ */
+export function restoreBaselineFields(
+  baseline: Record<string, unknown>,
+  bag: Record<string, unknown> | undefined,
+): void {
+  if (!bag) return;
+
+  // title and version override what the mapping produced. The mapping has no baseline
+  // to describe, so it writes the SARIF format's own name and spec version; where the
+  // bag carries the real ones, those invented values are a false claim about the
+  // policy rather than a neutral default.
+  for (const key of ['title', 'version'] as const) {
+    if (typeof bag[key] === 'string') baseline[key] = bag[key];
+  }
+
+  for (const key of BASELINE_STRING_FIELDS) {
+    if (baseline[key] !== undefined) continue;
+    if (typeof bag[key] === 'string') baseline[key] = bag[key];
+  }
+
+  for (const [key, required] of BASELINE_ARRAY_FIELDS) {
+    if (baseline[key] !== undefined) continue;
+    const v = bag[key];
+    if (!Array.isArray(v)) continue;
+    if (!v.every(e => isPlainObject(e) && required.every(r => e[r] !== undefined))) continue;
+    baseline[key] = v;
+  }
+
+  if (baseline.labels === undefined) {
+    const labels = bag.labels;
+    if (isPlainObject(labels) && Object.values(labels).every(v => typeof v === 'string')) {
+      baseline.labels = labels;
+    }
+  }
+
+  // The baseline's own passthrough — producer data outside the HDF model that belongs
+  // to this baseline. SARIF cannot express it either, so it restores like the rest. It
+  // does not collide with this converter's own carriage, which is written at the
+  // DOCUMENT level rather than the baseline's.
+  if (baseline.extensions === undefined && isPlainObject(bag.extensions)) {
+    baseline.extensions = bag.extensions;
+  }
+}
+
 /** The `hdf` bag a rule carries, or undefined. */
 export function ruleBag(rule: {properties?: Record<string, unknown>} | undefined): Record<string, unknown> | undefined {
   const bag = rule?.properties?.[HDF_BAG_KEY];

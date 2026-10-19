@@ -80,24 +80,29 @@ the document never carried.
 | Requirement identity and title | preserved | both |
 | Descriptions by label, except `default` | preserved | both |
 | Per-result status | preserved | both |
-| `results[].resource`, `results[].resourceId`, `results[].startTime` | restored from the bag | both |
-| `cvss`, `epss`, `refs`, `affectedPackages`, `code`, `effectiveChecksum` | restored from the bag | both |
+| `results[].resource`, `results[].resourceId`, `results[].startTime` | restored from the bag; a timestamp returns as the same instant in canonical spelling, so `.100Z` reads back `.1Z` in both languages | both |
+| `cvss`, `epss`, `refs`, `affectedPackages`, `code`, `effectiveChecksum` | restored from the bag; a member the schema permits but this build does not declare is dropped by Go and kept by TypeScript | both |
 | `verificationMethod` | restored from the bag | both |
 | `statusOverrides`: `appliedBy`, `appliedAt`, `expiresAt` | restored from the bag | both |
 | `tags.cwe`, and the NIST and CCI tags derived from it | preserved | both |
-| `kev`, `externalReferences`, `controlType`, `applicability`, `evidence`, `poams` | restored from the bag | no |
+| `evidence`, `externalReferences` | restored from the bag | both |
+| `kev`, `controlType`, `applicability`, `poams` | restored from the bag | no |
 | `impact`, where the requirement carries CVSS | recomputed | both |
 | `descriptions[default]` | derived from the SARIF | both |
 | Per-result `codeDesc` | derived from the SARIF | both |
 | `statusOverrides`: `type`, `status`, `reason` | derived from the suppression | no |
 | `results[].message` | relocated, not lost | no |
 | `severity` | added where the source had none | no |
-| Baseline `name` | preserved, via the driver | no |
-| Baseline `summary`, `description`, `maintainer`, `copyright`, `license`, `status`, `statusMessage`, `labels` | dropped | no |
-| Baseline `title` and `version` | replaced with invented values | no |
+| Baseline `name` | derived from the driver | both |
+| Baseline `summary`, `description`, `maintainer`, `copyright`, `copyrightEmail`, `license`, `status`, `statusMessage`, `parentBaseline`, `labels`, `supports`, `depends`, `groups`, `inputs`, `externalReferences` | restored from the bag | both |
+| Baseline `title` and `version` | restored from the bag; invented when it carries none | both |
+| Baseline `resultsChecksum` | recomputed over the results present | no |
+| Baseline `extensions` (its own passthrough) | restored from the bag | both |
+| Baseline `integrity` and `originalChecksum` | dropped, deliberately | both |
+| Document `generator` | re-stamped with the converter that produced the new file | both |
 | A requirement's `error` status | degrades to `failed` | both |
 
-Three of those need the reason stated rather than the outcome alone.
+Seven of those need the reason stated rather than the outcome alone.
 
 - **`impact`** is published through SARIF's `security-severity` convention, which is a
   CVSS base score, and recomputed from it on the way back. A requirement whose impact
@@ -112,6 +117,33 @@ Three of those need the reason stated rather than the outcome alone.
   field rather than restoring from the bag: the first result's text reaches the
   requirement's `descriptions[default]`, and every result's text is addressable in
   `tags["sarif-results"][i].message`. What changes is placement.
+- **Baseline `title` and `version`** are the only *baseline* fields restored over what
+  the import derived, rather than only where it derived nothing. Three requirement-level
+  fields behave the same way — `results[].startTime`, `verificationMethod`, and a status
+  override's `appliedBy`/`appliedAt`/`expiresAt`. In each case what the import would
+  otherwise write is the conversion time or a constant, not something read out of the
+  SARIF, so a carried value outranks it. With no baseline to describe, the
+  import writes the SARIF format's own name and spec version — `Static Analysis Results
+  Interchange Format` and `2.1.0` — so where the bag carries the real ones, those are
+  not a neutral default but a false claim about the policy.
+- **A carried member this build does not declare** rides along without costing the value
+  it is attached to. A few carried types are open in the schema — `Reference` is an
+  `anyOf` with no `additionalProperties` — so a `refs` entry may legally carry more than
+  `ref`, `url` and `uri`. The array and its declared members restore either way; whether
+  the extra member itself survives differs by language, because Go decodes into a typed
+  struct and drops it while TypeScript assigns the carried value verbatim and keeps it.
+  Refusing the whole value over such a member would turn a partial restore into a total
+  loss, and would do it again every time the schema gains a field.
+- **Baseline `integrity` and `originalChecksum`** are refused even though the bag
+  carries them and SARIF cannot express them. Both are tamper-evidence, and a round trip
+  is a transformation of the thing they attest to: `Integrity` is defined over "the HDF
+  file" and carries an optional `signature` and `signedBy`, so restoring it would
+  re-attach a signature to a document nobody signed. `originalChecksum` attests to
+  baseline requirements that the round trip has already changed.
+- **`generator`** is refused for a different reason: it names the converter that
+  produced *this* file, and `sarif-to-hdf` produced it. A document that began as
+  `grype-to-hdf` output comes back stamped `sarif-to-hdf`, which is accurate rather than
+  lossy — the original stays readable in the carried block.
 
 ## Why the passthrough block is not the general answer
 

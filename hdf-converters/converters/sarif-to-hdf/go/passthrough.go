@@ -2,6 +2,7 @@ package sarif
 
 import (
 	"encoding/json"
+	"reflect"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -191,9 +192,77 @@ func decodeBagField(bag map[string]interface{}, key string, target interface{}, 
 	if err != nil {
 		return
 	}
-	// Decode failure is silent on purpose: the bag is untrusted, and a malformed
-	// entry must cost only itself.
-	_ = json.Unmarshal(encoded, target)
+	// Decode into a scratch value and commit only on success. Decode failure is silent
+	// on purpose — the bag is untrusted and a malformed entry must cost only itself —
+	// but unmarshalling straight into the field does not achieve that: encoding/json
+	// allocates the pointee before it discovers the type mismatch, so a failed decode
+	// leaves a non-nil, empty value behind instead of the field it found.
+	v := reflect.ValueOf(target)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return
+	}
+	// Decode into a scratch value and commit only on success, so a failed decode cannot
+	// leave a half-built value behind: encoding/json allocates the pointee before it
+	// discovers a type mismatch, and assigning the field directly would replace what it
+	// found with a non-nil empty value.
+	//
+	// Undeclared members are IGNORED here, deliberately. Several carried types are open
+	// in the schema — Reference is an anyOf with no additionalProperties, so
+	// {"ref": …, "url": …, "title": …} is legal — and rejecting the value over a member
+	// this build does not know would turn a partial restore into a total loss, and would
+	// do it again every time the schema gains a field. A missing REQUIRED member is the
+	// shape that actually produces an invalid document, and it is checked where the type
+	// is known rather than here, by decodeBaselineArray.
+	scratch := reflect.New(v.Elem().Type())
+	if err := json.Unmarshal(encoded, scratch.Interface()); err != nil {
+		return
+	}
+	v.Elem().Set(scratch.Elem())
+}
+
+// baselineArrayRequiredKeys is the keys the HDF schema REQUIRES on each element of a
+// carried baseline array. Mirrors the TypeScript peer's BASELINE_ARRAY_FIELDS exactly;
+// the two are the same rule written twice because neither language can read the other's.
+var baselineArrayRequiredKeys = map[string][]string{
+	"supports":           nil,
+	"depends":            nil,
+	"groups":             {"id", "requirements"},
+	"inputs":             {"name"},
+	"externalReferences": {"sourceName"},
+}
+
+// decodeBaselineArray restores a carried array only when every element is an object
+// carrying the members the schema requires of it.
+//
+// This is the check {"bogusKey": 5} needs. A plain decode of it succeeds — undeclared
+// members are ignored and absent ones zeroed — and yields a RequirementGroup with no id
+// and a nil requirements, which then fails the output schema gate and costs the whole
+// conversion. Testing for the required members refuses exactly that, while leaving a
+// legitimate element carrying an EXTRA member alone.
+func decodeBaselineArray(bag map[string]interface{}, key string, target interface{}, alreadySet bool) {
+	if alreadySet {
+		return
+	}
+	raw, ok := bag[key]
+	if !ok {
+		return
+	}
+	items, ok := raw.([]interface{})
+	if !ok {
+		return
+	}
+	for _, item := range items {
+		obj, ok := item.(map[string]interface{})
+		if !ok {
+			return
+		}
+		for _, required := range baselineArrayRequiredKeys[key] {
+			if _, present := obj[required]; !present {
+				return
+			}
+		}
+	}
+	decodeBagField(bag, key, target, false)
 }
 
 // restoreUnexpressibleDescriptions restores only labels the SARIF mapping cannot
@@ -243,6 +312,67 @@ func ruleBag(rule *ReportingDescriptor) map[string]interface{} {
 	}
 	bag, _ := rule.Properties[hdfBagKey].(map[string]interface{})
 	return bag
+}
+
+// runBag returns the reserved hdf block a run carries, or nil.
+func runBag(run SarifRun) map[string]interface{} {
+	if len(run.Properties) == 0 {
+		return nil
+	}
+	bag, _ := run.Properties[hdfBagKey].(map[string]interface{})
+	return bag
+}
+
+// restoreBaselineFields merges a carried run bag's baseline identity back onto the
+// baseline this run converted to.
+//
+// SARIF's toolComponent describes the SCANNER. A baseline describes the POLICY — what
+// was required — so SARIF has no way to say any of these, and ruling (c) therefore
+// permits reading them. The exporter carries 23 keys; five are excluded, in three
+// groups:
+//
+//   - name and resultsChecksum are DERIVED, not read. SARIF does express the name, on
+//     the driver, and resultsChecksum must be computed over the results actually
+//     present or it attests to content this document does not contain.
+//   - integrity and originalChecksum are REFUSED. Both are tamper-evidence, and a round
+//     trip is a transformation of the thing they cover: Integrity is defined over "the
+//     HDF file" and carries an optional signature and signedBy, so restoring it would
+//     re-attach a signature to a document nobody signed.
+//   - generator is REFUSED because it names the converter that produced THIS file, and
+//     this converter produced it. Restoring the upstream one would misattribute the
+//     document; the original stays readable in the bag.
+//
+// title and version are restored OVER what the mapping produced, rather than only when
+// absent. The mapping has no baseline to describe, so it writes the SARIF format's own
+// name and spec version; where the bag carries the real ones, those invented values are
+// not a neutral default but a false claim about the policy.
+func restoreBaselineFields(baseline *hdf.EvaluatedBaseline, bag map[string]interface{}) {
+	if len(bag) == 0 {
+		return
+	}
+	decodeBagField(bag, "title", &baseline.Title, false)
+	decodeBagField(bag, "version", &baseline.Version, false)
+
+	decodeBagField(bag, "summary", &baseline.Summary, baseline.Summary != nil)
+	decodeBagField(bag, "description", &baseline.Description, baseline.Description != nil)
+	decodeBagField(bag, "maintainer", &baseline.Maintainer, baseline.Maintainer != nil)
+	decodeBagField(bag, "copyright", &baseline.Copyright, baseline.Copyright != nil)
+	decodeBagField(bag, "copyrightEmail", &baseline.CopyrightEmail, baseline.CopyrightEmail != nil)
+	decodeBagField(bag, "license", &baseline.License, baseline.License != nil)
+	decodeBagField(bag, "status", &baseline.Status, baseline.Status != nil)
+	decodeBagField(bag, "statusMessage", &baseline.StatusMessage, baseline.StatusMessage != nil)
+	decodeBagField(bag, "parentBaseline", &baseline.ParentBaseline, baseline.ParentBaseline != nil)
+	decodeBagField(bag, "labels", &baseline.Labels, len(baseline.Labels) > 0)
+	decodeBaselineArray(bag, "supports", &baseline.Supports, len(baseline.Supports) > 0)
+	decodeBaselineArray(bag, "depends", &baseline.Depends, len(baseline.Depends) > 0)
+	decodeBaselineArray(bag, "groups", &baseline.Groups, len(baseline.Groups) > 0)
+	decodeBaselineArray(bag, "inputs", &baseline.Inputs, len(baseline.Inputs) > 0)
+	decodeBaselineArray(bag, "externalReferences", &baseline.ExternalReferences, len(baseline.ExternalReferences) > 0)
+	// The baseline's own passthrough — producer data outside the HDF model that belongs
+	// to this baseline. SARIF cannot express it either, so it restores like the rest.
+	// It does not collide with this converter's own carriage, which is written at the
+	// DOCUMENT level rather than the baseline's.
+	decodeBagField(bag, "extensions", &baseline.Extensions, baseline.Extensions != nil)
 }
 
 // hdfBagKey is the single reserved key hdf-to-sarif writes its carriage under.

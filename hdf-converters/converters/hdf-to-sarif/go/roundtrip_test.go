@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
+	"time"
 
 	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -929,4 +931,373 @@ func TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed(t *testing.T) {
 		"the requirement itself survives the full circle")
 	assert.Equal(t, hdf.Failed, second.Baselines[0].Requirements[0].Results[0].Status,
 		"error degrades to failed on re-import; if that is fixed, revisit this")
+}
+
+// Baseline-level restore. hdf-to-sarif writes the whole baseline identity into the
+// run's hdf block; sarif-to-hdf restores the fields SARIF cannot express, derives the
+// two it can, and refuses the two that are tamper-evidence.
+//
+// The owner's ruling, per field:
+//
+//	restored    every field describing the POLICY — SARIF's toolComponent describes the
+//	            scanner, so it has no way to say any of them
+//	derived     name (the driver carries it) and resultsChecksum (recomputed over the
+//	            results actually present), which ruling (c) requires come from the SARIF
+//	never       integrity and originalChecksum. Both are tamper-evidence, and a round
+//	            trip is a transformation: Integrity covers "the HDF file" and can carry
+//	            a signature and signedBy, so restoring it would re-attach someone's
+//	            signature to a document they never signed.
+func TestRoundTrip_HDFToSarifToHDF_RestoresBaselineIdentity(t *testing.T) {
+	raw := seededBaselineHDF(t)
+
+	sarifBytes, err := ConvertHDFToSARIF(raw, roundTripVersion)
+	require.NoError(t, err, "export leg")
+	back, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
+	require.NoError(t, err, "re-import leg")
+	got := back.Baselines[0]
+
+	// Restored verbatim: the policy's own description of itself.
+	require.NotNil(t, got.Summary)
+	assert.Equal(t, "a summary", *got.Summary)
+	require.NotNil(t, got.Description)
+	assert.Equal(t, "a description", *got.Description)
+	require.NotNil(t, got.Maintainer)
+	assert.Equal(t, "Team Blue", *got.Maintainer)
+	require.NotNil(t, got.Copyright)
+	assert.Equal(t, "ACME Corp", *got.Copyright)
+	require.NotNil(t, got.CopyrightEmail)
+	assert.Equal(t, "sec@example.invalid", *got.CopyrightEmail)
+	require.NotNil(t, got.License)
+	assert.Equal(t, "Apache-2.0", *got.License)
+	require.NotNil(t, got.Status)
+	assert.Equal(t, "loaded", *got.Status)
+	require.NotNil(t, got.StatusMessage)
+	assert.Equal(t, "a status note", *got.StatusMessage)
+	require.NotNil(t, got.ParentBaseline)
+	assert.Equal(t, "parent-policy", *got.ParentBaseline)
+	assert.Equal(t, map[string]string{"team": "blue", "environment": "prod"}, got.Labels)
+	require.Len(t, got.Supports, 1)
+	require.Len(t, got.Depends, 1)
+	require.Len(t, got.Groups, 1)
+	require.Len(t, got.Inputs, 1)
+	require.Len(t, got.ExternalReferences, 1)
+
+	// Restored over the invented values. Without this the baseline claims the SARIF
+	// format's own name and spec version as its own: "Static Analysis Results
+	// Interchange Format" and "2.1.0".
+	require.NotNil(t, got.Title)
+	assert.Equal(t, "ACME Hardening Policy", *got.Title)
+	require.NotNil(t, got.Version)
+	assert.Equal(t, "9.9.9", *got.Version)
+
+	// Derived from the SARIF, never the bag.
+	assert.Equal(t, "Flawfinder", got.Name, "the driver carries the name, so SARIF expresses it")
+	require.NotNil(t, got.ResultsChecksum)
+
+	// The baseline's own passthrough is producer data SARIF cannot express, so it
+	// restores like the rest.
+	require.NotNil(t, got.Extensions)
+	encodedExt, err := json.Marshal(got.Extensions)
+	require.NoError(t, err)
+	assert.Contains(t, string(encodedExt), "policyOwner")
+
+	// Refused. Tamper-evidence does not survive a transformation of the thing it covers.
+	assert.Nil(t, got.Integrity,
+		"restoring integrity would re-attach a signature to a document nobody signed")
+	assert.Nil(t, got.OriginalChecksum,
+		"the round trip changes the requirements originalChecksum attests to")
+
+	// Also refused, for a different reason: generator names the converter that produced
+	// THIS file, and this converter produced it.
+	require.NotNil(t, back.Generator)
+	assert.Equal(t, "sarif-to-hdf", back.Generator.Name,
+		"restoring the upstream generator would misattribute the document")
+}
+
+// A bag that is absent, or whose entries are the wrong shape, must cost only itself.
+func TestRoundTrip_HDFToSarifToHDF_BaselineRestoreToleratesAMalformedBag(t *testing.T) {
+	raw := seededBaselineHDF(t)
+	sarifBytes, err := ConvertHDFToSARIF(raw, roundTripVersion)
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(sarifBytes, &doc))
+	run := doc["runs"].([]interface{})[0].(map[string]interface{})
+	block := run["properties"].(map[string]interface{})[hdfBagKey].(map[string]interface{})
+	// Wrong type for a string field, and for a slice field.
+	block["license"] = []interface{}{"not", "a", "string"}
+	block["groups"] = "not a list"
+	block["maintainer"] = "Team Blue"
+	mangled, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	back, err := sarif.ConvertSarifToHDF(mangled, roundTripVersion, "")
+	require.NoError(t, err, "a malformed bag must not fail the conversion")
+	got := back.Baselines[0]
+	assert.Nil(t, got.License, "a wrong-typed entry is skipped")
+	assert.Empty(t, got.Groups, "a wrong-typed entry is skipped")
+	require.NotNil(t, got.Maintainer, "its neighbours still restore")
+	assert.Equal(t, "Team Blue", *got.Maintainer)
+}
+
+// The adversarial corpus. Every entry is a value the bag could carry that does not fit
+// the field it addresses, and the contract is the same for all of them in both
+// languages: skip the field, keep its neighbours, and never fail the conversion.
+//
+// The last one is the subtle case and the reason this table exists. {"bogusKey": 5}
+// DECODES without error in Go — encoding/json ignores members the target does not
+// declare and zeroes the ones it does not find — so a decode that only checks err
+// commits a RequirementGroup with no id and a nil requirements, which then fails the
+// output schema gate and costs the whole document. TypeScript has no types at runtime
+// and would take the object verbatim, reaching the same invalid output by a different
+// route. Both languages reject it now, for the same reason stated differently.
+var adversarialBagValues = map[string]interface{}{
+	"supports":           []interface{}{1, 2, 3},
+	"depends":            []interface{}{"not-an-object"},
+	"inputs":             []interface{}{42},
+	"externalReferences": []interface{}{"x"},
+	"license":            []interface{}{"not", "a", "string"},
+	"labels":             map[string]interface{}{"team": 7},
+	"groups":             []interface{}{map[string]interface{}{"bogusKey": 5}},
+}
+
+func TestRoundTrip_HDFToSarifToHDF_BaselineRestoreSkipsEveryAdversarialValue(t *testing.T) {
+	for field, bad := range adversarialBagValues {
+		t.Run(field, func(t *testing.T) {
+			sarifBytes, err := ConvertHDFToSARIF(seededBaselineHDF(t), roundTripVersion)
+			require.NoError(t, err)
+
+			var doc map[string]interface{}
+			require.NoError(t, json.Unmarshal(sarifBytes, &doc))
+			run := doc["runs"].([]interface{})[0].(map[string]interface{})
+			block := run["properties"].(map[string]interface{})[hdfBagKey].(map[string]interface{})
+			block[field] = bad
+			mangled, err := json.Marshal(doc)
+			require.NoError(t, err)
+
+			back, err := sarif.ConvertSarifToHDF(mangled, roundTripVersion, "")
+			require.NoError(t, err, "an adversarial bag must never fail the conversion")
+
+			encoded, err := json.Marshal(back.Baselines[0])
+			require.NoError(t, err)
+			var got map[string]interface{}
+			require.NoError(t, json.Unmarshal(encoded, &got))
+			assert.NotContains(t, got, field, "the field must be skipped, not taken")
+
+			// Its neighbours are unaffected: one bad entry costs only itself.
+			assert.Equal(t, "Team Blue", got["maintainer"])
+			assert.Equal(t, "ACME Hardening Policy", got["title"])
+		})
+	}
+}
+
+// Timestamp spellings the carriage must survive, and the regression that made this
+// test necessary.
+//
+// Every one of these is a legitimate RFC3339 value a producer can emit, and Go's
+// time.Time normalizes three of the four on the way back out — it trims trailing
+// fractional zeros and rewrites a +00:00 offset as Z. A restore guard that asked
+// "does the decoded value re-serialize to the carried bytes?" therefore rejected
+// correct data: .100Z, .000Z and +00:00 were all dropped, and because
+// results[].startTime falls back to the conversion time when nothing restores it, the
+// document silently acquired the wrong assessment time rather than merely losing one.
+//
+// The guard now tests the carried MEMBER NAMES instead, which is what the adversarial
+// case actually needs, and is indifferent to how a value is spelled. Nothing in the
+// committed corpus carries a trailing-zero millisecond, which is why the regression
+// passed every suite.
+func TestRoundTrip_HDFToSarifToHDF_RestoresEveryTimestampSpelling(t *testing.T) {
+	for _, carried := range []string{
+		"2026-10-09T16:04:26.123Z", // no trailing zero — the only spelling the corpus had
+		"2026-10-09T16:04:26.100Z", // trailing zero in the fraction
+		"2026-10-09T16:04:26.000Z", // zero fraction
+		"2026-10-09T16:04:26+00:00",
+	} {
+		t.Run(carried, func(t *testing.T) {
+			raw := seededTimestampHDF(t, carried)
+			sarifBytes, err := ConvertHDFToSARIF(raw, roundTripVersion)
+			require.NoError(t, err, "export leg")
+			back, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
+			require.NoError(t, err, "re-import leg")
+
+			req := back.Baselines[0].Requirements[0]
+			want, err := time.Parse(time.RFC3339, carried)
+			require.NoError(t, err)
+
+			require.Len(t, req.Results, 1)
+			assert.True(t, req.Results[0].StartTime.Equal(want),
+				"startTime: want %s, got %s — a dropped restore silently substitutes the conversion time",
+				want, req.Results[0].StartTime)
+			assert.Len(t, req.Evidence, 1, "evidence must survive, whatever the capturedAt spelling")
+			assert.Len(t, req.ExternalReferences, 1, "externalReferences must survive too")
+			assert.Len(t, back.Baselines[0].ExternalReferences, 1, "and the baseline's own")
+		})
+	}
+}
+
+// A legitimately null value under an omitempty field. Input.Value is "any JSON value",
+// so null is schema-valid, and it does not re-serialize — another shape a
+// re-serialization guard rejects and a member-name guard does not.
+func TestRoundTrip_HDFToSarifToHDF_RestoresANullInputValue(t *testing.T) {
+	raw := seededTimestampHDF(t, "2026-10-09T16:04:26.123Z")
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	b := doc["baselines"].([]interface{})[0].(map[string]interface{})
+	b["inputs"] = []interface{}{map[string]interface{}{
+		"name": "threshold", "type": "Numeric", "value": nil,
+	}}
+	seeded, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	sarifBytes, err := ConvertHDFToSARIF(seeded, roundTripVersion)
+	require.NoError(t, err)
+	back, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines[0].Inputs, 1, "a null value must not cost the whole array")
+	assert.Equal(t, "threshold", back.Baselines[0].Inputs[0].Name)
+}
+
+// seededTimestampHDF puts the same timestamp on every carried time field the restore
+// touches: a result's startTime, an evidence item's capturedAt, and an external
+// reference's addedAt at both requirement and baseline scope.
+func seededTimestampHDF(t *testing.T, stamp string) []byte {
+	t.Helper()
+	path := filepath.Join("..", "fixtures", "input", "flawfinder.hdf.json")
+	raw, err := os.ReadFile(path) // #nosec G304 -- repo-relative fixture
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	b := doc["baselines"].([]interface{})[0].(map[string]interface{})
+	reqs := b["requirements"].([]interface{})
+	b["requirements"] = reqs[:1]
+	req := reqs[0].(map[string]interface{})
+
+	results := req["results"].([]interface{})
+	req["results"] = results[:1]
+	results[0].(map[string]interface{})["startTime"] = stamp
+
+	req["evidence"] = []interface{}{map[string]interface{}{
+		"type": "log", "data": "a line", "capturedAt": stamp,
+	}}
+	ref := []interface{}{map[string]interface{}{
+		"sourceName": "ACME", "href": "https://example.invalid/a", "addedAt": stamp,
+	}}
+	req["externalReferences"] = ref
+	b["externalReferences"] = ref
+
+	seeded, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return seeded
+}
+
+// An undeclared member must not cost the value it rides on.
+//
+// Reference is one of the few carried types the HDF schema leaves OPEN — an anyOf with
+// no additionalProperties and no unevaluatedProperties — so
+// {"ref": …, "url": …, "title": …} is a legal refs entry. A restore guard that rejected
+// a value for carrying a member this build does not declare threw the whole array away,
+// turning a partial restore into a total loss, and would have done it again on every
+// schema addition: External_Reference gained content and encoding in its own right.
+//
+// What each language does with the extra member differs and is recorded rather than
+// asserted here: Go decodes into a typed struct so an undeclared member is dropped,
+// TypeScript assigns the carried value verbatim so it is kept. Both predate this card.
+// What must agree, and is asserted in both, is that the ARRAY and its declared members
+// survive.
+func TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue(t *testing.T) {
+	path := filepath.Join("..", "..", "gitlab-to-hdf", "fixtures", "expected", "minimal-dast.json.hdf.json")
+	raw, err := os.ReadFile(path) // #nosec G304 -- repo-relative fixture
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	b := doc["baselines"].([]interface{})[0].(map[string]interface{})
+	req := b["requirements"].([]interface{})[0].(map[string]interface{})
+	req["refs"] = []interface{}{map[string]interface{}{
+		"ref": "NIST SP 800-53 Rev 5",
+		"url": "https://example.invalid/a",
+		// Schema-legal on an open type, and not a member hdf.Reference declares.
+		"title": "Security and Privacy Controls",
+	}}
+	seeded, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	sarifBytes, err := ConvertHDFToSARIF(seeded, roundTripVersion)
+	require.NoError(t, err, "export leg")
+	back, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
+	require.NoError(t, err, "re-import leg")
+
+	var restored []hdf.Reference
+	for _, r := range back.Baselines[0].Requirements {
+		if len(r.Refs) > 0 {
+			restored = r.Refs
+			break
+		}
+	}
+	require.Len(t, restored, 1, "the array must survive; dropping it loses the declared members too")
+	require.NotNil(t, restored[0].URL)
+	assert.Equal(t, "https://example.invalid/a", *restored[0].URL)
+	require.NotNil(t, restored[0].Ref)
+}
+
+// A SARIF document with no hdf bag at all keeps the converter's own defaults.
+func TestRoundTrip_HDFToSarifToHDF_NoBagKeepsTheInventedDefaults(t *testing.T) {
+	in := sarifFixture(t, "gosec.sarif")
+	out, err := sarif.ConvertSarifToHDF(in, roundTripVersion, "")
+	require.NoError(t, err)
+	b := out.Baselines[0]
+	require.NotNil(t, b.Title)
+	assert.Equal(t, "Static Analysis Results Interchange Format", *b.Title,
+		"with nothing carried, the invented title remains the fallback")
+	assert.Nil(t, b.License)
+	assert.Nil(t, b.Maintainer)
+}
+
+// seededBaselineHDF is a real exporter fixture with every baseline field the exporter
+// carries set to a distinguishable value, so a field that fails to restore is visible
+// rather than merely absent.
+func seededBaselineHDF(t *testing.T) []byte {
+	t.Helper()
+	path := filepath.Join("..", "fixtures", "input", "flawfinder.hdf.json")
+	raw, err := os.ReadFile(path) // #nosec G304 -- repo-relative fixture
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	// A generator this converter would never stamp, so the refusal assertion cannot
+	// pass by coincidence: the fixture's own generator is already sarif-to-hdf.
+	doc["generator"] = map[string]interface{}{"name": "grype-to-hdf", "version": "1.2.3"}
+	b := doc["baselines"].([]interface{})[0].(map[string]interface{})
+	for k, v := range map[string]interface{}{
+		"title": "ACME Hardening Policy", "version": "9.9.9",
+		"summary": "a summary", "description": "a description",
+		"maintainer": "Team Blue", "copyright": "ACME Corp",
+		"copyrightEmail": "sec@example.invalid", "license": "Apache-2.0",
+		"status": "loaded", "statusMessage": "a status note",
+		"parentBaseline": "parent-policy",
+		"labels":         map[string]interface{}{"team": "blue", "environment": "prod"},
+		"supports":       []interface{}{map[string]interface{}{"platform": "linux"}},
+		"depends":        []interface{}{map[string]interface{}{"name": "dep-a"}},
+		"groups":         []interface{}{map[string]interface{}{"id": "g1", "title": "Group One", "requirements": []interface{}{"V-1"}}},
+		"inputs":         []interface{}{map[string]interface{}{"name": "threshold", "type": "Numeric"}},
+		"integrity": map[string]interface{}{
+			"algorithm": "sha256", "checksum": strings.Repeat("a", 64),
+			"signature": "c2ln", "signedBy": "someone@example.invalid",
+		},
+		"originalChecksum": map[string]interface{}{
+			"algorithm": "sha256", "value": strings.Repeat("b", 64),
+		},
+		"externalReferences": []interface{}{
+			map[string]interface{}{"sourceName": "ACME", "href": "https://example.invalid/policy"},
+		},
+		"extensions": map[string]interface{}{
+			"passthrough": map[string]interface{}{"acme": map[string]interface{}{"policyOwner": "Team Blue"}},
+		},
+	} {
+		b[k] = v
+	}
+	seeded, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return seeded
 }

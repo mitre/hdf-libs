@@ -291,6 +291,217 @@ describe('SARIF -> HDF -> SARIF', () => {
 });
 
 describe('HDF -> SARIF -> HDF', () => {
+  // Baseline-level restore, the TypeScript peer of Go's
+  // TestRoundTrip_HDFToSarifToHDF_RestoresBaselineIdentity. The owner's ruling, per
+  // field: every field describing the POLICY is restored, because SARIF's
+  // toolComponent describes the scanner and has no way to say them; name and
+  // resultsChecksum are derived from the SARIF; integrity and originalChecksum are
+  // refused, because both are tamper-evidence and a round trip transforms the thing
+  // they cover — Integrity covers "the HDF file" and carries a signature and signedBy.
+  const seededBaseline = (): string => {
+    const raw = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'flawfinder.hdf.json'), 'utf8');
+    const doc = JSON.parse(raw) as Json;
+    // A generator this converter would never stamp, so the refusal assertion cannot
+    // pass by coincidence: the fixture's own generator is already sarif-to-hdf.
+    doc.generator = {name: 'grype-to-hdf', version: '1.2.3'};
+    const b = (doc.baselines as Json[])[0]!;
+    Object.assign(b, {
+      title: 'ACME Hardening Policy', version: '9.9.9',
+      summary: 'a summary', description: 'a description',
+      maintainer: 'Team Blue', copyright: 'ACME Corp',
+      copyrightEmail: 'sec@example.invalid', license: 'Apache-2.0',
+      status: 'loaded', statusMessage: 'a status note',
+      parentBaseline: 'parent-policy',
+      labels: {team: 'blue', environment: 'prod'},
+      supports: [{platform: 'linux'}],
+      depends: [{name: 'dep-a'}],
+      groups: [{id: 'g1', title: 'Group One', requirements: ['V-1']}],
+      inputs: [{name: 'threshold', type: 'Numeric'}],
+      integrity: {algorithm: 'sha256', checksum: 'a'.repeat(64), signature: 'c2ln', signedBy: 'someone@example.invalid'},
+      originalChecksum: {algorithm: 'sha256', value: 'b'.repeat(64)},
+      externalReferences: [{sourceName: 'ACME', href: 'https://example.invalid/policy'}],
+      extensions: {passthrough: {acme: {policyOwner: 'Team Blue'}}},
+    });
+    return JSON.stringify(doc);
+  };
+
+  it('restores the baseline identity', async () => {
+    const sarifOut = await convertHdfToSarif(seededBaseline(), TEST_VERSION);
+    const back = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
+    const b = (back.baselines as Json[])[0]!;
+
+    expect(b.summary).toBe('a summary');
+    expect(b.description).toBe('a description');
+    expect(b.maintainer).toBe('Team Blue');
+    expect(b.copyright).toBe('ACME Corp');
+    expect(b.copyrightEmail).toBe('sec@example.invalid');
+    expect(b.license).toBe('Apache-2.0');
+    expect(b.status).toBe('loaded');
+    expect(b.statusMessage).toBe('a status note');
+    expect(b.parentBaseline).toBe('parent-policy');
+    expect(b.labels).toEqual({team: 'blue', environment: 'prod'});
+    expect(b.supports).toHaveLength(1);
+    expect(b.depends).toHaveLength(1);
+    expect(b.groups).toHaveLength(1);
+    expect(b.inputs).toHaveLength(1);
+    expect(b.externalReferences).toHaveLength(1);
+
+    // Restored OVER the invented values, which name the SARIF format, not the policy.
+    expect(b.title).toBe('ACME Hardening Policy');
+    expect(b.version).toBe('9.9.9');
+
+    // Derived from the SARIF, never the bag.
+    expect(b.name).toBe('Flawfinder');
+    expect(b.resultsChecksum).toBeDefined();
+
+    // The baseline's own passthrough is producer data SARIF cannot express.
+    expect(JSON.stringify(b.extensions)).toContain('policyOwner');
+
+    // Refused.
+    expect(b.integrity).toBeUndefined();
+    expect(b.originalChecksum).toBeUndefined();
+    // Also refused: generator names the converter that produced THIS file.
+    expect((back.generator as Json).name).toBe('sarif-to-hdf');
+  });
+
+  it('tolerates a malformed baseline bag', async () => {
+    const sarifOut = await convertHdfToSarif(seededBaseline(), TEST_VERSION);
+    const doc = JSON.parse(sarifOut) as Json;
+    const run = (doc.runs as Json[])[0]!;
+    const block = (run.properties as Json).hdf as Json;
+    block.license = ['not', 'a', 'string'];
+    block.groups = 'not a list';
+    block.maintainer = 'Team Blue';
+
+    const back = JSON.parse(await convertSarifToHdf(JSON.stringify(doc), TEST_VERSION)) as Json;
+    const b = (back.baselines as Json[])[0]!;
+    expect(b.license).toBeUndefined();
+    expect(b.groups).toBeUndefined();
+    expect(b.maintainer).toBe('Team Blue');
+  });
+
+  // The adversarial corpus, the same table as Go's adversarialBagValues. Every entry
+  // is a value that does not fit the field it addresses, and the contract is identical
+  // in both languages: skip the field, keep its neighbours, never fail the conversion.
+  //
+  // The groups entry is the subtle one. {bogusKey: 5} DECODES without error in Go —
+  // encoding/json ignores undeclared members and zeroes missing ones — and TypeScript
+  // has no types at runtime to reject it, so both languages reached an invalid output
+  // by different routes before this. Go now rejects the decode as lossy; this side
+  // checks the keys the schema requires.
+  it.each([
+    ['supports', [1, 2, 3]],
+    ['depends', ['not-an-object']],
+    ['inputs', [42]],
+    ['externalReferences', ['x']],
+    ['license', ['not', 'a', 'string']],
+    ['labels', {team: 7}],
+    ['groups', [{bogusKey: 5}]],
+  ] as [string, unknown][])('skips the adversarial %s value', async (field, bad) => {
+    const sarifOut = await convertHdfToSarif(seededBaseline(), TEST_VERSION);
+    const doc = JSON.parse(sarifOut) as Json;
+    const block = ((doc.runs as Json[])[0]!.properties as Json).hdf as Json;
+    block[field] = bad;
+
+    const back = JSON.parse(await convertSarifToHdf(JSON.stringify(doc), TEST_VERSION)) as Json;
+    const b = (back.baselines as Json[])[0]!;
+    expect(b[field], `${field} must be skipped, not taken`).toBeUndefined();
+
+    // Its neighbours are unaffected: one bad entry costs only itself.
+    expect(b.maintainer).toBe('Team Blue');
+    expect(b.title).toBe('ACME Hardening Policy');
+  });
+
+  // Timestamp spellings the carriage must survive — the TypeScript peer of Go's
+  // TestRoundTrip_HDFToSarifToHDF_RestoresEveryTimestampSpelling. This side never had
+  // the bug (it assigns from the bag rather than decoding), which is exactly why the
+  // test belongs here too: Go dropped .100Z, .000Z and +00:00 while TypeScript kept
+  // them, so the two languages produced materially different documents from the same
+  // SARIF. Asserting the same outcome in both is what catches that class of drift.
+  const seededTimestamp = (stamp: string): string => {
+    const raw = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'flawfinder.hdf.json'), 'utf8');
+    const doc = JSON.parse(raw) as Json;
+    const b = (doc.baselines as Json[])[0]!;
+    b.requirements = (b.requirements as Json[]).slice(0, 1);
+    const req = (b.requirements as Json[])[0]!;
+    req.results = (req.results as Json[]).slice(0, 1);
+    ((req.results as Json[])[0]!).startTime = stamp;
+    req.evidence = [{type: 'log', data: 'a line', capturedAt: stamp}];
+    const ref = [{sourceName: 'ACME', href: 'https://example.invalid/a', addedAt: stamp}];
+    req.externalReferences = ref;
+    b.externalReferences = ref;
+    return JSON.stringify(doc);
+  };
+
+  it.each([
+    '2026-10-09T16:04:26.123Z',
+    '2026-10-09T16:04:26.100Z',
+    '2026-10-09T16:04:26.000Z',
+    '2026-10-09T16:04:26+00:00',
+  ])('restores the carriage when the timestamp is spelled %s', async stamp => {
+    const sarifOut = await convertHdfToSarif(seededTimestamp(stamp), TEST_VERSION);
+    const back = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
+    const b = (back.baselines as Json[])[0]!;
+    const req = (b.requirements as Json[])[0]!;
+
+    expect(new Date((req.results as Json[])[0]!.startTime as string).getTime())
+      .toBe(new Date(stamp).getTime());
+    expect(req.evidence).toHaveLength(1);
+    expect(req.externalReferences).toHaveLength(1);
+    expect(b.externalReferences).toHaveLength(1);
+  });
+
+  it('restores a null input value', async () => {
+    const doc = JSON.parse(seededTimestamp('2026-10-09T16:04:26.123Z')) as Json;
+    (doc.baselines as Json[])[0]!.inputs = [{name: 'threshold', type: 'Numeric', value: null}];
+    const sarifOut = await convertHdfToSarif(JSON.stringify(doc), TEST_VERSION);
+    const back = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
+    const inputs = (back.baselines as Json[])[0]!.inputs as Json[];
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]!.name).toBe('threshold');
+  });
+
+  // An undeclared member must not cost the value it rides on — the TypeScript peer of
+  // Go's TestRoundTrip_HDFToSarifToHDF_AnUndeclaredMemberDoesNotCostTheValue.
+  //
+  // Reference is one of the few carried types the HDF schema leaves OPEN, so
+  // {ref, url, title} is a legal refs entry. What each language does with the extra
+  // member differs and is recorded rather than asserted: Go decodes into a typed struct
+  // so it is dropped, this side assigns the carried value verbatim so it is kept. Both
+  // predate this card. What must agree is that the ARRAY and its declared members
+  // survive — a guard that rejected the value over the extra member lost all of them.
+  it('does not let an undeclared member cost the value it rides on', async () => {
+    const raw = readFileSync(
+      join(__dirname, '..', '..', 'gitlab-to-hdf', 'fixtures', 'expected', 'minimal-dast.json.hdf.json'), 'utf8');
+    const doc = JSON.parse(raw) as Json;
+    const req = ((doc.baselines as Json[])[0]!.requirements as Json[])[0]!;
+    req.refs = [{
+      ref: 'NIST SP 800-53 Rev 5',
+      url: 'https://example.invalid/a',
+      title: 'Security and Privacy Controls',
+    }];
+
+    const sarifOut = await convertHdfToSarif(JSON.stringify(doc), TEST_VERSION);
+    const back = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
+
+    let restored: Json[] | undefined;
+    for (const r of (back.baselines as Json[])[0]!.requirements as Json[]) {
+      if (Array.isArray(r.refs) && r.refs.length > 0) { restored = r.refs as Json[]; break; }
+    }
+    expect(restored, 'the array must survive; dropping it loses the declared members too')
+      .toHaveLength(1);
+    expect(restored![0]!.url).toBe('https://example.invalid/a');
+    expect(restored![0]!.ref).toBeDefined();
+  });
+
+  it('keeps the invented defaults when no bag is carried', async () => {
+    const out = JSON.parse(await convertSarifToHdf(sarifFixture('gosec.sarif'), TEST_VERSION)) as Json;
+    const b = (out.baselines as Json[])[0]!;
+    expect(b.title).toBe('Static Analysis Results Interchange Format');
+    expect(b.license).toBeUndefined();
+    expect(b.maintainer).toBeUndefined();
+  });
+
   /** Requirements by id. Identity, not position: the exporter groups runs by baseline. */
   const byId = (doc: Json) => {
     const out = new Map<string, Json>();

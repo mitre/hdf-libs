@@ -7,7 +7,7 @@ import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequi
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
-import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, resultBagRow, ruleBag, type BagGroup, type SarifLike } from './passthrough.js';
+import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, resultBagRow, ruleBag, type BagGroup, type SarifLike, restoreBaselineFields, runBag} from './passthrough.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -427,14 +427,14 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
         ));
   }
 
-  return {
-    baseline: createMinimalBaseline(baselineName, requirements, {
-      version,
-      title: 'Static Analysis Results Interchange Format',
-      resultsChecksum,
-    }),
-    bagGroups,
-  };
+  const baseline = createMinimalBaseline(baselineName, requirements, {
+    version,
+    title: 'Static Analysis Results Interchange Format',
+    resultsChecksum,
+  });
+  restoreBaselineFields(baseline as unknown as Record<string, unknown>, runBag(run));
+
+  return {baseline, bagGroups};
 }
 
 // Indexes every rule a run defines, from the driver and from any extensions.

@@ -556,14 +556,16 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 		}
 	}
 
-	return hdf.EvaluatedBaseline{
+	baseline := hdf.EvaluatedBaseline{
 		Name:            baselineName,
 		Version:         &version,
 		Title:           hdfutil.Ptr("Static Analysis Results Interchange Format"),
 		Maintainer:      maintainer,
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
-	}, bagGroups
+	}
+	restoreBaselineFields(&baseline, runBag(run))
+	return baseline, bagGroups
 }
 
 // synthesizeRunFailedRequirement is the requirement a run gets for declaring its own
