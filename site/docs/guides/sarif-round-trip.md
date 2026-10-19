@@ -100,9 +100,9 @@ the document never carried.
 | Baseline `extensions` (its own passthrough) | restored from the bag | both |
 | Baseline `integrity` and `originalChecksum` | dropped, deliberately | both |
 | Document `generator` | re-stamped with the converter that produced the new file | both |
-| A requirement's `error` status | degrades to `failed` | both |
+| A requirement's `error` status | restored from the bag, gated on the kind | both |
 
-Seven of those need the reason stated rather than the outcome alone.
+Eight of those need the reason stated rather than the outcome alone.
 
 - **`impact`** is published through SARIF's `security-severity` convention, which is a
   CVSS base score, and recomputed from it on the way back. A requirement whose impact
@@ -136,6 +136,14 @@ Seven of those need the reason stated rather than the outcome alone.
   by language, and both answers are defensible — Go decodes into a typed struct and cannot
   keep a field it has no type for, TypeScript assigns the carried value verbatim and
   preserves it for a newer consumer.
+- **A requirement's `error` status** is the one status SARIF cannot express. There is no
+  kind meaning "the check threw", so the export writes `open` — §3.27.9's state where the
+  tool had insufficient information to decide — and an importer reading the kind alone
+  cannot tell that from a tool that genuinely reported `open`. The carried status settles
+  it, and the restore is gated so the bag can only *refine* what the kind cannot
+  distinguish: a carried status whose own export would have produced a different kind is
+  ignored, and a result that was genuinely `open` in the source SARIF, with no carriage
+  behind it, still imports as `failed`.
 - **Baseline `integrity` and `originalChecksum`** are refused even though the bag
   carries them and SARIF cannot express them. Both are tamper-evidence, and a round trip
   is a transformation of the thing they attest to: `Integrity` is defined over "the HDF

@@ -288,6 +288,75 @@ describe('SARIF Converter', async () => {
       expect(codeDesc).not.toContain('second failure');
     });
 
+    // The driver name is read at six places across the two languages and must mean the
+    // same thing at every one. It did not: Go trimmed at none of its three sites, this
+    // side trimmed at two of its three, so a whitespace-only name produced a baseline
+    // called '   ' holding a requirement called 'sarif-run-failed' — an id that does not
+    // name its own baseline. Mirrors Go's
+    // TestConvertSarifToHDF_DriverNameIsTrimmedEverywhere.
+    const placeholderKinds = [
+      ['no-findings', {}, {results: []}, '-no-findings'],
+      ['not-analyzed', {}, {}, '-not-analyzed'],
+      ['run-failed', {invocations: [{executionSuccessful: false}]}, {results: []}, '-run-failed'],
+    ] as [string, Record<string, unknown>, Record<string, unknown>, string][];
+
+    it.each(placeholderKinds)('%s: a whitespace-only driver name falls back', async (_k, inv, res, suffix) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: '   '}}, ...inv, ...res}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('SARIF');
+      expect(baseline.requirements).toHaveLength(1);
+      expect(baseline.requirements[0].id).toBe('sarif' + suffix);
+    });
+
+    it.each(placeholderKinds)('%s: a padded real driver name is trimmed', async (_k, inv, res, suffix) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: '  gosec  '}}, ...inv, ...res}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('gosec');
+      expect(baseline.requirements).toHaveLength(1);
+      expect(baseline.requirements[0].id).toBe('gosec' + suffix);
+      expect(baseline.requirements[0].results[0].codeDesc).toContain('gosec');
+      expect(baseline.requirements[0].results[0].codeDesc).not.toContain('  gosec');
+    });
+
+    // The SEVENTH site. tool.name is read at the document level through firstDriver?.name
+    // rather than the helper, which is why a grep missed it and the first pass at this
+    // card left it untrimmed. Mirrors Go's
+    // TestConvertSarifToHDF_DocumentToolNameIsTrimmedToo.
+    it.each([
+      ['  gosec  ', 'gosec', 'gosec'],
+      ['   ', undefined, 'SARIF'],
+      ['gosec', 'gosec', 'gosec'],
+    ])('document tool.name for driver %s', async (name, wantTool, wantBaseline) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name, version: '1.2.3'}}, results: []}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.tool?.name).toBe(wantTool);
+      expect(result.baselines[0].name).toBe(wantBaseline);
+      expect(result.tool?.version).toBe('1.2.3');
+    });
+
+    // Whatever the name, the baseline and the id it holds must agree about the driver.
+    it.each(['gosec', '  gosec  ', '   ', ''])('requirement id names its own baseline (name=%s)', async name => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name}}, invocations: [{executionSuccessful: false}], results: []}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      const wantPrefix = baseline.name === 'SARIF' ? 'sarif' : baseline.name;
+      expect(baseline.requirements[0].id).toBe(wantPrefix + '-run-failed');
+    });
+
     it('gives a successful invocation no run-failed requirement', async () => {
       const input = JSON.stringify({
         version: '2.1.0',

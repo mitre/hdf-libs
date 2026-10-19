@@ -324,6 +324,51 @@ export function restoreUnexpressibleResult(out: Record<string, unknown>, row: Re
 }
 
 /**
+ * The SARIF kind each HDF status is written as — mirrors hdf-to-sarif's statusKinds.
+ * Declared here rather than imported so the two converters do not form a cycle, the same
+ * reason HDF_BAG_KEY is declared twice. The map is injective: five statuses, five
+ * distinct kinds, so a carried status can always be checked against its kind.
+ */
+const STATUS_EXPORT_KINDS: Record<string, string> = {
+  passed: 'pass',
+  failed: 'fail',
+  notApplicable: 'notApplicable',
+  notReviewed: 'review',
+  error: 'open',
+};
+
+/**
+ * Takes the status from a carried result row, but only when exporting that status would
+ * have produced the kind this SARIF actually states. Mirrors Go's restoreCarriedStatus.
+ *
+ * SARIF cannot express HDF's `error`: there is no kind meaning "the check threw", so the
+ * export writes `open` — §3.27.9's state where the tool had insufficient information to
+ * decide — and an importer reading the kind alone cannot tell that from a tool that
+ * genuinely reported `open`. That is the one distinction the kind cannot carry, and the
+ * owner's ruling is that the bag may settle it, because HDF cannot reflect every source
+ * status and deriving it only from what SARIF expresses discards what the source said.
+ *
+ * The gate is what keeps this honest. The bag is untrusted carriage, so it may REFINE a
+ * kind that cannot express the distinction and never overrule one that can: a carried
+ * `passed` found under kind `open` disagrees with the document it arrived in, and the
+ * SARIF wins. Same rule `tags.kind` already follows.
+ */
+export function restoreCarriedStatus(
+  out: Record<string, unknown>,
+  row: Record<string, unknown> | undefined,
+  kind: string | undefined,
+): void {
+  if (!row) return;
+  const carried = row.status;
+  if (typeof carried !== 'string') return;
+  const want = STATUS_EXPORT_KINDS[carried];
+  if (want === undefined) return;
+  // 3.27.9 defaults an absent kind to "fail".
+  if (want !== (kind || 'fail')) return;
+  out.status = carried;
+}
+
+/**
  * Replaces the identity, application time and expiry this converter invented with
  * the carried ones, position by position, leaving the type, status and reason it
  * derived from the SARIF suppression untouched. Positional because an override has

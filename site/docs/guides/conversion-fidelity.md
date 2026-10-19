@@ -21,7 +21,7 @@ Every import converter in the catalogue declares a relation except `scoutsuite`,
 
 | Converter | Input unit | Relation |
 |---|---|---|
-| `sarif` | results in each run | one requirement per distinct rule id per run (message text stands in for a missing rule id), plus one for a run that reported its own execution a failure; one placeholder requirement for a run that contributed nothing — passed where the run found nothing, notReviewed where it never analyzed |
+| `sarif` | results in each run | one requirement per distinct rule id per run (message text stands in for a missing rule id), plus one for a run that reported its own execution a failure; a run that contributed nothing AND declared no failure gets one placeholder instead — passed where it found nothing, notReviewed where it never analyzed — so a failed run with no results yields one requirement, and that one is the failure |
 | `semgrep` | results | one requirement per distinct check id, plus one for scan errors when semgrep reported any, plus one scan-coverage requirement always; one no-findings requirement when nothing matched |
 | `junit` | testcases | one requirement per testcase across every suite; one no-findings requirement when there are none |
 

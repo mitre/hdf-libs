@@ -7,7 +7,7 @@ import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequi
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
-import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, resultBagRow, ruleBag, type BagGroup, type SarifLike, restoreBaselineFields, runBag} from './passthrough.js';
+import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, restoreCarriedStatus, resultBagRow, ruleBag, type BagGroup, type SarifLike, restoreBaselineFields, runBag} from './passthrough.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -236,7 +236,8 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
     throw new Error('Invalid SARIF structure: missing or invalid runs field');
   }
 
-  const firstDriver = sarif.runs[0]?.tool?.driver;
+  const firstRun = sarif.runs[0];
+  const firstDriver = firstRun?.tool?.driver;
 
   const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -259,7 +260,9 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
   return buildHdfResults({
     generatorName: 'sarif-to-hdf',
     converterVersion,
-    toolName: firstDriver?.name,
+    // Through driverName like every other read of it, so a document cannot spell the
+    // same driver two ways: tool.name '  gosec  ' beside a baseline named 'gosec'.
+    toolName: firstRun ? driverName(firstRun) || undefined : undefined,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
     baselines,
@@ -269,6 +272,14 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 }
 
 // --- Run-level conversion ---
+
+// The run's tool driver name with surrounding whitespace removed, or '' when the run
+// names no driver. Every site reads it through here on purpose: six open-coded reads
+// across the two languages is how they stopped agreeing about a padded name, and left a
+// baseline called '   ' holding an id that did not name it. Mirrors Go's driverName.
+function driverName(run: SarifRun): string {
+  return run.tool?.driver?.name?.trim() ?? '';
+}
 
 // Whether the run declared its own execution a failure. Only an explicit false
 // counts: executionSuccessful is required on an invocation the run chose to emit,
@@ -386,7 +397,7 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   });
 
   // Use tool name for baseline name if available
-  const baselineName = run.tool?.driver?.name || 'SARIF';
+  const baselineName = driverName(run) || 'SARIF';
   const failed = executionFailed(run);
 
   // A run that declared its own failure contributes a requirement of its own, beside
@@ -400,9 +411,9 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   // required — and it must not change in response to the results attached to it, or
   // the same policy scanned twice would yield two different baselines.
   if (failed) {
-    const driverName = run.tool?.driver?.name?.trim() || '';
-    const target = driverName || 'SARIF analyzer';
-    const idPrefix = driverName || 'sarif';
+    const name = driverName(run);
+    const target = name || 'SARIF analyzer';
+    const idPrefix = name || 'sarif';
     requirements.push(buildRunFailedRequirement(
       `${idPrefix}-run-failed`,
       `${target} reported that its run did not complete successfully${invocationFailureDetail(run)}.`,
@@ -411,9 +422,9 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   }
 
   if (requirements.length === 0) {
-    const driverName = run.tool?.driver?.name?.trim() || '';
-    const target = driverName || 'SARIF analyzer';
-    const idPrefix = driverName || 'sarif';
+    const name = driverName(run);
+    const target = name || 'SARIF analyzer';
+    const idPrefix = name || 'sarif';
     requirements.push(analyzed
       ? buildNoFindingsRequirement(
           `${idPrefix}-no-findings`,
@@ -516,6 +527,7 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       // result's own bag. Every expanded row came from one SARIF result, so they
       // share its carriage the way they share its record.
       restoreUnexpressibleResult(r as unknown as Record<string, unknown>, resultBagRow(sr));
+      restoreCarriedStatus(r as unknown as Record<string, unknown>, resultBagRow(sr), sr.kind);
       perResult.push(perResultTagEntry(sr));
     }
     results.push(...expanded);

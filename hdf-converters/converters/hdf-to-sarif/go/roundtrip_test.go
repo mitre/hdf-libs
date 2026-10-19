@@ -903,19 +903,21 @@ func TestRoundTrip_SarifToHDFToSarif_DoesNotRebuildAFailedInvocation(t *testing.
 		"per-run health must not be recorded on the baseline")
 }
 
-// The requirement survives a full circle but its STATUS does not. HDF "error" exports
-// as SARIF kind "open", and the importer maps "open" back to "failed" — SARIF has no
-// kind that means "the check threw", so the two collapse. Pre-existing and documented
-// on statusKinds in converter.go; this card only made it reachable from a SARIF input.
-// Pinned so that restoring the distinction is a deliberate decision rather than an
-// accident.
-func TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed(t *testing.T) {
+// HDF "error" now survives a full circle. SARIF has no kind that means "the check
+// threw", so the export maps it to "open" — §3.27.9's state where the tool had
+// insufficient information to decide — and an importer reading only the kind cannot tell
+// that from a tool that genuinely reported "open". The carried status settles it.
+//
+// The owner's ruling: the bag MAY carry status, because HDF cannot reflect every source
+// status and deriving it only from what SARIF expresses throws away a distinction the
+// source document made. The restore is gated so the bag can only REFINE what the kind
+// cannot distinguish, never contradict it — a carried status whose own export would have
+// produced a different kind is ignored.
+func TestRoundTrip_SarifToHDFToSarifToHDF_PreservesErrorStatus(t *testing.T) {
 	in := sarifFixture(t, "failed-run.sarif")
 
 	first, err := sarif.ConvertSarifToHDF(in, roundTripVersion, "")
 	require.NoError(t, err, "import leg")
-	require.Len(t, first.Baselines[0].Requirements, 1)
-	require.Equal(t, "eslint-run-failed", first.Baselines[0].Requirements[0].ID)
 	require.Equal(t, hdf.Error, first.Baselines[0].Requirements[0].Results[0].Status,
 		"precondition: the first import records the failure as an error")
 
@@ -923,14 +925,72 @@ func TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed(t *testing.T) {
 	require.NoError(t, err)
 	sarifBytes, err := ConvertHDFToSARIF(firstBytes, roundTripVersion)
 	require.NoError(t, err, "export leg")
+
+	// The SARIF itself still says "open"; nothing about the export changed.
+	var log map[string]interface{}
+	require.NoError(t, json.Unmarshal(sarifBytes, &log))
+	res := log["runs"].([]interface{})[0].(map[string]interface{})["results"].([]interface{})[0]
+	assert.Equal(t, "open", res.(map[string]interface{})["kind"],
+		"error still exports as open; the fix is on the read side")
+
 	second, err := sarif.ConvertSarifToHDF(sarifBytes, roundTripVersion, "")
 	require.NoError(t, err, "re-import leg")
-
 	require.Len(t, second.Baselines[0].Requirements, 1)
-	assert.Equal(t, "eslint-run-failed", second.Baselines[0].Requirements[0].ID,
-		"the requirement itself survives the full circle")
-	assert.Equal(t, hdf.Failed, second.Baselines[0].Requirements[0].Results[0].Status,
-		"error degrades to failed on re-import; if that is fixed, revisit this")
+	assert.Equal(t, "eslint-run-failed", second.Baselines[0].Requirements[0].ID)
+	assert.Equal(t, hdf.Error, second.Baselines[0].Requirements[0].Results[0].Status,
+		"the carried status refines what the kind cannot distinguish")
+}
+
+// AC2: a result that was genuinely "open" in the SOURCE SARIF — no carriage behind it —
+// must still import as failed. Real scanner output must not start reading as errored
+// because this card taught the importer a new trick.
+func TestConvertSarif_GenuineOpenKindWithoutCarriageStaysFailed(t *testing.T) {
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "ExampleAnalyzer", "rules": [{"id": "R1"}] } },
+			"results": [{ "ruleId": "R1", "kind": "open", "message": { "text": "undecided" } }]
+		}]
+	}`)
+	out, err := sarif.ConvertSarifToHDF(input, roundTripVersion, "")
+	require.NoError(t, err)
+	require.Len(t, out.Baselines[0].Requirements, 1)
+	assert.Equal(t, hdf.Failed, out.Baselines[0].Requirements[0].Results[0].Status,
+		"no carried status, so the kind alone decides, exactly as before")
+}
+
+// AC3: a carried status that CONTRADICTS the kind is ignored. The bag is untrusted
+// carriage; it may refine a kind that cannot express the distinction, never overrule one
+// that can. "passed" exports to kind "pass", so finding it under kind "open" means the
+// two disagree and the SARIF wins.
+func TestConvertSarif_CarriedStatusContradictingTheKindIsIgnored(t *testing.T) {
+	for _, tc := range []struct {
+		name, kind, carried string
+		want                hdf.ResultStatus
+	}{
+		{"passed under open", "open", "passed", hdf.Failed},
+		{"notApplicable under fail", "fail", "notApplicable", hdf.Failed},
+		{"error under pass", "pass", "error", hdf.Passed},
+		{"nonsense value under open", "open", "not-a-status", hdf.Failed},
+		{"error under open agrees", "open", "error", hdf.Error},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(`{
+				"version": "2.1.0",
+				"runs": [{
+					"tool": { "driver": { "name": "ExampleAnalyzer", "rules": [{"id": "R1"}] } },
+					"results": [{
+						"ruleId": "R1", "kind": "` + tc.kind + `",
+						"message": { "text": "m" },
+						"properties": { "hdf": { "result": { "status": "` + tc.carried + `" } } }
+					}]
+				}]
+			}`)
+			out, err := sarif.ConvertSarifToHDF(input, roundTripVersion, "")
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Results[0].Status)
+		})
+	}
 }
 
 // Baseline-level restore. hdf-to-sarif writes the whole baseline identity into the
@@ -1102,10 +1162,13 @@ func TestRoundTrip_HDFToSarifToHDF_BaselineRestoreSkipsEveryAdversarialValue(t *
 // results[].startTime falls back to the conversion time when nothing restores it, the
 // document silently acquired the wrong assessment time rather than merely losing one.
 //
-// The guard now tests the carried MEMBER NAMES instead, which is what the adversarial
-// case actually needs, and is indifferent to how a value is spelled. Nothing in the
-// committed corpus carries a trailing-zero millisecond, which is why the regression
-// passed every suite.
+// The guard was replaced with a plain scratch decode, which is indifferent to how a
+// value is spelled; the member-name test that the adversarial case needs lives in
+// decodeBaselineArray, on the five baseline array fields. Three of the four timestamp
+// fields below bypass it entirely; the baseline's own externalReferences goes through
+// it, where the required-member gate checks sourceName and never looks at addedAt.
+// Nothing in the committed corpus carries a trailing-zero millisecond, which is why the
+// regression passed every suite.
 func TestRoundTrip_HDFToSarifToHDF_RestoresEveryTimestampSpelling(t *testing.T) {
 	for _, carried := range []string{
 		"2026-10-09T16:04:26.123Z", // no trailing zero — the only spelling the corpus had

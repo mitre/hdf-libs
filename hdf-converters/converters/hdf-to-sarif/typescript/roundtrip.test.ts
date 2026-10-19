@@ -267,13 +267,12 @@ describe('SARIF -> HDF -> SARIF', () => {
     expect(block.statusMessage).toBeUndefined();
   });
 
-  // The requirement survives a full circle but its STATUS does not. HDF 'error'
-  // exports as SARIF kind 'open', and the importer maps 'open' back to 'failed' —
-  // SARIF has no kind meaning "the check threw", so the two collapse. Pre-existing
-  // and documented on statusKinds; pinned so restoring the distinction is a
-  // deliberate decision rather than an accident. Mirrors Go's
-  // TestRoundTrip_SarifToHDFToSarifToHDF_DegradesErrorToFailed.
-  it('degrades the error status to failed on re-import', async () => {
+  // HDF 'error' now survives a full circle. SARIF has no kind meaning "the check threw",
+  // so the export maps it to 'open' and an importer reading only the kind cannot tell
+  // that from a tool that genuinely reported 'open'. The carried status settles it, gated
+  // so the bag can only refine what the kind cannot distinguish, never contradict it.
+  // Mirrors Go's TestRoundTrip_SarifToHDFToSarifToHDF_PreservesErrorStatus.
+  it('preserves the error status across a full circle', async () => {
     const input = sarifFixture('failed-run.sarif');
 
     const first = JSON.parse(await convertSarifToHdf(input, TEST_VERSION)) as Json;
@@ -282,11 +281,53 @@ describe('SARIF -> HDF -> SARIF', () => {
     expect(((firstReq.results as Json[])[0]!).status, 'precondition').toBe('error');
 
     const sarifOut = await convertHdfToSarif(JSON.stringify(first), TEST_VERSION);
+    // The SARIF itself still says 'open'; the fix is on the read side.
+    const exported = JSON.parse(sarifOut) as Json;
+    expect((((exported.runs as Json[])[0]!.results as Json[])[0]!).kind).toBe('open');
+
     const second = JSON.parse(await convertSarifToHdf(sarifOut, TEST_VERSION)) as Json;
     const secondReq = ((second.baselines as Json[])[0]!.requirements as Json[])[0]!;
-
     expect(secondReq.id).toBe('eslint-run-failed');
-    expect(((secondReq.results as Json[])[0]!).status).toBe('failed');
+    expect(((secondReq.results as Json[])[0]!).status).toBe('error');
+  });
+
+  // AC2: a result genuinely 'open' in the SOURCE SARIF, with no carriage behind it, must
+  // still import as failed. Real scanner output must not start reading as errored.
+  it('leaves a genuine open kind without carriage as failed', async () => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'ExampleAnalyzer', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', kind: 'open', message: {text: 'undecided'}}],
+      }],
+    });
+    const out = JSON.parse(await convertSarifToHdf(input, TEST_VERSION)) as Json;
+    const req = ((out.baselines as Json[])[0]!.requirements as Json[])[0]!;
+    expect(((req.results as Json[])[0]!).status).toBe('failed');
+  });
+
+  // AC3: a carried status that contradicts the kind is ignored. The bag may refine a kind
+  // that cannot express the distinction, never overrule one that can.
+  it.each([
+    ['open', 'passed', 'failed'],
+    ['fail', 'notApplicable', 'failed'],
+    ['pass', 'error', 'passed'],
+    ['open', 'not-a-status', 'failed'],
+    ['open', 'error', 'error'],
+  ])('kind=%s carrying status=%s imports as %s', async (kind, carried, want) => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'ExampleAnalyzer', rules: [{id: 'R1'}]}},
+        results: [{
+          ruleId: 'R1', kind, message: {text: 'm'},
+          properties: {hdf: {result: {status: carried}}},
+        }],
+      }],
+    });
+    const out = JSON.parse(await convertSarifToHdf(input, TEST_VERSION)) as Json;
+    const req = ((out.baselines as Json[])[0]!.requirements as Json[])[0]!;
+    expect(((req.results as Json[])[0]!).status).toBe(want);
   });
 });
 

@@ -498,8 +498,12 @@ func TestBuildHDFBlock_OmitsTheNewFieldsWhenAbsent(t *testing.T) {
 
 // externalReferences is declared on Requirement_Core, which Evaluated_Requirement
 // composes, so it is a requirement field as well as a document-root one. The dist
-// bundle leaves Requirement_Core as an unresolvable external $ref, which is why a
-// naive walk of the bundle misses this and the five fields above.
+// bundle embeds the common-primitives subschema under a $defs key equal to that
+// subschema's $id, with Requirement_Core under its $defs in turn — so a walk that
+// follows only #/$defs/<Name> stops at Evaluated_Requirement's own 16 properties and
+// never reaches this field. The same hiding place holds controlType,
+// verificationMethod and applicability; evidence and effectiveChecksum are among the
+// 16 and were dropped for a different reason.
 func TestBuildHDFBlock_CarriesRequirementExternalReferences(t *testing.T) {
 	req := map[string]interface{}{
 		"id": "V-4",

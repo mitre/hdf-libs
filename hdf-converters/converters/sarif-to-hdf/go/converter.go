@@ -94,6 +94,17 @@ func (r *SarifRun) UnmarshalJSON(data []byte) error {
 // found nothing.
 func (r SarifRun) analyzed() bool { return r.Results != nil }
 
+// driverName is the run's tool driver name with surrounding whitespace removed, or ""
+// when the run names no driver. Every site reads it through here on purpose: six
+// open-coded reads across the two languages is how they stopped agreeing about a padded
+// name, and left a baseline called "   " holding an id that did not name it.
+func (r SarifRun) driverName() string {
+	if r.Tool == nil || r.Tool.Driver == nil {
+		return ""
+	}
+	return strings.TrimSpace(r.Tool.Driver.Name)
+}
+
 // executionFailed reports whether the run declared its own execution a failure.
 // Only an explicit false counts: executionSuccessful is required on an invocation
 // the run chose to emit, so its absence means the run said nothing, not that it
@@ -382,12 +393,15 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		bagGroups = append(bagGroups, groups)
 	}
 
+	// Through driverName like every other read of it, so a document cannot spell the
+	// same driver two ways: tool.name "  gosec  " beside a baseline named "gosec".
 	toolName := ""
 	toolVersion := ""
-	if len(sarif.Runs) > 0 && sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
-		driver := sarif.Runs[0].Tool.Driver
-		toolName = driver.Name
-		toolVersion = driver.Version
+	if len(sarif.Runs) > 0 {
+		toolName = sarif.Runs[0].driverName()
+		if sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
+			toolVersion = sarif.Runs[0].Tool.Driver.Version
+		}
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -530,10 +544,8 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 	// Use tool name for baseline name if available
 	baselineName := "SARIF"
 	var maintainer *string
-	if run.Tool != nil && run.Tool.Driver != nil {
-		if run.Tool.Driver.Name != "" {
-			baselineName = run.Tool.Driver.Name
-		}
+	if name := run.driverName(); name != "" {
+		baselineName = name
 	}
 
 	// A run that declared its own failure contributes a requirement of its own,
@@ -575,9 +587,9 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 func synthesizeRunFailedRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
 	target := "SARIF analyzer"
 	idPrefix := "sarif"
-	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
-		target = run.Tool.Driver.Name
-		idPrefix = run.Tool.Driver.Name
+	if name := run.driverName(); name != "" {
+		target = name
+		idPrefix = name
 	}
 	return shared.BuildRunFailedRequirement(
 		idPrefix+"-run-failed",
@@ -597,9 +609,9 @@ func synthesizeRunFailedRequirement(run SarifRun, timestamp time.Time) hdf.Evalu
 func synthesizeEmptyRunRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
 	target := "SARIF analyzer"
 	idPrefix := "sarif"
-	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
-		target = run.Tool.Driver.Name
-		idPrefix = run.Tool.Driver.Name
+	if name := run.driverName(); name != "" {
+		target = name
+		idPrefix = name
 	}
 	if !run.analyzed() {
 		return shared.BuildNotAnalyzedRequirement(
@@ -743,6 +755,7 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			// result's own bag. Every expanded row came from one SARIF result, so they
 			// share its carriage the way they share its record.
 			restoreUnexpressibleResult(&expanded[j], resultBagRow(sr))
+			restoreCarriedStatus(&expanded[j], resultBagRow(sr), sr.Kind)
 			perResult = append(perResult, perResultTagEntry(sr))
 		}
 		results = append(results, expanded...)
@@ -1732,8 +1745,10 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 
 // ExpectedRequirementCount states how many requirements the input must convert
 // to: one per distinct rule in each run (message text standing in for a
-// missing ruleId), plus one for a run that declared its own execution a failure,
-// and one placeholder for a run that contributed nothing at all.
+// missing ruleId), plus one for a run that declared its own execution a failure.
+// A run that contributed nothing AND declared no failure gets one placeholder
+// instead — the failure requirement takes precedence, so a failed run with no
+// results is one requirement and not two, and the one it gets is the failure.
 // Computed from the input alone, through the same grouping the conversion uses.
 func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string, error) {
 	// The unit names rules AND run outcomes because a failed run contributes a

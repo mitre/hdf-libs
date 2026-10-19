@@ -346,6 +346,98 @@ func TestConvertSarifToHDF_FailureDetailComesFromTheFirstFailure(t *testing.T) {
 	assert.NotContains(t, codeDesc, "second failure")
 }
 
+// The driver name is read at six places across the two languages and must mean the same
+// thing at every one. It did not: Go trimmed at none of its three sites, TypeScript
+// trimmed at two of its three, so a whitespace-only name produced a baseline called "   "
+// holding a requirement called "   -run-failed" in Go and "sarif-run-failed" in
+// TypeScript — an id that does not even name its own baseline.
+func TestConvertSarifToHDF_DriverNameIsTrimmedEverywhere(t *testing.T) {
+	// One case per placeholder kind, because each is synthesized at its own site.
+	for _, tc := range []struct {
+		kind, invocations, results, wantSuffix string
+	}{
+		{"no-findings", "", `, "results": []`, "-no-findings"},
+		{"not-analyzed", "", "", "-not-analyzed"},
+		{"run-failed", `, "invocations": [{"executionSuccessful": false}]`, `, "results": []`, "-run-failed"},
+	} {
+		t.Run(tc.kind+"/whitespace-only name falls back", func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"   "}}` +
+				tc.invocations + tc.results + `}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			assert.Equal(t, "SARIF", baseline.Name, "a name that is only whitespace names nothing")
+			require.Len(t, baseline.Requirements, 1)
+			assert.Equal(t, "sarif"+tc.wantSuffix, baseline.Requirements[0].ID)
+		})
+
+		t.Run(tc.kind+"/padded real name is trimmed", func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"  gosec  "}}` +
+				tc.invocations + tc.results + `}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			assert.Equal(t, "gosec", baseline.Name)
+			require.Len(t, baseline.Requirements, 1)
+			assert.Equal(t, "gosec"+tc.wantSuffix, baseline.Requirements[0].ID,
+				"the id must name the same driver the baseline does")
+			assert.Contains(t, baseline.Requirements[0].Results[0].CodeDesc, "gosec")
+			assert.NotContains(t, baseline.Requirements[0].Results[0].CodeDesc, "  gosec")
+		})
+	}
+}
+
+// The SEVENTH site. tool.name is read at the document level, through a lowercase local
+// rather than through run.Tool.Driver.Name, which is why a grep for the latter missed it
+// and why the first pass at this card left it untrimmed. A document would then spell the
+// same driver two ways: tool.name "  gosec  " beside a baseline named "gosec".
+func TestConvertSarifToHDF_DocumentToolNameIsTrimmedToo(t *testing.T) {
+	for _, tc := range []struct{ name, wantTool, wantBaseline string }{
+		{"  gosec  ", "gosec", "gosec"},
+		{"   ", "", "SARIF"},
+		{"gosec", "gosec", "gosec"},
+	} {
+		t.Run("name="+tc.name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"` + tc.name +
+				`","version":"1.2.3"}},"results":[]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			require.NotNil(t, result.Tool)
+			got := ""
+			if result.Tool.Name != nil {
+				got = *result.Tool.Name
+			}
+			assert.Equal(t, tc.wantTool, got, "document tool.name")
+			assert.Equal(t, tc.wantBaseline, result.Baselines[0].Name,
+				"a document must not spell the same driver two ways")
+			require.NotNil(t, result.Tool.Version)
+			assert.Equal(t, "1.2.3", *result.Tool.Version, "the version is untouched")
+		})
+	}
+}
+
+// Whatever the name, the baseline and the id it holds must agree about the driver.
+func TestConvertSarifToHDF_RequirementIDNamesItsOwnBaseline(t *testing.T) {
+	for _, name := range []string{"gosec", "  gosec  ", "   ", ""} {
+		t.Run("name="+name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"` + name +
+				`"}},"invocations":[{"executionSuccessful":false}],"results":[]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			require.Len(t, baseline.Requirements, 1)
+			id := baseline.Requirements[0].ID
+			// The id prefix is the baseline name, lower-cased only in the fallback case.
+			wantPrefix := baseline.Name
+			if wantPrefix == "SARIF" {
+				wantPrefix = "sarif"
+			}
+			assert.Equal(t, wantPrefix+"-run-failed", id,
+				"baseline %q holds requirement %q — they must name the same driver", baseline.Name, id)
+		})
+	}
+}
+
 // A successful invocation must not acquire a run-failed requirement.
 func TestConvertSarifToHDF_SuccessfulInvocationGetsNoRunFailedRequirement(t *testing.T) {
 	input := []byte(`{

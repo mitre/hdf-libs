@@ -40,8 +40,10 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 	}
 }
 
-// The real MSDO export bundles 7 scanner runs: four are empty (one no-findings
-// requirement each), the rest report 253 results under 61 rules. A count of
+// The real MSDO export bundles 7 scanner runs. Three contribute no results:
+// antimalware and bandit each get a no-findings placeholder, and eslint gets a
+// run-failed requirement instead, because its invocation reports
+// executionSuccessful: false. The other four report 253 results under 62 rules. A count of
 // results or of runs would both be wrong; per-run distinct rules plus the
 // placeholders is right. Pinning the numbers keeps a 1:1 relation from passing.
 func TestExpectedRequirementCount_SumsRulesAcrossRuns(t *testing.T) {

@@ -192,27 +192,22 @@ func decodeBagField(bag map[string]interface{}, key string, target interface{}, 
 	if err != nil {
 		return
 	}
-	// Decode into a scratch value and commit only on success. Decode failure is silent
-	// on purpose — the bag is untrusted and a malformed entry must cost only itself —
-	// but unmarshalling straight into the field does not achieve that: encoding/json
-	// allocates the pointee before it discovers the type mismatch, so a failed decode
-	// leaves a non-nil, empty value behind instead of the field it found.
+	// Decode into a scratch value and commit only on success. Failure is silent on
+	// purpose — the bag is untrusted and a malformed entry must cost only itself — and
+	// decoding straight into the field would not achieve that: encoding/json allocates
+	// the pointee before it discovers a type mismatch, leaving a non-nil empty value
+	// behind instead of the field it found.
+	//
+	// Undeclared members are IGNORED here, deliberately, and the reason is schema SKEW
+	// rather than any type being open: a document built against a newer hdf-schema can
+	// carry a member this build has no field for, and rejecting the value over it would
+	// turn a partial restore into a total loss, again on every schema addition. A missing
+	// REQUIRED member is the shape that actually produces an invalid document, and it is
+	// checked where the type is known rather than here, by decodeBaselineArray.
 	v := reflect.ValueOf(target)
 	if v.Kind() != reflect.Pointer || v.IsNil() {
 		return
 	}
-	// Decode into a scratch value and commit only on success, so a failed decode cannot
-	// leave a half-built value behind: encoding/json allocates the pointee before it
-	// discovers a type mismatch, and assigning the field directly would replace what it
-	// found with a non-nil empty value.
-	//
-	// Undeclared members are IGNORED here, deliberately. Several carried types are open
-	// in the schema — Reference is an anyOf with no additionalProperties, so
-	// {"ref": …, "url": …, "title": …} is legal — and rejecting the value over a member
-	// this build does not know would turn a partial restore into a total loss, and would
-	// do it again every time the schema gains a field. A missing REQUIRED member is the
-	// shape that actually produces an invalid document, and it is checked where the type
-	// is known rather than here, by decodeBaselineArray.
 	scratch := reflect.New(v.Elem().Type())
 	if err := json.Unmarshal(encoded, scratch.Interface()); err != nil {
 		return
@@ -413,6 +408,56 @@ func restoreUnexpressibleResult(out *hdf.RequirementResult, row map[string]inter
 	// SARIF expresses it and the converter falls back to time.Now() — which silently
 	// restamps every finding with the moment it was converted.
 	decodeBagField(row, "startTime", &out.StartTime, false)
+}
+
+// statusExportKinds mirrors hdf-to-sarif's statusKinds: the SARIF kind each HDF status
+// is written as. Declared here rather than imported so the two converters do not form a
+// build cycle, which is the same reason hdfBagKey is declared twice.
+//
+// The map is injective — five statuses, five distinct kinds — so a carried status can
+// always be checked against the kind that accompanies it.
+var statusExportKinds = map[hdf.ResultStatus]string{
+	hdf.Passed:        "pass",
+	hdf.Failed:        "fail",
+	hdf.NotApplicable: "notApplicable",
+	hdf.NotReviewed:   "review",
+	hdf.Error:         "open",
+}
+
+// restoreCarriedStatus takes the status from a carried result row, but only when
+// exporting that status would have produced the kind this SARIF actually states.
+//
+// SARIF cannot express HDF's error: there is no kind meaning "the check threw", so the
+// export writes "open" — §3.27.9's state where the tool had insufficient information to
+// decide — and an importer reading the kind alone cannot tell that from a tool that
+// genuinely reported "open". That is the one distinction the kind cannot carry, and the
+// owner's ruling is that the bag may settle it, because HDF cannot reflect every source
+// status and deriving it only from what SARIF expresses discards what the source said.
+//
+// The gate is what keeps this honest. The bag is untrusted carriage, so it may REFINE a
+// kind that cannot express the distinction and never overrule one that can: a carried
+// "passed" found under kind "open" disagrees with the document it arrived in, and the
+// SARIF wins. Same rule tags.kind already follows.
+func restoreCarriedStatus(out *hdf.RequirementResult, row map[string]interface{}, kind string) {
+	if row == nil {
+		return
+	}
+	raw, ok := row["status"].(string)
+	if !ok {
+		return
+	}
+	want, known := statusExportKinds[hdf.ResultStatus(raw)]
+	if !known {
+		return
+	}
+	// §3.27.9 defaults an absent kind to "fail".
+	if kind == "" {
+		kind = "fail"
+	}
+	if want != kind {
+		return
+	}
+	out.Status = hdf.ResultStatus(raw)
 }
 
 // restoreInventedOverrideFields replaces the identity, application time and expiry

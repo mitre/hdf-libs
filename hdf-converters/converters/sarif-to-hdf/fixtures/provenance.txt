@@ -153,8 +153,7 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
 - `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
 - `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.
-- `failed-run.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: eslint (no version in the
-  source). Real published output, trimmed from
+- `failed-run.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: eslint 8.56.0. Real published output, trimmed from
   `../../msft-defender-devops-to-hdf/fixtures/input/sda.sarif` (Microsoft
   `security-devops-action`). That log has SEVEN runs — antimalware, bandit, credscan,
   eslint, iacfilescanner, templateanalyzer, checkov. Six whole runs were dropped and

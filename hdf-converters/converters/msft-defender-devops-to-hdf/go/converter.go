@@ -127,7 +127,8 @@ const sarifRelationUnit = "distinct SARIF rules and run outcomes"
 // ExpectedRequirementCount applies the MSDO guards and then defers to the
 // SARIF converter's relation, exactly as the conversion does: one requirement
 // per distinct rule in each run, plus one for a run that reported its own
-// execution a failure, and one placeholder for a run that contributed nothing.
+// execution a failure, or one placeholder where a run contributed nothing AND
+// declared no failure — the failure requirement takes precedence over it.
 // Enrichment adds tags and components, never requirements.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
 	if _, err := parseMsdoSarif(input); err != nil {
