@@ -91,9 +91,13 @@ func hdfOpen(ldr *loader.Loader) sdkmcp.ToolHandlerFor[openInput, openOutput] {
 	}
 }
 
-// summarize builds the type-specific headline summary for a valid document. The
-// engine core struct-parses results and baseline; system and plan are summarized
-// by a generic walk of the raw content (the loader does not struct-parse them).
+// summarize builds the type-specific headline summary for a valid document. The engine core
+// struct-parses results and baseline; system and plan are summarized by a generic walk of
+// the raw content (the loader does not struct-parse them).
+//
+// It returns a map, not the typed struct: `any` on the output field reflects to a bare
+// `true` schema — "anything" — which is weaker than the map it would replace. The typed
+// structs below are the contract source instead.
 func summarize(lr *hdfengine.LoadResult, content []byte) map[string]any {
 	switch lr.DocType {
 	case "results":
@@ -123,10 +127,7 @@ func systemSummary(content []byte) map[string]any {
 	for _, c := range doc.Components {
 		byType[c.Type]++
 	}
-	return map[string]any{
-		"componentCount":  len(doc.Components),
-		"componentByType": byType,
-	}
+	return structToMap(systemOpenSummary{ComponentCount: len(doc.Components), ComponentByType: byType})
 }
 
 // planSummary reports the assessment count from the raw plan document.
@@ -137,7 +138,7 @@ func planSummary(content []byte) map[string]any {
 	if err := json.Unmarshal(content, &doc); err != nil {
 		return nil
 	}
-	return map[string]any{"assessmentCount": len(doc.Assessments)}
+	return structToMap(planOpenSummary{AssessmentCount: len(doc.Assessments)})
 }
 
 func resultsSummary(r *hdf.HDFResults) map[string]any {
@@ -149,24 +150,77 @@ func resultsSummary(r *hdf.HDFResults) map[string]any {
 		reqCount += len(r.Baselines[i].Requirements)
 	}
 	counts := countByEffectiveStatus(*r)
-	return map[string]any{
-		"baselineCount":    len(r.Baselines),
-		"requirementCount": reqCount,
-		"statusBreakdown": map[string]int{
-			"passed":        counts.Passed.Total,
-			"failed":        counts.Failed.Total,
-			"notApplicable": counts.NoImpact.Total,
-			"notReviewed":   counts.Skipped.Total,
-			"error":         counts.Error.Total,
+	return structToMap(resultsOpenSummary{
+		BaselineCount:    len(r.Baselines),
+		RequirementCount: reqCount,
+		StatusBreakdown: resultsStatusBreakdown{
+			Passed:        counts.Passed.Total,
+			Failed:        counts.Failed.Total,
+			NotApplicable: counts.NoImpact.Total,
+			NotReviewed:   counts.Skipped.Total,
+			Error:         counts.Error.Total,
 		},
-	}
+	})
 }
 
 func baselineSummary(b *hdf.HDFBaseline) map[string]any {
 	if b == nil {
 		return nil
 	}
-	return map[string]any{"requirementCount": len(b.Requirements)}
+	return structToMap(baselineOpenSummary{RequirementCount: len(b.Requirements)})
+}
+
+// The per-docType open summaries, typed rather than built as map[string]any.
+//
+// Each has a fixed key set, so a struct describes it exactly and the contract golden can
+// carry a real shape instead of an untyped blob — which is what ADR-0008 prerequisite (b)
+// needs for an HTTP response body. The four document types with NO summary are recorded in
+// summarylessDocTypes below rather than left to a silent nil.
+
+// resultsOpenSummary is the hdf-results summary: counts plus the effective-status breakdown.
+type resultsOpenSummary struct {
+	BaselineCount    int                    `json:"baselineCount"`
+	RequirementCount int                    `json:"requirementCount"`
+	StatusBreakdown  resultsStatusBreakdown `json:"statusBreakdown"`
+}
+
+// resultsStatusBreakdown counts requirements by effective status. The field tags are the
+// Result_Status vocabulary; they are the wire contract, so they live here once.
+type resultsStatusBreakdown struct {
+	Passed        int `json:"passed"`
+	Failed        int `json:"failed"`
+	NotApplicable int `json:"notApplicable"`
+	NotReviewed   int `json:"notReviewed"`
+	Error         int `json:"error"`
+}
+
+// baselineOpenSummary is the hdf-baseline summary.
+type baselineOpenSummary struct {
+	RequirementCount int `json:"requirementCount"`
+}
+
+// systemOpenSummary is the hdf-system summary. ComponentByType is keyed by component type,
+// which is open-ended by design (the schema admits an x- custom namespace), so it stays a
+// map and the contract describes it as one.
+type systemOpenSummary struct {
+	ComponentCount  int            `json:"componentCount"`
+	ComponentByType map[string]int `json:"componentByType"`
+}
+
+// planOpenSummary is the hdf-plan summary.
+type planOpenSummary struct {
+	AssessmentCount int `json:"assessmentCount"`
+}
+
+// summarylessDocTypes are the document types hdf_open returns no summary for, with the
+// reason. Recorded rather than absent: a reader of the contract can tell "nothing to
+// summarise yet" apart from "someone forgot", and the test below fails if a document type
+// is neither summarised nor listed here.
+var summarylessDocTypes = map[string]string{
+	"comparison":               "hdf_diff already returns the comparison summary; opening one adds nothing",
+	"amendments":               "an overrides list has no aggregate worth a summary line; hdf_query reports applied overrides",
+	"evidence-package":         "contents are references, counted by hdf_validate mode=checksums",
+	"requirement-change-event": "a change event is a single unit; its payload IS the summary",
 }
 
 func toValidationErrors(errs []loader.ValidationError) []validationError {

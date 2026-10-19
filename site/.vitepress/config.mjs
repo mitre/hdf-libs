@@ -175,6 +175,7 @@ function buildSidebar() {
 function buildNav() {
   return [
     { text: 'Schemas', link: '/schemas/' },
+    { text: 'OpenAPI', link: '/openapi/' },
     { text: 'Documentation', link: '/docs/' },
     {
       text: VERSIONS.current,

@@ -262,7 +262,7 @@ func buildAddComponentsMultiFile(files []string, fromFormat, componentName, comp
 		}
 		all = append(all, comps...)
 		return nil
-	}); err != nil {
+	}, withFailClosed()); err != nil {
 		return nil, err
 	}
 	if componentNamePrefix != "" {

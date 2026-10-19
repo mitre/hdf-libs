@@ -14,7 +14,7 @@ import { cvssVersionFromVector, cvssSeverityFromScore } from '../../../shared/ty
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import {
-  assertRequirementCount,
+  assertResultCount,
   countJsonItemsUnderKey,
 } from '../../../shared/typescript/anchor.js';
 import { CVSSSeverity, Ecosystem, Version as CvssVersion, type HDFResults } from '@mitre/hdf-schema';
@@ -33,17 +33,17 @@ runConverterContractTests({
 });
 
 // Ground-truth anchor (input-derived count; see shared/typescript/anchor.ts):
-// one requirement per results[].vulnerabilities[] entry (no grouping/dedup),
-// counted independently of the converter's parser so a silent under-extraction
-// fails even when Go/TS agree. twistlock-twistcli-sample-1.json carries 97
-// vulnerabilities.
+// Requirements roll up one-per-CVE, so the count that tracks the input is the
+// RESULT count: one per results[].vulnerabilities[] entry, counted independently
+// of the converter's parser so a silent under-extraction fails even when Go/TS
+// agree. twistlock-twistcli-sample-1.json carries 97 vulnerabilities.
 describe('twistlock-to-hdf ground-truth anchor', () => {
-  it('emits one requirement per vulnerabilities[] entry', async () => {
+  it('emits one result per vulnerabilities[] entry', async () => {
     const input = loadFixture('twistlock-twistcli-sample-1.json');
-    assertRequirementCount(
+    assertResultCount(
       await convertTwistlockToHdf(input),
       countJsonItemsUnderKey(input, 'vulnerabilities'),
-      'twistlock-twistcli-sample-1.json: one requirement per results[].vulnerabilities[]',
+      'twistlock-twistcli-sample-1.json: one result per results[].vulnerabilities[]',
     );
   });
 });
@@ -93,11 +93,13 @@ describe('twistlock to HDF converter', async () => {
       expect(hdf.baselines[0]!.summary).toContain('Package Vulnerability Summary:');
     });
 
-    it('should produce 97 requirements from sample-1 (97 unique CVEs)', async () => {
+    it('should produce 58 requirements from sample-1 (58 distinct CVEs over 97 findings)', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
       ) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(97);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(58);
+      expect(reqs.reduce((n, r) => n + r.results.length, 0)).toBe(97);
     });
 
     it('should include sha256 checksum', async () => {
@@ -611,16 +613,21 @@ describe('twistlock to HDF converter', async () => {
     });
   });
 
-  describe('raw-finding code passthrough (heimdall2 parity)', () => {
-    it('preserves otherwise-unmapped fields in requirement.code', async () => {
+  describe('raw-finding carriage (ADR-0017 §5)', () => {
+    it('preserves otherwise-unmapped fields in the result source record', async () => {
       const input = loadFixture('twistlock-twistcli-coderepo-scan-sample.json');
       const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
-      expect(req.code).toBeDefined();
-      expect(req.code).toContain('"link":');
-      expect(req.code).toContain('"riskFactors":');
-      expect(req.code).toContain('"publishedDate":');
-      expect(req.code).toContain('"layerTime":');
+      expect(req.code, 'code is for an executable check; Twistlock runs none').toBeUndefined();
+      const record = req.results[0]!.rawSourceRecord!;
+      expect(record).toBeDefined();
+      expect(record.mediaType).toBe('application/json');
+      // An unwrapped code-repo scan has no results[] wrapper to point into.
+      expect(record.pointer).toBe('/vulnerabilities/0');
+      expect(record.content).toContain('"link":');
+      expect(record.content).toContain('"riskFactors":');
+      expect(record.content).toContain('"publishedDate":');
+      expect(record.content).toContain('"layerTime":');
     });
 
     it('projects fixed field order with empties dropped (Go-parity)', async () => {
@@ -634,7 +641,7 @@ describe('twistlock to HDF converter', async () => {
       });
       const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
-      expect(req.code).toBe(
+      expect(req.results[0]!.rawSourceRecord!.content).toBe(
         '{\n' +
         '  "id": "CVE-X",\n' +
         '  "status": "affected",\n' +
@@ -695,13 +702,14 @@ describe('twistlock result instance identity', () => {
     const hdf = JSON.parse(
       await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json')),
     ) as HDFResults;
-    const ids = hdf.baselines[0]!.requirements
-      .filter((r) => r.id === 'CVE-2021-43529')
-      .map((r) => {
-        expect(r.results).toHaveLength(1);
-        expect(r.results[0]!.resource).toBe('package');
-        return r.results[0]!.resourceId;
-      });
+    // After roll-up the five entries are five results on ONE requirement.
+    const group = hdf.baselines[0]!.requirements.filter((r) => r.id === 'CVE-2021-43529');
+    expect(group).toHaveLength(1);
+    expect(group[0]!.results).toHaveLength(5);
+    const ids = group[0]!.results.map((res) => {
+      expect(res.resource).toBe('package');
+      return res.resourceId;
+    });
 
     expect(ids).toEqual([
       'nss-util@3.67.0-7.el8_5',
@@ -710,5 +718,10 @@ describe('twistlock result instance identity', () => {
       'nss-softokn@3.67.0-7.el8_5',
       'nss-softokn-freebl@3.67.0-7.el8_5',
     ]);
+
+    // affectedPackages is the union across the merged group — first-wins would
+    // discard four of the five nss packages.
+    const names = (group[0]!.affectedPackages ?? []).map((p) => p.name).sort();
+    expect(names).toEqual(['nss', 'nss-softokn', 'nss-softokn-freebl', 'nss-sysinit', 'nss-util']);
   });
 });

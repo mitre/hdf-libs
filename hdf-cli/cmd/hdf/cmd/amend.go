@@ -105,6 +105,7 @@ Examples:
 
 func newAmendApplyCmd() *cobra.Command {
 	var (
+		requireMatch   bool
 		resultsPath    string
 		amendmentsPath string
 		outputPath     string
@@ -126,13 +127,15 @@ Examples:
   hdf amend apply --results results.json --amendments waivers.json -o merged.json`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runAmendApply(cmd, resultsPath, amendmentsPath, outputPath)
+			return runAmendApply(cmd, resultsPath, amendmentsPath, outputPath, requireMatch)
 		},
 	}
 
 	cmd.Flags().StringVar(&resultsPath, "results", "", "HDF results file to amend (required)")
 	cmd.Flags().StringVar(&amendmentsPath, "amendments", "", "Amendments file to apply (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Write merged output to file instead of stdout")
+	cmd.Flags().BoolVar(&requireMatch, "require-match", false,
+		"Fail when no override matched; by default a register carried across documents may legitimately match nothing")
 	_ = cmd.MarkFlagRequired("results")
 	_ = cmd.MarkFlagRequired("amendments")
 
@@ -196,7 +199,7 @@ Examples:
 	}
 }
 
-func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath string) error {
+func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath string, requireMatch bool) error {
 	resultsData, err := readInputFile(resultsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
@@ -243,6 +246,15 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 	// amendments file need not match every host on which it is applied), so this
 	// is a summary rather than an error — but the command is never silent.
 	fmt.Fprintf(os.Stderr, "Applied %d of %d override(s)\n", res.Applied, res.Total)
+	// Zero matches is an intended state for a register applied to every new
+	// results file whether or not it carries the finding; the caller whose
+	// register was written for THIS document opts into the failure, and the
+	// ids come from the document so they go through the sanitizer.
+	if requireMatch && res.Applied == 0 && res.Total > 0 {
+		return errors.New(sanitizeOutput(fmt.Sprintf(
+			"no override matched: this document carries none of %s; drop --require-match if the register is meant to be carried across documents",
+			strings.Join(res.Unmatched, ", "))))
+	}
 
 	merged := res.Output
 	if outputPath != "" {

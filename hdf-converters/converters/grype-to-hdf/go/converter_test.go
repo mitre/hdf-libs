@@ -2,6 +2,7 @@ package grype_to_hdf
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
@@ -58,10 +60,13 @@ func TestConvertGrypeToHDF(t *testing.T) {
 	}
 }
 
-// Grype carries no literal source snippet, so requirement.code holds the raw
-// match object serialized as indented JSON. Pin that it is set and round-trips
-// byte-structurally back to the source match (Heimdall CODE-tab fidelity).
-func TestConvertGrypeToHDF_RequirementCode(t *testing.T) {
+// Grype carries no literal source snippet and runs no executable check, so v3
+// leaves requirement.code absent and the match rides on the result. What the
+// Heimdall CODE tab actually renders is the v2 downgrade's control.code, so pin
+// the end-to-end path: convert, downgrade, and assert the tab is populated and
+// round-trips to the source match. An earlier version of this test asserted v3
+// code was non-nil, which stopped describing the tab once the match moved.
+func TestConvertGrypeToHDF_V2CodeTabIsPopulated(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 	if err != nil {
@@ -75,24 +80,45 @@ func TestConvertGrypeToHDF_RequirementCode(t *testing.T) {
 		t.Fatalf("Failed to parse fixture: %v", err)
 	}
 
-	reqs := hdfResults.Baselines[0].Requirements
-	if len(reqs) != len(raw.Matches) {
-		t.Fatalf("Expected %d requirements, got %d", len(raw.Matches), len(reqs))
+	// amazon.json carries one match per CVE, so roll-up merges nothing and the
+	// downgraded controls stay index-aligned with the source matches.
+	v3bytes, err := json.Marshal(hdfResults)
+	if err != nil {
+		t.Fatalf("marshalling converter output: %v", err)
+	}
+	v2bytes, _, err := hdfversion.TransformHDF(v3bytes, hdfversion.ModernVersion, hdfversion.LegacyVersion)
+	if err != nil {
+		t.Fatalf("downgrade to v2 failed: %v", err)
 	}
 
-	for i, req := range reqs {
-		if req.Code == nil {
-			t.Fatalf("requirement %d: Code is nil; Heimdall CODE tab would be empty", i)
+	var legacy struct {
+		Profiles []struct {
+			Controls []struct {
+				Code *string `json:"code"`
+			} `json:"controls"`
+		} `json:"profiles"`
+	}
+	if err := json.Unmarshal(v2bytes, &legacy); err != nil {
+		t.Fatalf("parsing v2 output: %v", err)
+	}
+	controls := legacy.Profiles[0].Controls
+	if len(controls) != len(raw.Matches) {
+		t.Fatalf("Expected %d controls, got %d", len(raw.Matches), len(controls))
+	}
+
+	for i, c := range controls {
+		if c.Code == nil {
+			t.Fatalf("control %d: code is nil; Heimdall CODE tab would be empty", i)
 		}
 		var got, want interface{}
-		if err := json.Unmarshal([]byte(*req.Code), &got); err != nil {
-			t.Fatalf("requirement %d: Code is not valid JSON: %v", i, err)
+		if err := json.Unmarshal([]byte(*c.Code), &got); err != nil {
+			t.Fatalf("control %d: code is not valid JSON: %v", i, err)
 		}
 		if err := json.Unmarshal(raw.Matches[i], &want); err != nil {
 			t.Fatalf("match %d: %v", i, err)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("requirement %d: Code does not round-trip to source match object", i)
+			t.Errorf("control %d: code does not round-trip to source match object", i)
 		}
 	}
 }
@@ -647,8 +673,11 @@ func TestConvertGrypeToHDF_MatchesAnchor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
-	shared.AssertRequirementCount(t, result, shared.CountJSONItemsUnderKey(t, input, "matches"),
-		"anchore_grype.json: one requirement per matches[] (no ignoredMatches)")
+	// Roll-up collapses requirements, so the one-per-match ground truth is now a
+	// statement about RESULTS. This is exactly why ADR-0017 §6 makes the
+	// result-count anchor mandatory for a rolled-up converter.
+	shared.AssertResultCount(t, result, shared.CountJSONItemsUnderKey(t, input, "matches"),
+		"anchore_grype.json: one result per matches[] (no ignoredMatches)")
 }
 
 func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
@@ -840,22 +869,22 @@ func TestConvertGrype_SetsResultResourceIdentityToArtifactPurl(t *testing.T) {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
+	// Post roll-up the two entries are one requirement carrying two results, so
+	// the identities are collected across results rather than across entries.
 	var got []string
 	for _, req := range hdfResults.Baselines[0].Requirements {
 		if req.ID != "Grype/CVE-2022-48174" {
 			continue
 		}
-		if len(req.Results) != 1 {
-			t.Fatalf("expected one result per entry, got %d", len(req.Results))
+		for _, res := range req.Results {
+			if res.Resource == nil || *res.Resource != "package" {
+				t.Errorf("resource = %v, want \"package\"", res.Resource)
+			}
+			if res.ResourceID == nil {
+				t.Fatalf("resourceId is nil — the instance identity lives only in prose")
+			}
+			got = append(got, *res.ResourceID)
 		}
-		res := req.Results[0]
-		if res.Resource == nil || *res.Resource != "package" {
-			t.Errorf("resource = %v, want \"package\"", res.Resource)
-		}
-		if res.ResourceID == nil {
-			t.Fatalf("resourceId is nil — the instance identity lives only in prose")
-		}
-		got = append(got, *res.ResourceID)
 	}
 
 	want := []string{
@@ -864,5 +893,191 @@ func TestConvertGrype_SetsResultResourceIdentityToArtifactPurl(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("resourceIds for the duplicate-id group =\n  %q\nwant\n  %q", got, want)
+	}
+}
+
+// Roll-up: one requirement per CVE, one result per affected package. The 42
+// duplicated ids in anchore_grype collapse without losing a single finding —
+// results concatenate, and each keeps the package identity that distinguishes
+// it. heimdall2's framework keeps only the first control, so upstream loses the
+// second package entirely; the union is a deliberate improvement.
+func TestConvertGrype_RollsUpOneRequirementPerCVE(t *testing.T) {
+	hdfResults, err := ConvertGrypeToHDF(loadFixture(t, "input/anchore_grype.json"), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	reqs := hdfResults.Baselines[0].Requirements
+
+	if len(reqs) != 47 {
+		t.Errorf("requirements = %d, want 47 (89 entries over 47 distinct ids)", len(reqs))
+	}
+	results := 0
+	seen := map[string]int{}
+	for _, r := range reqs {
+		results += len(r.Results)
+		seen[r.ID]++
+	}
+	if results != 89 {
+		t.Errorf("results = %d, want 89 — roll-up moves findings, it never drops them", results)
+	}
+	for id, n := range seen {
+		if n > 1 {
+			t.Errorf("id %q still appears %d times after roll-up", id, n)
+		}
+	}
+
+	// The worked example: one CVE against two packages, now one requirement
+	// whose two results name the two packages in source order.
+	var group *hdf.EvaluatedRequirement
+	for i := range reqs {
+		if reqs[i].ID == "Grype/CVE-2022-48174" {
+			group = &reqs[i]
+		}
+	}
+	if group == nil {
+		t.Fatal("Grype/CVE-2022-48174 missing after roll-up")
+	}
+	if len(group.Results) != 2 {
+		t.Fatalf("CVE-2022-48174 results = %d, want 2", len(group.Results))
+	}
+	var ids []string
+	for _, res := range group.Results {
+		if res.ResourceID == nil {
+			t.Fatal("a rolled-up result lost its instance identity")
+		}
+		ids = append(ids, *res.ResourceID)
+	}
+	want := []string{
+		"pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3",
+		"pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3",
+	}
+	if !reflect.DeepEqual(ids, want) {
+		t.Errorf("rolled-up resourceIds =\n  %q\nwant\n  %q", ids, want)
+	}
+	// Both packages survive in affectedPackages — first-wins would discard one.
+	if len(group.AffectedPackages) != 2 {
+		t.Errorf("affectedPackages = %d, want 2 (the union, not first-wins)", len(group.AffectedPackages))
+	}
+}
+
+// The relocation is what makes roll-up non-lossy. Before it, §6's `code`
+// first-wins discarded 42 of anchore_grype's 89 distinct match records; the
+// record now rides on the RESULT, so every one survives the merge. Each is the
+// bytes Grype emitted, locatable in the input by its pointer.
+func TestConvertGrype_CarriesEveryMatchRecordThroughRollUp(t *testing.T) {
+	input := loadFixture(t, "input/anchore_grype.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	var source struct {
+		Matches []json.RawMessage `json:"matches"`
+	}
+	if err := json.Unmarshal(input, &source); err != nil {
+		t.Fatalf("parsing fixture: %v", err)
+	}
+
+	records := map[string]bool{}
+	for _, b := range hdfResults.Baselines {
+		for _, r := range b.Requirements {
+			for _, res := range r.Results {
+				if res.RawSourceRecord == nil {
+					t.Fatalf("requirement %q: a result carries no source record", r.ID)
+				}
+				rec := res.RawSourceRecord
+				if rec.MediaType != "application/json" || rec.Encoding != hdf.UTF8 {
+					t.Errorf("record mediaType/encoding = %q/%q", rec.MediaType, rec.Encoding)
+				}
+				if rec.Pointer == nil {
+					t.Error("record has no pointer into the source artifact")
+				}
+				records[rec.Content] = true
+			}
+		}
+	}
+
+	// One distinct record per source match — nothing merged away. This is the
+	// assertion that fails if the relocation is removed and roll-up runs alone.
+	if len(records) != len(source.Matches) {
+		t.Errorf("distinct source records = %d, want %d (one per match, none lost to roll-up)",
+			len(records), len(source.Matches))
+	}
+
+	// Each record must be the bytes Grype emitted, parseable back to the match
+	// at the pointer it names.
+	for _, b := range hdfResults.Baselines {
+		for _, r := range b.Requirements {
+			for _, res := range r.Results {
+				var got, want interface{}
+				if err := json.Unmarshal([]byte(res.RawSourceRecord.Content), &got); err != nil {
+					t.Fatalf("record is not valid JSON: %v", err)
+				}
+				var idx int
+				if _, err := fmt.Sscanf(*res.RawSourceRecord.Pointer, "/matches/%d", &idx); err != nil {
+					continue // an ignoredMatches pointer; anchore_grype has none
+				}
+				if err := json.Unmarshal(source.Matches[idx], &want); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Errorf("record at %s does not round-trip to its source match", *res.RawSourceRecord.Pointer)
+				}
+			}
+		}
+	}
+}
+
+// The two id forms must survive roll-up as SEPARATE requirements. Merging an
+// ignored match into the active one for the same CVE would change a finding's
+// meaning — notReviewed and failed are different claims about the same package.
+// Whether the two forms should share an id is a separate open question.
+func TestConvertGrype_RollUpKeepsIgnoredMatchesDistinct(t *testing.T) {
+	const report = `{
+		"descriptor": {"name": "grype", "version": "0.79.3"},
+		"source": {"target": {"userInput": "test-image"}},
+		"matches": [{
+			"vulnerability": {"id": "CVE-2024-0001", "severity": "High", "description": "active"},
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "rpm-matcher"}],
+			"artifact": {"name": "test-pkg", "version": "1.0.0", "type": "rpm"}
+		}],
+		"ignoredMatches": [{
+			"vulnerability": {"id": "CVE-2024-0001", "severity": "High", "description": "ignored"},
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "rpm-matcher"}],
+			"artifact": {"name": "test-pkg", "version": "1.0.0", "type": "rpm"}
+		}]
+	}`
+
+	hdfResults, err := ConvertGrypeToHDF([]byte(report), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	reqs := hdfResults.Baselines[0].Requirements
+	if len(reqs) != 2 {
+		t.Fatalf("requirements = %d, want 2 (the id forms must not merge)", len(reqs))
+	}
+	active := shared.MustFindRequirement(t, reqs, "Grype/CVE-2024-0001")
+	ignored := shared.MustFindRequirement(t, reqs, "Grype-Ignored-Match/CVE-2024-0001")
+	if active.Results[0].Status != hdf.Failed {
+		t.Errorf("active status = %q, want failed", active.Results[0].Status)
+	}
+	if ignored.Results[0].Status != hdf.NotReviewed {
+		t.Errorf("ignored status = %q, want notReviewed", ignored.Results[0].Status)
+	}
+	// Each keeps its own record, pointing into the array it came from.
+	for _, tc := range []struct {
+		req  *hdf.EvaluatedRequirement
+		want string
+	}{
+		{active, "/matches/0"}, {ignored, "/ignoredMatches/0"},
+	} {
+		rec := tc.req.Results[0].RawSourceRecord
+		if rec == nil || rec.Pointer == nil {
+			t.Fatalf("%s: no source record pointer", tc.req.ID)
+		}
+		if *rec.Pointer != tc.want {
+			t.Errorf("%s: pointer = %q, want %q", tc.req.ID, *rec.Pointer, tc.want)
+		}
 	}
 }

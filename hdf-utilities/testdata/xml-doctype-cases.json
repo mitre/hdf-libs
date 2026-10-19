@@ -1,0 +1,214 @@
+{
+  "$comment": "Shared table for the XML prologue declaration inspector. Go (InspectXMLPrologue) and TypeScript (inspectXmlPrologue) both read it, so neither language can drift. The three facts are reported separately because they are three different attack surfaces and the POLICY over them belongs to the consumer, not here: an external identifier is the XXE/SSRF vector, an inline entity is the billion-laughs vector, and a subset of only ELEMENT/ATTLIST/NOTATION is inert. When leadingCommentBytes > 0 the suite prepends a comment of that many filler bytes before `xml`, which is how the cases that used to defeat the 4 KB scan window are expressed without embedding 4 KB of literal text here. `malformed` is true when the prologue could not be parsed to a root element: the other facts are then a lower bound, and a boundary that treats absence of findings as safe must refuse the input instead of accepting it.",
+  "cases": [
+    {
+      "name": "plain document",
+      "xml": "<?xml version=\"1.0\"?><note><to>a</to></note>",
+      "doctype": false,
+      "entity": false,
+      "why": "no prologue declaration of either kind",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "empty input",
+      "xml": "",
+      "doctype": false,
+      "entity": false,
+      "why": "nothing to scan; must not panic or index out of range",
+      "externalId": false,
+      "malformed": true
+    },
+    {
+      "name": "whitespace only",
+      "xml": "   \n\t  ",
+      "doctype": false,
+      "entity": false,
+      "why": "no root element is ever reached",
+      "externalId": false,
+      "malformed": true
+    },
+    {
+      "name": "doctype first",
+      "xml": "<!DOCTYPE note SYSTEM \"note.dtd\"><note/>",
+      "doctype": true,
+      "entity": false,
+      "why": "an external DTD reference needs no inline ENTITY to be an XXE vector",
+      "externalId": true,
+      "malformed": false
+    },
+    {
+      "name": "doctype after the xml declaration",
+      "xml": "<?xml version=\"1.0\"?>\n<!DOCTYPE note><note/>",
+      "doctype": true,
+      "entity": false,
+      "why": "the declaration is skipped, the DOCTYPE is still in the prologue",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype lowercase",
+      "xml": "<!doctype note><note/>",
+      "doctype": true,
+      "entity": false,
+      "why": "XML keywords are case-sensitive but scanners must not be fooled by case",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype with an internal subset declaring an entity",
+      "xml": "<!DOCTYPE note [<!ENTITY lol \"ha\">]><note>&lol;</note>",
+      "doctype": true,
+      "entity": true,
+      "why": "the billion-laughs shape; both detectors fire",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype beyond the legacy 4 KB scan window",
+      "leadingCommentBytes": 5000,
+      "xml": "<!DOCTYPE note SYSTEM \"note.dtd\"><note/>",
+      "doctype": true,
+      "entity": false,
+      "why": "THE BUG: a fixed 4 KB window accepts this. The prologue has no length bound, so neither may the scan",
+      "externalId": true,
+      "malformed": false
+    },
+    {
+      "name": "entity beyond the legacy 4 KB scan window",
+      "leadingCommentBytes": 5000,
+      "xml": "<!DOCTYPE note [<!ENTITY lol \"ha\">]><note>&lol;</note>",
+      "doctype": true,
+      "entity": true,
+      "why": "the same bug in the entity detector itself, which is what the converters gate on",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype-shaped text in character data",
+      "xml": "<note>&lt;!DOCTYPE fake&gt; and a literal <!DOCTYPE never here</note>",
+      "doctype": false,
+      "entity": false,
+      "why": "scanning stops at the root element, so content cannot false-positive",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype-shaped text in an attribute value",
+      "xml": "<note desc=\"<!DOCTYPE fake>\"/>",
+      "doctype": false,
+      "entity": false,
+      "why": "the root element is reached first; its attributes are not prologue",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "entity-shaped text after the root element",
+      "xml": "<note><body><!ENTITY not-a-declaration></body></note>",
+      "doctype": false,
+      "entity": false,
+      "why": "an ENTITY past the root cannot be a declaration, so flagging it would reject valid documents",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype-shaped text inside a prologue comment",
+      "xml": "<!-- <!DOCTYPE commented-out> --><note/>",
+      "doctype": false,
+      "entity": false,
+      "why": "a commented declaration is not a declaration; the comment is skipped as a unit",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "unterminated prologue comment",
+      "xml": "<!-- never closed <!DOCTYPE note><note/>",
+      "doctype": false,
+      "entity": false,
+      "why": "no root element is reachable, so there is no prologue to have declared anything; must terminate, not loop",
+      "externalId": false,
+      "malformed": true
+    },
+    {
+      "name": "processing instruction before the doctype",
+      "xml": "<?xml-stylesheet href=\"a.xsl\"?><!DOCTYPE note><note/>",
+      "doctype": true,
+      "entity": false,
+      "why": "any number of PIs may precede the DOCTYPE",
+      "externalId": false,
+      "malformed": false
+    },
+    {
+      "name": "doctype with an inert internal subset",
+      "xml": "<!DOCTYPE issues [\n<!ELEMENT issues (issue*)>\n<!ATTLIST issues burpVersion CDATA \"\">\n]><issues/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": false,
+      "why": "real Burp Suite export shape: declares structure only, so it can neither expand nor fetch",
+      "malformed": false
+    },
+    {
+      "name": "doctype with a PUBLIC external identifier",
+      "xml": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0//EN\" \"xhtml1.dtd\"><html/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": true,
+      "why": "an external DTD is an XXE/SSRF vector with no inline ENTITY of its own",
+      "malformed": false
+    },
+    {
+      "name": "doctype with a SYSTEM external identifier and an entity",
+      "xml": "<!DOCTYPE n SYSTEM \"n.dtd\" [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><n>&x;</n>",
+      "doctype": true,
+      "entity": true,
+      "externalId": true,
+      "why": "both vectors at once; the classic file-disclosure payload",
+      "malformed": false
+    },
+    {
+      "name": "external-identifier keyword in an inert subset comment",
+      "xml": "<!DOCTYPE n [<!-- SYSTEM is only a word here --><!ELEMENT n EMPTY>]><n/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": false,
+      "why": "the keyword must be recognised as a declaration token, not by substring search",
+      "malformed": false
+    },
+    {
+      "name": "entity hidden behind a quoted ]> in an ATTLIST default",
+      "xml": "<!DOCTYPE l [<!ATTLIST l v CDATA \"]>\"><!ENTITY e \"boom\">]><l>&e;</l>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "GATE BYPASS: ]> inside a quoted literal is not the end of the subset. A scanner that searches for the first ]> loses its place and reports a clean document",
+      "malformed": false
+    },
+    {
+      "name": "entity hidden behind a ]> in a subset comment",
+      "xml": "<!DOCTYPE l [<!-- ]> --><!ENTITY e \"boom\">]><l>&e;</l>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "same evasion through a comment rather than a quoted literal",
+      "malformed": false
+    },
+    {
+      "name": "notation with an external identifier inside the subset",
+      "xml": "<!DOCTYPE l [<!NOTATION g SYSTEM \"http://example.invalid/x\">]><l>ok</l>",
+      "doctype": true,
+      "entity": false,
+      "externalId": true,
+      "why": "an external reference can live INSIDE the subset, where a check that only inspects the DOCTYPE's own external-id position cannot see it",
+      "malformed": false
+    },
+    {
+      "name": "single-quoted ]> in an entity value",
+      "xml": "<!DOCTYPE l [<!ENTITY a ']>'>]><l>ok</l>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "both quote characters delimit literals in a DTD, not just the double quote",
+      "malformed": false
+    }
+  ]
+}

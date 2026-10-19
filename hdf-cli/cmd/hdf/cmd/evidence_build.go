@@ -50,7 +50,7 @@ Examples:
 				return fmt.Errorf("failed to expand results paths: %w", err)
 			}
 			if len(expanded) == 0 {
-				return fmt.Errorf("no results files provided; use --results or pass files as arguments")
+				return &exitCodeError{code: exitNothingToDo, message: "no results files provided; use --results or pass files as arguments", report: true}
 			}
 			return runEvidenceBuild(systemPath, expanded, amendmentsPath, comparisonPath, outputPath)
 		},

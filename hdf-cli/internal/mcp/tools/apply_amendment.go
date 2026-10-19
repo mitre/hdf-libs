@@ -29,6 +29,9 @@ type applyAmendmentInput struct {
 	Output     string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the applied results (a NEW file; the results input is never overwritten)"`
 	DryRun     bool          `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the delta, write no file)"`
 	Overwrite  bool          `json:"overwrite,omitempty" jsonschema:"replace an existing output file (default false)"`
+	// Zero matches is an intended state for a register applied to every new
+	// results file whether or not it carries the finding, so it is opt-in.
+	RequireMatch bool `json:"requireMatch,omitempty" jsonschema:"fail when no override matched; default false, since a register carried across documents may match nothing"`
 }
 
 // projectedCompliance is the before/after effective-compliance percentage the
@@ -97,6 +100,9 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
+		if in.RequireMatch && mergeRes.Applied == 0 && mergeRes.Total > 0 {
+			return toolError(noOverrideMatchedError(mergeRes.Unmatched)), applyAmendmentOutput{}, nil
+		}
 		merged := mergeRes.Output
 		if terr := refuseInvalidResults(merged); terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
@@ -159,6 +165,16 @@ func applyMerge(results, amendments []byte) (amend.MergeResult, *mcperr.Error) {
 
 // invalidResultsInputError renders a degraded-read results Load into a boundary
 // rejection that surfaces the first line-numbered schema error.
+// noOverrideMatchedError is the requireMatch refusal: the register names
+// requirements this document does not carry, listed so the caller can see
+// whether the register or the document is the one that is wrong.
+func noOverrideMatchedError(unmatched []string) *mcperr.Error {
+	return mcperr.New(mcperr.NoOverrideMatched,
+		"no override matched: this document carries none of "+strings.Join(unmatched, ", ")+
+			"; omit requireMatch if the register is meant to be carried across documents",
+		map[string]any{"unmatched": unmatched})
+}
+
 func invalidResultsInputError(load *loader.Result) *mcperr.Error {
 	msg := "the results document is not schema-valid HDF and cannot be amended"
 	if len(load.Errors) > 0 {

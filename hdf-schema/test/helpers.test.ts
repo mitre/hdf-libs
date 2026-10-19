@@ -343,6 +343,22 @@ describe('createResult', () => {
     expect('resource' in r).toBe(false);
     expect('resourceId' in r).toBe(false);
   });
+
+  it('includes rawSourceRecord when provided', () => {
+    const record = {
+      content: '{"id":"CVE-2021-44228"}',
+      encoding: 'utf-8' as const,
+      mediaType: 'application/json',
+      pointer: '/vulnerabilities/0',
+    };
+    const r = createResult('failed', 'boom', { rawSourceRecord: record });
+    expect(r.rawSourceRecord).toEqual(record);
+  });
+
+  it('omits rawSourceRecord when not provided', () => {
+    const r = createResult('passed');
+    expect('rawSourceRecord' in r).toBe(false);
+  });
 });
 
 describe('createRequirement extensions', () => {

@@ -35,6 +35,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
   - [mcp](#mcp) -- Run the HDF MCP server (stdio transport)
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
+- [Exit codes](#exit-codes)
 - [Supported Conversions](#supported-conversions)
   - [To HDF](#to-hdf)
   - [From HDF](#from-hdf)
@@ -100,7 +101,7 @@ The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directl
 
 ### validate
 
-Validate an HDF results or baseline file against the JSON schema. Returns exit code 0 on success, 1 on failure.
+Validate an HDF results or baseline file against the JSON schema. Exit codes are listed under [Exit codes](#exit-codes): 0 when every file is valid, 1 when every file is invalid, 3 when some are.
 
 ```
 USAGE
@@ -138,7 +139,7 @@ For a results document the success line is followed by `Agent-attributed overrid
 
 #### validate threshold
 
-Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation.
+Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation; a gate never exits 3, however many documents it was given (see [Exit codes](#exit-codes)).
 
 ```
 USAGE
@@ -343,7 +344,7 @@ FLAGS
       --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
   -q, --quiet              Suppress output, return exit code only (implies --exit-code)
-      --exit-code          POSIX diff exit codes: 0=identical, 1=differences, 2=error
+      --exit-code          POSIX diff exit codes: 0=identical, 1=differences
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
       --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
@@ -595,6 +596,7 @@ SUBCOMMANDS
 
 EXAMPLES
   hdf amend apply --results results.json --amendments waivers.json -o merged.json
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json --require-match   # fail if nothing matched
   hdf amend list waivers.json
   hdf amend verify waivers.json                     # structure, expiry, chain
   hdf amend verify waivers.json results.json         # also check against results
@@ -1143,6 +1145,22 @@ These flags apply to all commands.
 | `--no-follow-symlinks` | | `false` | Refuse to read symlinked files |
 | `--no-headers` | | `false` | Suppress column headers in table output |
 | `--schema-dir` | | | Load schemas from a directory instead of the embedded copies |
+
+## Exit codes
+
+One vocabulary for every command, so a pipeline can test the code rather than parse the output.
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success. In a bulk run, every file succeeded. |
+| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written; `query` with no matching requirements. |
+| `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command name that does not exist — at the root (`hdf bogus`) or under a group (`hdf evidence bogus`). A group invoked with no subcommand at all prints its help and exits 0. |
+| `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
+| `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
+
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
+
+One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
 
 ## Supported Conversions
 

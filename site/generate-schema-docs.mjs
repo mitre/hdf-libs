@@ -195,7 +195,7 @@ function writeIndexPage(outputDir, schemas, urlPrefix) {
     '',
     isHistorical
       ? `Historical snapshot of HDF documents as of release ${schemas[0]?.version}. For the current version see [/schemas/](/schemas/).`
-      : 'The Heimdall Data Format (HDF) defines 7 JSON document types for security assessment data. Each schema is self-contained — all referenced types are embedded, no external fetches needed.',
+      : `The Heimdall Data Format (HDF) defines ${schemas.length} JSON document types for security assessment data. Each schema is self-contained — all referenced types are embedded, no external fetches needed.`,
     '',
     '## Document Types',
     '',

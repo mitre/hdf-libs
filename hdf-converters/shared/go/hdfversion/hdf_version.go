@@ -320,6 +320,24 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.Legacy
 		Code:   r.Code,
 	}
 
+	// v2 has nowhere to put a per-result source record, so a requirement whose
+	// raw payload rides on its results would downgrade with an empty CODE tab.
+	// Fall back to the first result's record, which is where converters with no
+	// executable check now carry what they used to put in code.
+	//
+	// This is a lossy N-to-1 projection, and deliberately so: v2 has one code
+	// field per control, so a rolled-up requirement's remaining records have no
+	// destination. ADR-0017 §5 leaves the choice open. The records are all
+	// present in the v3 document, which is the one that carries them.
+	if c.Code == nil {
+		for _, res := range r.Results {
+			if res.RawSourceRecord != nil {
+				c.Code = hdfutil.Ptr(res.RawSourceRecord.Content)
+				break
+			}
+		}
+	}
+
 	// riskAdjustment (and any impact override) re-scores the displayed impact.
 	if r.EffectiveImpact != nil {
 		c.Impact = *r.EffectiveImpact

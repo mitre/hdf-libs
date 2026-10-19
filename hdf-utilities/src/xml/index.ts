@@ -259,3 +259,187 @@ function extractTextRecursive(obj: unknown): string {
 
   return '';
 }
+
+/**
+ * Walks the XML prologue — everything before the root element, the only region where a
+ * DOCTYPE may legally appear — and reports which declarations it holds.
+ *
+ * It reports rather than returning the text to search, because the text would still
+ * contain commented-out declarations: `<!-- <!DOCTYPE x> -->` is not a declaration, and
+ * grepping a region that includes it cannot tell the difference.
+ *
+ * A fixed byte window cannot bound this region: the prologue may carry any amount of
+ * comment and processing-instruction text, so a declaration can be pushed past any
+ * constant. Walking to the root element has no such hole, and it is also what stops
+ * declaration-shaped CONTENT from false-positiving — once the root is reached, nothing
+ * after it is a declaration.
+ *
+ * An unterminated construct yields no root element, and so no prologue: there is nothing
+ * a document that never opens an element can be said to have declared.
+ *
+ * Kept in parity with Go's scanXMLPrologue by testdata/xml-doctype-cases.json, which
+ * both suites read.
+ */
+export interface XmlPrologueDeclarations {
+  /** A DOCTYPE of any kind. A subset of only ELEMENT/ATTLIST/NOTATION is inert. */
+  hasDoctype: boolean;
+  /** An inline `<!ENTITY>` — the entity-expansion (billion-laughs) vector. */
+  hasEntityDecl: boolean;
+  /** An external DTD reference (SYSTEM/PUBLIC) — the XXE and SSRF vector. */
+  hasExternalId: boolean;
+  /**
+   * Set when the prologue could not be parsed to a root element, so the other fields are
+   * a lower bound rather than a complete answer. A boundary that treats absence of
+   * findings as "safe" must refuse this instead.
+   */
+  malformed: boolean;
+}
+
+const isDtdNameChar = (c: string): boolean => /[A-Za-z]/.test(c);
+const isSpace = (c: string): boolean => c === ' ' || c === '\t' || c === '\n' || c === '\r';
+
+/**
+ * Walks a DTD internal subset from the character after `[`, reporting what it declares
+ * plus the offset just past its closing `]>`.
+ *
+ * A state machine rather than a substring search because the subset's own EXTENT depends
+ * on quoting: `<!ATTLIST l v CDATA "]>">` contains a `]>` inside a literal, and a scanner
+ * that searches for the first `]>` ends the subset there, loses its place, and reports a
+ * document with a later `<!ENTITY>` as clean. Comments hide the same way. Measured: that
+ * evasion defeated the substring version of this function.
+ */
+interface SubsetScan {
+  end: number;
+  hasEntity: boolean;
+  hasExternalId: boolean;
+  ok: boolean;
+}
+
+function scanInternalSubset(s: string): SubsetScan {
+  let hasEntity = false;
+  let hasExternalId = false;
+  let i = 0;
+  const fail = (): SubsetScan => ({ end: 0, hasEntity, hasExternalId, ok: false });
+  while (i < s.length) {
+    const c = s[i] as string;
+    if (c === "'" || c === '"') {
+      i++;
+      while (i < s.length && s[i] !== c) i++;
+      if (i >= s.length) return fail(); // unterminated literal
+      i++;
+    } else if (s.startsWith('<!--', i)) {
+      const closeAt = s.indexOf('-->', i);
+      if (closeAt === -1) return fail();
+      i = closeAt + 3;
+    } else if (s.startsWith('<!', i)) {
+      let j = i + 2;
+      while (j < s.length && isDtdNameChar(s[j] as string)) j++;
+      if (s.slice(i + 2, j).toUpperCase() === 'ENTITY') hasEntity = true;
+      i = j;
+    } else if (c === ']') {
+      let j = i + 1;
+      while (j < s.length && isSpace(s[j] as string)) j++;
+      if (j < s.length && s[j] === '>') return { end: j + 1, hasEntity, hasExternalId, ok: true };
+      i++;
+    } else if (s.startsWith('SYSTEM', i) || s.startsWith('PUBLIC', i)) {
+      // Only counts outside literals and comments, where it is a keyword rather than
+      // text. Conservative: any external reference in the subset counts.
+      hasExternalId = true;
+      i += 6;
+    } else {
+      i++;
+    }
+  }
+  return fail(); // subset never closed
+}
+
+type PrologueScan = XmlPrologueDeclarations & { foundRoot: boolean };
+
+function scanXmlPrologue(input: string): PrologueScan {
+  let hasDoctype = false;
+  let hasEntityDecl = false;
+  let hasExternalId = false;
+  const out = (foundRoot: boolean): PrologueScan => ({
+    hasDoctype,
+    hasEntityDecl,
+    hasExternalId,
+    malformed: false,
+    foundRoot,
+  });
+  let i = 0;
+  for (;;) {
+    while (i < input.length && isSpace(input[i] as string)) i++;
+    if (i >= input.length) return out(false);
+    const rest = input.slice(i);
+    if (rest.startsWith('<?')) {
+      const closeAt = rest.indexOf('?>');
+      if (closeAt === -1) return out(false);
+      i += closeAt + 2;
+    } else if (rest.startsWith('<!--')) {
+      const closeAt = rest.indexOf('-->');
+      if (closeAt === -1) return out(false);
+      i += closeAt + 3; // skipped as a unit: its contents declare nothing
+    } else if (rest.slice(0, 9).toUpperCase() === '<!DOCTYPE') {
+      // Recorded the moment the token is seen, so this fact is sound no matter what the
+      // rest of the declaration does. Everything below only ADDS detail.
+      hasDoctype = true;
+      const open = rest.indexOf('[');
+      const gt = rest.indexOf('>');
+      if (gt === -1 && open === -1) return out(false);
+      if (open !== -1 && (gt === -1 || open < gt)) {
+        const head = rest.slice(0, open).toUpperCase();
+        if (head.includes('SYSTEM') || head.includes('PUBLIC')) hasExternalId = true;
+        const sub = scanInternalSubset(rest.slice(open + 1));
+        hasEntityDecl = hasEntityDecl || sub.hasEntity;
+        hasExternalId = hasExternalId || sub.hasExternalId;
+        if (!sub.ok) return out(false);
+        i += open + 1 + sub.end;
+      } else {
+        const head = rest.slice(0, gt).toUpperCase();
+        if (head.includes('SYSTEM') || head.includes('PUBLIC')) hasExternalId = true;
+        i += gt + 1;
+      }
+    } else if (rest.startsWith('<!')) {
+      const closeAt = rest.indexOf('>');
+      if (closeAt === -1) return out(false);
+      i += closeAt + 1;
+    } else if (rest.startsWith('<')) {
+      return out(true); // the root element
+    } else {
+      // Character data before any element: not well-formed, nothing to trust.
+      return out(false);
+    }
+  }
+}
+
+/**
+ * Reports whether the input declares a DOCTYPE before its root element. A DOCTYPE is
+ * rejected outright rather than only its inline entities: an external DTD reference needs
+ * no `<!ENTITY>` of its own to be an XXE or entity-expansion vector.
+ */
+export function containsXmlDoctype(input: string): boolean {
+  return inspectXmlPrologue(input).hasDoctype;
+}
+
+/**
+ * Reports what the input's prologue declares. The three facts are separate because they
+ * are three different attack surfaces, and which of them a given boundary refuses is a
+ * policy decision belonging to that boundary, not here. A document with no root element
+ * has no prologue to trust, and reports nothing.
+ *
+ * Kept in parity with Go's InspectXMLPrologue by testdata/xml-doctype-cases.json.
+ */
+export function inspectXmlPrologue(input: string): XmlPrologueDeclarations {
+  const { hasDoctype, hasEntityDecl, hasExternalId, foundRoot } = scanXmlPrologue(input);
+  // Could not reach a root element: report what was seen and set malformed, so a gate
+  // can tell "nothing declared" apart from "could not tell" and refuse the second.
+  return { hasDoctype, hasEntityDecl, hasExternalId, malformed: !foundRoot };
+}
+
+/**
+ * Reports whether the input declares an entity before its root element — the
+ * billion-laughs shape.
+ */
+export function containsXmlEntityDeclarations(input: string): boolean {
+  return inspectXmlPrologue(input).hasEntityDecl;
+}

@@ -1,9 +1,69 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import crosswalkAsset from '../src/data/nist-revision-crosswalk.json';
 import {
   translateNistControl,
   translateNistControls,
   nistRosterSize,
 } from '../src/nist/index.js';
+
+describe('crosswalk asset validation', () => {
+  afterEach(() => {
+    vi.doUnmock('../src/data/nist-revision-crosswalk.json');
+    vi.resetModules();
+  });
+
+  const withoutRosters = structuredClone(crosswalkAsset);
+  Reflect.deleteProperty(withoutRosters, 'rosters');
+  const withoutEdges = structuredClone(crosswalkAsset);
+  Reflect.deleteProperty(withoutEdges, 'edges');
+  const edge = crosswalkAsset.edges[0];
+  const cases: { name: string; asset: unknown }[] = [
+    { name: 'root is null', asset: null },
+    { name: 'root is an array', asset: [] },
+    { name: 'rosters is an array', asset: { ...crosswalkAsset, rosters: [] } },
+    { name: 'rosters is null', asset: { ...crosswalkAsset, rosters: null } },
+    { name: 'rosters is missing', asset: withoutRosters },
+    { name: 'roster is a string', asset: { ...crosswalkAsset, rosters: { '4': 'AC-1' } } },
+    { name: 'roster is null', asset: { ...crosswalkAsset, rosters: { '4': null } } },
+    { name: 'roster is an object', asset: { ...crosswalkAsset, rosters: { '4': {} } } },
+    { name: 'roster contains a number', asset: { ...crosswalkAsset, rosters: { '4': [1] } } },
+    { name: 'roster contains null', asset: { ...crosswalkAsset, rosters: { '4': [null] } } },
+    { name: 'edges is an object', asset: { ...crosswalkAsset, edges: {} } },
+    { name: 'edges is a string', asset: { ...crosswalkAsset, edges: '' } },
+    { name: 'edges is null', asset: { ...crosswalkAsset, edges: null } },
+    { name: 'edges is missing', asset: withoutEdges },
+    { name: 'edge is a number', asset: { ...crosswalkAsset, edges: [1] } },
+    { name: 'edge is null', asset: { ...crosswalkAsset, edges: [null] } },
+    { name: 'edge is an array', asset: { ...crosswalkAsset, edges: [[]] } },
+    { name: 'from is a string', asset: { ...crosswalkAsset, edges: [{ ...edge, from: '4' }] } },
+    { name: 'from is fractional', asset: { ...crosswalkAsset, edges: [{ ...edge, from: 4.5 }] } },
+    { name: 'from is not a safe integer', asset: { ...crosswalkAsset, edges: [{ ...edge, from: 1e20 }] } },
+    { name: 'control is a number', asset: { ...crosswalkAsset, edges: [{ ...edge, control: 1 }] } },
+    { name: 'targets is a string', asset: { ...crosswalkAsset, edges: [{ ...edge, targets: 'AC-1' }] } },
+    { name: 'targets is null', asset: { ...crosswalkAsset, edges: [{ ...edge, targets: null }] } },
+    { name: 'targets contains a number', asset: { ...crosswalkAsset, edges: [{ ...edge, targets: [1] }] } },
+    { name: 'targets contains null', asset: { ...crosswalkAsset, edges: [{ ...edge, targets: [null] }] } },
+    { name: 'relation is a number', asset: { ...crosswalkAsset, edges: [{ ...edge, relation: 1 }] } },
+    { name: 'detail is a number', asset: { ...crosswalkAsset, edges: [{ ...edge, detail: 1 }] } },
+    { name: 'family is a number', asset: { ...crosswalkAsset, edges: [{ ...edge, family: 1 }] } },
+    { name: 'family is null', asset: { ...crosswalkAsset, edges: [{ ...edge, family: null }] } },
+  ];
+
+  for (const field of ['from', 'control', 'targets', 'relation', 'detail']) {
+    const incompleteEdge = structuredClone(edge);
+    Reflect.deleteProperty(incompleteEdge, field);
+    cases.push({
+      name: `${field} is missing`,
+      asset: { ...crosswalkAsset, edges: [incompleteEdge] },
+    });
+  }
+
+  it.each(cases)('refuses $name with an asset-naming error', async ({ asset }) => {
+    vi.resetModules();
+    vi.doMock('../src/data/nist-revision-crosswalk.json', () => ({ default: asset }));
+    await expect(import('../src/nist/crosswalk.js')).rejects.toThrow('nist-revision-crosswalk.json');
+  });
+});
 
 describe('translateNistControl', () => {
   it('returns identity for controls present in both revisions', () => {

@@ -30,7 +30,7 @@ type validateInput struct {
 	Source  *handle.Source `json:"source,omitempty" jsonschema:"the document to validate, as {path} or {handle}; omit when using content"`
 	Content string         `json:"content,omitempty" jsonschema:"inline HDF document to validate, as an alternative to source"`
 	DocType string         `json:"docType,omitempty" jsonschema:"optional document type to validate against in schema mode (e.g. hdf-results); defaults to the detected type"`
-	Mode    string         `json:"mode" jsonschema:"validation mode: schema, checksums, or completeness"`
+	Mode    string         `json:"mode" jsonschema:"which check to run"`
 }
 
 // validateError is one structured, line-numbered validation error.
@@ -68,15 +68,38 @@ func RegisterValidate(s *sdkmcp.Server, ldr *loader.Loader) {
 		Name:        "hdf_validate",
 		Description: "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[validateInput](map[string]closedVocabulary{
+			"mode": {values: vocabValues(validateModeVocabulary)},
+		}),
 	}, hdfValidate(ldr))
+}
+
+// validateCheck runs one validation mode. The signatures differ, so each is adapted to a
+// common shape here rather than widened at the definition.
+type validateCheck func(out *validateOutput, docType string, content []byte, baseDir string, load *loader.Result)
+
+// validateChecks is the single source for what hdf_validate accepts: the advertised enum,
+// the argument check and the dispatch all read it. A mode declared in the vocabulary with
+// no entry here fails TestEveryAdvertisedMemberIsAccepted rather than being advertised and
+// then refused by the handler.
+var validateChecks = map[ValidateMode]validateCheck{
+	ValidateModeSchema: func(out *validateOutput, docType string, content []byte, _ string, load *loader.Result) {
+		validateSchema(out, docType, content, load)
+	},
+	ValidateModeChecksums: func(out *validateOutput, _ string, content []byte, baseDir string, load *loader.Result) {
+		validateChecksums(out, content, baseDir, load)
+	},
+	ValidateModeCompleteness: func(out *validateOutput, _ string, content []byte, baseDir string, load *loader.Result) {
+		validateCompleteness(out, content, baseDir, load)
+	},
 }
 
 func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, validateOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in validateInput) (*sdkmcp.CallToolResult, validateOutput, error) {
-		switch in.Mode {
-		case "schema", "checksums", "completeness":
-		default:
-			return argError(fmt.Sprintf("unknown mode %q", in.Mode), "use mode schema, checksums, or completeness"), errorValidateOutput(), nil
+		check, known := validateChecks[ValidateMode(in.Mode)]
+		if !known {
+			return argError(fmt.Sprintf("unknown mode %q", in.Mode),
+				"use mode "+vocabList(validateModeVocabulary)), errorValidateOutput(), nil
 		}
 
 		content, baseDir, load, terr := resolveForValidate(in, ldr)
@@ -85,14 +108,7 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 		}
 
 		out := validateOutput{Mode: in.Mode, Errors: []validateError{}}
-		switch in.Mode {
-		case "schema":
-			validateSchema(&out, in.DocType, content, load)
-		case "checksums":
-			validateChecksums(&out, content, baseDir, load)
-		case "completeness":
-			validateCompleteness(&out, content, baseDir, load)
-		}
+		check(&out, in.DocType, content, baseDir, load)
 		boundValidateResponse(&out)
 		return textResult(fmt.Sprintf("hdf_validate (%s): valid=%t, %d error(s). Detail in structuredContent.",
 			out.Mode, out.Valid, len(out.Errors))), out, nil

@@ -170,7 +170,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 ### Evidence
 
 - `parseEvidencePackage` / `ParseEvidencePackage` — package name and contents
-- `verifyChecksums` / `VerifyChecksums` — per-reference checksum status
+- `verifyChecksums` / `VerifyChecksums` — per-reference checksum status. Asynchronous in TypeScript (`await verifyChecksums(...)`): it hashes with the Web Crypto API so the package bundles for the browser
 - `plannedBaselineRefs`, `coveredBaselineNames`, `coveredBaselinesInPackage` — plan coverage inputs
 - `agentOverridesInPackage` / `AgentOverridesInPackage` — agent-attributed overrides across a package
 - `completeness` / `Completeness` — planned versus covered

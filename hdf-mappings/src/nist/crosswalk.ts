@@ -51,7 +51,47 @@ interface CrosswalkFile {
   edges: CrosswalkEdge[];
 }
 
-const crosswalk = rawCrosswalk as unknown as CrosswalkFile;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item: unknown) => typeof item === 'string');
+}
+
+function invalidCrosswalk(field: string): never {
+  throw new Error(`Invalid embedded nist-revision-crosswalk.json: ${field}`);
+}
+
+function assertCrosswalkFile(value: unknown): asserts value is CrosswalkFile {
+  if (!isRecord(value)) invalidCrosswalk('expected an object');
+  if (!isRecord(value.rosters)) invalidCrosswalk('rosters must be an object');
+  for (const [revision, ids] of Object.entries(value.rosters)) {
+    if (!isStringArray(ids)) invalidCrosswalk(`rosters.${revision} must be a string array`);
+  }
+  if (!Array.isArray(value.edges)) invalidCrosswalk('edges must be an array');
+  for (const [index, edge] of value.edges.entries()) {
+    if (!isRecord(edge)) invalidCrosswalk(`edges[${index}] must be an object`);
+    if (typeof edge.from !== 'number' || !Number.isSafeInteger(edge.from)) {
+      invalidCrosswalk(`edges[${index}].from must be a safe integer`);
+    }
+    for (const field of ['control', 'relation', 'detail']) {
+      if (typeof edge[field] !== 'string') {
+        invalidCrosswalk(`edges[${index}].${field} must be a string`);
+      }
+    }
+    if (!isStringArray(edge.targets)) {
+      invalidCrosswalk(`edges[${index}].targets must be a string array`);
+    }
+    if (edge.family !== undefined && typeof edge.family !== 'string') {
+      invalidCrosswalk(`edges[${index}].family must be a string when present`);
+    }
+  }
+}
+
+// A corrupt packaged asset is a build defect; refuse it before constructing either map.
+const crosswalk: unknown = rawCrosswalk;
+assertCrosswalkFile(crosswalk);
 
 const rosters = new Map<number, Set<string>>(
   Object.entries(crosswalk.rosters).map(([rev, ids]) => [Number(rev), new Set(ids)])
