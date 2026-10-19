@@ -1082,6 +1082,7 @@ func TestNonRegularKind(t *testing.T) {
 		{os.ModeDevice | os.ModeCharDevice | 0o600, "a character device"},
 		{os.ModeDevice | 0o600, "a block device"},
 		{os.ModeDir | 0o755, "a directory"},
+		{os.ModeSymlink | 0o777, "a symlink"},
 		{os.ModeIrregular | 0o600, "an irregular file"},
 	} {
 		assert.Equal(t, tc.want, nonRegularKind(tc.mode), "mode %v", tc.mode)

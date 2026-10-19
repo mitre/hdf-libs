@@ -94,6 +94,11 @@ What travels: the package, the documents named by systemRef and planRef, every d
 Anything that cannot travel is reported on stderr, naming the field that records it —
     with one deliberate exception, a remote externalReferences href, since inert context
     was never a candidate.
+A reference whose document would TRAVEL — systemRef, planRef, a contents[] entry, a
+    local externalEvidence artifact — that resolves inside the package with no file there
+    is an ERROR rather than a report: the package says the artifact is here, it is not,
+    and there is nothing to put in the archive under the name it promises. An
+    externalReferences href is inert context either way and is only ever reported.
 Everything stays recorded in the package, which travels in the archive and is the
     durable list.
 
@@ -125,7 +130,7 @@ Under --overwrite a failed run leaves whatever was already at that path untouche
 Examples:
   hdf evidence bundle boe.json -o boe.zip
   hdf evidence bundle boe.json -o /tmp/portal-q3-evidence.zip`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")

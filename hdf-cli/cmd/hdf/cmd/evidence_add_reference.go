@@ -226,7 +226,7 @@ Examples:
   hdf evidence add-ref pkg.json --source-name nvd --href https://nvd.nist.gov/vuln/detail/CVE-2021-44228
   hdf evidence add-ref pkg.json --source-name stix --kind threat-intel --document-file cti/vuln.json
   hdf evidence add-ref pkg.json --source-name openscap --rel raw-source --media-type application/xml --content-file scan.xml`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceAddReference(args[0], opts)
 		},

@@ -27,7 +27,7 @@ and HDF amendments to OSCAL POA&M using the registered converters.
 Examples:
   hdf evidence export package.json --format oscal -o output/
   hdf evidence export package.json --format oscal`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceExport(args[0], format, outputDir)
 		},

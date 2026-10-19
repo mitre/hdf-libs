@@ -162,7 +162,7 @@ Examples:
   hdf evidence add-evidence pkg.json --uri https://lake/ocsf/q1/ --format ocsf --checksum sha256:<hex>
   hdf evidence add-evidence pkg.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
   hdf evidence add-evidence pkg.json --uri sbom.cdx.json --infer`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceAddEvidence(args[0], opts)
 		},
@@ -262,6 +262,8 @@ func nonRegularKind(mode os.FileMode) string {
 		return "a block device"
 	case mode&os.ModeDir != 0:
 		return "a directory"
+	case mode&os.ModeSymlink != 0:
+		return "a symlink"
 	case !mode.IsRegular():
 		return "an irregular file"
 	}

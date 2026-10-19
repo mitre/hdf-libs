@@ -48,7 +48,7 @@ Examples:
   hdf evidence set evidence.json --system-ref portal-prod.hdf-system.json
   hdf evidence set evidence.json --plan-ref quarterly-plan.hdf-plan.json
   hdf evidence set evidence.json --unset description -o updated.json`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			if name == "" && description == "" && packageID == "" && systemRef == "" && planRef == "" && docVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --package-id, --system-ref, --plan-ref, --version, --unset)")

@@ -15,6 +15,14 @@ import (
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 )
 
+// skippedKind is a path the scan passed over, with the kind that decided it, so the
+// message can name what it found instead of guessing.
+type skippedKind struct {
+	path string
+	kind string
+	mode os.FileMode
+}
+
 // scanResult is what a directory scan found, already routed. Paths are absolute.
 type scanResult struct {
 	systems     []string // >1 is an error; the caller names them all
@@ -24,10 +32,10 @@ type scanResult struct {
 	amendments  []string
 	comparisons []string
 	boms        []string
-	unsupported []string // detected HDF, but no Content_Type exists for it
-	foreign     []string // not an HDF document at all
-	unreadable  []string // present but could not be read — reported, never dropped silently
-	symlinks    []string // skipped by type; reported, because "nothing is dropped in silence"
+	unsupported []string      // detected HDF, but no Content_Type exists for it
+	foreign     []string      // not an HDF document at all
+	unreadable  []string      // present but could not be read — reported, never dropped silently
+	irregular   []skippedKind // skipped by type; reported, because "nothing is dropped in silence"
 }
 
 // skipUnreadable records an entry the scan could not read and continues the walk.
@@ -145,10 +153,15 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 			return nil
 		}
 		if !d.Type().IsRegular() {
-			// A symlink is skipped by type: os.Root refuses an escaping one anyway,
-			// and following an in-tree one would list the same bytes twice under two
-			// names. Recorded so the skip is visible rather than silent.
-			out.symlinks = append(out.symlinks, filepath.Join(realBase, rel))
+			// Skipped by type: os.Root refuses an escaping symlink anyway, following an
+			// in-tree one would list the same bytes twice under two names, and a pipe or
+			// socket has no document to read. Recorded so the skip is visible, and the
+			// KIND is carried because the remedy differs — only a symlink has a target.
+			out.irregular = append(out.irregular, skippedKind{
+				path: filepath.Join(realBase, rel),
+				kind: nonRegularKind(d.Type()),
+				mode: d.Type(),
+			})
 			return nil
 		}
 		abs := filepath.Join(realBase, rel)
@@ -185,9 +198,10 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 	// Stable order, so a package built twice from one directory is identical.
 	for _, s := range [][]string{out.systems, out.results, out.baselines, out.plans,
 		out.amendments, out.comparisons, out.boms, out.unsupported, out.foreign,
-		out.unreadable, out.symlinks} {
+		out.unreadable} {
 		sort.Strings(s)
 	}
+	sort.Slice(out.irregular, func(i, j int) bool { return out.irregular[i].path < out.irregular[j].path })
 	return out, nil
 }
 
@@ -245,8 +259,14 @@ func reportScan(out *scanResult, baseDir, pkgPath string) {
 	for _, u := range out.unreadable {
 		fmt.Fprintf(os.Stderr, "Skipped %s: present but could not be read.\n", show(u))
 	}
-	for _, l := range out.symlinks {
-		fmt.Fprintf(os.Stderr, "Skipped %s: a symlink. Name its target explicitly if it belongs in the package.\n", show(l))
+	for _, l := range out.irregular {
+		advice := ""
+		if l.mode&os.ModeSymlink != 0 {
+			// Keyed on the mode, not on the rendered phrase: only a symlink HAS a target,
+			// and a reword of the kind string must not silently move the advice.
+			advice = " Name its target explicitly if it belongs in the package."
+		}
+		fmt.Fprintf(os.Stderr, "Skipped %s: %s.%s\n", show(l.path), l.kind, advice)
 	}
 	for _, f := range out.foreign {
 		fmt.Fprintf(os.Stderr, "Skipped %s: not an HDF document. To carry it as external evidence:\n"+

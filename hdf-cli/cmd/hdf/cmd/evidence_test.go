@@ -239,3 +239,43 @@ func TestEvidenceInfo_RefusesVerifyOnlyFlagsWithoutVerify(t *testing.T) {
 			"--%s is a --verify-only flag and is not covered by the refusal table above", name)
 	}
 }
+
+// readInput reads "" as a request for stdin, which arrived incidentally in an early
+// bulk PR rather than as a decision — and surfaced twice as a defect that `evidence
+// build` had to guard flag by flag. An empty positional path is almost always an
+// unset shell variable, so a command told to read one waited on stdin forever
+// instead of naming the package it was not given. Refused at the boundary now.
+func TestEvidenceSubcommands_RefuseABlankPackagePath(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"info", []string{"evidence", "info"}},
+		{"info --verify", []string{"evidence", "info", "--verify"}},
+		{"bundle", []string{"evidence", "bundle", "-o", "x.tar.gz"}},
+		{"update", []string{"evidence", "update", "--results", "r.json"}},
+		{"export", []string{"evidence", "export"}},
+		{"set", []string{"evidence", "set", "--name", "x"}},
+		{"add-evidence", []string{"evidence", "add-evidence", "--uri", "a.json", "--format", "raw-log"}},
+		{"add-reference", []string{"evidence", "add-reference", "--href", "a.json", "--source-name", "s"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// The blank path goes where the package path belongs: first positional.
+			args := append([]string{tc.args[0], tc.args[1]}, "")
+			args = append(args, tc.args[2:]...)
+			_, _, err := executeCommand(args...)
+			require.Error(t, err, "a blank package path must be refused, not read as stdin")
+			assert.Contains(t, err.Error(), "blank",
+				"the refusal must say the path is blank, so an unset variable is obvious")
+		})
+	}
+}
+
+// "-" stays the explicit stdin spelling: it can only be typed deliberately.
+func TestEvidenceSubcommands_StillAcceptDashForStdin(t *testing.T) {
+	err := evidencePackageArg(nil, []string{"-"})
+	assert.NoError(t, err, "- is the conventional stdin spelling and must survive")
+	assert.Error(t, evidencePackageArg(nil, []string{""}), "empty is refused")
+	assert.Error(t, evidencePackageArg(nil, []string{"   "}), "whitespace-only is refused too")
+	assert.NoError(t, evidencePackageArg(nil, []string{"pkg.json"}), "a real path passes")
+}

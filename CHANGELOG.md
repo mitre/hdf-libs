@@ -12,6 +12,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.
+
+  `readInput` reads `""` as a request for stdin, so a pipeline passing an unset shell variable waited indefinitely rather than reporting the input it never got. `-` remains the explicit stdin spelling and is unchanged. A whitespace-only path is refused on the same grounds. This covers the evidence subcommands only; the rest of the CLI shares the same reader and is tracked separately. (hdf-libs-52n0c.49)
+
+- **A directory scan names the kind of file it skipped, instead of calling every one a symlink.**
+
+  `hdf evidence build --from-dir` funnelled every non-regular file into one bucket, so a fifo was reported as `a symlink` and advised to "name its target explicitly" — advice that means nothing for a pipe. The kind is now carried with the path and named by the same helper `add-evidence` uses, and the symlink advice travels with symlinks alone. `--require-reachable`'s description and `bundle`'s help also now state the scope each implements: `--require-reachable` fails on a reference that does not resolve into the package, while an in-package reference whose file is missing is `bundle`'s error. (hdf-libs-52n0c.49)
+
 - **`hdf evidence update` names a remote `systemRef` instead of describing it as no reference at all.**
 
   A package recording `"systemRef": "https://x.example/system.json"` reported `no system document resolved; completeness cannot claim full baseline coverage` — the same line, word for word, as a package recording no `systemRef` at all. The reference the package does hold was never printed, because the remote case short-circuited ahead of the classification that names a rejected local reference. The three non-resolving shapes now read differently: an absent reference keeps `no system document resolved; …`, a remote one reports `systemRef https://x.example/system.json is remote and was not fetched; completeness cannot claim full baseline coverage`, and a rejected local one keeps `systemRef /system.json does not resolve inside the package's directory; …`.

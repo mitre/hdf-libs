@@ -59,7 +59,7 @@ Examples:
   hdf evidence update boe.json --results scans/q4.json -o boe-q4.json
   hdf evidence update boe.json --results "scans/*.json" --overwrite
   hdf evidence update boe.json --results scans/q4.json --dry-run`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceUpdate(args[0], opts)
 		},

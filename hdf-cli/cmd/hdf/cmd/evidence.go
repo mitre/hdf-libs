@@ -7,6 +7,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// evidencePackageArg accepts exactly one positional path and refuses a blank one.
+//
+// readInput treats "" as a request for stdin, so without this a command handed an
+// unset shell variable waits on stdin instead of naming the package it never got.
+// "-" survives as the explicit spelling, which can only be typed on purpose.
+func evidencePackageArg(cmd *cobra.Command, args []string) error {
+	if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+		return err
+	}
+	if strings.TrimSpace(args[0]) == "" {
+		return fmt.Errorf("the evidence package path is blank; name the package to read, " +
+			"or pass - to read it from stdin")
+	}
+	return nil
+}
+
 // NewEvidenceCmd creates the evidence command group with info subcommand.
 func NewEvidenceCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -127,7 +143,7 @@ Examples:
   hdf evidence info q1-2026.hdf-evidence-package.json --verify --checksums-only
   hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-reachable
   hdf evidence info q1-2026.hdf-evidence-package.json --verify --require-checksums`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(c *cobra.Command, args []string) error {
 			if verify {
 				return runEvidenceVerify(args[0], checksumsOnly, requireReachable,
@@ -151,7 +167,9 @@ Examples:
 	cmd.Flags().BoolVar(&checksumsOnly, "checksums-only", false,
 		"With --verify: check checksums only, skipping the completeness check")
 	cmd.Flags().BoolVar(&requireReachable, "require-reachable", false,
-		"With --verify: fail if the package records a reference this machine cannot resolve")
+		"With --verify: fail if the package records a reference that does not resolve INTO the "+
+			"package — a URI on another system, or a path outside its directory; an in-package "+
+			"reference whose file is missing is caught by bundle, not here")
 	cmd.Flags().BoolVar(&requireChecksums, "require-checksums", false,
 		"With --verify: fail if any reference records no checksum to verify, naming each; "+
 			"narrow, for an assessor who needs every document checksum-governed")
