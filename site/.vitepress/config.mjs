@@ -46,6 +46,7 @@ const DOCS_ORDER = {
     // End-to-end workflows
     'amendments-workflow',
     'thresholds-workflow',
+    'evidence-package-workflow',
     // Converting
     'converters',
     'converter-fingerprint-registry',
