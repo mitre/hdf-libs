@@ -26,7 +26,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.513Z",
               "status": "failed"
             }
           ],
@@ -58,6 +58,16 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "python//usr/lib/apk/db/installed",
+                  "region": {
+                    "endColumn": 1,
+                    "endLine": 1,
+                    "startColumn": 1,
+                    "startLine": 1
+                  }
+                },
+                "message": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
                 }
@@ -93,7 +103,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.513Z",
               "status": "failed"
             }
           ],
@@ -125,6 +135,16 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "python//usr/lib/apk/db/installed",
+                  "region": {
+                    "endColumn": 1,
+                    "endLine": 1,
+                    "startColumn": 1,
+                    "startLine": 1
+                  }
+                },
+                "message": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
                 }
@@ -160,7 +180,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.513Z",
               "status": "failed"
             }
           ],
@@ -192,6 +212,16 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "python//usr/lib/apk/db/installed",
+                  "region": {
+                    "endColumn": 1,
+                    "endLine": 1,
+                    "startColumn": 1,
+                    "startLine": 1
+                  }
+                },
+                "message": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
                 }
@@ -227,7 +257,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.926Z",
+              "startTime": "2026-10-14T01:18:11.513Z",
               "status": "failed"
             }
           ],
@@ -259,6 +289,16 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "python//usr/lib/apk/db/installed",
+                  "region": {
+                    "endColumn": 1,
+                    "endLine": 1,
+                    "startColumn": 1,
+                    "startLine": 1
+                  }
+                },
+                "message": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
                 }
@@ -280,11 +320,64 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "grype",
+            "on": "rule",
+            "properties": {
+              "purls": [
+                "pkg:apk/chainguard/python-3.12@3.12.12-r7?arch=x86_64\u0026distro=chainguard-20230214"
+              ],
+              "security-severity": "6.3"
+            },
+            "ruleId": "CVE-2025-12781-python-3.12"
+          },
+          {
+            "baseline": "grype",
+            "on": "rule",
+            "properties": {
+              "purls": [
+                "pkg:apk/chainguard/python-3.12@3.12.12-r7?arch=x86_64\u0026distro=chainguard-20230214"
+              ],
+              "security-severity": "5.9"
+            },
+            "ruleId": "CVE-2025-15366-python-3.12"
+          },
+          {
+            "baseline": "grype",
+            "on": "rule",
+            "properties": {
+              "purls": [
+                "pkg:apk/chainguard/python-3.12@3.12.12-r7?arch=x86_64\u0026distro=chainguard-20230214"
+              ],
+              "security-severity": "5.9"
+            },
+            "ruleId": "CVE-2025-15367-python-3.12"
+          },
+          {
+            "baseline": "grype",
+            "on": "rule",
+            "properties": {
+              "purls": [
+                "pkg:apk/chainguard/python-3.12@3.12.12-r7?arch=x86_64\u0026distro=chainguard-20230214"
+              ],
+              "security-severity": "5.7"
+            },
+            "ruleId": "CVE-2026-2297-python-3.12"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.926Z",
+  "timestamp": "2026-10-14T01:18:11.513Z",
   "tool": {
     "format": "SARIF",
     "name": "grype",

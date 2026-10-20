@@ -22,7 +22,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -33,7 +33,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -44,7 +44,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -55,7 +55,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -66,7 +66,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -77,7 +77,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -88,7 +88,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -121,6 +121,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/db_init.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 5,
+                    "startLine": 39
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "9cbc869fbfffeb60:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -128,6 +137,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/db_init.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 5,
+                    "startLine": 44
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "999f5c7e0b05368d:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -135,6 +153,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/db_init.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 5,
+                    "startLine": 40
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "9cbc869fbfffeb60:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -142,6 +169,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/db_init.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 5,
+                    "startLine": 45
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "999f5c7e0b05368d:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -149,6 +185,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libsession.py",
+                  "region": {
+                    "endColumn": 22,
+                    "startColumn": 5,
+                    "startLine": 21
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "74d45ccceba4240f:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -156,6 +201,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libsession.py",
+                  "region": {
+                    "endColumn": 22,
+                    "startColumn": 5,
+                    "startLine": 22
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d4457365d93c6620:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -163,6 +217,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/scrypt-crack.py",
+                  "region": {
+                    "endColumn": 27,
+                    "startColumn": 9,
+                    "startLine": 43
+                  }
+                },
+                "message": "'except' clause does nothing but pass and there is no explanatory comment.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "73d72fb9eca75097:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -195,7 +258,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -228,6 +291,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_user.py",
+                  "region": {
+                    "endColumn": 92,
+                    "startColumn": 20,
+                    "startLine": 33
+                  }
+                },
+                "message": "Keyword argument 'request' is not a supported parameter name of [function create](1).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "15e245a0c9ecd61e:1",
                   "primaryLocationStartColumnFingerprint": "11"
@@ -260,7 +332,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/8"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -293,6 +365,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_user.py",
+                  "region": {
+                    "endColumn": 75,
+                    "startColumn": 20,
+                    "startLine": 32
+                  }
+                },
+                "message": "Call to [function create](1) with too few arguments; should be no fewer than 3.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "8f57764f2c7d98c5:1",
                   "primaryLocationStartColumnFingerprint": "11"
@@ -325,7 +406,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/9"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -336,7 +417,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/10"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -347,7 +428,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/11"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -378,6 +459,14 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/api_list.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startLine": 8
+                  }
+                },
+                "message": "Mixing implicit and explicit returns may indicate an error as implicit returns always return None.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "74accf6a450cf312:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -385,6 +474,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/api_post.py",
+                  "region": {
+                    "endColumn": 29,
+                    "startLine": 10
+                  }
+                },
+                "message": "Mixing implicit and explicit returns may indicate an error as implicit returns always return None.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "10b773189db7d16:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -392,6 +489,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/scrypt-crack.py",
+                  "region": {
+                    "endColumn": 29,
+                    "startLine": 17
+                  }
+                },
+                "message": "Mixing implicit and explicit returns may indicate an error as implicit returns always return None.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "ec890e6bfc4bfff5:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -424,7 +529,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/12"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -455,6 +560,14 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libuser.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 2
+                  }
+                },
+                "message": "The module 'libuser' imports itself.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "667cfaa6fb788897:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -487,7 +600,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/13"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -498,7 +611,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/14"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -509,7 +622,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/15"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -520,7 +633,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/16"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -531,7 +644,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/17"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -542,7 +655,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/18"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -553,7 +666,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/19"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -564,7 +677,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/20"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -575,7 +688,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/21"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -586,7 +699,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/22"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -597,7 +710,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/23"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -608,7 +721,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/24"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -619,7 +732,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/25"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -630,7 +743,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/26"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -641,7 +754,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/27"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -652,7 +765,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/28"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -663,7 +776,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/29"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -674,7 +787,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/30"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -685,7 +798,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/31"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -696,7 +809,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/32"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -707,7 +820,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/33"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -718,7 +831,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/34"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -729,7 +842,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/35"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -740,7 +853,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/36"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -751,7 +864,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/37"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -762,7 +875,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/38"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -773,7 +886,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/39"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -784,7 +897,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/40"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -795,7 +908,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/41"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -806,7 +919,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/42"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -817,7 +930,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/43"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -828,7 +941,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/44"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -839,7 +952,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/45"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -850,7 +963,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/46"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -861,7 +974,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/47"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -872,7 +985,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/48"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -883,7 +996,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/49"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -894,7 +1007,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/50"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -905,7 +1018,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/51"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -916,7 +1029,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/52"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -947,6 +1060,14 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/aes-decrypt.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "4d26343580d9ed44:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -954,6 +1075,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/aes-encrypt.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 4
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "b084c34c99716d18:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -961,6 +1090,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/api_list.py",
+                  "region": {
+                    "endColumn": 25,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'Path' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "3c8d9f72ae39b6e2:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -968,6 +1105,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/ca-csr-create.py",
+                  "region": {
+                    "endColumn": 16,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'datetime' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a44d5a9d2634ab6f:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -975,6 +1120,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/ca-csr-create.py",
+                  "region": {
+                    "endColumn": 58,
+                    "startLine": 6
+                  }
+                },
+                "message": "Import of 'rsa' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "99c306167b81a4f0:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -982,6 +1135,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/ca-csr-load.py",
+                  "region": {
+                    "endColumn": 58,
+                    "startLine": 6
+                  }
+                },
+                "message": "Import of 'rsa' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "99c306167b81a4f0:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -989,6 +1150,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/ca-csr-load.py",
+                  "region": {
+                    "endColumn": 42,
+                    "startLine": 9
+                  }
+                },
+                "message": "Import of 'NameOID' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "284a9c9e889e5261:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -996,6 +1165,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/crack-cvv.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "2ed7480e1143bb47:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1003,6 +1180,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libapi.py",
+                  "region": {
+                    "endColumn": 14,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'random' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "fd745f4958f4258:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1010,6 +1195,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libapi.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'hashlib' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "31038c8b6d9316cd:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1017,6 +1210,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libapi.py",
+                  "region": {
+                    "endColumn": 10,
+                    "startLine": 4
+                  }
+                },
+                "message": "Import of 're' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "7b0ef3b13486cb3:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1024,6 +1225,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libapi.py",
+                  "region": {
+                    "endColumn": 25,
+                    "startLine": 8
+                  }
+                },
+                "message": "Import of 'Path' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "328a3ee63011c366:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1031,6 +1240,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libmfa.py",
+                  "region": {
+                    "endColumn": 23,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sleep' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "cbc68f53ab23d445:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1038,6 +1255,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libmfa.py",
+                  "region": {
+                    "endColumn": 23,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sleep' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "cbc68f53ab23d445:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1045,6 +1270,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libposts.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "f107b904160913e6:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1052,6 +1285,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libposts.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "f107b904160913e6:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1059,6 +1300,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libsession.py",
+                  "region": {
+                    "endColumn": 12,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'json' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "f780b036eb145a8:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1066,6 +1315,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libsession.py",
+                  "region": {
+                    "endColumn": 14,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'base64' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "f5d1e787c7a6c344:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1073,6 +1330,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libuser.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'libuser' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "667cfaa6fb788897:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1080,6 +1345,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libuser.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'hashlib' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "1331fff9ca89afc9:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1087,6 +1360,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_api.py",
+                  "region": {
+                    "endColumn": 107,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'render_template' is not used.\nImport of 'redirect' is not used.\nImport of 'g' is not used.\nImport of 'session' is not used.\nImport of 'make_response' is not used.\nImport of 'flash' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d2865a349c940675:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1094,6 +1375,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_api.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'libuser' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "28d90e6e4fde271c:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1101,6 +1390,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_api.py",
+                  "region": {
+                    "endColumn": 18,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'libsession' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "25d0c1846505f5c:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1108,6 +1405,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_api.py",
+                  "region": {
+                    "endColumn": 107,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'render_template' is not used.\nImport of 'redirect' is not used.\nImport of 'g' is not used.\nImport of 'session' is not used.\nImport of 'make_response' is not used.\nImport of 'flash' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d2865a349c940675:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1115,6 +1420,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_api.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'libuser' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "28d90e6e4fde271c:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1122,6 +1435,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_api.py",
+                  "region": {
+                    "endColumn": 18,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'libsession' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "25d0c1846505f5c:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1129,6 +1450,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_hello.py",
+                  "region": {
+                    "endColumn": 55,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'render_template' is not used.\nImport of 'redirect' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "51b7976662ffb851:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1136,6 +1465,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_hello.py",
+                  "region": {
+                    "endColumn": 55,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'render_template' is not used.\nImport of 'redirect' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "51b7976662ffb851:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1143,6 +1480,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_mfa.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'sqlite3' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d724d053ed8e054e:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1150,6 +1495,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_mfa.py",
+                  "region": {
+                    "endColumn": 98,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'session' is not used.\nImport of 'make_response' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "ad868df4f12204b9:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1157,6 +1510,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_mfa.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'libuser' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "1cb4bfedb8a9bc08:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1164,6 +1525,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_mfa.py",
+                  "region": {
+                    "endColumn": 18,
+                    "startLine": 4
+                  }
+                },
+                "message": "Import of 'libsession' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "e9290602ba805ac0:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1171,6 +1540,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_posts.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'sqlite3' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "9814c6b31e1d93a0:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1178,6 +1555,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_posts.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'sqlite3' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "9814c6b31e1d93a0:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1185,6 +1570,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_user.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'sqlite3' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d724d053ed8e054e:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1192,6 +1585,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_welcome1.py",
+                  "region": {
+                    "endColumn": 15,
+                    "startLine": 1
+                  }
+                },
+                "message": "Import of 'sqlite3' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "58910bf0de76fbd5:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1199,6 +1600,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_welcome1.py",
+                  "region": {
+                    "endColumn": 76,
+                    "startLine": 2
+                  }
+                },
+                "message": "Import of 'g' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "85bf47b589887598:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1206,6 +1615,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/scrypt-crack.py",
+                  "region": {
+                    "endColumn": 10,
+                    "startLine": 4
+                  }
+                },
+                "message": "Import of 'os' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "43c32b8960a0aa75:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1213,6 +1630,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/scrypt-generate.py",
+                  "region": {
+                    "endColumn": 11,
+                    "startLine": 3
+                  }
+                },
+                "message": "Import of 'sys' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "5d94ffbd853a97e:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1220,6 +1645,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "utils/scrypt-verify.py",
+                  "region": {
+                    "endColumn": 10,
+                    "startLine": 4
+                  }
+                },
+                "message": "Import of 'os' is not used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "5983e2072be94d68:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1252,7 +1685,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/53"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1263,7 +1696,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/54"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1274,7 +1707,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/55"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -1305,6 +1738,16 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libmfa.py",
+                  "region": {
+                    "endColumn": 11,
+                    "endLine": 83,
+                    "startColumn": 5,
+                    "startLine": 81
+                  }
+                },
+                "message": "These comments appear to contain commented-out code.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a4318a06ab13c9c5:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1312,6 +1755,16 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libmfa.py",
+                  "region": {
+                    "endColumn": 11,
+                    "endLine": 83,
+                    "startColumn": 5,
+                    "startLine": 81
+                  }
+                },
+                "message": "These comments appear to contain commented-out code.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a4318a06ab13c9c5:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1319,6 +1772,16 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_user.py",
+                  "region": {
+                    "endColumn": 34,
+                    "endLine": 59,
+                    "startColumn": 9,
+                    "startLine": 58
+                  }
+                },
+                "message": "These comments appear to contain commented-out code.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "ad07b677c66421df:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1363,7 +1826,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/56"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -1398,6 +1861,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libapi.py",
+                  "region": {
+                    "endColumn": 18,
+                    "startColumn": 5,
+                    "startLine": 22
+                  }
+                },
+                "message": "This path depends on [a user-provided value](1).\nThis path depends on [a user-provided value](2).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "6e479c79e8d1316:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -1470,7 +1942,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/57"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1544,7 +2016,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/58"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -1576,6 +2048,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_user.py",
+                  "region": {
+                    "endColumn": 24,
+                    "startColumn": 16,
+                    "startLine": 33
+                  }
+                },
+                "message": "Cross-site scripting vulnerability due to [a user-provided value](1).\nCross-site scripting vulnerability due to [a user-provided value](2).\nCross-site scripting vulnerability due to [a user-provided value](3).\nCross-site scripting vulnerability due to [a user-provided value](4).\nCross-site scripting vulnerability due to [a user-provided value](5).\nCross-site scripting vulnerability due to [a user-provided value](1).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "68a9962897fd336c:1",
                   "primaryLocationStartColumnFingerprint": "7"
@@ -1583,6 +2064,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_user.py",
+                  "region": {
+                    "endColumn": 24,
+                    "startColumn": 16,
+                    "startLine": 34
+                  }
+                },
+                "message": "Cross-site scripting vulnerability due to [a user-provided value](1).\nCross-site scripting vulnerability due to [a user-provided value](2).\nCross-site scripting vulnerability due to [a user-provided value](3).\nCross-site scripting vulnerability due to [a user-provided value](4).\nCross-site scripting vulnerability due to [a user-provided value](5).\nCross-site scripting vulnerability due to [a user-provided value](6).\nCross-site scripting vulnerability due to [a user-provided value](7).\nCross-site scripting vulnerability due to [a user-provided value](8).\nCross-site scripting vulnerability due to [a user-provided value](1).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "68a9962897fd336c:1",
                   "primaryLocationStartColumnFingerprint": "7"
@@ -1808,7 +2298,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/59"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1872,7 +2362,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/60"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -1903,6 +2393,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libuser.py",
+                  "region": {
+                    "endColumn": 112,
+                    "startColumn": 22,
+                    "startLine": 12
+                  }
+                },
+                "message": "This SQL query depends on [a user-provided value](1).\nThis SQL query depends on [a user-provided value](2).\nThis SQL query depends on [a user-provided value](3).\nThis SQL query depends on [a user-provided value](4).\nThis SQL query depends on [a user-provided value](5).\nThis SQL query depends on [a user-provided value](6).\nThis SQL query depends on [a user-provided value](7).\nThis SQL query depends on [a user-provided value](8).\nThis SQL query depends on [a user-provided value](9).\nThis SQL query depends on [a user-provided value](10).\nThis SQL query depends on [a user-provided value](11).\nThis SQL query depends on [a user-provided value](12).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "87f19d40ee7aefaf:1",
                   "primaryLocationStartColumnFingerprint": "17"
@@ -1910,6 +2409,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libuser.py",
+                  "region": {
+                    "endColumn": 160,
+                    "startColumn": 15,
+                    "startLine": 25
+                  }
+                },
+                "message": "This SQL query depends on [a user-provided value](1).\nThis SQL query depends on [a user-provided value](2).\nThis SQL query depends on [a user-provided value](3).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "dca96e071a47ec37:1",
                   "primaryLocationStartColumnFingerprint": "10"
@@ -1943,7 +2451,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/61"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1954,7 +2462,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/62"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1965,7 +2473,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/63"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -1976,7 +2484,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/64"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -2008,6 +2516,14 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/vulpy-ssl.py",
+                  "region": {
+                    "endColumn": 87,
+                    "startLine": 29
+                  }
+                },
+                "message": "A Flask app appears to be run in debug mode. This may allow an attacker to run arbitrary code through the debugger.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "b0c28a6e08dc0c46:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2015,6 +2531,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/vulpy-ssl.py",
+                  "region": {
+                    "endColumn": 87,
+                    "startLine": 29
+                  }
+                },
+                "message": "A Flask app appears to be run in debug mode. This may allow an attacker to run arbitrary code through the debugger.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "b0c28a6e08dc0c46:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2022,6 +2546,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/vulpy.py",
+                  "region": {
+                    "endColumn": 72,
+                    "startLine": 55
+                  }
+                },
+                "message": "A Flask app appears to be run in debug mode. This may allow an attacker to run arbitrary code through the debugger.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "acec19fa0fda9f4d:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2029,6 +2561,14 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/vulpy.py",
+                  "region": {
+                    "endColumn": 72,
+                    "startLine": 53
+                  }
+                },
+                "message": "A Flask app appears to be run in debug mode. This may allow an attacker to run arbitrary code through the debugger.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "92d0ce9893394f28:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2062,7 +2602,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/65"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -2073,7 +2613,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/66"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -2084,7 +2624,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/67"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -2095,7 +2635,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/68"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -2128,6 +2668,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libuser.py",
+                  "region": {
+                    "endColumn": 17,
+                    "startColumn": 5,
+                    "startLine": 51
+                  }
+                },
+                "message": "Unreachable statement.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "462c73efe920db8d:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2135,6 +2684,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_mfa.py",
+                  "region": {
+                    "endColumn": 46,
+                    "startColumn": 5,
+                    "startLine": 55
+                  }
+                },
+                "message": "Unreachable statement.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d6bd3070be542edc:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2142,6 +2700,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/mod_mfa.py",
+                  "region": {
+                    "endColumn": 46,
+                    "startColumn": 5,
+                    "startLine": 54
+                  }
+                },
+                "message": "Unreachable statement.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "d6bd3070be542edc:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2149,6 +2716,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_user.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 5,
+                    "startLine": 87
+                  }
+                },
+                "message": "Unreachable statement.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "82c238c169135ba3:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2181,7 +2757,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/69"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -2192,7 +2768,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/70"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             },
             {
@@ -2203,7 +2779,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/71"
               },
-              "startTime": "2026-10-11T01:15:07.912Z",
+              "startTime": "2026-10-14T01:18:11.481Z",
               "status": "failed"
             }
           ],
@@ -2236,6 +2812,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/libposts.py",
+                  "region": {
+                    "endColumn": 9,
+                    "startColumn": 5,
+                    "startLine": 28
+                  }
+                },
+                "message": "The value assigned to local variable 'rows' is never used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "2b43957e7f3d7581:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2243,6 +2828,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "bad/libposts.py",
+                  "region": {
+                    "endColumn": 9,
+                    "startColumn": 5,
+                    "startLine": 28
+                  }
+                },
+                "message": "The value assigned to local variable 'rows' is never used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "2b43957e7f3d7581:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2250,6 +2844,15 @@
               },
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "good/mod_user.py",
+                  "region": {
+                    "endColumn": 14,
+                    "startColumn": 9,
+                    "startLine": 48
+                  }
+                },
+                "message": "The value assigned to local variable 'email' is never used.",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "2efd6121c44681f2:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -2272,11 +2875,274 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "CodeQL",
+            "on": "run",
+            "properties": {
+              "semmle.formatSpecifier": "sarif-latest"
+            }
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Except doesn't do anything and has no comment",
+              "id": "py/empty-except",
+              "kind": "problem",
+              "name": "Empty except",
+              "precision": "high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "reliability",
+                "maintainability",
+                "external/cwe/cwe-390"
+              ]
+            },
+            "ruleId": "py/empty-except"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Using a named argument whose name does not correspond to a\n              parameter of the called function or method, will result in a\n              TypeError at runtime.",
+              "id": "py/call/wrong-named-argument",
+              "kind": "problem",
+              "name": "Wrong name for an argument in a call",
+              "precision": "very-high",
+              "problem.severity": "error",
+              "sub-severity": "low",
+              "tags": [
+                "reliability",
+                "correctness",
+                "external/cwe/cwe-628"
+              ]
+            },
+            "ruleId": "py/call/wrong-named-argument"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Using too many or too few arguments in a call to a function will result in a TypeError at runtime.",
+              "id": "py/call/wrong-arguments",
+              "kind": "problem",
+              "name": "Wrong number of arguments in a call",
+              "precision": "very-high",
+              "problem.severity": "error",
+              "sub-severity": "low",
+              "tags": [
+                "reliability",
+                "correctness",
+                "external/cwe/cwe-685"
+              ]
+            },
+            "ruleId": "py/call/wrong-arguments"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Mixing implicit and explicit returns indicates a likely error as implicit returns always return 'None'.",
+              "id": "py/mixed-returns",
+              "kind": "problem",
+              "name": "Explicit returns mixed with implicit (fall through) returns",
+              "precision": "high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "reliability",
+                "maintainability"
+              ]
+            },
+            "ruleId": "py/mixed-returns"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "A module imports itself",
+              "id": "py/import-own-module",
+              "kind": "problem",
+              "name": "Module imports itself",
+              "precision": "very-high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "maintainability",
+                "useless-code"
+              ]
+            },
+            "ruleId": "py/import-own-module"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Import is not required as it is not used",
+              "id": "py/unused-import",
+              "kind": "problem",
+              "name": "Unused import",
+              "precision": "very-high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "maintainability",
+                "useless-code"
+              ]
+            },
+            "ruleId": "py/unused-import"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Commented-out code makes the remaining code more difficult to read.",
+              "id": "py/commented-out-code",
+              "kind": "problem",
+              "name": "Commented-out code",
+              "precision": "high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "maintainability",
+                "readability",
+                "documentation"
+              ]
+            },
+            "ruleId": "py/commented-out-code"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Accessing paths influenced by users can allow an attacker to access unexpected resources.",
+              "id": "py/path-injection",
+              "kind": "path-problem",
+              "name": "Uncontrolled data used in path expression",
+              "precision": "high",
+              "problem.severity": "error",
+              "sub-severity": "high",
+              "tags": [
+                "correctness",
+                "security",
+                "external/owasp/owasp-a1",
+                "external/cwe/cwe-022",
+                "external/cwe/cwe-023",
+                "external/cwe/cwe-036",
+                "external/cwe/cwe-073",
+                "external/cwe/cwe-099"
+              ]
+            },
+            "ruleId": "py/path-injection"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Writing user input directly to a web page\n              allows for a cross-site scripting vulnerability.",
+              "id": "py/reflective-xss",
+              "kind": "path-problem",
+              "name": "Reflected server-side cross-site scripting",
+              "precision": "high",
+              "problem.severity": "error",
+              "sub-severity": "high",
+              "tags": [
+                "security",
+                "external/cwe/cwe-079",
+                "external/cwe/cwe-116"
+              ]
+            },
+            "ruleId": "py/reflective-xss"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Building a SQL query from user-controlled sources is vulnerable to insertion of\n              malicious SQL code by the user.",
+              "id": "py/sql-injection",
+              "kind": "path-problem",
+              "name": "SQL query built from user-controlled sources",
+              "precision": "high",
+              "problem.severity": "error",
+              "tags": [
+                "security",
+                "external/cwe/cwe-089",
+                "external/owasp/owasp-a1"
+              ]
+            },
+            "ruleId": "py/sql-injection"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Running a Flask app in debug mode may allow an attacker to run arbitrary code through the Werkzeug debugger.",
+              "id": "py/flask-debug",
+              "kind": "problem",
+              "name": "Flask app is run in debug mode",
+              "precision": "high",
+              "problem.severity": "error",
+              "tags": [
+                "security",
+                "external/cwe/cwe-215",
+                "external/cwe/cwe-489"
+              ]
+            },
+            "ruleId": "py/flask-debug"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Code is unreachable",
+              "id": "py/unreachable-statement",
+              "kind": "problem",
+              "name": "Unreachable code",
+              "precision": "very-high",
+              "problem.severity": "warning",
+              "sub-severity": "low",
+              "tags": [
+                "maintainability",
+                "useless-code",
+                "external/cwe/cwe-561"
+              ]
+            },
+            "ruleId": "py/unreachable-statement"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Local variable is defined but not used",
+              "id": "py/unused-local-variable",
+              "kind": "problem",
+              "name": "Unused local variable",
+              "precision": "very-high",
+              "problem.severity": "recommendation",
+              "sub-severity": "high",
+              "tags": [
+                "maintainability",
+                "useless-code",
+                "external/cwe/cwe-563"
+              ]
+            },
+            "ruleId": "py/unused-local-variable"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.912Z",
+  "timestamp": "2026-10-14T01:18:11.481Z",
   "tool": {
     "format": "SARIF",
     "name": "CodeQL"

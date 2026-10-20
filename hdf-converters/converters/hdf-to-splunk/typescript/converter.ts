@@ -109,14 +109,13 @@ function buildHECEvent(
 
 /**
  * Add the Splunk-specific lossless keys the shared exportmap block omits but the
- * splunk-to-hdf importer round-trips: the requirement's source_location and
- * verification_method, the baseline metadata beyond its name
+ * splunk-to-hdf importer round-trips: the requirement's source_location, the
+ * baseline metadata beyond its name
  * (version/title/checksum/groups), and the full target component. Each is
  * emitted only when the source carries it, so absent fields stay absent.
  */
 function augmentHdfBlock(hdf: Obj, req: Obj, baseline: Obj, component: Obj | undefined): void {
   if ('sourceLocation' in req) hdf.source_location = req.sourceLocation;
-  if ('verificationMethod' in req) hdf.verification_method = req.verificationMethod;
   if ('version' in baseline) hdf.baseline_version = baseline.version;
   if ('title' in baseline) hdf.baseline_title = baseline.title;
   if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;

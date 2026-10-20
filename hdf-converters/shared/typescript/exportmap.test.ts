@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   asMap,
   asArr,
+  buildHDFBlock,
   getStr,
   setIf,
   stringSlice,
@@ -18,6 +19,7 @@ import {
   firstRefURL,
   eventID,
   canonicalize,
+  stringifyDocument,
   stringifyLine,
   runExport,
   firstCVE,
@@ -229,6 +231,23 @@ describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () 
   });
 });
 
+describe('exportmap stringifyDocument (indented JSON documents)', () => {
+  // Two-space indentation, and otherwise everything stringifyLine guarantees:
+  // key-sorted, & unescaped, negative zero normalized away by JSON.stringify.
+  // The Go peer asserts these exact bytes in TestEncodeDocument.
+  it('indents while staying byte-identical to Go EncodeDocument', () => {
+    const obj = { b: [1, 'x&y'], a: { z: -0, sep: 'plain' } };
+    expect(stringifyDocument(canonicalize(obj))).toBe(
+      '{\n  "a": {\n    "sep": "plain",\n    "z": 0\n  },\n  "b": [\n    1,\n    "x&y"\n  ]\n}',
+    );
+  });
+
+  // The Go peer asserts the same in TestEncodeDocument_RawNumberTokensSurvive.
+  it('keeps RawNumber tokens bare at any indentation', () => {
+    expect(stringifyDocument({ score: floatNumber(8) })).toBe('{\n  "score": 8.0\n}');
+  });
+});
+
 describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
   it('floatNumber renders a bare decimal token, byte-identical to Go json.Number', () => {
     expect(stringifyLine({ base_score: floatNumber(0) })).toBe('{"base_score":0.0}');
@@ -338,5 +357,43 @@ const statusCases = (
 describe('statusOf: shared Go/TypeScript case table', () => {
   it.each(statusCases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
     expect(statusOf(c.requirement), c.note).toEqual(c.want);
+  });
+});
+
+describe('buildHDFBlock — requirement fields the bag used to drop', () => {
+  // Schema-valid on Evaluated_Requirement but absent from the passthrough map, so
+  // every exporter using this block dropped them. Asserted by value: a presence-only
+  // check passes when the wrong value is carried.
+  it('carries all five', () => {
+    const req = {
+      id: 'V-2',
+      evidence: [{ type: 'log', data: 'bG9n' }],
+      effectiveChecksum: { algorithm: 'sha256', value: 'abc' },
+      controlType: 'technical',
+      verificationMethod: 'automated',
+      applicability: 'required',
+    };
+    const hdf = buildHDFBlock(req, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+
+    expect(hdf.evidence).toEqual([{ type: 'log', data: 'bG9n' }]);
+    expect(hdf.effective_checksum).toEqual({ algorithm: 'sha256', value: 'abc' });
+    expect(hdf.control_type).toBe('technical');
+    expect(hdf.verification_method).toBe('automated');
+    expect(hdf.applicability).toBe('required');
+  });
+
+  // externalReferences is declared on Requirement_Core, which Evaluated_Requirement
+  // composes, so it is a requirement field as well as a document-root one.
+  it('carries requirement-level externalReferences', () => {
+    const refs = [{ sourceName: 'NVD', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1', kind: 'advisory' }];
+    const hdf = buildHDFBlock({ id: 'V-4', externalReferences: refs }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    expect(hdf.external_references).toEqual(refs);
+  });
+
+  it('adds no empty keys when the requirement omits them', () => {
+    const hdf = buildHDFBlock({ id: 'V-3' }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    for (const k of ['evidence', 'effective_checksum', 'control_type', 'verification_method', 'applicability']) {
+      expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
+    }
   });
 });

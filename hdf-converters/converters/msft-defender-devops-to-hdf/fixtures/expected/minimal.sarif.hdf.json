@@ -22,7 +22,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T00:55:33.788Z",
+              "startTime": "2026-10-14T01:18:11.632Z",
               "status": "failed"
             }
           ],
@@ -74,7 +74,17 @@
                   "gdnPrimarySignature": "ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe"
                 },
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": ".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem",
+                  "region": {
+                    "endColumn": 27,
+                    "endLine": 1,
+                    "startColumn": 1,
+                    "startLine": 1
+                  }
+                },
+                "message": "A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs "
               }
             ],
             "sarif-severity-source": "result-level",
@@ -110,7 +120,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/1/results/0"
               },
-              "startTime": "2026-10-11T00:55:33.788Z",
+              "startTime": "2026-10-14T01:18:11.632Z",
               "status": "failed"
             }
           ],
@@ -147,7 +157,18 @@
                   "gdnPrimarySignature": "d575ad4cda6d50d0a5b22693f2455c3705f7c36bb4b15adc9192690133bf9374"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "samples/Dockerfile",
+                  "region": {
+                    "endLine": 2,
+                    "snippet": {
+                      "text": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n"
+                    },
+                    "startLine": 1
+                  }
+                },
+                "message": "Ensure that HEALTHCHECK instructions have been added to container images"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -173,7 +194,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/1/results/1"
               },
-              "startTime": "2026-10-11T00:55:33.788Z",
+              "startTime": "2026-10-14T01:18:11.632Z",
               "status": "failed"
             }
           ],
@@ -210,7 +231,18 @@
                   "gdnPrimarySignature": "1242a262a0e0dc6e681ad67a81a121ae66f0b2562d1d669a066233daaa7a615a"
                 },
                 "kind": "fail",
-                "level": "note"
+                "level": "note",
+                "location": {
+                  "ref": "samples/Dockerfile",
+                  "region": {
+                    "endLine": 2,
+                    "snippet": {
+                      "text": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n"
+                    },
+                    "startLine": 1
+                  }
+                },
+                "message": "Ensure that a user for the container has been created"
               }
             ],
             "sarif-severity-source": "result-level",
@@ -239,11 +271,34 @@
       "url": "https://github.com/reynoldsa/security-devops-action"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "credscan",
+            "on": "result",
+            "ordinal": 0,
+            "properties": {
+              "DefectCode": "SecretInFile",
+              "EnrichmentScore": 112.5,
+              "MatchingScore": 94.41,
+              "Risk": "100",
+              "Severity": 94,
+              "Validation": "NoValidationRequested"
+            },
+            "ruleId": "CSCAN-GENERAL0020"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "msft-defender-devops-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T00:55:33.788Z",
+  "timestamp": "2026-10-14T01:18:11.632Z",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",

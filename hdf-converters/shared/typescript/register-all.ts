@@ -72,6 +72,7 @@ import { hdfToHtmlFingerprint } from '../../converters/hdf-to-html/typescript/fi
 import { hdfToXmlFingerprint } from '../../converters/hdf-to-xml/typescript/fingerprint.js';
 import { hdfToOscalSarFingerprint } from '../../converters/hdf-to-oscal-sar/typescript/fingerprint.js';
 import { hdfToOscalPoamFingerprint } from '../../converters/hdf-to-oscal-poam/typescript/fingerprint.js';
+import { hdfToSarifFingerprint } from '../../converters/hdf-to-sarif/typescript/fingerprint.js';
 
 const allFingerprints: ConverterFingerprint[] = [
   // JSON ingest
@@ -133,6 +134,7 @@ const allFingerprints: ConverterFingerprint[] = [
   hdfToXmlFingerprint,
   hdfToOscalSarFingerprint,
   hdfToOscalPoamFingerprint,
+  hdfToSarifFingerprint,
 ];
 
 /**

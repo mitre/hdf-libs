@@ -3,12 +3,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  EMBED_DIR,
   MAIN_SCHEMAS,
   ROOT_COMPONENT_NAMES,
-  buildComponentsDocument,
-  loadBundles,
 } from '../src/index.js';
+import { buildComponentsDocument } from '../src/components.js';
+import { EMBED_DIR, loadBundles } from '../src/embed.js';
 import type { JsonSchema } from '../src/index.js';
 
 const bundles = loadBundles(EMBED_DIR);
@@ -341,7 +340,7 @@ describe('2020-12 features pass through untouched', () => {
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 76, if: 13, dependentRequired: 0 });
+    }).toEqual({ unevaluatedProperties: 77, if: 13, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {

@@ -1288,6 +1288,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |
 | `hdf` | `cklb` | Export to DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
+| `hdf` | `sarif` | Export findings as SARIF 2.1.0 |
 | `hdf` | `hdf@2` | Export to the legacy Heimdall HDF schema (InSpec exec-json shape; loads in Heimdall2) |
 | `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 | `hdf-amendments` | `openvex` | Export HDF Amendments as OpenVEX statements (partial-fidelity round-trip) |

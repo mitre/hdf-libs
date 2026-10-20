@@ -117,12 +117,9 @@ function buildEvent(
   const labels = buildLabels(req);
   if (labels) obj.labels = labels;
 
-  // hdf.* lossless block, plus the requirement/baseline fields the shared
-  // allowlist omits (control classification, verification method, baseline
-  // title and integrity checksum) so the block stays genuinely lossless.
+  // hdf.* lossless block, plus the baseline fields the shared allowlist omits
+  // (title and integrity checksum) so the block stays genuinely lossless.
   const hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
-  if ('controlType' in req) hdf.control_type = req.controlType;
-  if ('verificationMethod' in req) hdf.verification_method = req.verificationMethod;
   if ('title' in baseline) hdf.baseline_title = baseline.title;
   if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
   obj.hdf = hdf;

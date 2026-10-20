@@ -7,7 +7,6 @@ settings:
 overrides:
   ajv@>=8.0.0 <8.18.0: ^8.18.0
   esbuild@<0.25.0: ^0.25.0
-  js-yaml@<4.3.2: ^4.3.2
   minimatch@>=10.0.0 <10.2.3: ^10.2.3
   shell-quote@<1.11.0: ^1.11.0
   uuid@<11.1.1: ^11.1.1
@@ -196,9 +195,6 @@ importers:
       yaml:
         specifier: ^2.8.1
         version: 2.9.1
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
 
   hdf-parsers:
     dependencies:

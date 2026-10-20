@@ -100,17 +100,23 @@ func withTimestamp(d hdf.HDFResults) hdf.HDFResults {
 // consumes HDF Results should survive.
 //
 // MustConvert cases are built with the testhdf builder wherever it can express
-// the case. The
-// one exception is zero-baselines: Go's variadic testhdf.Doc() leaves Baselines
-// nil, and HDFResults.Baselines carries no omitempty, so it marshals to null
-// rather than []. It is therefore stated as a typed struct literal — never hand
-// written JSON. (The TS peer has no such problem: a JS rest parameter yields [],
-// so schema-corpus.ts uses testhdf.doc() directly. The asymmetry is real, not an
-// oversight on either side.)
+// the case. There are two exceptions. zero-baselines: Go's variadic testhdf.Doc()
+// leaves Baselines nil, and HDFResults.Baselines carries no omitempty, so it
+// marshals to null rather than []. It is therefore stated as a typed struct
+// literal — never hand written JSON. (The TS peer has no such problem: a JS rest
+// parameter yields [], so schema-corpus.ts uses testhdf.doc() directly. The
+// asymmetry is real, not an oversight on either side.) passthrough-only-fields:
+// the builder has no options for evidence, applicability, externalReferences or a
+// document-root remediation, so it is hand-written JSON kept byte-identical to its
+// TypeScript twin rather than extending the builder in both languages.
 //
-// Each MustConvert case isolates exactly one absent field, so a failure names the
+// Most MustConvert cases isolate exactly one absent field, so a failure names the
 // cause. Two cases differing only in a field neither exercises would double the
-// runtime and halve the signal.
+// runtime and halve the signal. passthrough-only-fields is the deliberate
+// exception: it carries four fields at once because they share one obligation —
+// reaching an exporter's passthrough block — and no fixture exercises any of them
+// THROUGH the shared export block, which only hdf-to-sarif, -ecs and -splunk use.
+// So one case buys byte-parity coverage for all four.
 func ResultsCorpus() []CorpusCase {
 	gen := &hdf.Generator{Name: "testhdf", Version: "0.0.0"}
 
@@ -143,6 +149,44 @@ func ResultsCorpus() []CorpusCase {
 				testhdf.Title("t"), testhdf.Severity("medium"))))),
 			Contract: MustConvert,
 			Why:      "absent code must omit the check element entirely, not emit an empty one",
+		},
+		{
+			Name: "empty-tag-entry",
+			// tags is additionalProperties:true, so an empty string inside tags.nist is
+			// schema-valid input. A prefixing exporter that guards emptiness AFTER
+			// concatenation emits a bare "nist/" where one guarding the element emits
+			// nothing — a reachable Go/TypeScript divergence no other case reaches,
+			// because every other corpus requirement carries either real tags or none.
+			Input: mustJSON(withTimestamp(testhdf.Results(testhdf.Req("V-1",
+				testhdf.Title("t"), testhdf.Severity("medium"), testhdf.Code("c"),
+				testhdf.Tag("nist", []string{""}), testhdf.Tag("cci", []string{""}))))),
+			Contract: MustConvert,
+			Why:      "an empty tag entry must contribute no tag, identically in both languages",
+		},
+		{
+			Name: "passthrough-only-fields",
+			// evidence, applicability and requirement-level externalReferences, plus the
+			// document-root remediation. No target format has a first-class home for any
+			// of them, so each must land in the exporter's own passthrough block.
+			//
+			// hdf-to-html's finding-detail.json carries all three of the requirement
+			// fields and hdf-to-xml's full.json carries evidence and applicability, and
+			// both compare goldens over them in both languages — but neither uses the shared
+			// export block, and no HDF input fixture carries a document-root remediation
+			// (snyk-to-hdf inputs have a root `remediation`, but they are Snyk documents
+			// carrying Snyk's own differently-shaped field, not HDF).
+			// So nothing exercised these fields through the shared block, where a
+			// Go/TypeScript divergence would be invisible to golden parity.
+			//
+			// externalReferences is reachable on a requirement because Requirement_Core
+			// contributes it. The bundle embeds the whole common-primitives subschema
+			// under a $defs key equal to THAT subschema's $id, with Requirement_Core
+			// under its $defs in turn, so a walk that follows only the #/$defs/<Name>
+			// form has nothing to follow — which is how it was missed in the first
+			// place. The bundle itself is self-contained.
+			Input:    []byte(`{"generator":{"name":"t","version":"0.0.0"},"timestamp":"2024-01-01T00:00:00Z","remediation":{"uri":"https://example.com/fix.yml"},"baselines":[{"name":"b","requirements":[{"id":"V-1","title":"t","impact":0.5,"tags":{"nist":["AC-6"]},"descriptions":[{"label":"default","data":"d"}],"code":"c","applicability":"required","evidence":[{"type":"log","data":"bG9n"}],"externalReferences":[{"sourceName":"NVD","href":"https://nvd.nist.gov/vuln/detail/CVE-2021-1","kind":"advisory"}],"results":[{"status":"failed","codeDesc":"cd","startTime":"2024-01-01T00:00:00Z"}]}]}]}`),
+			Contract: MustConvert,
+			Why:      "fields with no target-format home must reach an exporter's passthrough block identically in both languages",
 		},
 		{
 			Name: "requirement-with-non-token-id",

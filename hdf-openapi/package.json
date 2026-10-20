@@ -50,8 +50,7 @@
     "@redocly/cli": "^2.54.3",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.20.6",
-    "yaml": "^2.8.1",
-    "zod": "^4.6.5"
+    "yaml": "^2.8.1"
   },
   "engines": {
     "node": ">=24.0.0"

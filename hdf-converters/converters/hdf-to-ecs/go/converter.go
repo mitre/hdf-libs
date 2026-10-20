@@ -116,16 +116,9 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	if labels := buildLabels(req); labels != nil {
 		obj["labels"] = labels
 	}
-	// hdf.* lossless block, plus the requirement/baseline fields the shared
-	// allowlist omits (control classification, verification method, baseline
-	// title and integrity checksum) so the block stays genuinely lossless.
+	// hdf.* lossless block, plus the baseline fields the shared allowlist omits
+	// (title and integrity checksum) so the block stays genuinely lossless.
 	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
-	if v, ok := req["controlType"]; ok {
-		hdf["control_type"] = v
-	}
-	if v, ok := req["verificationMethod"]; ok {
-		hdf["verification_method"] = v
-	}
 	if v, ok := baseline["title"]; ok {
 		hdf["baseline_title"] = v
 	}

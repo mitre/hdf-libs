@@ -74,14 +74,21 @@ function withTimestamp(d: HDFResults): Record<string, unknown> {
 
 /**
  * Adversarial HDF Results inputs every exporter consuming HDF Results should
- * survive. Every MustConvert case is built with the testhdf builder, including
- * `zero-baselines` — a JS rest parameter yields [], so `doc()` emits
- * `"baselines": []`. (Go's peer cannot do this: a variadic leaves the slice nil
- * and HDFResults.Baselines has no omitempty, so it marshals to null. That one
- * case is a typed struct literal there. The asymmetry is real, not an oversight.)
+ * survive. MustConvert cases are built with the testhdf builder wherever it can
+ * express the case. `zero-baselines` is built with it here — a JS rest parameter
+ * yields [], so `doc()` emits `"baselines": []`. (Go's peer cannot do this: a
+ * variadic leaves the slice nil and HDFResults.Baselines has no omitempty, so it
+ * marshals to null; there it is a typed struct literal. The asymmetry is real,
+ * not an oversight.) `passthrough-only-fields` is the one case hand-written as
+ * JSON in both languages: the builder has no options for evidence,
+ * applicability, externalReferences or a document-root remediation, and the
+ * literal is kept byte-identical to its Go twin rather than extending both
+ * builders.
  *
- * Each MustConvert case isolates exactly one absent field, so a failure names the
- * cause rather than leaving two candidates.
+ * Most MustConvert cases isolate exactly one absent field, so a failure names the
+ * cause rather than leaving two candidates. `passthrough-only-fields` is the
+ * deliberate exception: four fields sharing one obligation, reaching an
+ * exporter's passthrough block.
  */
 export function resultsCorpus(): CorpusCase[] {
   return [
@@ -116,6 +123,52 @@ export function resultsCorpus(): CorpusCase[] {
       ),
       contract: 'MustConvert',
       why: 'absent code must omit the check element entirely, not emit an empty one',
+    },
+    {
+      name: 'empty-tag-entry',
+      // tags is additionalProperties:true, so an empty string inside tags.nist is
+      // schema-valid input. A prefixing exporter that guards emptiness AFTER
+      // concatenation emits a bare "nist/" where one guarding the element emits
+      // nothing — a reachable Go/TypeScript divergence no other case reaches.
+      input: JSON.stringify(
+        withTimestamp(
+          testhdf.results(
+            testhdf.req('V-1', {
+              title: 't',
+              severity: 'medium',
+              code: 'c',
+              tags: {nist: [''], cci: ['']},
+            }),
+          ),
+        ),
+      ),
+      contract: 'MustConvert',
+      why: 'an empty tag entry must contribute no tag, identically in both languages',
+    },
+    {
+      name: 'passthrough-only-fields',
+      // evidence, applicability and requirement-level externalReferences, plus the
+      // document-root remediation. No target format has a first-class home for any of
+      // them, so each must land in the exporter's own passthrough block.
+      //
+      // hdf-to-html's finding-detail.json carries all three of the requirement fields
+      // and hdf-to-xml's full.json carries evidence and applicability, and both compare
+      // goldens over them in both languages — but neither uses the shared
+      // export block, and no HDF input fixture carries a document-root remediation
+      // (snyk-to-hdf inputs have a root `remediation`, but they are Snyk documents
+      // carrying Snyk's own differently-shaped field, not HDF). So
+      // nothing exercised these fields through the shared block, where a Go/TypeScript
+      // divergence would be invisible to golden parity.
+      //
+      // externalReferences is reachable on a requirement because Requirement_Core
+      // contributes it. The bundle embeds the whole common-primitives subschema under
+      // a $defs key equal to THAT subschema's $id, with Requirement_Core under its
+      // $defs in turn, so a walk that follows only the #/$defs/<Name> form has nothing
+      // to follow — which is how it was missed in the first place. The bundle itself is
+      // self-contained.
+      input: '{"generator":{"name":"t","version":"0.0.0"},"timestamp":"2024-01-01T00:00:00Z","remediation":{"uri":"https://example.com/fix.yml"},"baselines":[{"name":"b","requirements":[{"id":"V-1","title":"t","impact":0.5,"tags":{"nist":["AC-6"]},"descriptions":[{"label":"default","data":"d"}],"code":"c","applicability":"required","evidence":[{"type":"log","data":"bG9n"}],"externalReferences":[{"sourceName":"NVD","href":"https://nvd.nist.gov/vuln/detail/CVE-2021-1","kind":"advisory"}],"results":[{"status":"failed","codeDesc":"cd","startTime":"2024-01-01T00:00:00Z"}]}]}]}',
+      contract: 'MustConvert',
+      why: "fields with no target-format home must reach an exporter's passthrough block identically in both languages",
     },
     {
       name: 'requirement-with-non-token-id',

@@ -163,12 +163,299 @@ func TestConvertSarifToHDF_ResultsAbsentFixture(t *testing.T) {
 	require.Len(t, result.Baselines, 1)
 	require.Len(t, result.Baselines[0].Requirements, 1)
 
+	// The fixture carries executionSuccessful: false as well as an absent results
+	// array, and the declared failure is the more specific of the two signals.
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "ExampleAnalyzer-run-failed", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Error, req.Results[0].Status,
+		"the run declared its own execution a failure; notReviewed would under-report a known break")
+	assert.Contains(t, req.Results[0].CodeDesc, "exit code 127")
+	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings")
+	assert.Nil(t, result.Baselines[0].StatusMessage,
+		"a baseline is a policy document; per-run health does not belong on it")
+}
+
+// The absent-results rung in isolation: no invocation, so nothing contradicts the
+// reading that the run simply never analyzed.
+func TestConvertSarifToHDF_ResultsAbsentWithoutInvocationStaysNotReviewed(t *testing.T) {
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{ "tool": { "driver": { "name": "ExampleAnalyzer" } } }]
+	}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
 	req := result.Baselines[0].Requirements[0]
 	assert.Equal(t, "ExampleAnalyzer-not-analyzed", req.ID)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+}
+
+// The card's defect: a failed run whose results array is [] converted to a pass.
+func TestConvertSarifToHDF_FailedRunWithEmptyResultsIsError(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("failed-run.sarif"))
+	require.NoError(t, err, "Failed to read failed-run.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "eslint-run-failed", req.ID)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Run failed", *req.Title)
 	require.Len(t, req.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
-		"a run that reported no result set analyzed nothing; passed would assert a clean scan")
+	assert.Equal(t, hdf.Error, req.Results[0].Status,
+		"an empty results array from a failed run is not a clean scan")
 	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings")
+	assert.Nil(t, result.Baselines[0].StatusMessage,
+		"a baseline is a policy document; per-run health does not belong on it")
+}
+
+// Ruling: a failed run that still produced findings keeps them. Incomplete coverage
+// is not a reason to restyle sound findings as errors.
+func TestConvertSarifToHDF_FailedRunWithFindingsKeepsThem(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("spotbugs.sarif"))
+	require.NoError(t, err, "Failed to read spotbugs.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	baseline := result.Baselines[0]
+
+	// N results where x < N carry error: the findings stand as reported, and the run's
+	// own failure is one more requirement beside them.
+	var failedReqs, findingReqs int
+	for _, req := range baseline.Requirements {
+		if req.ID == "SpotBugs-run-failed" {
+			failedReqs++
+			require.Len(t, req.Results, 1)
+			assert.Equal(t, hdf.Error, req.Results[0].Status)
+			assert.Contains(t, req.Results[0].CodeDesc, "exit code 3")
+			assert.Contains(t, req.Results[0].CodeDesc, "ERROR,MISSING CLASS,BUGS FOUND")
+			continue
+		}
+		findingReqs++
+		for _, res := range req.Results {
+			assert.NotEqual(t, hdf.Error, res.Status,
+				"requirement %s was restyled as an error; only coverage was incomplete", req.ID)
+		}
+	}
+	assert.Equal(t, 1, failedReqs, "exactly one synthesized run-failed requirement")
+	assert.Greater(t, findingReqs, 0, "the fixture's findings must survive the failed invocation")
+
+	assert.Nil(t, baseline.StatusMessage,
+		"a baseline is a policy document; per-run health does not belong on it")
+}
+
+// invocations is an array, and SARIF does not say the entries must agree. Any
+// failure counts, because a run that failed one of its invocations did not wholly
+// succeed; reading only [0] would let a later failure disappear.
+func TestConvertSarifToHDF_AnyFailedInvocationCounts(t *testing.T) {
+	for name, invocations := range map[string]string{
+		"first of two failed":  `[{"executionSuccessful": false}, {"executionSuccessful": true}]`,
+		"second of two failed": `[{"executionSuccessful": true}, {"executionSuccessful": false}]`,
+		"both failed":          `[{"executionSuccessful": false}, {"executionSuccessful": false}]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			input := []byte(`{
+				"version": "2.1.0",
+				"runs": [{
+					"tool": { "driver": { "name": "ExampleAnalyzer" } },
+					"invocations": ` + invocations + `,
+					"results": []
+				}]
+			}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, "ExampleAnalyzer-run-failed", req.ID)
+			assert.Equal(t, hdf.Error, req.Results[0].Status)
+		})
+	}
+
+	// All succeeding is the only way to stay a pass.
+	t.Run("both succeeded", func(t *testing.T) {
+		input := []byte(`{
+			"version": "2.1.0",
+			"runs": [{
+				"tool": { "driver": { "name": "ExampleAnalyzer" } },
+				"invocations": [{"executionSuccessful": true}, {"executionSuccessful": true}],
+				"results": []
+			}]
+		}`)
+		result, err := ConvertSarifToHDF(input, testConverterVersion)
+		require.NoError(t, err)
+		assert.Equal(t, hdf.Passed, result.Baselines[0].Requirements[0].Results[0].Status)
+	})
+
+	// An invocation that omits the property says nothing; absence is not failure.
+	t.Run("invocation omitting executionSuccessful", func(t *testing.T) {
+		input := []byte(`{
+			"version": "2.1.0",
+			"runs": [{
+				"tool": { "driver": { "name": "ExampleAnalyzer" } },
+				"invocations": [{"exitCode": 0}],
+				"results": []
+			}]
+		}`)
+		result, err := ConvertSarifToHDF(input, testConverterVersion)
+		require.NoError(t, err)
+		assert.Equal(t, hdf.Passed, result.Baselines[0].Requirements[0].Results[0].Status)
+		assert.Len(t, result.Baselines[0].Requirements, 1)
+	})
+}
+
+// exitCode: null is not an exit code. Go's *int skips it; the TypeScript peer has to
+// check null as well as undefined or the two print different messages.
+func TestConvertSarifToHDF_NullExitCodeIsNotRendered(t *testing.T) {
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "ExampleAnalyzer" } },
+			"invocations": [{"executionSuccessful": false, "exitCode": null}],
+			"results": []
+		}]
+	}`)
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	codeDesc := result.Baselines[0].Requirements[0].Results[0].CodeDesc
+	assert.Equal(t, "ExampleAnalyzer reported that its run did not complete successfully.", codeDesc)
+	assert.NotContains(t, codeDesc, "null")
+}
+
+// The failure detail names the first failing invocation, not a later one.
+func TestConvertSarifToHDF_FailureDetailComesFromTheFirstFailure(t *testing.T) {
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "ExampleAnalyzer" } },
+			"invocations": [
+				{"executionSuccessful": true, "exitCode": 0},
+				{"executionSuccessful": false, "exitCode": 7, "exitCodeDescription": "first failure"},
+				{"executionSuccessful": false, "exitCode": 9, "exitCodeDescription": "second failure"}
+			],
+			"results": []
+		}]
+	}`)
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	codeDesc := result.Baselines[0].Requirements[0].Results[0].CodeDesc
+	assert.Contains(t, codeDesc, "exit code 7: first failure")
+	assert.NotContains(t, codeDesc, "second failure")
+}
+
+// The driver name is read at six places across the two languages and must mean the same
+// thing at every one. It did not: Go trimmed at none of its three sites, TypeScript
+// trimmed at two of its three, so a whitespace-only name produced a baseline called "   "
+// holding a requirement called "   -run-failed" in Go and "sarif-run-failed" in
+// TypeScript — an id that does not even name its own baseline.
+func TestConvertSarifToHDF_DriverNameIsTrimmedEverywhere(t *testing.T) {
+	// One case per placeholder kind, because each is synthesized at its own site.
+	for _, tc := range []struct {
+		kind, invocations, results, wantSuffix string
+	}{
+		{"no-findings", "", `, "results": []`, "-no-findings"},
+		{"not-analyzed", "", "", "-not-analyzed"},
+		{"run-failed", `, "invocations": [{"executionSuccessful": false}]`, `, "results": []`, "-run-failed"},
+	} {
+		t.Run(tc.kind+"/whitespace-only name falls back", func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"   "}}` +
+				tc.invocations + tc.results + `}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			assert.Equal(t, "SARIF", baseline.Name, "a name that is only whitespace names nothing")
+			require.Len(t, baseline.Requirements, 1)
+			assert.Equal(t, "sarif"+tc.wantSuffix, baseline.Requirements[0].ID)
+		})
+
+		t.Run(tc.kind+"/padded real name is trimmed", func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"  gosec  "}}` +
+				tc.invocations + tc.results + `}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			assert.Equal(t, "gosec", baseline.Name)
+			require.Len(t, baseline.Requirements, 1)
+			assert.Equal(t, "gosec"+tc.wantSuffix, baseline.Requirements[0].ID,
+				"the id must name the same driver the baseline does")
+			assert.Contains(t, baseline.Requirements[0].Results[0].CodeDesc, "gosec")
+			assert.NotContains(t, baseline.Requirements[0].Results[0].CodeDesc, "  gosec")
+		})
+	}
+}
+
+// The SEVENTH site. tool.name is read at the document level, through a lowercase local
+// rather than through run.Tool.Driver.Name, which is why a grep for the latter missed it
+// and why the first pass at this card left it untrimmed. A document would then spell the
+// same driver two ways: tool.name "  gosec  " beside a baseline named "gosec".
+func TestConvertSarifToHDF_DocumentToolNameIsTrimmedToo(t *testing.T) {
+	for _, tc := range []struct{ name, wantTool, wantBaseline string }{
+		{"  gosec  ", "gosec", "gosec"},
+		{"   ", "", "SARIF"},
+		{"gosec", "gosec", "gosec"},
+	} {
+		t.Run("name="+tc.name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"` + tc.name +
+				`","version":"1.2.3"}},"results":[]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			require.NotNil(t, result.Tool)
+			got := ""
+			if result.Tool.Name != nil {
+				got = *result.Tool.Name
+			}
+			assert.Equal(t, tc.wantTool, got, "document tool.name")
+			assert.Equal(t, tc.wantBaseline, result.Baselines[0].Name,
+				"a document must not spell the same driver two ways")
+			require.NotNil(t, result.Tool.Version)
+			assert.Equal(t, "1.2.3", *result.Tool.Version, "the version is untouched")
+		})
+	}
+}
+
+// Whatever the name, the baseline and the id it holds must agree about the driver.
+func TestConvertSarifToHDF_RequirementIDNamesItsOwnBaseline(t *testing.T) {
+	for _, name := range []string{"gosec", "  gosec  ", "   ", ""} {
+		t.Run("name="+name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"` + name +
+				`"}},"invocations":[{"executionSuccessful":false}],"results":[]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			baseline := result.Baselines[0]
+			require.Len(t, baseline.Requirements, 1)
+			id := baseline.Requirements[0].ID
+			// The id prefix is the baseline name, lower-cased only in the fallback case.
+			wantPrefix := baseline.Name
+			if wantPrefix == "SARIF" {
+				wantPrefix = "sarif"
+			}
+			assert.Equal(t, wantPrefix+"-run-failed", id,
+				"baseline %q holds requirement %q — they must name the same driver", baseline.Name, id)
+		})
+	}
+}
+
+// A successful invocation must not acquire a run-failed requirement.
+func TestConvertSarifToHDF_SuccessfulInvocationGetsNoRunFailedRequirement(t *testing.T) {
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "ExampleAnalyzer" } },
+			"invocations": [{ "executionSuccessful": true }],
+			"results": []
+		}]
+	}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "ExampleAnalyzer-no-findings", req.ID)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Len(t, result.Baselines[0].Requirements, 1,
+		"a successful run contributes no run-failed requirement")
 }
 
 func TestConvertSarifToHDF_EmptyResultsFallbackTarget(t *testing.T) {
@@ -1569,10 +1856,14 @@ func TestConvertSarifToHDF_SpotBugsFixture(t *testing.T) {
 
 	baseline := result.Baselines[0]
 	assert.Equal(t, "SpotBugs", baseline.Name)
-	require.Len(t, baseline.Requirements, 9, "56 results should group into 9 rules")
+	// 9 rules, plus one synthesized requirement for the run's own declared failure.
+	require.Len(t, baseline.Requirements, 10, "56 results group into 9 rules, plus the run-failed requirement")
 
 	// All SpotBugs results are "note" level → 0.3 impact
 	for _, req := range baseline.Requirements {
+		if req.ID == "SpotBugs-run-failed" {
+			continue
+		}
 		assert.Equal(t, 0.3, req.Impact, "SpotBugs rule %s should have note-level impact", req.ID)
 		assert.Equal(t, "note", req.Tags["sarif-level"])
 	}
@@ -1704,9 +1995,11 @@ func TestConvertSarifToHDF_SpotBugsAnchor(t *testing.T) {
 	result, err := ConvertSarifToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	want := countDistinctSarifRules(t, input)
+	// +1: the run declares executionSuccessful: false, which contributes a
+	// requirement of its own beside the per-rule ones.
+	want := countDistinctSarifRules(t, input) + 1
 	shared.AssertRequirementCount(t, result, want,
-		"spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)")
+		"spotbugs.sarif: one requirement per distinct result ruleId, plus the run-failed requirement")
 }
 
 // WHAT THIS GUARANTEE DOES NOT COVER. A golden-based parity test can only discriminate
@@ -2288,7 +2581,7 @@ func TestConvertSarifToHDF_ExtensionRuleSuppliesHelpURI(t *testing.T) {
 // that null a meaning: the tool "either failed to start or failed to begin its
 // analysis". An empty array is the opposite — the tool ran and found nothing. Go
 // decoded both to a nil slice, so a failed scan reported as a clean pass.
-func TestConvertSarifToHDF_ResultsNullIsNotAPass(t *testing.T) {
+func TestConvertSarifToHDF_ResultsNullWithFailedInvocationIsAnError(t *testing.T) {
 	input := `{
 		"version": "2.1.0",
 		"runs": [{
@@ -2305,7 +2598,9 @@ func TestConvertSarifToHDF_ResultsNullIsNotAPass(t *testing.T) {
 
 	req := result.Baselines[0].Requirements[0]
 	require.Len(t, req.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+	// This input declares executionSuccessful: false as well, and a tool that says
+	// it failed to start is an error rather than merely unreviewed.
+	assert.Equal(t, hdf.Error, req.Results[0].Status,
 		"a tool that failed to start reviewed nothing; passed would assert a clean scan that never happened")
 	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings",
 		"the text must not claim the tool reported anything")

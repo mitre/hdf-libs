@@ -1,0 +1,101 @@
+{
+  "$comment": "Shared table for hdf-to-sarif's URI rendering, read by go/uri_test.go and typescript/uri.test.ts so neither language can drift. SARIF puts format 'uri-reference' on artifactLocation.uri and format 'uri' on helpUri/informationUri, and real scanner output does not respect either. 'reference' is what EncodeURIReference/encodeUriReference must return; 'absolute' is what AbsoluteURI/absoluteUri must return, with \"\" meaning the value is dropped because it has no scheme.",
+  "cases": [
+    {
+      "input": "test/test-patched.c",
+      "reference": "test/test-patched.c",
+      "absolute": "",
+      "why": "an ordinary relative source path is already a valid uri-reference, and is not an absolute URI"
+    },
+    {
+      "input": "http://mymac.com:8191/WebGoat/attack",
+      "reference": "http://mymac.com:8191/WebGoat/attack",
+      "absolute": "http://mymac.com:8191/WebGoat/attack",
+      "why": "a real ZAP URL that needs no encoding at all"
+    },
+    {
+      "input": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>",
+      "reference": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.old.baseUrl%25%3E",
+      "absolute": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.old.baseUrl%25%3E",
+      "why": "the defect: a real ZAP ref carrying a template placeholder, which no URI grammar accepts. The encoded form is the one ZAP itself emits for the same construct elsewhere in the same scan"
+    },
+    {
+      "input": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
+      "reference": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
+      "absolute": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
+      "why": "an already-encoded triplet is left alone rather than double-encoded, so encoding is idempotent on its own output"
+    },
+    {
+      "input": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+",
+      "reference": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+",
+      "absolute": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+",
+      "why": "a real ZAP SQL-injection probe: + and - and ? and = are all sub-delims or gen-delims and stay as themselves"
+    },
+    {
+      "input": "C:\\Program Files\\app\\main.c",
+      "reference": "C:%5CProgram%20Files%5Capp%5Cmain.c",
+      "absolute": "C:%5CProgram%20Files%5Capp%5Cmain.c",
+      "why": "a Windows path: backslash and space are not in any RFC 3986 set. The drive letter makes it parse as a scheme, which is a known URI ambiguity and not this function's to resolve"
+    },
+    {
+      "input": "a file with spaces.rb",
+      "reference": "a%20file%20with%20spaces.rb",
+      "absolute": "",
+      "why": "spaces are encoded; no scheme, so the absolute form is dropped"
+    },
+    {
+      "input": "100%",
+      "reference": "100%25",
+      "absolute": "",
+      "why": "a bare percent is not a pct-encoded triplet and is itself encoded, so the output is always decodable"
+    },
+    {
+      "input": "50%2",
+      "reference": "50%252",
+      "absolute": "",
+      "why": "a truncated triplet is not a triplet"
+    },
+    {
+      "input": "%zz",
+      "reference": "%25zz",
+      "absolute": "",
+      "why": "a percent followed by non-hex is not a triplet"
+    },
+    {
+      "input": "src/café.c",
+      "reference": "src/caf%C3%A9.c",
+      "absolute": "",
+      "why": "a non-ASCII byte is encoded per UTF-8 byte, which is why both languages encode bytes and not code units"
+    },
+    {
+      "input": "",
+      "reference": "",
+      "absolute": "",
+      "why": "the empty string is a legal uri-reference and is not an absolute URI"
+    },
+    {
+      "input": "See the vendor advisory",
+      "reference": "See%20the%20vendor%20advisory",
+      "absolute": "",
+      "why": "free text in a helpUri field is dropped rather than emitted into a field with format uri"
+    },
+    {
+      "input": "./relative/help.html",
+      "reference": "./relative/help.html",
+      "absolute": "",
+      "why": "a relative reference is valid for artifactLocation.uri but not for helpUri"
+    },
+    {
+      "input": "urn:uuid:4b2f1a90-1b1a-4f6f-9d5e-1a2b3c4d5e6f",
+      "reference": "urn:uuid:4b2f1a90-1b1a-4f6f-9d5e-1a2b3c4d5e6f",
+      "absolute": "urn:uuid:4b2f1a90-1b1a-4f6f-9d5e-1a2b3c4d5e6f",
+      "why": "a non-http scheme is still an absolute URI"
+    },
+    {
+      "input": "9lives://nope",
+      "reference": "9lives%3A//nope",
+      "absolute": "",
+      "why": "a scheme must start with a letter, so this is a relative reference whose first segment merely looks like one — and RFC 3986 §4.2 forbids a colon in a relative reference's first segment, so the colon is encoded. Measured, not assumed: the unencoded form is rejected by the uri-reference format"
+    }
+  ]
+}

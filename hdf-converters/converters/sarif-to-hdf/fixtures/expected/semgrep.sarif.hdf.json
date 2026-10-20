@@ -26,7 +26,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.932Z",
+              "startTime": "2026-10-14T01:18:11.534Z",
               "status": "failed"
             },
             {
@@ -37,7 +37,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.932Z",
+              "startTime": "2026-10-14T01:18:11.534Z",
               "status": "failed"
             }
           ],
@@ -72,13 +72,39 @@
                 "fingerprints": {
                   "matchBasedId/v1": "c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_0"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "targets/basic/stupid.py",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 3,
+                    "snippet": {
+                      "text": "    return a + b == a + b"
+                    },
+                    "startColumn": 12,
+                    "startLine": 3
+                  }
+                },
+                "message": "Fake message."
               },
               {
                 "fingerprints": {
                   "matchBasedId/v1": "c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_1"
                 },
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "targets/basic/stupid.py",
+                  "region": {
+                    "endColumn": 26,
+                    "endLine": 3,
+                    "snippet": {
+                      "text": "    return a + b == a + b"
+                    },
+                    "startColumn": 21,
+                    "startLine": 3
+                  }
+                },
+                "message": "Fake message."
               }
             ],
             "sarif-severity-source": "rule-default",
@@ -98,11 +124,33 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "Semgrep OSS",
+            "on": "rule",
+            "properties": {
+              "precision": "very-high",
+              "tags": [
+                "CWE-88888888: Another fake CWE",
+                "CWE-99999999: Fake CWE",
+                "security"
+              ]
+            },
+            "ruleId": "rules.rule-with-cwe-tag"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.932Z",
+  "timestamp": "2026-10-14T01:18:11.534Z",
   "tool": {
     "format": "SARIF",
     "name": "Semgrep OSS"

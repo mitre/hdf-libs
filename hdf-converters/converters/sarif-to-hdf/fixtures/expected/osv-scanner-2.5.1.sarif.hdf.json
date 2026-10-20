@@ -26,7 +26,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.928Z",
+              "startTime": "2026-10-14T01:18:11.52Z",
               "status": "failed"
             }
           ],
@@ -57,6 +57,10 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml"
+                },
+                "message": "Package 'qs@6.15.2' is vulnerable to 'CVE-2026-82417' (also known as 'GHSA-4mjr-xmp4-gh2g').",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "e99f420a72f52cb10c5bb0afe8cf01a7b664e04a48cf47ae0e71b7b36de75f9d"
                 }
@@ -92,7 +96,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.928Z",
+              "startTime": "2026-10-14T01:18:11.52Z",
               "status": "failed"
             }
           ],
@@ -123,6 +127,10 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml"
+                },
+                "message": "Package 'vite@5.4.21' is vulnerable to 'CVE-2026-39365' (also known as 'GHSA-4w7w-66w2-5vf9').",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "977c04238e880af0fcd73bea6d6e5f9655f36bee530e9a22d9910f5ab53f8b53"
                 }
@@ -158,7 +166,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.928Z",
+              "startTime": "2026-10-14T01:18:11.52Z",
               "status": "failed"
             }
           ],
@@ -189,6 +197,10 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml"
+                },
+                "message": "Package 'vite@5.4.21' is vulnerable to 'CVE-2026-53571' (also known as 'GHSA-fx2h-pf6j-xcff').",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "ce5a95d4731f6f59eb0ce7295ce5a702df89f7d122d2983e28358cb9db94a660"
                 }
@@ -224,7 +236,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.928Z",
+              "startTime": "2026-10-14T01:18:11.52Z",
               "status": "failed"
             }
           ],
@@ -255,6 +267,10 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml"
+                },
+                "message": "Package 'vite@5.4.21' is vulnerable to 'CVE-2026-53632' (also known as 'GHSA-v6wh-96g9-6wx3').",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "ce6d93cf68ec13c86859aaa4e83f5690af72c42fc70eb4e97eb35d1377112942"
                 }
@@ -290,7 +306,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.928Z",
+              "startTime": "2026-10-14T01:18:11.52Z",
               "status": "failed"
             }
           ],
@@ -321,6 +337,10 @@
               {
                 "kind": "fail",
                 "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml"
+                },
+                "message": "Package 'qs@6.15.2' is vulnerable to 'CVE-2026-82562' (also known as 'GHSA-x5fp-wj9c-mxmx').",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a181e361f2c9fd650f9239f73039f4305462659d57838d87de70d6fc5ee8c00f"
                 }
@@ -342,11 +362,60 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "osv-scanner",
+            "on": "rule",
+            "properties": {
+              "security-severity": "6.3"
+            },
+            "ruleId": "CVE-2026-82417"
+          },
+          {
+            "baseline": "osv-scanner",
+            "on": "rule",
+            "properties": {
+              "security-severity": "6.3"
+            },
+            "ruleId": "CVE-2026-39365"
+          },
+          {
+            "baseline": "osv-scanner",
+            "on": "rule",
+            "properties": {
+              "security-severity": "8.2"
+            },
+            "ruleId": "CVE-2026-53571"
+          },
+          {
+            "baseline": "osv-scanner",
+            "on": "rule",
+            "properties": {
+              "security-severity": "5.5"
+            },
+            "ruleId": "CVE-2026-53632"
+          },
+          {
+            "baseline": "osv-scanner",
+            "on": "rule",
+            "properties": {
+              "security-severity": "6.3"
+            },
+            "ruleId": "CVE-2026-82562"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.928Z",
+  "timestamp": "2026-10-14T01:18:11.52Z",
   "tool": {
     "format": "SARIF",
     "name": "osv-scanner",

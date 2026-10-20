@@ -1,11 +1,12 @@
-// Package contract collects the MCP surface the ADR-0008 API generator reads: the response
-// shapes a tool returns, keyed by name.
+// Package contract collects the MCP surface: the response shapes a tool returns, keyed by
+// name.
 //
-// It exists so a generator has ONE typed source instead of inferring HTTP response bodies
-// from prose. A shape is registered by the package that owns the Go type, which means an
-// unexported row type contributes its shape without its package exporting it — the
-// generator consumes the reflected schema from the tracked golden and never needs the Go
-// type itself.
+// It was built so the ADR-0008 API generator had ONE typed source instead of inferring HTTP
+// response bodies from prose. That generator is gone and the API document moved to the
+// sibling repository, so what this now serves is the MCP's own drift gate — the tracked
+// contract golden. A shape is registered by the package that owns the Go type, which means
+// an unexported row type contributes its shape without its package exporting it: the golden
+// carries the reflected schema and no consumer needs the Go type itself.
 //
 // The dependency edge is one-way: packages that own shapes import this, and this imports
 // none of them.
