@@ -9,6 +9,11 @@ OpenAPI 3.1 components for the Heimdall Data Format, generated from the HDF JSON
 > was generated from the HDF MCP server's tool contract; it is now written there as route declarations with
 > the document generated from them. If you are looking for the API's OpenAPI document, it is published by
 > that repository, not this one.
+>
+> The MCP-to-API parity check went with it. **Do not rebuild it** — a parity check between a source
+> and its derivative cannot survive the removal of the derivation, and what replaced the guarantee is
+> still open. The record is
+> [The withdrawn MCP-to-API parity check](https://mitre.github.io/hdf-libs/docs/architecture/openapi-parity-supersession).
 
 ## Why this exists
 

@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
@@ -207,5 +207,82 @@ describe('every example in the published document validates against its own sche
       }
     }
     expect(failures).toEqual([]);
+  });
+});
+
+// The helper is exported as published API and ADR-0008 §2 makes a CHECKED example the
+// condition of the conventions privilege, so its ability to report a fault has to be pinned
+// directly: every other use of it here feeds it examples that pass, which cannot tell a
+// working validator from one that always returns no faults.
+describe('validateExample reports faults', () => {
+  it('reports an example that violates its own schema', () => {
+    const faults = validateExample({
+      type: 'object',
+      properties: { n: { type: 'integer' } },
+      required: ['n'],
+      examples: [{ n: 'not an integer' }],
+    });
+    expect(faults).toHaveLength(1);
+    expect(faults[0]!.index).toBe(0);
+    expect(faults[0]!.errors).toContain('integer');
+  });
+
+  it('indexes each fault by its position, passing examples included', () => {
+    const faults = validateExample({
+      type: 'object',
+      properties: { n: { type: 'integer' } },
+      examples: [{ n: 1 }, { n: 'bad' }, { n: 2 }, { n: 'also bad' }],
+    });
+    expect(faults.map((f) => f.index)).toEqual([1, 3]);
+  });
+
+  it('resolves a $ref into the supplied references rather than failing to compile', () => {
+    const schema = { $ref: '#/components/schemas/Inner', examples: [{ k: 'wrong type' }] };
+    const references = { Inner: { type: 'object', properties: { k: { type: 'number' } } } };
+    expect(validateExample(schema, references)).toHaveLength(1);
+    expect(validateExample({ ...schema, examples: [{ k: 1 }] }, references)).toEqual([]);
+  });
+
+  it('is silent about a schema carrying no examples, rather than inventing a fault', () => {
+    expect(validateExample({ type: 'object' })).toEqual([]);
+    expect(validateExample({ type: 'object', examples: 'not a list' })).toEqual([]);
+  });
+});
+
+// Card i6889.2's own first failing test: the package emits the components document and no
+// API document. The DOCUMENTS list above records the expectation in prose; this asserts it
+// against what the build actually wrote.
+describe('the built artifacts', () => {
+  const built = readdirSync(DIST);
+
+  it('include the components document', () => {
+    expect(built).toContain('hdf-components.oas.json');
+    expect(built).toContain('hdf-components.oas.yaml');
+  });
+
+  it('include no reference API document', () => {
+    expect(built.length).toBeGreaterThan(2);
+    expect(built.filter((f) => /hdf-api/.test(f))).toEqual([]);
+  });
+
+  // loadProblemDocs() defaults to its own directory, which is dist/ once built, so the
+  // authored YAML has to land there or the exported loader throws for a consumer. Measured
+  // against an installed tarball: before the build copied it, four exports were unusable.
+  it('include the authored problem table beside the derived one', () => {
+    expect(built).toContain('problems.json');
+    expect(built).toContain('problems.yaml');
+  });
+
+  // The published surface, read from the BUILT barrel rather than from src: the three
+  // build-time helpers read @mitre/hdf-schema's bundles, which are not in this package, so
+  // exporting them hands a consumer a call that cannot work.
+  it('export nothing a consumer cannot run', async () => {
+    const barrel: Record<string, unknown> = await import(join(DIST, 'index.js'));
+    const names = Object.keys(barrel);
+    expect(names).toContain('validateExample');
+    expect(names).toContain('problemTypes');
+    for (const buildTime of ['EMBED_DIR', 'loadBundles', 'buildComponentsDocument']) {
+      expect(names, `${buildTime} cannot run outside this repository`).not.toContain(buildTime);
+    }
   });
 });
