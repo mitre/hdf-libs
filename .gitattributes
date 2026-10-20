@@ -38,6 +38,12 @@ site/data/converters.json eol=lf
 # The OpenAPI tooling baseline is byte-compared against freshly serialised output, both by
 # scripts/openapi-matrix.mjs and by its test, so a CRLF checkout would fail the comparison.
 hdf-openapi/test/baseline/*.json eol=lf
+hdf-engine/testdata/**/*.json eol=lf
+# Reached the same way as the lines above: a test reads these bytes and hashes
+# them, so a CRLF checkout changes the digest. hdf-engine's evidence parity tests
+# failed on Windows alone for exactly this reason.
+hdf-converters/**/go/testdata/**/*.json eol=lf
+hdf-utilities/testdata/**/*.json eol=lf
 
 # Test fixtures are stored as regular git objects (text XML/JSON compresses
 # well in packfiles). Large full-scan fixtures that exceed ~1 MB should not
