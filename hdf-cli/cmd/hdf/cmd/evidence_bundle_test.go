@@ -1636,7 +1636,7 @@ func absolutePlanRefTree(t *testing.T) (dir, pkgPath string) {
 	t.Helper()
 	dir, pkgPath = bundleTree(t)
 	doc := readEvidenceDoc(t, pkgPath)
-	doc["planRef"] = filepath.Join(dir, "plan.json")
+	doc["planRef"] = filepath.ToSlash(filepath.Join(dir, "plan.json"))
 	patched, err := json.Marshal(doc)
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
