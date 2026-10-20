@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify as stringifyYaml } from 'yaml';
@@ -19,6 +19,9 @@ export function main(): void {
   // RFC 9457 §3.1.1 wants a type URI to dereference to documentation, so the table that
   // documents them ships with the documents that declare them.
   writeArtifact(join(outDir, 'problems.json'), `${JSON.stringify(loadProblemDocs(), null, 2)}\n`);
+  // The authored YAML ships too: loadProblemDocs() defaults to its own directory, which is
+  // dist/ in the published package, so without this the exported loader throws for a consumer.
+  writeArtifact(join(outDir, 'problems.yaml'), readFileSync(join(HERE, 'problems.yaml'), 'utf-8'));
   const count = Object.keys(doc.components.schemas).length;
   process.stdout.write(`hdf-components.oas.{json,yaml}: ${count} schemas at v${doc.info.version}\n`);
 }

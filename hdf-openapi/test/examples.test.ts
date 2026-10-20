@@ -264,4 +264,25 @@ describe('the built artifacts', () => {
     expect(built.length).toBeGreaterThan(2);
     expect(built.filter((f) => /hdf-api/.test(f))).toEqual([]);
   });
+
+  // loadProblemDocs() defaults to its own directory, which is dist/ once built, so the
+  // authored YAML has to land there or the exported loader throws for a consumer. Measured
+  // against an installed tarball: before the build copied it, four exports were unusable.
+  it('include the authored problem table beside the derived one', () => {
+    expect(built).toContain('problems.json');
+    expect(built).toContain('problems.yaml');
+  });
+
+  // The published surface, read from the BUILT barrel rather than from src: the three
+  // build-time helpers read @mitre/hdf-schema's bundles, which are not in this package, so
+  // exporting them hands a consumer a call that cannot work.
+  it('export nothing a consumer cannot run', async () => {
+    const barrel: Record<string, unknown> = await import(join(DIST, 'index.js'));
+    const names = Object.keys(barrel);
+    expect(names).toContain('validateExample');
+    expect(names).toContain('problemTypes');
+    for (const buildTime of ['EMBED_DIR', 'loadBundles', 'buildComponentsDocument']) {
+      expect(names, `${buildTime} cannot run outside this repository`).not.toContain(buildTime);
+    }
+  });
 });

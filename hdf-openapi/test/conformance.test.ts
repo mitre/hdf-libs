@@ -4,12 +4,11 @@ import AjvDraft07 from 'ajv';
 import addFormats from 'ajv-formats';
 import type { ErrorObject } from 'ajv';
 import {
-  EMBED_DIR,
   ROOT_COMPONENT_NAMES,
-  buildComponentsDocument,
   extractStandaloneSchema,
-  loadBundles,
 } from '../src/index.js';
+import { buildComponentsDocument } from '../src/components.js';
+import { EMBED_DIR, loadBundles } from '../src/embed.js';
 import type { JsonSchema } from '../src/index.js';
 import { baseline, results as corpusResults } from '@mitre/hdf-fixtures';
 
