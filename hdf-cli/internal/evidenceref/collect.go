@@ -76,7 +76,7 @@ func Collect(pkgData []byte) (References, error) {
 		return nil, fmt.Errorf("read the package's references: %w", err)
 	}
 
-	refs := make(References, 0, len(doc.Contents)+len(doc.ExternalEvidence)+4)
+	var refs References
 	add := func(field string, index int, stored string) {
 		refs = append(refs, Reference{Field: field, Index: index, Stored: stored})
 	}
