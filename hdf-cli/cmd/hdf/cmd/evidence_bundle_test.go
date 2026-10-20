@@ -697,7 +697,7 @@ func TestEvidenceBundle_VerifiesExternalEvidenceChecksums(t *testing.T) {
 	// absolute path CONTAINS the derived relative ref as a substring — so asserting
 	// only on "scans/audit.ndjson" passes whether the message quotes what the package
 	// records or a ref derived from it, and pins neither.
-	assert.Contains(t, err.Error(), "checksum mismatch for "+artifact,
+	assert.Contains(t, err.Error(), "checksum mismatch for "+filepath.ToSlash(artifact),
 		"the message must quote the uri the PACKAGE records, not a ref derived from it")
 	assert.NoFileExists(t, out)
 }
@@ -943,7 +943,7 @@ func TestEvidenceBundle_RefusesToOverwriteExternalEvidence(t *testing.T) {
 
 			_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", artifact)
 			require.Error(t, err, "the archive must not be written over recorded evidence")
-			assert.Contains(t, err.Error(), artifact,
+			assert.Contains(t, err.Error(), filepath.ToSlash(artifact),
 				"and the refusal must quote the uri the package records")
 			assert.Contains(t, err.Error(), "the external evidence this package records",
 				"and name which kind of reference it is protecting")
@@ -1415,7 +1415,7 @@ func TestEvidenceBundle_CarriesAnAbsoluteRootReferenceThatResolvesInTree(t *test
 	// never resolved an absolute root reference left the whole suite green.
 	pkg, err := json.Marshal(map[string]any{
 		"name":    "abs-root",
-		"planRef": filepath.Join(dir, "plan.json"), // absolute, in-tree, contents[]-free
+		"planRef": filepath.ToSlash(filepath.Join(dir, "plan.json")), // absolute, in-tree, contents[]-free
 		"contents": []map[string]any{
 			{"type": "hdf-results", "uri": "r.json",
 				"checksum": map[string]string{"algorithm": "sha256", "value": sumOf("r.json")}},
@@ -1457,7 +1457,7 @@ func TestEvidenceBundle_RefusesAMissingOutputDirectoryByName(t *testing.T) {
 func TestEvidenceBundle_QualifiesTheExtentForEveryReasonADocumentIsAbsent(t *testing.T) {
 	for _, tc := range []struct{ name, planRef string }{
 		{"a remote planRef", "https://plans.example/q3.json"},
-		{"a planRef outside the package", filepath.Join("..", "outside-plan.json")},
+		{"a planRef outside the package", "../outside-plan.json"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			parent := t.TempDir()
@@ -1567,7 +1567,7 @@ func TestEvidenceBundle_ResolvesContainmentThroughASymlinkedSpelling(t *testing.
 			"checksum": map[string]string{"algorithm": "sha256", "value": fmt.Sprintf("%x", sha256.Sum256(src))},
 		}},
 		"externalEvidence": []map[string]any{
-			{"uri": filepath.Join(linked, "art.ndjson"), "format": "ecs"},
+			{"uri": filepath.ToSlash(filepath.Join(linked, "art.ndjson")), "format": "ecs"},
 		},
 	})
 	require.NoError(t, err)
