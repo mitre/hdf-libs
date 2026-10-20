@@ -24,6 +24,7 @@ require (
 	github.com/tiktoken-go/tokenizer v0.8.1
 	golang.org/x/term v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
+	lukechampine.com/blake3 v1.4.1
 )
 
 require (
@@ -35,6 +36,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.5.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
@@ -95,7 +97,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
+	github.com/spf13/pflag v1.0.9
 	github.com/toon-format/toon-go v1.0.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
