@@ -21,7 +21,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -33,7 +33,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -45,7 +45,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -57,7 +57,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -69,7 +69,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -81,7 +81,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -93,7 +93,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -105,7 +105,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -117,7 +117,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/8"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -129,7 +129,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/9"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -141,7 +141,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/10"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -153,7 +153,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/11"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -165,7 +165,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/12"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -177,7 +177,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/13"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -189,7 +189,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/14"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -201,7 +201,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/15"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -213,7 +213,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/16"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -225,7 +225,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/17"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -237,7 +237,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/18"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -249,7 +249,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/19"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -261,7 +261,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/21"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -273,7 +273,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/22"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -285,7 +285,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/23"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -297,7 +297,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/34"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -309,7 +309,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/38"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -321,7 +321,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/39"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -333,7 +333,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/40"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -345,7 +345,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/41"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -357,7 +357,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/42"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -369,7 +369,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/43"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -381,7 +381,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/44"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -393,7 +393,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/45"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -405,7 +405,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/46"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -417,7 +417,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/47"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -429,7 +429,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/49"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -441,7 +441,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/50"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -453,7 +453,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/51"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -465,7 +465,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/52"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -477,7 +477,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/53"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -489,7 +489,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/54"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -501,7 +501,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/55"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -513,7 +513,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/56"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -525,7 +525,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/57"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -537,7 +537,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/58"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -549,7 +549,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/59"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -561,7 +561,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/60"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -573,7 +573,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/61"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -585,7 +585,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/68"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -597,7 +597,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/69"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -609,7 +609,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/70"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             }
           ],
@@ -620,551 +620,551 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Intentional warning for truncated input",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -1187,203 +1187,703 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 15,
+                    "endLine": 142,
+                    "startColumn": 3,
+                    "startLine": 142
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 298,
+                    "startColumn": 5,
+                    "startLine": 298
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/burpsuite-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 221,
+                    "startColumn": 5,
+                    "startLine": 221
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/checkov-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 251,
+                    "startColumn": 5,
+                    "startLine": 251
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/cyclonedx-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 656,
+                    "startColumn": 5,
+                    "startLine": 656
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/dbprotect-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 351,
+                    "startColumn": 5,
+                    "startLine": 351
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 435,
+                    "startColumn": 5,
+                    "startLine": 435
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 527,
+                    "startColumn": 5,
+                    "startLine": 527
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gitlab-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 305,
+                    "startColumn": 5,
+                    "startLine": 305
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gosec-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 276,
+                    "startColumn": 5,
+                    "startLine": 276
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 528,
+                    "startColumn": 7,
+                    "startLine": 528
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 541,
+                    "startColumn": 7,
+                    "startLine": 541
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/jfrog-xray-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 399,
+                    "startColumn": 5,
+                    "startLine": 399
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 206,
+                    "startColumn": 5,
+                    "startLine": 206
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 216,
+                    "startColumn": 7,
+                    "startLine": 216
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-cloud-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 198,
+                    "startColumn": 5,
+                    "startLine": 198
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-endpoint-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 461,
+                    "startColumn": 5,
+                    "startLine": 461
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-secure-score-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 339,
+                    "startColumn": 7,
+                    "startLine": 339
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 177,
+                    "startColumn": 5,
+                    "startLine": 177
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 266,
+                    "startColumn": 5,
+                    "startLine": 266
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 501,
+                    "startColumn": 5,
+                    "startLine": 501
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/neuvector-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 484,
+                    "startColumn": 5,
+                    "startLine": 484
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nikto-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 104,
+                    "startColumn": 7,
+                    "startLine": 104
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-sar.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 75,
+                    "startColumn": 7,
+                    "startLine": 75
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 192,
+                    "startColumn": 5,
+                    "startLine": 192
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 219,
+                    "startColumn": 5,
+                    "startLine": 219
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 390,
+                    "startColumn": 5,
+                    "startLine": 390
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 19,
+                    "endLine": 474,
+                    "startColumn": 7,
+                    "startLine": 474
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sonarqube-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 303,
+                    "startColumn": 5,
+                    "startLine": 303
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/twistlock-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 389,
+                    "startColumn": 5,
+                    "startLine": 389
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 477,
+                    "startColumn": 5,
+                    "startLine": 477
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 759,
+                    "startColumn": 5,
+                    "startLine": 759
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 230,
+                    "startColumn": 5,
+                    "startLine": 230
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 21,
+                    "endLine": 267,
+                    "startColumn": 9,
+                    "startLine": 267
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 20,
+                    "endLine": 43,
+                    "startColumn": 7,
+                    "startLine": 43
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 20,
+                    "endLine": 44,
+                    "startColumn": 7,
+                    "startLine": 44
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 20,
+                    "endLine": 45,
+                    "startColumn": 7,
+                    "startLine": 45
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 20,
+                    "endLine": 46,
+                    "startColumn": 7,
+                    "startLine": 46
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 20,
+                    "endLine": 47,
+                    "startColumn": 7,
+                    "startLine": 47
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 82,
+                    "startColumn": 5,
+                    "startLine": 82
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 83,
+                    "startColumn": 5,
+                    "startLine": 83
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 84,
+                    "startColumn": 5,
+                    "startLine": 84
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 85,
+                    "startColumn": 5,
+                    "startLine": 85
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 94,
+                    "startColumn": 5,
+                    "startLine": 94
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 108,
+                    "startColumn": 7,
+                    "startLine": 108
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts",
+                  "region": {
+                    "endColumn": 18,
+                    "endLine": 114,
+                    "startColumn": 5,
+                    "startLine": 114
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/converterutil.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 145,
+                    "startColumn": 5,
+                    "startLine": 145
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 90,
+                    "startColumn": 5,
+                    "startLine": 90
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 138,
+                    "startColumn": 5,
+                    "startLine": 138
+                  }
+                },
+                "message": "Unexpected console statement."
               },
               {
                 "kind": "fail",
-                "level": "warning"
+                "level": "warning",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts",
+                  "region": {
+                    "endColumn": 16,
+                    "endLine": 219,
+                    "startColumn": 5,
+                    "startLine": 219
+                  }
+                },
+                "message": "Unexpected console statement."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1576,7 +2076,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/20"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1588,7 +2088,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/48"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1600,7 +2100,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/71"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             }
           ],
@@ -1611,34 +2111,34 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "sanctioned parse-helper implementation",
               "status": "passed",
               "type": "waiver"
@@ -1661,15 +2161,45 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 40,
+                    "endLine": 150,
+                    "startColumn": 24,
+                    "startLine": 150
+                  }
+                },
+                "message": "Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling)."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts",
+                  "region": {
+                    "endColumn": 40,
+                    "endLine": 349,
+                    "startColumn": 24,
+                    "startLine": 349
+                  }
+                },
+                "message": "Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling)."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-utilities/src/string/index.ts",
+                  "region": {
+                    "endColumn": 37,
+                    "endLine": 117,
+                    "startColumn": 27,
+                    "startLine": 117
+                  }
+                },
+                "message": "Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling)."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -1709,7 +2239,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/24"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1721,7 +2251,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/25"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1733,7 +2263,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/26"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1745,7 +2275,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/27"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1757,7 +2287,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/28"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1769,7 +2299,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/29"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1781,7 +2311,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/30"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1793,7 +2323,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/31"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1805,7 +2335,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/32"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1817,7 +2347,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/33"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1829,7 +2359,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/64"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1841,7 +2371,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/65"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1853,7 +2383,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/66"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -1865,7 +2395,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/67"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             }
           ],
@@ -1876,155 +2406,155 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -2047,59 +2577,199 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 56,
+                    "endLine": 115,
+                    "startColumn": 53,
+                    "startLine": 115
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 7,
+                    "endLine": 156,
+                    "startColumn": 4,
+                    "startLine": 156
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 56,
+                    "endLine": 163,
+                    "startColumn": 53,
+                    "startLine": 163
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 56,
+                    "endLine": 164,
+                    "startColumn": 53,
+                    "startLine": 164
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 25,
+                    "endLine": 170,
+                    "startColumn": 22,
+                    "startLine": 170
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 32,
+                    "endLine": 182,
+                    "startColumn": 29,
+                    "startLine": 182
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 30,
+                    "endLine": 191,
+                    "startColumn": 27,
+                    "startLine": 191
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 26,
+                    "endLine": 198,
+                    "startColumn": 23,
+                    "startLine": 198
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 35,
+                    "endLine": 260,
+                    "startColumn": 32,
+                    "startLine": 260
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts",
+                  "region": {
+                    "endColumn": 32,
+                    "endLine": 277,
+                    "startColumn": 29,
+                    "startLine": 277
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts",
+                  "region": {
+                    "endColumn": 30,
+                    "endLine": 64,
+                    "startColumn": 27,
+                    "startLine": 64
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts",
+                  "region": {
+                    "endColumn": 31,
+                    "endLine": 65,
+                    "startColumn": 28,
+                    "startLine": 65
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts",
+                  "region": {
+                    "endColumn": 22,
+                    "endLine": 67,
+                    "startColumn": 19,
+                    "startLine": 67
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts",
+                  "region": {
+                    "endColumn": 35,
+                    "endLine": 72,
+                    "startColumn": 32,
+                    "startLine": 72
+                  }
+                },
+                "message": "Unexpected any. Specify a different type."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2171,7 +2841,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/35"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -2183,7 +2853,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/36"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -2195,7 +2865,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/37"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             }
           ],
@@ -2206,34 +2876,34 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -2256,15 +2926,45 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts",
+                  "region": {
+                    "endColumn": 28,
+                    "endLine": 606,
+                    "startColumn": 18,
+                    "startLine": 606
+                  }
+                },
+                "message": "An empty interface declaration allows any non-nullish value, including literals like `0` and `\"\"`.\n- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.\n- If you want a type meaning \"any object\", you probably want `object` instead.\n- If you want a type meaning \"any value\", you probably want `unknown` instead."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts",
+                  "region": {
+                    "endColumn": 33,
+                    "endLine": 4372,
+                    "startColumn": 18,
+                    "startLine": 4372
+                  }
+                },
+                "message": "An empty interface declaration allows any non-nullish value, including literals like `0` and `\"\"`.\n- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.\n- If you want a type meaning \"any object\", you probably want `object` instead.\n- If you want a type meaning \"any value\", you probably want `unknown` instead."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts",
+                  "region": {
+                    "endColumn": 37,
+                    "endLine": 4559,
+                    "startColumn": 18,
+                    "startLine": 4559
+                  }
+                },
+                "message": "An empty interface declaration allows any non-nullish value, including literals like `0` and `\"\"`.\n- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.\n- If you want a type meaning \"any object\", you probably want `object` instead.\n- If you want a type meaning \"any value\", you probably want `unknown` instead."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2303,7 +3003,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/62"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             },
             {
@@ -2315,7 +3015,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/63"
               },
-              "startTime": "2026-10-11T01:15:07.923Z",
+              "startTime": "2026-10-14T01:18:11.506Z",
               "status": "failed"
             }
           ],
@@ -2326,23 +3026,23 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-10-11T01:15:07.923Z",
+              "appliedAt": "2026-10-14T01:18:11.506Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-10-11T01:15:07.923Z",
+              "expiresAt": "2027-10-14T01:18:11.506Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -2365,11 +3065,31 @@
             "sarif-results": [
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts",
+                  "region": {
+                    "endColumn": 17,
+                    "endLine": 13,
+                    "startColumn": 11,
+                    "startLine": 13
+                  }
+                },
+                "message": "'before' is assigned a value but never used."
               },
               {
                 "kind": "fail",
-                "level": "error"
+                "level": "error",
+                "location": {
+                  "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts",
+                  "region": {
+                    "endColumn": 24,
+                    "endLine": 13,
+                    "startColumn": 19,
+                    "startLine": 13
+                  }
+                },
+                "message": "'after' is assigned a value but never used."
               }
             ],
             "sarif-severity-source": "result-level",
@@ -2400,7 +3120,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.923Z",
+  "timestamp": "2026-10-14T01:18:11.506Z",
   "tool": {
     "format": "SARIF",
     "name": "ESLint",

@@ -35,10 +35,12 @@ describe('sarif-to-hdf ground-truth anchor', () => {
   it('emits one requirement per distinct rule (spotbugs)', async () => {
     const input = loadFixture('input', 'spotbugs.sarif');
     const result = await convertSarifToHdf(input);
+    // +1: the run declares executionSuccessful: false, which contributes a
+    // requirement of its own beside the per-rule ones.
     assertRequirementCount(
       result,
-      countDistinctSarifRules(input),
-      'spotbugs.sarif: one requirement per distinct result ruleId (fallback rule.id)',
+      countDistinctSarifRules(input) + 1,
+      'spotbugs.sarif: one requirement per distinct result ruleId, plus the run-failed requirement',
     );
   });
 });
@@ -130,17 +132,248 @@ describe('SARIF Converter', async () => {
       expect(n.results[0].codeDesc).toBe(a.results[0].codeDesc);
     });
 
-    it('treats the results-absent fixture as not analyzed', async () => {
+    // The fixture carries executionSuccessful: false as well as an absent results
+    // array, and the declared failure is the more specific of the two signals.
+    it('treats the results-absent fixture as a failed run', async () => {
       const input = loadFixture('input', 'results-absent.sarif');
       const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines[0].requirements).toHaveLength(1);
       const req = result.baselines[0].requirements[0];
-      expect(req.id).toBe('ExampleAnalyzer-not-analyzed');
-      expect(req.results[0].status).toBe('notReviewed');
+      expect(req.id).toBe('ExampleAnalyzer-run-failed');
+      expect(req.results[0].status).toBe('error');
+      expect(req.results[0].codeDesc).toContain('exit code 127');
       expect(req.results[0].codeDesc).not.toContain('zero findings');
+      // A baseline is a policy document; per-run health does not belong on it.
+      expect(result.baselines[0].statusMessage).toBeUndefined();
     });
 
-    it('treats results:null as not analyzed, not as a pass', async () => {
+    // The absent-results rung in isolation: no invocation, so nothing contradicts
+    // the reading that the run simply never analyzed.
+    it('keeps absent results without an invocation as not analyzed', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'ExampleAnalyzer'}}}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-not-analyzed');
+      expect(req.results[0].status).toBe('notReviewed');
+      expect(result.baselines[0].requirements).toHaveLength(1);
+    });
+
+    // The card's defect: a failed run whose results array is [] converted to a pass.
+    it('converts a failed run with an empty results array to an error', async () => {
+      const input = loadFixture('input', 'failed-run.sarif');
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines).toHaveLength(1);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('eslint-run-failed');
+      expect(req.title).toBe('Run failed');
+      expect(req.results[0].status).toBe('error');
+      expect(req.results[0].codeDesc).not.toContain('zero findings');
+      expect(result.baselines[0].statusMessage).toBeUndefined();
+    });
+
+    // Ruling: a failed run that still produced findings keeps them. Incomplete
+    // coverage is not a reason to restyle sound findings as errors.
+    it('keeps the findings of a failed run that still reported some', async () => {
+      const input = loadFixture('input', 'spotbugs.sarif');
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      // N results where x < N carry error: the findings stand as reported, and the
+      // run's own failure is one more requirement beside them.
+      let failedReqs = 0;
+      let findingReqs = 0;
+      for (const req of baseline.requirements) {
+        if (req.id === 'SpotBugs-run-failed') {
+          failedReqs++;
+          expect(req.results[0].status).toBe('error');
+          expect(req.results[0].codeDesc).toContain('exit code 3');
+          expect(req.results[0].codeDesc).toContain('ERROR,MISSING CLASS,BUGS FOUND');
+          continue;
+        }
+        findingReqs++;
+        for (const res of req.results) {
+          expect(res.status).not.toBe('error');
+        }
+      }
+      expect(failedReqs).toBe(1);
+      expect(findingReqs).toBeGreaterThan(0);
+      expect(baseline.statusMessage).toBeUndefined();
+    });
+
+    // invocations is an array and SARIF does not say the entries must agree. Any
+    // failure counts, because a run that failed one of its invocations did not wholly
+    // succeed; reading only [0] would let a later failure disappear. Mirrors Go's
+    // TestConvertSarifToHDF_AnyFailedInvocationCounts.
+    it.each([
+      ['first of two failed', [{executionSuccessful: false}, {executionSuccessful: true}]],
+      ['second of two failed', [{executionSuccessful: true}, {executionSuccessful: false}]],
+      ['both failed', [{executionSuccessful: false}, {executionSuccessful: false}]],
+    ] as [string, Record<string, unknown>[]][])('%s: any failed invocation counts', async (_name, invocations) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'ExampleAnalyzer'}}, invocations, results: []}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-run-failed');
+      expect(req.results[0].status).toBe('error');
+    });
+
+    it('keeps a run whose invocations all succeeded a pass', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'ExampleAnalyzer'}},
+          invocations: [{executionSuccessful: true}, {executionSuccessful: true}],
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines[0].requirements[0].results[0].status).toBe('passed');
+      expect(result.baselines[0].requirements).toHaveLength(1);
+    });
+
+    // An invocation that omits the property says nothing; absence is not failure.
+    it('does not read an invocation without executionSuccessful as a failure', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'ExampleAnalyzer'}},
+          invocations: [{exitCode: 0}],
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines[0].requirements[0].results[0].status).toBe('passed');
+      expect(result.baselines[0].statusMessage).toBeUndefined();
+    });
+
+    // exitCode: null is not an exit code. Go's *int skips it, so this must too or the
+    // two languages print different messages. Mirrors Go's
+    // TestConvertSarifToHDF_NullExitCodeIsNotRendered.
+    it('does not render a null exitCode', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'ExampleAnalyzer'}},
+          invocations: [{executionSuccessful: false, exitCode: null}],
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const codeDesc = result.baselines[0].requirements[0].results[0].codeDesc;
+      expect(codeDesc).toBe('ExampleAnalyzer reported that its run did not complete successfully.');
+      expect(codeDesc).not.toContain('null');
+    });
+
+    it('takes the failure detail from the first failing invocation', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'ExampleAnalyzer'}},
+          invocations: [
+            {executionSuccessful: true, exitCode: 0},
+            {executionSuccessful: false, exitCode: 7, exitCodeDescription: 'first failure'},
+            {executionSuccessful: false, exitCode: 9, exitCodeDescription: 'second failure'},
+          ],
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const codeDesc = result.baselines[0].requirements[0].results[0].codeDesc;
+      expect(codeDesc).toContain('exit code 7: first failure');
+      expect(codeDesc).not.toContain('second failure');
+    });
+
+    // The driver name is read at six places across the two languages and must mean the
+    // same thing at every one. It did not: Go trimmed at none of its three sites, this
+    // side trimmed at two of its three, so a whitespace-only name produced a baseline
+    // called '   ' holding a requirement called 'sarif-run-failed' — an id that does not
+    // name its own baseline. Mirrors Go's
+    // TestConvertSarifToHDF_DriverNameIsTrimmedEverywhere.
+    const placeholderKinds = [
+      ['no-findings', {}, {results: []}, '-no-findings'],
+      ['not-analyzed', {}, {}, '-not-analyzed'],
+      ['run-failed', {invocations: [{executionSuccessful: false}]}, {results: []}, '-run-failed'],
+    ] as [string, Record<string, unknown>, Record<string, unknown>, string][];
+
+    it.each(placeholderKinds)('%s: a whitespace-only driver name falls back', async (_k, inv, res, suffix) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: '   '}}, ...inv, ...res}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('SARIF');
+      expect(baseline.requirements).toHaveLength(1);
+      expect(baseline.requirements[0].id).toBe('sarif' + suffix);
+    });
+
+    it.each(placeholderKinds)('%s: a padded real driver name is trimmed', async (_k, inv, res, suffix) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: '  gosec  '}}, ...inv, ...res}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('gosec');
+      expect(baseline.requirements).toHaveLength(1);
+      expect(baseline.requirements[0].id).toBe('gosec' + suffix);
+      expect(baseline.requirements[0].results[0].codeDesc).toContain('gosec');
+      expect(baseline.requirements[0].results[0].codeDesc).not.toContain('  gosec');
+    });
+
+    // The SEVENTH site. tool.name is read at the document level through firstDriver?.name
+    // rather than the helper, which is why a grep missed it and the first pass at this
+    // card left it untrimmed. Mirrors Go's
+    // TestConvertSarifToHDF_DocumentToolNameIsTrimmedToo.
+    it.each([
+      ['  gosec  ', 'gosec', 'gosec'],
+      ['   ', undefined, 'SARIF'],
+      ['gosec', 'gosec', 'gosec'],
+    ])('document tool.name for driver %s', async (name, wantTool, wantBaseline) => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name, version: '1.2.3'}}, results: []}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.tool?.name).toBe(wantTool);
+      expect(result.baselines[0].name).toBe(wantBaseline);
+      expect(result.tool?.version).toBe('1.2.3');
+    });
+
+    // Whatever the name, the baseline and the id it holds must agree about the driver.
+    it.each(['gosec', '  gosec  ', '   ', ''])('requirement id names its own baseline (name=%s)', async name => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name}}, invocations: [{executionSuccessful: false}], results: []}],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const baseline = result.baselines[0];
+      const wantPrefix = baseline.name === 'SARIF' ? 'sarif' : baseline.name;
+      expect(baseline.requirements[0].id).toBe(wantPrefix + '-run-failed');
+    });
+
+    it('gives a successful invocation no run-failed requirement', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'ExampleAnalyzer'}},
+          invocations: [{executionSuccessful: true}],
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(result.baselines[0].requirements).toHaveLength(1);
+    });
+
+    it('treats results:null with a failed invocation as an error, not a pass', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -151,7 +384,9 @@ describe('SARIF Converter', async () => {
       });
       const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
-      expect(req.results[0].status).toBe('notReviewed');
+      // This input declares executionSuccessful: false as well, and a tool that says
+      // it failed to start is an error rather than merely unreviewed.
+      expect(req.results[0].status).toBe('error');
       expect(req.results[0].codeDesc).not.toContain('zero findings');
     });
 
@@ -1379,10 +1614,12 @@ describe('SARIF Converter', async () => {
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('SpotBugs');
-      expect(baseline.requirements).toHaveLength(9);
+      // 9 rules, plus one synthesized requirement for the run's own declared failure.
+      expect(baseline.requirements).toHaveLength(10);
 
       // All SpotBugs results are note level → 0.3 impact
       for (const req of baseline.requirements) {
+        if (req.id === 'SpotBugs-run-failed') continue;
         expect(req.impact).toBe(0.3);
         expect(req.tags['sarif-level']).toBe('note');
       }

@@ -57,6 +57,7 @@ const DOCS_ORDER = {
     'oscal-cli-examples',
     'asff-interop',
     'vex-interop',
+    'sarif-round-trip',
     'cti-stix',
     'siem-export',
     // Reference

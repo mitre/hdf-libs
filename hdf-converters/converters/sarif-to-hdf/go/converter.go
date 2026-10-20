@@ -24,6 +24,9 @@ type SarifFile struct {
 	Schema  string     `json:"$schema"`
 	Version string     `json:"version"`
 	Runs    []SarifRun `json:"runs"`
+	// Properties is the log-level bag. Captured only so the passthrough can carry
+	// it; nothing in the mapping reads it.
+	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
 // SarifRun represents a single analysis run.
@@ -40,6 +43,21 @@ type SarifRun struct {
 	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
 	// Artifacts is the table artifactLocation.index addresses (§3.4.5).
 	Artifacts []SarifArtifact `json:"artifacts,omitempty"`
+	// Invocations carries the run's own account of whether it succeeded. A run can
+	// report its own failure, and a failure says something the results array cannot.
+	Invocations []SarifInvocation `json:"invocations,omitempty"`
+	// Properties is the run-level bag, captured for the passthrough only.
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// SarifInvocation is one execution of the tool. executionSuccessful is the only
+// required property of the object, and the only one this converter maps to status;
+// the exit fields are read solely to describe the failure.
+type SarifInvocation struct {
+	ExecutionSuccessful *bool   `json:"executionSuccessful,omitempty"`
+	ExitCode            *int    `json:"exitCode,omitempty"`
+	ExitCodeDescription *string `json:"exitCodeDescription,omitempty"`
+	ExitSignalName      *string `json:"exitSignalName,omitempty"`
 }
 
 // SarifArtifact is one entry of a run's artifacts table. Only its location is read:
@@ -75,6 +93,55 @@ func (r *SarifRun) UnmarshalJSON(data []byte) error {
 // or null — the tool did not analyze; true with an empty slice means it ran and
 // found nothing.
 func (r SarifRun) analyzed() bool { return r.Results != nil }
+
+// driverName is the run's tool driver name with surrounding whitespace removed, or ""
+// when the run names no driver. Every site reads it through here on purpose: six
+// open-coded reads across the two languages is how they stopped agreeing about a padded
+// name, and left a baseline called "   " holding an id that did not name it.
+func (r SarifRun) driverName() string {
+	if r.Tool == nil || r.Tool.Driver == nil {
+		return ""
+	}
+	return strings.TrimSpace(r.Tool.Driver.Name)
+}
+
+// executionFailed reports whether the run declared its own execution a failure.
+// Only an explicit false counts: executionSuccessful is required on an invocation
+// the run chose to emit, so its absence means the run said nothing, not that it
+// failed.
+func (r SarifRun) executionFailed() bool {
+	for _, inv := range r.Invocations {
+		if inv.ExecutionSuccessful != nil && !*inv.ExecutionSuccessful {
+			return true
+		}
+	}
+	return false
+}
+
+// invocationFailureDetail renders the exit information of the first failed
+// invocation as a parenthetical suffix, or "" when the run supplied none.
+func (r SarifRun) invocationFailureDetail() string {
+	for _, inv := range r.Invocations {
+		if inv.ExecutionSuccessful == nil || *inv.ExecutionSuccessful {
+			continue
+		}
+		var parts []string
+		if inv.ExitCode != nil {
+			parts = append(parts, fmt.Sprintf("exit code %d", *inv.ExitCode))
+		}
+		if inv.ExitSignalName != nil && *inv.ExitSignalName != "" {
+			parts = append(parts, *inv.ExitSignalName)
+		}
+		if inv.ExitCodeDescription != nil && *inv.ExitCodeDescription != "" {
+			parts = append(parts, *inv.ExitCodeDescription)
+		}
+		if len(parts) == 0 {
+			return ""
+		}
+		return " (" + strings.Join(parts, ": ") + ")"
+	}
+	return ""
+}
 
 // rawList is resultList's unparsed twin; indices line up with resultList.
 func (r SarifRun) rawList() []json.RawMessage {
@@ -317,17 +384,24 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
 
+	baselineNames := make([]string, 0, len(limitedRuns))
+	bagGroups := make([][]bagGroup, 0, len(limitedRuns))
 	for runIdx, run := range limitedRuns {
-		baseline := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
+		baseline, groups := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
+		baselineNames = append(baselineNames, baseline.Name)
+		bagGroups = append(bagGroups, groups)
 	}
 
+	// Through driverName like every other read of it, so a document cannot spell the
+	// same driver two ways: tool.name "  gosec  " beside a baseline named "gosec".
 	toolName := ""
 	toolVersion := ""
-	if len(sarif.Runs) > 0 && sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
-		driver := sarif.Runs[0].Tool.Driver
-		toolName = driver.Name
-		toolVersion = driver.Version
+	if len(sarif.Runs) > 0 {
+		toolName = sarif.Runs[0].driverName()
+		if sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
+			toolVersion = sarif.Runs[0].Tool.Driver.Version
+		}
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -340,6 +414,10 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		Components:       []hdf.Component{},
 		Timestamp:        &timestamp,
 	})
+
+	// Carriage last, so it describes the document that was actually built: the
+	// baseline names it addresses runs by are the ones convertRun settled on.
+	attachPropertyBags(hdfResult, collectPropertyBags(sarif, baselineNames, bagGroups))
 
 	return hdfResult, nil
 }
@@ -431,7 +509,7 @@ func resolveArtifactIndices(run *SarifRun) {
 
 // --- Run-level conversion ---
 
-func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) (hdf.EvaluatedBaseline, []bagGroup) {
 	// Fill in every indexed path — a result's own locations and its code-flow steps —
 	// before anything reads one, so the
 	// rest of the conversion needs no knowledge of the artifacts table. The typed
@@ -445,19 +523,43 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 	groupOrder, groupMap := groupResults(run, ruleMap)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
+	bagGroups := make([]bagGroup, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
 		g := groupMap[ruleID]
 		req := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
 		requirements = append(requirements, req)
+
+		// Collected in the same order the requirement's results are built, so a
+		// carried bag's ordinal addresses the result it came from.
+		bg := bagGroup{ruleID: g.ruleID}
+		if g.rule != nil {
+			bg.ruleProps = g.rule.Properties
+		}
+		for _, sr := range g.results {
+			bg.resultProps = append(bg.resultProps, sr.Properties)
+		}
+		bagGroups = append(bagGroups, bg)
 	}
 
 	// Use tool name for baseline name if available
 	baselineName := "SARIF"
 	var maintainer *string
-	if run.Tool != nil && run.Tool.Driver != nil {
-		if run.Tool.Driver.Name != "" {
-			baselineName = run.Tool.Driver.Name
-		}
+	if name := run.driverName(); name != "" {
+		baselineName = name
+	}
+
+	// A run that declared its own failure contributes a requirement of its own,
+	// beside whatever it did report. HDF expresses a partly-failed evaluation as a
+	// set of N results where x < N carry error — the way InSpec does, where a control
+	// that fails to execute yields error without scrubbing the run. The findings
+	// themselves are never restyled: what a failed run tells you is that its coverage
+	// was incomplete, not that what it found is wrong.
+	//
+	// It does NOT go on the baseline. A baseline is a policy document — what was
+	// required — and it must not change in response to the results attached to it, or
+	// the same policy scanned twice would yield two different baselines.
+	if run.executionFailed() {
+		requirements = append(requirements, synthesizeRunFailedRequirement(run, timestamp))
 	}
 
 	if len(requirements) == 0 {
@@ -466,7 +568,7 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 		}
 	}
 
-	return hdf.EvaluatedBaseline{
+	baseline := hdf.EvaluatedBaseline{
 		Name:            baselineName,
 		Version:         &version,
 		Title:           hdfutil.Ptr("Static Analysis Results Interchange Format"),
@@ -474,20 +576,42 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
 	}
+	restoreBaselineFields(&baseline, runBag(run))
+	return baseline, bagGroups
+}
+
+// synthesizeRunFailedRequirement is the requirement a run gets for declaring its own
+// execution a failure. Its id and title mark it as this converter's own, the way the
+// not-analyzed placeholder does, so a consumer can tell it from a rule the tool
+// reported.
+func synthesizeRunFailedRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
+	target := "SARIF analyzer"
+	idPrefix := "sarif"
+	if name := run.driverName(); name != "" {
+		target = name
+		idPrefix = name
+	}
+	return shared.BuildRunFailedRequirement(
+		idPrefix+"-run-failed",
+		fmt.Sprintf("%s reported that its run did not complete successfully%s.",
+			target, run.invocationFailureDetail()),
+		timestamp,
+	)
 }
 
 // HDF requires requirements.minItems=1, so a run contributing no requirements
-// still needs one. Which placeholder depends on whether the tool analyzed at
-// all: §3.14.23 distinguishes an absent or null results array, which analyzed
-// nothing, from [], which ran and found nothing. ID/target derive from
+// still needs one. Which placeholder depends on whether the tool analyzed at all:
+// §3.14.23 distinguishes an absent or null results array, which analyzed nothing,
+// from [], which ran and found nothing. A run that declared a failure has already
+// contributed a requirement and never reaches here. ID/target derive from
 // run.tool.driver.name so downstream converters that delegate to SARIF can
 // identify and override the placeholder.
 func synthesizeEmptyRunRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
 	target := "SARIF analyzer"
 	idPrefix := "sarif"
-	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
-		target = run.Tool.Driver.Name
-		idPrefix = run.Tool.Driver.Name
+	if name := run.driverName(); name != "" {
+		target = name
+		idPrefix = name
 	}
 	if !run.analyzed() {
 		return shared.BuildNotAnalyzedRequirement(
@@ -627,6 +751,11 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			if j == 0 {
 				expanded[j].RawSourceRecord = record
 			}
+			// Result fields SARIF cannot carry, from the row hdf-to-sarif put on this
+			// result's own bag. Every expanded row came from one SARIF result, so they
+			// share its carriage the way they share its record.
+			restoreUnexpressibleResult(&expanded[j], resultBagRow(sr))
+			restoreCarriedStatus(&expanded[j], resultBagRow(sr), sr.Kind)
 			perResult = append(perResult, perResultTagEntry(sr))
 		}
 		results = append(results, expanded...)
@@ -740,6 +869,13 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			req.Disposition = &disp
 		}
 	}
+
+	// Last: restore only what SARIF cannot express, from the carried bag if one is
+	// there. Untrusted and optional by design — see restoreUnexpressible.
+	if bag := ruleBag(rule); bag != nil {
+		restoreUnexpressible(&req, bag)
+	}
+
 	return req
 }
 
@@ -984,6 +1120,22 @@ func perResultTagEntry(result SarifResult) map[string]interface{} {
 	}
 	if len(result.PartialFingerprints) > 0 {
 		entry["partialFingerprints"] = result.PartialFingerprints
+	}
+	// The result's OWN message. SARIF scopes a message to the result; HDF's
+	// requirement-level descriptions[default] holds the first one as a summary, so
+	// without this a rule whose results carry different messages keeps only one,
+	// and an exporter re-deriving the message falls back to codeDesc — HDF location
+	// prose, not what the tool said.
+	if result.Message.Text != "" {
+		entry["message"] = result.Message.Text
+	}
+	// The result's OWN location. HDF's Source_Location is {ref, line} and closed and
+	// sits on the REQUIREMENT, so a rule with ten results at ten places kept only
+	// the first and an exporter re-emitting them gave all ten that one location.
+	// Region members beyond line have no HDF home at all; they ride here under the
+	// documented sarif-region vocabulary hdf-to-sarif already parses.
+	if loc := perResultLocation(result); len(loc) > 0 {
+		entry["location"] = loc
 	}
 	return entry
 }
@@ -1593,10 +1745,15 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 
 // ExpectedRequirementCount states how many requirements the input must convert
 // to: one per distinct rule in each run (message text standing in for a
-// missing ruleId), and one no-findings requirement for a run with no results.
+// missing ruleId), plus one for a run that declared its own execution a failure.
+// A run that contributed nothing AND declared no failure gets one placeholder
+// instead — the failure requirement takes precedence, so a failed run with no
+// results is one requirement and not two, and the one it gets is the failure.
 // Computed from the input alone, through the same grouping the conversion uses.
 func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string, error) {
-	const unit = "distinct SARIF rules"
+	// The unit names rules AND run outcomes because a failed run contributes a
+	// requirement of its own: a document with no rules at all can still convert to one.
+	const unit = "distinct SARIF rules and run outcomes"
 	sarif, err := parseSarif(input, inputVersion...)
 	if err != nil {
 		return 0, unit, err
@@ -1604,11 +1761,58 @@ func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string
 	count := 0
 	for _, run := range shared.LimitSliceWithWarning(sarif.Runs, 0, "run") {
 		order, _ := groupResults(run, buildRuleMap(run))
-		if len(order) == 0 {
+		// A run that declared its own failure contributes one requirement beyond its
+		// rules, so the predicted count has to include it or the CLI under-reports.
+		if run.executionFailed() {
+			count++
+		}
+		if len(order) == 0 && !run.executionFailed() {
 			count++
 			continue
 		}
 		count += len(order)
 	}
 	return count, unit, nil
+}
+
+// perResultLocation carries one result's first location: the uri and the region
+// members SARIF defines as integers. Only the FIRST — a multi-location result is
+// expanded into several HDF results on import, so each expanded row carries the
+// location it was expanded from.
+func perResultLocation(result SarifResult) map[string]interface{} {
+	if len(result.Locations) == 0 {
+		return nil
+	}
+	phys := result.Locations[0].PhysicalLocation
+	if phys == nil {
+		return nil
+	}
+	out := map[string]interface{}{}
+	if phys.ArtifactLocation != nil && phys.ArtifactLocation.URI != "" {
+		out["ref"] = phys.ArtifactLocation.URI
+	}
+	if r := phys.Region; r != nil {
+		region := map[string]interface{}{}
+		for key, v := range map[string]int{
+			"startLine": r.StartLine, "startColumn": r.StartColumn,
+			"endLine": r.EndLine, "endColumn": r.EndColumn,
+		} {
+			if v != 0 {
+				region[key] = v
+			}
+		}
+		// The snippet rides here too. It is the one region member with no HDF home at
+		// all — it reaches codeDesc as prose and nothing structured — so without this
+		// an exporter has nothing to rebuild region.snippet from.
+		if r.Snippet != nil && r.Snippet.Text != "" {
+			region["snippet"] = map[string]interface{}{"text": r.Snippet.Text}
+		}
+		if len(region) > 0 {
+			out["region"] = region
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

@@ -33,6 +33,8 @@ describe('adversarial corpus', () => {
       'no-timestamp',
       'requirement-without-title',
       'requirement-without-code',
+      'empty-tag-entry',
+      'passthrough-only-fields',
       'requirement-with-non-token-id',
       'requirement-without-severity',
       'baselines-missing',

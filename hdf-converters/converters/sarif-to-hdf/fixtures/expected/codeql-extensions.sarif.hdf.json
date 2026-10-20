@@ -44,7 +44,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.92Z",
+              "startTime": "2026-10-14T01:18:11.494Z",
               "status": "failed"
             }
           ],
@@ -79,6 +79,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "dsvpwa/handlers.py",
+                  "region": {
+                    "endColumn": 56,
+                    "startColumn": 37,
+                    "startLine": 116
+                  }
+                },
+                "message": "This path depends on a [user-provided value](1).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a886445d8048d84b:1",
                   "primaryLocationStartColumnFingerprint": "20"
@@ -120,7 +129,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.92Z",
+              "startTime": "2026-10-14T01:18:11.494Z",
               "status": "failed"
             }
           ],
@@ -152,6 +161,15 @@
             "sarif-results": [
               {
                 "kind": "fail",
+                "location": {
+                  "ref": "dsvpwa/handlers.py",
+                  "region": {
+                    "endColumn": 30,
+                    "startColumn": 17,
+                    "startLine": 184
+                  }
+                },
+                "message": "This command line depends on a [user-provided value](1).",
                 "partialFingerprints": {
                   "primaryLocationLineHash": "a392bb9657eb08d2:1",
                   "primaryLocationStartColumnFingerprint": "0"
@@ -175,11 +193,100 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "CodeQL",
+            "on": "run",
+            "properties": {
+              "codeqlConfigSummary": {
+                "disableDefaultQueries": false
+              },
+              "metricResults": [
+                {
+                  "rule": {
+                    "id": "py/summary/lines-of-code",
+                    "index": 36,
+                    "toolComponent": {
+                      "index": 0
+                    }
+                  },
+                  "ruleId": "py/summary/lines-of-code",
+                  "value": 116930
+                },
+                {
+                  "baseline": 709,
+                  "rule": {
+                    "id": "py/summary/lines-of-user-code",
+                    "index": 37,
+                    "toolComponent": {
+                      "index": 0
+                    }
+                  },
+                  "ruleId": "py/summary/lines-of-user-code",
+                  "value": 593
+                }
+              ],
+              "semmle.formatSpecifier": "sarif-latest"
+            }
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Accessing paths influenced by users can allow an attacker to access unexpected resources.",
+              "id": "py/path-injection",
+              "kind": "path-problem",
+              "name": "Uncontrolled data used in path expression",
+              "precision": "high",
+              "problem.severity": "error",
+              "security-severity": "7.5",
+              "sub-severity": "high",
+              "tags": [
+                "correctness",
+                "security",
+                "external/cwe/cwe-022",
+                "external/cwe/cwe-023",
+                "external/cwe/cwe-036",
+                "external/cwe/cwe-073",
+                "external/cwe/cwe-099"
+              ]
+            },
+            "ruleId": "py/path-injection"
+          },
+          {
+            "baseline": "CodeQL",
+            "on": "rule",
+            "properties": {
+              "description": "Using externally controlled strings in a command line may allow a malicious\n              user to change the meaning of the command.",
+              "id": "py/command-line-injection",
+              "kind": "path-problem",
+              "name": "Uncontrolled command line",
+              "precision": "high",
+              "problem.severity": "error",
+              "security-severity": "9.8",
+              "sub-severity": "high",
+              "tags": [
+                "correctness",
+                "security",
+                "external/cwe/cwe-078",
+                "external/cwe/cwe-088"
+              ]
+            },
+            "ruleId": "py/command-line-injection"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.92Z",
+  "timestamp": "2026-10-14T01:18:11.494Z",
   "tool": {
     "format": "SARIF",
     "name": "CodeQL"

@@ -1,0 +1,168 @@
+# hdf-to-sarif fixtures — provenance
+
+Recorded 2026-10-09.
+
+This converter's INPUT is HDF, so every input fixture here is HDF Results
+produced by running one of this repository's own converters over a source that
+itself qualifies as real (CLAUDE.md "Fixture Integrity", case 1). Nothing here
+was hand-authored.
+
+The SARIF 2.1.0 schema is NOT vendored again here — there is one copy in the
+repo, at `../../sarif-to-hdf/fixtures/sarif-schema-2.1.0.json`, recorded in that
+directory's `provenance.json` (OASIS canonical URL, SHA-256, retrieval date).
+Both directions validate against it; a second copy could drift from the first.
+
+## `input/`
+
+### `flawfinder.hdf.json`
+Produced by this repository's `sarif-to-hdf`, as
+`hdf convert --from sarif <trimmed sarif_input.sarif>`, built from
+`hdf-cli` at commit ddc2a204 (hence `generator.version` = "dev", the version a
+source build reports).
+
+- Source artifact: `../../sarif-to-hdf/fixtures/input/sarif_input.sarif`,
+  which that directory's provenance records as byte-identical to SAF CLI
+  `test/sample_data/sarif/sample_input_report/sarif_input.sarif`
+  (https://github.com/mitre/saf, pinned at 8037c390).
+- sha256 of the source as retrieved:
+  87846b1d52b288b27284aac7a8d454d880f4178b833237a51ab3811eda72fa65
+- Producer, read from the file itself: SARIF 2.1.0; `runs[0].tool.driver`
+  Flawfinder 2.0.15.
+- Trim, applied to the SARIF **before** conversion so the HDF is unmodified
+  converter output: 18 of 21 `runs[0].tool.driver.rules` and 70 of 77
+  `runs[0].results` dropped, keeping rules FF1014, FF1010 and FF1059 and the
+  7 results that reference them. Whole elements dropped, no string edited.
+  Those three were kept because they are the only ones that together cover all
+  three resolved SARIF levels — FF1014 `error`, FF1010 `note`, and FF1059,
+  which carries no `defaultConfiguration` at all and so resolves to SARIF's
+  default `warning` — plus a multi-result rule (FF1010 has four).
+- `baselines[0].resultsChecksum` is the converter's checksum of the TRIMMED
+  SARIF it was given, not of the full upstream file.
+- Field map (HDF → SARIF, as this converter writes it):
+  tool.name/version                → runs[].tool.driver.name/version
+  generator                        → runs[].properties.hdf.generator
+  baselines[].name                 → runs[].automationDetails.id
+  requirements[].id                → runs[].tool.driver.rules[].id, results[].ruleId
+  requirements[].title             → rules[].name, rules[].shortDescription.text
+  descriptions[default]            → rules[].fullDescription.text (no rationale label present)
+  descriptions[check]              → rules[].help.text
+  tags.helpUri                     → rules[].helpUri
+  tags.severity                    → rules[].defaultConfiguration.level, results[].level
+  tags.cwe / tags.nist / tags.cci  → rules[].properties.tags[]
+  tags.fingerprints                → results[].fingerprints, results[].partialFingerprints
+  sourceLocation.ref/line          → results[].locations[].physicalLocation.artifactLocation.uri / region.startLine
+  results[].status                 → results[].kind
+  results[].message|codeDesc       → results[].message.text
+  everything shared.BuildHDFBlock  → the `hdf` property bag (see the converter's docs)
+  carries
+
+FIELD COVERAGE. Every property of a results document is carried: 26 are reachable on
+`Evaluated_Requirement` (16 of its own plus `Requirement_Core`'s 12, overlapping on
+`descriptions` and `sourceLocation`) and 16 at the document root. Each maps to a SARIF
+field or reaches the `hdf` bag.
+
+Complete at property granularity only. Nested inside those properties, this exporter
+carries no bytes it was converted FROM and echoes back nothing it has already consumed;
+what that drops is listed under coverage gaps below, with the rationale at each function
+in `go/passthrough.go`.
+
+Seven fields previously reached neither a SARIF field nor the bag: `evidence`,
+`effectiveChecksum`, `controlType`, `verificationMethod`, `applicability` and
+`externalReferences`, all missing from the shared export block, and `remediation`,
+missing from this exporter's document-root key list. The shared-block gap was not
+SARIF-specific -- `hdf-to-ecs` and `hdf-to-splunk` use the same block -- so fixing it
+there changed those two exporters' output as well.
+
+Counting these is error-prone: the bundle embeds the common-primitives subschema under a
+`$defs` key equal to that subschema's `$id`, with `Requirement_Core` under its `$defs` in
+turn, so a walk following only `#/$defs/<Name>` has nothing to follow, stops at 16
+properties and reports full coverage. Resolve `$id`, or validate candidate documents
+against a real validator.
+
+### `grype-cve.hdf.json`
+Produced by this repository's `grype-to-hdf`, as
+`hdf convert --from grype <trimmed directory_scan.json>`, same CLI build.
+
+- Source artifact: `../../grype-to-hdf/fixtures/input/directory_scan.json`,
+  which that directory's provenance records as real grype 0.117.0 output from
+  an actual `grype dir:. -o json` run (2026-09-20) over a one-line
+  `requirements.txt` pinning `Jinja2==2.10`.
+- sha256 of the source as retrieved:
+  a7fcd429f7950fdbe35ec35eb36c49714b2f55b0ebf370b5b62e643001e199fa
+- Trim, applied to the grype JSON **before** conversion: 4 of 6 `matches`
+  dropped, keeping GHSA-462w-v97r-4m45 and GHSA-g3rq-g295-4j3m, and keeping the
+  `descriptor`, `source` and `distro` blocks whole. Whole elements dropped, no
+  string edited.
+- Kept because this is the repository's only committed real HDF Results
+  document carrying `cvss[]` — the scoring data SARIF 2.1.0 has no field for at
+  all — which is what exercises `rules[].properties["security-severity"]` and
+  the CVSS carriage in the `hdf` bag.
+
+## `expected/`
+
+Generated by this converter, not sourced. Regenerate with:
+
+    UPDATE_GOLDEN=1 go test ./converters/hdf-to-sarif/go/           # the three *.sarif.json
+    go test ./converters/hdf-to-sarif/go/ -update                   # corpus-outputs.json
+
+`minimal.sarif.json` has no local input: it is `@mitre/hdf-fixtures`
+`results/minimal.json`, loaded from the shared corpus by both languages.
+`corpus-outputs.json` freezes this converter's output for every case in
+`internal/corpus` ResultsCorpus(), including the ones it refuses; Go owns
+regeneration and the TypeScript test only verifies, which is what makes the
+byte-identical claim an assertion.
+
+Three further real documents are validated against the SARIF schema in both
+languages but deliberately NOT frozen — `@mitre/hdf-fixtures`
+`results/duplicate-baselines.json`, `results/merge-grype.json` and
+`results/merge-zap.json`. A golden for a 16-baseline Prisma export is hundreds
+of kilobytes of review noise, while schema validity and the run count are what
+they prove. (`merge-zap.json` is also the document that found the
+uri-reference defect: ZAP reports a template-placeholder URL that no URI
+grammar accepts. See `uri-reference-cases.json`.)
+
+## `uri-reference-cases.json`
+
+A shared Go/TypeScript case table, not a fixture: the exact strings this
+converter must produce for SARIF's `uri-reference` and `uri` formats. Both
+languages read it so neither can drift on a value no document happens to carry.
+
+Four rows are quoted verbatim from `@mitre/hdf-fixtures`
+`results/merge-zap.json` (real OWASP ZAP output against WebGoat), including the
+`mymac.com:8191` host they carry. That host is NOT redacted here: the table's
+purpose is to pin the exact bytes the converter must emit for a document already
+committed to this repository, so a substituted host would stop it quoting the
+document it claims to quote. The value is not newly exposed — it is already
+published in `@mitre/hdf-fixtures` and read by hdf-engine, hdf-cli's MCP tests
+and hdf-to-html's tests. If that fixture is ever redacted, these rows must be
+re-quoted from the redacted form in the same change.
+
+## Recorded coverage gaps
+
+- **Deliberate nested drops.** Three, all because the exporter carries no bytes it was
+  converted FROM and echoes back nothing it already consumed:
+  `extensions.rawSourceArtifacts` (`remainingExtensions` at document scope,
+  `baselineExtensions` at baseline scope); every `results[].rawSourceRecord`
+  (`withoutRawSourceRecord`); and everything under `extensions.passthrough.sarif`
+  except a property bag whose address matches an emitted object -- an unmatched bag
+  survives in the input, not the output, and even a matched one loses any key the
+  exporter already set (`setBag`). All in `go/passthrough.go`, which carries the
+  rationale. Tested: `go/schema_validation_test.go` and its TypeScript peer assert the
+  document-scope `rawSourceArtifacts` and `rawSourceRecord` drops, and
+  `go/passthrough_test.go` the unmatched-bag and consumed-namespace behavior. The
+  baseline-scope `rawSourceArtifacts` drop has no test in either language and is correct
+  by code reading only.
+- **Region precision.** `tags["sarif-region"]` is this converter's documented
+  home for `startColumn`/`endLine`/`endColumn`/offsets/snippet, because HDF's
+  `Source_Location` is `{ref, line}` and closed. No committed fixture carries
+  it, because `sarif-to-hdf` does not write it today (it puts the column into
+  the result's `codeDesc` prose and the snippet into `code`) and this card does
+  not change that importer. The real SARIF behind `flawfinder.hdf.json` DOES
+  carry `region.startColumn`, `endColumn` and `snippet`, so the data exists
+  upstream and is lost on import, not on export. The convention is covered by
+  unit tests in both languages rather than filled with a fabricated document.
+- **Carried property bags.** `extensions.passthrough.sarif` likewise has no
+  committed fixture: no importer writes that block yet. Covered by unit tests
+  in both languages, which build the document in code.
+- **EPSS and KEV.** No committed HDF Results document carries `epss` or `kev`.
+  Both are covered by unit tests; no document was manufactured to fill the gap.

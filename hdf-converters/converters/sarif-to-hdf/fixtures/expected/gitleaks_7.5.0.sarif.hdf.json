@@ -18,7 +18,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -29,7 +29,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -40,7 +40,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -51,7 +51,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -62,7 +62,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/6"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -73,7 +73,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/7"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             }
           ],
@@ -97,22 +97,82 @@
             "sarif-level": "warning",
             "sarif-results": [
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\","
+                    },
+                    "startLine": 13
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\","
+                    },
+                    "startLine": 13
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\","
+                    },
+                    "startLine": 44
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py",
+                  "region": {
+                    "snippet": {
+                      "text": "        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)"
+                    },
+                    "startLine": 37
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"AKIAIOSFODNN7EXAMPLE\","
+                    },
+                    "startLine": 44
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/tools/test_gitlab_secret_detection_report_parser.py",
+                  "region": {
+                    "snippet": {
+                      "text": "        self.assertEqual(\"AWS\\nAKIAIOSFODNN7EXAMPLE\", first_finding.description)"
+                    },
+                    "startLine": 37
+                  }
+                },
+                "message": "AWS Access Key secret detected"
               }
             ],
             "sarif-severity-source": "fallback",
@@ -138,7 +198,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             },
             {
@@ -149,7 +209,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/5"
               },
-              "startTime": "2026-10-11T01:15:07.925Z",
+              "startTime": "2026-10-14T01:18:11.508Z",
               "status": "failed"
             }
           ],
@@ -173,10 +233,30 @@
             "sarif-level": "warning",
             "sarif-results": [
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\","
+                    },
+                    "startLine": 13
+                  }
+                },
+                "message": "Asymmetric Private Key secret detected"
               },
               {
-                "kind": "fail"
+                "kind": "fail",
+                "location": {
+                  "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json",
+                  "region": {
+                    "snippet": {
+                      "text": "      \"raw_source_code_extract\": \"-----BEGIN OPENSSH PRIVATE KEY-----\","
+                    },
+                    "startLine": 13
+                  }
+                },
+                "message": "Asymmetric Private Key secret detected"
               }
             ],
             "sarif-severity-source": "fallback",
@@ -196,11 +276,140 @@
       "version": "2.1.0"
     }
   ],
+  "extensions": {
+    "passthrough": {
+      "sarif": {
+        "propertyBags": [
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 0,
+            "properties": {
+              "author": "Bhurinat Wangsutthitham",
+              "commit": "6d127980966808f7413935678e079dcd7fedf9c2",
+              "commitMessage": "feat: added GitLab secret detection report parser (#4605)\n\n* feat: added GitLab secret detection report parser\r\n\r\n* fix: Flake8 compliance\r\n\r\n* fix: remove entry from test_type.json\r\n\r\n* fix: change severity on parser\r\n\r\n* fix: update findings description field for raw_source_code\r\n\r\n* fix: add unique_id_from_tool for findings\r\n\r\n* fix: remove autoimported module\r\n\r\n* fix: typo\r\n\r\n* test: added unittests for unique_id_from_tool field\r\n\r\n* fix: Flake8 compliant\r\n\r\n* test: add testing for findings date\r\n\r\n* fix: datetime bug parser",
+              "date": "2021-07-15T22:00:32+07:00",
+              "email": "nate.bwangsut@gmail.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 1,
+            "properties": {
+              "author": "Cody Maffucci",
+              "commit": "8bbcdfd743c5695bdd7d3bc21aa9417131a7ab12",
+              "commitMessage": "Merge pull request #4877 from DefectDojo/release/2.1.0\n\nRelease/2.1.0",
+              "date": "2021-07-27T11:19:31-05:00",
+              "email": "46459665+Maffooch@users.noreply.github.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 2,
+            "properties": {
+              "author": "Cody Maffucci",
+              "commit": "8bbcdfd743c5695bdd7d3bc21aa9417131a7ab12",
+              "commitMessage": "Merge pull request #4877 from DefectDojo/release/2.1.0\n\nRelease/2.1.0",
+              "date": "2021-07-27T11:19:31-05:00",
+              "email": "46459665+Maffooch@users.noreply.github.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 3,
+            "properties": {
+              "author": "Cody Maffucci",
+              "commit": "8bbcdfd743c5695bdd7d3bc21aa9417131a7ab12",
+              "commitMessage": "Merge pull request #4877 from DefectDojo/release/2.1.0\n\nRelease/2.1.0",
+              "date": "2021-07-27T11:19:31-05:00",
+              "email": "46459665+Maffooch@users.noreply.github.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 4,
+            "properties": {
+              "author": "Bhurinat Wangsutthitham",
+              "commit": "6d127980966808f7413935678e079dcd7fedf9c2",
+              "commitMessage": "feat: added GitLab secret detection report parser (#4605)\n\n* feat: added GitLab secret detection report parser\r\n\r\n* fix: Flake8 compliance\r\n\r\n* fix: remove entry from test_type.json\r\n\r\n* fix: change severity on parser\r\n\r\n* fix: update findings description field for raw_source_code\r\n\r\n* fix: add unique_id_from_tool for findings\r\n\r\n* fix: remove autoimported module\r\n\r\n* fix: typo\r\n\r\n* test: added unittests for unique_id_from_tool field\r\n\r\n* fix: Flake8 compliant\r\n\r\n* test: add testing for findings date\r\n\r\n* fix: datetime bug parser",
+              "date": "2021-07-15T22:00:32+07:00",
+              "email": "nate.bwangsut@gmail.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 5,
+            "properties": {
+              "author": "Bhurinat Wangsutthitham",
+              "commit": "6d127980966808f7413935678e079dcd7fedf9c2",
+              "commitMessage": "feat: added GitLab secret detection report parser (#4605)\n\n* feat: added GitLab secret detection report parser\r\n\r\n* fix: Flake8 compliance\r\n\r\n* fix: remove entry from test_type.json\r\n\r\n* fix: change severity on parser\r\n\r\n* fix: update findings description field for raw_source_code\r\n\r\n* fix: add unique_id_from_tool for findings\r\n\r\n* fix: remove autoimported module\r\n\r\n* fix: typo\r\n\r\n* test: added unittests for unique_id_from_tool field\r\n\r\n* fix: Flake8 compliant\r\n\r\n* test: add testing for findings date\r\n\r\n* fix: datetime bug parser",
+              "date": "2021-07-15T22:00:32+07:00",
+              "email": "nate.bwangsut@gmail.com",
+              "offender": "AKIAIOSFODNN7EXAMPLE",
+              "repo": "."
+            },
+            "ruleId": "AWS Access Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 0,
+            "properties": {
+              "author": "Cody Maffucci",
+              "commit": "8bbcdfd743c5695bdd7d3bc21aa9417131a7ab12",
+              "commitMessage": "Merge pull request #4877 from DefectDojo/release/2.1.0\n\nRelease/2.1.0",
+              "date": "2021-07-27T11:19:31-05:00",
+              "email": "46459665+Maffooch@users.noreply.github.com",
+              "offender": "-----BEGIN OPENSSH PRIVATE KEY-----",
+              "repo": "."
+            },
+            "ruleId": "Asymmetric Private Key secret detected"
+          },
+          {
+            "baseline": "Gitleaks",
+            "on": "result",
+            "ordinal": 1,
+            "properties": {
+              "author": "Bhurinat Wangsutthitham",
+              "commit": "6d127980966808f7413935678e079dcd7fedf9c2",
+              "commitMessage": "feat: added GitLab secret detection report parser (#4605)\n\n* feat: added GitLab secret detection report parser\r\n\r\n* fix: Flake8 compliance\r\n\r\n* fix: remove entry from test_type.json\r\n\r\n* fix: change severity on parser\r\n\r\n* fix: update findings description field for raw_source_code\r\n\r\n* fix: add unique_id_from_tool for findings\r\n\r\n* fix: remove autoimported module\r\n\r\n* fix: typo\r\n\r\n* test: added unittests for unique_id_from_tool field\r\n\r\n* fix: Flake8 compliant\r\n\r\n* test: add testing for findings date\r\n\r\n* fix: datetime bug parser",
+              "date": "2021-07-15T22:00:32+07:00",
+              "email": "nate.bwangsut@gmail.com",
+              "offender": "-----BEGIN OPENSSH PRIVATE KEY-----",
+              "repo": "."
+            },
+            "ruleId": "Asymmetric Private Key secret detected"
+          }
+        ],
+        "schemaVersion": 1
+      }
+    }
+  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.925Z",
+  "timestamp": "2026-10-14T01:18:11.508Z",
   "tool": {
     "format": "SARIF",
     "name": "Gitleaks"

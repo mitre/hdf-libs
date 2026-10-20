@@ -341,7 +341,7 @@ describe('2020-12 features pass through untouched', () => {
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 76, if: 13, dependentRequired: 0 });
+    }).toEqual({ unevaluatedProperties: 77, if: 13, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {

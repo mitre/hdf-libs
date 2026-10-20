@@ -3,10 +3,11 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, buildRunFailedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, restoreCarriedStatus, resultBagRow, ruleBag, type BagGroup, type SarifLike, restoreBaselineFields, runBag} from './passthrough.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -16,9 +17,24 @@ interface SarifFile {
   $schema?: string;
   version: string;
   runs: SarifRun[];
+  // The log-level bag. Captured only so the passthrough can carry it; nothing in
+  // the mapping reads it.
+  properties?: Record<string, unknown>;
+}
+
+// One execution of the tool. executionSuccessful is the only required property of
+// the object, and the only one this converter maps to status; the exit fields are
+// read solely to describe the failure. Mirrors Go's SarifInvocation.
+interface SarifInvocation {
+  executionSuccessful?: boolean;
+  exitCode?: number;
+  exitCodeDescription?: string;
+  exitSignalName?: string;
 }
 
 interface SarifRun {
+  // The run-level bag, captured for the passthrough only.
+  properties?: Record<string, unknown>;
   // Rules may be defined on the driver or on any extension: modern CodeQL leaves
   // tool.driver.rules empty and puts every rule on an extension.
   tool?: {
@@ -29,6 +45,9 @@ interface SarifRun {
   // array the opposite meaning to [] — nothing analyzed, versus a scan that ran
   // and found nothing. Declaring it as a plain array also threw on the null.
   results?: SarifResult[] | null;
+  // The run's own account of whether it succeeded. A run can report its own
+  // failure, and a failure says something the results array cannot.
+  invocations?: SarifInvocation[];
   taxonomies?: SarifTaxonomy[];
   // The table artifactLocation.index addresses (§3.4.5). Only each entry's location
   // is read: an index resolves to that location's uri and no further.
@@ -217,7 +236,8 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
     throw new Error('Invalid SARIF structure: missing or invalid runs field');
   }
 
-  const firstDriver = sarif.runs[0]?.tool?.driver;
+  const firstRun = sarif.runs[0];
+  const firstDriver = firstRun?.tool?.driver;
 
   const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -228,18 +248,62 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 
   const timestamp = new Date();
 
+  const converted = limitedRuns.map((run, runIdx) =>
+    convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx]));
+  const baselines = converted.map(c => c.baseline);
+
+  // Carriage last, so it describes the document that was actually built: the
+  // baseline names it addresses runs by are the ones convertRun settled on.
+  const block = buildPassthroughBlock(
+    collectPropertyBags(sarif as SarifLike, baselines.map(b => b.name), converted.map(c => c.bagGroups)));
+
   return buildHdfResults({
     generatorName: 'sarif-to-hdf',
     converterVersion,
-    toolName: firstDriver?.name,
+    // Through driverName like every other read of it, so a document cannot spell the
+    // same driver two ways: tool.name '  gosec  ' beside a baseline named 'gosec'.
+    toolName: firstRun ? driverName(firstRun) || undefined : undefined,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx])),
+    baselines,
     timestamp,
+    ...(block ? {extensions: {passthrough: {sarif: block}}} : {}),
   });
 }
 
 // --- Run-level conversion ---
+
+// The run's tool driver name with surrounding whitespace removed, or '' when the run
+// names no driver. Every site reads it through here on purpose: six open-coded reads
+// across the two languages is how they stopped agreeing about a padded name, and left a
+// baseline called '   ' holding an id that did not name it. Mirrors Go's driverName.
+function driverName(run: SarifRun): string {
+  return run.tool?.driver?.name?.trim() ?? '';
+}
+
+// Whether the run declared its own execution a failure. Only an explicit false
+// counts: executionSuccessful is required on an invocation the run chose to emit,
+// so its absence means the run said nothing, not that it failed. Mirrors Go's
+// executionFailed.
+function executionFailed(run: SarifRun): boolean {
+  return (run.invocations ?? []).some(inv => inv.executionSuccessful === false);
+}
+
+// The exit information of the first failed invocation, as a parenthetical suffix
+// or '' when the run supplied none. Mirrors Go's invocationFailureDetail.
+function invocationFailureDetail(run: SarifRun): string {
+  for (const inv of run.invocations ?? []) {
+    if (inv.executionSuccessful !== false) continue;
+    const parts: string[] = [];
+    // Null as well as undefined: Go's *int reads JSON null as nil and skips it, so
+    // checking only undefined would print "exit code null" in one language alone.
+    if (inv.exitCode !== undefined && inv.exitCode !== null) parts.push(`exit code ${inv.exitCode}`);
+    if (inv.exitSignalName) parts.push(inv.exitSignalName);
+    if (inv.exitCodeDescription) parts.push(inv.exitCodeDescription);
+    return parts.length === 0 ? '' : ` (${parts.join(': ')})`;
+  }
+  return '';
+}
 
 // Fills in the uri an artifactLocation.index addresses. §3.4.5 permits a location to
 // carry only an index into run.artifacts, so the file IS known even where uri is
@@ -280,7 +344,7 @@ function resolveArtifactIndices(run: SarifRun): void {
   }
 }
 
-function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): EvaluatedBaseline {
+function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): {baseline: EvaluatedBaseline; bagGroups: BagGroup[]} {
   // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
   // the parsed objects in place, and rawSourceRecord is built from them, so without
   // this a record would carry the uri THIS CONVERTER inferred rather than what the
@@ -319,18 +383,48 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
     group.raws.push(rawSnapshots[srcIdx] ?? '');
   }
 
+  // Collected in the same order the requirement's results are built, so a carried
+  // bag's ordinal addresses the result it came from.
+  const bagGroups: BagGroup[] = [];
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
+    bagGroups.push({
+      ruleId,
+      ruleProps: group.rule?.properties,
+      resultProps: group.results.map(r => r.properties),
+    });
     return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
   });
 
   // Use tool name for baseline name if available
-  const baselineName = run.tool?.driver?.name || 'SARIF';
+  const baselineName = driverName(run) || 'SARIF';
+  const failed = executionFailed(run);
+
+  // A run that declared its own failure contributes a requirement of its own, beside
+  // whatever it did report. HDF expresses a partly-failed evaluation as a set of N
+  // results where x < N carry error — the way InSpec does, where a control that fails
+  // to execute yields error without scrubbing the run. The findings themselves are
+  // never restyled: what a failed run tells you is that its coverage was incomplete,
+  // not that what it found is wrong.
+  //
+  // It does NOT go on the baseline. A baseline is a policy document — what was
+  // required — and it must not change in response to the results attached to it, or
+  // the same policy scanned twice would yield two different baselines.
+  if (failed) {
+    const name = driverName(run);
+    const target = name || 'SARIF analyzer';
+    const idPrefix = name || 'sarif';
+    requirements.push(buildRunFailedRequirement(
+      `${idPrefix}-run-failed`,
+      `${target} reported that its run did not complete successfully${invocationFailureDetail(run)}.`,
+      timestamp,
+    ));
+  }
 
   if (requirements.length === 0) {
-    const driverName = run.tool?.driver?.name?.trim() || '';
-    const target = driverName || 'SARIF analyzer';
-    const idPrefix = driverName || 'sarif';
+    const name = driverName(run);
+    const target = name || 'SARIF analyzer';
+    const idPrefix = name || 'sarif';
     requirements.push(analyzed
       ? buildNoFindingsRequirement(
           `${idPrefix}-no-findings`,
@@ -344,11 +438,14 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
         ));
   }
 
-  return createMinimalBaseline(baselineName, requirements, {
+  const baseline = createMinimalBaseline(baselineName, requirements, {
     version,
     title: 'Static Analysis Results Interchange Format',
     resultsChecksum,
   });
+  restoreBaselineFields(baseline as unknown as Record<string, unknown>, runBag(run));
+
+  return {baseline, bagGroups};
 }
 
 // Indexes every rule a run defines, from the driver and from any extensions.
@@ -426,6 +523,11 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       // and keeps ADR-0017's rule intact, since nothing is merged across SARIF results;
       // the record's own pointer still says which result it came from.
       if (j === 0) r.rawSourceRecord = record;
+      // Result fields SARIF cannot carry, from the row hdf-to-sarif put on this
+      // result's own bag. Every expanded row came from one SARIF result, so they
+      // share its carriage the way they share its record.
+      restoreUnexpressibleResult(r as unknown as Record<string, unknown>, resultBagRow(sr));
+      restoreCarriedStatus(r as unknown as Record<string, unknown>, resultBagRow(sr), sr.kind);
       perResult.push(perResultTagEntry(sr));
     }
     results.push(...expanded);
@@ -538,6 +640,12 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       r.disposition = governingDisposition(overrides, effRoll);
     }
   }
+
+  // Last: restore only what SARIF cannot express, from the carried bag if one is
+  // there. Untrusted and optional by design — see restoreUnexpressible.
+  const bag = ruleBag(rule);
+  if (bag) restoreUnexpressible(req as unknown as Record<string, unknown>, bag);
+
   return req;
 }
 
@@ -710,7 +818,48 @@ function perResultTagEntry(result: SarifResult): Record<string, unknown> {
   if (result.partialFingerprints && Object.keys(result.partialFingerprints).length > 0) {
     entry.partialFingerprints = result.partialFingerprints;
   }
+  // The result's OWN message. SARIF scopes a message to the result; HDF's
+  // requirement-level descriptions[default] holds the first one as a summary, so
+  // without this a rule whose results carry different messages keeps only one, and
+  // an exporter re-deriving the message falls back to codeDesc — HDF location prose,
+  // not what the tool said.
+  if (result.message?.text) entry.message = result.message.text;
+  // The result's OWN location. HDF's Source_Location is {ref, line} and closed and
+  // sits on the REQUIREMENT, so a rule with ten results at ten places kept only the
+  // first and an exporter re-emitting them gave all ten that one location. Mirrors
+  // Go's perResultLocation.
+  const loc = perResultLocation(result);
+  if (loc) entry.location = loc;
   return entry;
+}
+
+/**
+ * Carries one result's first location: the uri and the region members SARIF defines
+ * as integers. Only the FIRST — a multi-location result is expanded into several
+ * HDF results on import, so each expanded row carries what it was expanded from.
+ */
+function perResultLocation(result: SarifResult): Record<string, unknown> | undefined {
+  const phys = result.locations?.[0]?.physicalLocation;
+  if (!phys) return undefined;
+  const out: Record<string, unknown> = {};
+  if (phys.artifactLocation?.uri) out.ref = phys.artifactLocation.uri;
+  const r = phys.region;
+  if (r) {
+    const region: Record<string, number> = {};
+    for (const [k, v] of Object.entries({
+      startLine: r.startLine, startColumn: r.startColumn,
+      endLine: r.endLine, endColumn: r.endColumn,
+    })) {
+      if (typeof v === 'number' && v !== 0) region[k] = v;
+    }
+    // The snippet rides here too. It is the one region member with no HDF home at
+    // all — it reaches codeDesc as prose and nothing structured — so without this an
+    // exporter has nothing to rebuild region.snippet from.
+    const snippetText = r.snippet?.text;
+    if (snippetText) (region as Record<string, unknown>).snippet = {text: snippetText};
+    if (Object.keys(region).length > 0) out.region = region;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 // The kind every result in the group STATED, or undefined when they disagree or any

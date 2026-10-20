@@ -267,18 +267,24 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 		hdf["cci"] = cci
 	}
 	passthrough := map[string]string{
-		"tags":             "tags",
-		"cvss":             "cvss",
-		"cwe":              "cwe",
-		"epss":             "epss",
-		"kev":              "kev",
-		"affectedPackages": "affected_packages",
-		"descriptions":     "descriptions",
-		"results":          "results",
-		"statusOverrides":  "status_overrides",
-		"poams":            "poams",
-		"code":             "code",
-		"refs":             "refs",
+		"tags":               "tags",
+		"cvss":               "cvss",
+		"cwe":                "cwe",
+		"epss":               "epss",
+		"kev":                "kev",
+		"affectedPackages":   "affected_packages",
+		"descriptions":       "descriptions",
+		"results":            "results",
+		"statusOverrides":    "status_overrides",
+		"poams":              "poams",
+		"code":               "code",
+		"refs":               "refs",
+		"evidence":           "evidence",
+		"effectiveChecksum":  "effective_checksum",
+		"controlType":        "control_type",
+		"verificationMethod": "verification_method",
+		"applicability":      "applicability",
+		"externalReferences": "external_references",
 	}
 	for src, dst := range passthrough {
 		if v, ok := req[src]; ok {
@@ -301,9 +307,23 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 // per-event lines into byte-identical NDJSON with the TypeScript side. Go's
 // encoding/json already sorts object keys.
 func EncodeLine(v interface{}) ([]byte, error) {
+	return encode(v, "")
+}
+
+// EncodeDocument returns v as two-space-indented JSON, otherwise identical to
+// EncodeLine: HTML escaping disabled, negative zero normalized, object keys
+// sorted, trailing newline. For an exporter whose output is one JSON DOCUMENT
+// rather than a stream of events, where a single-line file is needlessly hostile
+// to a human reader.
+func EncodeDocument(v interface{}) ([]byte, error) {
+	return encode(v, "  ")
+}
+
+func encode(v interface{}, indent string) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
+	enc.SetIndent("", indent)
 	if err := enc.Encode(normalizeNegativeZero(v, 0)); err != nil {
 		return nil, err
 	}

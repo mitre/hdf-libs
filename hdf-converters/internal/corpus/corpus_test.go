@@ -27,6 +27,8 @@ func TestAdversarialCorpus_CoversDocumentedCases(t *testing.T) {
 		"no-timestamp",
 		"requirement-without-title",
 		"requirement-without-code",
+		"empty-tag-entry",
+		"passthrough-only-fields",
 		"requirement-with-non-token-id",
 		"requirement-without-severity",
 		"baselines-missing",
@@ -279,6 +281,8 @@ func TestCorpusContracts_AreExplicitAndCorrectlyAssigned(t *testing.T) {
 		"requirement-without-title": MustConvert,
 		// Added on main after this table was written: a package-style id is the
 		// commonest non-token shape in real data, and it must still convert.
+		"empty-tag-entry":               MustConvert,
+		"passthrough-only-fields":       MustConvert,
 		"requirement-with-non-token-id": MustConvert,
 		"requirement-without-code":      MustConvert,
 		"requirement-without-severity":  MustConvert,

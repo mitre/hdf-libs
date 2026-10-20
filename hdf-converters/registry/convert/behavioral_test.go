@@ -70,7 +70,7 @@ func TestConvert_PerWrapperType(t *testing.T) {
 func TestConvert_ReverseHDFToX(t *testing.T) {
 	SetVersion("0.0.0-test")
 	results := readInput(t, "gosec-to-hdf/fixtures/expected/real.json.hdf.json")
-	for _, dest := range []string{"ckl", "asff", "csv", "ocsf", "splunk", "xccdf", "xml", "cklb", "ecs", "oscal-sar"} {
+	for _, dest := range []string{"ckl", "asff", "csv", "ocsf", "splunk", "xccdf", "xml", "cklb", "ecs", "oscal-sar", "sarif"} {
 		t.Run(dest, func(t *testing.T) {
 			conv, err := GetConverter("hdf", dest)
 			if err != nil {
@@ -317,7 +317,7 @@ func TestConvert_InvalidInputErrors(t *testing.T) {
 	for _, src := range []string{"gosec", "oscal-catalog", "oscal-ssp", "oscal-assessment-plan", "openvex", "sarif", "gitlab", "legacyhdf"} {
 		t.Run(src, func(t *testing.T) { mustError(t, src, "hdf") })
 	}
-	for _, dest := range []string{"ckl", "asff", "csv", "ocsf", "splunk", "xccdf", "xml", "cklb", "ecs", "oscal-sar"} {
+	for _, dest := range []string{"ckl", "asff", "csv", "ocsf", "splunk", "xccdf", "xml", "cklb", "ecs", "oscal-sar", "sarif"} {
 		t.Run("hdf-"+dest, func(t *testing.T) { mustError(t, "hdf", dest) })
 	}
 	for _, dest := range []string{"csaf-vex", "cyclonedx-vex", "openvex", "oscal-poam"} {

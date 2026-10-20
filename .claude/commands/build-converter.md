@@ -976,7 +976,7 @@ if (requirements.length === 0) {
 
 ### `passed` vs. `notApplicable` — the distinction matters
 
-Synthesize **`passed`** when the scanner *ran* against in-scope inputs and found nothing wrong. This is the default. Spec-backed: NIST 800-53A *Satisfied*, OSCAL `satisfied`, XCCDF `pass`, STIG *Not_a_Finding*, SARIF v2.1.0 §3.7.2 (empty `results[]` array means the scan ran clean). The shared `BuildNoFindingsRequirement` helper produces `passed` for this case.
+Synthesize **`passed`** when the scanner *ran* against in-scope inputs and found nothing wrong. This is the default. Spec-backed: NIST 800-53A *Satisfied*, OSCAL `satisfied`, XCCDF `pass`, STIG *Not_a_Finding*, SARIF v2.1.0 §3.14.23 ("if the tool did not detect any results, `results` **SHALL** be an empty array" — NOT §3.7.2, whose generic array-default rule §3.14.23 explicitly overrides by defaulting an absent `results` to null). The shared `BuildNoFindingsRequirement` helper produces `passed` for this case.
 
 Synthesize **`notApplicable`** when the rule's applicability check itself didn't run — e.g. an AWS Config rule with zero in-scope resources, where the rule never evaluated against anything. The codeDesc should explain *why* it didn't apply, and `tags` should preserve the scan metadata. Do NOT use `BuildNoFindingsRequirement` for this case; construct the requirement explicitly with `Status: hdf.NotApplicable`. See `aws-config-to-hdf` for the model.
 

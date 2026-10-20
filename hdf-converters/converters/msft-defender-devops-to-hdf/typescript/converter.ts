@@ -206,7 +206,9 @@ function applyEnrichments(
 }
 
 // HDF requires requirements.minItems=1; SARIF's empty results[] means the
-// scan ran clean (§3.7.2), so synthesize one passed placeholder per baseline.
+// scan ran clean (§3.14.23), so synthesize one passed placeholder per baseline. A
+// run that declared its own failure is handled upstream by the generic SARIF
+// converter, which this one delegates to, and never reaches here.
 function synthesizeNoFindingsPlaceholders(result: HDFResults): void {
   const startTime = result.timestamp ?? new Date();
   for (const baseline of result.baselines ?? []) {

@@ -5,21 +5,21 @@
         {
           "descriptions": [
             {
-              "data": "ExampleAnalyzer reported no result set; the run did not analyze.",
+              "data": "ExampleAnalyzer reported that its run did not complete successfully (exit code 127: analyzer binary not found on PATH).",
               "label": "default"
             }
           ],
           "results": [
             {
-              "codeDesc": "ExampleAnalyzer reported no result set; the run did not analyze.",
-              "startTime": "2026-10-11T01:15:07.928Z",
-              "status": "notReviewed"
+              "codeDesc": "ExampleAnalyzer reported that its run did not complete successfully (exit code 127: analyzer binary not found on PATH).",
+              "startTime": "2026-10-14T01:18:11.524Z",
+              "status": "error"
             }
           ],
-          "id": "ExampleAnalyzer-not-analyzed",
+          "id": "ExampleAnalyzer-run-failed",
           "impact": 0,
           "tags": {},
-          "title": "Not analyzed"
+          "title": "Run failed"
         }
       ],
       "resultsChecksum": {
@@ -35,7 +35,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T01:15:07.928Z",
+  "timestamp": "2026-10-14T01:18:11.524Z",
   "tool": {
     "format": "SARIF",
     "name": "ExampleAnalyzer",
