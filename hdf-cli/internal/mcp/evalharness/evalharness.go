@@ -56,21 +56,26 @@ const (
 	// description had to say a governing POA&M counts too; measured 5617.
 	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
 	// measured 5669.
+	// Raised to 5800 (owner decision 2026-10-05) for the twelve advertised enum
+	// arrays; measured 5778. An enum costs tokens here and saves a rejected call
+	// plus a retry, which no budget in this file counts.
+	// Raised to 5720 (owner decision 2026-10-11) for hdf_apply_amendment's
+	// requireMatch; measured 5710 after two shortenings of its description.
+	// Raised to 5850 on merging those two branches: each raise was measured
+	// against a surface without the other, and carrying both measures 5807 —
+	// over either ceiling. Needs the owner's confirmation like the two above.
 	// Raised to 5710 (owner decision 2026-10-11) so hdf_validate's content field
 	// can say that inline content does not resolve an evidence package's
 	// references: hdf-libs-52n0c.32 made it stop resolving them against the MCP
 	// root, and the published schema said nothing about it, which is false by
-	// omission to a client that reads only the schema. Buys correctness, not
-	// surface, like the 1020 per-tool raise. Measured 5707; a longer first wording
-	// measured 5716 and was tightened before raising. hdf-libs-5cim9 — the audit
-	// this block has named as due since the 5580 raise — still has not run.
-	// NOTE on the ordinals above: they do not reconcile. Counting the "Raised"
-	// clauses makes 5580 the fourth, but its own text calls it the fifth, and the
-	// ReadProfileBudget block below runs two ahead of its clause count in the same
-	// way. Both schemes are now in the file and neither can be checked, so this
-	// entry claims no ordinal; 5cim9 should settle the count rather than each
-	// raise re-deriving it.
-	ToolsListTotalBudget = 5710
+	// omission to a client that reads only the schema.
+	// MERGED VALUE, NEEDS THE OWNER'S CONFIRMATION: each ceiling above was measured
+	// without the other branch's surface. Carrying all three measures 5833, so 5850
+	// holds with 17 tokens of headroom — thinner than any single raise intended.
+	// hdf-libs-5cim9, the audit this block has named as due since the 5580 raise,
+	// should settle the value and the ordinal scheme rather than each raise
+	// re-deriving them.
+	ToolsListTotalBudget = 5850
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -101,7 +106,10 @@ const (
 	// hdf_query is now roughly a fifth of the listing and this is its fifth raise
 	// — the audit in hdf-libs-5cim9 was named as the thing to do before a fifth,
 	// and it has not run. Say so rather than let the ratchet look routine.
-	ToolsListPerToolBudget = 1080
+	// Raised to 1120 (owner decision 2026-10-05) when the closed vocabularies became
+	// real enum arrays: status, severity, verbosity and fields now advertise their
+	// members as data instead of prose an agent has to parse. Measured 1102.
+	ToolsListPerToolBudget = 1120
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -128,13 +136,17 @@ const (
 	// Unlike the raise above, trimming did NOT help — three wordings measured
 	// 3969/3971/3972, so the cheapest was the clearest and the cost is the field
 	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
+	// Raised to 4100 (owner decision 2026-10-05) for the advertised enum arrays on
+	// the read tools; measured 4072.
 	// Raised to 4010 (owner decision 2026-10-11) so hdf_validate's content field
 	// can say that inline content does not resolve an evidence package's
 	// references — hdf_validate is in this profile, so the correctness fix in
-	// hdf-libs-52n0c.32 lands here too. Measured 4007, against 3987 before the
-	// wording was added. No ordinal claimed, for the reason recorded against
-	// ToolsListTotalBudget above; 5cim9 still has not run.
-	ReadProfileBudget = 4010
+	// hdf-libs-52n0c.32 lands here too. Measured 4007, against 3987 before.
+	// MERGED VALUE, NEEDS THE OWNER'S CONFIRMATION for the reason recorded against
+	// ToolsListTotalBudget above. Carrying both raises measures 4098 against this
+	// 4100 — TWO tokens of headroom, so the next description edit of any read tool
+	// will breach it. The thinnest margin in this file.
+	ReadProfileBudget = 4100
 )
 
 var (

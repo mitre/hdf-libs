@@ -2,8 +2,11 @@ package evals
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/tools"
 )
 
 // TestToolErrorPaths_DeliverTaxonomyCode drives the hdf_query, hdf_diff, and
@@ -41,10 +44,16 @@ func TestToolErrorPaths_DeliverTaxonomyCode(t *testing.T) {
 			collection: "changes",
 		},
 		{
+			// A SEMANTIC error, which is what this test is about: it reaches the handler, so
+			// the taxonomy code, the nextCall hint and the non-nil errors[] all have to
+			// survive the SDK's output validation. The mode is valid on purpose — an
+			// out-of-vocabulary mode is now rejected before the handler runs and produces
+			// no structured output at all, so it cannot exercise this at all. That
+			// behaviour is pinned by TestEnumRejection_HappensBeforeTheHandler below.
 			call: call{Tool: "hdf_validate", Args: map[string]any{
 				"source": map[string]any{"path": "nonexistent-4908-2-validate.json"},
-				"mode":   "bogus-mode"}},
-			wantInText: []string{"unknown mode", `"nextCall":`},
+				"mode":   "schema"}},
+			wantInText: []string{`"code":"DOCUMENT_NOT_FOUND"`, `"nextCall":`},
 			collection: "errors",
 		},
 	}
@@ -109,4 +118,43 @@ func assertToolIsError(t *testing.T, tool, frame string) (string, map[string]any
 		t.Fatalf("%s: isError result carried no content: %s", tool, frame)
 	}
 	return m.Result.Content[0].Text, m.Result.StructuredContent
+}
+
+// An out-of-vocabulary enum value is rejected by the SDK's argument validation before the
+// handler runs, so it carries no taxonomy code, no nextCall and no structured output.
+//
+// Accepted deliberately (owner decision 2026-10-05) when the closed vocabularies became
+// advertised enums: the SDK validates arguments against the input schema with no opt-out
+// and no hook to own the message, the rejection still names the property, the offending
+// value and the allowed values, and an agent that reads the schema cannot produce this
+// error at all. The alternative was a middleware regex-parsing a dependency's error prose
+// to rebuild a message we used to own — fragile in a way that degrades silently.
+//
+// Pinned so the trade is visible rather than looking like a lost taxonomy, and so a future
+// SDK that lets a server own this error fails here and prompts restoring the richer form.
+func TestEnumRejection_HappensBeforeTheHandler(t *testing.T) {
+	frames := driveCalls(t, []call{{Tool: "hdf_validate", Args: map[string]any{
+		"source": map[string]any{"path": "nonexistent-4908-2-validate.json"},
+		"mode":   "bogus-mode",
+	}}})
+
+	text, structured := assertToolIsError(t, "hdf_validate", frames[0])
+	// Built from the exported vocabulary, not typed out: a fourth hand-written copy of
+	// validate's modes is exactly what the declared vocabulary exists to prevent.
+	wantMembers := fmt.Sprintf("%s %s %s",
+		tools.ValidateModeSchema, tools.ValidateModeChecksums, tools.ValidateModeCompleteness)
+	for _, want := range []string{"/properties/mode", "bogus-mode", wantMembers} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the rejection must still name %q, so a caller can fix the call; got: %s", want, text)
+		}
+	}
+	// The absences are the point: asserting them keeps this test honest about what was
+	// given up, instead of only checking what remains.
+	if strings.Contains(text, `"nextCall":`) {
+		t.Errorf("a nextCall hint reappeared — the SDK may now let a server own this error, "+
+			"so restore the handler's taxonomy message and delete this test: %s", text)
+	}
+	if _, present := structured["errors"]; present {
+		t.Errorf("structured output reappeared for a schema-rejected call: %#v", structured)
+	}
 }

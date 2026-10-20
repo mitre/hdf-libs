@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -125,19 +126,23 @@ func TestTokenizerPinned(t *testing.T) {
 }
 
 func TestMeasureToolsList_WithinCeilings(t *testing.T) {
-	golden := readTestdata(t, "tools-list.golden.json")
+	// Measured on the LIVE surface, not the committed golden. The ceiling is a statement
+	// about what an agent carries per turn, so it has to be enforced against what the
+	// server actually advertises; measuring the golden made it true only indirectly, via
+	// the separate test that keeps the golden in sync.
+	live := driveToolsList(t)
 	// Feed the real per-tool JSON so the per-tool ceiling (ToolsListPerToolBudget) is enforced on the
 	// production surface, not just the total — this is where tool-schema growth
 	// surfaces before it silently consumes headroom.
-	m, err := MeasureToolsList(golden, perToolJSON(t, golden))
+	m, err := MeasureToolsList(live, perToolJSON(t, live))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(m.Violations) != 0 {
-		t.Errorf("golden tools/list must be within ceilings (total %d, per-tool %v), got violations: %v", m.TotalTokens, m.PerTool, m.Violations)
+		t.Errorf("live tools/list must be within ceilings (total %d, per-tool %v), got violations: %v", m.TotalTokens, m.PerTool, m.Violations)
 	}
 	if m.TotalTokens > ToolsListTotalBudget {
-		t.Errorf("golden tools/list %d tokens exceeds total budget %d", m.TotalTokens, ToolsListTotalBudget)
+		t.Errorf("live tools/list %d tokens exceeds total budget %d", m.TotalTokens, ToolsListTotalBudget)
 	}
 }
 
@@ -191,7 +196,7 @@ func TestMeasureToolsList_FailsPastCeilings(t *testing.T) {
 func TestMeasureToolsList_OverBudgetNotHardFail(t *testing.T) {
 	// A tools/list between the total budget and the hard-fail ceiling is flagged
 	// as over-budget (but not hard-fail) — the middle branch.
-	mid := `{"tools":["` + strings.Repeat("status severity impact requirement baseline component ", 800) + `"]}`
+	mid := `{"tools":["` + strings.Repeat("status severity impact requirement baseline component ", 1000) + `"]}`
 	m, _ := MeasureToolsList(mid, map[string]string{})
 	if m.TotalTokens <= ToolsListTotalBudget || m.TotalTokens > ToolsListHardFail {
 		t.Skipf("fixture sized %d not in the (%d, %d] over-budget band; adjust", m.TotalTokens, ToolsListTotalBudget, ToolsListHardFail)
@@ -244,12 +249,38 @@ func TestReplay_NilAssert(t *testing.T) {
 // TestToolsList_MatchesGolden re-drives the live server and asserts its
 // tools/list equals the golden — so any growth in the tool surface surfaces in
 // review rather than silently consuming headroom.
+// updateToolsList rewrites the committed tools/list golden instead of asserting against
+// it. Run after a deliberate change to the tool surface, then review the diff:
+//
+//	go test ./internal/mcp/evalharness -run TestToolsList_MatchesGolden -update-tools-list
+var updateToolsList = flag.Bool("update-tools-list", false,
+	"rewrite testdata/tools-list.golden.json from the live tool surface")
+
 func TestToolsList_MatchesGolden(t *testing.T) {
 	live := driveToolsList(t)
-	golden := readTestdata(t, "tools-list.golden.json")
+	path := filepath.Join("testdata", "tools-list.golden.json")
 
+	if *updateToolsList {
+		// Written indented so the committed diff is reviewable per line; the comparison
+		// below normalizes, so formatting is not part of the contract.
+		var pretty bytes.Buffer
+		if err := json.Indent(&pretty, []byte(live), "", "  "); err != nil {
+			t.Fatalf("indenting the live tools/list: %v", err)
+		}
+		pretty.WriteByte('\n')
+		if err := os.WriteFile(path, pretty.Bytes(), 0o600); err != nil {
+			t.Fatalf("writing %s: %v", path, err)
+		}
+		t.Logf("rewrote %s from the live tool surface — review the diff", path)
+		return
+	}
+
+	golden := readTestdata(t, "tools-list.golden.json")
 	if normalizeJSON(t, live) != normalizeJSON(t, golden) {
-		t.Errorf("live tools/list differs from the golden — update the golden intentionally when the tool surface changes.\n live:   %s\n golden: %s", live, golden)
+		t.Errorf("live tools/list differs from the golden. If the tool surface changed on "+
+			"purpose, regenerate and review the diff:\n"+
+			"  go test ./internal/mcp/evalharness -run TestToolsList_MatchesGolden -update-tools-list\n"+
+			" live:   %s\n golden: %s", live, golden)
 	}
 }
 

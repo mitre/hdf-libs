@@ -5,9 +5,9 @@
 // behavioural parity with the Go implementation (see test/evidence.test.ts,
 // which runs both over the same fixtures).
 
-import { createHash } from 'node:crypto';
 import { blake3 } from '@noble/hashes/blake3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
+import { generateHash, type HashAlgorithm } from '@mitre/hdf-utilities';
 import { agentOverrideCount } from './compliance.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -158,34 +158,44 @@ export function parseExternalEvidence(pkg: string): EvidenceContent[] {
  * recorded, preserving entry order. No checksum → skipped; an algorithm this
  * build cannot compute → unsupported, never mismatch (that would say their evidence
  * changed when it did not) and never error, since the bytes may be intact; a fetch throw → error;
- * hash mismatch → mismatch (carrying expected+actual). */
-export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): ChecksumResult[] {
-  return contents.map((c) => {
-    const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
-    if (c.format !== undefined && c.format !== '') {
-      r.format = c.format;
-    }
-    if (c.checksum === '') {
-      return r;
-    }
-    r.algorithm = effectiveAlgorithm(c.checksumAlgorithm);
-    // The algorithm is checked before any IO: whether this build can compute it
-    // is a property of the package, not of the filesystem.
-    if (!supportedAlgorithm(c.checksumAlgorithm)) {
-      return { ...r, status: 'unsupported', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
-    }
-    let data: Uint8Array;
-    try {
-      data = fetch(c.uri);
-    } catch (e) {
-      return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
-    }
-    const actual = checksumHex(c.checksumAlgorithm, data);
-    if (actual === c.checksum) {
-      return { ...r, status: 'match' };
-    }
-    return { ...r, status: 'mismatch', expected: c.checksum, actual };
-  });
+ * hash mismatch → mismatch (carrying expected+actual).
+ *
+ * Asynchronous because the SHA family is hashed through Web Crypto, which is what lets
+ * this package bundle for the browser. */
+export async function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Promise<ChecksumResult[]> {
+  const results: ChecksumResult[] = [];
+  // One entry at a time, so only one fetched document is held in memory.
+  for (const c of contents) {
+    results.push(await verifyChecksum(c, fetch));
+  }
+  return results;
+}
+
+async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<ChecksumResult> {
+  const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
+  if (c.format !== undefined && c.format !== '') {
+    r.format = c.format;
+  }
+  if (c.checksum === '') {
+    return r;
+  }
+  r.algorithm = effectiveAlgorithm(c.checksumAlgorithm);
+  // The algorithm is checked before any IO: whether this build can compute it
+  // is a property of the package, not of the filesystem.
+  if (!supportedAlgorithm(c.checksumAlgorithm)) {
+    return { ...r, status: 'unsupported', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
+  }
+  let data: Uint8Array;
+  try {
+    data = fetch(c.uri);
+  } catch (e) {
+    return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
+  }
+  const actual = await checksumHex(c.checksumAlgorithm, data);
+  if (actual === c.checksum) {
+    return { ...r, status: 'match' };
+  }
+  return { ...r, status: 'mismatch', expected: c.checksum, actual };
 }
 
 /** Extracts assessment baselineRefs from a plan document, deduped in first-seen
@@ -294,21 +304,22 @@ function unsupportedAlgorithmMessage(algorithm: string | undefined): string {
 }
 
 /** Hashes data with the named Hash_Algorithm, hex-encoded. An empty algorithm
- * means sha256, so a package that records only a value keeps its meaning. Throws
- * for an algorithm this build cannot compute. */
-export function checksumHex(algorithm: string | undefined, data: Uint8Array): string {
+ * means sha256, so a package that records only a value keeps its meaning. Rejects
+ * an algorithm this build cannot compute.
+ *
+ * The SHA family goes through the shared Web Crypto helper rather than node:crypto,
+ * which is what lets this package bundle for the browser; blake3 has no Web Crypto
+ * equivalent and keeps its own implementation. */
+export async function checksumHex(algorithm: string | undefined, data: Uint8Array): Promise<string> {
   if (!supportedAlgorithm(algorithm)) {
     throw new Error(unsupportedAlgorithmMessage(algorithm));
   }
   if (algorithm === 'blake3') {
-    // Node's crypto offers blake2b512 and blake2s256 only, so this is the one
-    // algorithm in the enum that needs a package. The 32-byte default-length digest
-    // is what the BLAKE3 reference vectors direct implementations to compare.
+    // The 32-byte default-length digest is what the BLAKE3 reference vectors direct
+    // implementations to compare.
     return bytesToHex(blake3(data));
   }
-  return createHash(!algorithm ? 'sha256' : algorithm)
-    .update(data)
-    .digest('hex');
+  return generateHash(data, { algorithm: (!algorithm ? 'sha256' : algorithm) as HashAlgorithm });
 }
 
 /**

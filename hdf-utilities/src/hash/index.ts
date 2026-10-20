@@ -7,12 +7,17 @@
 /**
  * Supported hash algorithms
  */
-export type HashAlgorithm = 'sha256' | 'sha512';
+export type HashAlgorithm = 'sha256' | 'sha384' | 'sha512';
 
 /**
  * Supported output encodings
  */
 export type HashEncoding = 'hex' | 'base64';
+
+/**
+ * Data that can be hashed: text, hashed as its UTF-8 bytes, or raw bytes
+ */
+export type HashInput = string | Uint8Array;
 
 /**
  * Options for hash generation
@@ -27,8 +32,21 @@ export interface HashOptions {
 /** Map our algorithm names to Web Crypto algorithm identifiers */
 const ALGORITHM_MAP: Record<HashAlgorithm, string> = {
   sha256: 'SHA-256',
+  sha384: 'SHA-384',
   sha512: 'SHA-512',
 };
+
+/** Web Crypto refuses a view over shared memory, so such a view is copied first. */
+function digestInput(data: HashInput): Uint8Array<ArrayBuffer> {
+  if (typeof data === 'string') {
+    return new TextEncoder().encode(data);
+  }
+  return isArrayBufferBacked(data) ? data : new Uint8Array(data);
+}
+
+function isArrayBufferBacked(bytes: Uint8Array): bytes is Uint8Array<ArrayBuffer> {
+  return bytes.buffer instanceof ArrayBuffer;
+}
 
 /** Convert an ArrayBuffer to a hex string */
 function bufferToHex(buffer: ArrayBuffer): string {
@@ -53,7 +71,7 @@ function bufferToBase64(buffer: ArrayBuffer): string {
 /**
  * Generate a hash of the given data
  *
- * @param data - String data to hash
+ * @param data - Text or bytes to hash
  * @param options - Hash generation options
  * @returns Hex-encoded hash string
  *
@@ -63,18 +81,17 @@ function bufferToBase64(buffer: ArrayBuffer): string {
  * // Returns: 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
  * ```
  */
-export async function generateHash(data: string, options: HashOptions = {}): Promise<string> {
+export async function generateHash(data: HashInput, options: HashOptions = {}): Promise<string> {
   const { algorithm = 'sha256', encoding = 'hex' } = options;
   const webAlgorithm = ALGORITHM_MAP[algorithm];
-  const encoded = new TextEncoder().encode(data);
-  const hashBuffer = await globalThis.crypto.subtle.digest(webAlgorithm, encoded);
+  const hashBuffer = await globalThis.crypto.subtle.digest(webAlgorithm, digestInput(data));
   return encoding === 'base64' ? bufferToBase64(hashBuffer) : bufferToHex(hashBuffer);
 }
 
 /**
  * Generate a SHA-256 hash (recommended for most use cases)
  *
- * @param data - String data to hash
+ * @param data - Text or bytes to hash
  * @returns Hex-encoded SHA-256 hash
  *
  * @example
@@ -83,14 +100,14 @@ export async function generateHash(data: string, options: HashOptions = {}): Pro
  * // Returns: 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
  * ```
  */
-export async function sha256(data: string): Promise<string> {
+export async function sha256(data: HashInput): Promise<string> {
   return generateHash(data, { algorithm: 'sha256' });
 }
 
 /**
  * Generate a SHA-512 hash (enhanced security for sensitive data)
  *
- * @param data - String data to hash
+ * @param data - Text or bytes to hash
  * @returns Hex-encoded SHA-512 hash
  *
  * @example
@@ -99,7 +116,7 @@ export async function sha256(data: string): Promise<string> {
  * // Returns: '309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f'
  * ```
  */
-export async function sha512(data: string): Promise<string> {
+export async function sha512(data: HashInput): Promise<string> {
   return generateHash(data, { algorithm: 'sha512' });
 }
 
@@ -127,7 +144,7 @@ export async function hashObject(obj: unknown, options: HashOptions = {}): Promi
 /**
  * Verify that data matches a given hash
  *
- * @param data - String data to verify
+ * @param data - Text or bytes to verify
  * @param expectedHash - Expected hash value
  * @param options - Hash generation options (must match hash generation)
  * @returns True if data matches the hash
@@ -140,7 +157,7 @@ export async function hashObject(obj: unknown, options: HashOptions = {}): Promi
  * ```
  */
 export async function verifyHash(
-  data: string,
+  data: HashInput,
   expectedHash: string,
   options: HashOptions = {}
 ): Promise<boolean> {

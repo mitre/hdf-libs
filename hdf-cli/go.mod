@@ -3,9 +3,10 @@ module github.com/mitre/hdf-libs/hdf-cli/v3
 go 1.26.9
 
 require (
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.1
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.84.1
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
+	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-libs/hdf-converters/v3 v3.7.2
 	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.7.2
@@ -21,20 +22,19 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/tiktoken-go/tokenizer v0.8.1
-	golang.org/x/term v0.46.0
+	golang.org/x/term v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.47.1 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.47.3 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.33.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.1 // indirect
 	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.5.1 // indirect
-	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
@@ -52,8 +52,8 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.6 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.6 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.38.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1 // indirect
-	github.com/aws/smithy-go v1.28.1 // indirect
+	github.com/aws/smithy-go v1.28.5 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
@@ -96,12 +96,12 @@ require (
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/toon-format/toon-go v0.0.0-20251202084852-7ca0e27c4e8c
+	github.com/toon-format/toon-go v1.0.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.42.0
 	google.golang.org/protobuf v1.36.12 // indirect
 	sigs.k8s.io/release-utils v0.12.4 // indirect

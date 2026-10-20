@@ -597,7 +597,7 @@ hdf
 │
 ├── diff <old> <new>                 # Compare any two HDF docs of same type
 │   ├── --group-by <label>           # Group by any label
-│   ├── --detailed-exitcode          # 0/1/2 basic, 10-14 detailed
+│   ├── --detailed-exitcode          # 0/1 basic, 10-14 detailed
 │   └── --format json|md|table       # Output format
 │
 ├── system                           # System architecture
@@ -683,7 +683,7 @@ not competing schemas:
 | v3.3 CVE-ecosystem primitives (`cvss[]`, `epss`, `kev`, `cwe[]`, `affectedPackages[]`) | Complete |
 | Typed inputs, labels, cross-references, integrity chain | Complete |
 | `hdf-diff` TS + Go libraries | Complete |
-| `hdf diff` CLI (exit codes 0/1/2 + 10-14) | Complete |
+| `hdf diff` CLI (exit codes 0/1 + 10-14) | Complete |
 | `hdf system` / `hdf plan` / `hdf amend` / `hdf evidence` / `hdf generate` | Complete |
 | 30+ scanner converters (TS + Go) | Complete; clean-scan synth standardized |
 | Schema validators + auto-validate on `hdf convert` / `hdf fetch` output | Complete |

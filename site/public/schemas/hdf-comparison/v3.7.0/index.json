@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.7.0",
   "type": "object",
+  "$comment": "Examples, in order: 1) a temporal comparison of two runs of the same scan, showing one fixed, one regressed and one new requirement. Produced by `hdf diff` over hdf-diff/test/fixtures/scan-before.json and scan-after.json with whole requirements dropped from the inputs, so `summary` is computed by the engine and matches the diffs it reports. The engine also writes a `baseline` key on each diff that this definition does not declare; it is omitted here, so regenerating this example needs that key stripped until the schema and the engine agree.",
   "unevaluatedProperties": false,
   "required": [
     "formatVersion",
@@ -109,6 +110,237 @@
       "description": "Reserved for tool-specific data not defined in the HDF standard."
     }
   },
+  "examples": [
+    {
+      "formatVersion": "1.0.0",
+      "comparisonMode": "temporal",
+      "sources": [
+        {
+          "role": "old",
+          "label": "trim-before.json"
+        },
+        {
+          "role": "new",
+          "label": "trim-after.json"
+        }
+      ],
+      "summary": {
+        "fixed": 1,
+        "regressed": 1,
+        "new": 1,
+        "absent": 0,
+        "unchanged": 0,
+        "updated": 0,
+        "total": 3,
+        "matchedCount": 2,
+        "unmatchedOldCount": 0,
+        "unmatchedNewCount": 1
+      },
+      "requirementDiffs": [
+        {
+          "id": "SV-001",
+          "state": "fixed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "descriptions": [
+              {
+                "data": "The system must disable root SSH login",
+                "label": "default"
+              }
+            ],
+            "id": "SV-001",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "SSH config PermitRootLogin should eq 'no'",
+                "message": "expected 'yes' to eq 'no'",
+                "runTime": 0.1,
+                "startTime": "2024-01-01T00:00:00Z",
+                "status": "failed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 1,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000366"
+              ],
+              "nist": [
+                "AC-6"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SSH root login is disabled"
+          },
+          "after": {
+            "descriptions": [
+              {
+                "data": "The system must disable root SSH login",
+                "label": "default"
+              }
+            ],
+            "id": "SV-001",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "SSH config PermitRootLogin should eq 'no'",
+                "runTime": 0.1,
+                "startTime": "2024-02-01T00:00:00Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 1,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000366"
+              ],
+              "nist": [
+                "AC-6"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SSH root login is disabled"
+          },
+          "fieldChanges": [],
+          "oldEffectiveStatus": "failed",
+          "newEffectiveStatus": "passed",
+          "title": "Ensure SSH root login is disabled"
+        },
+        {
+          "id": "SV-003",
+          "state": "regressed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "descriptions": [
+              {
+                "data": "The audit subsystem must be active",
+                "label": "default"
+              }
+            ],
+            "id": "SV-003",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "auditd service should be enabled",
+                "runTime": 0.08,
+                "startTime": "2024-01-01T00:00:02Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 40,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000130"
+              ],
+              "nist": [
+                "AU-3"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure audit logging is enabled"
+          },
+          "after": {
+            "descriptions": [
+              {
+                "data": "The audit subsystem must be active",
+                "label": "default"
+              }
+            ],
+            "id": "SV-003",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "auditd service should be enabled",
+                "message": "expected service to be enabled, got disabled",
+                "runTime": 0.07,
+                "startTime": "2024-02-01T00:00:02Z",
+                "status": "failed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 40,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000130"
+              ],
+              "nist": [
+                "AU-3"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure audit logging is enabled"
+          },
+          "fieldChanges": [],
+          "oldEffectiveStatus": "passed",
+          "newEffectiveStatus": "failed",
+          "title": "Ensure audit logging is enabled"
+        },
+        {
+          "id": "SV-006",
+          "state": "new",
+          "changeReasons": [],
+          "before": null,
+          "after": {
+            "descriptions": [
+              {
+                "data": "SELinux must be in enforcing mode",
+                "label": "default"
+              }
+            ],
+            "id": "SV-006",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "getenforce should return Enforcing",
+                "runTime": 0.01,
+                "startTime": "2024-02-01T00:00:05Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 100,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-002165"
+              ],
+              "nist": [
+                "AC-3 (4)"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SELinux is enforcing"
+          },
+          "fieldChanges": [],
+          "newEffectiveStatus": "passed",
+          "title": "Ensure SELinux is enforcing"
+        }
+      ],
+      "baselineDiffs": [
+        {
+          "name": "rhel9-stig-baseline",
+          "oldVersion": "1.0.0",
+          "newVersion": "1.1.0",
+          "state": "updated"
+        }
+      ]
+    }
+  ],
   "description": "Structured comparison between two or more HDF security assessment documents. Supports temporal, baseline, fleet, and multi-source comparison modes.",
   "title": "HDF Comparison",
   "$defs": {

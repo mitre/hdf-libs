@@ -18,6 +18,10 @@ import (
 // Container image scans wrap results in a "results" array; code repo
 // scans omit that wrapper and return a single result object directly.
 type TwistlockReport struct {
+	// unwrapped records that the source had no results[] wrapper, so source
+	// pointers must not reference the synthesized one.
+	unwrapped bool
+
 	Results    []TwistlockResult `json:"results"`
 	ConsoleURL string            `json:"consoleURL"`
 }
@@ -46,9 +50,11 @@ type TwistlockPackage struct {
 }
 
 // TwistlockVuln represents a single vulnerability entry. The json tags carry
-// omitempty because this struct is re-serialized verbatim into requirement.code
-// (buildVulnCode) — the omission rules must mirror the TS projection for byte
-// parity, and the declaration order fixes the field order of that output.
+// omitempty because this struct is re-serialized into the result's
+// rawSourceRecord (renderVulnRecord) — the omission rules must mirror the TS
+// projection for byte parity, and the declaration order fixes the field order
+// of that output. Note the record is this STRUCT's projection, not the source
+// bytes: a Twistlock field the struct does not model does not reach it.
 type TwistlockVuln struct {
 	ID               string   `json:"id,omitempty"`
 	CVE              string   `json:"cve,omitempty"`
@@ -323,16 +329,15 @@ func formatMessage(vuln TwistlockVuln) string {
 		packageName, packageVersion, packageName)
 }
 
-// buildVulnCode re-serializes the parsed vulnerability into indented JSON for
-// requirement.code (the raw-finding passthrough, Heimdall's CODE tab), so
-// fields with no structured HDF home (link, riskFactors, publishedDate,
+// renderVulnRecord re-serializes the parsed vulnerability into indented JSON
+// for the result's rawSourceRecord, so fields with no structured HDF home (link, riskFactors, publishedDate,
 // fixDate, layerTime) are not lost. It is byte-identical to the TS projection:
 // json.Encoder with HTML escaping disabled and a two-space indent matches
 // JSON.stringify(obj, null, 2). The encoder appends a trailing newline that
 // JSON.stringify does not, so it is trimmed. Field order and omission follow
 // the TwistlockVuln declaration + omitempty tags — do not reorder without
 // updating the TS projection.
-func buildVulnCode(vuln TwistlockVuln) string {
+func renderVulnRecord(vuln TwistlockVuln) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
@@ -346,7 +351,7 @@ func buildVulnCode(vuln TwistlockVuln) string {
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
 // The packageTypes map and distro provide context for resolving the package
 // ecosystem when the per-vulnerability entry doesn't include packageType.
-func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro string) hdf.EvaluatedRequirement {
+func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro string, sourcePointer string) hdf.EvaluatedRequirement {
 	nist := shared.DefaultRemediationNIST
 	cciTags := cci.NISTToCCI(nist)
 
@@ -379,6 +384,18 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		result.Resource = hdfutil.Ptr("package")
 		result.ResourceID = hdfutil.Ptr(instanceID)
 	}
+
+	// The vulnerability record that produced this result, carried on the RESULT
+	// per ADR-0017 §5 — one CVE against two packages is two records, and
+	// roll-up's first-wins on `code` would otherwise discard the second.
+	if record := renderVulnRecord(vuln); record != "" {
+		result.RawSourceRecord = &hdf.RawSourceRecord{
+			Content:   record,
+			Encoding:  hdf.UTF8,
+			MediaType: "application/json",
+			Pointer:   hdfutil.Ptr(sourcePointer),
+		}
+	}
 	results := []hdf.RequirementResult{result}
 
 	title := vuln.ID
@@ -391,10 +408,6 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		Descriptions:       descriptions,
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
-	}
-
-	if code := buildVulnCode(vuln); code != "" {
-		req.Code = &code
 	}
 
 	if cv := buildCvss(vuln); cv != nil {
@@ -426,7 +439,9 @@ func resultTarget(result TwistlockResult) string {
 }
 
 // convertSingleResult converts one TwistlockResult to an EvaluatedBaseline.
-func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+// pointerPrefix locates this result in the source artifact ("" for an unwrapped
+// code-repo scan, whose vulnerabilities sit at the document root).
+func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum, pointerPrefix string) hdf.EvaluatedBaseline {
 	vulns := result.Vulnerabilities
 	if vulns == nil {
 		vulns = []TwistlockVuln{}
@@ -438,8 +453,12 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
 	for i, vuln := range limitedVulns {
-		requirements[i] = buildRequirement(vuln, packageTypes, result.Distro)
+		pointer := fmt.Sprintf("%s/vulnerabilities/%d", pointerPrefix, i)
+		requirements[i] = buildRequirement(vuln, packageTypes, result.Distro, pointer)
 	}
+
+	// One requirement per CVE, one result per affected package.
+	requirements = shared.RollUpRequirements(requirements)
 
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{
@@ -480,7 +499,11 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	baselines := make([]hdf.EvaluatedBaseline, len(report.Results))
 	for i, result := range report.Results {
-		baselines[i] = convertSingleResult(result, checksum)
+		prefix := fmt.Sprintf("/results/%d", i)
+		if report.unwrapped {
+			prefix = ""
+		}
+		baselines[i] = convertSingleResult(result, checksum, prefix)
 	}
 
 	// Use the first result's name or repository as target name
@@ -531,6 +554,7 @@ func parseInput(input []byte) (*TwistlockReport, error) {
 			return nil, fmt.Errorf("twistlock: invalid JSON: %w", err)
 		}
 		report.Results = []TwistlockResult{singleResult}
+		report.unwrapped = true
 	}
 
 	if len(report.Results) == 0 {
@@ -540,9 +564,37 @@ func parseInput(input []byte) (*TwistlockReport, error) {
 }
 
 // ExpectedRequirementCount states how many requirements the input must convert
-// to: one per vulnerabilities[] entry of every results[] element, each within
-// the size limit, with one no-findings requirement for a result that has none.
+// to. Roll-up emits one requirement per DISTINCT vulnerability id within each
+// result, with one no-findings requirement for a result that has none. The
+// number of findings is what ExpectedResultCount measures.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Twistlock vulnerability ids"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, result := range report.Results {
+		limited, _ := hdfutil.LimitSlice(result.Vulnerabilities, 0)
+		if len(limited) == 0 {
+			count++
+			continue
+		}
+		// The id must be derived the way buildRequirement derives it, or a
+		// roll-up group would be counted more than once.
+		ids := make(map[string]bool, len(limited))
+		for _, vuln := range limited {
+			ids[vuln.ID] = true
+		}
+		count += len(ids)
+	}
+	return count, unit, nil
+}
+
+// ExpectedResultCount states how many results the input must convert to: one
+// per vulnerabilities[] entry of every results[] element, each within the size
+// limit, with one for the no-findings placeholder of an empty result.
+func ExpectedResultCount(input []byte) (int, string, error) {
 	const unit = "Twistlock vulnerabilities"
 	report, err := parseInput(input)
 	if err != nil {

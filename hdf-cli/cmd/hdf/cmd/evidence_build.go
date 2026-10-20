@@ -57,7 +57,11 @@ Examples:
 				return fmt.Errorf("failed to expand results paths: %w", err)
 			}
 			if len(expanded) == 0 && opts.fromDir == "" {
-				return fmt.Errorf("no results files provided; use --results, --from-dir, or pass files as arguments")
+				return &exitCodeError{
+					code:    exitNothingToDo,
+					message: "no results files provided; use --results, --from-dir, or pass files as arguments",
+					report:  true,
+				}
 			}
 			opts.resultsPaths = expanded
 			for _, g := range []*[]string{&opts.baselinePaths, &opts.bomPaths, &opts.amendmentsPaths, &opts.comparisonPaths} {

@@ -87,8 +87,8 @@ type GrypeMatch struct {
 	Artifact               GrypeArtifact               `json:"artifact"`
 
 	// raw is the match exactly as Grype emitted it. Grype carries no literal
-	// source snippet, so requirement.code is the whole match re-indented in
-	// place — preserving source key order, every field the typed struct does
+	// source snippet, so the result's rawSourceRecord is the whole match
+	// re-indented in place — preserving source key order, every field the typed struct does
 	// not model, and the source number literals, so the output is byte-identical
 	// to the TypeScript twin's JSON.stringify(match, null, 2).
 	raw json.RawMessage
@@ -344,11 +344,11 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// buildMatchCode renders the raw match as indented JSON for requirement.code.
-// json.Indent re-formats the original bytes in place, preserving source key
-// order so the output is byte-identical to the TypeScript twin's
-// JSON.stringify(match, null, 2).
-func buildMatchCode(match GrypeMatch) string {
+// renderMatchRecord renders the raw match as indented JSON. json.Indent
+// re-formats the original bytes in place, preserving source key order so the
+// output is byte-identical to the TypeScript twin's JSON.stringify(match, null,
+// 2) — the twins share goldens, so the record cannot be the raw bytes.
+func renderMatchRecord(match GrypeMatch) string {
 	if len(match.raw) == 0 {
 		return "{}"
 	}
@@ -512,7 +512,7 @@ func buildKev(k *GrypeKEV) *hdf.Kev {
 	return out
 }
 
-func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName string, startTime time.Time) hdf.EvaluatedRequirement {
+func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName string, startTime time.Time, sourcePointer string) hdf.EvaluatedRequirement {
 	vuln := match.Vulnerability
 	cveID := vuln.ID
 	severity := vuln.Severity
@@ -561,6 +561,20 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 		result.ResourceID = hdfutil.Ptr(id)
 	}
 
+	// The match that produced this result, carried on the RESULT per ADR-0017 §5
+	// — which is where it has to live, because one CVE against two packages is
+	// two matches, and roll-up's first-wins on `code` would otherwise discard
+	// the second. `code` stays absent — Grype runs no executable check — and the
+	// v2 downgrade reconstructs its CODE tab from this record.
+	if len(match.raw) > 0 {
+		result.RawSourceRecord = &hdf.RawSourceRecord{
+			Content:   renderMatchRecord(match),
+			Encoding:  hdf.UTF8,
+			MediaType: "application/json",
+			Pointer:   hdfutil.Ptr(sourcePointer),
+		}
+	}
+
 	// Get CCI tags from curated NIST → CCI mapping
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
 
@@ -569,12 +583,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	shared.MarkUnratedSeverity(tags, severity)
 
 	// Build requirement ID
-	var requirementID string
-	if isIgnored {
-		requirementID = fmt.Sprintf("Grype-Ignored-Match/%s", cveID)
-	} else {
-		requirementID = fmt.Sprintf("Grype/%s", cveID)
-	}
+	requirementID := buildRequirementID(cveID, isIgnored)
 
 	// Build descriptions
 	descriptions := []hdf.Description{
@@ -599,7 +608,6 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 		ID:                 requirementID,
 		Title:              &title,
 		Impact:             impact,
-		Code:               hdfutil.Ptr(buildMatchCode(match)),
 		Results:            []hdf.RequirementResult{result},
 		Tags:               tags,
 		Descriptions:       descriptions,
@@ -693,10 +701,53 @@ func parseInput(input []byte) (*GrypeReport, error) {
 	return &grypeData, nil
 }
 
+// buildRequirementID is the one place the requirement id is spelled. Roll-up
+// groups on it and ExpectedRequirementCount counts distinct values of it, so a
+// second expression here would let the declared count and the emitted output
+// disagree. The ignored-match prefix matters: an ignored match sharing a CVE
+// with a regular one is a DIFFERENT requirement, not a duplicate of it.
+func buildRequirementID(cveID string, isIgnored bool) string {
+	if isIgnored {
+		return fmt.Sprintf("Grype-Ignored-Match/%s", cveID)
+	}
+	return fmt.Sprintf("Grype/%s", cveID)
+}
+
 // ExpectedRequirementCount states how many requirements the input must convert
 // to: one per matches[] entry plus one per ignoredMatches[] entry, each array
 // within its own size limit, or one no-findings requirement when both are empty.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct grype vulnerability ids"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limitedMatches, _ := hdfutil.LimitSlice(report.Matches, 0)
+	limitedIgnored, _ := hdfutil.LimitSlice(report.IgnoredMatches, 0)
+
+	// Roll-up emits one requirement per id, so the requirement count is the
+	// number of DISTINCT ids — not the number of findings, which is what
+	// ExpectedResultCount measures. The id must be derived the same way the
+	// converter derives it, prefix included, or an ignored match that shares a
+	// CVE with a regular one would be counted once instead of twice.
+	ids := make(map[string]bool, len(limitedMatches)+len(limitedIgnored))
+	for _, m := range limitedMatches {
+		ids[buildRequirementID(m.Vulnerability.ID, false)] = true
+	}
+	for _, m := range limitedIgnored {
+		ids[buildRequirementID(m.Vulnerability.ID, true)] = true
+	}
+	count := len(ids)
+	if count == 0 {
+		count = 1 // the no-findings placeholder
+	}
+	return count, unit, nil
+}
+
+// ExpectedResultCount is the raw-finding relation ADR-0017 §6 makes mandatory
+// for a rolled-up converter: roll-up moves the finding count off the
+// requirements, so only this still catches a silently dropped match.
+func ExpectedResultCount(input []byte) (int, string, error) {
 	const unit = "grype matches and ignored matches"
 	report, err := parseInput(input)
 	if err != nil {
@@ -706,7 +757,7 @@ func ExpectedRequirementCount(input []byte) (int, string, error) {
 	limitedIgnored, _ := hdfutil.LimitSlice(report.IgnoredMatches, 0)
 	count := len(limitedMatches) + len(limitedIgnored)
 	if count == 0 {
-		count = 1
+		count = 1 // the no-findings placeholder carries one result
 	}
 	return count, unit, nil
 }
@@ -746,15 +797,21 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	// Process regular matches
 	limitedMatches := shared.LimitSliceWithWarning(grypeData.Matches, 0, "match")
-	for _, match := range limitedMatches {
-		requirements = append(requirements, convertMatchToRequirement(match, false, targetName, resultStart))
+	for i, match := range limitedMatches {
+		requirements = append(requirements, convertMatchToRequirement(match, false, targetName, resultStart, fmt.Sprintf("/matches/%d", i)))
 	}
 
 	// Process ignored matches
 	limitedIgnored := shared.LimitSliceWithWarning(grypeData.IgnoredMatches, 0, "ignored match")
-	for _, match := range limitedIgnored {
-		requirements = append(requirements, convertMatchToRequirement(match, true, targetName, resultStart))
+	for i, match := range limitedIgnored {
+		requirements = append(requirements, convertMatchToRequirement(match, true, targetName, resultStart, fmt.Sprintf("/ignoredMatches/%d", i)))
 	}
+
+	// One requirement per CVE, one result per affected package: Grype reports a
+	// CVE once per matched package, which is one requirement with several results
+	// rather than several requirements sharing an id. Grype emits a single
+	// baseline, so this slice is that baseline's — which is the helper's contract.
+	requirements = shared.RollUpRequirements(requirements)
 
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{

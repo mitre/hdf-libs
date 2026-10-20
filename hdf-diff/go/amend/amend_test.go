@@ -1462,3 +1462,25 @@ func TestChainOverrides(t *testing.T) {
 		assert.Contains(t, err.Error(), "chaining override 1")
 	})
 }
+
+// MergeResult names the overrides that matched nothing, so a caller that
+// expects every override to land can say which did not — the CLI's
+// --require-match and the MCP tool both report them.
+func TestMergeAmendments_NamesUnmatchedOverrides(t *testing.T) {
+	results := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0.5,"results":[{"status":"failed","startTime":"2025-01-01T00:00:00Z"}]}]}]}`)
+	override := func(id string) string {
+		return `{"type":"waiver","requirementId":"` + id + `","status":"passed","reason":"r","appliedBy":{"type":"email","identifier":"a@example.gov"},"appliedAt":"2025-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}`
+	}
+	t.Run("an override naming an absent requirement is listed", func(t *testing.T) {
+		res, err := MergeAmendments(results, []byte(`{"name":"n","overrides":[`+override("V-1")+`,`+override("ZZ-999")+`]}`))
+		require.NoError(t, err)
+		assert.Equal(t, 1, res.Applied)
+		assert.Equal(t, 2, res.Total)
+		assert.Equal(t, []string{"ZZ-999"}, res.Unmatched)
+	})
+	t.Run("nothing unmatched when every override lands", func(t *testing.T) {
+		res, err := MergeAmendments(results, []byte(`{"name":"n","overrides":[`+override("V-1")+`]}`))
+		require.NoError(t, err)
+		assert.Empty(t, res.Unmatched)
+	})
+}

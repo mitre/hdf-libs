@@ -803,7 +803,7 @@ hdf-schema/src/schemas/
 └── primitives/
     ├── common.schema.json             (exists — Identity, Checksum, Signature, Evidence)
     ├── result.schema.json             (exists — ResultStatus, RequirementResult)
-    ├── component.schema.json          (exists — 11 component types with labels)
+    ├── component.schema.json          (exists — 13 component types with labels)
     ├── data-flow.schema.json          (exists — Data_Flow, Direction)
     ├── extensions.schema.json         (exists — StatusOverride, POAM, Generator)
     ├── comparison.schema.json         (exists — RequirementDiff, Source)
@@ -823,7 +823,7 @@ Existing primitives reused across document types:
 - **Checksum** — SHA-256/384/512 integrity verification
 - **Signature** — digital signatures (JWK, PEM, Ed25519, PKCS#11)
 - **Evidence** — supporting artifacts (screenshots, logs, URLs)
-- **Component** — assessed entities (11 polymorphic types)
+- **Component** — assessed entities (13 polymorphic types)
 
 New primitives:
 - **Input** — typed parameter definition (name, type, value, operator, constraints)

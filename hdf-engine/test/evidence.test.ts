@@ -40,7 +40,7 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     expect(comp.missing).toEqual(['PostgreSQL-STIG']);
   });
 
-  it('parses externalEvidence preserving all three checksum distinctions (same as Go)', () => {
+  it('parses externalEvidence preserving all three checksum distinctions (same as Go)', async () => {
     const entries = parseExternalEvidence(readText('package.json'));
     expect(entries).toHaveLength(4);
     // The last entry has an EMPTY uri, which is schema-valid (uri is required but has
@@ -63,7 +63,7 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     // type belongs to contents[]; an external entry must not borrow it.
     expect(entries.map((e) => e.type)).toEqual(['', '', '', '']);
     // And the SAME verifier runs on them — one implementation of the hashing.
-    const verified = verifyChecksums(entries, fetch);
+    const verified = await verifyChecksums(entries, fetch);
     expect(verified.map((r) => r.status)).toEqual(['match', 'skipped', 'skipped', 'skipped']);
     // Carried through, not dropped: a caller reporting the result needs to know what
     // the artifact is without reading `type`'s vocabulary onto it.
@@ -76,23 +76,23 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     expect(agentOverridesInPackage(contents, fetch)).toBe(2);
   });
 
-  it('classifies checksums: match, mismatch, skipped (same as Go)', () => {
+  it('classifies checksums: match, mismatch, skipped (same as Go)', async () => {
     const goodHash = sha256Hex(readBytes('rhel-results.json'));
     const contents: EvidenceContent[] = [
       { uri: 'rhel-results.json', type: 'hdf-results', checksum: goodHash },
       { uri: 'plan.json', type: 'hdf-plan', checksum: '0'.repeat(64) },
       { uri: 'rhel-results.json', type: 'hdf-results', checksum: '' },
     ];
-    const got = verifyChecksums(contents, fetch);
+    const got = await verifyChecksums(contents, fetch);
     expect(got.map((r) => r.status)).toEqual(['match', 'mismatch', 'skipped']);
-    expect(got[1]?.expected).toBeTruthy();
-    expect(got[1]?.actual).toBeTruthy();
+    expect(got[1]?.expected).toBe('0'.repeat(64));
+    expect(got[1]?.actual).toBe(sha256Hex(readBytes('plan.json')));
   });
 
   // The checksum-algorithm contract, pinned on the SHARED package fixture so both
   // languages read the same recorded algorithms rather than two hand-kept copies.
   // go/evidence_parity_test.go asserts these same four outcomes over the same file.
-  it('honours each entry\u2019s recorded checksum algorithm (same as Go)', () => {
+  it('honours each entry\u2019s recorded checksum algorithm (same as Go)', async () => {
     const { contents } = parseEvidencePackage(readText('package.json'));
     expect(contents.map((c) => c.checksumAlgorithm)).toEqual(['sha512', 'sha384', 'sha256', 'blake3']);
 
@@ -102,7 +102,7 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     // is what pins this language's blake3 against Go's over one real document. It is the
     // PLAN rather than a results document deliberately: a second hdf-results entry for one
     // file would be counted twice by the aggregation helpers.
-    const got = verifyChecksums(contents, fetch);
+    const got = await verifyChecksums(contents, fetch);
     expect(got.map((r) => r.status)).toEqual(['match', 'match', 'match', 'match']);
     expect(got[3]?.algorithm).toBe('blake3');
     // Only a mismatch carries expected+actual, so a match reports no actual hash.
@@ -116,23 +116,23 @@ describe('evidence-verify engine — unit', () => {
   // The engine still parses raw JSON, so an omitted algorithm must mean sha256
   // rather than being refused as unsupported \u2014 defensive handling, pinned here
   // because a schema-valid fixture cannot express it. Go asserts the same.
-  it('treats an omitted algorithm as sha256', () => {
+  it('treats an omitted algorithm as sha256', async () => {
     const data = readBytes('rhel-results.json');
     const sha256 = createHash('sha256').update(data).digest('hex');
     const fetchOne: FetchFn = () => data;
     // Both the '' the parse yields and an entry built without the field at all.
     const stated: EvidenceContent = { uri: 'x', type: 'hdf-results', checksum: sha256, checksumAlgorithm: '' };
     const omitted: EvidenceContent = { uri: 'x', type: 'hdf-results', checksum: sha256 };
-    expect(verifyChecksums([stated, omitted], fetchOne).map((r) => r.status)).toEqual(['match', 'match']);
-    expect(checksumHex('', data)).toBe(sha256);
-    expect(checksumHex(undefined, data)).toBe(sha256);
+    expect((await verifyChecksums([stated, omitted], fetchOne)).map((r) => r.status)).toEqual(['match', 'match']);
+    expect(await checksumHex('', data)).toBe(sha256);
+    expect(await checksumHex(undefined, data)).toBe(sha256);
   });
 
   // A skipped entry has no checksum VALUE to verify: no checksum at all, or one
   // whose value is blank (schema-valid — Checksum.value has no minLength) which may
   // still name an algorithm. Nothing was hashed either way. Go asserts the same.
-  it('reports no algorithm for an entry it never hashed', () => {
-    const got = verifyChecksums(
+  it('reports no algorithm for an entry it never hashed', async () => {
+    const got = await verifyChecksums(
       [
         { uri: 'none.json', type: 'bom', checksum: '' },
         { uri: 'empty.json', type: 'bom', checksum: '', checksumAlgorithm: 'sha512', checksumRecorded: true },
@@ -143,15 +143,15 @@ describe('evidence-verify engine — unit', () => {
     expect(got.map((r) => r.algorithm)).toEqual([undefined, undefined]);
   });
 
-  it('refuses an algorithm it cannot compute rather than guessing', () => {
+  it('refuses an algorithm it cannot compute rather than guessing', async () => {
     // Every algorithm Hash_Algorithm admits is computable now, so the refusal is reachable
     // only from OUTSIDE the enum — a document this tooling did not write.
     // The WHOLE message, list included: go/evidence_test.go asserts this identical string,
     // which is what keeps one refusal from drifting into two spellings across languages.
-    expect(() => checksumHex('md5', new Uint8Array([1]))).toThrow(
+    await expect(checksumHex('md5', new Uint8Array([1]))).rejects.toThrow(
       'unsupported checksum algorithm "md5": this build computes sha256, sha384, sha512 and blake3',
     );
-    expect(() => checksumHex('sha1', new Uint8Array([1]))).toThrow(/unsupported checksum algorithm "sha1"/);
+    await expect(checksumHex('sha1', new Uint8Array([1]))).rejects.toThrow(/unsupported checksum algorithm "sha1"/);
   });
   it('parses planRef and contents (checksum value or empty)', () => {
     const pkg = JSON.stringify({
@@ -168,11 +168,11 @@ describe('evidence-verify engine — unit', () => {
     expect(contents[1]?.checksum).toBe('');
   });
 
-  it('classifies a fetch failure as error', () => {
+  it('classifies a fetch failure as error', async () => {
     const throwing: FetchFn = () => {
       throw new Error('no such file: x');
     };
-    const got = verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
+    const got = await verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
     expect(got[0]?.status).toBe('error');
     expect(got[0]?.error).toContain('no such file');
   });
@@ -281,11 +281,11 @@ describe('evidence-verify engine — unit', () => {
     expect(agentOverridesInPackage([{ uri: 'z.json', type: 'hdf-results', checksum: '' }], mem)).toBe(1);
   });
 
-  it('classifies a non-Error throw as error with the stringified value', () => {
+  it('classifies a non-Error throw as error with the stringified value', async () => {
     const throwing: FetchFn = () => {
       throw 'plain string failure';
     };
-    const got = verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
+    const got = await verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
     expect(got[0]?.status).toBe('error');
     expect(got[0]?.error).toBe('plain string failure');
   });
@@ -311,13 +311,13 @@ const blake3VectorInput = (n: number): Uint8Array =>
   Uint8Array.from({ length: n }, (_, i) => i % 251);
 
 describe('checksumHex — blake3, against the reference vectors', () => {
-  it('matches every committed BLAKE3 reference vector', () => {
+  it('matches every committed BLAKE3 reference vector', async () => {
     const { cases } = blake3Vectors();
     expect(cases.length).toBeGreaterThan(0);
     for (const c of cases) {
       // The vector's hash is an extended output; a default-length digest is its first
       // 32 bytes, which is what the upstream file directs implementations to check.
-      expect(checksumHex('blake3', blake3VectorInput(c.input_len))).toBe(c.hash.slice(0, 64));
+      expect(await checksumHex('blake3', blake3VectorInput(c.input_len))).toBe(c.hash.slice(0, 64));
     }
   });
 
@@ -331,7 +331,7 @@ describe('checksumHex — blake3, against the reference vectors', () => {
 
   // No schema-valid document can carry an off-schema algorithm, but the refusal exists
   // for documents this tooling did not write.
-  it('still refuses an off-schema algorithm', () => {
-    expect(() => checksumHex('md5', new Uint8Array([1]))).toThrow();
+  it('still refuses an off-schema algorithm', async () => {
+    await expect(checksumHex('md5', new Uint8Array([1]))).rejects.toThrow();
   });
 });

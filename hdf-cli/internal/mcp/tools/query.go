@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
@@ -30,8 +31,8 @@ type queryInput struct {
 	// passes exactly one of source / sources, which the handler enforces.
 	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
 	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
-	Status    []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
-	Severity  []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
+	Status    []string        `json:"status,omitempty" jsonschema:"result statuses to match (OR)"`
+	Severity  []string        `json:"severity,omitempty" jsonschema:"severities to match (OR)"`
 	Impact    string          `json:"impact,omitempty" jsonschema:"effective impact (after overrides); e.g. >0.5, =0"`
 	RawImpact string          `json:"rawImpact,omitempty" jsonschema:"impact before overrides; same grammar"`
 	Cvss      string          `json:"cvss,omitempty" jsonschema:"CVSS score, computed else base, highest entry; e.g. >=7"`
@@ -52,10 +53,22 @@ type queryInput struct {
 	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override or POA&M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
 	PoamType    []string `json:"poamType,omitempty" jsonschema:"kind of the governing POA&M: remediation|mitigation|riskAcceptance|vendorDependency (OR); disposition reports every plan as poam"`
 	Poams       string   `json:"poams,omitempty" jsonschema:"valid | none-valid (none, empty, or lapsed)"`
-	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"how much detail each row carries"`
 	Limit       int      `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
 	Page        int      `json:"page,omitempty" jsonschema:"0-based page when truncated"`
-	Fields      []string `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
+	Fields      []string `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row"`
+}
+
+// correlationFields renders the projector set as the advertised vocabulary, sorted because
+// Go map iteration order is random and an enum that reorders per process would churn the
+// contract golden.
+func correlationFields() []string {
+	out := make([]string, 0, len(correlationProjectors))
+	for name := range correlationProjectors {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // correlationProjectors is the bounded correlation set (bead-established): the
@@ -90,11 +103,6 @@ var correlationProjectors = map[string]func(*hdf.EvaluatedRequirement) any{
 		return nil
 	},
 }
-
-// correlationFieldNames lists the allowed Fields values in a stable order, for
-// the fail-loud validation error (the jsonschema tag is description-only — the
-// reflector rejects enum tags — so the allowed set is enforced in the handler).
-var correlationFieldNames = []string{"cwe", "cvss", "affectedPackages", "sourceLocation"}
 
 // unknownCorrelationField returns the first Fields value that is not a known
 // correlation field, so the handler can refuse it rather than silently ignore it.
@@ -200,6 +208,12 @@ func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 		Name:        "hdf_query",
 		Description: queryToolDescription,
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[queryInput](map[string]closedVocabulary{
+			"status":    {values: schemaEnum("Result_Status")},
+			"severity":  {values: schemaEnum("Severity")},
+			"verbosity": verbosityVocab(),
+			"fields":    {values: correlationFields()},
+		}),
 	}, hdfQuery(ldr))
 }
 
@@ -261,7 +275,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		}
 		if f, ok := unknownCorrelationField(in.Fields); ok {
 			return argError(fmt.Sprintf("unknown correlation field %q", f),
-				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFieldNames, ", "))), errorQueryOutput(), nil
+				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFields(), ", "))), errorQueryOutput(), nil
 		}
 		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
 			WrongDocType: wrongDocTypeForQuery,
@@ -367,7 +381,7 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 	}
 
 	budget := respond.ConciseTokenBudget
-	if verbosity == "full" {
+	if IsFull(verbosity) {
 		budget = respond.FullTokenBudget
 	}
 	// Measure the real envelope (fixed handle/metadata overhead counts), not the
@@ -436,7 +450,7 @@ func queryTruncationNotice(returned, total, page, numPages int, limited bool) st
 // typed conciseRow/fullRow structs and marshalled via structToMap so their json
 // tags (exact concise keys, omitempty full extras) remain authoritative.
 func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string, fields []string) []map[string]any {
-	full := verbosity == "full"
+	full := IsFull(verbosity)
 	rows := make([]map[string]any, 0, len(matches))
 	for _, m := range matches {
 		var row map[string]any
