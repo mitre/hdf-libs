@@ -42,6 +42,10 @@ overrides:
   "esbuild@<0.25.0": "^0.25.0"
   # minimatch 10.1.3 via @stryker-mutator/core (dev); goes when stryker declares ^10.2.3.
   "minimatch@>=10.0.0 <10.2.3": "^10.2.3"
+  # GHSA-q3jh-wrc6-jgq8 and GHSA-8r9p-f939-6h3c — follow-redirects 1.16.0 leaks
+  # credential headers across origins; dev-only, via http-server > http-proxy in
+  # hdf-schema. Goes when http-proxy declares ^1.16.1.
+  "follow-redirects@>=1.16.0 <1.16.1": "^1.16.1"
   # GHSA-pqg4-j6r4-53mv — shell-quote quote() command injection, every release
   # from 1.8.4 through 1.10.0, via concurrently (dev; its latest still declares
   # 1.9.0). Supersedes the earlier <1.8.5 hold, which pinned into this range.
