@@ -63,6 +63,10 @@ overrides:
   # 7.29.1 but that release was skipped, so 7.29.7 is the real 7.x fix; goes when
   # stryker's babel plugins declare ^7.29.7 themselves.
   "@babel/core@<7.29.1": "^7.29.7"
+  # GHSA-q3jh-wrc6-jgq8 / GHSA-8r9p-f939-6h3c — follow-redirects 1.16.0 credential
+  # headers survive a cross-origin redirect, via http-server → http-proxy under
+  # hdf-schema (dev); goes when http-proxy resolves ^1.16.1 itself.
+  "follow-redirects@>=1.16.0 <1.16.1": "^1.16.1"
 auditConfig:
   ignoreGhsas:
     # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when
@@ -73,3 +77,7 @@ auditConfig:
     # with the same vitepress 2.x bump (tracked: hdf-libs-34nl).
     - "GHSA-4w7w-66w2-5vf9"
     - "GHSA-v6wh-96g9-6wx3"
+    # GHSA-587h-7wmj-h5pm — launch-editor bundled in vite 5.4.x (Windows-only
+    # dev-server path check); 5.4.21 is the last 5.x and fixes start at 6.4.4, so it
+    # clears with the same vitepress 2.x bump (tracked: hdf-libs-34nl).
+    - "GHSA-587h-7wmj-h5pm"
