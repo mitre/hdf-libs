@@ -43,6 +43,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Nessus | `convertNessusToHdf` | XML |
 | Netsparker / Invicti | `convertNetsparkerToHdf` | XML |
 | NeuVector | `convertNeuvectorToHdf` | JSON |
+| Nexus IQ / Sonatype Lifecycle (policy evaluation) | `convertNexusIQToHdf` | JSON |
 | Nikto | `convertNiktoToHdf` | JSON |
 | OpenVEX (→ HDF Amendments) | `convertOpenVexToHdf` | JSON |
 | OSCAL Catalog | `convertOscalCatalogToHdf` | JSON |

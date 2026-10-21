@@ -42,6 +42,9 @@ export { convertHdfToCklb } from '../converters/hdf-to-cklb/typescript/index.js'
 // KICS to HDF converter
 export { convertKicsToHdf } from '../converters/kics-to-hdf/typescript/index.js';
 
+// Nexus IQ (Sonatype Lifecycle) to HDF converter
+export { convertNexusIQToHdf } from '../converters/nexusiq-to-hdf/typescript/index.js';
+
 // Semgrep to HDF converter
 export { convertSemgrepToHdf } from '../converters/semgrep-to-hdf/typescript/index.js';
 

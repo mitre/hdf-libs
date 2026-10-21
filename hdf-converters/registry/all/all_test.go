@@ -99,6 +99,8 @@ var fixtureTests = []struct {
 	{"msft-defender-endpoint-to-hdf", "minimal.json", "msft-defender-endpoint-to-hdf"},
 	{"msft-secure-score-to-hdf", "minimal.json", "msft-secure-score-to-hdf"},
 	{"neuvector-to-hdf", "minimal.json", "neuvector-to-hdf"},
+	{"nexusiq-to-hdf", "policy-evaluation.json", "nexusiq-to-hdf"},
+	{"nexusiq-to-hdf", "empty.json", "nexusiq-to-hdf"},
 	{"nikto-to-hdf", "minimal.json", "nikto-to-hdf"},
 	{"semgrep-to-hdf", "real.json", "semgrep-to-hdf"},
 	{"snyk-to-hdf", "minimal.json", "snyk-to-hdf"},
