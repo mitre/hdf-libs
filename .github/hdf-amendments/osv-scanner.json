@@ -1,5 +1,5 @@
 {
-  "name": "riskAdjustments-2026-09-07",
+  "name": "waivers-2026-10-21",
   "overrides": [
     {
       "appliedAt": "2026-09-07T15:01:58Z",
@@ -44,6 +44,86 @@
       "requirementId": "CVE-2026-53632",
       "status": "notApplicable",
       "type": "riskAdjustment"
+    },
+    {
+      "appliedAt": "2026-10-21T15:47:08Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "daffb09ff0a827728f09ab25ec6d74cbd40556d72911275ed690684498586cf0"
+      },
+      "reason": "GHSA-587h-7wmj-h5pm: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
+      "requirementId": "CVE-2026-112942",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-21T15:47:08Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "938d13eee364dbfaf39d37fd22e81f53071b35ae35bdc569a825583b4ced1e63"
+      },
+      "reason": "GHSA-698v-4r3x-3vcv: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
+      "requirementId": "CVE-2026-112943",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-21T15:47:08Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "88fce7ce27c1779b6905d720f490b3af39c2613945ec0d0eb922264618fcf376"
+      },
+      "reason": "GHSA-r825-w8mm-5pxw: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
+      "requirementId": "CVE-2026-112944",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-21T19:45:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "1f8d8b7cde7372f68e99ab68207e5af80061595da883d490a215f27296351ccb"
+      },
+      "reason": "GHSA-9jrq-w75r-8gcw: cross-origin script execution through Vite custom middleware — a malicious site visited WHILE the dev server runs can load scripts in a page the dev server serves. CVSS 4.0 records UI:A and AT:P, so it needs the developer to visit the hostile page and the app to pass an unchanged browser request URL to server.transformIndexHtml; whether vitepress does that is NOT established here, so this waiver does not rest on it. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
+      "requirementId": "CVE-2026-112945",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-21T19:45:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "17cff434a586538b474fcad28994969a1c013cf29941679a9d5d3bae199e5d48"
+      },
+      "reason": "GHSA-rq7h-c2jc-7f22: files outside server.fs.allow can be served when a project path matches a system path, on non-Windows machines — the inverse exposure to the launch-editor three above, which are Windows-only. It needs the project to reference a path concatenated with root (the advisory's example is \u003croot\u003e/etc/hosts), which nothing in this repo's docs build does. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
+      "requirementId": "CVE-2026-112946",
+      "status": "notApplicable",
+      "type": "waiver"
     }
   ]
 }
