@@ -99,6 +99,14 @@ describe('integration: detectConverter with real fixtures', () => {
     expect(result!.fingerprint.id).toBe('kics-to-hdf');
   });
 
+  it('detects nexusiq, including a scan with no violations', () => {
+    for (const name of ['policy-evaluation.json', 'empty.json']) {
+      const result = detectConverter(fixture('nexusiq-to-hdf', name));
+      expect(result).toBeDefined();
+      expect(result!.fingerprint.id).toBe('nexusiq-to-hdf');
+    }
+  });
+
   it('detects msft-defender-cloud', () => {
     const result = detectConverter(fixture('msft-defender-cloud-to-hdf', 'minimal.json'));
     expect(result).toBeDefined();

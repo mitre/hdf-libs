@@ -285,6 +285,24 @@ func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
 	assert.Equal(t, stats, result.Statistics)
 }
 
+func TestBuildHDFResults_ExternalReferences(t *testing.T) {
+	href := "https://iq.example.com/report/1"
+	refs := []hdf.ExternalReference{{SourceName: "nexus-iq", Href: &href}}
+
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:      "test-to-hdf",
+		ConverterVersion:   "1.0.0",
+		Baselines:          []hdf.EvaluatedBaseline{},
+		ExternalReferences: refs,
+	})
+	assert.Equal(t, refs, result.ExternalReferences)
+
+	none := BuildHDFResults(HDFResultsOptions{GeneratorName: "test-to-hdf", ConverterVersion: "1.0.0"})
+	data, err := json.Marshal(none)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "externalReferences")
+}
+
 func TestBuildHDFResults_ToolPartialFields(t *testing.T) {
 	// Only format set, no name/version
 	result := BuildHDFResults(HDFResultsOptions{

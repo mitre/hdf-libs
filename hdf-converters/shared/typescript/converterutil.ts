@@ -7,7 +7,7 @@
  */
 
 import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
-import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
+import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, ExternalReference, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { validateResults } from '@mitre/hdf-validators';
@@ -487,6 +487,8 @@ export interface HdfResultsOptions {
    * members and an empty one says nothing.
    */
   extensions?: Record<string, unknown>;
+  /** Links to artifacts outside the document, such as the source tool's own report pages. */
+  externalReferences?: ExternalReference[];
 }
 
 /**
@@ -518,6 +520,7 @@ export function buildHdfResults(opts: HdfResultsOptions): string {
   if (opts.timestamp) hdf.timestamp = opts.timestamp;
   if (opts.statistics) hdf.statistics = opts.statistics;
   if (opts.extensions) hdf.extensions = opts.extensions;
+  if (opts.externalReferences) hdf.externalReferences = opts.externalReferences;
 
   return serializeHdf(hdf);
 }

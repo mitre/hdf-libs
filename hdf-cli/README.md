@@ -1200,6 +1200,7 @@ One behaviour to know about: `evidence build` hashes the inputs it is handed wit
 | `nessus` | | Tenable Nessus scan results (`.nessus` XML) |
 | `netsparker` | `invicti` | Netsparker/Invicti web scanner (XML) |
 | `neuvector` | | NeuVector container security (JSON) |
+| `nexusiq` | `sonatype`, `lifecycle` | Sonatype Nexus IQ / Lifecycle policy-evaluation result written by the IQ CLI's `--result-file` (JSON). IQ's GitLab and CycloneDX exports convert through `gitlab` and `cyclonedx` |
 | `nikto` | | Nikto web server scanner (JSON) |
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |

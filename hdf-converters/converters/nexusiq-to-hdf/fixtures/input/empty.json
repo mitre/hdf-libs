@@ -1,0 +1,27 @@
+{
+  "applicationId": "example-org_example-app_dev",
+  "scanId": "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "stage": "build",
+  "reportHtmlUrl": "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "reportPdfUrl": "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9/pdf",
+  "reportDataUrl": "https://lifecycle.example.com/api/v2/applications/example-org_example-app_dev/reports/0a1b2c3d4e5f60718293a4b5c6d7e8f9/raw",
+  "prioritiesUrl": "https://lifecycle.example.com/ui/links/developer/integrations/example-org_example-app_dev/0a1b2c3d4e5f60718293a4b5c6d7e8f9/cli",
+  "policyEvaluationResult": {
+    "alerts": [],
+    "affectedComponentCount": 0,
+    "criticalComponentCount": 0,
+    "severeComponentCount": 0,
+    "moderateComponentCount": 0,
+    "criticalPolicyViolationCount": 0,
+    "severePolicyViolationCount": 0,
+    "moderatePolicyViolationCount": 0,
+    "legacyViolationCount": 0,
+    "totalComponentCount": 0,
+    "sastAlerts": [],
+    "criticalSastPolicyViolationCount": 0,
+    "severeSastPolicyViolationCount": 0,
+    "moderateSastPolicyViolationCount": 0,
+    "totalSastFindingCount": 0,
+    "grandfatheredPolicyViolationCount": 0
+  }
+}

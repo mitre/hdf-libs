@@ -407,6 +407,7 @@ The glob is anchored, so `*CVE-2018-1269` does not match `CVE-2018-12698` — a 
 | `asff`, `cyclonedx`, `grype`, `prisma`, `twistlock`, `veracode` | the CVE ends the id (`Grype/CVE-2022-27943`, `46-CVE-2019-19927`) | `*CVE-2022-27943` |
 | `neuvector` | the CVE *starts* the id (`CVE-2021-36159/apk-tools/2.10.5-r1`) | `*CVE-2021-36159*` |
 | `sarif` | **both shapes occur** (`CVE-2026-2297-python-3.12` and plain) | `*CVE-2026-2297*` |
+| `nexusiq` | IQ's policy violation id; **no CVE in the id at all** (`e27fb118b0d940248ae27e451b1e9314`), and no `cvss[]` either, because the result file states a score but not its CVSS version | `tag: cve:CVE-2026-97687` |
 
 The trap is that the wrong spelling fails *silently*. On neuvector output, `--id '*CVE-2021-36159'` returns nothing at all, so `max: 0` passes and the gate is forever-green — the same false confidence `search` gives, arrived at from the other direction. Always confirm with `hdf query` before committing a policy:
 

@@ -301,6 +301,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "lifecycle",
+      "dest": "hdf",
+      "name": "Nexus IQ to HDF",
+      "acceptsEmpty": false
+    },
+    {
       "source": "msdo",
       "dest": "hdf",
       "name": "Microsoft Defender for DevOps to HDF",
@@ -346,6 +352,12 @@
       "source": "neuvector",
       "dest": "hdf",
       "name": "NeuVector to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "nexusiq",
+      "dest": "hdf",
+      "name": "Nexus IQ to HDF",
       "acceptsEmpty": false
     },
     {
@@ -460,6 +472,12 @@
       "source": "sonarqube",
       "dest": "hdf",
       "name": "SonarQube to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "sonatype",
+      "dest": "hdf",
+      "name": "Nexus IQ to HDF",
       "acceptsEmpty": false
     },
     {
