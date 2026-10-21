@@ -10,6 +10,7 @@ import (
 
 	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -423,6 +424,31 @@ func TestSonarqubeFetcher_EmptyResults(t *testing.T) {
 	result := mustUnmarshalSonarqube(t, data)
 	assert.Empty(t, result.Issues)
 	assert.Equal(t, 0, result.Total)
+}
+
+func TestSonarqubeFetcher_EmptyResults_FetchAndConvert(t *testing.T) {
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeIssuesPage(w, []sonarqubeconv.Issue{}, nil, nil, 0, 1)
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	raw, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	var envelope map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(raw, &envelope))
+	assert.JSONEq(t, `[]`, string(envelope["issues"]), "a clean scan must carry an empty issues array, not null")
+
+	result, err := sonarqubeconv.ConvertSonarqubeToHDF(raw, "test-version")
+	require.NoError(t, err, "a clean scan must convert, not fail")
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "sonarqube-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
 }
 
 func TestSonarqubeFetcher_ResponseExceedsMaxSize(t *testing.T) {

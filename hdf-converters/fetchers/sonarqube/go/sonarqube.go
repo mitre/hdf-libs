@@ -251,6 +251,10 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	for _, r := range ruleMap {
 		rules = append(rules, r)
 	}
+	// A nil slice marshals to null, which the converter rejects as a missing issues field.
+	if allIssues == nil {
+		allIssues = []sonarqubeconv.Issue{}
+	}
 
 	result := sonarqubeconv.IssuesResponse{
 		Total:         len(allIssues),
