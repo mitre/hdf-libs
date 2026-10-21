@@ -492,6 +492,9 @@ type HDFResultsOptions struct {
 	// leaves the field absent rather than writing an empty object, because
 	// extensions is closed to two members and an empty one says nothing.
 	Extensions *hdf.Extensions
+	// ExternalReferences links the document to artifacts outside it, such as the
+	// source tool's own report pages.
+	ExternalReferences []hdf.ExternalReference
 }
 
 // BuildHDFResults assembles an HDFResults struct from the given options.
@@ -508,6 +511,8 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 		Timestamp:  opts.Timestamp,
 		Statistics: opts.Statistics,
 		Extensions: opts.Extensions,
+
+		ExternalReferences: opts.ExternalReferences,
 	}
 
 	if opts.ToolName != "" || opts.ToolVersion != "" || opts.ToolFormat != "" {

@@ -136,6 +136,7 @@ The mapping per converter, as ratified:
 | veracode (static flaws) | `file` | `sourcefilepath + sourcefile + ":" + line` |
 | veracode (SCA) | `component` | `component_id`, else `sha1` |
 | neuvector | `file` when `file_name` is present, otherwise `package` | the file path, else `package_name@package_version` |
+| nexusiq | `package`, unset when IQ could not identify the component | the pypi purl, else `name@version` |
 | zap | `url` | the instance `uri` |
 
 Four things that caught us, worth knowing before mapping a new tool:

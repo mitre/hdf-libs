@@ -90,6 +90,19 @@ describe('buildHdfResults timestamp serialization', () => {
   });
 });
 
+describe('buildHdfResults externalReferences', () => {
+  it('carries root externalReferences and omits the key when none are given', () => {
+    const refs = [{ sourceName: 'nexus-iq', href: 'https://iq.example.com/report/1' }];
+    const withRefs = JSON.parse(
+      buildHdfResults({ generatorName: 'test-to-hdf', converterVersion: '1.0.0', baselines: [], externalReferences: refs }),
+    );
+    expect(withRefs.externalReferences).toEqual(refs);
+
+    const without = JSON.parse(buildHdfResults({ generatorName: 'test-to-hdf', converterVersion: '1.0.0', baselines: [] }));
+    expect(without).not.toHaveProperty('externalReferences');
+  });
+});
+
 describe('limitArray', () => {
   it('should return full array when under limit', () => {
     const result = limitArray(['a', 'b', 'c'], 10);
