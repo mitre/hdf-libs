@@ -338,6 +338,17 @@ func externalEvidenceRefs(pkg []byte) []externalRef {
 	return out
 }
 
+// escapesPackageRef reports whether a reference names something outside the package,
+// as recorded or as a resolved archive-entry path. All three containment sites share it.
+//
+// BOTH slashes root a path on Windows and filepath.IsAbs is false for either, so IsAbs
+// alone judged such a reference in-tree and SafePath then re-rooted it onto a different
+// document. The backslash form arrives without a literal backslash: "%5Cx.json" is a
+// legal uri-reference, and decoding runs before containment because it can create one.
+func escapesPackageRef(uri string) bool {
+	return strings.HasPrefix(uri, "/") || strings.HasPrefix(uri, `\`) || filepath.IsAbs(uri)
+}
+
 // isRemoteURI reports whether a URI names something the archive cannot carry.
 func isRemoteURI(uri string) bool { return strings.Contains(uri, "://") }
 
@@ -356,7 +367,7 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 	// report a path plainly inside it as outside. A missing in-tree file must reach
 	// collect and be reported as unreadable, not blamed on containment.
 	raw := string(uri)
-	if !filepath.IsAbs(raw) {
+	if !escapesPackageRef(raw) {
 		ref := filepath.ToSlash(filepath.Clean(raw))
 		if ref == ".." || strings.HasPrefix(ref, "../") {
 			return "", false
@@ -481,7 +492,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			return fmt.Errorf("cannot bundle: %w", err)
 		}
 		ref := filepath.ToSlash(filepath.Clean(string(uri)))
-		if ref == ".." || strings.HasPrefix(ref, "../") || strings.HasPrefix(ref, "/") {
+		if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
 			return fmt.Errorf("%s %q cannot be bundled: it would write an archive entry outside the root", label, subject)
 		}
 		data, already := collected[ref]

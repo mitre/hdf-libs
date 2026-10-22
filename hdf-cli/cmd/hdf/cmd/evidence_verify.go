@@ -276,7 +276,7 @@ func checkContentRefShape(uri, label string) error {
 			"inside the archive, and a recorded remote artifact travels by URI and hash, "+
 			"not as a carried file", label, uri)
 	}
-	if strings.HasPrefix(uri, "/") || filepath.IsAbs(uri) {
+	if escapesPackageRef(uri) {
 		return fmt.Errorf("%s %q cannot name an archive entry: an entry path is relative to "+
 			"the archive root", label, uri)
 	}
