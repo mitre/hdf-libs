@@ -388,10 +388,10 @@ hdf evidence build \
 hdf evidence set /tmp/example-hdf-evidence.json --plan-ref example-hdf-plan.json
 
 # --- Step 5: Verify checksums ---
-hdf evidence verify /tmp/example-hdf-evidence.json --checksums-only
+hdf evidence info --verify /tmp/example-hdf-evidence.json --checksums-only
 
 # --- Step 6: Verify completeness against the plan ---
-hdf evidence verify /tmp/example-hdf-evidence.json
+hdf evidence info --verify /tmp/example-hdf-evidence.json
 # Checks that every baseline in the plan has a corresponding results document.
 
 # --- Other evidence commands ---
@@ -405,8 +405,8 @@ hdf validate --type evidence-package /tmp/example-hdf-evidence.json
 - Each document validates against its schema at creation time.
 - Plan has 2 assessments derived from system components.
 - Evidence build accepts multiple `--results` flags, globs, and positional args.
-- `evidence verify --checksums-only`: all SHA-256 checksums match.
-- `evidence verify` (default): completeness check reports missing baselines.
+- `evidence info --verify --checksums-only`: all SHA-256 checksums match.
+- `evidence info --verify` (default): completeness check reports missing baselines.
 - `evidence set --plan-ref`: links evidence to the assessment plan.
 - `evidence info`: displays package name, preparer, timestamp, systemRef, contents list with checksum status, and completeness summary.
 

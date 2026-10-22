@@ -17,7 +17,7 @@ const cleanResultsFixture = "testdata/evidence-verify/rhel9-results.json"
 // TestReadout_CountsAgentOverrides is the card's designated first-failing test:
 // the agent-attributed override count (appliedBy.type=="agent", the system one
 // excluded) is surfaced in the hdf validate, hdf validate threshold, and hdf
-// evidence verify readouts.
+// evidence info --verify readouts.
 func TestReadout_CountsAgentOverrides(t *testing.T) {
 	t.Run("validate", func(t *testing.T) {
 		stdout, stderr, err := executeCommand("validate", agentOverrideFixture)
@@ -40,11 +40,11 @@ func TestReadout_CountsAgentOverrides(t *testing.T) {
 		}
 	})
 
-	t.Run("evidence verify", func(t *testing.T) {
+	t.Run("evidence info --verify", func(t *testing.T) {
 		pkg := buildEvidencePackage(t, agentOverrideFixture)
-		stdout, stderr, _ := executeCommand("evidence", "verify", pkg)
+		stdout, stderr, _ := executeCommand("evidence", "info", "--verify", pkg)
 		if !strings.Contains(stdout+stderr, "Agent-attributed overrides: 1") {
-			t.Fatalf("evidence verify readout missing agent-override count:\n%s%s", stdout, stderr)
+			t.Fatalf("evidence info --verify readout missing agent-override count:\n%s%s", stdout, stderr)
 		}
 	})
 
@@ -52,9 +52,9 @@ func TestReadout_CountsAgentOverrides(t *testing.T) {
 	// HDF carries. A typed decode rejects those outright, so a path that skips
 	// normalization drops the whole document and reports 0 with no error. The
 	// engine unit test pins the helper; this pins the wiring the reader sees.
-	t.Run("evidence verify with zone-less timestamps", func(t *testing.T) {
+	t.Run("evidence info --verify with zone-less timestamps", func(t *testing.T) {
 		pkg := buildEvidencePackage(t, agentOverrideZonelessFixture)
-		stdout, stderr, _ := executeCommand("evidence", "verify", pkg)
+		stdout, stderr, _ := executeCommand("evidence", "info", "--verify", pkg)
 		if !strings.Contains(stdout+stderr, "Agent-attributed overrides: 1") {
 			t.Fatalf("zone-less timestamps must not drop the document:\n%s%s", stdout, stderr)
 		}

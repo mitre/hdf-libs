@@ -179,7 +179,7 @@ amendments from model judgment, the server stamps each override with
 `appliedBy.type = "agent"` and an `appliedAt` timestamp — the model cannot
 claim a non-agent identity. Those overrides survive `hdf_apply_amendment`
 onto the applied results file, so `hdf_compliance` (and the
-`hdf validate` / `hdf evidence verify` CLI readouts) can report how many
+`hdf validate` / `hdf evidence info --verify` CLI readouts) can report how many
 overrides an agent applied, without back-tracing to the amendments
 document. This detective surface is what makes autonomous authoring
 auditable.

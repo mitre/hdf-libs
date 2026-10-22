@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -28,7 +29,7 @@ const ValidateResponseTokenCap = respond.ConciseTokenBudget
 // inline content, an optional docType, and one of three modes.
 type validateInput struct {
 	Source  *handle.Source `json:"source,omitempty" jsonschema:"the document to validate, as {path} or {handle}; omit when using content"`
-	Content string         `json:"content,omitempty" jsonschema:"inline HDF document to validate, as an alternative to source"`
+	Content string         `json:"content,omitempty" jsonschema:"inline HDF document to validate, as an alternative to source; an evidence package's references are not resolved from inline content, so pass source.path to verify them"`
 	DocType string         `json:"docType,omitempty" jsonschema:"optional document type to validate against in schema mode (e.g. hdf-results); defaults to the detected type"`
 	Mode    string         `json:"mode" jsonschema:"which check to run"`
 }
@@ -66,7 +67,7 @@ func errorValidateOutput() validateOutput {
 func RegisterValidate(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name:        "hdf_validate",
-		Description: "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
+		Description: "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file checksums, each under the algorithm its entry records), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
 		Annotations: appmcp.ReadOnly(),
 		InputSchema: mustEnumSchema[validateInput](map[string]closedVocabulary{
 			"mode": {values: vocabValues(validateModeVocabulary)},
@@ -76,21 +77,21 @@ func RegisterValidate(s *sdkmcp.Server, ldr *loader.Loader) {
 
 // validateCheck runs one validation mode. The signatures differ, so each is adapted to a
 // common shape here rather than widened at the definition.
-type validateCheck func(out *validateOutput, docType string, content []byte, baseDir string, load *loader.Result)
+type validateCheck func(out *validateOutput, docType string, content []byte, fetch hdfengine.FetchFunc, load *loader.Result)
 
 // validateChecks is the single source for what hdf_validate accepts: the advertised enum,
 // the argument check and the dispatch all read it. A mode declared in the vocabulary with
 // no entry here fails TestEveryAdvertisedMemberIsAccepted rather than being advertised and
 // then refused by the handler.
 var validateChecks = map[ValidateMode]validateCheck{
-	ValidateModeSchema: func(out *validateOutput, docType string, content []byte, _ string, load *loader.Result) {
+	ValidateModeSchema: func(out *validateOutput, docType string, content []byte, _ hdfengine.FetchFunc, load *loader.Result) {
 		validateSchema(out, docType, content, load)
 	},
-	ValidateModeChecksums: func(out *validateOutput, _ string, content []byte, baseDir string, load *loader.Result) {
-		validateChecksums(out, content, baseDir, load)
+	ValidateModeChecksums: func(out *validateOutput, _ string, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
+		validateChecksums(out, content, fetch, load)
 	},
-	ValidateModeCompleteness: func(out *validateOutput, _ string, content []byte, baseDir string, load *loader.Result) {
-		validateCompleteness(out, content, baseDir, load)
+	ValidateModeCompleteness: func(out *validateOutput, _ string, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
+		validateCompleteness(out, content, fetch, load)
 	},
 }
 
@@ -102,13 +103,13 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 				"use mode "+vocabList(validateModeVocabulary)), errorValidateOutput(), nil
 		}
 
-		content, baseDir, load, terr := resolveForValidate(in, ldr)
+		content, fetch, load, terr := resolveForValidate(in, ldr)
 		if terr != nil {
 			return toolError(terr), errorValidateOutput(), nil
 		}
 
 		out := validateOutput{Mode: in.Mode, Errors: []validateError{}}
-		check(&out, in.DocType, content, baseDir, load)
+		check(&out, in.DocType, content, fetch, load)
 		boundValidateResponse(&out)
 		return textResult(fmt.Sprintf("hdf_validate (%s): valid=%t, %d error(s). Detail in structuredContent.",
 			out.Mode, out.Valid, len(out.Errors))), out, nil
@@ -116,33 +117,53 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 }
 
 // resolveForValidate turns the source-or-content input into confined bytes, the
-// base directory referenced files resolve against, and a loaded document. Inline
-// content resolves referenced files against HDF_MCP_ROOT; a source resolves them
-// against the source document's own directory.
-func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, string, *loader.Result, *mcperr.Error) {
+// fetcher that referenced files are read through, and a loaded document. A
+// content reference means a path relative to the package document's own
+// directory, so the rule is whether the document HAS a directory: one read from a
+// file resolves against filepath.Dir of its own path, and one that never existed
+// as a file resolves nothing. Two inputs reach the second case — inline content,
+// and a handle with an empty path, which marks a document authored in this session
+// and never written. Keying on the input field instead missed the second and left
+// it resolving against the MCP root. Deciding it here is also what keeps the
+// checksums and completeness modes from diverging.
+func resolveForValidate(in validateInput, ldr *loader.Loader) ([]byte, hdfengine.FetchFunc, *loader.Result, *mcperr.Error) {
 	hasContent := in.Content != ""
 	hasSource := in.Source != nil && (in.Source.Path != "" || in.Source.Handle != "")
 	switch {
 	case hasContent && hasSource:
-		return nil, "", nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
+		return nil, nil, nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
 		res, err := ldr.Load([]byte(in.Content))
 		if err != nil {
-			return nil, "", nil, sizeOrLoadError(err)
+			return nil, nil, nil, sizeOrLoadError(err)
 		}
-		return []byte(in.Content), mcpRoot(), res, nil
+		return []byte(in.Content), unresolvableFetch(noLocationInline), res, nil
 	case hasSource:
 		resolved, e := resolveSource(*in.Source, ldr, "source")
 		if e != nil {
-			return nil, "", nil, e
+			return nil, nil, nil, e
 		}
-		base := mcpRoot()
-		if p, err := hdfutil.SafePath(mcpRoot(), resolved.Handle.Path); err == nil {
-			base = filepath.Dir(p)
+		// Tested directly rather than inferred from SafePath refusing an empty
+		// path: the condition is that the document HAS no location, and reading it
+		// off an error both hid a real path failure and made the fallback to the
+		// MCP root look deliberate.
+		if resolved.Handle.Path == "" {
+			return resolved.Content, unresolvableFetch(noLocationAuthored), resolved.Load, nil
 		}
-		return resolved.Content, base, resolved.Load, nil
+		// RETAINED THOUGH UNREACHABLE TODAY: both resolvers confine the path before
+		// returning (resolvePath, resolveHandle), so this fires only if containment
+		// changes between their check and this one. It fails closed rather than
+		// falling back to the MCP root, which is the substitution this card removed —
+		// deleting it would quietly restore that fallback for whatever reaches here.
+		p, perr := hdfutil.SafePath(mcpRoot(), resolved.Handle.Path)
+		if perr != nil {
+			return nil, nil, nil, mcperr.New(mcperr.PathDenied,
+				"the document's own path resolves outside HDF_MCP_ROOT",
+				map[string]any{"path": resolved.Handle.Path})
+		}
+		return resolved.Content, confinedFetchAt(filepath.Dir(p)), resolved.Load, nil
 	default:
-		return nil, "", nil, mcperr.New(mcperr.DocumentNotFound, "no source or content provided", nil).
+		return nil, nil, nil, mcperr.New(mcperr.DocumentNotFound, "no source or content provided", nil).
 			WithNextCall("pass source.path/source.handle or inline content")
 	}
 }
@@ -174,15 +195,27 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 	out.Errors = lineNumberedErrors(vr, content)
 }
 
+// carryLoaderVerdict seeds the reply from the load rather than from optimism. A
+// mode that inspects an invalid document must not mint a verdict that outranks
+// the schema's: checksums matching says nothing about the members the document
+// is missing.
+func carryLoaderVerdict(out *validateOutput, load *loader.Result) {
+	out.Valid = load.Valid
+	if !load.Valid {
+		out.Errors = append(out.Errors, fromLoaderErrors(load.Errors)...)
+	}
+}
+
 // validateChecksums fills the verdict for checksums mode: verify each referenced
-// file's sha256, and report the agent-override count across the package results.
-func validateChecksums(out *validateOutput, content []byte, baseDir string, load *loader.Result) {
+// file against the algorithm its own entry records, and report the agent-override
+// count across the package results.
+func validateChecksums(out *validateOutput, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
 	contents, ok := requireEvidencePackage(out, content, load)
 	if !ok {
 		return
 	}
-	fetch := confinedFetchAt(baseDir)
-	out.Valid = true
+	carryLoaderVerdict(out, load)
+	var unverifiable []string
 	for _, r := range hdfengine.VerifyChecksums(contents, fetch) {
 		switch r.Status {
 		case hdfengine.ChecksumMismatch:
@@ -191,40 +224,63 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 		case hdfengine.ChecksumError:
 			out.Valid = false
 			out.Errors = append(out.Errors, validateError{Path: r.URI, Message: "cannot verify checksum: " + r.Error})
+		case hdfengine.ChecksumUnsupported:
+			// NOT an error and NOT invalid: the recorded algorithm is one this build
+			// cannot compute, so the bytes may be intact. Every algorithm Hash_Algorithm
+			// admits is computed now, so this is reachable only for an OFF-SCHEMA
+			// algorithm. Reported in the notice so the caller knows a
+			// checksum went unchecked — falling through to no case at all would have
+			// reported an unverified entry as verified.
+			// The algorithm is named alongside the entry: a caller told a checksum went
+			// unverified cannot act on that without knowing which algorithm it was.
+			unverifiable = append(unverifiable, r.URI+" ("+r.Algorithm+")")
 		case hdfengine.ChecksumMatch, hdfengine.ChecksumSkipped:
 			// A match needs no error, and a skipped entry declared no checksum to verify.
 		}
+	}
+	if len(unverifiable) > 0 {
+		out.Notice = appendNotice(out.Notice, fmt.Sprintf(
+			"%d checksum(s) record an algorithm this build cannot compute and were not verified: %s",
+			len(unverifiable), strings.Join(unverifiable, ", ")))
 	}
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 }
 
 // validateCompleteness fills the verdict for completeness mode: every planned
 // baseline must be covered by a results document in the package.
-func validateCompleteness(out *validateOutput, content []byte, baseDir string, load *loader.Result) {
+func validateCompleteness(out *validateOutput, content []byte, fetch hdfengine.FetchFunc, load *loader.Result) {
 	contents, ok := requireEvidencePackage(out, content, load)
 	if !ok {
 		return
 	}
+	carryLoaderVerdict(out, load)
 	planRef, _, _ := hdfengine.ParseEvidencePackage(content)
-	fetch := confinedFetchAt(baseDir)
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 
+	// Every branch below APPENDS and sets Valid false explicitly. Assigning the
+	// error list would discard the loader's, and leaving Valid alone would report
+	// a schema-valid package as complete when completeness was never checked.
 	if planRef == "" {
-		out.Errors = []validateError{{Message: "evidence package has no planRef; cannot check completeness"}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Message: "evidence package has no planRef; cannot check completeness"})
 		return
 	}
 	planData, ferr := fetch(planRef)
 	if ferr != nil {
-		out.Errors = []validateError{{Path: planRef, Message: "cannot read plan: " + ferr.Error()}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "cannot read plan: " + ferr.Error()})
 		return
 	}
 	planned, perr := hdfengine.PlannedBaselineRefs(planData)
 	if perr != nil {
-		out.Errors = []validateError{{Path: planRef, Message: "cannot parse plan: " + perr.Error()}}
+		out.Valid = false
+		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "cannot parse plan: " + perr.Error()})
 		return
 	}
 	comp := hdfengine.Completeness(planned, hdfengine.CoveredBaselinesInPackage(contents, fetch))
-	out.Valid = comp.Complete
+	// Completeness can only make the verdict worse, never rescue a document the
+	// schema already rejected.
+	out.Valid = out.Valid && comp.Complete
 	for _, m := range comp.Missing {
 		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "missing results for baseline " + m})
 	}
@@ -233,6 +289,12 @@ func validateCompleteness(out *validateOutput, content []byte, baseDir string, l
 // requireEvidencePackage confirms the document is an evidence package and parses
 // its contents, or fills out with an explanatory invalid verdict and returns
 // ok=false.
+// Deliberately does NOT gate on load.Valid, unlike apply_amendment and diff: those
+// two MUTATE, so invalid input must never reach the engine, while these modes only
+// inspect — and an operator reaches for validate precisely because something is
+// wrong, so refusing to look is the least useful answer. Maintainer decision,
+// 2026-10-13. The obligation that comes with proceeding is carrying the loader's
+// verdict through rather than minting a fresh one; see carryLoaderVerdict.
 func requireEvidencePackage(out *validateOutput, content []byte, load *loader.Result) ([]hdfengine.EvidenceContent, bool) {
 	out.DocType = load.DocType
 	if load.DocType != string(validators.TypeEvidencePackage) {
@@ -247,11 +309,46 @@ func requireEvidencePackage(out *validateOutput, content []byte, load *loader.Re
 	return contents, true
 }
 
+// The two ways a document can arrive with no location of its own, as the reason
+// clause of the refusal below. Written out rather than derived, because the
+// remedy is the same but the situation a caller has to recognize is not.
+const (
+	noLocationInline   = "inline content has no package directory"
+	noLocationAuthored = "a handle with no path is a document that was never written to a file, so it has no package directory"
+)
+
+// unresolvableFetch is the fetcher for a document that carries no location: the
+// bytes never existed as a file, so there is no package directory and every
+// candidate base is a guess. Resolving against HDF_MCP_ROOT would read a
+// same-named file the package never referenced — reporting drift in a document
+// the operator never named, or, where that file happened to match, reporting
+// verified bytes nobody read. Refusing is reported per entry by the callers: a
+// checksum error, and an unreadable planRef in completeness mode.
+func unresolvableFetch(why string) hdfengine.FetchFunc {
+	return func(uri string) ([]byte, error) {
+		return nil, fmt.Errorf("referenced file %q cannot be resolved: %s to resolve it against; "+
+			"pass source.path to a package file on disk instead", uri, why)
+	}
+}
+
 // confinedFetchAt resolves a referenced URI relative to base, confined by
 // SafePath so a traversal-escaping reference is rejected rather than read.
 func confinedFetchAt(base string) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
-		p, err := hdfutil.SafePath(base, uri)
+		// Through the same contract the CLI uses, which is the point: hdf_validate is the
+		// third consumer 52n0c.31's AC names, and a resolver that disagreed with verify
+		// and bundle about what a reference means is the defect class .8 and .32 each hit.
+		// Decoding here also means an encoded traversal meets this containment check,
+		// rather than passing it as a literal directory name.
+		// Decode and confine as two steps rather than through PathFromRecorded, so
+		// the two failures stay distinguishable: a malformed escape means nothing was
+		// resolved at all, and reporting it as containment sends an operator looking
+		// for a traversal that is not there.
+		decoded, err := evidenceref.Decode(uri)
+		if err != nil {
+			return nil, fmt.Errorf("referenced file %q is not a valid uri-reference and could not be decoded: %w", uri, err)
+		}
+		p, err := evidenceref.Path(base, decoded)
 		if err != nil {
 			return nil, fmt.Errorf("referenced file %q is outside the evidence package root", uri)
 		}

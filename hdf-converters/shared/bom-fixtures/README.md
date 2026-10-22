@@ -18,6 +18,10 @@ CycloneDX-ML set is additionally consumed by the hdf-cli `system create` tests
 | `spdx-ai-model-1.json` | SPDX 3.0 AI/Dataset (JSON-LD) | SPDX `spdx-examples` repo — AI/Dataset profile example `ai/example01` (SimpleHTR handwriting recognition). Carries 2 `ai_AIPackage` (word-model, line-model) + 1 `dataset_DatasetPackage` (IAMdataset), with trainedOn/testedOn relationships. |
 | `spdx-ai-model-2.json` | SPDX 3.0 AI/Dataset (JSON-LD) | SPDX `spdx-examples` repo — AI/Dataset profile example `ai/example02` (sentiment-demo SBOM). Carries 1 `ai_AIPackage` + 1 `dataset_DatasetPackage`. |
 | `spdx-ai-dataset-1.json` | SPDX 3.0 AI/Dataset (JSON-LD) | SPDX `spdx-examples` repo — Dataset profile example `dataset/example01` (Our World in Data CO2 dataset). Carries 0 `ai_AIPackage` + 1 `dataset_DatasetPackage`. |
+| `cyclonedx-format-casing-vectors.json` | Detection vector table (not a BOM) | Written for hdf-libs-52n0c.46. NOT captured output and not a document: a list of `bomFormat` values with whether the CycloneDX detectors must claim each, read by BOTH language suites so the two cannot drift on casing. Nothing is asserted about any real SBOM's content. |
+| `spdx3-context-vectors.json` | Detection vector table (not a BOM) | Written for hdf-libs-52n0c.11. NOT captured output and not a document: `@context` values — string, array and inline-object forms — with whether each names an SPDX 3 vocabulary for ROUTING, read by BOTH language suites so the two cannot drift. Nothing is asserted about any real SBOM's content. |
+
+The two `*-vectors.json` tables are consumed by the bom detector tests in BOTH languages (`shared/go/bom/bom_test.go`, `shared/typescript/bom/bom.test.ts`) and by nothing else. They assert nothing about any document's content. The SPDX-3 table's own `comment` states which of its rows are evidence and which merely illustrate; this file does not restate it, because the two drifted apart once already.
 
 Consumers: shared bom parser tests (`shared/typescript/bom`, `shared/go/bom`)
 and the hdf-cli `system create` AI-BOM tests. The three `spdx-ai-*` fixtures are

@@ -64,6 +64,17 @@ const (
 	// Raised to 5850 on merging those two branches: each raise was measured
 	// against a surface without the other, and carrying both measures 5807 —
 	// over either ceiling. Needs the owner's confirmation like the two above.
+	// Raised to 5710 (owner decision 2026-10-11) so hdf_validate's content field
+	// can say that inline content does not resolve an evidence package's
+	// references: hdf-libs-52n0c.32 made it stop resolving them against the MCP
+	// root, and the published schema said nothing about it, which is false by
+	// omission to a client that reads only the schema.
+	// Confirmed by the owner 2026-10-20 on merging the branches above: each ceiling
+	// had been measured without the other's surface, and carrying all three measures
+	// 5833, so 5850 holds with 17 tokens of headroom — thinner than any single raise
+	// intended. hdf-libs-5cim9, the audit this block has named as due since the 5580
+	// raise, should settle the value and the ordinal scheme rather than each raise
+	// re-deriving them.
 	ToolsListTotalBudget = 5850
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
@@ -127,6 +138,14 @@ const (
 	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
 	// Raised to 4100 (owner decision 2026-10-05) for the advertised enum arrays on
 	// the read tools; measured 4072.
+	// Raised to 4010 (owner decision 2026-10-11) so hdf_validate's content field
+	// can say that inline content does not resolve an evidence package's
+	// references — hdf_validate is in this profile, so the correctness fix in
+	// hdf-libs-52n0c.32 lands here too. Measured 4007, against 3987 before.
+	// Confirmed by the owner 2026-10-20 with ToolsListTotalBudget above. Carrying both
+	// raises measures 4098 against this 4100 — TWO tokens of headroom, so the next
+	// description edit of any read tool will breach it. The thinnest margin in this
+	// file, and the reason 5cim9 is worth running before the next raise.
 	ReadProfileBudget = 4100
 )
 

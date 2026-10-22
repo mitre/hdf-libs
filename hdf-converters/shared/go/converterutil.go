@@ -6,6 +6,7 @@
 package shared
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -40,6 +41,53 @@ var digestHashAlgorithms = map[string]hdf.HashAlgorithm{
 	"blake3": hdf.Blake3,
 }
 
+// digestHexLengths is the hex-character count each algorithm's digest must have.
+// blake3 is its 32-byte default length, which is what ChecksumHex computes and what the
+// BLAKE3 reference vectors direct implementations to compare against — so blake3 and
+// sha256 are the SAME length, and a length check can therefore validate a digest against
+// a stated algorithm but can never infer one.
+var digestHexLengths = map[hdf.HashAlgorithm]int{
+	hdf.Sha256: 64,
+	hdf.Sha384: 96,
+	hdf.Sha512: 128,
+	hdf.Blake3: 64,
+}
+
+// ParseDigest converts "<algo>:<hex>" into a Checksum, reporting WHY it cannot rather
+// than returning nothing. DigestToChecksums answers the converter's question — is this a
+// digest I can record — where a tool needs to tell an operator what to fix, so the two
+// share one algorithm table and one set of rules.
+//
+// Validates the hex and its length against the STATED algorithm. Neither check can
+// recover a missing algorithm: an unprefixed digest is refused, because sha256 and
+// blake3 are both 64 hex characters and guessing is how a correct digest ends up
+// recorded under the wrong name.
+func ParseDigest(digest string) (hdf.Checksum, error) {
+	i := strings.IndexByte(digest, ':')
+	if i < 0 {
+		return hdf.Checksum{}, fmt.Errorf("%q states no algorithm: write it as sha256:<hex>, "+
+			"sha384:<hex>, sha512:<hex> or blake3:<hex>, because a digest's length cannot "+
+			"identify its algorithm (sha256 and blake3 are both 64 hex characters)", digest)
+	}
+	name, value := digest[:i], digest[i+1:]
+	algo, ok := digestHashAlgorithms[name]
+	if !ok {
+		// No leading "checksum": a caller wrapping this with its flag name would then
+		// print "--checksum checksum algorithm ...".
+		return hdf.Checksum{}, fmt.Errorf("algorithm %q cannot be recorded: "+
+			"HDF records sha256, sha384, sha512, blake3", name)
+	}
+	decoded, err := hex.DecodeString(value)
+	if err != nil {
+		return hdf.Checksum{}, fmt.Errorf("the %s digest %q is not hex-encoded: %w", name, value, err)
+	}
+	if want := digestHexLengths[algo]; len(value) != want {
+		return hdf.Checksum{}, fmt.Errorf("a %s digest is %d hex characters, got %d", name, want, len(value))
+	}
+	// Lowercased so one artifact hashed twice cannot be recorded as two values.
+	return hdf.Checksum{Algorithm: algo, Value: hex.EncodeToString(decoded)}, nil
+}
+
 // DigestToChecksums converts a container/artifact digest string ("<algo>:<hex>")
 // into a Component.Integrity checksum, folding the algorithm prefix into
 // Checksum.Algorithm. Returns nil for an empty digest, one with no algorithm
@@ -56,6 +104,10 @@ func DigestToChecksums(digest string) []hdf.Checksum {
 	if !ok {
 		return nil
 	}
+	// Deliberately NOT ParseDigest: a container digest arrives already validated by the
+	// registry that produced it, and rejecting one here for a length this build does not
+	// expect would drop a real checksum out of a converted document. The shared piece is
+	// the algorithm table, which is what kept the two from disagreeing.
 	return []hdf.Checksum{{Algorithm: algo, Value: digest[i+1:]}}
 }
 

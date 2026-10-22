@@ -10,6 +10,7 @@ import {
   buildBom,
   detectCycloneDX,
   detectCycloneDXML,
+  isBOMDocument,
   detectFormat,
   detectSPDX,
   detectSPDX3,
@@ -856,5 +857,90 @@ describe('numeric scalar value parity (TS↔Go)', () => {
     expect((model.hyperparameters ?? []).map(h => h.value)).toEqual(
       SCALAR_CASES.map(([, expected]) => expected),
     );
+  });
+});
+
+// The Go twin of this is TestDetectCycloneDX_ToleratesFormatCasing. Both read the
+// SAME vector table, so neither language can quietly disagree about which
+// spellings of bomFormat count. See hdf-libs-52n0c.46 for why casing is
+// tolerated: a document these detectors decline is handed to HDF document
+// detection, which reaches components after five more specific keys.
+describe('CycloneDX bomFormat casing', () => {
+  interface CasingVector {
+    bomFormat: string;
+    detect: boolean;
+    why: string;
+  }
+  const table = JSON.parse(
+    readFileSync(join(FIXTURES_DIR, 'cyclonedx-format-casing-vectors.json'), 'utf-8'),
+  ) as { vectors: CasingVector[] };
+
+  it('reads a non-empty table, because an empty one would assert nothing', () => {
+    expect(table.vectors.length).toBeGreaterThan(0);
+  });
+
+  for (const v of table.vectors) {
+    it(`${v.bomFormat || '(empty)'}: ${v.why}`, () => {
+      const doc = {
+        bomFormat: v.bomFormat,
+        specVersion: '1.5',
+        version: 1,
+        components: [{ type: 'library', name: 'openssl', version: '3.0.2' }],
+      };
+      expect(detectCycloneDX(doc) > 0).toBe(v.detect);
+
+      // The ML detector gates on the same field, so it must agree about the
+      // format and keep deciding the ML part on its own.
+      const mlDoc = {
+        bomFormat: v.bomFormat,
+        specVersion: '1.5',
+        version: 1,
+        components: [{ type: 'machine-learning-model', name: 'resnet', version: '1' }],
+      };
+      expect(detectCycloneDXML(mlDoc) > 0).toBe(v.detect);
+    });
+  }
+});
+
+// The Go twin is TestIsBOMDocument_RecognizesSPDX3ByItsContextValue. Both read
+// the SAME vector table. Routing is a wider question than parsing: detectFormat
+// answers which format parseBom can normalize, and of the SPDX-3 profiles that is
+// the AI/dataset one only, so a plain software-profile
+// SBOM is a real BOM it declines. See hdf-libs-52n0c.11 AC 3.
+describe('isBOMDocument — SPDX 3 by @context value', () => {
+  interface ContextVector {
+    // unknown, not string: JSON-LD admits a string, an array or an object.
+    context: unknown;
+    isSPDX3: boolean;
+    why: string;
+  }
+  const table = JSON.parse(
+    readFileSync(join(FIXTURES_DIR, 'spdx3-context-vectors.json'), 'utf-8'),
+  ) as { vectors: ContextVector[] };
+
+  it('reads a non-empty table', () => {
+    expect(table.vectors.length).toBeGreaterThan(0);
+  });
+
+  for (const v of table.vectors) {
+    it(v.why, () => {
+      // Software profile only: nothing but the context can classify it.
+      const doc = {
+        '@context': v.context,
+        '@graph': [
+          { type: 'SpdxDocument', spdxId: 'urn:a' },
+          { type: 'software_Sbom', spdxId: 'urn:b' },
+          { type: 'software_Package', name: 'openssl' },
+        ],
+      };
+      expect(isBOMDocument(doc)).toBe(v.isSPDX3);
+    });
+  }
+
+  it('still answers the formats detectFormat knows', () => {
+    for (const name of ['cyclonedx-sbom.json', 'spdx-sbom.json', 'spdx-ai-model-1.json']) {
+      expect(isBOMDocument(JSON.parse(loadFixture(name)))).toBe(true);
+    }
+    expect(isBOMDocument({ version: 4, terraform_version: '1.7.5' })).toBe(false);
   });
 });

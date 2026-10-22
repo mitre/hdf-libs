@@ -1,0 +1,7 @@
+{
+  "comment": "Thresholds for scripts/check-comment-length.mjs, read by BOTH the TypeScript and the Go checker \u2014 the Go side requires -config and carries no defaults, so the numbers have one source. doc: a comment group ending IMMEDIATELY above a declaration, or a file header \u2014 the first comment group in the file, including in a file that opens with a shebang, since a shebang is trivia rather than code, and including a file whose only content is comments. A blank line detaches a group, and a detached group is judged as any other comment run. inline: any other comment run. line: the width of one comment line, measured from its own first character so indentation is not charged. An allowlist entry is {file, reason}; the check fails on one whose reason is missing or blank, and on one naming a path nothing scans. Existing violations are frozen in comment-length-baseline.json, not exempted here.",
+  "doc": 10,
+  "inline": 5,
+  "line": 90,
+  "allowlist": []
+}

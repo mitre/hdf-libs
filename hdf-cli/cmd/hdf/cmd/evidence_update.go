@@ -1,0 +1,761 @@
+package cmd
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	"github.com/spf13/cobra"
+	"golang.org/x/text/unicode/norm"
+)
+
+type evidenceUpdateOpts struct {
+	resultsPaths []string
+	outputPath   string
+	overwrite    bool
+	dryRun       bool
+}
+
+func newEvidenceUpdateCmd() *cobra.Command {
+	var opts evidenceUpdateOpts
+
+	cmd := &cobra.Command{
+		Use:   "update <package> --results <doc>... (-o <out> | --overwrite | --dry-run)",
+		Short: "Record newer results in an existing evidence package, keeping its identity and history",
+		Long: `Read an evidence package back, record this run's results, recompute the completeness
+check, and keep everything the package already carried: packageId, name, description,
+planRef, and every external evidence and reference already attached.
+
+The package ACCUMULATES. A results document is replaced only when it sits at the same
+contents[] reference — the same slot, a file refreshed in place. A document at any
+other path is ADDED, even when it covers a baseline the package already covers,
+because a baseline is a set of requirements that can apply to many components, so one
+baseline appearing twice is normal rather than a collision. No results entry is ever
+removed: the package is meant to hold the scan history, which is what makes a trend over
+time tellable. A --results document whose reference is already held by an entry of a
+DIFFERENT type is refused rather than retyped.
+
+References are compared after normalisation on BOTH sides — the path given and the one
+already recorded — so ./scans/x.json and scans/../scans/x.json name the same entry whichever
+side they appear on. An absolute path GIVEN on the command line resolves to its
+package-relative form too; an absolute path already RECORDED in the package does not, because
+such a reference is out of contract and 'hdf evidence info --verify' refuses it outright.
+
+Two scans covering one baseline are told apart by their own content — a results
+document's timestamp and the components it targeted. Both are optional in HDF, so when
+they are absent this says so rather than implying the entries are distinguishable.
+
+An evidence package is an attestation, so this never silently rewrites one: name the
+package to write with -o, or pass --overwrite to replace the input deliberately.
+
+Examples:
+  hdf evidence update boe.json --results scans/q4.json -o boe-q4.json
+  hdf evidence update boe.json --results "scans/*.json" --overwrite
+  hdf evidence update boe.json --results scans/q4.json --dry-run`,
+		Args: evidencePackageArg,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runEvidenceUpdate(args[0], opts)
+		},
+	}
+
+	cmd.Flags().StringArrayVar(&opts.resultsPaths, "results", nil,
+		"Results document(s) to record (repeatable, supports globs)")
+	cmd.Flags().StringVarP(&opts.outputPath, "output", "o", "", "Package to write")
+	cmd.Flags().BoolVar(&opts.overwrite, "overwrite", false,
+		"Replace the input package deliberately, instead of writing a new one with -o")
+	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false,
+		"Report what would change and write nothing")
+
+	return cmd
+}
+
+// updateTarget resolves where the updated package is written. An evidence package is an
+// attestation, so neither flag means refuse rather than overwrite by default — the
+// opposite of add-evidence and add-reference, which only ever append.
+func updateTarget(pkgPath string, opts evidenceUpdateOpts) (string, error) {
+	// Contradictory flags are misuse whether or not anything is written.
+	if opts.outputPath != "" && opts.overwrite {
+		return "", fmt.Errorf("-o and --overwrite both name where to write; pass one")
+	}
+	switch {
+	case opts.outputPath != "":
+		return opts.outputPath, nil
+	case opts.overwrite:
+		return pkgPath, nil
+	case opts.dryRun:
+		// A dry run writes nothing, so it need not name a destination. Requiring one made
+		// this command's own documented --dry-run example fail.
+		return "", nil
+	default:
+		return "", fmt.Errorf("an evidence package is an attestation and this would rewrite one: "+
+			"name the package to write with -o, or pass --overwrite to replace %s deliberately", pkgPath)
+	}
+}
+
+func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
+	resultsPaths, err := expandGlobs(opts.resultsPaths)
+	if err != nil {
+		return err
+	}
+	if len(resultsPaths) == 0 {
+		return fmt.Errorf("--results is required: name the results document(s) to record")
+	}
+	// Resolved before any work, so a missing destination is not discovered after every
+	// read and hash.
+	// Resolved even for a dry run: a contradiction between -o and --overwrite is misuse
+	// whether or not anything is written, and a dry run that accepts flags the real run
+	// rejects is not a preview of it.
+	target, err := updateTarget(pkgPath, opts)
+	if err != nil {
+		return err
+	}
+
+	pkgData, err := readInputFile(pkgPath)
+	if err != nil {
+		return fmt.Errorf("failed to read evidence package: %w", err)
+	}
+	doc, err := loadAndValidateHDFDoc(pkgData, "evidence-package")
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
+	}
+	pkgDir := filepath.Dir(pkgPath)
+
+	contents, _ := doc["contents"].([]interface{})
+	// The enumeration as the package stands NOW. It is re-collected twice below —
+	// inside the --results loop, and again after the document is updated — because
+	// this command mutates contents and a stale enumeration silently misses entries.
+	refs, err := evidenceref.Collect(pkgData)
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
+	}
+	coveredBefore := baselinesByRef(pkgDir, contents, refs)
+
+	// ref -> source path, built once as the refs are derived. Recomputing them later to
+	// build a lookup map would be a second derivation of the same value, which is exactly
+	// what let a checksum check silently miss in card .4.
+	sourceOf := map[string]string{}
+	seen := map[string]struct{}{}
+	var replaced, added []string
+	// Pairs of (stored spelling, the spelling given on the command line) that are one name
+	// written differently — case, Unicode normalization, or both — and name one file here.
+	var spelledDifferently [][2]string
+	// Pairs of (count, reference) where more than one recorded entry named one file.
+	var multiRef [][2]string
+	// Pairs of (other recorded spelling, the incoming reference) naming one file under two
+	// DIFFERENT names, which stay separate entries and so leave the other one stale.
+	var alsoNamed [][2]string
+	for _, path := range resultsPaths {
+		ref, refErr := packageRelativeRef(pkgDir, path)
+		if refErr != nil {
+			return refErr
+		}
+		// Named twice in one invocation. Reported as that, not as a replacement: the
+		// second pass would otherwise find the first pass's own append and call it
+		// "refreshed in place", which is false — the ref was not in the package when the
+		// command started.
+		//
+		// Keyed on the file, not on the reference string: two spellings of one name evaded
+		// a string key, so the same entry was reported twice and an entry THIS run appended
+		// was reported as refreshed in place — exactly the falsehood described above.
+		// COMPARED DECODED, like every other reference comparison in this file. This loop
+		// compared the encoded forms, so for any path needing escapes — a space, a #, a %
+		// — the two spellings stopped resolving to one file, each argument was treated as
+		// new, and the second then matched the first's own just-appended entry. The result
+		// was "replaced ... refreshed in place" AND "added" for one file given twice:
+		// precisely the falsehood the comment above says this mechanism prevents.
+		refDecoded, _ := evidenceref.Decode(ref)
+		dupKey := ref
+		for prior := range seen {
+			priorDecoded, _ := evidenceref.Decode(prior)
+			if sameNameDifferentSpelling(normalizedRef(string(priorDecoded)), normalizedRef(string(refDecoded))) &&
+				samePath(refPath(pkgDir, string(priorDecoded)), refPath(pkgDir, string(refDecoded))) {
+				dupKey = prior
+				break
+			}
+		}
+		if _, dup := seen[dupKey]; dup {
+			fmt.Fprintf(os.Stderr, "  %s named more than once; recorded once\n", ref)
+			continue
+		}
+		seen[ref] = struct{}{}
+
+		data, raw, readErr := readInputFileAndRaw(path)
+		if readErr != nil {
+			return fmt.Errorf("failed to read --results file %s: %w", path, readErr)
+		}
+		// Fingerprinted, not taken on the flag's word. The type was hardcoded from the
+		// flag name, so --results on a system document filed it as results — weaker than
+		// the filename guess this repo already forbids, and `evidence info --verify` reads
+		// these types to judge completeness, so a mistyped entry yields a confident wrong verdict.
+		if err := requireDetectedType(data, path, "results", "results"); err != nil {
+			return err
+		}
+
+		sourceOf[ref] = path
+		// Enumerated from the CURRENT contents, not the snapshot taken before the
+		// loop: this loop appends, so from the second --results onward the snapshot
+		// is short by this run's own entries and the lookup below would skip them.
+		//
+		// No test fails if this reverts to the snapshot, and that is measured, not
+		// assumed: an entry this run appended is already caught by the dupKey guard
+		// above, and the only other path needs checksumDivergesFrom, which cannot
+		// fire for bytes this run just hashed. So the staleness is unobservable
+		// today and the correctness here is structural.
+		loopData, loopMarshalErr := contentsAsDocument(contents)
+		if loopMarshalErr != nil {
+			return loopMarshalErr
+		}
+		loopRefs, loopErr := evidenceref.Collect(loopData)
+		if loopErr != nil {
+			return loopErr
+		}
+		matched, conflictType, conflictRef, storedSpellings, otherNames := indexesOfResultsRef(pkgDir, contents, loopRefs, ref, raw)
+		if conflictType != "" {
+			// Names the STORED spelling, which is the entry the operator has to find and
+			// remove. Naming the incoming spelling told them to remove a reference that does
+			// not appear in their package, because a conflict can be reached by a spelling
+			// that merely names the same file.
+			return fmt.Errorf("%s is already recorded in this package with type %s; "+
+				"update replaces a results entry in place and will not retype an existing one — "+
+				"remove that entry first if it really is results now", conflictRef, conflictType)
+		}
+		for _, stored := range storedSpellings {
+			spelledDifferently = append(spelledDifferently, [2]string{stored, ref})
+		}
+		for _, other := range otherNames {
+			alsoNamed = append(alsoNamed, [2]string{other, ref})
+		}
+		if len(matched) > 0 {
+			// Each matched entry keeps ITS OWN recorded spelling and gains the fresh
+			// checksum: a recorded reference is part of an attestation and is not rewritten
+			// silently, so the stored form survives and the difference is reported instead.
+			for _, i := range matched {
+				rec, found := loopRefs.At("contents", i)
+				if !found {
+					return fmt.Errorf("contents[%d] matched but is not in the package's own enumeration", i)
+				}
+				contents[i] = contentEntryFromBytes("hdf-results", rec.Stored, raw)
+				replaced = append(replaced, rec.Stored)
+			}
+			if len(matched) > 1 {
+				multiRef = append(multiRef, [2]string{fmt.Sprint(len(matched)), ref})
+			}
+			continue
+		}
+		contents = append(contents, contentEntryFromBytes("hdf-results", ref, raw))
+		added = append(added, ref)
+		// Recorded as we go, so a second same-baseline scan added in the SAME invocation is
+		// reported too. A snapshot taken before the loop said nothing about them, which is
+		// exactly the documented pipeline shape: --results "scans/*.json".
+		if names, nameErr := hdfengine.CoveredBaselineNames(data); nameErr == nil {
+			coveredBefore[ref] = names
+		}
+	}
+	doc["contents"] = contents
+
+	// Re-collected, NOT the snapshot taken above: this run appends entries, so the
+	// earlier enumeration is short by exactly the documents whose coverage is about
+	// to be recomputed. Everything below this line reads the updated enumeration.
+	updatedData, marshalErr := json.Marshal(doc)
+	if marshalErr != nil {
+		return fmt.Errorf("re-read the updated package's references: %w", marshalErr)
+	}
+	updatedRefs, collectErr := evidenceref.Collect(updatedData)
+	if collectErr != nil {
+		return collectErr
+	}
+
+	// Recomputed from the POST-update content, never carried forward: a package that
+	// claims coverage it no longer has is worse than one that fails validation. Reuses
+	// build's computeCompleteness rather than a second implementation of it.
+	//
+	// Fed the updated enumeration for ordering discipline rather than necessity —
+	// this command never writes systemRef, so the two enumerations agree on it, and
+	// no test distinguishes them. Everything after the re-collect reads the updated
+	// one so that stops being a fact anyone has to re-derive.
+	sysDoc, haveSystem, unresolved, sysErr := systemDocForPackage(pkgDir, updatedRefs)
+	if sysErr != nil {
+		return sysErr
+	}
+	allResults, resErr := resultsPathsInPackage(pkgDir, contents, updatedRefs)
+	if resErr != nil {
+		return resErr
+	}
+	// Through build's completenessForPackage, so the "no system document means no
+	// coverage claim" rule has one definition: a package built without a system and a
+	// package whose systemRef stopped resolving must describe themselves the same way.
+	completeness := completenessForPackage(sysDoc, haveSystem, allResults)
+	if !haveSystem {
+		if unresolved.ref != "" {
+			// Named, because a systemRef the package RECORDS is a different situation from
+			// one it never recorded; the reason distinguishes the rejected-local case from
+			// the remote one, which these three used to collapse into two messages.
+			fmt.Fprintf(os.Stderr, "  systemRef %s %s; completeness cannot claim full baseline coverage\n",
+				sanitizeOutput(unresolved.ref), unresolved.reason)
+		} else {
+			fmt.Fprintf(os.Stderr, "  no system document resolved; completeness cannot claim full baseline coverage\n")
+		}
+	}
+	doc["completenessCheck"] = completeness
+	doc["preparedAt"] = time.Now().UTC().Format(time.RFC3339)
+
+	reportUpdate(replaced, added, spelledDifferently, multiRef, alsoNamed, coveredBefore, sourceOf)
+
+	output, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize evidence package: %w", err)
+	}
+	// Validated before the dry-run exit, so a dry run cannot report a change the real
+	// run would refuse.
+	if err := validateHDFDocument(output); err != nil {
+		return fmt.Errorf("evidence package failed validation before write: %w", err)
+	}
+	if opts.dryRun {
+		fmt.Fprintf(os.Stderr, "Dry run: nothing written.\n")
+		return nil
+	}
+	if err := os.WriteFile(target, output, 0o600); err != nil {
+		return fmt.Errorf("failed to write evidence package: %w", err)
+	}
+	fmt.Fprintf(os.Stderr, "Updated %s\n", target)
+	return nil
+}
+
+// normalizedRef puts a reference in the form packageRelativeRef produces, so a stored uri
+// and an incoming one are compared on equal terms. Normalising only the incoming side left
+// a stored "./scans/x.json" invisible to both the replacement match and the type-conflict
+// guard: the same file could be declared twice under different types, and a genuine refresh
+// added a second entry while the first kept a stale checksum, so the package failed its own
+// verification.
+func normalizedRef(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	return filepath.ToSlash(filepath.Clean(uri))
+}
+
+// indexesOfResultsRef finds EVERY hdf-results entry naming a reference's file. It additionally
+// reports the type, and the stored spelling, of an entry holding that reference under ANOTHER
+// type, so the caller can refuse rather than overwrite it: matching on uri alone let --results
+// on a system document destroy the package's only hdf-system entry and re-type it, which
+// schema validation accepts in silence.
+//
+// The reference is the only replacement key. Keying on baseline name would delete one
+// component's evidence when another component assessed against the same baseline is
+// recorded.
+func indexesOfResultsRef(pkgDir string, contents []interface{}, refs evidenceref.References, ref string, raw []byte,
+) (matched []int, conflictType, conflictRef string, storedSpellings, otherNames []string) {
+	// COMPARED ON THE DECODED FORMS, both sides. The incoming ref is minted encoded
+	// (packageRelativeRef records a uri-reference), while a stored one carries whatever
+	// spelling its author used — so comparing raw strings made an NFD filename stop
+	// matching its own entry the moment minting started escaping non-ASCII bytes. What
+	// two references mean is what decides whether they are the same reference.
+	wantDecoded, _ := evidenceref.Decode(ref)
+	wantNorm := normalizedRef(string(wantDecoded))
+	wantPath := refPath(pkgDir, string(wantDecoded))
+	for i, e := range contents {
+		entry, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rec, found := refs.At("contents", i)
+		if !found {
+			continue
+		}
+		uri := rec.Stored
+		entryDecoded := rec.Decoded
+		norm := normalizedRef(string(entryDecoded))
+		exact := norm == wantNorm
+		// Narrowed to ONE NAME SPELLED DIFFERENTLY — a case difference, a Unicode
+		// normalization difference, or both. samePath compares inodes, so on its own it also
+		// matches a hardlink and an absolute-versus-relative spelling of one file; those are
+		// two NAMES for one file and merging them is a separate decision, deliberately not
+		// taken here. samePath is still what decides, so on a case-sensitive filesystem the
+		// two spellings are different files and nothing matches.
+		sameName := !exact && sameNameDifferentSpelling(norm, wantNorm) &&
+			samePath(wantPath, refPath(pkgDir, string(entryDecoded)))
+		if !exact && !sameName {
+			// One file under a DIFFERENT name — a hardlink, or an absolute reference
+			// beside a relative one. Deliberately not matched, because those are two
+			// references the operator recorded and merging them would discard one. But
+			// not merged is not the same as not mentioned: this entry keeps whatever
+			// checksum it had, which the incoming bytes have just made stale, and saying
+			// nothing is what left the operator to discover it when verification failed.
+			// MEASURED, not inferred, and that is the whole predicate. This warning made
+			// three false claims before it: twice because it tracked which entries THIS
+			// RUN had rewritten and got the bookkeeping wrong, and once because it had
+			// the bookkeeping right and still concluded staleness from non-participation
+			// alone. Comparing the recorded checksum against the bytes in hand answers
+			// the question directly, and it subsumes all of that tracking — a samePath
+			// pair names ONE file, so an entry this run just rewrote cannot diverge from
+			// a later argument's reading of it.
+			if samePath(wantPath, refPath(pkgDir, string(entryDecoded))) && checksumDivergesFrom(entry, raw) {
+				otherNames = append(otherNames, uri)
+			}
+			continue
+		}
+		if docType, _ := entry["type"].(string); docType != "hdf-results" {
+			return nil, docType, uri, nil, nil
+		}
+		// EVERY entry naming the file, not just the first: a package the previous release
+		// wrote can hold two, and refreshing one left the other with a stale checksum, so
+		// update exited 0 reporting "refreshed in place" while verify exited 1.
+		matched = append(matched, i)
+		if sameName {
+			storedSpellings = append(storedSpellings, uri)
+		}
+	}
+	return matched, "", "", storedSpellings, otherNames
+}
+
+// checksumDivergesFrom reports whether an entry's RECORDED checksum disagrees with these
+// bytes AS VERIFICATION COMPARES THEM — which is what makes "verification will fail on
+// it" a statement rather than a guess.
+//
+// Mirrors hdfengine.VerifyChecksums in all three of ITS decisions, each of which was a
+// separate disagreement before it was matched: the algorithm is the ENTRY'S OWN, not the
+// one this build writes; the comparison is EXACT, not case-folded; and "nothing recorded"
+// means exactly empty, not whitespace-trimmed. The invariant is that these are the SAME
+// tests, so if verification's ever change, this must change with them.
+//
+// The fourth half — whether the bytes in hand are the bytes verification will fetch — is
+// mirrored too, as of 52n0c.42. It was not: this was fed through readInputFile, which
+// strips a UTF-8 BOM, while verification re-reads raw, so for a BOM-carrying source the
+// two hashed different bytes and no comparison here could have been right. The caller now
+// passes the bytes as read from disk, which is why this parameter is named raw.
+//
+// An entry recording no checksum, or one this build cannot compute, is NOT divergent —
+// there is nothing recorded to disagree, and saying otherwise would send an operator
+// after a checksum that was never claimed.
+func checksumDivergesFrom(entry map[string]interface{}, raw []byte) bool {
+	cs, ok := entry["checksum"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	recorded, _ := cs["value"].(string)
+	// EXACTLY empty, not trimmed — because that is VerifyChecksums' own test. A
+	// whitespace-only value is schema-valid (Checksum.value has no pattern or minLength)
+	// and verification does NOT skip it: it fetches, hashes, and reports a mismatch,
+	// since a hex digest never equals "   ". Trimming here called that blank and stayed
+	// silent on an entry verification fails.
+	if recorded == "" {
+		return false
+	}
+	algorithm, _ := cs["algorithm"].(string)
+	actual, err := hdfengine.ChecksumHex(algorithm, raw)
+	if err != nil {
+		return false
+	}
+	return actual != recorded
+}
+
+// sameNameDifferentSpelling reports whether two references are the SAME NAME written
+// differently — a case difference, a Unicode normalization difference, or both.
+//
+// Normalization is folded as well as case because NFC and NFD are one name in two
+// encodings, and on macOS that split is routine: readdir and extracted archives yield NFD
+// while shell completion yields NFC, and `build` records whichever it was handed. A
+// case-fold alone left those unmatched — strings.EqualFold("café" NFC, "café" NFD) is
+// false — which appended a duplicate and so reopened the stale-checksum failure this card
+// exists to close, for a filesystem that os.SameFile says holds one file.
+//
+// Deliberately NOT a general identity test: a hardlink and an absolute-versus-relative
+// spelling are two NAMES for one file, and merging those is a separate decision. samePath
+// still decides, so on a case-sensitive filesystem two spellings are different files and
+// nothing matches.
+func sameNameDifferentSpelling(a, b string) bool {
+	return strings.EqualFold(norm.NFC.String(a), norm.NFC.String(b))
+}
+
+// refPath is where a recorded reference points, for IDENTITY COMPARISON ONLY — never for
+// reading, which goes through the confined resolution in add-evidence. A relative
+// reference is package-relative, matching what bundle and verify resolve; anything else
+// stands as recorded so samePath's lexical fallback can still compare it.
+func refPath(pkgDir, uri string) string {
+	if uri == "" || isRemoteURI(uri) || filepath.IsAbs(uri) {
+		return uri
+	}
+	return filepath.Join(pkgDir, filepath.FromSlash(uri))
+}
+
+// baselinesByRef maps each results reference to the baselines it covers, for reporting
+// which incoming document lands beside an existing one.
+func baselinesByRef(pkgDir string, contents []interface{}, refs evidenceref.References) map[string][]string {
+	covered := map[string][]string{}
+	for i, e := range contents {
+		entry, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if docType, _ := entry["type"].(string); docType != "hdf-results" {
+			continue
+		}
+		rec, found := refs.At("contents", i)
+		if !found || rec.Stored == "" {
+			continue
+		}
+		uri := rec.Stored
+		// Classified first: SafePath JOINS, so a root-anchored reference re-roots onto a
+		// same-basename file inside the package and this scan would credit coverage to a
+		// document the package never named.
+		decoded, decErr := evidenceref.Decode(uri)
+		if decErr != nil {
+			continue
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
+		if !inTree {
+			continue
+		}
+		path, err := evidenceref.Path(pkgDir, ref)
+		if err != nil {
+			continue
+		}
+		data, err := readFromFile(path, true)
+		if err != nil {
+			continue
+		}
+		names, err := hdfengine.CoveredBaselineNames(data)
+		if err != nil {
+			continue
+		}
+		covered[uri] = names
+	}
+	return covered
+}
+
+// resultsPathsInPackage resolves every results reference to a readable path, for
+// recomputing completeness over the post-update content.
+func resultsPathsInPackage(pkgDir string, contents []interface{}, refs evidenceref.References) ([]string, error) {
+	paths := make([]string, 0, len(contents))
+	for i, e := range contents {
+		entry, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		// Load-bearing, not defence in depth: computeCompleteness counts any document
+		// carrying a top-level baselines array, so a bom entry pointing at such JSON would
+		// mint the green verdict this command otherwise refuses to mint. It also keeps a
+		// non-results entry's uri from being resolved at all, so an escaping one is left to
+		// `evidence info --verify` rather than failing an update that has nothing to do with it.
+		if docType, _ := entry["type"].(string); docType != "hdf-results" {
+			continue
+		}
+		rec, found := refs.At("contents", i)
+		if !found || rec.Stored == "" {
+			continue
+		}
+		uri := rec.Stored
+		decoded, decErr := rec.Decoded, rec.Err
+		if decErr != nil {
+			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, decErr)
+		}
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
+		if !inTree {
+			return nil, fmt.Errorf("results reference %q cannot be resolved: it is outside the package's "+
+				"directory", uri)
+		}
+		path, err := evidenceref.Path(pkgDir, ref)
+		if err != nil {
+			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, err)
+		}
+		paths = append(paths, path)
+	}
+	return paths, nil
+}
+
+// contentsAsDocument wraps the contents being assembled back into a document shape
+// so the seam can enumerate them. The error is returned rather than absorbed: an
+// empty fallback would make every lookup miss, and an entry that should be
+// refreshed in place would be appended instead.
+func contentsAsDocument(contents []interface{}) ([]byte, error) {
+	b, err := json.Marshal(map[string]interface{}{"contents": contents})
+	if err != nil {
+		return nil, fmt.Errorf("re-read the package's contents: %w", err)
+	}
+	return b, nil
+}
+
+// unresolvedSystemRef describes a systemRef the package records that yielded no system
+// document: the reference as stored, and the reason, which the caller prints verbatim.
+// Each non-resolving shape carries its own reason: ABSENT and REMOTE read alike until
+// this split them, and the remote reference went unnamed.
+// The zero value means there was nothing to resolve.
+type unresolvedSystemRef struct {
+	ref    string
+	reason string
+}
+
+// systemDocForPackage reads the system document the package references, so completeness
+// can be recomputed against it. It reports whether a document was resolved, because
+// computeCompleteness does NOT treat an empty system document as "nothing to check
+// against": it sets allBaselinesAssessed from the results alone, so an unresolvable
+// systemRef would mint a green verdict from nothing.
+//
+// A MIS-resolved systemRef was the live defect: SafePath JOINS, so a root-anchored
+// "/system.json" re-rooted to <pkgDir>/system.json and RESOLVED — to a document it did
+// not name. Classified through the predicate verify and bundle use, a reference outside
+// the package is reported as unresolved rather than substituted.
+func systemDocForPackage(pkgDir string, refs evidenceref.References) (
+	map[string]interface{}, bool, unresolvedSystemRef, error) {
+	rec, found := refs.At("systemRef", -1)
+	ref := rec.Stored
+	none := unresolvedSystemRef{}
+	switch {
+	case !found || ref == "":
+		return map[string]interface{}{}, false, none, nil
+	case isRemoteURI(ref):
+		// Recorded and legitimate, but outside the package and never fetched, so it is
+		// named rather than resolved.
+		return map[string]interface{}{}, false,
+			unresolvedSystemRef{ref: ref, reason: "is remote and was not fetched"}, nil
+	}
+	if rec.Err != nil {
+		return nil, false, none, fmt.Errorf("systemRef %q cannot be resolved: %w", ref, rec.Err)
+	}
+	resolved, inTree := packageSubtreeRef(pkgDir, rec.Decoded)
+	if !inTree {
+		return map[string]interface{}{}, false, unresolvedSystemRef{
+			ref: ref, reason: "does not resolve inside the package's directory"}, nil
+	}
+	path, err := evidenceref.Path(pkgDir, resolved)
+	if err != nil {
+		return nil, false, none, fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
+	}
+	data, err := readFromFile(path, true)
+	if err != nil {
+		return nil, false, none, fmt.Errorf("systemRef %q is referenced but could not be read: %w", ref, err)
+	}
+	var sysDoc map[string]interface{}
+	if err := json.Unmarshal(data, &sysDoc); err != nil {
+		return nil, false, none, fmt.Errorf("systemRef %q is not readable JSON: %w", ref, err)
+	}
+	return sysDoc, true, none, nil
+}
+
+// reportUpdate says what changed, and for an added document covering a baseline the
+// package already covered, what distinguishes the two. A results document's timestamp
+// and components are both OPTIONAL in HDF, so their absence is stated rather than
+// papered over — two indistinguishable scans are still both retained.
+func reportUpdate(replaced, added []string, spelledDifferently, multiRef, alsoNamed [][2]string, coveredBefore map[string][]string, sourceOf map[string]string) {
+	// Reported BEFORE the per-reference lines, so the explanation precedes the line it
+	// explains: the entry was refreshed under the spelling the package already records.
+	// Which of the two spellings names the file on a filesystem that distinguishes them is
+	// not known here, so neither is described as the one on disk — the operator may have
+	// mistyped the command line, in which case the recorded reference is the correct one.
+	for _, pair := range spelledDifferently {
+		fmt.Fprintf(os.Stderr, "  note: the recorded spelling %s and the spelling you gave %s are "+
+			"one name written differently (case or Unicode normalization); they name one file on "+
+			"this filesystem, so the entry was refreshed in place and the reference was left as "+
+			"recorded\n", sanitizeOutput(pair[0]), sanitizeOutput(pair[1]))
+	}
+	// A WARNING, not a note: the two notes above describe something that was handled,
+	// while this one describes something the operator still has to do. The package now
+	// names one file twice and only one of the two entries was refreshed, so the other
+	// records a checksum verification will not accept for these bytes — which 'hdf evidence info
+	// --verify' will fail on and 'bundle' will refuse. Said here because this is the last
+	// moment it is cheap to fix; before this it surfaced two commands later with nothing
+	// pointing at the cause.
+	//
+	// Neither spelling is called the wrong one. They are two references the operator
+	// recorded, merging them would discard one, and which of them should survive is a
+	// judgement only they can make.
+	for _, pair := range alsoNamed {
+		fmt.Fprintf(os.Stderr, "  WARNING: %s already names this same file under a different "+
+			"name, and stays a separate reference — so the checksum it records DOES NOT MATCH "+
+			"these bytes and verification will fail on it. Re-run update with that spelling "+
+			"too, or remove whichever of the two the package should not keep.\n",
+			sanitizeOutput(pair[0]))
+	}
+	for _, pair := range multiRef {
+		fmt.Fprintf(os.Stderr, "  note: %s recorded references name one file (%s); all were refreshed\n",
+			pair[0], sanitizeOutput(pair[1]))
+	}
+	for _, ref := range replaced {
+		fmt.Fprintf(os.Stderr, "  replaced %s (same reference, refreshed in place)\n", ref)
+	}
+	for _, ref := range added {
+		fmt.Fprintf(os.Stderr, "  added %s\n", ref)
+		overlap := overlappingBaselines(ref, sourceOf[ref], coveredBefore)
+		if len(overlap) == 0 {
+			continue
+		}
+		fmt.Fprintf(os.Stderr, "    also covered by an existing entry: %s\n", strings.Join(overlap, ", "))
+		fmt.Fprintf(os.Stderr, "    both are kept — %s\n", distinguishingFacts(sourceOf[ref]))
+	}
+}
+
+// overlappingBaselines names the baselines an incoming document shares with OTHER entries —
+// those the package already held, plus any added earlier in this same invocation.
+func overlappingBaselines(selfRef, path string, coveredBefore map[string][]string) []string {
+	if path == "" {
+		return nil
+	}
+	data, err := readFromFile(path, true)
+	if err != nil {
+		return nil
+	}
+	incoming, err := hdfengine.CoveredBaselineNames(data)
+	if err != nil {
+		return nil
+	}
+	existing := map[string]struct{}{}
+	for ref, names := range coveredBefore {
+		// An entry does not overlap itself. Added entries are recorded in this map so two
+		// documents in one invocation are compared, which put each entry's own baselines in
+		// the union and made every new scan report overlapping "an existing entry".
+		if ref == selfRef {
+			continue
+		}
+		for _, n := range names {
+			existing[n] = struct{}{}
+		}
+	}
+	var shared []string
+	for _, n := range incoming {
+		if _, ok := existing[n]; ok {
+			shared = append(shared, n)
+		}
+	}
+	sort.Strings(shared)
+	return shared
+}
+
+// distinguishingFacts reports the timestamp and targeted components a reader can use to
+// tell two scans of one baseline apart, naming whichever is absent.
+func distinguishingFacts(path string) string {
+	data, err := readFromFile(path, true)
+	if err != nil {
+		return "this document could not be read to say what distinguishes them"
+	}
+	// Read through the generated type, as hdf-engine's merge does, so these two fields
+	// cannot drift from the schema the way a local anonymous struct would.
+	var res hdf.HDFResults
+	if json.Unmarshal(data, &res) != nil {
+		return "this document could not be read to say what distinguishes them"
+	}
+	var facts []string
+	if res.Timestamp != nil {
+		facts = append(facts, "assessed "+res.Timestamp.UTC().Format(time.RFC3339))
+	} else {
+		facts = append(facts, "no timestamp recorded")
+	}
+	names := make([]string, 0, len(res.Components))
+	for _, c := range res.Components {
+		if c.Name != "" {
+			names = append(names, c.Name)
+		}
+	}
+	if len(names) > 0 {
+		facts = append(facts, "targets "+strings.Join(names, ", "))
+	} else {
+		facts = append(facts, "no target components recorded")
+	}
+	return strings.Join(facts, "; ")
+}

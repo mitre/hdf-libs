@@ -7,7 +7,7 @@
 /**
  * Supported hash algorithms
  */
-export type HashAlgorithm = 'sha256' | 'sha512';
+export type HashAlgorithm = 'sha256' | 'sha384' | 'sha512';
 
 /**
  * Supported output encodings
@@ -32,6 +32,7 @@ export interface HashOptions {
 /** Map our algorithm names to Web Crypto algorithm identifiers */
 const ALGORITHM_MAP: Record<HashAlgorithm, string> = {
   sha256: 'SHA-256',
+  sha384: 'SHA-384',
   sha512: 'SHA-512',
 };
 

@@ -1,16 +1,21 @@
 // Evidence-verify engine — the TypeScript peer of hdf-engine/go/evidence.go.
-// Pure, filesystem-agnostic core of `hdf evidence verify` (ADR-0007 §11):
+// Pure, filesystem-agnostic core of `hdf evidence info --verify` (ADR-0007 §11):
 // content-checksum classification and plan/results completeness. All filesystem
 // IO and path confinement stay in the caller, injected as a FetchFn. Kept at
 // behavioural parity with the Go implementation (see test/evidence.test.ts,
 // which runs both over the same fixtures).
 
-import { sha256 } from '@mitre/hdf-utilities';
+import { blake3 } from '@noble/hashes/blake3.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
+import { generateHash, type HashAlgorithm } from '@mitre/hdf-utilities';
 import { agentOverrideCount } from './compliance.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
-/** Classifies a single content entry's checksum verification. */
-export type ChecksumStatus = 'match' | 'mismatch' | 'skipped' | 'error';
+/** Classifies a single content entry's checksum verification. 'unsupported' is a
+ * recorded algorithm this build cannot compute — deliberately NOT 'error', since the
+ * bytes may be intact and the package valid. Every consumer switching on this type
+ * must handle it; leaving it to a default reports an unverified entry as verified. */
+export type ChecksumStatus = 'match' | 'mismatch' | 'skipped' | 'error' | 'unsupported';
 
 /** One content entry of an evidence package: a referenced document and its
  * recorded checksum ('' when the entry carries none). */
@@ -18,12 +23,41 @@ export interface EvidenceContent {
   uri: string;
   type: string;
   checksum: string;
+  /** The algorithm the package recorded, '' when it stated none. Optional so an
+   * omitted field behaves exactly like Go's zero-valued string: absent means
+   * sha256 at verification time. The sha256 default belongs to verification, not
+   * to the parse, so an unstated algorithm is not invented here. */
+  checksumAlgorithm?: string;
+  /** Distinguishes an entry carrying no checksum object from one carrying a
+   * checksum whose value is empty. `checksum` alone conflates them, and the
+   * difference matters: a recorded-but-blank value is unverifiable, whereas an
+   * absent checksum is simply not a claim. Optional so an omitted field behaves
+   * like Go's zero-valued bool. */
+  checksumRecorded?: boolean;
+  /** Set for an `externalEvidence[]` entry and absent for a `contents[]` one;
+   * `type` is the reverse. The schema gives the two arrays different fields — a
+   * content entry records a Content_Type, an external entry records a native
+   * Native_Format — so they are kept apart rather than collapsed into `type`,
+   * which would put 'raw-log' in a field whose vocabulary is the seven document
+   * types. Optional so an omitted field behaves like Go's zero-valued string. */
+  format?: string;
 }
 
 /** The verification outcome for one content entry. */
 export interface ChecksumResult {
   uri: string;
   type: string;
+  /** Mirrors `EvidenceContent.format`: set for an `externalEvidence[]` entry,
+   * absent for a `contents[]` one, so a caller can report what an artifact is
+   * without reading `type`'s Content_Type vocabulary onto it. */
+  format?: string;
+  /** The algorithm this entry's checksum is recorded under, with an unstated one
+   * reported as the sha256 it defaults to. Absent for a skipped entry — one with no
+   * checksum VALUE to verify, whether it carries no checksum at all or one whose
+   * value is blank (Checksum.value has no minLength, so a blank value is
+   * schema-valid and may still name an algorithm). Nothing was hashed in either
+   * case, and naming an algorithm would imply a computation that never ran. */
+  algorithm?: string;
   status: ChecksumStatus;
   expected?: string;
   actual?: string;
@@ -84,18 +118,50 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
   const doc = parseDocument(pkg, 'evidence package');
   const contents: EvidenceContent[] = objectArray(doc.contents, 'evidence package', 'contents').map((c) => {
     const checksum = c.checksum;
+    const isObject = typeof checksum === 'object' && checksum !== null;
     return {
       uri: str(c.uri),
       type: str(c.type),
-      checksum: typeof checksum === 'object' && checksum !== null ? str((checksum as RawObject).value) : '',
+      checksum: isObject ? str((checksum as RawObject).value) : '',
+      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
+      checksumRecorded: isObject,
     };
   });
   return { planRef: str(doc.planRef), contents };
 }
 
-/** Verifies each content entry's sha256 against fetch(uri), preserving entry
- * order. No checksum → skipped; a fetch throw → error; hash mismatch → mismatch
- * (carrying expected+actual). */
+/** Returns the `externalEvidence[]` entries as the same shape `contents[]` parses
+ * to, so ONE verification pass covers both arrays. It exists because verify
+ * examined `contents[]` only, and a wrong checksum in the other array passed at
+ * exit 0 while bundle refused the same package — the two commands disagreeing
+ * about one document.
+ *
+ * Additive on purpose: `verifyChecksums` is reused unchanged on what this returns,
+ * so the hashing has one implementation rather than one per array. */
+export function parseExternalEvidence(pkg: string): EvidenceContent[] {
+  const doc = parseDocument(pkg, 'evidence package');
+  return objectArray(doc.externalEvidence, 'evidence package', 'externalEvidence').map((e) => {
+    const checksum = e.checksum;
+    const isObject = typeof checksum === 'object' && checksum !== null;
+    return {
+      uri: str(e.uri),
+      type: '',
+      format: str(e.format),
+      checksum: isObject ? str((checksum as RawObject).value) : '',
+      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
+      checksumRecorded: isObject,
+    };
+  });
+}
+
+/** Verifies each content entry against fetch(uri) using the algorithm the entry
+ * recorded, preserving entry order. No checksum → skipped; an algorithm this
+ * build cannot compute → unsupported, never mismatch (that would say their evidence
+ * changed when it did not) and never error, since the bytes may be intact; a fetch throw → error;
+ * hash mismatch → mismatch (carrying expected+actual).
+ *
+ * Asynchronous because the SHA family is hashed through Web Crypto, which is what lets
+ * this package bundle for the browser. */
 export async function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Promise<ChecksumResult[]> {
   const results: ChecksumResult[] = [];
   // One entry at a time, so only one fetched document is held in memory.
@@ -107,8 +173,17 @@ export async function verifyChecksums(contents: EvidenceContent[], fetch: FetchF
 
 async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<ChecksumResult> {
   const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
+  if (c.format !== undefined && c.format !== '') {
+    r.format = c.format;
+  }
   if (c.checksum === '') {
     return r;
+  }
+  r.algorithm = effectiveAlgorithm(c.checksumAlgorithm);
+  // The algorithm is checked before any IO: whether this build can compute it
+  // is a property of the package, not of the filesystem.
+  if (!supportedAlgorithm(c.checksumAlgorithm)) {
+    return { ...r, status: 'unsupported', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
   }
   let data: Uint8Array;
   try {
@@ -116,7 +191,7 @@ async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<Check
   } catch (e) {
     return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
   }
-  const actual = await sha256(data);
+  const actual = await checksumHex(c.checksumAlgorithm, data);
   if (actual === c.checksum) {
     return { ...r, status: 'match' };
   }
@@ -200,6 +275,85 @@ export function completeness(planned: string[], covered: string[]): Completeness
   const coveredSet = new Set(covered);
   const missing = planned.filter((p) => !coveredSet.has(p)).sort();
   return { planned, covered, missing, complete: missing.length === 0 };
+}
+
+/** The algorithms this build can verify — every value Hash_Algorithm admits. An
+ * algorithm outside the enum is refused by name rather than silently treated as
+ * something else. Kept identical to Go's ChecksumHex. */
+const SUPPORTED_ALGORITHMS = ['sha256', 'sha384', 'sha512', 'blake3'] as const;
+
+/** Names the algorithm an entry's checksum is verified under: an unstated
+ * algorithm means sha256, so reporting '' would understate it. */
+function effectiveAlgorithm(recorded: string | undefined): string {
+  return !recorded ? 'sha256' : recorded;
+}
+
+function supportedAlgorithm(algorithm: string | undefined): boolean {
+  return !algorithm || (SUPPORTED_ALGORITHMS as readonly string[]).includes(algorithm);
+}
+
+/** Formats the algorithm list exactly as Go's ChecksumHex does, so the two languages
+ * emit the SAME user-visible refusal rather than two spellings of it. */
+function algorithmList(): string {
+  const all = SUPPORTED_ALGORITHMS as readonly string[];
+  return `${all.slice(0, -1).join(', ')} and ${all[all.length - 1]}`;
+}
+
+function unsupportedAlgorithmMessage(algorithm: string | undefined): string {
+  return `unsupported checksum algorithm "${algorithm}": this build computes ${algorithmList()}`;
+}
+
+/** Hashes data with the named Hash_Algorithm, hex-encoded. An empty algorithm
+ * means sha256, so a package that records only a value keeps its meaning. Rejects
+ * an algorithm this build cannot compute.
+ *
+ * The SHA family goes through the shared Web Crypto helper rather than node:crypto,
+ * which is what lets this package bundle for the browser; blake3 has no Web Crypto
+ * equivalent and keeps its own implementation. */
+export async function checksumHex(algorithm: string | undefined, data: Uint8Array): Promise<string> {
+  if (!supportedAlgorithm(algorithm)) {
+    throw new Error(unsupportedAlgorithmMessage(algorithm));
+  }
+  if (algorithm === 'blake3') {
+    // The 32-byte default-length digest is what the BLAKE3 reference vectors direct
+    // implementations to compare.
+    return bytesToHex(blake3(data));
+  }
+  return generateHash(data, { algorithm: (!algorithm ? 'sha256' : algorithm) as HashAlgorithm });
+}
+
+/**
+ * Turns a recorded evidence reference into the path it names.
+ *
+ * A reference is a uri-reference — the schema says so on both `contents[].uri` and
+ * `externalEvidence[].uri` — so its percent-escapes are part of the encoding, not part of
+ * the name. The DECODED form is what the reference means. Before this, every consumer
+ * treated the value as opaque bytes, so the legal spelling of a filename containing a
+ * space failed while the illegal spelling worked: a producer following the declared
+ * format wrote a package this toolchain could not read.
+ *
+ * ORDERING MATTERS AND THE CALLER OWNS IT. Decoding can CREATE a parent traversal —
+ * `%2e%2e/x` becomes `../x` and `a%2Fb` gains a separator — so the decoded form, never the
+ * raw one, is what a caller must put through its containment check.
+ *
+ * A value whose percent is not a valid escape cannot be decoded, and that throws rather
+ * than being guessed at: falling back to the raw bytes would make resolution depend on
+ * whether a filename happens to contain a `%`.
+ *
+ * Present here even though no TypeScript consumer resolves a reference to a filesystem
+ * today — what a reference MEANS is language-independent, and a consumer that starts
+ * resolving must not be free to disagree with Go. Pinned across both by
+ * `testdata/reference-decode-vectors.json`.
+ */
+export function decodeReference(uri: string): string {
+  if (uri === '') return '';
+  // decodeURIComponent throws URIError on a malformed escape, which is the reporting
+  // this contract wants; Go's url.PathUnescape returns an error for the same inputs.
+  try {
+    return decodeURIComponent(uri);
+  } catch {
+    throw new Error(`reference ${JSON.stringify(uri)} is not a valid uri-reference`);
+  }
 }
 
 function dedupe(input: string[]): string[] {

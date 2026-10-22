@@ -6,7 +6,7 @@
     "oapi-codegen": "2.8.0"
   },
   "keywordCounts": {
-    "$comment": 44,
+    "$comment": 45,
     "$ref": 240,
     "additionalProperties": 26,
     "allOf": 22,

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ and HDF amendments to OSCAL POA&M using the registered converters.
 Examples:
   hdf evidence export package.json --format oscal -o output/
   hdf evidence export package.json --format oscal`,
-		Args: cobra.ExactArgs(1),
+		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceExport(args[0], format, outputDir)
 		},
@@ -59,17 +59,27 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 	}
 
 	pkgDir := filepath.Dir(pkgPath)
+	refs, err := evidenceref.Collect(data)
+	if err != nil {
+		return err
+	}
 	contents, _ := doc["contents"].([]interface{})
 	exported := 0
 
-	for _, cRaw := range contents {
+	for i, cRaw := range contents {
 		entry, ok := cRaw.(map[string]interface{})
 		if !ok {
 			continue
 		}
 
+		// The type is this command's own concern; the reference comes from the
+		// seam, already decoded once.
 		docType, _ := entry["type"].(string)
-		uri, _ := entry["uri"].(string)
+		rec, found := refs.At("contents", i)
+		if !found {
+			continue
+		}
+		uri := rec.Stored
 
 		var converterSource, converterDest, outputName string
 		switch docType {
@@ -85,8 +95,16 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 			continue // Skip non-convertible types
 		}
 
-		// Read the referenced document (validate path stays within package directory)
-		refPath, pathErr := hdfutil.SafePath(pkgDir, uri)
+		if rec.Err != nil {
+			continue
+		}
+		decoded := rec.Decoded
+		ref, inTree := packageSubtreeRef(pkgDir, decoded)
+		if !inTree {
+			fmt.Fprintf(os.Stderr, "Warning: skipping %s: it does not resolve inside the package's directory\n", uri)
+			continue
+		}
+		refPath, pathErr := evidenceref.Path(pkgDir, ref)
 		if pathErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
 			continue

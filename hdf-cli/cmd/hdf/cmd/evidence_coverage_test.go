@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,10 +58,8 @@ func TestEvidenceBuildBasic(t *testing.T) {
 		assert.Equal(t, "hdf-system", first["type"])
 		assert.Equal(t, "system.json", first["uri"])
 		chk := first["checksum"].(map[string]interface{})
-		assert.Equal(t, "sha256", chk["algorithm"])
-
-		expectedHash := sha256.Sum256([]byte(systemDoc))
-		assert.Equal(t, hex.EncodeToString(expectedHash[:]), chk["value"])
+		assert.Equal(t, evidenceDigestAlgo, chk["algorithm"])
+		assert.Equal(t, evidenceDigestHex([]byte(systemDoc)), chk["value"])
 	})
 
 	t.Run("builds package to stdout when no output flag", func(t *testing.T) {
@@ -75,11 +74,22 @@ func TestEvidenceBuildBasic(t *testing.T) {
 		assert.Equal(t, "test-system-evidence-package", pkg["name"])
 	})
 
-	t.Run("errors when system flag missing", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "build",
+	// This subtest held the opposite contract. systemRef is optional in the schema, and
+	// a package recording none is a normal product: an assessment of a lone component
+	// asserts no system, so refusing to build one shut that use case out entirely.
+	t.Run("builds a package recording no system when the flag is omitted", func(t *testing.T) {
+		stdout, stderr, err := executeCommand("evidence", "build",
 			"--results", resultsPath,
 		)
-		require.Error(t, err)
+		require.NoError(t, err)
+
+		var pkg map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(stdout), &pkg))
+		_, recorded := pkg["systemRef"]
+		assert.False(t, recorded, "no --system records no systemRef")
+		assert.Equal(t, "evidence-package", pkg["name"])
+		assert.Len(t, pkg["contents"], 1, "nothing stands in for the absent system")
+		assert.Contains(t, stderr, "asserts no system")
 	})
 
 	t.Run("errors when results flag missing", func(t *testing.T) {
@@ -111,8 +121,14 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 
 	systemDoc := `{"name": "my-system", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
-	amendDoc := `{"amendments": []}`
-	compDoc := `{"comparison": {}}`
+	// Real documents, not placeholders: every content-carrying flag now
+	// fingerprint-checks its input, and {"amendments": []} / {"comparison": {}}
+	// detect as no HDF type at all. The comparison fixture was produced by running
+	// `hdf diff rhel9-results.json postgres-results.json --format json` over the
+	// two sibling results fixtures in testdata/evidence-verify.
+	amendDoc := fixtures.Amendments.UC01Fixed
+	compDoc, compErr := os.ReadFile(filepath.Join("testdata", "evidence-verify", "comparison.json"))
+	require.NoError(t, compErr)
 
 	systemPath := filepath.Join(tmpDir, "system.json")
 	resultsPath := filepath.Join(tmpDir, "results.json")
@@ -122,8 +138,8 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(systemPath, []byte(systemDoc), 0o600))
 	require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
-	require.NoError(t, os.WriteFile(amendPath, []byte(amendDoc), 0o600))
-	require.NoError(t, os.WriteFile(compPath, []byte(compDoc), 0o600))
+	require.NoError(t, os.WriteFile(amendPath, amendDoc, 0o600))
+	require.NoError(t, os.WriteFile(compPath, compDoc, 0o600))
 
 	_, stderr, err := executeCommand("evidence", "build",
 		"--system", systemPath,
@@ -382,33 +398,32 @@ func TestComputeCompleteness(t *testing.T) {
 // --- buildContentEntry tests ---
 
 func TestBuildContentEntry(t *testing.T) {
-	t.Run("produces correct entry with sha256 checksum", func(t *testing.T) {
+	t.Run("produces correct entry with a computed checksum", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		content := `{"hello": "world"}`
 		fp := filepath.Join(tmpDir, "doc.json")
 		require.NoError(t, os.WriteFile(fp, []byte(content), 0o600))
 
-		entry, err := buildContentEntry("hdf-results", fp)
+		entry, err := buildContentEntry("hdf-results", fp, filepath.Base(fp))
 		require.NoError(t, err)
 
 		assert.Equal(t, "hdf-results", entry["type"])
 		assert.Equal(t, "doc.json", entry["uri"])
 
 		chk := entry["checksum"].(map[string]interface{})
-		assert.Equal(t, "sha256", chk["algorithm"])
+		assert.Equal(t, evidenceDigestAlgo, chk["algorithm"])
 
-		h := sha256.Sum256([]byte(content))
-		assert.Equal(t, hex.EncodeToString(h[:]), chk["value"])
+		assert.Equal(t, evidenceDigestHex([]byte(content)), chk["value"])
 	})
 
 	t.Run("returns error for missing file", func(t *testing.T) {
-		_, err := buildContentEntry("hdf-system", "/nonexistent/file.json")
+		_, err := buildContentEntry("hdf-system", "/nonexistent/file.json", "file.json")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to read")
 	})
 }
 
-// --- evidence verify tests ---
+// --- evidence info --verify tests ---
 
 func TestEvidenceVerifyCommand(t *testing.T) {
 	t.Run("verifies matching checksums successfully", func(t *testing.T) {
@@ -438,8 +453,12 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.NoError(t, err)
+		// sha256 deliberately: this package was PLANTED with a sha256 checksum, and
+		// verification must honour the algorithm the package records rather than the one
+		// the authoring commands now compute with. Keeping it here is what proves the two
+		// are independent.
 		assert.Contains(t, stdout, "sha256 match")
 		assert.Contains(t, stdout, "test-package")
 	})
@@ -467,10 +486,12 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
 		assert.Contains(t, stdout, "MISMATCH")
-		assert.Contains(t, err.Error(), "checksum mismatches")
+		// Singular-aware and scoped to what happened; the old wording always printed
+		// both counts, so one mismatch read as "1 checksum mismatches, 0 errors".
+		assert.Contains(t, err.Error(), "1 checksum mismatch(es)")
 	})
 
 	t.Run("skips entries without checksum", func(t *testing.T) {
@@ -489,7 +510,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+		stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "no checksum")
 		assert.Contains(t, stdout, "skipped")
@@ -515,13 +536,13 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		_, _, err := executeCommand("evidence", "verify", pkgPath)
+		_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "errors")
+		assert.Contains(t, err.Error(), "1 reference(s) could not be read")
 	})
 
 	t.Run("errors when package file missing", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "verify", "/nonexistent/package.json")
+		_, _, err := executeCommand("evidence", "info", "--verify", "/nonexistent/package.json")
 		require.Error(t, err)
 	})
 
@@ -530,14 +551,14 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "bad.json")
 		require.NoError(t, os.WriteFile(pkgPath, []byte("not json"), 0o600))
 
-		_, _, err := executeCommand("evidence", "verify", pkgPath)
+		_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 		require.Error(t, err)
 		// The load gate now rejects non-HDF-shaped input before json.Unmarshal.
 		assert.Contains(t, err.Error(), "not a recognized HDF document")
 	})
 
 	t.Run("requires exactly one argument", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "verify")
+		_, _, err := executeCommand("evidence", "info", "--verify")
 		require.Error(t, err)
 	})
 }
@@ -574,7 +595,7 @@ func TestEvidenceVerifyJSON(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	stdout, _, err := executeCommand("evidence", "verify", "--json", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", "--json", pkgPath)
 	require.NoError(t, err)
 
 	var out map[string]interface{}
@@ -600,17 +621,26 @@ func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
 		{URI: "b", Type: "hdf-plan", Status: hdfengine.ChecksumMismatch, Expected: "x", Actual: "y"},
 		{URI: "c", Type: "hdf-system", Status: hdfengine.ChecksumSkipped},
 		{URI: "d", Type: "hdf-results", Status: hdfengine.ChecksumError, Error: "boom"},
+		// The table enumerates the WHOLE status type on purpose: a status this function
+		// does not translate becomes an entry with an empty status and no count, which is
+		// how an unverified entry gets reported as verified.
+		{URI: "e", Type: "hdf-results", Status: hdfengine.ChecksumUnsupported, Error: "no md5"},
 	}
-	results, counts := toVerifyResults(in)
-	require.Len(t, results, 4)
+	results, counts := toVerifyResults(in, refFieldContents)
+	require.Len(t, results, 5)
+	// The array each result came from is carried, so a reader can tell a content
+	// document from a native artifact held elsewhere.
+	assert.Equal(t, refFieldContents, results[0].Field)
 	assert.Equal(t, "match", results[0].Status)
 	assert.Equal(t, "y", results[1].Actual)
+	assert.Equal(t, "unsupported", results[4].Status)
 	assert.Equal(t, 1, counts.match)
 	assert.Equal(t, 1, counts.mismatch)
 	assert.Equal(t, 1, counts.skipped)
 	assert.Equal(t, 1, counts.errors)
+	assert.Equal(t, 1, counts.unsupported)
 
-	empty, ec := toVerifyResults(nil)
+	empty, ec := toVerifyResults(nil, refFieldExternal)
 	assert.Empty(t, empty)
 	assert.Equal(t, 0, ec.match)
 }
@@ -625,7 +655,7 @@ func TestConfinedFetch_VerifiesChecksums(t *testing.T) {
 		{URI: "file.txt", Type: "hdf-results", Checksum: "badhash"},
 		{URI: "file.txt", Type: "hdf-results", Checksum: ""},
 		{URI: "missing.json", Type: "hdf-results", Checksum: "abc"},
-	}, confinedFetch(tmpDir))
+	}, confinedFetch(tmpDir, nil))
 	assert.Equal(t, hdfengine.ChecksumMatch, got[0].Status)
 	assert.Equal(t, hdfengine.ChecksumMismatch, got[1].Status)
 	assert.Equal(t, hdfengine.ChecksumSkipped, got[2].Status)
@@ -634,7 +664,9 @@ func TestConfinedFetch_VerifiesChecksums(t *testing.T) {
 }
 
 func TestConfinedFetch_RejectsTraversal(t *testing.T) {
-	_, err := confinedFetch(t.TempDir())("../../../etc/passwd")
+	// nil resolution map: the recorded reference is used as-is, which is what a
+	// traversal attempt looks like before any classifier has seen it.
+	_, err := confinedFetch(t.TempDir(), nil)("../../../etc/passwd")
 	assert.Error(t, err)
 }
 
@@ -803,7 +835,7 @@ func TestEvidenceExportCommand(t *testing.T) {
 	})
 }
 
-// --- evidence verify with multiple documents ---
+// --- evidence info --verify with multiple documents ---
 
 func TestEvidenceVerifyMultipleDocuments(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -844,7 +876,7 @@ func TestEvidenceVerifyMultipleDocuments(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, stdout, "sha256 match")
 	assert.Contains(t, stdout, "MISMATCH")
@@ -873,7 +905,7 @@ func TestEvidenceVerifyRejectsNoPackageName(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	_, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "schema validation")
 	assert.Contains(t, err.Error(), "name")
@@ -902,10 +934,13 @@ func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Verify — checksums should match since files haven't changed
-	stdout, _, err := executeCommand("evidence", "verify", outputPath)
+	// Verify — checksums should match since files haven't changed.
+	// The algorithm build COMPUTED, reported back by verification: the round trip
+	// 52n0c.30 AC 4 asks for, where a package authored under a non-sha256 algorithm must
+	// verify cleanly rather than merely be writable.
+	stdout, _, err := executeCommand("evidence", "info", "--verify", outputPath)
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "sha256 match")
+	assert.Contains(t, stdout, evidenceDigestAlgo+" match")
 	assert.Contains(t, stdout, "2/2 checksums valid")
 }
 
@@ -916,4 +951,48 @@ func TestEvidenceExport_RejectsOversizeInput(t *testing.T) {
 	_, _, err := executeCommand("evidence", "export", pkg, "--format", "oscal", "--max-size", "1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "too large")
+}
+
+// SafePath JOINS a reference under the package directory, so a root-anchored
+// "/rhel9-results.json" resolves back to <pkgDir>/rhel9-results.json — a real file
+// with a different name than the reference. export read it, converted it, and
+// reported "Exported /rhel9-results.json", naming a path it never opened. Reference
+// resolution now goes through the same predicate verify and bundle use, so a
+// reference that does not resolve inside the package is skipped and reported
+// instead of being substituted by a same-basename file that happens to be there.
+func TestEvidenceExport_DoesNotSubstituteAReRootedDocument(t *testing.T) {
+	dir := t.TempDir()
+	// The file the re-root would reach. Real, readable, and convertible — so a
+	// successful export is proof the substitution happened, not proof of a missing file.
+	body, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "rhel9-results.json"), body, 0o600))
+
+	pkg := map[string]interface{}{
+		"name": "reroot",
+		"contents": []map[string]interface{}{
+			{"type": "hdf-results", "uri": "/rhel9-results.json"},
+		},
+	}
+	raw, marshalErr := json.Marshal(pkg)
+	require.NoError(t, marshalErr)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
+
+	outDir := filepath.Join(dir, "out")
+	require.NoError(t, os.MkdirAll(outDir, 0o750))
+	stdout, stderr, exportErr := executeCommand("evidence", "export", pkgPath, "-o", outDir)
+	combined := stdout + stderr
+
+	// The reference does not resolve inside the package, so nothing may be exported
+	// from it — and the run must say so rather than claiming a successful export.
+	assert.NotContains(t, combined, "Exported /rhel9-results.json",
+		"export must not claim to have exported a reference it never opened")
+	entries, readErr := os.ReadDir(outDir)
+	require.NoError(t, readErr)
+	assert.Empty(t, entries,
+		"nothing may be written from a reference that does not resolve inside the package")
+	assert.Contains(t, combined, "/rhel9-results.json",
+		"the skip must name the reference as the package records it")
+	_ = exportErr // skip-and-report is export's posture; the exit code is not the assertion
 }

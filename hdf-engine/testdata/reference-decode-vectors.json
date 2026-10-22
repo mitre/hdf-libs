@@ -1,0 +1,55 @@
+{
+  "$comment": "Vectors pinning what a recorded evidence reference MEANS. A reference is a uri-reference (the schema says so), so its percent-escapes decode and the decoded form is the package-relative path. Shared by Go and TypeScript so the two cannot drift: what a reference means is language-independent, even where only one language currently resolves one to a filesystem. Cases marked malformed:true cannot be decoded at all and are reported, never guessed at.",
+  "vectors": [
+    {
+      "why": "no escapes: unchanged, which is every reference shipped so far",
+      "uri": "scans/q4.json",
+      "decoded": "scans/q4.json"
+    },
+    {
+      "why": "a literal space is NOT a legal uri-reference, but decoding leaves it alone, so a package written against the old byte-path reading keeps working",
+      "uri": "my scans/q4.json",
+      "decoded": "my scans/q4.json"
+    },
+    {
+      "why": "the legal spelling of that same filename, which is the defect this table exists for: it failed while the illegal one worked",
+      "uri": "my%20scans/q4.json",
+      "decoded": "my scans/q4.json"
+    },
+    {
+      "why": "a # is a fragment delimiter in a URI and a plain character in a filename, so a producer must encode it and a consumer must decode it",
+      "uri": "tag%23frag.json",
+      "decoded": "tag#frag.json"
+    },
+    {
+      "why": "a literal % that introduces no valid escape cannot be decoded; reported rather than guessed at, because guessing would make resolution depend on the filename",
+      "uri": "100%done.json",
+      "malformed": true
+    },
+    {
+      "why": "%2F decodes to a separator. Harmless on a filesystem where / is always a separator and a filename can never contain one, but it must be the DECODED form that meets the containment check",
+      "uri": "a%2Fb.json",
+      "decoded": "a/b.json"
+    },
+    {
+      "why": "an encoded parent traversal. Decoding CREATES it, which is why the decoded form is what gets contained; nothing escapes today only because nothing decodes",
+      "uri": "%2e%2e/escape.json",
+      "decoded": "../escape.json"
+    },
+    {
+      "why": "the same traversal with only the separator encoded",
+      "uri": "..%2fescape.json",
+      "decoded": "../escape.json"
+    },
+    {
+      "why": "a percent-encoded percent, which decodes to a single literal % and is the only way to write one",
+      "uri": "100%25done.json",
+      "decoded": "100%done.json"
+    },
+    {
+      "why": "an empty reference names nothing; decoding neither fixes nor worsens that, and the callers that refuse it keep doing so",
+      "uri": "",
+      "decoded": ""
+    }
+  ]
+}

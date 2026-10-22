@@ -208,7 +208,7 @@
         "sha512",
         "blake3"
       ],
-      "description": "Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers container-image and other artifact digests that use it.",
+      "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable.",
       "title": "Hash Algorithm"
     },
     "Requirement_Group": {

@@ -4,11 +4,15 @@ rules:
       where:
           status: error
       max: 0
-    # Some tests skip by design; the budget is the windows hdf-cli document's measured count (11) from a fully green run — re-measure there, never from the run being gated.
+    # Some tests skip by design; 20 is the windows hdf-cli count measured on run 39866226876, the
+    # first fully green windows leg — the windows cmd package did not compile before 2026-10-20, so
+    # no earlier run could measure it. Re-measure on a green run, never on the run being gated.
+    # One budget is set by the highest platform, so ubuntu (13) carries invisible headroom and a
+    # platform could stop running tests unnoticed: per-platform split tracked in hdf-libs-nm8bc.
     - name: skipped stays within budget
       where:
           status: notReviewed
-      max: 11
+      max: 20
     - name: nothing failing is unadjudicated
       where:
           status: failed

@@ -21,6 +21,7 @@ export {
   detectSPDX,
   detectSPDX3,
   detectSPDX3Security,
+  isBOMDocument,
 } from './fingerprints.js';
 export { parseCycloneDX } from './cyclonedx.js';
 export { parseSPDX } from './spdx.js';

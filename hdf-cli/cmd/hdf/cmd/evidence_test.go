@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,9 +55,16 @@ func TestEvidenceInfoCommand(t *testing.T) { //nolint:dupl
 		assert.Contains(t, stdout, "hdf-system")
 		assert.Contains(t, stdout, "portal-prod.hdf-system.json")
 		assert.Contains(t, stdout, "rhel9-stig.hdf-baseline.json")
-		assert.Contains(t, stdout, "\u2713 checksum")
+		// The tick is gone from the default path: nothing is hashed there, so nothing
+		// may be rendered as checked. This assertion used to pin the tick, which is
+		// what made the defect in 52n0c.37 look like intended behaviour.
+		assert.Contains(t, stdout, "checksum recorded")
+		assert.NotContains(t, stdout, "\u2713",
+			"the tick belongs to a computed match under --verify, not to the summary")
 		assert.Contains(t, stdout, "waivers.hdf-amendments.json")
-		assert.Contains(t, stdout, "Completeness:")
+		// Attributed, not bare: the schema calls the stored block non-authoritative, so
+		// the heading says the package recorded it rather than implying info found it.
+		assert.Contains(t, stdout, "Completeness, as recorded by the package")
 		assert.Contains(t, stdout, "All baselines assessed: yes")
 		assert.Contains(t, stdout, "All components covered: yes")
 		assert.Contains(t, stdout, "Expired waivers: 0")
@@ -88,4 +97,185 @@ func TestEvidenceInfoCommand(t *testing.T) { //nolint:dupl
 func TestBoolYesNo(t *testing.T) {
 	assert.Equal(t, "yes", boolYesNo(true))
 	assert.Equal(t, "no", boolYesNo(false))
+}
+
+// Absorbed from hdf-libs-52n0c.37. info printed "✓ checksum" on the mere PRESENCE of the
+// checksum key, so an entry recording a BLANK value and one whose reference is a remote
+// URI nobody fetched both displayed as checked. The tick claimed verification that never
+// happened — and in the default path nothing is hashed at all, so no line may imply it.
+// A blank value is schema-valid: Checksum.value has no minLength.
+func TestEvidenceInfo_DefaultPathReportsWhatIsRecordedNotWhatIsChecked(t *testing.T) {
+	dir := t.TempDir()
+	pkgPath := filepath.Join(dir, "pkg.json")
+	pkg := map[string]any{
+		"name": "recorded-states",
+		"contents": []any{
+			map[string]any{"type": "hdf-results", "uri": "a.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("a", 64)}},
+			map[string]any{"type": "hdf-results", "uri": "b.json",
+				"checksum": map[string]any{"algorithm": "sha256", "value": ""}},
+			map[string]any{"type": "hdf-plan", "uri": "c.json"},
+		},
+		"externalEvidence": []any{
+			map[string]any{"uri": "https://logs.example.gov/x.ndjson", "format": "raw-log",
+				"checksum": map[string]any{"algorithm": "sha256", "value": strings.Repeat("b", 64)}},
+		},
+	}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	stdout, _, runErr := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, runErr)
+
+	// Nothing was hashed, so no tick anywhere — not for the entry with a checksum, and
+	// certainly not for the remote one nobody fetched.
+	assert.NotContains(t, stdout, "✓", "the default path hashes nothing, so it may not tick")
+	assert.NotContains(t, stdout, "checked")
+	assert.NotContains(t, stdout, "verified")
+
+	// Three RECORDED states, distinguished: a value, an empty value, and none at all.
+	// The middle one is the defect — it used to read identically to the first.
+	assert.Contains(t, stdout, "checksum recorded")
+	assert.Contains(t, stdout, "checksum recorded but empty")
+	assert.Contains(t, stdout, "no checksum recorded")
+
+	// And the remote entry is reported as recording one, which is true: info did not
+	// fetch it, so its reachability is not info's claim to make.
+	assert.Contains(t, stdout, "https://logs.example.gov/x.ndjson")
+}
+
+// The second half of the same defect, one field over. The schema says of
+// Completeness_Check: "Informational summary of assessment completeness. Not
+// authoritative — tools should compute these from the referenced documents." So the
+// default path printing that block under a bare "Completeness:" heading presents a claim
+// it never established, exactly as the presence-tick did. It must say the package RECORDS
+// this, and point at where a computed answer comes from.
+func TestEvidenceInfo_LabelsTheStoredCompletenessAsRecorded(t *testing.T) {
+	dir := t.TempDir()
+	pkgPath := filepath.Join(dir, "pkg.json")
+	pkg := map[string]any{
+		"name":     "stored-completeness",
+		"contents": []any{map[string]any{"type": "hdf-results", "uri": "a.json"}},
+		// A block claiming full coverage. Nothing here was computed from anything.
+		"completenessCheck": map[string]any{
+			"allBaselinesAssessed": true,
+			"allComponentsCovered": true,
+			"compliancePercent":    100,
+		},
+	}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	stdout, _, runErr := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, runErr)
+
+	assert.Contains(t, stdout, "as recorded",
+		"the heading must attribute the numbers to the document, not to this command")
+	assert.Contains(t, stdout, "--verify",
+		"and point at where a computed answer comes from")
+	assert.NotContains(t, stdout, "\nCompleteness:\n",
+		"the bare heading reads as this command's finding")
+}
+
+// The refusal was stated in the help and correct in the binary, and NOTHING RAN IT: the
+// whole branch could be deleted and the suite stayed green. That is the "a gate must be
+// wired to something that runs it" failure, found by the AC review rather than by me.
+//
+// Refused rather than ignored, because a flag that silently does nothing is how an
+// operator comes to believe a check ran. --require-checksums-match is included via
+// Changed() rather than by value: it defaults TRUE, so its value cannot distinguish the
+// default from an operator explicitly typing =false.
+func TestEvidenceInfo_RefusesVerifyOnlyFlagsWithoutVerify(t *testing.T) {
+	dir := t.TempDir()
+	pkgPath := filepath.Join(dir, "pkg.json")
+	pkg := map[string]any{"name": "stray-flags",
+		"contents": []any{map[string]any{"type": "hdf-results", "uri": "a.json"}}}
+	out, err := json.MarshalIndent(pkg, "", " ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, out, 0o600))
+
+	// TABLE-DRIVEN OVER EVERY VERIFY-ONLY FLAG, and it must grow when one is added. A
+	// mutant removing the newest flag from strayVerifyFlags left this suite green,
+	// because the table listed only the flags that existed when it was written — the
+	// same untested-gate shape the test itself was added to close, one flag later.
+	var covered []string
+	for _, tc := range []struct{ name, flag string }{
+		{"checksums-only", "--checksums-only"},
+		{"require-reachable", "--require-reachable"},
+		{"require-checksums", "--require-checksums"},
+		// The one the old rationale wrongly excluded: it defaults true, so only
+		// Changed() can tell an explicit =false from the default.
+		{"require-checksums-match set explicitly", "--require-checksums-match=false"},
+	} {
+		covered = append(covered, strings.TrimPrefix(strings.Split(tc.flag, "=")[0], "--"))
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, runErr := executeCommand("evidence", "info", pkgPath, tc.flag)
+			require.Error(t, runErr, "%s does nothing without --verify and must be refused", tc.flag)
+			assert.Contains(t, runErr.Error(), "only mean(s) something with --verify")
+			assert.Contains(t, runErr.Error(), strings.Split(tc.flag, "=")[0],
+				"the refusal must name the flag the operator actually typed")
+		})
+	}
+
+	// And the default, with nothing set, is not refused — the refusal keys on what was
+	// typed, not on the flags' values.
+	_, _, okErr := executeCommand("evidence", "info", pkgPath)
+	require.NoError(t, okErr, "an unset --require-checksums-match must not trip the refusal")
+
+	// THE TABLE CANNOT FALL BEHIND THE FLAG SET AGAIN. Every flag info declares whose
+	// help says "With --verify" must appear above, derived from the command rather than
+	// from memory — which is what let the table go stale when --require-checksums landed.
+	declared := map[string]bool{}
+	newEvidenceInfoCmd().Flags().VisitAll(func(f *pflag.Flag) {
+		if strings.HasPrefix(f.Usage, "With --verify") {
+			declared[f.Name] = true
+		}
+	})
+	require.NotEmpty(t, declared, "the derivation must find something, or it proves nothing")
+	for name := range declared {
+		assert.Contains(t, covered, name,
+			"--%s is a --verify-only flag and is not covered by the refusal table above", name)
+	}
+}
+
+// readInput reads "" as a request for stdin, which arrived incidentally in an early
+// bulk PR rather than as a decision — and surfaced twice as a defect that `evidence
+// build` had to guard flag by flag. An empty positional path is almost always an
+// unset shell variable, so a command told to read one waited on stdin forever
+// instead of naming the package it was not given. Refused at the boundary now.
+func TestEvidenceSubcommands_RefuseABlankPackagePath(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"info", []string{"evidence", "info"}},
+		{"info --verify", []string{"evidence", "info", "--verify"}},
+		{"bundle", []string{"evidence", "bundle", "-o", "x.tar.gz"}},
+		{"update", []string{"evidence", "update", "--results", "r.json"}},
+		{"export", []string{"evidence", "export"}},
+		{"set", []string{"evidence", "set", "--name", "x"}},
+		{"add-evidence", []string{"evidence", "add-evidence", "--uri", "a.json", "--format", "raw-log"}},
+		{"add-reference", []string{"evidence", "add-reference", "--href", "a.json", "--source-name", "s"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// The blank path goes where the package path belongs: first positional.
+			args := append([]string{tc.args[0], tc.args[1]}, "")
+			args = append(args, tc.args[2:]...)
+			_, _, err := executeCommand(args...)
+			require.Error(t, err, "a blank package path must be refused, not read as stdin")
+			assert.Contains(t, err.Error(), "blank",
+				"the refusal must say the path is blank, so an unset variable is obvious")
+		})
+	}
+}
+
+// "-" stays the explicit stdin spelling: it can only be typed deliberately.
+func TestEvidenceSubcommands_StillAcceptDashForStdin(t *testing.T) {
+	err := evidencePackageArg(nil, []string{"-"})
+	assert.NoError(t, err, "- is the conventional stdin spelling and must survive")
+	assert.Error(t, evidencePackageArg(nil, []string{""}), "empty is refused")
+	assert.Error(t, evidencePackageArg(nil, []string{"   "}), "whitespace-only is refused too")
+	assert.NoError(t, evidencePackageArg(nil, []string{"pkg.json"}), "a real path passes")
 }

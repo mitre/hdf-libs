@@ -112,6 +112,7 @@
       "title": "Content Type"
     },
     "Content_Reference": {
+      "$comment": "Examples, in order: 1) the system document at the package root; 2) a results document with a per-entry description; 3) a BOM in a subdirectory, which also shows that checksum is optional. Every example uri is package-relative on purpose — an earlier one was an absolute https URL, which demonstrated a package the tooling refuses to resolve. A remote artifact belongs in externalEvidence[].",
       "type": "object",
       "unevaluatedProperties": false,
       "required": [
@@ -126,7 +127,7 @@
         "uri": {
           "type": "string",
           "format": "uri-reference",
-          "description": "URI to the document. Can be a relative path or absolute URL."
+          "description": "A uri-reference whose DECODED form is a path relative to the package document's own directory — that is what the reference MEANS, independently of any one consumer. Percent-escapes are part of the encoding, not the name: `my%20scans/q4.json` and `my scans/q4.json` name the same file, and the escaped spelling is the one this field's format admits. A consumer decodes before it resolves, never after, because decoding can produce a parent traversal that containment must then see. It is never fetched: there is no network retrieval anywhere in evidence handling. `uri-reference` admits shapes other than a relative path and they stay schema-valid; how a consumer resolves one, and what it does when it cannot, is that consumer's own contract. An artifact deliberately held elsewhere belongs in externalEvidence[], which references it by URI and checksum without retrieving it."
         },
         "checksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
@@ -162,7 +163,7 @@
         },
         {
           "type": "bom",
-          "uri": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
+          "uri": "boms/webtier.cdx.json",
           "description": "WebTier CycloneDX SBOM (bomType=sbom)"
         }
       ],

@@ -467,3 +467,88 @@ func normalizeJSON(t *testing.T, s string) string {
 	}
 	return strings.TrimSpace(buf.String())
 }
+
+// A tool's Description is what an LLM client reads to decide how to call it, so a false
+// claim there misroutes callers and no behavioural test catches it. hdf_validate's said it
+// verified "sha256 checksums" long after the engine began honouring each entry's recorded
+// algorithm. Asserted against the LIVE tools/list rather than the golden, so it cannot be
+// satisfied by editing the golden alone.
+func TestToolsList_DescriptionsDoNotNameOneHashAlgorithm(t *testing.T) {
+	live := driveToolsList(t)
+
+	// ALLOWLIST, not a pattern list. Matching phrasings of the false claim only ever
+	// catches the ones someone thought of: a guard written that way killed "sha256
+	// checksums" and let "sha256 checksum", "SHA-256 checksums" and "verified under
+	// sha256" through. So the rule is inverted — a hash algorithm named in ANY
+	// description on the surface, the tool's own or any schema property's, is a finding
+	// unless it is listed here with its reason. Property NAMES are not scanned, which is
+	// what keeps this allowlist one entry long rather than eight.
+	allowed := map[string]string{
+		"with output set, preview the write (return the summary + sha256, write no file)": "" +
+			"hdf_diff's dryRun genuinely returns a sha256 of the document it would have written " +
+			"(diff.go: out.Sha256 = hdfutil.SHA256Hex(docBytes)), surfaced as the sha256 output " +
+			"field. Naming the algorithm is correct here because exactly one is computed.",
+	}
+
+	for _, d := range allDescriptions(t, live) {
+		// Lower-cased and de-hyphenated before matching, so "SHA-256" is not a way past it.
+		probe := strings.ReplaceAll(strings.ToLower(d), "-", "")
+		for _, alg := range []string{"sha256", "sha384", "sha512", "blake3"} {
+			if !strings.Contains(probe, alg) {
+				continue
+			}
+			if _, ok := allowed[d]; ok {
+				continue
+			}
+			t.Errorf("a tool description names the hash algorithm %q:\n  %q\n"+
+				"The checksum modes verify every algorithm Hash_Algorithm admits, so naming one "+
+				"misdescribes the surface. If the mention is genuinely correct, add the description "+
+				"to the allowlist in this test with the reason.", alg, d)
+		}
+	}
+
+	if !strings.Contains(live, "the algorithm its entry records") {
+		t.Error("hdf_validate's description must say WHICH algorithm the checksums mode uses")
+	}
+}
+
+// allDescriptions collects every "description" string anywhere in a tools/list response —
+// the tool's own and every schema property's, since a property description is prose an
+// LLM client reads just as the tool's is, and the only algorithm mention on the live
+// surface today sits in one of them. Property NAMES are deliberately not collected: an
+// output field called "sha256" is a field name, not a claim about which algorithms are
+// verified, and scanning the raw JSON conflated the two.
+func allDescriptions(t *testing.T, listJSON string) []string {
+	t.Helper()
+	var doc any
+	if err := json.Unmarshal([]byte(listJSON), &doc); err != nil {
+		t.Fatalf("parsing tools/list: %v", err)
+	}
+	var out []string
+	var walk func(any)
+	walk = func(node any) {
+		switch v := node.(type) {
+		case map[string]any:
+			for key, val := range v {
+				if key == "description" {
+					if str, ok := val.(string); ok {
+						out = append(out, str)
+					}
+				}
+				walk(val)
+			}
+		case []any:
+			for _, item := range v {
+				walk(item)
+			}
+		}
+	}
+	walk(doc)
+	// A response whose descriptions failed to parse would make every assertion below
+	// vacuous, so the count is asserted rather than assumed.
+	if len(out) < 10 {
+		t.Fatalf("collected only %d descriptions from tools/list; the surface has more, so this "+
+			"test would be asserting against almost nothing", len(out))
+	}
+	return out
+}

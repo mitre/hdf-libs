@@ -17,8 +17,8 @@ func TestHdfConvert_Batch_SameBasenameInputsAreNumbered(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("HDF_MCP_ROOT", root)
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/host1/scan.json", gosecFixture(t))
-	writeInRootPath(t, "in/host2/scan.json", awsConfigFixture(t))
+	writeInRoot(t, "in/host1/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/host2/scan.json", awsConfigFixture(t))
 
 	res, out := callConvert(t, convertInput{
 		Sources:   []handle.Source{{Path: "in/host1/scan.json"}, {Path: "in/host2/scan.json"}},
@@ -55,8 +55,8 @@ func TestHdfConvert_Batch_SameBasenameInputsAreNumbered(t *testing.T) {
 func TestHdfConvert_Batch_DistinctBasenamesKeepPlainNames(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/host1/scan.json", gosecFixture(t))
-	writeInRootPath(t, "in/host2/aws.json", awsConfigFixture(t))
+	writeInRoot(t, "in/host1/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/host2/aws.json", awsConfigFixture(t))
 
 	_, out := callConvert(t, convertInput{
 		Sources:   []handle.Source{{Path: "in/host1/scan.json"}, {Path: "in/host2/aws.json"}},
@@ -80,9 +80,9 @@ func TestHdfConvert_Batch_NumberingSkipsALiteralName(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("HDF_MCP_ROOT", root)
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/host1/scan.json", gosecFixture(t))
-	writeInRootPath(t, "in/host2/scan.json", awsConfigFixture(t))
-	writeInRootPath(t, "in/scan.1.json", gosecFixture(t))
+	writeInRoot(t, "in/host1/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/host2/scan.json", awsConfigFixture(t))
+	writeInRoot(t, "in/scan.1.json", gosecFixture(t))
 
 	res, out := callConvert(t, convertInput{
 		Sources: []handle.Source{
@@ -125,7 +125,7 @@ func TestHdfConvert_Batch_NumberingSkipsALiteralName(t *testing.T) {
 func TestHdfConvert_Batch_RepeatedInputTolerated(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/scan.json", gosecFixture(t))
+	writeInRoot(t, "in/scan.json", gosecFixture(t))
 
 	res, out := callConvert(t, convertInput{
 		Sources:   []handle.Source{{Path: "in/scan.json"}, {Path: "./in/scan.json"}},
@@ -149,7 +149,7 @@ func TestHdfConvert_Batch_SourceWithoutFileNameRefusedBeforeAnyWrite(t *testing.
 	root := t.TempDir()
 	t.Setenv("HDF_MCP_ROOT", root)
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "scan.json", gosecFixture(t))
+	writeInRoot(t, "scan.json", gosecFixture(t))
 
 	res, out := callConvert(t, convertInput{
 		Sources:   []handle.Source{{Path: "/"}},

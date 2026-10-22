@@ -1,5 +1,5 @@
-// Evidence-verify engine — the pure, filesystem-agnostic core of `hdf evidence
-// verify` (ADR-0007 §11), shared by the CLI and the MCP so exactly one
+// Evidence-verify engine — the pure, filesystem-agnostic core of
+// `hdf evidence info --verify` (ADR-0007 §11), shared by the CLI and the MCP so exactly one
 // implementation exists. It classifies content-checksum matches and computes
 // plan/results completeness; all filesystem IO and path confinement stay in the
 // caller, injected as a FetchFunc. Kept at behavioural parity with the TS peer
@@ -7,13 +7,16 @@
 package hdfengine
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	"lukechampine.com/blake3"
 )
 
 // ChecksumStatus classifies a single content entry's checksum verification.
@@ -24,6 +27,12 @@ const (
 	ChecksumMismatch ChecksumStatus = "mismatch"
 	ChecksumSkipped  ChecksumStatus = "skipped"
 	ChecksumError    ChecksumStatus = "error"
+	// ChecksumUnsupported is a recorded algorithm this build cannot compute. It is
+	// deliberately NOT an error: the bytes may be intact and the package valid, and a
+	// document recording a digest we cannot compute is the same shape as one
+	// referencing an artifact we cannot reach. Every caller switching on this type
+	// must handle it — leaving it to a default reports an unverified entry as verified.
+	ChecksumUnsupported ChecksumStatus = "unsupported"
 )
 
 // EvidenceContent is one content entry of an evidence package: a referenced
@@ -32,16 +41,42 @@ type EvidenceContent struct {
 	URI      string `json:"uri"`
 	Type     string `json:"type"`
 	Checksum string `json:"checksum"`
+	// ChecksumAlgorithm is the algorithm the package recorded, empty when it
+	// stated none. The sha256 default belongs to verification, not to the parse,
+	// so an unstated algorithm is not invented here.
+	ChecksumAlgorithm string `json:"checksumAlgorithm"`
+	// ChecksumRecorded distinguishes an entry carrying no checksum object from one
+	// carrying a checksum whose value is empty. Checksum alone conflates them, and
+	// the difference matters: a recorded-but-blank value is unverifiable, whereas an
+	// absent checksum is simply not a claim.
+	ChecksumRecorded bool `json:"checksumRecorded"`
+	// Format is set for an externalEvidence[] entry and empty for a contents[] one;
+	// Type is the reverse. The schema gives the two arrays different fields — a
+	// content entry records a Content_Type, an external entry records a native
+	// Native_Format — so they are kept apart rather than collapsed into Type, which
+	// would put "raw-log" in a field whose vocabulary is the seven document types.
+	Format string `json:"format,omitempty"`
 }
 
 // ChecksumResult is the verification outcome for one content entry.
 type ChecksumResult struct {
-	URI      string         `json:"uri"`
-	Type     string         `json:"type"`
-	Status   ChecksumStatus `json:"status"`
-	Expected string         `json:"expected,omitempty"`
-	Actual   string         `json:"actual,omitempty"`
-	Error    string         `json:"error,omitempty"`
+	URI  string `json:"uri"`
+	Type string `json:"type"`
+	// Format mirrors EvidenceContent.Format: set for an externalEvidence[] entry,
+	// empty for a contents[] one, so a caller can report what an artifact is
+	// without reading Type's Content_Type vocabulary onto it.
+	Format string `json:"format,omitempty"`
+	// Algorithm is the algorithm this entry's checksum is recorded under, with an
+	// unstated one reported as the sha256 it defaults to. It is EMPTY for a skipped
+	// entry — one with no checksum VALUE to verify, whether it carries no checksum at
+	// all or one whose value is blank (Checksum.value has no minLength, so a blank
+	// value is schema-valid and may still name an algorithm). Nothing was hashed in
+	// either case, and naming an algorithm would imply a computation that never ran.
+	Algorithm string         `json:"algorithm,omitempty"`
+	Status    ChecksumStatus `json:"status"`
+	Expected  string         `json:"expected,omitempty"`
+	Actual    string         `json:"actual,omitempty"`
+	Error     string         `json:"error,omitempty"`
 }
 
 // CompletenessResult reports which planned baselines are covered by results.
@@ -65,7 +100,8 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 			URI      string `json:"uri"`
 			Type     string `json:"type"`
 			Checksum *struct {
-				Value string `json:"value"`
+				Algorithm string `json:"algorithm"`
+				Value     string `json:"value"`
 			} `json:"checksum"`
 		} `json:"contents"`
 	}
@@ -77,25 +113,76 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 		ec := EvidenceContent{URI: c.URI, Type: c.Type}
 		if c.Checksum != nil {
 			ec.Checksum = c.Checksum.Value
+			ec.ChecksumAlgorithm = c.Checksum.Algorithm
+			ec.ChecksumRecorded = true
 		}
 		contents = append(contents, ec)
 	}
 	return doc.PlanRef, contents, nil
 }
 
-// VerifyChecksums verifies each content entry's sha256 against fetch(uri),
-// preserving entry order. No checksum → skipped; a fetch error → error; hash
-// mismatch → mismatch (carrying expected+actual).
+// ParseExternalEvidence returns the externalEvidence[] entries as the same shape
+// contents[] parses to, so ONE verification pass covers both arrays. It exists
+// because verify examined contents[] only, and a wrong checksum in the other array
+// passed at exit 0 while bundle refused the same package — the two commands
+// disagreeing about one document.
+//
+// Additive on purpose: VerifyChecksums is reused unchanged on what this returns, so
+// the hashing has one implementation rather than one per array. Callers that already
+// have the package's contents[] call this alongside ParseEvidencePackage; nothing an
+// existing caller does changes behaviour.
+func ParseExternalEvidence(pkg []byte) ([]EvidenceContent, error) {
+	var doc struct {
+		ExternalEvidence []struct {
+			URI      string `json:"uri"`
+			Format   string `json:"format"`
+			Checksum *struct {
+				Algorithm string `json:"algorithm"`
+				Value     string `json:"value"`
+			} `json:"checksum"`
+		} `json:"externalEvidence"`
+	}
+	if err := json.Unmarshal(pkg, &doc); err != nil {
+		return nil, fmt.Errorf("parse evidence package: %w", err)
+	}
+	out := make([]EvidenceContent, 0, len(doc.ExternalEvidence))
+	for _, e := range doc.ExternalEvidence {
+		ec := EvidenceContent{URI: e.URI, Format: e.Format}
+		if e.Checksum != nil {
+			ec.Checksum = e.Checksum.Value
+			ec.ChecksumAlgorithm = e.Checksum.Algorithm
+			ec.ChecksumRecorded = true
+		}
+		out = append(out, ec)
+	}
+	return out, nil
+}
+
+// VerifyChecksums verifies each content entry against fetch(uri) using the
+// algorithm the entry recorded, preserving entry order. No checksum → skipped;
+// an algorithm this build cannot compute → unsupported, never mismatch (that would
+// say their evidence changed when it did not) and never error (the bytes may be
+// intact); a fetch error → error; hash mismatch → mismatch (carrying
+// expected+actual).
 func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResult {
 	out := make([]ChecksumResult, 0, len(contents))
 	for _, c := range contents {
-		r := ChecksumResult{URI: c.URI, Type: c.Type}
+		r := ChecksumResult{URI: c.URI, Type: c.Type, Format: c.Format}
 		if c.Checksum == "" {
 			r.Status = ChecksumSkipped
+			out = append(out, r)
+			continue
+		}
+		r.Algorithm = effectiveAlgorithm(c.ChecksumAlgorithm)
+		// The algorithm is checked before any IO: whether this build can compute
+		// it is a property of the package, not of the filesystem.
+		if _, hashErr := ChecksumHex(c.ChecksumAlgorithm, nil); hashErr != nil {
+			r.Status = ChecksumUnsupported
+			r.Error = hashErr.Error()
 		} else if data, err := fetch(c.URI); err != nil {
 			r.Status = ChecksumError
 			r.Error = err.Error()
-		} else if actual := sha256HexOf(data); actual == c.Checksum {
+		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); actual == c.Checksum {
 			r.Status = ChecksumMatch
 		} else {
 			r.Status = ChecksumMismatch
@@ -219,8 +306,40 @@ func Completeness(planned, covered []string) CompletenessResult {
 	}
 }
 
-func sha256HexOf(b []byte) string {
-	return hdfutil.SHA256Hex(b)
+// effectiveAlgorithm names the algorithm an entry's checksum is verified under:
+// an unstated algorithm means sha256, so reporting "" would understate it.
+func effectiveAlgorithm(recorded string) string {
+	if recorded == "" {
+		return "sha256"
+	}
+	return recorded
+}
+
+// ChecksumHex hashes data with the named Hash_Algorithm, hex-encoded. An empty
+// algorithm means sha256, so a package that records only a value keeps its meaning.
+// Every algorithm the enum admits is computed here; one from outside it is refused by
+// name rather than silently treated as something else. This is the single definition
+// of which algorithms this codebase can verify — the CLI reads it rather than keeping
+// its own copy.
+func ChecksumHex(algorithm string, data []byte) (string, error) {
+	switch algorithm {
+	case "", "sha256":
+		return hdfutil.SHA256Hex(data), nil
+	case "sha384":
+		sum := sha512.Sum384(data)
+		return hex.EncodeToString(sum[:]), nil
+	case "sha512":
+		sum := sha512.Sum512(data)
+		return hex.EncodeToString(sum[:]), nil
+	case "blake3":
+		// The 32-byte default-length digest, which is what the BLAKE3 reference vectors
+		// direct implementations to compare against; the function's extended output has no
+		// meaning for a recorded Checksum.
+		sum := blake3.Sum256(data)
+		return hex.EncodeToString(sum[:]), nil
+	default:
+		return "", fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
+	}
 }
 
 func dedupe(in []string) []string {
@@ -233,4 +352,33 @@ func dedupe(in []string) []string {
 		}
 	}
 	return out
+}
+
+// DecodeReference turns a recorded evidence reference into the path it names.
+//
+// A reference is a uri-reference — the schema says so on both contents[].uri and
+// externalEvidence[].uri — so its percent-escapes are part of the encoding, not part of
+// the name. The DECODED form is what the reference means. Before this, every consumer
+// treated the value as opaque bytes, so the legal spelling of a filename containing a
+// space failed while the illegal spelling worked: a producer following the declared
+// format wrote a package this toolchain could not read.
+//
+// ORDERING MATTERS AND THE CALLER OWNS IT. Decoding can CREATE a parent traversal —
+// "%2e%2e/x" becomes "../x" and "a%2Fb" gains a separator — so the decoded form, never
+// the raw one, is what a caller must put through its containment check. Nothing escaped
+// before only because nothing decoded.
+//
+// A value whose percent is not a valid escape cannot be decoded, and that is REPORTED
+// rather than guessed at: falling back to the raw bytes would make resolution depend on
+// whether a filename happens to contain a %, which is the one thing a consumer must not
+// do. Pinned across languages by testdata/reference-decode-vectors.json.
+func DecodeReference(uri string) (string, error) {
+	if uri == "" {
+		return "", nil
+	}
+	decoded, err := url.PathUnescape(uri)
+	if err != nil {
+		return "", fmt.Errorf("reference %q is not a valid uri-reference: %w", uri, err)
+	}
+	return decoded, nil
 }

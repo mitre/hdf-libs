@@ -2,9 +2,21 @@
   "name": "parity-package",
   "planRef": "plan.json",
   "contents": [
-    {"type": "hdf-plan", "uri": "plan.json"},
-    {"type": "hdf-results", "uri": "rhel-results.json"},
-    {"type": "hdf-results", "uri": "agent-results.json"},
-    {"type": "hdf-results", "uri": "absent-results.json"}
+    {"type": "hdf-plan", "uri": "plan.json",
+     "checksum": {"algorithm": "sha512", "value": "2e8ff33b2ae91a4e2d86100549c7b8080aa42b5f8da744208bd9023fb1e263d3a18868a5b745014a095fca38e2c36c12dc7d9ae4767be4ca39081e9a1f0ee5a0"}},
+    {"type": "hdf-results", "uri": "rhel-results.json",
+     "checksum": {"algorithm": "sha384", "value": "2370dce69b725b0f2e864c5a838ae259ae962e9af90bac68d2cefc4156a52699517af9739a7d305efbeb8ecb27dee50a"}},
+    {"type": "hdf-results", "uri": "agent-results.json",
+     "checksum": {"algorithm": "sha256", "value": "651e8f83291553986888187f0d7a6a350bf7fd98c8ad463001ca2ba524890edd"}},
+    {"type": "hdf-plan", "uri": "plan.json",
+     "checksum": {"algorithm": "blake3", "value": "fcfb76d5583c912dbc10292255d5aec40d67404f4444364f86770139bdad49a8"}}
+  ],
+  "externalEvidence": [
+    {"uri": "rhel-results.json", "format": "raw-log",
+     "checksum": {"algorithm": "sha256", "value": "128300c53536f190fe8f9f1161d55965142e7621de9223fe49ce7fe082b77282"}},
+    {"uri": "agent-results.json", "format": "ecs",
+     "checksum": {"algorithm": "sha256", "value": ""}},
+    {"uri": "plan.json", "format": "ocsf"},
+    {"uri": "", "format": "spdx"}
   ]
 }
