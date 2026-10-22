@@ -1,10 +1,10 @@
 # Evidence Packages End to End
 
-A results document says what one tool found. A threshold says whether that was acceptable. An evidence package says: *here is everything we looked at for this release, here is what we decided about it, and here is proof none of it changed since.*
+An HDF evidence package is the sum total body of evidence that can be used to determine the risks to a system. In practical terms, it is the collection of all data pertaining to an HDF system at a given point in time -- its defining components, its security plan, its baselines, and the results that prove the status of those baselines, as well as any supporting external references.
 
-That last part is the point. A pipeline produces a scattering of artifacts — an SBOM, three scanner outputs, a waiver somebody approved — and they are only evidence while someone can still tell which release they belong to and that they are the same bytes that were reviewed. A directory of files cannot say that. An evidence package can: it names every document, records a checksum for each, and travels as one archive that re-verifies wherever it lands.
+Historically, the contents of an evidence package are what would be submitted to an auditor during an assessment, and more recently they would be what is submitted to a Governance, Risk and Compliance (GRC) tool to document a system's security status. Most organizations have some policy requirement to track their software systems' status in a GRC tool of some kind. In a modern DevSecOps paradigm, it's best to automate pushing updates to a GRC tool, since software systems are updated so often. Even in situations where manual data submissions are still required, it's best to have an organized and standardized body of evidence. That is the need the HDF evidence package schema was meant to fill.
 
-This guide builds one from a CI run, for a release built from source. Every transcript below is real output from `hdf`. The five pipeline artifacts are copies of this repository's converter fixtures, so you can follow along exactly:
+This guide demonstrates how to build an HDF evidence package from a CI run for a software component, for a release built from source. Every transcript below is real output from `hdf`. The five pipeline artifacts are copies of this repository's converter fixtures, so you can follow along exactly:
 
 | In this guide | Copied from |
 |---|---|
@@ -14,11 +14,9 @@ This guide builds one from a CI run, for a release built from source. Every tran
 | `trivy-fs.json` | `hdf-converters/converters/trivy-to-hdf/fixtures/input/fs-misconfig-secret.json` |
 | `vendor-vex.json` | `hdf-converters/converters/csaf-vex-to-hdf/fixtures/input/sec-vex-2022-0001.json` |
 
-For a broader tour of the CLI across all document types, see [CLI user stories](./cli-user-story-examples.md); this page goes deep on one document type instead of broad across all of them.
+For a broader tour of the CLI across all document types, see [CLI user stories](./cli-user-story-examples.md).
 
-## What a package records, and what it only points at
-
-Three arrays, and conflating them is the most common misunderstanding of this document type.
+## What's in a package
 
 | Array | What it holds | Travels in the archive? |
 |---|---|---|
@@ -26,30 +24,17 @@ Three arrays, and conflating them is the most common misunderstanding of this do
 | `externalEvidence[]` | Native-format artifacts the HDF came from, or that nothing converts: raw scanner output, logs, telemetry. By URI and hash | Yes, when the artifact lives inside the package directory |
 | `externalReferences[]` | Inert context: an advisory, a CTI object, a vendor VEX. Never fetched, never carried, recorded so a reader knows what was consulted | No |
 
-The distinction is about what the package is *attesting*. A document in `contents[]` is part of the assessment. An artifact in `externalEvidence[]` is the raw material behind it. A reference in `externalReferences[]` is something you read, which may live on someone else's server and may be gone next year — recording it is honest; pretending to carry it is not.
+Anything listed in the contents[] field is an HDF documents present inside the evidence package itself. Since the HDF schemas often allow for external references to be linked (such as, for example, an HDF System document referencing its full SBOM by URI instead of copying it inline), there are also lists of external references inside the package.
 
-Two root fields, `systemRef` and `planRef`, each name a single document. `build` records those documents in `contents[]` as well, so they are both pointed at and carried; a reference in either that resolves outside the package directory is reported and does not travel.
+Furthermore, two root fields, `systemRef` and `planRef`, each name a single document. `build` records those documents in `contents[]` as well, so they are both pointed at and carried; a reference in either that resolves outside the package directory is reported and does not travel.
 
-**Everything in this guide stays local.** No reference points off this machine. That is a deliberate choice, and [The strict read](#the-strict-read) shows what it buys.
+The reason for this is because the HDF CLI currently has no mechanism to download external references to place them locally, so any references that are not a local filepath just have to live as URIs for now. Many `hdf evidence` commands have flags to control whether an external reference that cannot be resolved is considered a problem or not.
 
-## Lay the directory out
+Therefore, for the purposes of this guide, there are no external references present; all of our data comes from a single CI/CD pipeline. 
 
-Keep the package directory to things that belong *in* the package. Policy, specs and derived views live beside it, not in it — `build` classifies everything it finds, so a stray file becomes a line of output you have to explain, and a missing one silently shrinks the package.
+## The pipeline
 
-```
-release-4821/
-├── policy.yaml          # the threshold, committed in the repo
-├── fp-spec.json         # the adjudication spec
-└── artifacts/           # the package directory
-```
-
-The criterion is not the file type, and it is not "only pipeline output" — it is whether the package will **carry or reference** the file. Everything it will goes inside, and that is wider than the HDF documents: the three converted results, the system document and the adjudications land in `contents[]`, but so does the SBOM, as a `bom` rather than an `hdf-*` type, and moving it out drops the package from six documents to five. The raw scanner outputs go inside too, because [the external evidence](#carry-the-native-evidence) travels only while it lives in the package directory, and so does the vendor VEX, so that [its reference](#point-at-context-you-did-not-produce) can be recorded relatively.
-
-Two kinds of file stay out. Policy and specs — the threshold, the adjudication spec — are inputs to the process rather than evidence of it, so nothing in the package points at them. And a *derived* view stays out even when it would be carried: [the effective results](#adjudicate) are a recomputable projection of a document already in the package, so keeping them would record the same evidence twice.
-
-The package document itself is the one thing the rule does not decide, because `bundle` makes the archive root *be* its directory. Keep it in the directory anyway: built a level up it still bundles, but every reference it records gains an `artifacts/` prefix and the archive reproduces that deeper shape instead of the flat one [below](#seal-it-and-hand-it-over). A second package built over the same directory is simply skipped, as the [rebuild below](#completeness-needs-a-plan) shows. Anything a command writes *about* the package rather than *into* it — a bundle archive, an updated copy — is cleaner outside.
-
-A build of this release dropped five files into `artifacts/`, which is where the commands below run unless they say otherwise:
+Let's say we're the maintainers of a piece of software with attached CI/CD. A pipeline run for a new release of the application ("webapp"), built from source, left five files in its artifacts directory (such as GitHub or GitLab might produce). Every command below runs from there:
 
 ```console
 $ cd artifacts
@@ -62,11 +47,13 @@ $ wc -c *
    68117 total
 ```
 
-An SBOM generated from the dependency manifest, a dependency vulnerability scan, a static-analysis run, a filesystem scan for misconfiguration and secrets, and a vendor VEX the team pulled down while triaging. Five tools, five formats, nothing in common.
+An SBOM generated from the dependency manifest, a dependency vulnerability scan, a static-analysis run, a filesystem scan for misconfiguration and secrets, and a vendor VEX the team pulled down while triaging.
 
-## Normalize
+(We picked these examples because they represent many types of security data and are a reasonable approximation of a real pipeline, but recall that HDF is all about normalizing any upstream format, so the specific scan types don't matter here.)
 
-`hdf convert` auto-detects each scanner:
+## Normalize what the scanners wrote
+
+`hdf convert` autodetects each format and emits the HDF-normalized version:
 
 ```console
 $ hdf convert grype-deps.json -o deps.hdf.json
@@ -82,355 +69,203 @@ Detected: Trivy 2 (confidence: 95%)
 trivy-fs.json: 5 requirements, matching the input's trivy findings
 ```
 
-Three formats in, one shape out. That shape is what makes a single policy, and a single package, possible.
+## Describe the system the evidence covers
 
-## Gate
-
-One policy, applied to all three:
-
-```yaml
-# policy.yaml
-# No critical or high findings may ship.
-failed:
-    critical:
-        max: 0
-    high:
-        max: 0
-```
+A package asserts something about a system, so we'll need an HDF system doc to identify what all of this HDF data is describing. We can use `hdf system create` to turn the SBOM document into an HDF system document.
 
 ```console
-$ hdf validate threshold deps.hdf.json -T ../policy.yaml
-Agent-attributed overrides: 0
-✗ deps.hdf.json — 1 threshold violation
-
-  Violations:
-    failed.high: 1 exceeds maximum 0
-      Grype/GHSA-462w-v97r-4m45  Grype found a vulnerability to GHSA-462w-v97r-4m45 in .  [failed/high]
-
-$ hdf validate threshold sast.hdf.json -T ../policy.yaml
-Agent-attributed overrides: 0
-✗ sast.hdf.json — 1 threshold violation
-
-  Violations:
-    failed.high: 1 exceeds maximum 0
-      python.lang.security.audit.subprocess-shell-true.subprocess-shell-true  Subprocess Shell True  [failed/high]
-
-$ hdf validate threshold fs.hdf.json -T ../policy.yaml
-Agent-attributed overrides: 0
-✗ fs.hdf.json — 2 threshold violations
-
-  Violations:
-    failed.critical: 2 exceeds maximum 0
-      Trivy/secret/aws-access-key-id@app.env:2  AWS Access Key ID  [failed/critical]
-      Trivy/secret/aws-secret-access-key@app.env:3  AWS Secret Access Key  [failed/critical]
-    failed.high: 1 exceeds maximum 0
-      Trivy/DS-0002  Image user should not be 'root'  [failed/high]
-```
-
-All three exit 1. See [Thresholds End to End](./thresholds-workflow.md) for the policy language.
-
-## Adjudicate
-
-Two of those critical findings are the same documented dummy key pair, committed in a test fixture. That is a judgement a scanner cannot make, so it goes in its own document rather than being edited into the results. Write it to `fp-spec.json`:
-
-```json
-[
-  {
-    "type": "falsePositive",
-    "requirementId": "Trivy/secret/aws-access-key-id@app.env:2",
-    "reason": "app.env is a committed test fixture; the key is a documented dummy from the AWS docs and grants nothing.",
-    "appliedBy": { "identifier": "appsec@example.org", "type": "email" },
-    "expiresAt": "1y"
-  },
-  {
-    "type": "falsePositive",
-    "requirementId": "Trivy/secret/aws-secret-access-key@app.env:3",
-    "reason": "Same fixture, same documented dummy pair.",
-    "appliedBy": { "identifier": "appsec@example.org", "type": "email" },
-    "expiresAt": "1y"
-  }
-]
-```
-
-```console
-$ hdf amend create --from ../fp-spec.json -o adjudications.json
-Created adjudications.json with 2 amendments
-```
-
-The results stay exactly as the scanner produced them. The effective view is computed on demand, and written outside the package directory because it is derived, not evidence:
-
-```console
-$ hdf amend apply --results fs.hdf.json --amendments adjudications.json -o ../fs-effective.json
-Applied 2 of 2 override(s)
-Merged output written to ../fs-effective.json
-
-$ hdf validate threshold ../fs-effective.json -T ../policy.yaml
-Agent-attributed overrides: 0
-✗ ../fs-effective.json — 1 threshold violation
-
-  Violations:
-    failed.high: 1 exceeds maximum 0
-      Trivy/DS-0002  Image user should not be 'root'  [failed/high]
-```
-
-The two false positives are gone and one finding remains, because it is real. The container still runs as root and that has to be fixed — adjudicating evidence is not the same as passing, and the SAST and dependency findings are still outstanding too. See [Amendments End to End](./amendments-workflow.md) for authoring.
-
-## Describe the software it covers
-
-A package asserts something about a *system*, and for a release built from source the SBOM already describes it. Import it rather than retyping it:
-
-```console
-$ hdf system create sbom.cdx.json --from cyclonedx -o system.json
-Imported cyclonedx SBOM as component "juice-shop" (type: application)
+$ hdf system create sbom.cdx.json --from cyclonedx --component-name "webapp" -o system.json
+Imported cyclonedx SBOM as component "webapp" (type: application)
 System document written to system.json (1 components)
 ```
 
-`--from` here only *verifies* the auto-detected format — it never force-parses, so naming the wrong one fails rather than producing a wrong document.
+### Systems and components
 
-## Assemble the package
+Note that a full software system is likely made of multiple software components in a stack -- it would include the host that the webapp runs on, for example, and perhaps the cloud environment that host runs in. There may be a backing database component, a webserver proxy, and so on. For this example, since our data all describes the application's source code specifically, we designate "webapp" as a system with a single component.
 
-Point `build` at the directory and it classifies every file by content, not by filename:
+## Build the package
+
+Point `build` at the directory. It classifies every file by content:
 
 ```console
-$ hdf evidence build --from-dir . -o juice-shop.hdf-evidence-package.json
+$ hdf evidence build --from-dir . -o evidence-package.json
 Skipped grype-deps.json: not an HDF document. To carry it as external evidence:
-  hdf evidence add-evidence juice-shop.hdf-evidence-package.json --uri grype-deps.json --format <format>
+  hdf evidence add-evidence evidence-package.json --uri grype-deps.json --format <format>
 Skipped semgrep-sast.json: not an HDF document. To carry it as external evidence:
-  hdf evidence add-evidence juice-shop.hdf-evidence-package.json --uri semgrep-sast.json --format <format>
+  hdf evidence add-evidence evidence-package.json --uri semgrep-sast.json --format <format>
 Skipped trivy-fs.json: not an HDF document. To carry it as external evidence:
-  hdf evidence add-evidence juice-shop.hdf-evidence-package.json --uri trivy-fs.json --format <format>
+  hdf evidence add-evidence evidence-package.json --uri trivy-fs.json --format <format>
 Skipped vendor-vex.json: not an HDF document. To carry it as external evidence:
-  hdf evidence add-evidence juice-shop.hdf-evidence-package.json --uri vendor-vex.json --format <format>
-Evidence package written to juice-shop.hdf-evidence-package.json (6 documents)
+  hdf evidence add-evidence evidence-package.json --uri vendor-vex.json --format <format>
+Evidence package written to evidence-package.json (5 documents)
 ```
 
-Six documents: the system, three results, the SBOM, and the adjudications. Nothing was dropped in silence — four files are not HDF, so the scan names each one and hands you a command for it.
-
-Take that offer for three of them and decline it for the fourth. That is the whole distinction: the scanner outputs are the evidence this release produced; the vendor VEX is something the team read.
-
-## Carry the native evidence
-
-The raw scanner output is the primary artifact. The HDF is a normalization of it, and an assessor may want to re-derive one from the other:
-
-```console
-$ hdf evidence add-evidence juice-shop.hdf-evidence-package.json \
-    --uri grype-deps.json   --format x-grype \
-    --uri semgrep-sast.json --format x-semgrep \
-    --uri trivy-fs.json     --format x-trivy
-Added 3 external evidence reference(s) to juice-shop.hdf-evidence-package.json
-  grype-deps.json -> x-grype
-  semgrep-sast.json -> x-semgrep
-  trivy-fs.json -> x-trivy
-```
-
-Each is hashed as it is recorded. `format` is an open set — the reserved values are `ecs`, `ocsf`, `cyclonedx`, `spdx` and `raw-log`, and anything else must take an `x-` prefix, as above.
-
-## Point at context you did not produce
-
-The VEX is a vendor's statement about their own product — this repository's sample says Secvisogram is not affected by Log4Shell. It is not evidence this release produced, and the package should not claim to carry it:
-
-```console
-$ hdf evidence add-reference juice-shop.hdf-evidence-package.json --href vendor-vex.json \
-    --source-name csaf --kind threat-intel --rel reference --external-id CVE-2021-44228
-Added 1 external reference to juice-shop.hdf-evidence-package.json
-  csaf CVE-2021-44228 -> vendor-vex.json (externalReferences — inert context)
-```
+Five documents: the system, the three converted results, and the SBOM. For this example we left the original unconverted data that we passed to `hdf convert` earlier present in the directory to demonstrate that they're not included in the package, only HDF data is. The four files that are not HDF are each named, with the command that would carry them as external references.
 
 Give the package a name while you are here:
 
 ```console
-$ hdf evidence set juice-shop.hdf-evidence-package.json \
-    --name "juice-shop 19.1.1 — build 4821" \
-    --description "Source-code assessment evidence for release 19.1.1"
-Updated juice-shop.hdf-evidence-package.json
+$ hdf evidence set evidence-package.json \
+    --name "webapp X.Y.Z assessment evidence" \
+    --description "Source-code assessment evidence for release X.Y.Z"
+Updated evidence-package.json
 ```
 
-## Verify
+## Add a scan result to an existing package
 
-Every checksum above was computed when its entry was recorded — by the directory scan for the documents, by `add-evidence` and `add-reference` for the rest. Nothing is re-read or re-verified until you ask:
+You can build an evidence package from scratch from a directory, but you can also add data to an existing one. When the next tool reports — here an IaC scan that was not in the first build — convert it and hand it to `update`:
 
 ```console
-$ hdf evidence info juice-shop.hdf-evidence-package.json --verify
-Verifying evidence package: juice-shop 19.1.1 — build 4821
+$ hdf convert checkov-iac.json -o iac.hdf.json
+Detected: Checkov (confidence: 100%)
+checkov-iac.json: 9 requirements, matching the input's distinct Checkov check ids
 
-  ✓ system.json (sha512 match)
-  ✓ deps.hdf.json (sha512 match)
-  ✓ fs.hdf.json (sha512 match)
-  ✓ sast.hdf.json (sha512 match)
-  ✓ sbom.cdx.json (sha512 match)
-  ✓ adjudications.json (sha512 match)
-  ✓ grype-deps.json (sha512 match)
-  ✓ semgrep-sast.json (sha512 match)
-  ✓ trivy-fs.json (sha512 match)
+$ hdf evidence update evidence-package.json \
+    --results iac.hdf.json -o evidence-package.json
+  added iac.hdf.json
+Updated evidence-package.json
+```
 
-Verified: 9/9 checksums valid
+`added`, not `replaced`: a document at a reference the package already records is refreshed in place, and a new one is added alongside. Pass `--dry-run` to see which of the two would happen before writing anything.
+
+### Refreshing a scan you already have
+
+Another common case is that a scan has re-run against the same component, and the evidence package should be updated to match. Let's say one of webapp's dependencies gets bumped and the scan is re-run to show a prior CVE finding is gone, and we want our package to show the updated version only.
+
+`update` decides by the reference, so the same command does both jobs. `--dry-run` says which before anything is written:
+
+```console
+$ hdf evidence update evidence-package.json --results deps.hdf.json --dry-run
+  replaced deps.hdf.json (same reference, refreshed in place)
+Dry run: nothing written.
+```
+
+Drop `--dry-run` and the refresh lands, re-recording the checksum as it goes:
+
+```console
+$ hdf evidence update evidence-package.json --results deps.hdf.json -o evidence-package.json
+  replaced deps.hdf.json (same reference, refreshed in place)
+Updated evidence-package.json
+```
+
+```console
+$ hdf evidence info evidence-package.json --verify
+# abridged — the same six checksum lines
+Verified: 6/6 checksums valid
 Agent-attributed overrides: 0
 Note: no planRef in evidence package — skipping completeness check
 ```
 
-Nine: the six documents and the three native artifacts. The VEX is absent from that list even though `add-reference` did hash it — `--verify` reads `contents[]` and `externalEvidence[]`, and `externalReferences[]` is outside its scope by design. An inert reference is recorded, not attested.
-
-### Completeness needs a plan
-
-That last note is worth reading rather than skipping. Completeness asks a different question from integrity — not "are these the bytes we reviewed" but "did we assess everything we said we would", which needs an assessment plan to compare against. Write it to `plan.json`:
-
-```json
-{
-  "name": "release-4821-plan",
-  "assessments": [
-    { "baselineRef": "Grype Scan" },
-    { "baselineRef": "Semgrep Scan" },
-    { "baselineRef": "Trivy Scan" },
-    { "baselineRef": "Nessus Scan" }
-  ]
-}
-```
-
-The package carries a plan in `contents[]` and names it in `planRef`, so a plan belongs in the package directory. Put it there and rebuild with `--plan`, which does both:
+If we add data that represents a document the package has never seen, it is kept alongside rather than replacing anything. The CLI will note when another entry already covers the same baseline:
 
 ```console
-$ hdf evidence build --from-dir . --plan plan.json -o planned.json
-Skipped juice-shop.hdf-evidence-package.json (evidence-package): an evidence package's contents[] has no type for it.
-# abridged — then the same four "not an HDF document" skips as before
-Evidence package written to planned.json (7 documents)
+$ hdf evidence update evidence-package.json --results extra.hdf.json --dry-run
+  added extra.hdf.json
+    also covered by an existing entry: Semgrep Scan
+    both are kept — assessed 2026-10-22T15:06:38Z; no target components recorded
+Dry run: nothing written.
+```
 
-$ hdf evidence info planned.json --verify
-Verifying evidence package: juice-shop-system-evidence-package
+So we can cover the case where multiple types of scanners cover the same baseline, if the developers want to do that for whatever reason.
+
+One thing to know if you re-run `hdf convert` on an input that has not changed: the result is byte-identical, because conversion is deterministic and the HDF `timestamp` comes from the scan rather than from the moment of conversion. A refresh in that case is a no-op rather than an error.
+
+## Inspect and verify the package
+
+`hdf evidence info` reports what the package says about itself. It reads the package document and nothing else — none of the referenced documents are opened:
+
+```console
+$ hdf evidence info evidence-package.json
+Evidence Package: webapp X.Y.Z assessment evidence
+Prepared at: 2026-10-22T17:17:07Z
+System: system.json
+
+Contents (6):
+  hdf-system       system.json  checksum recorded
+  hdf-results      deps.hdf.json  checksum recorded
+  hdf-results      fs.hdf.json  checksum recorded
+  hdf-results      sast.hdf.json  checksum recorded
+  bom              sbom.cdx.json  checksum recorded
+  hdf-results      iac.hdf.json  checksum recorded
+
+Completeness, as recorded by the package (not computed here — use --verify):
+  All baselines assessed: yes
+  All components covered: yes
+  Compliance: 18%
+```
+
+Six documents: the five `build` recorded, plus the IaC results `update` added. `checksum recorded` means the package holds a hash for that entry — not that anything has been checked against it. Likewise the completeness block is a value the package carries, which is why the heading says so.
+
+Adding `--verify` to that same command turns the report into a check. Each reference is read, hashed, and compared against the hash the package recorded as an integrity field:
+
+```console
+$ hdf evidence info evidence-package.json --verify
+Verifying evidence package: webapp X.Y.Z assessment evidence
 
   ✓ system.json (sha512 match)
   ✓ deps.hdf.json (sha512 match)
   ✓ fs.hdf.json (sha512 match)
   ✓ sast.hdf.json (sha512 match)
-  ✓ plan.json (sha512 match)
   ✓ sbom.cdx.json (sha512 match)
-  ✓ adjudications.json (sha512 match)
+  ✓ iac.hdf.json (sha512 match)
 
-Verified: 7/7 checksums valid
+Verified: 6/6 checksums valid
 Agent-attributed overrides: 0
-
-Completeness check FAILED:
-  Missing results for baseline: Grype Scan
-  Missing results for baseline: Nessus Scan
+Note: no planRef in evidence package — skipping completeness check
 ```
 
-Seven, not nine: this is a fresh build, so it carries the documents and not the three native artifacts the first package gained from `add-evidence`. The banner differs because `--name` overrode the name on the first package; `build` mints one from the system document, and this package still carries the minted form. The first skip is the first package itself — an evidence package is not a document another package can carry.
+(Note that integrity and completeness are different questions: `--verify` answers "are these the bytes we recorded", and only an assessment plan can answer "did we assess everything we said we would". Give the package a `planRef` and the same command checks both.)
 
-Exit 1, and the two misses teach different lessons. `Nessus Scan` is missing because this pipeline never ran one — a genuine gap. `Grype Scan` is missing because the Grype results carry a baseline named `.`, the directory it scanned, not the name the plan guessed. **Completeness matches on baseline names**, so a plan has to use the names the scanners actually emit; `Semgrep Scan` and `Trivy Scan` match because those are exactly what those converters produce.
+## Hand it over as one file
 
-## Seal it and hand it over
+A directory verifies where it sits. `bundle` makes it travel:
 
 ```console
-$ hdf evidence bundle juice-shop.hdf-evidence-package.json -o ../juice-shop-build-4821.zip
-Archive written to ../juice-shop-build-4821.zip (10 file(s))
-Contains exactly the package, every document it references, in-tree external evidence — nothing else.
-  not carried: vendor-vex.json (context, not evidence) — recorded in externalReferences
+$ hdf evidence bundle evidence-package.json -o ../evidence-bundle.zip
+Archive written to ../evidence-bundle.zip (7 file(s))
+Contains exactly the package, every document it references — nothing else.
 ```
 
-Ten files: the package and the nine things it carries. The VEX is named as not carried, which is the third array behaving exactly as designed.
-
-The archive root *is* the package's own directory, so it reproduces that layout wherever it is extracted:
+Seven: the package and the six documents it carries. The archive root is the package's own directory, so it reproduces that layout wherever it lands:
 
 ```console
-$ unzip -Z1 ../juice-shop-build-4821.zip
-adjudications.json
+$ unzip -Z1 ../evidence-bundle.zip
 deps.hdf.json
+evidence-package.json
 fs.hdf.json
-grype-deps.json
-juice-shop.hdf-evidence-package.json
+iac.hdf.json
 sast.hdf.json
 sbom.cdx.json
-semgrep-sast.json
 system.json
-trivy-fs.json
 ```
 
-That property holds because every reference here is recorded *relatively*. A reference recorded as an absolute path is the exception: its document travels under a relative name while the package still names the producing machine's path, so the extracted copy cannot resolve it. `bundle` reports that rather than rewriting the package, and the fix is to record the reference relatively when authoring it.
-
-The recipient's check is the same command, run somewhere else entirely:
+At the root sits `evidence-package.json` itself — the evidence package document, which validates against `hdf-evidence-package.schema.json` like any other HDF document:
 
 ```console
-$ mkdir -p /tmp/assessor
-$ unzip -q ../juice-shop-build-4821.zip -d /tmp/assessor
+$ hdf validate evidence-package.json
+✓ evidence-package.json is a valid HDF evidence-package file
+```
+
+It is the index the rest of the archive hangs from: every path in its `contents[]` is relative to the directory it sits in, which is why the archive needs no manifest of its own and why extracting it anywhere keeps the references intact. It carries no `$schema` or `formatVersion` field — the document type is recognized from its shape, which is also how `hdf` picks the right schema to validate it against.
+
+The recipient runs the same command somewhere else entirely:
+
+```console
+$ mkdir -p /tmp/assessor && unzip -q ../evidence-bundle.zip -d /tmp/assessor
 $ cd /tmp/assessor
-$ hdf evidence info juice-shop.hdf-evidence-package.json --verify
-# abridged — the banner and the same nine checksum lines
-Verified: 9/9 checksums valid
+$ hdf evidence info evidence-package.json --verify
+# abridged — the same banner and six checksum lines
+Verified: 6/6 checksums valid
 Agent-attributed overrides: 0
 Note: no planRef in evidence package — skipping completeness check
 ```
 
-Nine of nine, on a different machine, with no path rewriting. That is the property the package exists for. The remaining sections run back in the original `artifacts/` directory, so change back to it before continuing.
-
-## The strict read
-
-An assessor accepting this as the evidence of record can demand more than integrity. Two opt-in flags turn soft reports into failures:
-
-- `--require-checksums` fails if a `contents[]` or `externalEvidence[]` entry records no checksum to verify. It does not reach `externalReferences[]`, which is never attested.
-- `--require-reachable` fails if the package records a reference that does not resolve *into* the package — a URI on another system, or a path outside its directory.
-
-```console
-$ hdf evidence info juice-shop.hdf-evidence-package.json --verify \
-    --require-checksums --require-reachable
-# abridged — the banner and the same nine checksum lines
-Verified: 9/9 checksums valid
-Agent-attributed overrides: 0
-Note: no planRef in evidence package — skipping completeness check
-```
-
-Exit 0 — and that is what the local-only decision bought. Add a single remote reference to the same package and the strict read stops passing:
-
-```console
-$ cp juice-shop.hdf-evidence-package.json remote-probe.json
-$ hdf evidence add-evidence remote-probe.json --uri https://builds.example/run-4821.log \
-    --format raw-log --checksum sha256:3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a3b7a
-Added 1 external evidence reference(s) to remote-probe.json
-  https://builds.example/run-4821.log -> raw-log
-
-$ hdf evidence info remote-probe.json --verify --require-reachable
-# abridged — the banner and the same nine checksum lines, then
-  ? https://builds.example/run-4821.log (not reachable here: remote)
-
-Verified: 9/9 checksums valid, 1 not reachable here
-Agent-attributed overrides: 0
-
-  not reachable here: https://builds.example/run-4821.log (remote) — recorded in externalEvidence
-These are recorded references the package does not carry; pass --require-reachable to treat that as a failure.
-Error: 1 recorded reference(s) could not be resolved (--require-reachable)
-```
-
-Exit 1. A package that points at an artifact on a build server is a legitimate thing to produce — HDF supports it deliberately, and `--require-reachable` exists precisely so an assessor who cannot accept it can say so. But a self-contained package is the one that still verifies in five years, and it costs nothing to build if you decide it early.
-
-## Keep it current
-
-The next build produces new results for the same release line. `update` records them without disturbing the package:
-
-```console
-$ hdf evidence update juice-shop.hdf-evidence-package.json \
-    --results deps.hdf.json -o ../build-4822.json
-  replaced deps.hdf.json (same reference, refreshed in place)
-Updated ../build-4822.json
-```
-
-A document at the same reference is replaced in place; a new one is added alongside. Pass `--dry-run` to see what would change and write nothing.
-
-If you want a package to carry a stable identity across those updates, set one explicitly. `evidence build` does not mint a `packageId`, and `update` preserves whatever it finds:
-
-```console
-$ hdf evidence set juice-shop.hdf-evidence-package.json \
-    --package-id 7c9e6679-7425-40de-944b-e07fc1f90ae7
-Updated juice-shop.hdf-evidence-package.json
-```
-
-## Gating a pipeline with this
-
-[Thresholds End to End](./thresholds-workflow.md) carries a section gating a GitHub pipeline. This guide has none yet, deliberately: this repository's own CI may only use a fully released version of the CLI, and the currently pinned release predates these subcommands. Rather than write a pipeline nobody can run, that section is tracked as `hdf-libs-wgvm.27` and will be written once a release carries them.
-
-Until then the shape is the arc above: normalize in the job that produces each artifact, gate with `validate threshold`, assemble with `evidence build --from-dir` over the artifacts directory, and publish the `bundle` archive as a release asset. The property worth asserting in CI is the one [The strict read](#the-strict-read) demonstrates — download the archive, extract it somewhere that never built it, and require exit 0.
+Six of six, on a different machine, with no path rewriting. That property holds because every reference the package records is relative to the package's own directory — which is what makes an evidence package a deliverable rather than a directory listing.
 
 ## Where to go next
 
-- [Thresholds End to End](./thresholds-workflow.md) — the policy language the gate step used
-- [Amendments End to End](./amendments-workflow.md) — authoring the adjudications, expiry, and the audit trail
+- [Thresholds End to End](./thresholds-workflow.md) — gate a pipeline on what these results contain
+- [Amendments End to End](./amendments-workflow.md) — waive, attest and adjudicate findings without editing the results
 - [CLI user stories](./cli-user-story-examples.md) — a broader tour across every document type
 - [HDF Specification §7](../specification/hdf-specification.md) — the normative definition of the evidence package document
 - `hdf evidence <subcommand> --help` — every flag, with the reasoning for the ones that refuse things
