@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -593,7 +594,9 @@ func TestEvidenceAddEvidence_AbsentArtifactNamesThePathItTried(t *testing.T) {
 	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
 	assert.Nil(t, entry["checksum"], "no checksum is recorded for an artifact that is not there")
 	assert.Contains(t, stderr, "no local file to hash", "the existing notice still prints")
-	assert.Contains(t, stderr, filepath.Join(filepath.Dir(pkg), "scans", "missing.ndjson"),
+	// Through %q, as the notice formats it: Go's %q escapes the separator, so a raw
+	// path is not a substring of the message on any platform that uses a backslash.
+	assert.Contains(t, stderr, fmt.Sprintf("%q", filepath.Join(filepath.Dir(pkg), "scans", "missing.ndjson")),
 		"and it names the path actually tried, not just the uri as typed")
 }
 

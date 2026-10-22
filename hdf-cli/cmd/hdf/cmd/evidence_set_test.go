@@ -94,8 +94,8 @@ func TestEvidenceSet_LeavesAReferenceItCannotResolveExactlyAsGiven(t *testing.T)
 	for _, tc := range []struct {
 		name, ref string
 	}{
-		{"absolute outside the package", filepath.Join(string(filepath.Separator), "etc", "hosts")},
-		{"parent traversal", filepath.Join("..", "shared", "plan.json")},
+		{"absolute outside the package", absoluteOutsideRef(t, "etc", "hosts")},
+		{"parent traversal", recordedRelRef("..", "shared", "plan.json")},
 		{"remote uri", "https://portal.example/plans/q3.json"},
 		{"already package-relative", "scans/plan.json"},
 		// These two pin the IsAbs gate. Cleaning would rewrite both, so without the gate

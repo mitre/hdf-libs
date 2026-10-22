@@ -174,7 +174,9 @@ func TestEvidenceVerify_ReportsAnUnreachableReferenceWithoutReadingIt(t *testing
 			if tc.plantOutside {
 				planted := filepath.Join(outside, "escape.json")
 				require.NoError(t, os.WriteFile(planted, body, 0o600))
-				uri = planted
+				// Recorded, so forward-slashed: a raw OS path here fails the uri-reference
+				// format and the document is rejected before the classifier runs.
+				uri = filepath.ToSlash(planted)
 			} else {
 				// Plant at the traversal/root-anchored target too where it is expressible,
 				// so a read would succeed and be visible as a match.
@@ -366,7 +368,7 @@ func TestEvidence_BundleAndVerifyAgreeOnTheSamePackage(t *testing.T) {
 		// parentTraversal is here because its absence hid a real divergence: the first
 		// version of this table tested absolute and remote shapes only, and a "../" ref
 		// still made verify exit 1 where bundle exited 0.
-		for _, shape := range []string{"relative", "absoluteInside", "absoluteOutside", "remote", "parentTraversal"} {
+		for _, shape := range []string{"relative", "absoluteInside", "absoluteOutside", "remote", "parentTraversal", "driveRelative"} {
 			t.Run(field+"/"+shape, func(t *testing.T) {
 				dir := t.TempDir()
 				outside := t.TempDir()
@@ -383,13 +385,22 @@ func TestEvidence_BundleAndVerifyAgreeOnTheSamePackage(t *testing.T) {
 				case "relative":
 					ref = "plan.json"
 				case "absoluteInside":
-					ref = filepath.Join(dir, "plan.json")
+					// ToSlash because ref is RECORDED, and all five reference fields are
+					// uri-reference: a Windows separator makes the document schema-invalid,
+					// so the shape under test never reaches the code that resolves it.
+					ref = filepath.ToSlash(filepath.Join(dir, "plan.json"))
 				case "absoluteOutside":
-					ref = filepath.Join(outside, "plan.json")
+					ref = filepath.ToSlash(filepath.Join(outside, "plan.json"))
 				case "remote":
 					ref = "https://example.com/plan.json"
 				case "parentTraversal":
-					ref = filepath.Join("..", filepath.Base(outside), "plan.json")
+					ref = filepath.ToSlash(filepath.Join("..", filepath.Base(outside), "plan.json"))
+				case "driveRelative":
+					// Root-anchored, which is what a Unix-rooted path MEANS on Windows:
+					// relative to the current drive, not absolute. Carried as its own shape
+					// because the table previously used it to mean absoluteOutside, so that
+					// case silently stopped being exercised there.
+					ref = "/plan.json"
 				}
 
 				pkg := map[string]interface{}{

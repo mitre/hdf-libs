@@ -911,7 +911,7 @@ func TestEvidenceUpdate_DoesNotResolveSystemRefOntoADifferentDocument(t *testing
 		// suite stayed green while the reference vanished from the output entirely — the
 		// regression was invisible because nothing covered a non-root-anchored reject.
 		{name: "parent traversal is named, not silent", systemRef: "../system.json", wantAssessed: false, wantNamed: true},
-		{name: "absolute outside the package is named, not silent", systemRef: "/etc/hosts", wantAssessed: false, wantNamed: true},
+		{name: "absolute outside the package is named, not silent", systemRef: absoluteOutsideRef(t, "etc", "hosts"), wantAssessed: false, wantNamed: true},
 		// The contrast case: a systemRef the package never recorded is NOT a rejected
 		// reference, and the two must not read identically on stderr.
 		{name: "absent systemRef reports no reference", systemRef: "", wantAssessed: false, wantNamed: false},
@@ -993,6 +993,15 @@ func TestEvidenceUpdate_NamesARemoteSystemRef(t *testing.T) {
 		{
 			name:      "rejected local systemRef keeps its own reason",
 			systemRef: "/system.json",
+			marker:    "does not resolve inside the package's directory",
+			wantNamed: true,
+		},
+		{
+			// The same reason, reached by a genuinely absolute path rather than a
+			// root-anchored one, so the two spellings are both covered on every platform.
+			// allMarkers compares by value, so two rows may share a marker.
+			name:      "absolute systemRef outside the package keeps the same reason",
+			systemRef: absoluteOutsideRef(t, "etc", "system.json"),
 			marker:    "does not resolve inside the package's directory",
 			wantNamed: true,
 		},
@@ -1231,6 +1240,10 @@ func TestEvidenceUpdate_RefreshesEveryEntryNamingTheSameFile(t *testing.T) {
 // spelling it wrote.
 func rewriteStoredRef(t *testing.T, pkgPath, from, to string) string {
 	t.Helper()
+	// to is written into a uri field, so it is RECORDED forward-slashed. Callers
+	// legitimately pass an OS path here, and a Windows separator would make the
+	// document schema-invalid before anything under test ran.
+	to = filepath.ToSlash(to)
 	doc := updatedPackage(t, pkgPath)
 	contents, _ := doc["contents"].([]any)
 	var stored string
@@ -1241,6 +1254,10 @@ func rewriteStoredRef(t *testing.T, pkgPath, from, to string) string {
 			entry["uri"] = stored
 		}
 	}
+	// from is a RECORDED uri suffix, which the schema requires forward-slashed, so a
+	// filepath.Join here matches nothing on Windows and the precondition below reads as
+	// a missing fixture rather than a separator mismatch.
+	require.NotContains(t, from, `\`, "build the suffix as a literal or with path.Join, never filepath.Join")
 	require.NotEmpty(t, stored, "precondition: the package records a uri ending %s", from)
 	patched, err := json.Marshal(doc)
 	require.NoError(t, err)
@@ -1375,14 +1392,14 @@ func TestEvidenceUpdate_TwoNamesForOneFileStaySeparateReferences(t *testing.T) {
 		scan := filepath.Join(dir, "scans", "rhel9.json")
 		// The shared helper, not a second copy of it: rewriteStoredRef already replaces a
 		// stored uri with any other spelling, and an absolute path is just another spelling.
-		rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
+		storedScan := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 		out := filepath.Join(dir, "updated.json")
 		_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
 		require.NoError(t, err)
 
 		uris := contentURIs(t, updatedPackage(t, out))
-		assert.Contains(t, uris, scan, "the absolute reference is untouched")
+		assert.Contains(t, uris, storedScan, "the absolute reference is untouched")
 		assert.Contains(t, uris, "scans/rhel9.json", "and the relative one is its own reference")
 		assert.NotContains(t, stderr, "written differently",
 			"an absolute and a relative reference are two names for one file")
@@ -1444,7 +1461,7 @@ func TestEvidenceUpdate_ReportsAnotherReferenceNamingTheSameFile(t *testing.T) {
 	// The package records the ABSOLUTE spelling, which is what build writes when handed a
 	// --results outside the package directory. packageRelativeRef turns the incoming path
 	// into "scans/rhel9.json", so the two are one file under two names.
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	// The scan is re-run, so the recorded checksum on the absolute entry goes stale.
 	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":1}`), 0o600))
@@ -1511,7 +1528,7 @@ func TestEvidenceUpdate_ReportsAHardlinkNamingTheSameFile(t *testing.T) {
 	}
 	// The package records the LINK; the command is given the original. Two names, one
 	// inode, and no shared suffix for a string comparison to fall back on.
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"),
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json",
 		filepath.ToSlash(filepath.Join("scans", "other-name.json")))
 	require.NoError(t, os.WriteFile(scan, []byte(`{"baselines":[],"x":3}`), 0o600))
 
@@ -1583,7 +1600,7 @@ func TestEvidenceUpdate_DoesNotCallAnEntryItJustRefreshedStale(t *testing.T) {
 	}
 	// The package records only the hard-linked name, which shares no suffix with the other
 	// — so the two are one file under two names, matched by inode and nothing else.
-	rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"),
+	rewriteStoredRef(t, pkgPath, "scans/rhel9.json",
 		filepath.ToSlash(filepath.Join("scans", "hard.json")))
 
 	out := filepath.Join(dir, "updated.json")
@@ -1617,7 +1634,7 @@ func TestEvidenceUpdate_DoesNotCallAnUnchangedEntryStale(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
 	// The package records the absolute spelling; the file is NOT modified.
-	rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	out := filepath.Join(dir, "updated.json")
 	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
@@ -1639,7 +1656,7 @@ func TestEvidenceUpdate_DoesNotCallAnUnchangedEntryStale(t *testing.T) {
 func TestEvidenceUpdate_DoesNotCallABlankChecksumStale(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	// Blank the recorded value on that absolute entry, which the schema permits
 	// (Checksum.value has no minLength), and change the bytes so only the blank value
@@ -1681,7 +1698,7 @@ func TestEvidenceUpdate_DoesNotCallABlankChecksumStale(t *testing.T) {
 func TestEvidenceUpdate_AgreesWithVerificationOnCasedHex(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	// The recorded value is the CORRECT digest, uppercased. The file is never modified.
 	src, err := os.ReadFile(scan)
@@ -1729,7 +1746,7 @@ func TestEvidenceUpdate_AgreesWithVerificationOnCasedHex(t *testing.T) {
 func TestEvidenceUpdate_ComparesUnderTheEntrysOwnAlgorithm(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	// A correct sha256 digest — what a package authored before 52n0c.30 carries. The file
 	// is never modified, so verification will match it and the report must stay silent.
@@ -1774,7 +1791,7 @@ func TestEvidenceUpdate_ComparesUnderTheEntrysOwnAlgorithm(t *testing.T) {
 func TestEvidenceUpdate_AgreesWithVerificationOnAWhitespaceChecksum(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	doc := updatedPackage(t, pkgPath)
 	contents, _ := doc["contents"].([]any)
@@ -1811,7 +1828,7 @@ func TestEvidenceUpdate_AgreesWithVerificationOnAWhitespaceChecksum(t *testing.T
 func TestEvidenceUpdate_ComparesTheBytesVerificationWillFetch(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
-	stored := rewriteStoredRef(t, pkgPath, filepath.Join("scans", "rhel9.json"), scan)
+	stored := rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
 
 	// A BOM-carrying document, with the other entry recording the correct digest of the
 	// bytes ON DISK. Nothing is stale, so the report must stay silent — and it will only
