@@ -50,18 +50,11 @@
           "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
         },
         "externalIds": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_IDs"
         },
         "labels": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Labels",
+          "description": "Grouping and selection metadata for this component. Document and baseline labels do not propagate here. Well-known keys include system, component, environment, region, and team."
         },
         "boms": {
           "type": "array",

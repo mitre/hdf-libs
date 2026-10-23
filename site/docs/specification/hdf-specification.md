@@ -27,7 +27,8 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 - UUIDs use RFC 4122 format.
 - Checksums use `{algorithm, value}` pairs. Algorithms: `sha256`, `sha384`, `sha512`, `blake3`.
 - `generator` (optional on all documents): `{name, version}` of the producing tool.
-- `labels` (optional on most documents): `{key: value}` string map for flexible grouping. Well-known keys: `system`, `component`, `environment`, `region`, `team`.
+- `labels` (optional at the root of amendments, baseline, evidence-package, plan, and system): string map for grouping the owning document. Component and baseline label maps are independent, with no inheritance. Well-known grouping keys include `system`, `component`, `environment`, `region`, `team`. See [label scopes](../guides/label-keys-reference.md#scope-and-ownership).
+- `externalIds` (optional on those five document roots and on components): opaque string identifiers keyed by external scheme. For example, `labels.pipeline=nightly` groups packages while root `externalIds.ci-run` identifies the producing run; a component uses `externalIds.cmdb` for its asset record. These do not replace HDF identity fields or act as component label selectors.
 
 ### Prose fields
 

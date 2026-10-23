@@ -57,6 +57,10 @@
     "extensions": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
       "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this baseline was converted from."
+    },
+    "externalIds": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_IDs",
+      "description": "External identities associated with this baseline document, such as its producing CI run or external catalog record."
     }
   },
   "examples": [
@@ -129,7 +133,13 @@
             "SV-260476"
           ]
         }
-      ]
+      ],
+      "labels": {
+        "team": "security"
+      },
+      "externalIds": {
+        "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+      }
     }
   ],
   "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
@@ -203,6 +213,40 @@
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "Labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional grouping and selection metadata on the object that owns this map. Root labels describe the document; component labels describe an assessed asset; baseline labels describe a baseline. Scopes are independent: labels are not inherited or copied between a document and its components, baselines, or referenced documents. Labels do not establish identity or provenance by themselves. Use externalIds for identifiers assigned by another system, including a producing CI run. Existing keys and values remain unrestricted strings; well-known grouping keys include system, component, environment, region, and team.",
+          "$comment": "Examples, in order: 1) document grouping for a recurring pipeline; 2) component grouping. A pipeline name groups runs; a particular run identity belongs in externalIds on the document it produced.",
+          "examples": [
+            {
+              "pipeline": "nightly",
+              "team": "security"
+            },
+            {
+              "environment": "production",
+              "component": "WebTier"
+            }
+          ]
+        },
+        "External_IDs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Identifiers associated with the owning object in external systems, keyed by identifier scheme. On a document, these may identify the producing CI run or the document's record in a GRC system. On a component, these identify the asset in a CMDB or cloud provider. Use a scheme and value that distinguish the owning project or repository when an identifier is only locally unique. Values are opaque strings, not fetched or interpreted as paths. These identifiers do not replace HDF identity fields and are not component label selectors. Custom schemes are allowed; existing component schemes include aws, azure, cmdb, emass, and cve.",
+          "$comment": "Examples, in order: 1) a document's producing pipeline run, with project context in the URL; 2) a component's asset identity. The ci-run scheme is an example convention, not a required key.",
+          "examples": [
+            {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+            },
+            {
+              "cmdb": "CI0012345"
+            }
+          ]
+        },
         "External_Reference": {
           "type": "object",
           "title": "External Reference",
@@ -1145,11 +1189,19 @@
               "description": "The status. Example: 'loaded'."
             },
             "labels": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              },
-              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Labels",
+              "description": "Grouping metadata for this baseline. When embedded in results, labels stay on the baseline and are independent of document and component labels. Merge provenance keys tool, toolVersion, and sourceDocument retain their established meanings.",
+              "$comment": "Examples, in order: 1) baseline ownership; 2) evaluated-baseline merge provenance, independent of component labels.",
+              "examples": [
+                {
+                  "team": "security"
+                },
+                {
+                  "tool": "grype",
+                  "toolVersion": "0.79.3",
+                  "sourceDocument": "grype.hdf.json"
+                }
+              ]
             }
           },
           "examples": [

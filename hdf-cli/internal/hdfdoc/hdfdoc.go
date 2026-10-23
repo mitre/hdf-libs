@@ -27,33 +27,7 @@ var ErrNoComponents = errors.New("document has no components")
 // returned unchanged (not an error). Input is not schema-validated here — callers
 // validate downstream — so a non-HDF-shaped doc passes through untouched.
 func ApplyLabels(data []byte, labels map[string]string) ([]byte, error) {
-	if len(labels) == 0 {
-		return data, nil
-	}
-
-	doc, components, err := parseComponents(data)
-	if err != nil {
-		return nil, err
-	}
-	if components == nil {
-		return data, nil
-	}
-
-	for _, target := range components {
-		existing := make(map[string]interface{})
-		if labelsRaw, ok := target["labels"]; ok {
-			if labelsMap, ok := labelsRaw.(map[string]interface{}); ok {
-				existing = labelsMap
-			}
-		}
-
-		for k, v := range labels {
-			existing[k] = v
-		}
-		target["labels"] = existing
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
+	return UpdateMetadata(data, ComponentScope, "", MetadataChanges{Labels: labels})
 }
 
 // ValidateComponentID rejects an id the schema's `format: uuid` would reject.
@@ -105,70 +79,14 @@ func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error
 // report an identifier as attached when it was not, or attach it more widely than
 // it asked.
 func ApplyExternalIDs(data []byte, ids map[string]string, componentName string) ([]byte, error) {
-	if len(ids) == 0 {
-		return data, nil
-	}
-
-	doc, components, err := parseComponents(data)
-	if err != nil {
-		return nil, err
-	}
-	if len(components) == 0 {
-		return nil, fmt.Errorf("%w to set external IDs on", ErrNoComponents)
-	}
-
-	selected, err := selectComponents(components, componentName)
-	if err != nil {
-		return nil, err
-	}
-	for _, comp := range selected {
-		existing, ok := comp["externalIds"].(map[string]interface{})
-		if !ok {
-			existing = make(map[string]interface{}, len(ids))
-		}
-		for scheme, value := range ids {
-			existing[scheme] = value
-		}
-		comp["externalIds"] = existing
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
+	return UpdateMetadata(data, ComponentScope, componentName, MetadataChanges{ExternalIDs: ids})
 }
 
 // RemoveExternalIDs deletes the given schemes from "externalIds" on every
 // component, or on the one component named componentName. A scheme a component
 // does not carry is ignored; a map left empty is dropped.
 func RemoveExternalIDs(data []byte, schemes []string, componentName string) ([]byte, error) {
-	if len(schemes) == 0 {
-		return data, nil
-	}
-
-	doc, components, err := parseComponents(data)
-	if err != nil {
-		return nil, err
-	}
-	if components == nil {
-		return data, nil
-	}
-
-	selected, err := selectComponents(components, componentName)
-	if err != nil {
-		return nil, err
-	}
-	for _, comp := range selected {
-		existing, ok := comp["externalIds"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		for _, scheme := range schemes {
-			delete(existing, scheme)
-		}
-		if len(existing) == 0 {
-			delete(comp, "externalIds")
-		}
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
+	return UpdateMetadata(data, ComponentScope, componentName, MetadataChanges{RemoveExternalIDs: schemes})
 }
 
 // parseComponents decodes the document and its components array. components is

@@ -1,6 +1,6 @@
 # Well-Known Label Keys Reference
 
-Labels are optional `Record<string, string>` metadata on **components** and **baselines** in HDF. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
+Labels are optional `Record<string, string>` grouping metadata on HDF **documents**, **components**, and **baselines**. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
 
 For full design rationale, see [hdf-document-ecosystem.md](../architecture/hdf-document-ecosystem.md), section "Labels -- Flexible Grouping Without Hierarchy."
 
@@ -22,7 +22,19 @@ Every component in `hdf-results` and every baseline can carry a `labels` object 
 }
 ```
 
-Labels are defined in `Base_Component` within `primitives/component.schema.json` and in `Baseline_Metadata` within `primitives/common.schema.json`. The schema accepts any string keys and string values -- it does not enforce specific keys.
+Labels share the `Labels` definition in `primitives/common.schema.json`, referenced by document, component, target, and baseline metadata schemas. The schema accepts any string keys and string values -- it does not enforce specific keys.
+
+## Scope and ownership
+
+A label describes the object that owns its map. Root labels describe a document; component labels describe an asset; baseline labels describe a baseline. These scopes are independent: a root label is not inherited by components, baselines, or documents referenced by a package. A component label does not become a document label. Existing baseline provenance keys remain supported.
+
+| Owner | Location | CLI surface |
+|---|---|---|
+| Amendments, baseline, evidence package, plan, system document | Root `labels` and `externalIds` | `hdf label set/show/remove --scope document` |
+| Component in results or system | `components[].labels` and `components[].externalIds` | `hdf label set/show/remove` (default), or `--scope component` |
+| Evaluated baseline in results | `baselines[].labels` | Produced by converters or merge; the label command does not edit this scope |
+
+Results, comparison, and requirement-change-event documents do not support root labels or root external IDs. Component selectors continue to use component labels; document labels do not participate in those selectors. Labels alone do not establish identity or prove provenance.
 
 ## Well-Known Keys
 
@@ -159,9 +171,24 @@ Use `hdf label remove` to delete label keys:
 hdf label remove results.json team region
 ```
 
+### Document grouping and producing-run identity
+
+For an existing evidence package named `package.json`, record both the recurring pipeline and the particular run that produced it:
+
+```bash
+hdf label set package.json --scope document pipeline=nightly team=security \
+  --external-id ci-run=https://ci.example.org/projects/portal/runs/4821
+hdf label show package.json --scope document --json
+hdf label remove package.json --scope document pipeline --external-id ci-run
+```
+
+The same commands accept amendments, baseline, plan, and system documents. Set merges supplied keys and preserves unrelated metadata; remove ignores missing keys. Both can write a separate file with `-o`. Document JSON output is `{"labels":{...},"externalIds":{...}}`, with empty objects when metadata is absent; component output retains its array of component summaries.
+
+The document scope rejects component-specific flags, including `--component-name`, `--component-id`, and `--generate-component-id`. Input and output are schema-validated before an atomic write. Metadata changes do not refresh a document's integrity attestation; finalize metadata before computing or signing that attestation.
+
 ## External IDs Are Not Labels
 
-An identifier owned by another system — a CMDB asset ID, an eMASS system ID, a cloud resource ID — belongs in `components[].externalIds`, not in `labels`. The two do different jobs:
+An identifier owned by another system — a CMDB asset ID, an eMASS system ID, a cloud resource ID — belongs in the owning object's `externalIds`, not in `labels`. Use `components[].externalIds` for assets and root `externalIds` for documents or their producing runs. The two do different jobs:
 
 - A label is grouping and selection metadata. `hdf system create` copies a component's labels into its `targetSelector`, so an asset ID stored as a label becomes part of the selector.
 - Label keys share one namespace with the well-known keys above. `externalIds` is keyed by scheme, so the owner of each identifier is explicit and cannot collide with a grouping key.
@@ -183,11 +210,11 @@ hdf label set results.json --external-id cmdb=CI0012345 --component-name web-ser
 hdf label remove results.json --external-id cmdb
 ```
 
-The flag merges: a scheme named on the command line is overwritten, and schemes not named are left as they are. The value is carried verbatim and may be any non-empty string. Well-known schemes are `aws`, `azure`, `cmdb`, `emass` and `cve`; custom schemes are allowed.
+The flag merges: a scheme named on the command line is overwritten, and schemes not named are left as they are. The value is carried verbatim and may be any non-empty string. Existing component schemes include `aws`, `azure`, `cmdb`, `emass` and `cve`; custom schemes are allowed. For document run identity, `ci-run` is an example convention, not a required key. Include project or repository context when a run number is only locally unique. Values are opaque strings: the command does not fetch them or interpret them as paths, and they do not replace `packageId` or other HDF identity fields.
 
-`hdf label set` exits non-zero and writes nothing when a pair has no `=`, the scheme or value is empty, the same scheme is given twice, the document has no components, or `--component-name` matches no component or more than one (a name is not identity, so a document may repeat it). `--component-name` applies to `--external-id` only; labels and `--component-id` are always written to every component, so the command rejects combining them with it.
+Setting external IDs with `hdf label set` exits non-zero and writes nothing when a pair has no `=`, the scheme or value is empty, the same scheme is given twice, component scope has no components, or `--component-name` matches no component or more than one (a name is not identity, so a document may repeat it). `--component-name` applies to `--external-id` only; in component scope, labels and `--component-id` are written to every component, so the command rejects combining them with it.
 
-`hdf label show` lists external IDs under each component's labels, and `--json` carries an `externalIds` object for every component:
+With the default component scope, `hdf label show` lists external IDs under each component's labels, and `--json` carries an `externalIds` object for every component:
 
 ```bash
 hdf label show results.json
