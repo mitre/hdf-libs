@@ -214,6 +214,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 
 ## Development Practices
 
+- **No embedded Python implementations.** Never write a shell script or workflow shell step that merely feeds a substantial Python program to an interpreter through a heredoc, multiline `python -c`, here-string, or pipe. If Python is the implementation, use a proper `.py` file and invoke it directly. Use native shell tools for short shell tasks.
 - **Test-driven development (TDD).** Write tests before implementation.
 - **>90% code coverage required.** Code is not considered working without unit tests meeting this threshold.
 - Tests define the spec; implementation fulfills the spec.

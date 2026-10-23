@@ -1,0 +1,32 @@
+name: Setup pinned npm
+description: Install the same integrity-verified npm client for CI, consumers and publishing. Node must already be installed.
+runs:
+  using: composite
+  steps:
+    - name: Install integrity-pinned npm
+      shell: bash
+      env:
+        NPM_VERSION: '11.21.0'
+        NPM_SHA512: 'Zov8KhamNneiLdELtj5YALtNmJW4L4fCLTzjfpzXG2w6MSHcf0UxgdlK5uloCuksWT+7mGUU7wi79cO6RqivPg=='
+      run: |
+        archive="$RUNNER_TEMP/npm-cli.tgz"
+        curl --fail --silent --show-error --retry 3 --max-time 120 \
+          "https://registry.npmjs.org/npm/-/npm-$NPM_VERSION.tgz" -o "$archive"
+        actual=$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)
+        test "$actual" = "$NPM_SHA512"
+        mkdir -p "$RUNNER_TEMP/pinned-npm"
+        tar -xzf "$archive" -C "$RUNNER_TEMP/pinned-npm" --strip-components=1
+        test "$(node "$RUNNER_TEMP/pinned-npm/bin/npm-cli.js" --version)" = "$NPM_VERSION"
+        # Keep Node's existing npm/npx launchers on both Unix and Windows.
+        node_bin=$(node -p 'require("path").dirname(process.execPath).split(require("path").sep).join("/")')
+        if [ "$RUNNER_OS" = Windows ]; then
+          modules=$(npm root --global | tr '\\' '/')
+          if [ ! -d "$modules/npm" ]; then modules="$node_bin/node_modules"; fi
+        else
+          modules="$node_bin/../lib/node_modules"
+        fi
+        test -d "$modules/npm"
+        mv "$modules/npm" "$RUNNER_TEMP/original-npm"
+        mv "$RUNNER_TEMP/pinned-npm" "$modules/npm"
+        test "$(npm --version)" = "$NPM_VERSION"
+        echo "Using npm $NPM_VERSION"

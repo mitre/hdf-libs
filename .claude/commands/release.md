@@ -314,7 +314,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
 6. **Only the root tag is pushed by hand, and only onto a prepare commit.** The workflow runs on a pushed `vNEW` or `vNEW-rc.N` root tag and creates the per-module tags itself (`hdf-cli/vNEW`, `hdf-converters/vNEW`, etc.) in lockstep on the same commit; never push those by hand. The root tag must sit on the squash commit of that version's prepare PR (Phase 7.5 step 0), checked by subject before tagging — on any other commit the modules publish with requires no tag provides.
-7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` only (there is no per-major `v3` tag — the Publish step sets exactly `--tag next` for a stable and `--tag rc` for an rc) — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other packages (11 at the time of writing) keep the default `latest` behavior for a stable and get `next` for an rc — do not "harmonize" them onto `next`.
+7. **npm dist-tags are workflow-owned.** Formal stable releases publish `@mitre/hdf-converters` under `stable`; its `latest` remains owned by heimdall2's v2 line. Other packages keep `latest` for a stable release. Formal RCs publish under `rc`. `next` belongs to the automatic main-snapshot workflow and must not be moved by a formal release. Never run a manual publish for hdf-converters or move its `latest` to v3. See `site/docs/contributing/main-snapshots.md` for the channel migration and snapshot policy. The formal workflow retains its inline Bash publisher, including dependency order, pnpm packing, provenance and immutable-content retry verification; the preparation, review, signing and approval phases of this skill remain required for formal releases.
 
 ### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
 
@@ -357,7 +357,7 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 3. Verify the publish landed correctly — the same checks as Phase 8, but against the RC:
    - all per-module tags appear at `vNEW-rc.1` in lockstep;
    - **npm dist-tags:** `@mitre/hdf-converters` got `rc` and **`latest` is UNTOUCHED** (still the 2.x heimdall2 line) — `npm view @mitre/hdf-converters dist-tags`. An RC that moves `latest` is an incident (restore per Phase 8).
-   - the other 11 packages published under a prerelease tag (`rc`/`next`), **not** `latest`;
+   - the other packages published under `rc`, **not** `latest` or `next`;
    - the supply-chain artifacts are actually attached to the GitHub prerelease: syft SBOM, cosign signature, SLSA build provenance (whichever the pipeline change added);
    - **the Go modules actually build for a consumer** — this is the check that catches a bad prepare-release commit, and the one whose absence let four prereleases ship unbuildable. Do it outside the repo so no `replace` or workspace can mask it:
 
@@ -381,7 +381,7 @@ Once the release PR is merged to `main`, the user runs the release workflow. Con
 - All per-module Git tags appear at the same version
 - Generated `site/` schema reference is at the new version (it's regenerated from the schemas, so it should auto-track) — minor/major only
 - `pkg.go.dev` resolves the new versions for `github.com/mitre/hdf-libs/<module>/v3@vNEW`
-- `npm view @mitre/hdf-converters dist-tags` shows `latest` still on the 2.x line (heimdall2 owns it) and `next` on vNEW (stable) or `rc` on the rc; there is no per-major tag. If `latest` moved to 3.x, treat it as an incident: the user restores it (`npm dist-tag add @mitre/hdf-converters@<newest 2.x> latest`) and we find what published it.
+- `npm view @mitre/hdf-converters dist-tags` shows `latest` still on the 2.x line (heimdall2 owns it) and `stable` on vNEW (stable) or `rc` on the RC; `next` stays on the latest published main snapshot; there is no per-major tag. If `latest` moved to 3.x, treat it as an incident: the user restores it (`npm dist-tag add @mitre/hdf-converters@<newest 2.x> latest`) and we find what published it.
 
 If anything lags, surface it; don't paper over.
 
