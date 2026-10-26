@@ -23,6 +23,71 @@
   --vp-c-brand-3: #70c7f4;
 }
 
+.schema-viewer {
+  margin: 1.25rem 0 2rem;
+}
+
+.schema-viewer-intro {
+  color: var(--vp-c-text-2);
+}
+
+.schema-viewer-selector {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.schema-viewer select {
+  appearance: auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font: inherit;
+}
+
+.schema-viewer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.schema-viewer-tree {
+  max-height: 36rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+  font: 0.8rem/1.7 var(--vp-font-family-mono);
+  overflow-wrap: anywhere;
+}
+
+.schema-tree summary, .schema-tree-leaf {
+  padding: 0.1rem 0.2rem;
+}
+
+.schema-tree summary { cursor: pointer; }
+.schema-tree-children {
+  margin-left: 0.75rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--vp-c-divider);
+}
+.schema-tree-key { color: var(--vp-c-brand-1); }
+.schema-tree-count { color: var(--vp-c-text-2); }
+.schema-tree-string { color: var(--vp-c-tip-1); }
+.schema-tree-number, .schema-tree-boolean { color: var(--vp-c-warning-1); }
+.schema-viewer :focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
 /* Wider content area for property tables */
 .VPDoc .container {
   max-width: 1200px !important;
