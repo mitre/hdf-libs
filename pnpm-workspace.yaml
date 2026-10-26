@@ -21,6 +21,8 @@ minimumReleaseAge: 10080
 # serves its cooldown normally; goes when 1.2.2 ages past the window.
 minimumReleaseAgeExclude:
   - source-map-js@1.2.2
+  # Fixes both fast-uri URI-parsing advisories; remove after this patch ages past the cooldown.
+  - fast-uri@3.1.9
 # Forced patched versions for transitive advisories (see the security gate).
 # Every target is a RANGE, never an exact version: an exact pin names the floor
 # itself, so when the advisory's patched floor rises the pin becomes the new
