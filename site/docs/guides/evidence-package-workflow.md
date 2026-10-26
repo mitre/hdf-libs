@@ -262,6 +262,26 @@ Note: no planRef in evidence package — skipping completeness check
 
 Six of six, on a different machine, with no path rewriting. That property holds because every reference the package records is relative to the package's own directory — which is what makes an evidence package a deliverable rather than a directory listing.
 
+## Evidence from hdf-libs CI
+
+The repository's CI workflow assembles the normalized scan and test documents, the dependency SBOM, and the native scanner and JUnit reports into the `hdf-evidence-package` artifact. Its `run.json` records the source commit, run URL, CLI identity, and upstream gate outcomes. The ZIP and its SHA-512 checksum are retained for 90 days.
+
+Failed gates still leave an evidence package when enough input was produced to build one. Check `run.json` before interpreting it: an archive that verifies has intact recorded files, but that does not mean the tests passed or every job produced evidence. A run with no normalized HDF or SBOM fails packaging rather than emitting an empty package.
+
+To inspect a run, set `RUN_ID` to its numeric Actions run ID. With GitHub CLI, `unzip`, `sha512sum`, and an HDF CLI supporting these evidence commands installed:
+
+```bash
+gh run download "$RUN_ID" --repo mitre/hdf-libs --name hdf-evidence-package --dir evidence-download
+cd evidence-download
+sha512sum -c hdf-libs-evidence.zip.sha512
+unzip -q hdf-libs-evidence.zip -d extracted
+hdf evidence info extracted/evidence-package.json --verify --require-checksums --require-reachable
+```
+
+Formal releases attach the same ZIP and checksum from a successful **main push** CI run for the tagged commit. The release workflow refuses a different commit's evidence and does not consume pull-request artifacts. If the matching CI run has not passed, or its evidence has expired, the release stops before npm publishing; rerun CI for that commit first.
+
+Until 3.8.0 provides the required commands, CI builds its gate CLI from a fixed, reviewed main commit in an isolated checkout. It does not build that trusted CLI from the pull request being assessed.
+
 ## Where to go next
 
 - [Thresholds End to End](./thresholds-workflow.md) — gate a pipeline on what these results contain

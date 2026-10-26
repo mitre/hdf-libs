@@ -54,10 +54,8 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # The released hdf CLI the gates run. Bumped post-publish by the release
-  # skill (Phase 9) from the linux_amd64 line of that release's checksums.txt.
-  HDF_CLI_VERSION: '3.7.2'
-  HDF_CLI_SHA256: '77509e5beaf4077ce68d0adbbb4915417796fe927fb13f07472f35e74ce5b220'
+  # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
+  HDF_CLI_SOURCE_SHA: '9c81f348c127edd1a6a25bb9ee5a7d2b955624e9'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -498,25 +496,33 @@ jobs:
           retention-days: 7
 
   # ── The CLI the gates run ────────────────────────────────────────────────
-  # A pinned, checksum-verified release. Bump HDF_CLI_VERSION and
-  # HDF_CLI_SHA256 together after each publish; the release skill's Phase 9
-  # does it from that release's checksums.txt.
+  # Build reviewed source in isolation so a PR cannot change the CLI judging it.
   gate-cli:
-    name: Fetch the gate CLI (pinned release)
+    name: Build the gate CLI (pinned main commit)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      # A released binary, never one built from the commit under test: a CLI
-      # bug in a PR must not be able to judge its own gate.
-      - name: Download and verify
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mitre/hdf-libs
+          ref: ${{ env.HDF_CLI_SOURCE_SHA }}
+          path: gate-source
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: gate-source/go.work
+          cache: false
+      - name: Build the reviewed CLI
+        working-directory: gate-source/hdf-cli
         run: |
-          url="https://github.com/${{ github.repository }}/releases/download/v${HDF_CLI_VERSION}/hdf_${HDF_CLI_VERSION}_linux_amd64.tar.gz"
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/hdf-cli.tar.gz" "$url"
-          echo "${HDF_CLI_SHA256}  $RUNNER_TEMP/hdf-cli.tar.gz" | sha256sum -c -
-          tar xzf "$RUNNER_TEMP/hdf-cli.tar.gz" -C "$RUNNER_TEMP" hdf
+          test "$(git rev-parse HEAD)" = "$HDF_CLI_SOURCE_SHA"
+          go build -mod=readonly \
+            -ldflags "-X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit=$HDF_CLI_SOURCE_SHA" \
+            -o "$RUNNER_TEMP/hdf" ./cmd/hdf
           "$RUNNER_TEMP/hdf" version
+          "$RUNNER_TEMP/hdf" evidence --help
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate-cli
@@ -824,6 +830,73 @@ jobs:
         with:
           name: hdf-normalized-tests
           path: hdf-tests/
+          retention-days: 90
+
+  package-evidence:
+    name: Package this run's HDF evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [gate-cli, gate-hdf-scans, gate-hdf-tests, scan-deps]
+    if: always() && !cancelled() && needs.gate-cli.result == 'success'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: '{hdf-normalized-*,scan-*,test-results-*,sbom}'
+          path: evidence
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      - name: Put the gate CLI on PATH
+        run: |
+          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
+          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
+      - name: Assemble and verify evidence
+        working-directory: evidence
+        env:
+          UPSTREAM_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          shopt -s nullglob
+          documents=(hdf-normalized-*/*.hdf.json sbom/*.spdx.json)
+          [ "${#documents[@]}" -gt 0 ] || { echo "::error::no HDF documents or SBOM to package"; exit 1; }
+          jq -n --arg commit "$GITHUB_SHA" \
+            --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson cli "$(hdf version --json)" --argjson jobs "$UPSTREAM_RESULTS" \
+            '{commit: $commit, run: $run, cli: $cli, jobs: $jobs}' > run.json
+          hdf evidence build --from-dir . -o evidence-package.json
+          hdf evidence set evidence-package.json \
+            --name "hdf-libs CI $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" \
+            --description "Evidence for $GITHUB_SHA; run.json records gate outcomes and missing upstream jobs."
+          references=(evidence add-evidence evidence-package.json)
+          for report in scan-*/* test-results-*/* run.json; do
+            [ -f "$report" ] || continue
+            case "$report" in
+              *.sarif) format=x-sarif ;;
+              *.xml) format=x-junit ;;
+              */semgrep.json) format=x-semgrep ;;
+              *) format=x-github-actions ;;
+            esac
+            references+=(--uri "$report" --format "$format")
+          done
+          hdf "${references[@]}"
+          hdf validate evidence-package.json
+          hdf evidence info evidence-package.json --verify --require-checksums --require-reachable
+          mkdir -p ../evidence-dist
+          hdf evidence bundle evidence-package.json -o ../evidence-dist/hdf-libs-evidence.zip
+          (cd ../evidence-dist && sha512sum hdf-libs-evidence.zip > hdf-libs-evidence.zip.sha512)
+      - name: Verify after extraction
+        run: |
+          mkdir -p "$RUNNER_TEMP/evidence-recipient"
+          unzip -q evidence-dist/hdf-libs-evidence.zip -d "$RUNNER_TEMP/evidence-recipient"
+          hdf evidence info "$RUNNER_TEMP/evidence-recipient/evidence-package.json" \
+            --verify --require-checksums --require-reachable
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hdf-evidence-package
+          path: evidence-dist/
+          if-no-files-found: error
           retention-days: 90
 
   # ── Coverage ingestion: SonarQube Cloud ──────────────────────────────────
