@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
+
 - **Comment length is now gated.** `pnpm lint:comments` fails when a declaration's doc comment (or a file header) exceeds 10 lines, any other comment run exceeds 5, or a comment line exceeds 90 characters.
 
   The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
