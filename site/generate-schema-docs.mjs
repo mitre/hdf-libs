@@ -263,6 +263,10 @@ function renderSchemaPage(schema, name, urlPrefix) {
     `| **\`$id\`** | \`${schema.$id}\` |`,
     `| **Download** | [${name}.schema.json](${downloadUrl}) |`,
     '',
+    '## Interactive schema',
+    '',
+    `<SchemaViewer src="${downloadUrl}" />`,
+    '',
   ];
 
   if (schema.properties) {

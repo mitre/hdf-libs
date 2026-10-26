@@ -167,3 +167,25 @@ test('the schema index states the same number of document types that it lists', 
   assert.ok(listed > 0, 'the index lists no document types, so this check could not fail');
   assert.equal(Number(stated[1]), listed);
 });
+
+test('current and archived schema pages offer a viewer of their own downloadable schema', () => {
+  const siteDir = path.resolve(__dirname, '..');
+  execFileSync('node', ['generate-schema-docs.mjs'], { cwd: siteDir, stdio: 'ignore' });
+  const manifest = JSON.parse(fs.readFileSync(path.join(siteDir, '.vitepress/versions.json'), 'utf8'));
+  const roots = ['schemas', ...manifest.versions.filter((v) => v !== manifest.current).map((v) => `${v}/schemas`)];
+  let current = 0;
+  let archived = 0;
+  for (const root of roots) {
+    for (const file of fs.readdirSync(path.join(siteDir, root)).filter((f) => f !== 'index.md' && f.endsWith('.md'))) {
+      const page = fs.readFileSync(path.join(siteDir, root, file), 'utf8');
+      const download = page.match(/\*\*Download\*\* \| \[[^\]]+\]\(([^)]+)\)/);
+      assert.ok(download, `${root}/${file} must retain its download link`);
+      assert.ok(page.includes(`<SchemaViewer src="${download[1]}" />`), `${root}/${file} must show its own schema`);
+      assert.equal((page.match(/<SchemaViewer /g) || []).length, 1, 'one shared viewer per page');
+      assert.ok(page.includes('## Properties'), 'readable property tables remain available');
+      if (root === 'schemas') current++;
+      else archived++;
+    }
+  }
+  assert.ok(current > 0 && archived > 0, 'exercise both current and archived definition pages');
+});
