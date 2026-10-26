@@ -24,6 +24,8 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'pnpm'
 
+    - uses: $/.github/actions/setup-npm
+
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile

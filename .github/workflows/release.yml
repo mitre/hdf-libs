@@ -64,6 +64,7 @@ jobs:
           package-manager-cache: false
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: $/.github/actions/setup-npm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -111,22 +112,9 @@ jobs:
             hdf-openapi
           )
 
-          # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
-          # Convention for this repo: `rc` is the only pre-release identifier.
-          # Any tag with `-rc` in it (e.g. v3.1.0-rc.1, v3.1.0-rc.2) is a
-          # pre-release; a bare semver tag (v3.1.0) is a stable release.
-          #
-          # @mitre/hdf-converters is special-cased: its npm name is shared with
-          # heimdall2, which still publishes the 2.x line and owns `latest`.
-          # A stable publish with no --tag steals `latest`, so a plain
-          # `npm install @mitre/hdf-converters` would hand v2 consumers an
-          # API-incompatible v3. Policy agreed with the heimdall2 team:
-          # hdf-converters stables publish under `next`, rc's under `rc` —
-          # never `latest`, implicit or explicit. (A per-major `v3` alias was
-          # planned but is impossible: npm rejects any dist-tag name that
-          # parses as a semver range. Revisit a legal alias, e.g. `latest-3`,
-          # only if a v4 line ever forks.)
-          # Do NOT "simplify" this back into one shared TAG_FLAG.
+          # Formal RCs use rc; stable converters use stable because Heimdall's
+          # v2 line owns latest. Other stable packages retain latest.
+          # next belongs exclusively to main snapshots.
 
           # Use pnpm publish (not npm) so that workspace:* dependency specifiers
           # are rewritten to the actual published versions in the tarball.
@@ -165,10 +153,10 @@ jobs:
               if [[ "$VERSION" == *"-rc"* ]]; then
                 TAG_FLAG="--tag rc"
               else
-                TAG_FLAG="--tag next"
+                TAG_FLAG="--tag stable"
               fi
             elif [[ "$VERSION" == *"-rc"* ]]; then
-              TAG_FLAG="--tag next"
+              TAG_FLAG="--tag rc"
             fi
 
             name="@mitre/$pkg"
@@ -379,8 +367,8 @@ jobs:
 
           ```bash
           # TypeScript/Node.js — install the packages you need
-          npm install @mitre/hdf-converters@next   # converters + schema + parsers + utilities + mappings
-          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @rc, or an exact version)
+          npm install @mitre/hdf-converters@stable   # converters + schema + parsers + utilities + mappings
+          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @stable, @rc, or an exact version)
           npm install @mitre/hdf-validators    # schema validation
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups

@@ -73,6 +73,7 @@ const DOCS_ORDER = {
   ],
   contributing: [
     'developer-guide',
+    'main-snapshots',
     // Writing a mapper only comes up while writing a converter, so it follows it.
     'writing-a-converter',
     'using-mappings-in-converters',

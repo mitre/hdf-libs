@@ -61,57 +61,15 @@ jobs:
           PACKAGES=(
             hdf-schema hdf-utilities hdf-mappings hdf-validators
             hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine hdf-openapi
+            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi
           )
           for pkg in "${PACKAGES[@]}"; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
           done
           ls -la /tmp/tarballs
 
-      - name: Install tarballs in scratch project via npm
-        run: |
-          mkdir -p /tmp/smoke
-          cd /tmp/smoke
-          # Synthesize a package.json that file:-references every tarball,
-          # so npm resolves the inter-package @mitre/* deps from local
-          # tarballs (versions match because they were all packed from the
-          # same workspace state).
-          node <<'EOF'
-          const fs = require('fs');
-          const tarballs = fs.readdirSync('/tmp/tarballs').filter(f => f.endsWith('.tgz'));
-          const deps = {};
-          for (const tb of tarballs) {
-            const m = tb.match(/^mitre-(.+)-\d/);
-            if (!m) throw new Error('unexpected tarball name: ' + tb);
-            deps['@mitre/' + m[1]] = 'file:/tmp/tarballs/' + tb;
-          }
-          fs.writeFileSync('package.json', JSON.stringify({
-            name: 'smoke-test', version: '0.0.0', private: true, dependencies: deps,
-          }, null, 2));
-          EOF
-          cat package.json
-          npm install --no-audit --no-fund
-
-      - name: Import every package in raw Node ESM
-        # Catches regressions where JSON imports (or any import pattern
-        # Node ESM rejects) survive into the published dist. The
-        # scratch project above has all packages installed via npm, so
-        # this exercises the real consumer path under the same Node
-        # version (22) declared in engines.node — no split, no
-        # cross-version surprises.
-        run: |
-          cd /tmp/smoke
-          FAIL=0
-          for pkg in @mitre/hdf-schema @mitre/hdf-utilities @mitre/hdf-mappings \
-                     @mitre/hdf-validators @mitre/hdf-parsers @mitre/hdf-converters \
-                     @mitre/hdf-generators @mitre/hdf-diff @mitre/hdf-extension-graph \
-                     @mitre/hdf-engine @mitre/hdf-openapi; do
-            printf "%-30s " "$pkg"
-            if ! node -e "import('$pkg').then(m => console.log('OK,', Object.keys(m).length, 'exports')).catch(e => { console.error('FAIL:', e.message); process.exit(1); })"; then
-              FAIL=1
-            fi
-          done
-          exit $FAIL
+      - name: Install and import every packed package via npm
+        run: bash scripts/check-npm-consumers.sh /tmp/tarballs
 
   # NOTE: publint + @arethetypeswrong/cli moved to ci.yml's
   # `verify-packages` job so packaging defects surface on the PR that

@@ -142,7 +142,7 @@ jobs:
             "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz"
           echo "$ZIZMOR_SHA256  $tmp/zizmor.tar.gz" | sha256sum -c -
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
-          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
+          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
@@ -373,6 +373,13 @@ jobs:
           name: scan-ts
           path: scan-artifacts/
           retention-days: 7
+      - name: Repository lint guards
+        run: |
+          pnpm run lint:timestamps
+          pnpm run lint:generated-html
+          pnpm run lint:package-names
+      - name: Shared npm consumer smoke tests
+        run: pnpm run test:release-smoke
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
       - name: npm audit (prod moderate+, dev high+)

@@ -15,7 +15,7 @@
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint:published-deps && pnpm run lint:overrides && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run lint:comments && pnpm run lint:package-names && pnpm run lint:go-consumers && pnpm run lint:gosec-coverage && pnpm run lint:release-version && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint:published-deps && pnpm run lint:overrides && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run lint:comments && pnpm run lint:package-names && pnpm run lint:go-consumers && pnpm run lint:gosec-coverage && pnpm run lint:release-version && pnpm run test:release-smoke && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
@@ -36,6 +36,7 @@
     "prepare": "husky",
     "lint:go-consumers": "bash scripts/check-go-module-consumers.test.sh && bash scripts/check-go-module-consumers.sh",
     "lint:gosec-coverage": "bash scripts/check-gosec-coverage.test.sh && bash scripts/check-gosec-coverage.sh",
+    "test:release-smoke": "bash scripts/check-npm-consumers.test.sh",
     "lint:release-version": "bash scripts/check-release-version.test.sh",
     "lint:go-module-versions": "bash scripts/set-go-module-versions.test.sh",
     "lint:go-mod-tidy": "bash scripts/check-go-mod-tidy.test.sh && bash scripts/check-go-mod-tidy.sh"
