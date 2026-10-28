@@ -117,19 +117,21 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 | [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
 | [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
-| [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
+| [golangci-lint](https://golangci-lint.run/) | 2.11.3 | Go linter (required for `pnpm lint`) |
 | [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
-| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | latest | Go vulnerability scanner (required for `pnpm check`) |
+| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | 1.1.4 | Go vulnerability scanner (required for `pnpm check`) |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | latest | Secret detection (required for `pnpm check`) |
+
+golangci-lint and govulncheck are pinned to the versions CI runs (`GOLANGCI_LINT_VERSION` and `GOVULNCHECK_VERSION` in `.github/workflows/ci.yml`), so local lint reports what CI reports; update both places together. Newer golangci-lint releases add checks that fail lint on code CI accepts. Run them under the Go version in `go.work`: golangci-lint 2.11.3 is built with Go 1.26 and panics on a Go 1.27 toolchain.
 
 **macOS (Homebrew):**
 
 ```bash
 brew install node go gitleaks
 corepack enable && corepack prepare pnpm@11.10.0 --activate
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
 go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 ```
 
 **Ubuntu / WSL:**
@@ -146,9 +148,9 @@ sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.ta
 echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
 
 # golangci-lint, gosec, govulncheck
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
 go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 
 # gitleaks
 brew install gitleaks  # or download from GitHub releases
@@ -165,9 +167,9 @@ winget install GoLang.Go
 corepack enable && corepack prepare pnpm@11.10.0 --activate
 
 # Go tools (restart your terminal after installing Go)
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
 go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 
 # gitleaks
 winget install Gitleaks.Gitleaks
