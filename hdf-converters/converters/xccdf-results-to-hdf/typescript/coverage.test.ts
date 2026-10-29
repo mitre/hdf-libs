@@ -4,6 +4,9 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { parseXml } from '@mitre/hdf-utilities';
+import { Severity } from '@mitre/hdf-schema';
+import type { HDFBaseline } from '@mitre/hdf-schema';
+import { convertXccdfBenchmarkToHdf } from './converter.js';
 
 // Completeness of the benchmark path against the XCCDF schemas: every element
 // and attribute path the 1.1.4 and 1.2 XSDs admit under Benchmark, Group and
@@ -267,7 +270,7 @@ interface CoverageSchemaPaths {
 }
 
 // fixtures/xccdf-coverage.json: paths keyed in the walker's output form (a
-// key ending in /** covers the whole subtree), and vendor rows for content the
+// key ending in /** covers the paths below it), and vendor rows for content the
 // schemas leave opaque, keyed by a schema path extended with the vendor's own
 // elements or a [@attr=value] selector.
 interface CoverageAllowlist {
@@ -390,8 +393,9 @@ function coverageProblems(walked: string[], allow: CoverageAllowlist): string[] 
   const walkedSet = new Set(walked);
   const subtrees = Object.keys(allow.paths)
     .filter((key) => key.endsWith('/**'))
-    .map((key) => key.slice(0, -'/**'.length));
-  const under = (p: string, prefix: string): boolean => p === prefix || p.startsWith(`${prefix}/`);
+    .map((key) => key.slice(0, -'/**'.length))
+    .sort(byteOrder);
+  const under = (p: string, prefix: string): boolean => p.startsWith(`${prefix}/`);
 
   const problems: string[] = [];
   for (const p of walked) {
@@ -408,8 +412,15 @@ function coverageProblems(walked: string[], allow: CoverageAllowlist): string[] 
       if (!walked.some((p) => under(p, prefix))) {
         problems.push(`allowlist subtree defined by no schema: ${key}`);
       }
-    } else if (!walkedSet.has(key)) {
+      continue;
+    }
+    if (!walkedSet.has(key)) {
       problems.push(`allowlist path defined by no schema: ${key}`);
+    }
+    for (const prefix of subtrees) {
+      if (under(key, prefix)) {
+        problems.push(`exact row shadowed by subtree row ${prefix}/**: ${key}`);
+      }
     }
   }
   for (const key of sortedKeys(allow.vendor)) {
@@ -456,6 +467,147 @@ function coverageProblems(walked: string[], allow: CoverageAllowlist): string[] 
     }
   }
   return problems;
+}
+
+// The part of a Baseline the arrival rules read.
+type ArrivalBaseline = Pick<HDFBaseline, 'name' | 'title' | 'version' | 'summary' | 'requirements' | 'groups' | 'extensions'>;
+type ArrivalRequirement = ArrivalBaseline['requirements'][number];
+
+// "Non-empty" for a tag or passthrough value: a string with text, a list or
+// object with members, or a bool or number, which is present by being there.
+// An unexpected type is not arrived, so it fails visibly.
+function nonEmptyValue(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return value !== '';
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  if (typeof value === 'boolean' || typeof value === 'number') {
+    return true;
+  }
+  if (typeof value === 'object' && value !== null) {
+    return Object.keys(value).length > 0;
+  }
+  return false;
+}
+
+function nonEmptyString(value: string | undefined): boolean {
+  return value !== undefined && value !== '';
+}
+
+// Whether the Baseline carries a non-empty value at a coverage target. The
+// converter's output decides, never the input. Impact is numeric and present
+// by schema, so it counts as arrived when above zero.
+function targetArrives(b: ArrivalBaseline, target: string): boolean {
+  const dot = target.indexOf('.');
+  const section = dot < 0 ? target : target.slice(0, dot);
+  const field = dot < 0 ? '' : target.slice(dot + 1);
+  const anyRequirement = (holds: (r: ArrivalRequirement) => boolean): boolean => b.requirements.some(holds);
+  const groups = b.groups ?? [];
+  switch (section) {
+    case 'requirements':
+      return field === '' && b.requirements.length > 0;
+    case 'groups':
+      switch (field) {
+        case '':
+          return groups.length > 0;
+        case 'id':
+          return groups.some((g) => g.id !== '');
+        case 'title':
+          return groups.some((g) => nonEmptyString(g.title));
+        default:
+          return false;
+      }
+    case 'document':
+      switch (field) {
+        case 'name':
+          return b.name !== '';
+        case 'title':
+          return nonEmptyString(b.title);
+        case 'version':
+          return nonEmptyString(b.version);
+        case 'summary':
+          return nonEmptyString(b.summary);
+        default:
+          return false;
+      }
+    case 'requirement':
+      switch (field) {
+        case 'id':
+          return anyRequirement((r) => r.id !== '');
+        case 'title':
+          return anyRequirement((r) => nonEmptyString(r.title));
+        case 'impact':
+          return anyRequirement((r) => r.impact > 0);
+        case 'severity':
+          return anyRequirement((r) => nonEmptyString(r.severity));
+        default:
+          return false;
+      }
+    case 'tags':
+      return field !== '' && anyRequirement((r) => nonEmptyValue(r.tags[field]));
+    case 'descriptions':
+      return field !== '' && anyRequirement((r) => r.descriptions.some((d) => d.label === field && d.data !== ''));
+    case 'refs':
+      return field === '' && anyRequirement((r) => (r.refs ?? []).length > 0);
+    case 'passthrough':
+      return field !== '' && nonEmptyValue(b.extensions?.passthrough?.[field]);
+    default:
+      return false;
+  }
+}
+
+type BaselineLoader = (fixture: string) => Promise<ArrivalBaseline>;
+
+// The second half of the completeness test: every mapped row names a fixture,
+// that fixture converts, and every target of the row arrives non-empty. Rows
+// marked "none: <reason>" come back as skipped so the test lists them by name
+// instead of passing them silently.
+async function arrivalProblems(
+  allow: CoverageAllowlist,
+  load: BaselineLoader
+): Promise<{ problems: string[]; skipped: string[] }> {
+  const problems: string[] = [];
+  const skipped: string[] = [];
+  for (const section of [allow.paths, allow.vendor]) {
+    for (const key of sortedKeys(section)) {
+      const row = section[key]!;
+      const fixture = row.fixture ?? '';
+      if (row.target.includes('skip')) {
+        if (fixture !== '') {
+          problems.push(`skip row names a fixture: ${key}`);
+        }
+        continue;
+      }
+      if (fixture === '') {
+        problems.push(`mapped row without a fixture: ${key}`);
+        continue;
+      }
+      if (fixture.startsWith('none:')) {
+        const reason = fixture.slice('none:'.length).trim();
+        if (reason === '') {
+          problems.push(`fixture: none without a reason: ${key}`);
+        } else {
+          skipped.push(`${key}: ${reason}`);
+        }
+        continue;
+      }
+      let baseline: ArrivalBaseline;
+      try {
+        baseline = await load(fixture);
+      } catch (err) {
+        problems.push(`fixture ${fixture} for ${key}: ${err instanceof Error ? err.message : String(err)}`);
+        continue;
+      }
+      for (const target of row.target) {
+        if (!targetArrives(baseline, target)) {
+          problems.push(`target ${target} does not arrive from ${fixture}: ${key}`);
+        }
+      }
+    }
+  }
+  return { problems, skipped };
 }
 
 function rowsOf(...pairs: string[]): Record<string, CoverageRow> {
@@ -509,10 +661,23 @@ describe('xccdf coverage', () => {
     ]);
   });
 
-  it('a subtree row covers its descendants and nothing beside them', () => {
+  // An exact row inside a subtree row would fall to the subtree silently if
+  // deleted, so the pair is refused: split the subtree instead.
+  it('names an exact row shadowed by a subtree row', () => {
+    const walked = ['A/b', 'A/b/c', 'A/b/d'];
+    const allow = { paths: rowsOf('A/b', 'skip', 'A/b/**', 'skip', 'A/b/c', 'tags.x'), vendor: {} };
+    expect(coverageProblems(walked, allow)).toEqual(['exact row shadowed by subtree row A/b/**: A/b/c']);
+  });
+
+  // A subtree row covers the paths below its root, never the root itself, so
+  // deleting the root's own row is always caught.
+  it('a subtree row covers its descendants only', () => {
     const walked = ['A/b', 'A/b/c', 'A/b/c/@d', 'A/bx'];
     const problems = coverageProblems(walked, { paths: rowsOf('A/b/**', 'skip'), vendor: {} });
-    expect(problems).toEqual(['schema path not in the allowlist: A/bx']);
+    expect(problems).toEqual([
+      'schema path not in the allowlist: A/b',
+      'schema path not in the allowlist: A/bx',
+    ]);
   });
 
   it('a skip row without a reason fails', () => {
@@ -553,6 +718,90 @@ describe('xccdf coverage', () => {
       'vendor path is schema-defined and belongs in paths: Rule/ident',
       'vendor selector on a path no schema defines: Rule/identifier[@system=cce]',
     ]);
+  });
+
+  it('every mapped field arrives from its fixture', async () => {
+    const baselines = new Map<string, HDFBaseline>();
+    const load = async (fixture: string): Promise<HDFBaseline> => {
+      const cached = baselines.get(fixture);
+      if (cached) {
+        return cached;
+      }
+      const input = readFileSync(join(__dirname, '..', 'fixtures', 'input', fixture), 'utf-8');
+      const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(input)) as HDFBaseline;
+      baselines.set(fixture, baseline);
+      return baseline;
+    };
+    const { problems, skipped } = await arrivalProblems(loadCoverageAllowlist(), load);
+    console.log(`${skipped.length} rows skipped (fixture: none):\n${skipped.join('\n')}`);
+    expect(problems, `mapped fields that do not arrive:\n${problems.join('\n')}`).toEqual([]);
+  });
+
+  it('names a row whose target does not arrive', async () => {
+    const filled: ArrivalBaseline = { name: 'n', requirements: [{ id: 'r', impact: 0.5, descriptions: [], tags: { cci: ['CCI-000001'] } }] };
+    const load = (fixture: string): Promise<ArrivalBaseline> =>
+      fixture === 'x.xml' ? Promise.resolve(filled) : Promise.reject(new Error(`no fixture ${fixture}`));
+    const { problems, skipped } = await arrivalProblems({
+      paths: {
+        A: { target: ['tags.cci'], fixture: 'x.xml' },
+        B: { target: ['tags.cce'], fixture: 'x.xml' },
+        C: { target: ['skip'], reason: 'because' },
+        D: { target: ['tags.cci'] },
+        E: { target: ['tags.cci'], fixture: 'none: no fixture carries it' },
+        F: { target: ['tags.cci'], fixture: 'none:' },
+        G: { target: ['tags.cci'], fixture: 'missing.xml' },
+        H: { target: ['skip'], reason: 'because', fixture: 'x.xml' },
+      },
+      vendor: {},
+    }, load);
+    expect(problems).toEqual([
+      'target tags.cce does not arrive from x.xml: B',
+      'mapped row without a fixture: D',
+      'fixture: none without a reason: F',
+      'fixture missing.xml for G: no fixture missing.xml',
+      'skip row names a fixture: H',
+    ]);
+    expect(skipped).toEqual(['E: no fixture carries it']);
+  });
+
+  // Every target form the allowlist admits has an arrival rule, and each rule
+  // is false on an empty Baseline and true on one that carries the value.
+  it('targetArrives covers every target kind', () => {
+    const full: ArrivalBaseline = {
+      name: 'n', title: 't', version: 't', summary: 't',
+      groups: [{ id: 'g', title: 't', requirements: ['r'] }],
+      requirements: [{
+        id: 'r', title: 't', impact: 0.7, severity: Severity.High,
+        descriptions: [{ label: 'check', data: 'c' }],
+        refs: [{ url: 'https://example.invalid' }],
+        tags: { cci: ['CCI-000001'], rid: 'SV-1', documentable: false, empty: '', none: [] },
+      }],
+      extensions: { passthrough: { releaseInfo: 'Release: 9', blank: '' } },
+    };
+    const empty: ArrivalBaseline = { name: '', requirements: [] };
+    // One requirement and one group with every field blank: present, not arrived.
+    const blank: ArrivalBaseline = {
+      name: '',
+      groups: [{ id: '', requirements: [] }],
+      requirements: [{ id: '', impact: 0, descriptions: [{ label: 'check', data: '' }], tags: { cci: [] } }],
+      extensions: { passthrough: { releaseInfo: '' } },
+    };
+    for (const target of [
+      'document.name', 'document.title', 'document.version', 'document.summary',
+      'requirements', 'groups', 'groups.id', 'groups.title',
+      'requirement.id', 'requirement.title', 'requirement.impact', 'requirement.severity',
+      'tags.cci', 'tags.rid', 'tags.documentable', 'descriptions.check', 'refs', 'passthrough.releaseInfo',
+    ]) {
+      expect(COVERAGE_TARGET_FORM.test(target), target).toBe(true);
+      expect(targetArrives(full, target), `${target} on a full Baseline`).toBe(true);
+      expect(targetArrives(empty, target), `${target} on an empty Baseline`).toBe(false);
+      if (target !== 'requirements' && target !== 'groups') {
+        expect(targetArrives(blank, target), `${target} on a blank Baseline`).toBe(false);
+      }
+    }
+    for (const target of ['tags.empty', 'tags.none', 'passthrough.blank', 'descriptions.fix', 'groups.weight', 'document.id', 'requirement.weight', 'tag.cci']) {
+      expect(targetArrives(full, target), target).toBe(false);
+    }
   });
 
   it('target accepts a string or a list, nothing else', () => {

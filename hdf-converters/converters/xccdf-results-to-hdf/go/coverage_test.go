@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // Completeness of the benchmark path against the XCCDF schemas: every element
@@ -276,7 +278,7 @@ type coverageSchemaPaths struct {
 }
 
 // coverageAllowlist is fixtures/xccdf-coverage.json: paths keyed in the
-// walker's output form (a key ending in /** covers the whole subtree), and
+// walker's output form (a key ending in /** covers the paths below it), and
 // vendor rows for content the schemas leave opaque, keyed by a schema path
 // extended with the vendor's own elements or a [@attr=value] selector.
 type coverageAllowlist struct {
@@ -337,7 +339,8 @@ func coverageProblems(walked []string, allow coverageAllowlist) []string {
 			subtrees = append(subtrees, prefix)
 		}
 	}
-	under := func(p, prefix string) bool { return p == prefix || strings.HasPrefix(p, prefix+"/") }
+	sort.Strings(subtrees)
+	under := func(p, prefix string) bool { return strings.HasPrefix(p, prefix+"/") }
 
 	var problems []string
 	for _, p := range walked {
@@ -367,8 +370,15 @@ func coverageProblems(walked []string, allow coverageAllowlist) []string {
 			if !defined {
 				problems = append(problems, "allowlist subtree defined by no schema: "+key)
 			}
-		} else if !walkedSet[key] {
+			continue
+		}
+		if !walkedSet[key] {
 			problems = append(problems, "allowlist path defined by no schema: "+key)
+		}
+		for _, prefix := range subtrees {
+			if under(key, prefix) {
+				problems = append(problems, "exact row shadowed by subtree row "+prefix+"/**: "+key)
+			}
 		}
 	}
 	for _, key := range sortedCoverageKeys(allow.Vendor) {
@@ -418,6 +428,153 @@ func coverageProblems(walked []string, allow coverageAllowlist) []string {
 	return problems
 }
 
+// nonEmptyValue is "non-empty" for a tag or passthrough value: a string with
+// text, a list or map with members, or a bool or number, which is present by
+// being there. An unexpected type is not arrived, so it fails visibly.
+func nonEmptyValue(v any) bool {
+	switch x := v.(type) {
+	case string:
+		return x != ""
+	case []string:
+		return len(x) > 0
+	case []any:
+		return len(x) > 0
+	case []map[string]any:
+		return len(x) > 0
+	case map[string]any:
+		return len(x) > 0
+	case bool, float64, int:
+		return true
+	default:
+		return false
+	}
+}
+
+func nonEmptyPtr(s *string) bool {
+	return s != nil && *s != ""
+}
+
+func anyRequirement(b *hdf.HDFBaseline, holds func(r *hdf.BaselineRequirement) bool) bool {
+	for i := range b.Requirements {
+		if holds(&b.Requirements[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+// targetArrives reports whether the Baseline carries a non-empty value at a
+// coverage target. The converter's output decides, never the input. Impact is
+// numeric and present by schema, so it counts as arrived when above zero.
+func targetArrives(b *hdf.HDFBaseline, target string) bool {
+	section, field, _ := strings.Cut(target, ".")
+	switch section {
+	case "requirements":
+		return field == "" && len(b.Requirements) > 0
+	case "groups":
+		switch field {
+		case "":
+			return len(b.Groups) > 0
+		case "id":
+			for _, g := range b.Groups {
+				if g.ID != "" {
+					return true
+				}
+			}
+		case "title":
+			for _, g := range b.Groups {
+				if nonEmptyPtr(g.Title) {
+					return true
+				}
+			}
+		}
+		return false
+	case "document":
+		switch field {
+		case "name":
+			return b.Name != ""
+		case "title":
+			return nonEmptyPtr(b.Title)
+		case "version":
+			return nonEmptyPtr(b.Version)
+		case "summary":
+			return nonEmptyPtr(b.Summary)
+		}
+		return false
+	case "requirement":
+		switch field {
+		case "id":
+			return anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return r.ID != "" })
+		case "title":
+			return anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return nonEmptyPtr(r.Title) })
+		case "impact":
+			return anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return r.Impact > 0 })
+		case "severity":
+			return anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return r.Severity != nil && *r.Severity != "" })
+		}
+		return false
+	case "tags":
+		return field != "" && anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return nonEmptyValue(r.Tags[field]) })
+	case "descriptions":
+		return field != "" && anyRequirement(b, func(r *hdf.BaselineRequirement) bool {
+			for _, d := range r.Descriptions {
+				if d.Label == field && d.Data != "" {
+					return true
+				}
+			}
+			return false
+		})
+	case "refs":
+		return field == "" && anyRequirement(b, func(r *hdf.BaselineRequirement) bool { return len(r.Refs) > 0 })
+	case "passthrough":
+		return field != "" && b.Extensions != nil && nonEmptyValue(b.Extensions.Passthrough[field])
+	}
+	return false
+}
+
+type baselineLoader func(fixture string) (*hdf.HDFBaseline, error)
+
+// arrivalProblems is the second half of the completeness test: every mapped
+// row names a fixture, that fixture converts, and every target of the row
+// arrives non-empty. Rows marked "none: <reason>" are returned as skipped so
+// the test lists them by name instead of passing them silently.
+func arrivalProblems(allow coverageAllowlist, load baselineLoader) (problems, skipped []string) {
+	for _, section := range []map[string]coverageRow{allow.Paths, allow.Vendor} {
+		for _, key := range sortedCoverageKeys(section) {
+			row := section[key]
+			if slices.Contains(row.Target, "skip") {
+				if row.Fixture != "" {
+					problems = append(problems, "skip row names a fixture: "+key)
+				}
+				continue
+			}
+			reason, isNone := strings.CutPrefix(row.Fixture, "none:")
+			switch {
+			case row.Fixture == "":
+				problems = append(problems, "mapped row without a fixture: "+key)
+			case isNone:
+				if reason = strings.TrimSpace(reason); reason == "" {
+					problems = append(problems, "fixture: none without a reason: "+key)
+				} else {
+					skipped = append(skipped, key+": "+reason)
+				}
+			default:
+				b, err := load(row.Fixture)
+				if err != nil {
+					problems = append(problems, fmt.Sprintf("fixture %s for %s: %v", row.Fixture, key, err))
+					continue
+				}
+				for _, target := range row.Target {
+					if !targetArrives(b, target) {
+						problems = append(problems, fmt.Sprintf("target %s does not arrive from %s: %s", target, row.Fixture, key))
+					}
+				}
+			}
+		}
+	}
+	return problems, skipped
+}
+
 func rowsOf(pairs ...string) map[string]coverageRow {
 	rows := map[string]coverageRow{}
 	for i := 0; i+1 < len(pairs); i += 2 {
@@ -464,10 +621,23 @@ func TestXccdfCoverage_AllowlistPathNoSchemaDefinesIsNamed(t *testing.T) {
 	}, problems)
 }
 
-func TestXccdfCoverage_SubtreeRowCoversDescendants(t *testing.T) {
+// An exact row inside a subtree row would fall to the subtree silently if
+// deleted, so the pair is refused: split the subtree instead.
+func TestXccdfCoverage_ExactRowUnderSubtreeIsNamed(t *testing.T) {
+	walked := []string{"A/b", "A/b/c", "A/b/d"}
+	allow := coverageAllowlist{Paths: rowsOf("A/b", "skip", "A/b/**", "skip", "A/b/c", "tags.x")}
+	require.Equal(t, []string{"exact row shadowed by subtree row A/b/**: A/b/c"}, coverageProblems(walked, allow))
+}
+
+// A subtree row covers the paths below its root, never the root itself, so
+// deleting the root's own row is always caught.
+func TestXccdfCoverage_SubtreeRowCoversDescendantsOnly(t *testing.T) {
 	walked := []string{"A/b", "A/b/c", "A/b/c/@d", "A/bx"}
 	problems := coverageProblems(walked, coverageAllowlist{Paths: rowsOf("A/b/**", "skip")})
-	require.Equal(t, []string{"schema path not in the allowlist: A/bx"}, problems)
+	require.Equal(t, []string{
+		"schema path not in the allowlist: A/b",
+		"schema path not in the allowlist: A/bx",
+	}, problems)
 }
 
 func TestXccdfCoverage_SkipRowWithoutReasonFails(t *testing.T) {
@@ -507,6 +677,100 @@ func TestXccdfCoverage_VendorRowsExtendSchemaPaths(t *testing.T) {
 		"vendor path is schema-defined and belongs in paths: Rule/ident",
 		"vendor selector on a path no schema defines: Rule/identifier[@system=cce]",
 	}, coverageProblems(walked, allow))
+}
+
+func TestXccdfCoverage_MappedFieldsArrive(t *testing.T) {
+	baselines := map[string]*hdf.HDFBaseline{}
+	load := func(fixture string) (*hdf.HDFBaseline, error) {
+		if b, ok := baselines[fixture]; ok {
+			return b, nil
+		}
+		data, err := os.ReadFile(filepath.Join(fixtureDir(), fixture))
+		if err != nil {
+			return nil, err
+		}
+		b, err := ConvertXccdfBenchmarkToHDF(data, converterVersion)
+		if err != nil {
+			return nil, err
+		}
+		baselines[fixture] = b
+		return b, nil
+	}
+	problems, skipped := arrivalProblems(loadCoverageAllowlist(t), load)
+	t.Logf("%d rows skipped (fixture: none):\n%s", len(skipped), strings.Join(skipped, "\n"))
+	require.Empty(t, problems, "mapped fields that do not arrive:\n%s", strings.Join(problems, "\n"))
+}
+
+func TestXccdfCoverage_UnfilledTargetIsNamed(t *testing.T) {
+	filled := &hdf.HDFBaseline{Requirements: []hdf.BaselineRequirement{{Tags: map[string]any{"cci": []string{"CCI-000001"}}}}}
+	load := func(fixture string) (*hdf.HDFBaseline, error) {
+		if fixture != "x.xml" {
+			return nil, fmt.Errorf("no fixture %s", fixture)
+		}
+		return filled, nil
+	}
+	allow := coverageAllowlist{
+		Paths: map[string]coverageRow{
+			"A": {Target: coverageTargets{"tags.cci"}, Fixture: "x.xml"},
+			"B": {Target: coverageTargets{"tags.cce"}, Fixture: "x.xml"},
+			"C": {Target: coverageTargets{"skip"}, Reason: "because"},
+			"D": {Target: coverageTargets{"tags.cci"}},
+			"E": {Target: coverageTargets{"tags.cci"}, Fixture: "none: no fixture carries it"},
+			"F": {Target: coverageTargets{"tags.cci"}, Fixture: "none:"},
+			"G": {Target: coverageTargets{"tags.cci"}, Fixture: "missing.xml"},
+			"H": {Target: coverageTargets{"skip"}, Reason: "because", Fixture: "x.xml"},
+		},
+	}
+	problems, skipped := arrivalProblems(allow, load)
+	require.Equal(t, []string{
+		"target tags.cce does not arrive from x.xml: B",
+		"mapped row without a fixture: D",
+		"fixture: none without a reason: F",
+		"fixture missing.xml for G: no fixture missing.xml",
+		"skip row names a fixture: H",
+	}, problems)
+	require.Equal(t, []string{"E: no fixture carries it"}, skipped)
+}
+
+// Every target form the allowlist admits has an arrival rule, and each rule
+// is false on an empty Baseline and true on one that carries the value.
+func TestXccdfCoverage_TargetArrivesCoversEveryTargetKind(t *testing.T) {
+	title := "t"
+	severity := hdf.SeverityHigh
+	full := &hdf.HDFBaseline{
+		Name: "n", Title: &title, Version: &title, Summary: &title,
+		Groups: []hdf.RequirementGroup{{ID: "g", Title: &title, Requirements: []string{"r"}}},
+		Requirements: []hdf.BaselineRequirement{{
+			ID: "r", Title: &title, Impact: 0.7, Severity: &severity,
+			Descriptions: []hdf.Description{{Label: "check", Data: "c"}},
+			Refs:         []hdf.Reference{{URL: &title}},
+			Tags:         map[string]any{"cci": []string{"CCI-000001"}, "rid": "SV-1", "documentable": false, "empty": "", "none": []string{}},
+		}},
+		Extensions: &hdf.Extensions{Passthrough: map[string]any{"releaseInfo": "Release: 9", "blank": ""}},
+	}
+	empty := &hdf.HDFBaseline{}
+	// One requirement and one group with every field blank: present, not arrived.
+	blank := &hdf.HDFBaseline{
+		Groups:       []hdf.RequirementGroup{{}},
+		Requirements: []hdf.BaselineRequirement{{Descriptions: []hdf.Description{{Label: "check", Data: ""}}, Tags: map[string]any{"cci": []string{}}}},
+		Extensions:   &hdf.Extensions{Passthrough: map[string]any{"releaseInfo": ""}},
+	}
+	for _, target := range []string{
+		"document.name", "document.title", "document.version", "document.summary",
+		"requirements", "groups", "groups.id", "groups.title",
+		"requirement.id", "requirement.title", "requirement.impact", "requirement.severity",
+		"tags.cci", "tags.rid", "tags.documentable", "descriptions.check", "refs", "passthrough.releaseInfo",
+	} {
+		require.True(t, coverageTargetForm.MatchString(target), target)
+		require.True(t, targetArrives(full, target), "%s on a full Baseline", target)
+		require.False(t, targetArrives(empty, target), "%s on an empty Baseline", target)
+		if target != "requirements" && target != "groups" {
+			require.False(t, targetArrives(blank, target), "%s on a blank Baseline", target)
+		}
+	}
+	for _, target := range []string{"tags.empty", "tags.none", "passthrough.blank", "descriptions.fix", "groups.weight", "document.id", "requirement.weight", "tag.cci"} {
+		require.False(t, targetArrives(full, target), target)
+	}
 }
 
 func TestXccdfCoverage_TargetAcceptsStringOrList(t *testing.T) {
