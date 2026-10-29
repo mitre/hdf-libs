@@ -41,16 +41,58 @@ func isXccdfNS(ns string) bool {
 
 // Benchmark is the root element of an XCCDF document.
 type Benchmark struct {
-	XMLName     xml.Name   `xml:"Benchmark"`
-	ID          string     `xml:"id,attr"`
-	Status      string     `xml:"status"`
-	Title       string     `xml:"title"`
-	Description Prose      `xml:"description"`
-	Version     string     `xml:"version"`
-	Platforms   []Platform `xml:"platform"`
-	Groups      []Group    `xml:"Group"`
-	Rules       []Rule     `xml:"Rule"`
-	TestResult  TestResult `xml:"TestResult"`
+	XMLName     xml.Name             `xml:"Benchmark"`
+	ID          string               `xml:"id,attr"`
+	Statuses    []BenchmarkStatus    `xml:"status"`
+	Title       string               `xml:"title"`
+	Description Prose                `xml:"description"`
+	Notices     []Notice             `xml:"notice"`
+	References  []BenchmarkReference `xml:"reference"`
+	PlainTexts  []PlainText          `xml:"plain-text"`
+	Version     string               `xml:"version"`
+	Platforms   []Platform           `xml:"platform"`
+	Profiles    []Profile            `xml:"Profile"`
+	Groups      []Group              `xml:"Group"`
+	Rules       []Rule               `xml:"Rule"`
+	TestResult  TestResult           `xml:"TestResult"`
+}
+
+// BenchmarkStatus is the benchmark's XCCDF status with its date.
+type BenchmarkStatus struct {
+	Date  string `xml:"date,attr"`
+	Value string `xml:",chardata"`
+}
+
+// Notice is a benchmark notice: prose (htmlTextWithSubType) with an id.
+type Notice struct {
+	ID    string `xml:"id,attr"`
+	Inner string `xml:",innerxml"`
+}
+
+// BenchmarkReference is a benchmark-level reference with its Dublin Core
+// publisher and source.
+type BenchmarkReference struct {
+	Publishers []string `xml:"publisher"`
+	Sources    []string `xml:"source"`
+}
+
+// PlainText is a benchmark plain-text element, selected by id.
+type PlainText struct {
+	ID   string `xml:"id,attr"`
+	Text string `xml:",chardata"`
+}
+
+// Profile is a benchmark Profile with the items it selects.
+type Profile struct {
+	ID      string          `xml:"id,attr"`
+	Titles  []string        `xml:"title"`
+	Selects []ProfileSelect `xml:"select"`
+}
+
+// ProfileSelect is one Profile select; @selected defaults to true in XCCDF.
+type ProfileSelect struct {
+	IDRef    string `xml:"idref,attr"`
+	Selected string `xml:"selected,attr"`
 }
 
 // Platform represents an XCCDF platform element.
@@ -63,10 +105,11 @@ type Platform struct {
 // bound to a single Rule silently drops every rule after the first, and a Group
 // without nested Groups drops whole subtrees.
 type Group struct {
-	ID     string  `xml:"id,attr"`
-	Title  string  `xml:"title"`
-	Rules  []Rule  `xml:"Rule"`
-	Groups []Group `xml:"Group"`
+	ID       string  `xml:"id,attr"`
+	Selected string  `xml:"selected,attr"`
+	Title    string  `xml:"title"`
+	Rules    []Rule  `xml:"Rule"`
+	Groups   []Group `xml:"Group"`
 }
 
 // groupedRule pairs a rule with the Group it was found in, at any depth.
@@ -926,6 +969,189 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 // Benchmark-to-Baseline conversion
 // ---------------------------------------------------------------------------
 
+// benchmarkPassthrough gathers the benchmark-level facts the Baseline has no
+// field for, flat under extensions.passthrough with the keys the CKL path
+// uses. A missing or empty source leaves its key out.
+func benchmarkPassthrough(b *Benchmark) map[string]any {
+	ext := map[string]any{}
+	if info := b.plainText("release-info"); info != "" {
+		ext["releaseInfo"] = info
+		if release, date, ok := parseReleaseInfo(info); ok {
+			ext["benchmarkRelease"] = release
+			ext["benchmarkDate"] = date
+		}
+	}
+	status := b.currentStatus()
+	setIfNotEmpty(ext, "benchmarkStatus", strings.TrimSpace(status.Value))
+	setIfNotEmpty(ext, "benchmarkStatusDate", status.Date)
+	var notices []map[string]any
+	for _, n := range b.Notices {
+		notices = append(notices, map[string]any{"id": n.ID, "text": hdfutil.StripHTML(proseFromInnerXML(n.Inner))})
+	}
+	if len(notices) > 0 {
+		ext["notices"] = notices
+	}
+	for _, r := range b.References {
+		if _, set := ext["publisher"]; !set {
+			setIfNotEmpty(ext, "publisher", firstOf(r.Publishers))
+		}
+		if _, set := ext["source"]; !set {
+			setIfNotEmpty(ext, "source", firstOf(r.Sources))
+		}
+	}
+	var platforms []string
+	for _, p := range b.Platforms {
+		if p.IDRef != "" {
+			platforms = append(platforms, p.IDRef)
+		}
+	}
+	if len(platforms) > 0 {
+		ext["platforms"] = platforms
+	}
+	var profiles []map[string]any
+	if len(b.Profiles) > 0 {
+		rules, groups := buildRuleMap(b), groupsByID(b)
+		for i := range b.Profiles {
+			p := &b.Profiles[i]
+			profiles = append(profiles, map[string]any{"id": p.ID, "selectedRuleIds": selectedRequirementIDs(p, rules, groups), "title": firstOf(p.Titles)})
+		}
+	}
+	if len(profiles) > 0 {
+		ext["profiles"] = profiles
+	}
+	setIfNotEmpty(ext, "generatorVersion", b.plainText("generator"))
+	setIfNotEmpty(ext, "conventionsVersion", b.plainText("conventionsVersion"))
+	return ext
+}
+
+// selectedRequirementIDs resolves a Profile's selects to requirement ids: a
+// Rule contributes its own id and a Group every rule it holds at any depth
+// unless that rule or an inner group is deselected (XCCDF: selecting a Group
+// selects its items): a group's rules, then its nested groups, each in
+// document order. Ids are revision-free and deduplicated; an idref naming
+// nothing is kept as given, revision-free.
+func selectedRequirementIDs(p *Profile, rules map[string]*Rule, groups map[string]*Group) []string {
+	var ids []string
+	for _, s := range p.Selects {
+		switch {
+		case isDeselected(s.Selected) || s.IDRef == "":
+		case rules[s.IDRef] != nil:
+			ids = append(ids, baselineRequirementID(rules[s.IDRef]))
+		case groups[s.IDRef] != nil:
+			ids = append(ids, groupRequirementIDs(groups[s.IDRef])...)
+		default:
+			ids = append(ids, extractRuleID(s.IDRef))
+		}
+	}
+	out := dedup(ids)
+	if out == nil {
+		out = []string{}
+	}
+	return out
+}
+
+func groupRequirementIDs(g *Group) []string {
+	var ids []string
+	for i := range g.Rules {
+		if !isDeselected(g.Rules[i].Selected) {
+			ids = append(ids, baselineRequirementID(&g.Rules[i]))
+		}
+	}
+	for i := range g.Groups {
+		if !isDeselected(g.Groups[i].Selected) {
+			ids = append(ids, groupRequirementIDs(&g.Groups[i])...)
+		}
+	}
+	return ids
+}
+
+// groupsByID indexes every Group at any depth by its id.
+func groupsByID(b *Benchmark) map[string]*Group {
+	index := map[string]*Group{}
+	var walk func(groups []Group)
+	walk = func(groups []Group) {
+		for i := range groups {
+			index[groups[i].ID] = &groups[i]
+			walk(groups[i].Groups)
+		}
+	}
+	walk(b.Groups)
+	return index
+}
+
+// baselineRequirementID is the requirement id a Rule becomes: the SV- id
+// without its revision suffix, or the rule's version when it has no id.
+func baselineRequirementID(rule *Rule) string {
+	if id := extractRuleID(rule.ID); id != "" {
+		return id
+	}
+	return rule.Version
+}
+
+// currentStatus is the benchmark's current status: the one with the latest
+// date, or the last in document order when none is dated, as XCCDF defines it.
+func (b *Benchmark) currentStatus() BenchmarkStatus {
+	var current BenchmarkStatus
+	for _, s := range b.Statuses {
+		if s.Date > current.Date || (s.Date == "" && current.Date == "") {
+			current = s
+		}
+	}
+	return current
+}
+
+// firstOf is the first of several same-named elements (a Profile may carry one
+// title per language, a reference one publisher per language); "" when none.
+func firstOf(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return items[0]
+}
+
+// isDeselected reads an XCCDF selected attribute as xs:boolean: "false" or
+// "0", trimmed; anything else, including absence, is selected.
+func isDeselected(selected string) bool {
+	switch strings.TrimSpace(selected) {
+	case "false", "0":
+		return true
+	}
+	return false
+}
+
+// plainText is the trimmed text of the plain-text element with the given id,
+// found by id and never by position, or "".
+func (b *Benchmark) plainText(id string) string {
+	for _, p := range b.PlainTexts {
+		if p.ID == id {
+			return strings.TrimSpace(p.Text)
+		}
+	}
+	return ""
+}
+
+// parseReleaseInfo splits DISA's "Release: 9 Benchmark Date: 01 Jul 2026" into
+// the release and the date, as stig-parser does. Anything else is not parsed
+// and the caller keeps the text verbatim.
+func parseReleaseInfo(info string) (release, date string, ok bool) {
+	before, after, found := strings.Cut(info, "Benchmark Date: ")
+	if !found {
+		return "", "", false
+	}
+	release = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(before), "Release:"))
+	date = strings.TrimSpace(after)
+	if release == "" || date == "" {
+		return "", "", false
+	}
+	return release, date, true
+}
+
+func setIfNotEmpty(m map[string]any, key, val string) {
+	if val != "" {
+		m[key] = val
+	}
+}
+
 func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
 	integrity := shared.InputIntegrity(input)
 
@@ -971,6 +1197,9 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 			Version: converterVersion,
 		},
 	}
+	if ext := benchmarkPassthrough(benchmark); len(ext) > 0 {
+		baseline.Extensions = &hdf.Extensions{Passthrough: ext}
+	}
 
 	return baseline, nil
 }
@@ -978,10 +1207,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 // convertRuleToBaselineRequirement converts a single XCCDF Rule into an HDF
 // BaselineRequirement for benchmark-to-baseline conversion.
 func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequirement {
-	id := extractRuleID(rule.ID)
-	if id == "" {
-		id = rule.Version
-	}
+	id := baselineRequirementID(rule)
 
 	severity := strings.ToLower(rule.Severity)
 	impact := hdfutil.SeverityToImpact(severity, 0.5)

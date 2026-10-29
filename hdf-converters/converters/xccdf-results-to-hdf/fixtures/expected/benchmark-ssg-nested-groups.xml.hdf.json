@@ -1,4 +1,24 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2026-06-01",
+      "platforms": [
+        "cpe:/o:redhat:enterprise_linux:8.0",
+        "cpe:/o:redhat:enterprise_linux:8.1",
+        "cpe:/o:redhat:enterprise_linux:8.10",
+        "cpe:/o:redhat:enterprise_linux:8.2",
+        "cpe:/o:redhat:enterprise_linux:8.3",
+        "cpe:/o:redhat:enterprise_linux:8.4",
+        "cpe:/o:redhat:enterprise_linux:8.5",
+        "cpe:/o:redhat:enterprise_linux:8.6",
+        "cpe:/o:redhat:enterprise_linux:8.7",
+        "cpe:/o:redhat:enterprise_linux:8.8",
+        "cpe:/o:redhat:enterprise_linux:8.9",
+        "cpe:/o:redhat:enterprise_linux:8"
+      ]
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"

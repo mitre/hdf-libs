@@ -10,6 +10,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	hdfvalidators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1747,4 +1748,186 @@ func TestConvertBenchmark_ProseEdges(t *testing.T) {
 		"rationale": "why it matters",
 		"warning":   "careful x",
 	}, descriptions)
+}
+
+// --- Benchmark-level facts under extensions.passthrough ---
+
+func baselineOf(t *testing.T, fixture string) *hdf.HDFBaseline {
+	t.Helper()
+	baseline, err := ConvertXccdfBenchmarkToHDF(loadFixture(t, fixture), converterVersion)
+	require.NoError(t, err)
+	return baseline
+}
+
+func passthroughOf(t *testing.T, baseline *hdf.HDFBaseline) map[string]any {
+	t.Helper()
+	require.NotNil(t, baseline.Extensions, "extensions missing")
+	return baseline.Extensions.Passthrough
+}
+
+// DISA's release-info, located by id and split on "Benchmark Date: ".
+func TestConvertBenchmark_ReleaseInfo(t *testing.T) {
+	ext := passthroughOf(t, baselineOf(t, "U_RHEL_9_STIG_V2R9_Manual-xccdf.xml"))
+	require.Equal(t, "Release: 9 Benchmark Date: 01 Jul 2026", ext["releaseInfo"])
+	require.Equal(t, "9", ext["benchmarkRelease"])
+	require.Equal(t, "01 Jul 2026", ext["benchmarkDate"])
+}
+
+func TestConvertBenchmark_PassthroughCarriesBenchmarkFacts(t *testing.T) {
+	disaBaseline := baselineOf(t, "U_RHEL_9_STIG_V2R9_Manual-xccdf.xml")
+	disa := passthroughOf(t, disaBaseline)
+	require.Equal(t, "accepted", disa["benchmarkStatus"])
+	require.Equal(t, "2026-05-20", disa["benchmarkStatusDate"])
+	require.Equal(t, "DISA", disa["publisher"])
+	require.Equal(t, "STIG.DOD.MIL", disa["source"])
+	require.Equal(t, "3.5.2", disa["generatorVersion"])
+	require.Equal(t, "1.10.0", disa["conventionsVersion"])
+	require.Equal(t, []map[string]any{{"id": "terms-of-use", "text": ""}}, disa["notices"])
+	require.NotContains(t, disa, "platforms")
+	disaProfiles, ok := disa["profiles"].([]map[string]any)
+	require.True(t, ok, "profiles: %T", disa["profiles"])
+	require.Len(t, disaProfiles, 9)
+	require.Equal(t, map[string]any{
+		"id":              "MAC-1_Classified",
+		"selectedRuleIds": []string{"SV-257777", "SV-257778", "SV-257779", "SV-257782", "SV-257784", "SV-257795", "SV-257949"},
+		"title":           "I - Mission Critical Classified",
+	}, disaProfiles[0])
+
+	cisBaseline := baselineOf(t, "CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml")
+	cis := passthroughOf(t, cisBaseline)
+	require.Equal(t, "draft", cis["benchmarkStatus"])
+	require.Equal(t, "2021-12-09", cis["benchmarkStatusDate"])
+	require.Equal(t, []string{"cpe:2.3:a:google:chrome:*:*:*:*:*:*:*"}, cis["platforms"])
+	for _, absent := range []string{"releaseInfo", "benchmarkRelease", "benchmarkDate", "publisher", "source", "generatorVersion", "conventionsVersion"} {
+		require.NotContains(t, cis, absent)
+	}
+	cisNotices, ok := cis["notices"].([]map[string]any)
+	require.True(t, ok, "notices: %T", cis["notices"])
+	require.Len(t, cisNotices, 1)
+	require.Equal(t, "terms-of-use", cisNotices[0]["id"])
+	noticeText, ok := cisNotices[0]["text"].(string)
+	require.True(t, ok, "notice text: %T", cisNotices[0]["text"])
+	require.True(t, strings.HasPrefix(noticeText, "BACKGROUND. The Center for Internet Security"), "notice text: %q", noticeText)
+	cisProfiles, ok := cis["profiles"].([]map[string]any)
+	require.True(t, ok)
+	require.Len(t, cisProfiles, 2)
+	require.Equal(t, "xccdf_org.cisecurity.benchmarks_profile_Level_1_L1_-_CorporateEnterprise_Environment_general_use", cisProfiles[0]["id"])
+	require.Equal(t, "Level 1 (L1) - Corporate/Enterprise Environment (general use)", cisProfiles[0]["title"])
+	level1, ok := cisProfiles[0]["selectedRuleIds"].([]string)
+	require.True(t, ok)
+	require.Len(t, level1, 15)
+	require.Equal(t, "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled", level1[0])
+	require.Len(t, cisProfiles[1]["selectedRuleIds"], 23)
+
+	for name, baseline := range map[string]*hdf.HDFBaseline{"disa": disaBaseline, "cis": cisBaseline} {
+		data, err := json.Marshal(baseline)
+		require.NoError(t, err)
+		result := hdfvalidators.ValidateBaseline(data)
+		require.True(t, result.Valid, "%s baseline with passthrough does not validate: %s", name, result.Error())
+	}
+}
+
+func TestParseReleaseInfo(t *testing.T) {
+	for _, c := range []struct {
+		in, release, date string
+		ok                bool
+	}{
+		{"Release: 9 Benchmark Date: 01 Jul 2026", "9", "01 Jul 2026", true},
+		{"Release: 3.5 Benchmark Date: 24 Jan 2020", "3.5", "24 Jan 2020", true},
+		{"Release: 12 Benchmark Date: 23 Oct 2020 ", "12", "23 Oct 2020", true},
+		{"Version 2 build 7", "", "", false},
+		{"Benchmark Date: 01 Jul 2026", "", "", false},
+		{"Release: 9 Benchmark Date: ", "", "", false},
+		{"", "", "", false},
+	} {
+		release, date, ok := parseReleaseInfo(c.in)
+		require.Equal(t, c.ok, ok, c.in)
+		require.Equal(t, c.release, release, c.in)
+		require.Equal(t, c.date, date, c.in)
+	}
+}
+
+// release-info is found by its id wherever it sits among the plain-text
+// elements, and unparseable text keeps releaseInfo verbatim with no parsed
+// keys and no error. Synthetic XML input, not a committed fixture.
+func TestConvertBenchmark_ReleaseInfoByIdAndUnparseable(t *testing.T) {
+	head := "<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.1\" id=\"x_benchmark\"><status date=\"2026-01-02\">accepted</status><title>t</title><description>d</description>"
+	tail := "<version>1</version><Group id=\"V-1\"><title>g</title><Rule id=\"SV-1r1_rule\" severity=\"low\"><version>X-1</version><title>r</title><description>d</description></Rule></Group></Benchmark>"
+
+	byID, err := ConvertXccdfBenchmarkToHDF([]byte(head+
+		"<plain-text id=\"other\">Release: 1 Benchmark Date: 01 Jan 2000</plain-text><plain-text id=\"generator\">3.5.2</plain-text><plain-text id=\"conventionsVersion\">1.10.0</plain-text><plain-text id=\"release-info\">Release: 4 Benchmark Date: 02 Feb 2026</plain-text>"+tail), converterVersion)
+	require.NoError(t, err)
+	ext := passthroughOf(t, byID)
+	require.Equal(t, "Release: 4 Benchmark Date: 02 Feb 2026", ext["releaseInfo"])
+	require.Equal(t, "4", ext["benchmarkRelease"])
+	require.Equal(t, "02 Feb 2026", ext["benchmarkDate"])
+	require.Equal(t, "3.5.2", ext["generatorVersion"])
+	require.Equal(t, "1.10.0", ext["conventionsVersion"])
+
+	unparseable, err := ConvertXccdfBenchmarkToHDF([]byte(head+"<plain-text id=\"release-info\">Version 2 build 7</plain-text>"+tail), converterVersion)
+	require.NoError(t, err)
+	ext = passthroughOf(t, unparseable)
+	require.Equal(t, "Version 2 build 7", ext["releaseInfo"])
+	require.NotContains(t, ext, "benchmarkRelease")
+	require.NotContains(t, ext, "benchmarkDate")
+
+	none, err := ConvertXccdfBenchmarkToHDF([]byte(head+tail), converterVersion)
+	require.NoError(t, err)
+	ext = passthroughOf(t, none)
+	for _, absent := range []string{"releaseInfo", "benchmarkRelease", "benchmarkDate", "generatorVersion", "conventionsVersion", "notices", "platforms", "profiles", "publisher", "source"} {
+		require.NotContains(t, ext, absent)
+	}
+	require.Equal(t, "accepted", ext["benchmarkStatus"])
+}
+
+// A Profile select names a Rule or a Group. A selected Group contributes every
+// rule it holds at any depth unless that rule or an inner group opts out
+// (XCCDF: selecting a Group selects its items), so selectedRuleIds always
+// holds requirement ids a consumer can join on. Duplicates collapse; an idref
+// naming nothing is kept as given. Synthetic XML input, not a committed fixture.
+func TestConvertBenchmark_ProfileSelectsResolveToRequirementIDs(t *testing.T) {
+	input := []byte("<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.1\" id=\"x_benchmark\"><status>accepted</status><title>t</title><description>d</description><version>1</version>" +
+		"<Profile id=\"p\"><title>P</title><select idref=\"g1\" selected=\"true\"/><select idref=\"SV-3r1_rule\" selected=\"true\"/><select idref=\"nothing\" selected=\"true\"/><select idref=\"SV-5r1_rule\" selected=\"false\"/></Profile>" +
+		"<Group id=\"g1\"><title>g1</title><Rule id=\"SV-1r1_rule\" severity=\"low\"><version>X-1</version><title>r1</title><description>d</description></Rule>" +
+		"<Group id=\"g2\"><title>g2</title><Rule id=\"SV-2r1_rule\" severity=\"low\" selected=\"false\"><version>X-2</version><title>r2</title><description>d</description></Rule><Rule id=\"SV-3r1_rule\" severity=\"low\"><version>X-3</version><title>r3</title><description>d</description></Rule></Group>" +
+		"<Group id=\"g3\" selected=\"false\"><title>g3</title><Rule id=\"SV-4r1_rule\" severity=\"low\"><version>X-4</version><title>r4</title><description>d</description></Rule></Group></Group>" +
+		"<Group id=\"g4\"><title>g4</title><Rule id=\"SV-5r1_rule\" severity=\"low\"><version>X-5</version><title>r5</title><description>d</description></Rule></Group></Benchmark>")
+	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+	profiles, ok := passthroughOf(t, baseline)["profiles"].([]map[string]any)
+	require.True(t, ok)
+	require.Len(t, profiles, 1)
+	require.Equal(t, []string{"SV-1", "SV-3", "nothing"}, profiles[0]["selectedRuleIds"])
+}
+
+// Edges no fixture carries, resolved alike in both languages: several status
+// elements (latest dated wins; undated, the last), attributed Dublin Core
+// children, first non-empty publisher and source, a Profile with several titles
+// (the first), selected="0", a dangling revisioned idref, a notice with markup.
+// Synthetic XML input, not a committed fixture.
+func TestConvertBenchmark_PassthroughEdges(t *testing.T) {
+	rule := "<Group id=\"g\"><title>g</title><Rule id=\"SV-1r1_rule\" severity=\"low\"><version>X-1</version><title>r1</title><description>d</description></Rule><Rule id=\"SV-2r1_rule\" severity=\"low\"><version>X-2</version><title>r2</title><description>d</description></Rule></Group></Benchmark>"
+	input := []byte("<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.1\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\" id=\"x_benchmark\">" +
+		"<status date=\"2021-02-02\">accepted</status><status date=\"2020-01-01\">draft</status><status>incomplete</status>" +
+		"<title>t</title><description>d</description>" +
+		"<notice id=\"n\"><xhtml:p>a <xhtml:b>b</xhtml:b></xhtml:p></notice>" +
+		"<reference href=\"https://example.invalid\"><dc:publisher></dc:publisher><dc:source>S1</dc:source></reference>" +
+		"<reference><dc:publisher xml:lang=\"en\">P2</dc:publisher><dc:publisher>P2b</dc:publisher><dc:source>S2</dc:source></reference>" +
+		"<reference><dc:publisher>P3</dc:publisher></reference>" +
+		"<version>1</version>" +
+		"<Profile id=\"p\"><title xml:lang=\"en\">First</title><title xml:lang=\"de\">Zweite</title><select idref=\"SV-1r1_rule\" selected=\"true\"/><select idref=\"SV-2r1_rule\" selected=\" 0 \"/><select idref=\"SV-9r2_rule\" selected=\"true\"/></Profile>" + rule)
+	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{
+		"benchmarkStatus":     "accepted",
+		"benchmarkStatusDate": "2021-02-02",
+		"notices":             []map[string]any{{"id": "n", "text": "a b"}},
+		"profiles":            []map[string]any{{"id": "p", "selectedRuleIds": []string{"SV-1", "SV-9"}, "title": "First"}},
+		"publisher":           "P2",
+		"source":              "S1",
+	}, passthroughOf(t, baseline))
+
+	undated, err := ConvertXccdfBenchmarkToHDF([]byte("<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.1\" id=\"x_benchmark\"><status>draft</status><status>accepted</status><title>t</title><description>d</description><version>1</version>"+rule), converterVersion)
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{"benchmarkStatus": "accepted"}, passthroughOf(t, undated))
 }

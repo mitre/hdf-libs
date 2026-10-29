@@ -1,4 +1,142 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "01 Jul 2026",
+      "benchmarkRelease": "9",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2026-05-20",
+      "conventionsVersion": "1.10.0",
+      "generatorVersion": "3.5.2",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 9 Benchmark Date: 01 Jul 2026",
+      "source": "STIG.DOD.MIL"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"

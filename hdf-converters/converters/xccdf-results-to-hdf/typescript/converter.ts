@@ -33,18 +33,47 @@ interface XccdfBenchmark {
 
 interface BenchmarkElement {
   id?: string;
+  status?: string | StatusElement | Array<string | StatusElement>;
   title?: string | TextElement;
   description?: string | TextElement;
+  notice?: Array<string | NoticeElement>;
+  reference?: BenchmarkReferenceElement[];
   version?: string | VersionElement;
+  platform?: BenchmarkPlatformElement[];
   Group?: GroupElement[];
   Rule?: RuleElement[];
   Profile?: ProfileElement[];
   TestResult?: TestResultElement;
-  'plain-text'?: PlainText | PlainText[];
+  'plain-text'?: PlainText[];
 }
 
 interface TextElement {
   '#text'?: string;
+}
+
+interface StatusElement {
+  '#text'?: string;
+  date?: string;
+}
+
+interface NoticeElement {
+  '#text'?: string;
+  id?: string;
+}
+
+interface BenchmarkReferenceElement {
+  href?: string;
+  publisher?: string | TextElement | Array<string | TextElement>;
+  source?: string | TextElement | Array<string | TextElement>;
+}
+
+interface BenchmarkPlatformElement {
+  idref?: string;
+}
+
+interface SelectElement {
+  idref?: string;
+  selected?: string;
 }
 
 interface VersionElement {
@@ -59,7 +88,8 @@ interface PlainText {
 
 interface ProfileElement {
   id?: string;
-  title?: string | TextElement;
+  title?: string | TextElement | Array<string | TextElement>;
+  select?: SelectElement[];
 }
 
 /**
@@ -69,6 +99,7 @@ interface ProfileElement {
  */
 interface GroupElement {
   id?: string;
+  selected?: string;
   title?: string | TextElement;
   Rule?: RuleElement[];
   Group?: GroupElement[];
@@ -123,6 +154,7 @@ function flattenGroups(groups: GroupElement[]): GroupedRule[] {
 
 interface RuleElement {
   id?: string;
+  selected?: string;
   severity?: string;
   title?: string | TextElement;
   description?: string | TextElement;
@@ -277,6 +309,9 @@ const ARRAY_TAGS = [
   'platform',
   'check-content',
   'reference',
+  'notice',
+  'plain-text',
+  'metadata',
   // ARF-specific array tags
   'report',
   'report-request',
@@ -344,7 +379,7 @@ function parseCpeVersion(testSystem: string | undefined): string {
 // Guide content carries its words inside XHTML children, and parsing those into
 // keyed objects loses the words and their order. The raw inner XML goes through
 // proseText, which sees the same bytes Go's decoder gives innerxml.
-const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtext'];
+const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtext', '*.notice'];
 
 // trimValues would strip each text node before the parser concatenates them, so
 // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
@@ -542,6 +577,182 @@ function calculateDuration(testResult: TestResultElement): number {
 // Benchmark-to-Baseline conversion
 // ---------------------------------------------------------------------------
 
+/**
+ * Splits DISA's "Release: 9 Benchmark Date: 01 Jul 2026" into the release and
+ * the date, as stig-parser does. Anything else is not parsed and the caller
+ * keeps the text verbatim.
+ */
+export function parseReleaseInfo(info: string): { release: string; date: string; ok: boolean } {
+  const marker = 'Benchmark Date: ';
+  const at = info.indexOf(marker);
+  if (at < 0) {
+    return { release: '', date: '', ok: false };
+  }
+  const release = info.slice(0, at).trim().replace(/^Release:/, '').trim();
+  const date = info.slice(at + marker.length).trim();
+  if (release === '' || date === '') {
+    return { release: '', date: '', ok: false };
+  }
+  return { release, date, ok: true };
+}
+
+// The benchmark's current status: the one with the latest date, or the last
+// in document order when none is dated, as XCCDF defines it.
+function currentStatus(benchmark: BenchmarkElement): { value: string; date: string } {
+  let current = { value: '', date: '' };
+  const statuses = Array.isArray(benchmark.status) ? benchmark.status : benchmark.status === undefined ? [] : [benchmark.status];
+  for (const s of statuses) {
+    const candidate = typeof s === 'string' ? { value: s, date: '' } : { value: s['#text'] ?? '', date: s.date ?? '' };
+    if (candidate.date > current.date || (candidate.date === '' && current.date === '')) {
+      current = candidate;
+    }
+  }
+  return { value: current.value.trim(), date: current.date };
+}
+
+// Reads an XCCDF selected attribute as xs:boolean: "false" or "0", trimmed;
+// anything else, including absence, is selected.
+function isDeselected(selected: string | undefined): boolean {
+  const value = (selected ?? '').trim();
+  return value === 'false' || value === '0';
+}
+
+// The trimmed text of the plain-text element with the given id, found by id
+// and never by position, or ''.
+function plainTextById(benchmark: BenchmarkElement, id: string): string {
+  return extractText((benchmark['plain-text'] ?? []).find((p) => p.id === id)).trim();
+}
+
+// The requirement id a Rule becomes: the SV- id without its revision suffix,
+// or the rule's version when it has no id.
+function baselineRequirementId(rule: RuleElement): string {
+  return extractRuleID(rule.id ?? '') || extractVersion(rule.version);
+}
+
+function groupsById(groups: GroupElement[], index = new Map<string, GroupElement>()): Map<string, GroupElement> {
+  for (const group of groups) {
+    if (group.id) {
+      index.set(group.id, group);
+    }
+    groupsById(group.Group ?? [], index);
+  }
+  return index;
+}
+
+function groupRequirementIds(group: GroupElement): string[] {
+  const ids: string[] = [];
+  for (const rule of group.Rule ?? []) {
+    if (!isDeselected(rule.selected)) {
+      ids.push(baselineRequirementId(rule));
+    }
+  }
+  for (const inner of group.Group ?? []) {
+    if (!isDeselected(inner.selected)) {
+      ids.push(...groupRequirementIds(inner));
+    }
+  }
+  return ids;
+}
+
+// Resolves a Profile's selects to requirement ids: a Rule contributes its own
+// id and a Group every rule it holds at any depth unless that rule or an inner
+// group is deselected (XCCDF: selecting a Group selects its items): a group's
+// rules, then its nested groups, each in document order. Ids are revision-free
+// and deduplicated; an idref naming nothing is kept as given, revision-free.
+function selectedRequirementIds(
+  profile: ProfileElement,
+  rules: Map<string, RuleElement>,
+  groups: Map<string, GroupElement>
+): string[] {
+  const ids: string[] = [];
+  for (const s of profile.select ?? []) {
+    const idref = s.idref ?? '';
+    if (isDeselected(s.selected) || idref === '') {
+      continue;
+    }
+    const rule = rules.get(idref);
+    const group = groups.get(idref);
+    if (rule) {
+      ids.push(baselineRequirementId(rule));
+    } else if (group) {
+      ids.push(...groupRequirementIds(group));
+    } else {
+      ids.push(extractRuleID(idref));
+    }
+  }
+  return [...new Set(ids)];
+}
+
+// The text of the first of several same-named elements (a Profile may carry
+// one title per language, a reference one publisher per language), or ''.
+function firstText(field: string | TextElement | Array<string | TextElement> | undefined): string {
+  return extractText(Array.isArray(field) ? field[0] : field);
+}
+
+function setIf(target: Record<string, unknown>, key: string, value: string): void {
+  if (value !== '') {
+    target[key] = value;
+  }
+}
+
+// Benchmark-level facts the Baseline has no field for, flat under
+// extensions.passthrough with the keys the CKL path uses, inserted in sorted
+// key order so the output matches Go's map serialisation byte for byte. A
+// missing or empty source leaves its key out.
+function benchmarkPassthrough(benchmark: BenchmarkElement): Record<string, unknown> {
+  const ext: Record<string, unknown> = {};
+  const info = plainTextById(benchmark, 'release-info');
+  const parsed = parseReleaseInfo(info);
+  const status = currentStatus(benchmark);
+  const notices = (benchmark.notice ?? []).map((n) => ({
+    id: typeof n === 'string' ? '' : (n.id ?? ''),
+    text: stripHTML(proseText(n)),
+  }));
+  const references = benchmark.reference ?? [];
+  const publisher = references.map((r) => firstText(r.publisher)).find((v) => v !== '') ?? '';
+  const source = references.map((r) => firstText(r.source)).find((v) => v !== '') ?? '';
+  const platforms = (benchmark.platform ?? []).map((p) => p.idref ?? '').filter((v) => v !== '');
+  const rules = new Map<string, RuleElement>();
+  for (const { rule } of flattenGroups(benchmark.Group ?? [])) {
+    if (rule.id) {
+      rules.set(rule.id, rule);
+    }
+  }
+  for (const rule of benchmark.Rule ?? []) {
+    if (rule.id) {
+      rules.set(rule.id, rule);
+    }
+  }
+  const groups = groupsById(benchmark.Group ?? []);
+  const profiles = (benchmark.Profile ?? []).map((p) => ({
+    id: p.id ?? '',
+    selectedRuleIds: selectedRequirementIds(p, rules, groups),
+    title: firstText(p.title),
+  }));
+
+  if (parsed.ok) {
+    setIf(ext, 'benchmarkDate', parsed.date);
+    setIf(ext, 'benchmarkRelease', parsed.release);
+  }
+  setIf(ext, 'benchmarkStatus', status.value);
+  setIf(ext, 'benchmarkStatusDate', status.date);
+  setIf(ext, 'conventionsVersion', plainTextById(benchmark, 'conventionsVersion'));
+  setIf(ext, 'generatorVersion', plainTextById(benchmark, 'generator'));
+  if (notices.length > 0) {
+    ext['notices'] = notices;
+  }
+  if (platforms.length > 0) {
+    ext['platforms'] = platforms;
+  }
+  if (profiles.length > 0) {
+    ext['profiles'] = profiles;
+  }
+  setIf(ext, 'publisher', publisher);
+  setIf(ext, 'releaseInfo', info);
+  setIf(ext, 'source', source);
+  return ext;
+}
+
 async function convertBenchmarkToBaselineJson(
   benchmark: BenchmarkElement,
   rawInput: string,
@@ -594,6 +805,10 @@ async function convertBenchmarkToBaselineJson(
     groups,
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
   };
+  const ext = benchmarkPassthrough(benchmark);
+  if (Object.keys(ext).length > 0) {
+    baseline.extensions = { passthrough: ext };
+  }
 
   return serializeHdf(baseline);
 }
@@ -605,7 +820,7 @@ function ruleToBaselineRequirement(
   rule: RuleElement,
   group: GroupElement | undefined
 ): BaselineRequirement {
-  const id = extractRuleID(rule.id ?? '') || extractVersion(rule.version);
+  const id = baselineRequirementId(rule);
   // A title-less rule gets no title at all: an empty string is junk, and
   // synthesizing one from the id would invent data. Go omits it too.
   const title = extractText(rule.title) || undefined;

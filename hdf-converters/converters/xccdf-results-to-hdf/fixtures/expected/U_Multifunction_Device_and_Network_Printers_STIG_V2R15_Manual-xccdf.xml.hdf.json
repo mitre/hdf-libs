@@ -1,4 +1,248 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "30 Jan 2025",
+      "benchmarkRelease": "15",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2024-10-10",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7028",
+            "SV-7029",
+            "SV-106815"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7028",
+            "SV-7029",
+            "SV-106815"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7028",
+            "SV-7029",
+            "SV-106815"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-6999",
+            "SV-7001",
+            "SV-7002",
+            "SV-7003",
+            "SV-7004",
+            "SV-7005",
+            "SV-7009",
+            "SV-7015",
+            "SV-7019",
+            "SV-7021",
+            "SV-7022",
+            "SV-7023",
+            "SV-7024",
+            "SV-7025",
+            "SV-7026",
+            "SV-7027",
+            "SV-7028",
+            "SV-7029",
+            "SV-7030",
+            "SV-7031",
+            "SV-106815"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 15 Benchmark Date: 30 Jan 2025",
+      "source": "STIG.DOD.MIL"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"

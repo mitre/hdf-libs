@@ -1,4 +1,218 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "26 Oct 2018",
+      "benchmarkRelease": "12",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2018-09-19",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 12 Benchmark Date: 26 Oct 2018",
+      "source": "STIG.DOD.MIL"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"
