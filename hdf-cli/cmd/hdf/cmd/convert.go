@@ -641,7 +641,7 @@ func autoDetectFormat(data []byte, inputPath string) (format, version string, er
 			"Specify the format explicitly with --from <format>\n"+
 			"Run 'hdf convert --help' to see supported formats", inputPath)
 	}
-	format = registry.SourceNameFromFingerprintID(result.Fingerprint.ID)
+	format = registry.SourceNameFor(result.Fingerprint)
 	version = result.Version
 	printDebug("Auto-detected format: %s (confidence: %.0f%%)", format, result.Confidence*100)
 	if result.Version != "" {

@@ -31,6 +31,42 @@ SCAP Security Guide content by its own identifiers (`xccdf_org.ssgproject.conten
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
+### `CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml`
+Derived from `mitre/cis-bench` (https://github.com/mitre/cis-bench)
+`tests/fixtures/xccdf/official/cis/CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml`,
+read 2026-10-28 at commit `09949ed64c908cb0848a728717da96bac98a36bf` (the file
+last changed in `0450ef8ff637e6c49fd7869fd5a5cc9b9e67c2ec`, 2025-12-15).
+SHA-256 of the source as read: `b834988bbdebd243d22838e3fb5f9daf3df7ef785954717381d02263e78f7d0e`
+(460,152 bytes). Where cis-bench obtained it from CIS was not established
+by this search.
+
+Trimmed 2026-10-28 from 93 rules to 23. Each rule was classified by its level
+(selected by the Level 1 Profile, or by Level 2 only), `@role` (`full` /
+`unscored`), check form (a direct `check`, `complex-check` only, or neither)
+and whether it carries both CIS Controls v7 and v8 `ident`s; the first two
+rules in document order of each of the 12 resulting shapes were kept (two
+shapes have one rule), plus 2.3.2, the only rule whose `complex-check` nests
+further `complex-check`s. Kept, by recommendation number: 1.1.1, 1.2.1, 1.2.2,
+1.3, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.15, 1.26, 1.28, 2.2.2, 2.2.4, 2.3.2, 2.6.1,
+2.8.1, 2.10, 2.14, 2.17, 4.1.1, 4.4. Every kept rule carries `ident system="URL"`.
+Whole elements dropped: 43 `Rule`s; 8 `Group`s left with no kept rule, each
+with its subtree; 136 Benchmark-level `Value`s no kept rule's `check-export`
+references (48 kept); 127 Profile `select`s naming dropped rules (Level 1:
+72 to 15, Level 2: 93 to 23, so every kept rule keeps its Profile membership
+and no `select` names a missing rule); and the Benchmark's `xccdf:signature`,
+an XML-DSig signature over the original content that no longer verifies once
+anything is removed. The whitespace run before each dropped element went with
+it, so no blank lines are left; no string inside a kept element was edited.
+Result: 137,747 bytes, SHA-256
+`3f49e5c9558c629aa496b39cf2e74615d3dc038bf80c03c85d779d969d84eb88`.
+
+What the full file holds, for the fields the benchmark path will carry: 85
+`full` and 8 `unscored` rules; 59 rules with a direct `check`, 33 with only a
+`complex-check`, and one (1.26) with neither; one rule (2.3.2) nests
+`complex-check` inside `complex-check`; 40 rules carry both
+`http://cisecurity.org/20-cc/v7.0` and `.../v8.0` idents, 53 carry neither;
+all 93 carry `URL` idents; every rule has a `metadata` element.
+
 ### `empty.xml`
 Synthetic by construction: an empty or no-findings document used to
 exercise the nothing-to-convert path. Not sourced from anywhere.
@@ -46,6 +82,141 @@ No counterpart in either upstream checked. Introduced by this repository in
 `Development (#10)`, a commit that records no source. Origin not established by those searches;
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
+
+### `U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml`
+Byte-identical to DISA's Multifunction Device and Network Printers STIG,
+Version 2 Release 15, downloaded 2026-10-28 from DISA's STIG library:
+https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_Multifunction_Device_and_Network_Printers_V2R15_STIG.zip
+(server `Last-Modified: Tue, 28 Apr 2026 22:37:19 GMT`), SHA-256 of the zip as
+retrieved `5107dd51f918bceb5313ca701acb1b46ec72f4713c369917ec54e659e0df3f2a`.
+The fixture is the zip member
+`U_Multifunction_Device_and_Network_Printers_V2R15_Manual_STIG/U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml`,
+untrimmed (63,442 bytes, 22 rules), SHA-256
+`29c57d09dba64d633664215d72f63b05ead8e3def3ae1624beeabbe85600c01e`. Unlike
+the RHEL and SLES files it is pretty-printed: of its 791 CRLF line breaks, 704
+are whitespace between tags and 87 sit inside text content, all kept as
+published (`.gitattributes` marks DISA Manual XCCDF fixtures `-text`).
+
+It is here because it is the one STIG in DISA's current library found to fill
+any of the prose `description` sub-elements: across its 22 rules
+`PotentialImpacts` is non-empty in 3, `Responsibility` in 14 and `IAControls`
+in 10; `Documentable` is `false` in all 22; `FalsePositives`,
+`FalseNegatives`, `Mitigations`, `SeverityOverrideGuidance`,
+`ThirdPartyTools` and `MitigationControl` are empty in all 22. Severity: 11
+medium, 6 high, 5 low. One rule carries an `ident` (`http://iase.disa.mil/cci`);
+the other 21 carry none. Two Groups carry a `Rule` with the same id,
+`SV-7031r1_rule`, which the XCCDF 1.1.4 schema forbids (see Schema below).
+
+### `U_RHEL_9_STIG_V2R9_Manual-xccdf.xml`
+Derived from DISA's Red Hat Enterprise Linux 9 STIG, Version 2 Release 9,
+downloaded 2026-10-28 from DISA's STIG library:
+https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_RHEL_9_V2R9_STIG.zip
+(server `Last-Modified: Fri, 10 Jul 2026 14:47:26 GMT`), SHA-256 of the zip as
+retrieved `1875de2543d01695c5a346c51888cc336113e9199bfe6726d74a08de286ca1ae`.
+The fixture comes from the zip member
+`U_RHEL_9_V2R9_Manual_STIG/U_RHEL_9_STIG_V2R9_Manual-xccdf.xml`, SHA-256
+`c912407aa6a2f151979db8bf6d901a06116f1624bf60b19b3737febf73bba539`
+(1,397,150 bytes). There is no whitespace between tags; its line breaks all
+sit inside text content, and 49 of them are CRLF, all inside two rules:
+`V-257879` (44) and `V-257949` (5); the rest are LF.
+
+Trimmed 2026-10-28 from 445 rules to 7: the first two in document order for
+each severity V2R9 uses, plus `V-257949`, the one of the two CRLF-bearing
+rules with fewer line breaks. Kept Groups: `V-257777`, `V-257784` (high), `V-257778`,
+`V-257779` (medium; `V-257779` carries six CCIs), `V-257949` (medium, CRLF),
+`V-257782`, `V-257795` (low). Whole elements dropped: the other 438 `Group`s
+(each holds exactly one `Rule`; V2R9 nests no Groups) and the 3,942 Profile
+`select`s that name them, so each of the nine Profiles selects the seven kept
+Groups. Every Benchmark-level element (`status`, `title`, `description`,
+`notice`, `front-matter`, `rear-matter`, `reference`, the three
+`plain-text`s, `version`, the nine `Profile`s) is kept. Exactly the dropped
+elements' bytes were removed; no string inside a kept element was edited, and
+the five CRLF in `V-257949` are kept as published (`.gitattributes` marks DISA
+Manual XCCDF fixtures `-text`). Result: 27,143 bytes, SHA-256
+`9fc7cccff72b389c772d17e087010b7c767fe7f20b47fc4faad9fb594727278f`.
+
+What the full V2R9 file holds, checked across all 445 rules:
+
+- Severity: 402 medium, 28 high, 15 low. Every `Rule/@weight` is `10.0`; no
+  rule has `@role`.
+- `ident`: all 923 are `system="http://cyber.mil/cci"`. No rule carries a
+  legacy ident (`.../legacy`) or a CCE.
+- DISA `description` sub-elements: `VulnDiscussion` is non-empty in all 445.
+  `Documentable` is `false` in all 445. `FalsePositives`, `FalseNegatives`,
+  `Mitigations`, `SeverityOverrideGuidance`, `PotentialImpacts`,
+  `ThirdPartyTools`, `MitigationControl`, `Responsibility` and `IAControls`
+  are present and empty in all 445, so no rule in V2R9 fills any of these
+  nine.
+
+### `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml`
+Derived from DISA's SUSE Linux Enterprise Server 11 for System z STIG,
+Version 1 Release 12, a sunset STIG DISA still serves, downloaded 2026-10-28
+from DISA's STIG library:
+https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_SLES_V11_for_System_z_V1R12_STIG.zip
+(server `Last-Modified: Tue, 28 Apr 2026 22:37:13 GMT`), SHA-256 of the zip as
+retrieved `4a849e95ae5c5186500b20f145717aa69e7b5b3a74ec6d6b2eea25a0c71e7689`.
+The fixture comes from the zip member
+`U_SLES_V11_for_System_z_V1R12_Manual_STIG/U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml`,
+SHA-256 `be2322864d01478479f8dc9d81635779e9962042a8688ad05ec4c3ca80bece19`
+(1,400,348 bytes, 550 rules). There is no whitespace between tags; all 5,013
+line breaks inside text content are CRLF.
+
+It is here because it fills the prose `description` sub-elements that no
+current DISA STIG was found to fill. Across all 550 rules: `FalsePositives`
+is non-empty in 1, `Mitigations` in 2, `SeverityOverrideGuidance` in 4,
+`MitigationControl` in 2, `IAControls` in 2 and `Responsibility` in 549 (15
+rules carry more than one non-empty `Responsibility`); `Documentable` is
+`true` in 20 and `false` in 530; `FalseNegatives`, `PotentialImpacts` and
+`ThirdPartyTools` are empty in all 550. Severity: 460 medium, 24 high, 66 low.
+`ident` systems: `http://iase.disa.mil/cci` (566) and `http://cce.mitre.org`
+(65).
+
+Trimmed 2026-10-28 from 550 rules to 16: for each of these features, the
+first two rules in document order that have it — each severity, each filled
+sub-element, `Documentable` `true`, and more than one `Responsibility` (only
+one rule fills `FalsePositives`). Kept Groups: `V-756`, `V-760`, `V-770`,
+`V-774`, `V-781`, `V-794`, `V-801`, `V-808`, `V-833`, `V-846`, `V-867`,
+`V-4692`, `V-22411`, `V-24386`, `V-29236`, `V-34936`. Whole elements dropped:
+the other 534 `Group`s (each holds exactly one `Rule`; no Groups nest) and the
+4,789 Profile `select`s that name them; each Profile keeps exactly the
+`select`s it had for the kept Groups (the three `*_Public` Profiles select 15
+of them, as in the source). Every Benchmark-level element is kept. Exactly the
+dropped elements' bytes were removed; no string inside a kept element was
+edited, and its CRLF are kept as published (`.gitattributes` marks DISA
+Manual XCCDF fixtures `-text`). Result: 47,096 bytes, 170 CRLF, SHA-256
+`c9e132c2a59876850e3ced5f45189af160a63eeffb160fe7242ce70ffe1844b6`.
+
+Where the nine prose sub-elements are filled, across the three DISA fixtures:
+`FalsePositives`, `Mitigations`, `SeverityOverrideGuidance`,
+`MitigationControl` (SLES 11 System z); `PotentialImpacts` (Multifunction
+Device); `Responsibility`, `IAControls` (both). `FalseNegatives` and
+`ThirdPartyTools` are filled by none of them, nor by any other STIG release
+checked that DISA currently serves; they are filled in older sunset STIGs
+that are no longer at DISA's download path (Windows Server 2008 MS V6R46
+fills both; Windows 7 V1R32 fills `ThirdPartyTools`).
+
+## Fixture matrix (recorded 2026-10-28)
+
+An XCCDF-family document has a shape (what SCAP defines: benchmark,
+benchmark with results, standalone `TestResult`, ARF, source data stream,
+tailoring), a schema version (1.0, 1.1.x, 1.2) and a publisher dialect (what
+the XSD does not define: DISA STIG sub-elements and `release-info`, CIS
+`controls:` metadata and Level profiles, ComplianceAsCode/SSG nested Groups).
+One parser reads all of them; the dialect decides which extensions are
+present. The cells this directory covers, and the ones it does not:
+
+| shape \ dialect | DISA STIG | CIS | SSG |
+|---|---|---|---|
+| benchmark | RHEL 9 V2R9, SLES 11 System z, MFD V2R15 (all 1.1) | Chrome v2.1.0 (1.2) | `benchmark-ssg-nested-groups.xml` (1.2) |
+| benchmark with results | OpenSCAP and SCC runs of RHEL 7/8 (1.2 ids) | none | none |
+| ARF | `arf-minimal.xml` | none | none |
+| standalone `TestResult` | none | none | none |
+| source data stream | none (DISA SCAP benchmarks ship this way) | — | none (SSG `-ds.xml`) |
+| tailoring | none | none | none |
+
+The empty cells are not covered by any test here; the converter does not
+read standalone `TestResult`, source data streams or tailoring documents at
+all.
 
 ### `xccdf-results-openscap-rhel7.xml`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-openscap-rhel7.xml`.
@@ -85,6 +256,10 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `arf-minimal.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.3.5`; Benchmark `xccdf_com.example.www_benchmark_dummy` version 1.0.
 - `benchmark-minimal-1.1.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MS_Windows_Server_2022_STIG` version 2.
 - `benchmark-minimal-1.2.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MS_Windows_Server_2022_STIG` version 2.
+- `CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml` (read 2026-10-28) — XCCDF 1.2 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.cisecurity.benchmarks_benchmark_2.1.0_CIS_Google_Chrome_Benchmark` version 2.1.0, `status` `draft` dated 2021-12-09, `@style` `SCAP_1.2`. The file carries no generator field, so the tool that produced it is not determinable from file content.
+- `U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MULTI-FUNCTION_DEVICE` version 2, `plain-text id="release-info"` `Release: 15 Benchmark Date: 30 Jan 2025`, `status` `accepted` dated 2024-10-10. The file carries no generator field, so the tool that produced it is not determinable from file content.
+- `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `SuSe_zLinux` version 1, `plain-text id="release-info"` `Release: 12 Benchmark Date: 26 Oct 2018`, `status` `accepted` dated 2018-09-19. The file carries no generator field, so the tool that produced it is not determinable from file content.
+- `U_RHEL_9_STIG_V2R9_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `RHEL_9_STIG` version 2, `plain-text id="release-info"` `Release: 9 Benchmark Date: 01 Jul 2026`, `status` `accepted` dated 2026-05-20; producer from `plain-text id="generator"`: `3.5.2` (no tool name given), `plain-text id="conventionsVersion"`: `1.10.0`.
 - `benchmark-ssg-nested-groups.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.ssgproject.content_benchmark_RHEL-8` version 0.1.81.
 - `empty.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
 - `minimal.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
@@ -97,3 +272,31 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 XCCDF 1.2 has an XSD and it is vendored at `hdf-to-xccdf/schemas/xccdf_1.2.xsd` (with the CPE and `xml.xsd` schemas it imports; see that directory's `provenance.json`); libxml2 compiles it in the hdf-to-xccdf tests. It is not copied here. The ARF 1.1 XSD for `arf-minimal.xml` (NIST, `asset-reporting-format_1.1.0.xsd`) is vendored here and recorded in `provenance.json`; it imports the asset-identification and reporting-core schemas by relative path, which are not vendored, so it is hash-checked but not compiled.
+
+`CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml` validates against that
+vendored `xccdf_1.2.xsd` (`xmllint --nonet --schema`, libxml2 2.9.13,
+2026-10-28), both the full source file and the trimmed fixture.
+
+The three DISA fixtures (`U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml`,
+`U_RHEL_9_STIG_V2R9_Manual-xccdf.xml`, `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml`)
+are XCCDF 1.1. The standalone NIST `xccdf-1.1.4.xsd` vendored at
+`hdf-to-xccdf/schemas/xccdf-1.1.4.xsd` does not compile offline: it imports
+`xml.xsd` and Dublin Core by URL and `cpe-language_2.1.xsd` by server-root
+path. NIST's complete schema bundle for the same release,
+https://csrc.nist.gov/schema/xccdf/1.1.4/xccdf-1.1.4-schema-bundle-20071011.zip
+(SHA-256 as retrieved 2026-10-28
+`9fa7bcbac4fef7e288d26073c59fa9bce44a681d7a02f56a48a3da17327c38c7`), carries
+the companions, and its `xccdf-1.1.4.xsd` differs from the standalone file only
+in those three `schemaLocation` values, which name the bundled files. Validated
+against the bundle (`xmllint --nonet --schema`, libxml2 2.9.13, 2026-10-28;
+the bundle is not vendored here):
+
+- `U_RHEL_9_STIG_V2R9_Manual-xccdf.xml` validates, as does the full DISA source.
+- `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml` validates, as does the
+  full DISA source.
+- `U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml`
+  fails, and so does DISA's file, since this fixture is that file unchanged:
+  `Rule` id `SV-7031r1_rule` appears twice, violating the schema's `ruleIdKey`,
+  `itemIdKey` and `selectableItemIdKey` uniqueness constraints. This is a
+  defect in DISA's published content, kept as published; the converter turns
+  it into two requirements with the same id.

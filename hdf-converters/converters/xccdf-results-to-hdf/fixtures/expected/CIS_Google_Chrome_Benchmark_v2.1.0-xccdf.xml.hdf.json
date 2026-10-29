@@ -1,0 +1,658 @@
+{
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+        "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled"
+      ],
+      "title": "Enforced Defaults"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1.1_HTTP_authentication",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled"
+      ],
+      "title": "HTTP authentication"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher"
+      ],
+      "title": "Safe Browsing settings"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled"
+      ],
+      "title": "Attack Surface Reduction"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+        "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications"
+      ],
+      "title": "Content settings"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.3_Extensions",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme"
+      ],
+      "title": "Extensions"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.6_Password_manager",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured"
+      ],
+      "title": "Password manager"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.8_Remote_access_Chrome_Remote_Desktop",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled"
+      ],
+      "title": "Remote access (Chrome Remote Desktop)"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_4_Data_Loss_Prevention",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled"
+      ],
+      "title": "Data Loss Prevention"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_4.1_Allow_or_deny_screen_capture",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled"
+      ],
+      "title": "Allow or deny screen capture"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "3f49e5c9558c629aa496b39cf2e74615d3dc038bf80c03c85d779d969d84eb88"
+  },
+  "name": "xccdf-org.cisecurity.benchmarks-benchmark-2.1.0-cis-google-chrome-benchmark",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Allow Google Cast to connect to Cast devices on all IP addresses' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Allow the audio sandbox to run' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559188",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Ask where to save each file before downloading' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559187",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Continue running background apps when Google Chrome is closed' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559198",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Control SafeSites adult content filtering' is set to 'Enabled: Filter top level sites (but not embedded iframes) for adult content' specified"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Determine the availability of variations' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559200",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Disable Certificate Transparency enforcement for a list of Legacy Certificate Authorities' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559191",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Enable component updates in Google Chrome' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'List of names that will bypass the HSTS policy check' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:1971117",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Suppress lookalike domain warnings on domains' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.1_HTTP_authentication",
+        "gtitle": "HTTP authentication",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Cross-origin HTTP Authentication prompts' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+        "gtitle": "Safe Browsing settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Configure the list of domains on which Safe Browsing will not trigger warnings' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:1971122",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+        "gtitle": "Safe Browsing settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Safe Browsing Protection Level' is set to 'Enabled: Standard Protection' or higher"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow proceeding from the SSL warning page' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Force Google SafeSearch' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559224",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Require online OCSP/CRL checks for local trust anchors' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559205",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+        "gtitle": "Content settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Control use of the Web Bluetooth API' is set to 'Enabled: Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559204",
+          "label": "check"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+        "gtitle": "Content settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Default notification setting' is set to 'Enabled: Do not allow any site to show desktop notifications'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.3_Extensions",
+        "gtitle": "Extensions",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Configure allowed app/extension types' is set to 'Enabled: extension, hosted_app, platform_app, theme'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.6_Password_manager",
+        "gtitle": "Password manager",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Enable saving passwords to the password manager' is Explicitly Configured"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.8_Remote_access_Chrome_Remote_Desktop",
+        "gtitle": "Remote access (Chrome Remote Desktop)",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "Ensure 'Allow remote access connections to this machine' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_4_Data_Loss_Prevention",
+        "gtitle": "Data Loss Prevention",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow invocation of file selection dialogs' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "fix"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_4.1_Allow_or_deny_screen_capture",
+        "gtitle": "Allow or deny screen capture",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow or deny screen capture' is set to 'Disabled'"
+    }
+  ],
+  "status": "loaded",
+  "summary": "",
+  "title": "CIS Google Chrome Benchmark",
+  "version": "2.1.0"
+}

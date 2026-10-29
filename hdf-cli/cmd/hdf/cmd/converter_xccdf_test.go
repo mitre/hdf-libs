@@ -213,3 +213,37 @@ func TestArfConverter_Convert_Minimal(t *testing.T) {
 
 	assertHDFOutput(t, output)
 }
+
+// --- `hdf convert <file>` with no --from ---
+
+// Detection must route a benchmark (no TestResult) to the benchmark converter:
+// routing every XCCDF root to xccdf-results rejected DISA and CIS benchmarks.
+func TestConvertCommand_AutoDetectsXccdfBenchmark(t *testing.T) {
+	for _, name := range []string{
+		"benchmark-minimal-1.1.xml",
+		"benchmark-minimal-1.2.xml",
+		"benchmark-ssg-nested-groups.xml",
+		"U_RHEL_9_STIG_V2R9_Manual-xccdf.xml",
+		"CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml",
+	} {
+		t.Run(name, func(t *testing.T) {
+			stdout, stderr, err := executeCommand("convert", converterFixturePath(t, "xccdf-results-to-hdf", "input/"+name))
+			require.NoErrorf(t, err, "stderr: %s", stderr)
+			assert.Contains(t, stderr, "Detected: XCCDF/ARF")
+			result := validators.ValidateBaseline([]byte(stdout))
+			assert.True(t, result.Valid, "auto-detected benchmark must convert to a valid HDF baseline: %s", result.Error())
+		})
+	}
+}
+
+func TestConvertCommand_AutoDetectsXccdfResults(t *testing.T) {
+	for _, name := range []string{"minimal.xml", "stig-rhel7.xml", "arf-minimal.xml"} {
+		t.Run(name, func(t *testing.T) {
+			stdout, stderr, err := executeCommand("convert", converterFixturePath(t, "xccdf-results-to-hdf", "input/"+name))
+			require.NoErrorf(t, err, "stderr: %s", stderr)
+			assert.Contains(t, stderr, "Detected: XCCDF/ARF")
+			result := validators.ValidateResults([]byte(stdout))
+			assert.True(t, result.Valid, "auto-detected results must convert to valid HDF results: %s", result.Error())
+		})
+	}
+}

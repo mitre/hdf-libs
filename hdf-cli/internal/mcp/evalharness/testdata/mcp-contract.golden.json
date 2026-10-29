@@ -2291,7 +2291,8 @@
       "PATH_DENIED",
       "SCHEMA_INVALID",
       "TOO_LARGE",
-      "WRITE_FAILED"
+      "WRITE_FAILED",
+      "WRONG_DOC_TYPE"
     ],
     "hdf_diff": [
       "CACHE_MISS",
