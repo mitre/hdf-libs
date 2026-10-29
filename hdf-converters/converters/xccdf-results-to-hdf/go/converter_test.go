@@ -907,6 +907,67 @@ func TestMapResultStatus(t *testing.T) {
 	}
 }
 
+func TestBuildBaselineTags_DescriptionSubElements(t *testing.T) {
+	rule := &Rule{Description: Prose("<VulnDiscussion>Why</VulnDiscussion>" +
+		"<FalsePositives></FalsePositives><FalseNegatives></FalseNegatives>" +
+		"<Documentable>true</Documentable>" +
+		"<Mitigations>Use <b>TLS</b></Mitigations>" +
+		"<SeverityOverrideGuidance>Elevate to CAT I if world-writable.</SeverityOverrideGuidance>" +
+		"<Responsibility>System Administrator</Responsibility>" +
+		"<Responsibility>Information Assurance Officer</Responsibility>" +
+		"<IAControls>ECAR-1, ECAR-2</IAControls>")}
+	tags := buildBaselineTags(rule, nil)
+
+	assert.Equal(t, true, tags["documentable"])
+	assert.Equal(t, []string{"System Administrator", "Information Assurance Officer"}, tags["responsibility"])
+	assert.Equal(t, "ECAR-1, ECAR-2", tags["ia_controls"])
+	assert.Equal(t, "Use TLS", tags["mitigations"])
+	assert.Equal(t, "Elevate to CAT I if world-writable.", tags["severity_override_guidance"])
+	for _, absent := range []string{"false_positives", "false_negatives", "potential_impacts", "third_party_tools", "mitigation_control", "vuln_discussion"} {
+		_, has := tags[absent]
+		assert.False(t, has, "empty or non-tag sub-element must not produce %q", absent)
+	}
+}
+
+func TestBuildBaselineTags_DocumentableNotBooleanIsOmitted(t *testing.T) {
+	rule := &Rule{Description: Prose("<VulnDiscussion>Why</VulnDiscussion><Documentable>maybe</Documentable>")}
+	tags := buildBaselineTags(rule, nil)
+	_, has := tags["documentable"]
+	assert.False(t, has)
+}
+
+func TestBenchmark_DISADescriptionSubElementTags(t *testing.T) {
+	sles := loadFixture(t, "U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(sles, converterVersion)
+	require.NoError(t, err)
+	byID := make(map[string]hdf.BaselineRequirement, len(result.Requirements))
+	for _, r := range result.Requirements {
+		byID[r.ID] = r
+	}
+	require.Contains(t, byID, "SV-44791")
+	assert.Equal(t, true, byID["SV-44791"].Tags["documentable"])
+	assert.Equal(t, false, byID["SV-44760"].Tags["documentable"])
+	assert.Equal(t, []string{"System Administrator", "Information Assurance Officer"}, byID["SV-45877"].Tags["responsibility"])
+	assert.Equal(t, []string{"System Administrator"}, byID["SV-44760"].Tags["responsibility"])
+	fp, _ := byID["SV-45872"].Tags["false_positives"].(string)
+	assert.True(t, strings.HasPrefix(fp, "False positives may occur with the SMTP EXPN check"), "got %q", fp)
+	assert.Equal(t, "GEN000000-FW", byID["SV-45723"].Tags["mitigations"])
+	mc, _ := byID["SV-45723"].Tags["mitigation_control"].(string)
+	assert.True(t, strings.HasPrefix(mc, "The system's firewall default-deny policy"), "got %q", mc)
+	assert.Equal(t, "ECAR-1, ECAR-2, ECAR-3", byID["SV-45286"].Tags["ia_controls"])
+
+	mfd := loadFixture(t, "U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml")
+	result, err = ConvertXccdfBenchmarkToHDF(mfd, converterVersion)
+	require.NoError(t, err)
+	var pi string
+	for _, r := range result.Requirements {
+		if r.ID == "SV-7015" {
+			pi, _ = r.Tags["potential_impacts"].(string)
+		}
+	}
+	assert.True(t, strings.HasPrefix(pi, "Print clients configured to use the unauthorized port(s)"), "got %q", pi)
+}
+
 func TestExtractVulnDiscussion(t *testing.T) {
 	tests := []struct {
 		name     string

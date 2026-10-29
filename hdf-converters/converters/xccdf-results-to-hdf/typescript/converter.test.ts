@@ -1205,6 +1205,67 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect(req30!.impact).toBe(0.7); // high
     });
 
+    it('carries the DISA description sub-elements as tags', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;true&lt;/Documentable&gt;&lt;Mitigations&gt;Use &lt;b&gt;TLS&lt;/b&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;Elevate to CAT I if world-writable.&lt;/SeverityOverrideGuidance&gt;&lt;Responsibility&gt;System Administrator&lt;/Responsibility&gt;&lt;Responsibility&gt;Information Assurance Officer&lt;/Responsibility&gt;&lt;IAControls&gt;ECAR-1, ECAR-2&lt;/IAControls&gt;</description>
+      <fixtext>Fix it</fixtext>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
+      const tags = (baseline.requirements as BaselineRequirement[])[0]!.tags!;
+      expect(tags['documentable']).toBe(true);
+      expect(tags['responsibility']).toEqual(['System Administrator', 'Information Assurance Officer']);
+      expect(tags['ia_controls']).toBe('ECAR-1, ECAR-2');
+      expect(tags['mitigations']).toBe('Use TLS');
+      expect(tags['severity_override_guidance']).toBe('Elevate to CAT I if world-writable.');
+      for (const absent of ['false_positives', 'false_negatives', 'potential_impacts', 'third_party_tools', 'mitigation_control', 'vuln_discussion']) {
+        expect(tags).not.toHaveProperty(absent);
+      }
+    });
+
+    it('omits documentable when its value is not a boolean', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;Documentable&gt;maybe&lt;/Documentable&gt;</description>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
+      expect((baseline.requirements as BaselineRequirement[])[0]!.tags).not.toHaveProperty('documentable');
+    });
+
+    it('carries the sub-elements the real DISA fixtures fill', async () => {
+      const sles = await parseBaseline('U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml');
+      const byId = new Map((sles.requirements as BaselineRequirement[]).map((r) => [r.id, r]));
+      expect(byId.get('SV-44791')!.tags!['documentable']).toBe(true);
+      expect(byId.get('SV-44760')!.tags!['documentable']).toBe(false);
+      expect(byId.get('SV-45877')!.tags!['responsibility']).toEqual(['System Administrator', 'Information Assurance Officer']);
+      expect(byId.get('SV-44760')!.tags!['responsibility']).toEqual(['System Administrator']);
+      expect(byId.get('SV-45872')!.tags!['false_positives']).toMatch(/^False positives may occur with the SMTP EXPN check/);
+      expect(byId.get('SV-45723')!.tags!['mitigations']).toBe('GEN000000-FW');
+      expect(byId.get('SV-45723')!.tags!['mitigation_control']).toMatch(/^The system's firewall default-deny policy/);
+      expect(byId.get('SV-45286')!.tags!['ia_controls']).toBe('ECAR-1, ECAR-2, ECAR-3');
+      const mfd = await parseBaseline('U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml');
+      const r = (mfd.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-7015');
+      expect(r!.tags!['potential_impacts']).toMatch(/^Print clients configured to use the unauthorized port\(s\)/);
+    });
+
     it('should extract VulnDiscussion as default description', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
       const req = findBaselineReq(baseline, 'SV-254238');

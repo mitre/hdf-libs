@@ -372,12 +372,16 @@
           "CCI-000213"
         ],
         "check_id": "C-42265r1_chk",
+        "documentable": false,
         "fix_id": "F-38210r1_fix",
         "gid": "V-756",
         "gtitle": "GEN000020",
         "nist": [
           "AC-3",
           "AC-3.1"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-44760r1_rule",
         "severity": "medium",
@@ -420,6 +424,7 @@
           "CCI-000770"
         ],
         "check_id": "C-42288r1_chk",
+        "documentable": true,
         "fix_id": "F-38241r1_fix",
         "gid": "V-760",
         "gtitle": "GEN000280",
@@ -427,6 +432,9 @@
           "IA-2 (5)",
           "IA-2 (5) (b)",
           "IA-2 (5).2 (ii)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-44791r1_rule",
         "severity": "medium",
@@ -469,12 +477,16 @@
           "CCI-000366"
         ],
         "check_id": "C-42322r1_chk",
+        "documentable": false,
         "fix_id": "F-38293r1_fix",
         "gid": "V-770",
         "gtitle": "GEN000560",
         "nist": [
           "CM-6 b",
           "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-44860r1_rule",
         "severity": "high",
@@ -517,12 +529,16 @@
           "CCI-000366"
         ],
         "check_id": "C-42341r1_chk",
+        "documentable": false,
         "fix_id": "F-38333r2_fix",
         "gid": "V-774",
         "gtitle": "GEN000900",
         "nist": [
           "CM-6 b",
           "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-44901r1_rule",
         "severity": "low",
@@ -565,12 +581,16 @@
           "CCI-000366"
         ],
         "check_id": "C-42299r1_chk",
+        "documentable": false,
         "fix_id": "F-38266r1_fix",
         "gid": "V-781",
         "gtitle": "GEN000380",
         "nist": [
           "CM-6 b",
           "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-44827r1_rule",
         "severity": "low",
@@ -613,6 +633,7 @@
           "CCI-001499"
         ],
         "check_id": "C-43432r1_chk",
+        "documentable": false,
         "fix_id": "F-39575r1_fix",
         "gid": "V-794",
         "gtitle": "GEN001200",
@@ -620,8 +641,12 @@
           "CM-5 (6)",
           "CM-5 (6).1"
         ],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-46272r1_rule",
         "severity": "medium",
+        "severity_override_guidance": "Elevate to Severity Code I if any file listed world-writable.",
         "stig_id": "GEN001200"
       },
       "title": "All system command files must have mode 0755 or less permissive."
@@ -661,12 +686,16 @@
           "CCI-000368"
         ],
         "check_id": "C-42530r2_chk",
+        "documentable": true,
         "fix_id": "F-38578r1_fix",
         "gid": "V-801",
         "gtitle": "GEN002380",
         "nist": [
           "CM-6 c",
           "CM-6.1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45184r2_rule",
         "severity": "medium",
@@ -709,6 +738,7 @@
           "CCI-000366"
         ],
         "check_id": "C-42553r1_chk",
+        "documentable": true,
         "fix_id": "F-38601r1_fix",
         "gid": "V-808",
         "gtitle": "GEN002560",
@@ -716,8 +746,12 @@
           "CM-6 b",
           "CM-6.1 (iv)"
         ],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-45205r1_rule",
         "severity": "medium",
+        "severity_override_guidance": "If the default umask is 000 or does not restrict the world-writable permission, this becomes a CAT I finding.",
         "stig_id": "GEN002560"
       },
       "title": "The system and user default umask must be 077."
@@ -757,12 +791,16 @@
           "CCI-000225"
         ],
         "check_id": "C-43149r1_chk",
+        "documentable": false,
         "fix_id": "F-39235r1_fix",
         "gid": "V-833",
         "gtitle": "GEN004400",
         "nist": [
           "AC-6",
           "AC-6.1"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45851r1_rule",
         "severity": "high",
@@ -805,12 +843,17 @@
           "CCI-001475"
         ],
         "check_id": "C-43194r1_chk",
+        "documentable": true,
         "fix_id": "F-39255r1_fix",
         "gid": "V-846",
         "gtitle": "GEN004820",
         "nist": [
           "AC-22 c",
           "AC-22.1 (iii)"
+        ],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
         ],
         "rid": "SV-45877r1_rule",
         "severity": "medium",
@@ -853,12 +896,17 @@
           "CCI-001435"
         ],
         "check_id": "C-36937r2_chk",
+        "documentable": false,
         "fix_id": "F-39579r1_fix",
         "gid": "V-867",
         "gtitle": "GEN006400",
         "nist": [
           "AC-17 (8)",
           "AC-17 (8).1 (i)"
+        ],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
         ],
         "rid": "SV-46282r1_rule",
         "severity": "medium",
@@ -901,12 +949,17 @@
           "CCI-000366"
         ],
         "check_id": "C-43189r1_chk",
+        "documentable": false,
+        "false_positives": "False positives may occur with the SMTP EXPN check. According to RFC821, it is acceptable for a server to respond with a 250 (success) or 550 (failure) when the server supports the EXPN command. For example, some servers return 550 EXPN command not available, meaning the command is not supported and the machine is not vulnerable. However, a result of 550 that is a mailing list, not a user would be a failure code, but not an indication of an error, and the machine would be vulnerable. If a false positive is suspected, check the log file for the response from the server.",
         "fix_id": "F-39250r1_fix",
         "gid": "V-4692",
         "gtitle": "GEN004660",
         "nist": [
           "CM-6 b",
           "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45872r1_rule",
         "severity": "low",
@@ -949,12 +1002,18 @@
           "CCI-001551"
         ],
         "check_id": "C-43090r1_chk",
+        "documentable": false,
         "fix_id": "F-39121r1_fix",
         "gid": "V-22411",
         "gtitle": "GEN003604",
+        "mitigation_control": "The system's firewall default-deny policy mitigates the risk from this vulnerability.",
+        "mitigations": "GEN000000-FW",
         "nist": [
           "AC-4",
           "AC-4.1 (ii)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45723r1_rule",
         "severity": "medium",
@@ -997,12 +1056,18 @@
           "CCI-000197"
         ],
         "check_id": "C-43130r1_chk",
+        "documentable": false,
         "fix_id": "F-39199r1_fix",
         "gid": "V-24386",
         "gtitle": "GEN003850",
+        "mitigation_control": "If an enabled telnet daemon is configured to only allow encrypted sessions, such as with Kerberos or the use of encrypted network tunnels, the risk of exposing sensitive information is mitigated, and this is not a finding.",
+        "mitigations": "GEN003850",
         "nist": [
           "IA-5 (1) (c)",
           "IA-5 (1).1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45809r1_rule",
         "severity": "high",
@@ -1045,12 +1110,17 @@
           "CCI-000126"
         ],
         "check_id": "C-42633r1_chk",
+        "documentable": false,
         "fix_id": "F-38682r1_fix",
         "gid": "V-29236",
         "gtitle": "GEN002720-2",
+        "ia_controls": "ECAR-1, ECAR-2, ECAR-3",
         "nist": [
           "AU-2 d",
           "AU-2.1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-45286r1_rule",
         "severity": "medium",
@@ -1093,12 +1163,17 @@
           "CCI-000192"
         ],
         "check_id": "C-43421r1_chk",
+        "documentable": false,
         "fix_id": "F-39498r1_fix",
         "gid": "V-34936",
         "gtitle": "GEN000000-ZSLE0002",
+        "ia_controls": "ECSC-1",
         "nist": [
           "IA-5 (1) (a)",
           "IA-5 (1).1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
         ],
         "rid": "SV-46164r1_rule",
         "severity": "medium",

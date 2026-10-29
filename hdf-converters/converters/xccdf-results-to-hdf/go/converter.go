@@ -1319,8 +1319,57 @@ func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
 		tags["gid"] = group.ID
 		tags["gtitle"] = group.Title
 	}
+	addDescriptionSubElementTags(tags, string(rule.Description))
 
 	return tags
+}
+
+// DISA's description body is literal text with eleven labelled sub-elements
+// (VulnDiscussion feeds the default description); these ten become tags.
+var descriptionSubElementTags = []struct{ element, tag string }{
+	{"FalsePositives", "false_positives"},
+	{"FalseNegatives", "false_negatives"},
+	{"Mitigations", "mitigations"},
+	{"SeverityOverrideGuidance", "severity_override_guidance"},
+	{"PotentialImpacts", "potential_impacts"},
+	{"ThirdPartyTools", "third_party_tools"},
+	{"MitigationControl", "mitigation_control"},
+	{"IAControls", "ia_controls"},
+}
+
+// addDescriptionSubElementTags emits one tag per non-empty DISA sub-element:
+// strings for the eight above (the first non-empty occurrence), a list for
+// Responsibility (DISA repeats it), a bool for Documentable ("true"/"false";
+// anything else is not a boolean and is left out rather than guessed).
+func addDescriptionSubElementTags(tags map[string]interface{}, desc string) {
+	for _, s := range descriptionSubElementTags {
+		if vals := descriptionSubElementText(desc, s.element); len(vals) > 0 {
+			tags[s.tag] = vals[0]
+		}
+	}
+	if vals := descriptionSubElementText(desc, "Responsibility"); len(vals) > 0 {
+		tags["responsibility"] = vals
+	}
+	if vals := descriptionSubElementText(desc, "Documentable"); len(vals) > 0 {
+		switch vals[0] {
+		case "true":
+			tags["documentable"] = true
+		case "false":
+			tags["documentable"] = false
+		}
+	}
+}
+
+// descriptionSubElementText is every non-empty occurrence of <element> in
+// document order, markup stripped the way the default description is.
+func descriptionSubElementText(desc, element string) []string {
+	var out []string
+	for _, raw := range descriptionFieldValues(desc, element) {
+		if v := strings.TrimSpace(hdfutil.StripHTML(raw)); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // kebabCase converts a string like "MS_Windows_Server_2022_STIG" to
@@ -1781,21 +1830,32 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 // XML element embedded in the description string. Returns the full string
 // if no VulnDiscussion element is found.
 func extractVulnDiscussion(desc string) string {
-	const openTag = "<VulnDiscussion>"
-	const closeTag = "</VulnDiscussion>"
-
-	startIdx := strings.Index(desc, openTag)
-	if startIdx == -1 {
-		return desc
+	if vals := descriptionFieldValues(desc, "VulnDiscussion"); len(vals) > 0 {
+		return vals[0]
 	}
-	startIdx += len(openTag)
+	return desc
+}
 
-	endIdx := strings.Index(desc[startIdx:], closeTag)
-	if endIdx == -1 {
-		return desc
+// descriptionFieldValues is the raw text inside every <element>…</element>
+// pair of a DISA description, in document order. It splits on the literal
+// tags and never parses: 209 of the current library's descriptions are not
+// well-formed XML, and DISA's own stylesheet string-splits the same way.
+func descriptionFieldValues(desc, element string) []string {
+	openTag, closeTag := "<"+element+">", "</"+element+">"
+	var vals []string
+	for rest := desc; ; {
+		start := strings.Index(rest, openTag)
+		if start == -1 {
+			return vals
+		}
+		rest = rest[start+len(openTag):]
+		end := strings.Index(rest, closeTag)
+		if end == -1 {
+			return vals
+		}
+		vals = append(vals, rest[:end])
+		rest = rest[end+len(closeTag):]
 	}
-
-	return desc[startIdx : startIdx+endIdx]
 }
 
 // buildTags constructs the tags map from the rule-result and rule definition.

@@ -440,6 +440,7 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-2941r2_chk",
+        "documentable": false,
         "fix_id": "F-6430r2_fix",
         "gid": "V-6777",
         "gtitle": "MFD Protocol TCP/IP",
@@ -481,6 +482,7 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-2954r2_chk",
+        "documentable": false,
         "fix_id": "F-6432r2_fix",
         "gid": "V-6779",
         "gtitle": "MFD/Printer Firewall/Router Rule Perimeter",
@@ -522,6 +524,7 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-2965r2_chk",
+        "documentable": false,
         "fix_id": "F-6433r2_fix",
         "gid": "V-6780",
         "gtitle": "MFD Firmware",
@@ -563,6 +566,7 @@
       "severity": "high",
       "tags": {
         "check_id": "C-2966r2_chk",
+        "documentable": false,
         "fix_id": "F-6434r1_fix",
         "gid": "V-6781",
         "gtitle": "MFD SNMP Community Strings ",
@@ -604,6 +608,7 @@
       "severity": "high",
       "tags": {
         "check_id": "C-2968r2_chk",
+        "documentable": false,
         "fix_id": "F-6435r2_fix",
         "gid": "V-6782",
         "gtitle": "MFD Configuration State After Power Down or Reboot",
@@ -645,10 +650,15 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-2969r2_chk",
+        "documentable": false,
         "fix_id": "F-6436r2_fix",
         "gid": "V-6783",
         "gtitle": "MFD Management Protocols",
+        "ia_controls": "DCPP-1",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7005r2_rule",
         "severity": "medium",
         "stig_id": "MFD02.003"
@@ -686,10 +696,15 @@
       "severity": "high",
       "tags": {
         "check_id": "C-2984r1_chk",
+        "documentable": false,
         "fix_id": "F-6447r1_fix",
         "gid": "V-6784",
         "gtitle": " MFD or a printer can be managed from any IP",
+        "ia_controls": "DCBP-1",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7009r1_rule",
         "severity": "high",
         "stig_id": "MFD02.005"
@@ -727,10 +742,16 @@
       "severity": "low",
       "tags": {
         "check_id": "C-2994r1_chk",
+        "documentable": false,
         "fix_id": "F-6456r1_fix",
         "gid": "V-6790",
         "gtitle": "Print Services Restricted to Port 9100 and/or LPD",
+        "ia_controls": "DCBP-1",
         "nist": [],
+        "potential_impacts": "Print clients configured to use the unauthorized port(s) will not be able to print until they are reconfigured to use the correct port.",
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7015r1_rule",
         "severity": "low",
         "stig_id": "MFD03.001"
@@ -768,10 +789,12 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-2998r4_chk",
+        "documentable": false,
         "fix_id": "F-6461r2_fix",
         "gid": "V-6794",
         "gtitle": "MFD/Printer Restrict Jobs Only From Print Spooler",
         "nist": [],
+        "potential_impacts": "Client systems that are configured to bypass the print server that spools print jobs will lose access to the printer until reconfigured.",
         "rid": "SV-7019r3_rule",
         "severity": "medium",
         "stig_id": "MFD04.001"
@@ -809,10 +832,15 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-3002r1_chk",
+        "documentable": false,
         "fix_id": "F-6463r1_fix",
         "gid": "V-6796",
         "gtitle": "MFD Authorized Users Restrictions",
+        "ia_controls": "ECAN-1, IAIA-1, IAIA-2",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7021r1_rule",
         "severity": "medium",
         "stig_id": "MFD05.001"
@@ -850,10 +878,15 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-3005r1_chk",
+        "documentable": false,
         "fix_id": "F-6465r1_fix",
         "gid": "V-6797",
         "gtitle": "MFD and Spooler Auditing",
+        "ia_controls": "ECAR-1, ECAR-2, ECAR-3",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7022r1_rule",
         "severity": "medium",
         "stig_id": "MFD06.001"
@@ -891,9 +924,11 @@
       "severity": "low",
       "tags": {
         "check_id": "C-3006r3_chk",
+        "documentable": false,
         "fix_id": "F-6467r2_fix",
         "gid": "V-6798",
         "gtitle": "MFD/Printer Security Policy ",
+        "ia_controls": "DCBP-1, ECAN-1, ECIC-1, IAIA-1, PECS-1, PECS-2, PEDD-1",
         "nist": [],
         "rid": "SV-7023r3_rule",
         "severity": "low",
@@ -932,10 +967,15 @@
       "severity": "low",
       "tags": {
         "check_id": "C-3009r2_chk",
+        "documentable": false,
         "fix_id": "F-6470r2_fix",
         "gid": "V-6799",
         "gtitle": "MFD Level of Audit and Reviewing",
+        "ia_controls": "ECAR-1, ECAR-2, ECAR-3, ECAT-1, ECAT-2",
         "nist": [],
+        "responsibility": [
+          "Information Assurance Officer"
+        ],
         "rid": "SV-7024r2_rule",
         "severity": "low",
         "stig_id": "MFD06.006"
@@ -973,10 +1013,16 @@
       "severity": "high",
       "tags": {
         "check_id": "C-3012r4_chk",
+        "documentable": false,
         "fix_id": "F-6472r4_fix",
         "gid": "V-6800",
         "gtitle": "MFD Classified Network",
+        "ia_controls": "DCBP-1",
         "nist": [],
+        "potential_impacts": "If the device is removed from the classified network it will need to be sanitized in accordance with DoDD 5200.1R if it is to be used for unclassified processing or is to be decommissioned.",
+        "responsibility": [
+          "Information Assurance Officer"
+        ],
         "rid": "SV-7025r2_rule",
         "severity": "high",
         "stig_id": "MFD07.001"
@@ -1014,10 +1060,15 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-3016r1_chk",
+        "documentable": false,
         "fix_id": "F-6475r1_fix",
         "gid": "V-6801",
         "gtitle": "MFD Clearing Disk Space Scan to Disk",
+        "ia_controls": "ECRC-1",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7026r1_rule",
         "severity": "medium",
         "stig_id": "MFD07.002"
@@ -1055,10 +1106,14 @@
       "severity": "low",
       "tags": {
         "check_id": "C-3017r1_chk",
+        "documentable": false,
         "fix_id": "F-6476r1_fix",
         "gid": "V-6802",
         "gtitle": "MFD Scan Discretionary Access Control",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7027r1_rule",
         "severity": "low",
         "stig_id": "MFD07.003"
@@ -1096,10 +1151,14 @@
       "severity": "low",
       "tags": {
         "check_id": "C-3018r2_chk",
+        "documentable": false,
         "fix_id": "F-6477r2_fix",
         "gid": "V-6803",
         "gtitle": "MFD fax from network auditing",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7028r2_rule",
         "severity": "low",
         "stig_id": "MFD07.004"
@@ -1137,10 +1196,14 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-3019r2_chk",
+        "documentable": false,
         "fix_id": "F-6478r1_fix",
         "gid": "V-6804",
         "gtitle": "MFD scan to SMTP (email)",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7029r2_rule",
         "severity": "medium",
         "stig_id": "MFD07.005"
@@ -1178,10 +1241,15 @@
       "severity": "medium",
       "tags": {
         "check_id": "C-3020r1_chk",
+        "documentable": false,
         "fix_id": "F-6479r1_fix",
         "gid": "V-6805",
         "gtitle": "MFD Hard Drive Lock",
+        "ia_controls": "PECF-1, PECF-2",
         "nist": [],
+        "responsibility": [
+          "Information Assurance Officer"
+        ],
         "rid": "SV-7030r1_rule",
         "severity": "medium",
         "stig_id": "MFD08.001"
@@ -1219,10 +1287,14 @@
       "severity": "high",
       "tags": {
         "check_id": "C-3021r1_chk",
+        "documentable": false,
         "fix_id": "F-6480r1_fix",
         "gid": "V-6806",
         "gtitle": "MFD/Printer Global Configuration Settings",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7031r1_rule",
         "severity": "high",
         "stig_id": "MFD08.002"
@@ -1260,10 +1332,14 @@
       "severity": "high",
       "tags": {
         "check_id": "C-3021r1_chk",
+        "documentable": false,
         "fix_id": "F-6480r1_fix",
         "gid": "V-6807",
         "gtitle": "MFD/Printer Global Configuration Settings",
         "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
         "rid": "SV-7031r1_rule",
         "severity": "high",
         "stig_id": "MFD09.001"
@@ -1305,6 +1381,7 @@
           "CCI-000382"
         ],
         "check_id": "C-96545r1_chk",
+        "documentable": false,
         "fix_id": "F-103387r1_fix",
         "gid": "V-97711",
         "gtitle": "MFD03.002",

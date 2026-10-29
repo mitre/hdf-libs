@@ -873,6 +873,7 @@ function ruleToBaselineRequirement(
     tags['gid'] = group.id;
     tags['gtitle'] = extractText(group.title);
   }
+  addDescriptionSubElementTags(tags, proseText(rule.description));
 
   const req: BaselineRequirement = {
     id,
@@ -1587,10 +1588,65 @@ export function buildCheckCode(check: CheckElement | undefined): string {
  * VulnDiscussion tag is found, returns the original text.
  */
 function extractVulnDiscussion(description: string): string {
-  const match = description.match(
-    /<VulnDiscussion>([\s\S]*?)<\/VulnDiscussion>/
-  );
-  return match ? match[1]! : description;
+  const vals = descriptionFieldValues(description, 'VulnDiscussion');
+  return vals.length > 0 ? vals[0]! : description;
+}
+
+// The raw text inside every <element>…</element> pair of a DISA description, in
+// document order. Splits on the literal tags and never parses: 209 of the current
+// library's descriptions are not well-formed XML, and DISA's own stylesheet
+// string-splits the same way.
+function descriptionFieldValues(description: string, element: string): string[] {
+  const openTag = `<${element}>`;
+  const closeTag = `</${element}>`;
+  const vals: string[] = [];
+  let rest = description;
+  for (;;) {
+    const start = rest.indexOf(openTag);
+    if (start === -1) return vals;
+    rest = rest.slice(start + openTag.length);
+    const end = rest.indexOf(closeTag);
+    if (end === -1) return vals;
+    vals.push(rest.slice(0, end));
+    rest = rest.slice(end + closeTag.length);
+  }
+}
+
+// DISA's description body is literal text with eleven labelled sub-elements
+// (VulnDiscussion feeds the default description); these ten become tags.
+const descriptionSubElementTags: ReadonlyArray<readonly [element: string, tag: string]> = [
+  ['FalsePositives', 'false_positives'],
+  ['FalseNegatives', 'false_negatives'],
+  ['Mitigations', 'mitigations'],
+  ['SeverityOverrideGuidance', 'severity_override_guidance'],
+  ['PotentialImpacts', 'potential_impacts'],
+  ['ThirdPartyTools', 'third_party_tools'],
+  ['MitigationControl', 'mitigation_control'],
+  ['IAControls', 'ia_controls'],
+];
+
+// One tag per non-empty DISA sub-element: strings for the eight above (the first
+// non-empty occurrence), a list for Responsibility (DISA repeats it), a boolean for
+// Documentable ("true"/"false"; anything else is not a boolean and is left out
+// rather than guessed).
+function addDescriptionSubElementTags(tags: Record<string, unknown>, description: string): void {
+  for (const [element, tag] of descriptionSubElementTags) {
+    const vals = descriptionSubElementText(description, element);
+    if (vals.length > 0) tags[tag] = vals[0];
+  }
+  const responsibility = descriptionSubElementText(description, 'Responsibility');
+  if (responsibility.length > 0) tags['responsibility'] = responsibility;
+  const documentable = descriptionSubElementText(description, 'Documentable')[0];
+  if (documentable === 'true') tags['documentable'] = true;
+  else if (documentable === 'false') tags['documentable'] = false;
+}
+
+// Every non-empty occurrence of <element> in document order, markup stripped the
+// way the default description is.
+function descriptionSubElementText(description: string, element: string): string[] {
+  return descriptionFieldValues(description, element)
+    .map((raw) => stripHTML(raw).trim())
+    .filter((v) => v !== '');
 }
 
 /**

@@ -233,6 +233,7 @@
           "CCI-000366"
         ],
         "check_id": "C-61518r1155675_chk",
+        "documentable": false,
         "fix_id": "F-61442r925317_fix",
         "gid": "V-257777",
         "gtitle": "SRG-OS-000480-GPOS-00227",
@@ -281,6 +282,7 @@
           "CCI-000366"
         ],
         "check_id": "C-61519r1134891_chk",
+        "documentable": false,
         "fix_id": "F-61443r925320_fix",
         "gid": "V-257778",
         "gtitle": "SRG-OS-000480-GPOS-00227",
@@ -334,6 +336,7 @@
           "CCI-001388"
         ],
         "check_id": "C-61520r925322_chk",
+        "documentable": false,
         "fix_id": "F-61444r925323_fix",
         "gid": "V-257779",
         "gtitle": "SRG-OS-000023-GPOS-00006",
@@ -389,6 +392,7 @@
           "CCI-000366"
         ],
         "check_id": "C-61523r942960_chk",
+        "documentable": false,
         "fix_id": "F-61447r925332_fix",
         "gid": "V-257782",
         "gtitle": "SRG-OS-000480-GPOS-00227",
@@ -437,6 +441,7 @@
           "CCI-002235"
         ],
         "check_id": "C-61525r1208765_chk",
+        "documentable": false,
         "fix_id": "F-61449r1208465_fix",
         "gid": "V-257784",
         "gtitle": "SRG-OS-000324-GPOS-00125",
@@ -485,6 +490,7 @@
           "CCI-002824"
         ],
         "check_id": "C-61536r1044844_chk",
+        "documentable": false,
         "fix_id": "F-61460r925371_fix",
         "gid": "V-257795",
         "gtitle": "SRG-OS-000433-GPOS-00193",
@@ -535,6 +541,7 @@
           "CCI-000366"
         ],
         "check_id": "C-61690r1134911_chk",
+        "documentable": false,
         "fix_id": "F-61614r1134912_fix",
         "gid": "V-257949",
         "gtitle": "SRG-OS-000480-GPOS-00227",
