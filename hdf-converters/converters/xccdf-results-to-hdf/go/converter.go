@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,7 +45,7 @@ type Benchmark struct {
 	ID          string     `xml:"id,attr"`
 	Status      string     `xml:"status"`
 	Title       string     `xml:"title"`
-	Description string     `xml:"description"`
+	Description Prose      `xml:"description"`
 	Version     string     `xml:"version"`
 	Platforms   []Platform `xml:"platform"`
 	Groups      []Group    `xml:"Group"`
@@ -114,9 +116,9 @@ type Rule struct {
 	Weight      string          `xml:"weight,attr"`
 	Version     string          `xml:"version"`
 	Title       string          `xml:"title"`
-	Description string          `xml:"description"`
-	Rationale   string          `xml:"rationale"`
-	Warning     string          `xml:"warning"`
+	Description Prose           `xml:"description"`
+	Rationale   Prose           `xml:"rationale"`
+	Warning     Prose           `xml:"warning"`
 	Fixtext     Fixtext         `xml:"fixtext"`
 	Idents      []Ident         `xml:"ident"`
 	Checks      []Check         `xml:"check"`
@@ -134,10 +136,91 @@ type RuleReference struct {
 	Type       string `xml:"type"`
 }
 
-// Fixtext represents an XCCDF fixtext element with optional fixref attribute.
+// Fixtext is an XCCDF fixtext element: prose with an optional fixref attribute.
 type Fixtext struct {
-	Text   string `xml:",chardata"`
+	Inner  string `xml:",innerxml"`
 	Fixref string `xml:"fixref,attr"`
+}
+
+// Text is the fixtext prose, read the way Prose is.
+func (f Fixtext) Text() string {
+	return proseFromInnerXML(f.Inner)
+}
+
+// Prose is the text of an htmlTextWithSubType element (description, rationale,
+// warning, fixtext, front and rear matter). CIS and SCAP Security Guide content
+// carries its words inside XHTML children, so the element's own character data
+// is not the text; the raw inner XML is, with the markup stripped later by the
+// callers, as DISA's escaped sub-elements already are.
+type Prose string
+
+func (p *Prose) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var raw struct {
+		Inner string `xml:",innerxml"`
+	}
+	if err := d.DecodeElement(&raw, &start); err != nil {
+		return err
+	}
+	*p = Prose(proseFromInnerXML(raw.Inner))
+	return nil
+}
+
+var (
+	cdataSectionRe = regexp.MustCompile(`(?s)<!\[CDATA\[(.*?)\]\]>`)
+	xmlCommentOrPI = regexp.MustCompile(`(?s)<!--.*?-->|<\?.*?\?>`)
+	xmlEntityRe    = regexp.MustCompile(`&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));`)
+	lineEndingRe   = regexp.MustCompile(`\r\n?`)
+)
+
+var xmlNamedEntities = map[string]string{"lt": "<", "gt": ">", "quot": `"`, "apos": "'", "amp": "&"}
+
+// proseFromInnerXML turns raw inner XML into the text the decoder would have
+// produced for character data, and the same text the TypeScript converter
+// produces from the same bytes: line endings folded to LF (XML 1.0 §2.11),
+// CDATA sections literal, comments and processing instructions dropped (the
+// markup stripper would stop at the first ">" inside one), and the predefined
+// and numeric entities decoded everywhere else. Element tags stay in place for
+// the markup stripper.
+func proseFromInnerXML(inner string) string {
+	inner = lineEndingRe.ReplaceAllString(inner, "\n")
+	var b strings.Builder
+	last := 0
+	for _, m := range cdataSectionRe.FindAllStringSubmatchIndex(inner, -1) {
+		b.WriteString(proseMarkupText(inner[last:m[0]]))
+		b.WriteString(inner[m[2]:m[3]])
+		last = m[1]
+	}
+	b.WriteString(proseMarkupText(inner[last:]))
+	return b.String()
+}
+
+func proseMarkupText(s string) string {
+	return decodeXMLEntities(xmlCommentOrPI.ReplaceAllString(s, ""))
+}
+
+// decodeXMLEntities decodes the five predefined entities and decimal or hex
+// character references, and nothing else, matching the TypeScript decoder: a
+// reference to no valid code point becomes U+FFFD in both.
+func decodeXMLEntities(s string) string {
+	return xmlEntityRe.ReplaceAllStringFunc(s, func(ref string) string {
+		m := xmlEntityRe.FindStringSubmatch(ref)
+		switch {
+		case m[1] != "":
+			return codePointText(m[1], 10)
+		case m[2] != "":
+			return codePointText(m[2], 16)
+		default:
+			return xmlNamedEntities[m[3]]
+		}
+	})
+}
+
+func codePointText(digits string, base int) string {
+	n, err := strconv.ParseInt(digits, base, 32)
+	if err != nil {
+		return "\uFFFD"
+	}
+	return string(rune(n))
 }
 
 // Ident represents an XCCDF ident element (CCI, CCE, etc.).
@@ -817,7 +900,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		Title:           hdfutil.Ptr(baselineName),
 		Version:         hdfutil.Ptr(benchmark.Version),
 		Status:          &status,
-		Summary:         hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
+		Summary:         hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
@@ -879,7 +962,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Title:        hdfutil.Ptr(benchmark.Title),
 		Version:      hdfutil.Ptr(benchmark.Version),
 		Status:       &status,
-		Summary:      hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
+		Summary:      hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
 		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
@@ -932,7 +1015,7 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description
 
 	if rule.Description != "" {
-		descText := extractVulnDiscussion(rule.Description)
+		descText := extractVulnDiscussion(string(rule.Description))
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
 			Data:  hdfutil.StripHTML(descText),
@@ -951,21 +1034,21 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule.Fixtext.Text != "" {
+	if fix := rule.Fixtext.Text(); fix != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(fix),
 		})
 	}
 
-	if r := strings.TrimSpace(rule.Rationale); r != "" {
+	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "rationale",
 			Data:  hdfutil.StripHTML(r),
 		})
 	}
 
-	if w := strings.TrimSpace(rule.Warning); w != "" {
+	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "warning",
 			Data:  hdfutil.StripHTML(w),
@@ -1163,7 +1246,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		}
 		if benchmark != nil {
 			baseline.Version = hdfutil.Ptr(benchmark.Version)
-			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description))
+			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description)))
 		}
 		baselines = append(baselines, baseline)
 
@@ -1421,7 +1504,7 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description
 
 	if rule != nil && rule.Description != "" {
-		descText := extractVulnDiscussion(rule.Description)
+		descText := extractVulnDiscussion(string(rule.Description))
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
 			Data:  hdfutil.StripHTML(descText),
@@ -1444,21 +1527,21 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule.Fixtext.Text != "" {
+	if fix := rule.Fixtext.Text(); fix != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(fix),
 		})
 	}
 
-	if r := strings.TrimSpace(rule.Rationale); r != "" {
+	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "rationale",
 			Data:  hdfutil.StripHTML(r),
 		})
 	}
 
-	if w := strings.TrimSpace(rule.Warning); w != "" {
+	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "warning",
 			Data:  hdfutil.StripHTML(w),

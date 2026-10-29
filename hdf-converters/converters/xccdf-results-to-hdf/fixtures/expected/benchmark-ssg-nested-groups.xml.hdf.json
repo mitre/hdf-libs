@@ -39,7 +39,7 @@
     {
       "descriptions": [
         {
-          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and DHCP (Dynamic Host Configuration Protocol) services. The package can be removed with the following command:",
+          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and DHCP (Dynamic Host Configuration Protocol) services. The dnsmasq package can be removed with the following command: $ sudo yum erase dnsmasq",
           "label": "default"
         },
         {
@@ -68,7 +68,7 @@
     {
       "descriptions": [
         {
-          "data": "The service can be disabled with the following command:",
+          "data": "The dnsmasq service can be disabled with the following command: $ sudo systemctl mask --now dnsmasq.service",
           "label": "default"
         },
         {
@@ -103,7 +103,7 @@
     {
       "descriptions": [
         {
-          "data": "The service is provided by the package. The package can be removed with the following command:",
+          "data": "The named service is provided by the bind package. The bind package can be removed with the following command: $ sudo yum erase bind",
           "label": "default"
         },
         {
@@ -406,7 +406,7 @@
     {
       "descriptions": [
         {
-          "data": "The service can be disabled with the following command:",
+          "data": "The named service can be disabled with the following command: $ sudo systemctl mask --now named.service",
           "label": "default"
         },
         {
@@ -705,7 +705,7 @@
     {
       "descriptions": [
         {
-          "data": "If it is necessary for a secondary nameserver to receive zone data via zone transfer from the primary server, follow the instructions here. Use dnssec-keygen to create a symmetric key file in the current directory: This output is the name of a file containing the new key. Read the file to find the base64-encoded key string: Add the directives to on the primary server: Add the directives below to on the secondary nameserver:",
+          "data": "If it is necessary for a secondary nameserver to receive zone data via zone transfer from the primary server, follow the instructions here. Use dnssec-keygen to create a symmetric key file in the current directory: $ cd /tmp $ sudo dnssec-keygen -a HMAC-MD5 -b 128 -n HOST dns.example.com Kdns.example.com .+aaa +iiiii This output is the name of a file containing the new key. Read the file to find the base64-encoded key string: $ sudo cat Kdns.example.com .+NNN +MMMMM .key dns.example.com IN KEY 512 3 157 base64-key-string Add the directives to /etc/named.conf on the primary server: key zone-transfer-key { algorithm hmac-md5; secret \"base64-key-string \"; }; zone \"example.com \" IN { type master; allow-transfer { key zone-transfer-key; }; ... }; Add the directives below to /etc/named.conf on the secondary nameserver: key zone-transfer-key { algorithm hmac-md5; secret \"base64-key-string \"; }; server IP-OF-MASTER { keys { zone-transfer-key; }; }; zone \"example.com \" IN { type slave; masters { IP-OF-MASTER ; }; ... };",
           "label": "default"
         },
         {
@@ -1003,7 +1003,7 @@
     {
       "descriptions": [
         {
-          "data": "Is there a mission-critical reason to enable the risky dynamic update functionality? If not, edit . For each zone specification, correct the following directive if necessary:",
+          "data": "Is there a mission-critical reason to enable the risky dynamic update functionality? If not, edit /etc/named.conf . For each zone specification, correct the following directive if necessary: zone \"example.com \" IN { allow-update { none; }; ... };",
           "label": "default"
         },
         {
@@ -1026,7 +1026,7 @@
     {
       "descriptions": [
         {
-          "data": "Is it necessary for a secondary nameserver to receive zone data via zone transfer from the primary server? If not, follow the instructions in this section. If so, see the next section for instructions on protecting zone transfers. Add or correct the following directive within :",
+          "data": "Is it necessary for a secondary nameserver to receive zone data via zone transfer from the primary server? If not, follow the instructions in this section. If so, see the next section for instructions on protecting zone transfers. Add or correct the following directive within /etc/named.conf : options { allow-transfer { none; }; ... }",
           "label": "default"
         },
         {
@@ -1048,7 +1048,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This guide presents a catalog of security-relevant configuration settings for Red Hat Enterprise Linux 8. It is a rendering of content structured in the eXtensible Configuration Checklist Description Format (XCCDF) in order to support security automation. The SCAP content is is available in the package which is developed at . Providing system administrators with such guidance informs them how to securely configure systems under their control in a variety of network roles. Policy makers and baseline creators can use this catalog of settings, with its associated references to higher-level security control catalogs, in order to assist them in security baseline creation. This guide is a , and satisfaction of every item is not likely to be possible or sensible in many operational scenarios. However, the XCCDF format enables granular selection and adjustment of settings, and their association with OVAL and OCIL content provides an automated checking capability. Transformations of this document, and its associated automated checking content, are capable of providing baselines that meet a diverse set of policy objectives. Some example XCCDF , which are selections of items that form checklists and can be used as baselines, are available with this guide. They can be processed, in an automated fashion, with tools that support the Security Content Automation Protocol (SCAP). The DISA STIG, which provides required settings for US Department of Defense systems, is one example of a baseline created from this guidance.",
+  "summary": "This guide presents a catalog of security-relevant configuration settings for Red Hat Enterprise Linux 8. It is a rendering of content structured in the eXtensible Configuration Checklist Description Format (XCCDF) in order to support security automation. The SCAP content is is available in the scap-security-guide package which is developed at https://www.open-scap.org/security-policies/scap-security-guide . Providing system administrators with such guidance informs them how to securely configure systems under their control in a variety of network roles. Policy makers and baseline creators can use this catalog of settings, with its associated references to higher-level security control catalogs, in order to assist them in security baseline creation. This guide is a catalog, not a checklist , and satisfaction of every item is not likely to be possible or sensible in many operational scenarios. However, the XCCDF format enables granular selection and adjustment of settings, and their association with OVAL and OCIL content provides an automated checking capability. Transformations of this document, and its associated automated checking content, are capable of providing baselines that meet a diverse set of policy objectives. Some example XCCDF Profiles , which are selections of items that form checklists and can be used as baselines, are available with this guide. They can be processed, in an automated fashion, with tools that support the Security Content Automation Protocol (SCAP). The DISA STIG, which provides required settings for US Department of Defense systems, is one example of a baseline created from this guidance.",
   "title": "Guide to the Secure Configuration of Red Hat Enterprise Linux 8",
   "version": "0.1.81"
 }

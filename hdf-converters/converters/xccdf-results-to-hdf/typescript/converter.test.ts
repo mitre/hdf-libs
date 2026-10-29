@@ -1684,3 +1684,48 @@ describe('extractCheckContentRef', () => {
     ).toEqual({ name: '', href: '' });
   });
 });
+
+// XCCDF prose elements are htmlTextWithSubType: CIS and SCAP Security Guide
+// content carries its text inside XHTML children, so a parser that reads only
+// an element's own text drops every word. Text on both sides of the span
+// proves document order is kept.
+describe('prose inside xhtml children', () => {
+  it('carries text inside xhtml children', async () => {
+    const baseline = await parseBaseline('CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml');
+    expect(baseline.summary?.startsWith('This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser.'), baseline.summary).toBe(true);
+
+    const req = findBaselineReq(baseline, 'xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled');
+    expect(req).toBeDefined();
+    const descriptions = Object.fromEntries(req!.descriptions.map((d) => [d.label, d.data]));
+    expect(descriptions['default']).toBe('This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)');
+    expect(descriptions['rationale']).toBe('This setting is typically disabled to help combat phishing attempts.');
+    expect(descriptions['fix']).toBe('To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.');
+  });
+});
+
+// Edges no committed fixture carries: the five predefined entities and numeric
+// references decode (an invalid code point becomes U+FFFD), a CDATA section is
+// literal, a comment or PI is dropped even when it contains ">", a nested
+// element keeps its place, and every prose field is wired. Synthetic XML
+// input, not a committed fixture.
+describe('prose pipeline edges', () => {
+  it('decodes entities, keeps CDATA literal, drops comments and PIs, keeps nested-element order, wires every prose field', async () => {
+    const input = '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:xhtml="http://www.w3.org/1999/xhtml" id="xccdf_x_benchmark_p">' +
+      '<status>draft</status><title>t</title><version>1</version>' +
+      '<Group id="g"><title>g</title><Rule id="r" severity="low"><title>r</title>' +
+      '<description>a &lt;b&gt; &amp; &#65; &#x42; &quot;q&quot; &apos;p&apos; &#xD800; line1\r\nline2 <xhtml:p>in <xhtml:s>s</xhtml:s> out</xhtml:p> <!-- c > d --> <?pi x > y ?> <![CDATA[c &amp; <d>]]> end</description>' +
+      '<warning category="general"><xhtml:p>careful <xhtml:code>x</xhtml:code></xhtml:p></warning>' +
+      '<rationale><xhtml:p>why <xhtml:em>it</xhtml:em> matters</xhtml:p></rationale>' +
+      '<fixtext fixref="f"><xhtml:div>run <xhtml:code>cmd</xhtml:code></xhtml:div></fixtext>' +
+      '</Rule></Group></Benchmark>';
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(input)) as HDFBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+    const descriptions = Object.fromEntries(baseline.requirements[0]!.descriptions.map((d) => [d.label, d.data]));
+    expect(descriptions).toEqual({
+      default: 'a & A B "q" \'p\' \uFFFD line1 line2 in s out c &amp; end',
+      fix: 'run cmd',
+      rationale: 'why it matters',
+      warning: 'careful x',
+    });
+  });
+});

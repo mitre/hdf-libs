@@ -340,17 +340,24 @@ function parseCpeVersion(testSystem: string | undefined): string {
   return parts.length >= 4 ? parts[3]! : '';
 }
 
+// Prose elements (htmlTextWithSubType) are left unparsed: CIS and SCAP Security
+// Guide content carries its words inside XHTML children, and parsing those into
+// keyed objects loses the words and their order. The raw inner XML goes through
+// proseText, which sees the same bytes Go's decoder gives innerxml.
+const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtext'];
+
+// trimValues would strip each text node before the parser concatenates them, so
+// prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
+// came back as "Thepackage". Keep the whitespace and let stripHTML collapse it.
+const PARSE_OPTIONS = { trimValues: false, stopNodes: PROSE_STOP_NODES };
+
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
   validateInputSize(input, 'xccdf-results');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
   // Detect input format: ARF or raw XCCDF
   const arfParsed = parsed as ArfParsed;
@@ -388,11 +395,7 @@ export async function convertXccdfBenchmarkToHdf(input: string, converterVersion
   }
   validateInputSize(input, 'xccdf-benchmark');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
   const xccdfParsed = parsed as XccdfBenchmark;
   const benchmark = xccdfParsed.Benchmark;
 
@@ -424,11 +427,7 @@ export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0
   }
   validateInputSize(input, 'xccdf');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
   // Check ARF first
   const arfParsed = parsed as ArfParsed;
@@ -509,7 +508,7 @@ async function convertBenchmarkResultsToHdf(
   baseline.title = baselineName;
   baseline.version = extractVersion(benchmark.version);
   baseline.status = 'loaded';
-  baseline.summary = stripHTML(extractText(benchmark.description));
+  baseline.summary = stripHTML(proseText(benchmark.description));
 
   const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
   const toolVersion = parseCpeVersion(testResult['test-system']);
@@ -589,7 +588,7 @@ async function convertBenchmarkToBaselineJson(
     title: extractText(benchmark.title),
     version: extractVersion(benchmark.version),
     status: 'loaded',
-    summary: stripHTML(extractText(benchmark.description)),
+    summary: stripHTML(proseText(benchmark.description)),
     integrity,
     requirements,
     groups,
@@ -615,7 +614,7 @@ function ruleToBaselineRequirement(
 
   const descriptions: Description[] = [{
     label: 'default',
-    data: stripHTML(extractVulnDiscussion(extractText(rule.description))),
+    data: stripHTML(extractVulnDiscussion(proseText(rule.description))),
   }];
 
   const check = selectCheck(rule.check);
@@ -624,17 +623,17 @@ function ruleToBaselineRequirement(
     descriptions.push({ label: 'check', data: checkDesc });
   }
 
-  const fixtext = extractFixtext(rule.fixtext);
+  const fixtext = proseText(rule.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
   }
 
-  const rationale = extractText(rule.rationale).trim();
+  const rationale = proseText(rule.rationale).trim();
   if (rationale) {
     descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
   }
 
-  const warning = extractText(rule.warning).trim();
+  const warning = proseText(rule.warning).trim();
   if (warning) {
     descriptions.push({ label: 'warning', data: stripHTML(warning) });
   }
@@ -791,7 +790,7 @@ async function convertArfCollection(
     baseline.status = 'loaded';
     if (benchmark) {
       baseline.version = extractVersion(benchmark.version);
-      baseline.summary = stripHTML(extractText(benchmark.description));
+      baseline.summary = stripHTML(proseText(benchmark.description));
     }
     baselines.push(baseline);
 
@@ -958,22 +957,22 @@ function ruleResultToRequirement(
 
   const descriptions: Description[] = [{
     label: 'default',
-    data: stripHTML(extractVulnDiscussion(extractText(ruleDef?.description))),
+    data: stripHTML(extractVulnDiscussion(proseText(ruleDef?.description))),
   }];
   const check = selectCheck(ruleDef?.check);
   const checkDesc = checkDescriptionData(check);
   if (checkDesc) {
     descriptions.push({ label: 'check', data: checkDesc });
   }
-  const fixtext = extractFixtext(ruleDef?.fixtext);
+  const fixtext = proseText(ruleDef?.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
   }
-  const rationale = extractText(ruleDef?.rationale).trim();
+  const rationale = proseText(ruleDef?.rationale).trim();
   if (rationale) {
     descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
   }
-  const warning = extractText(ruleDef?.warning).trim();
+  const warning = proseText(ruleDef?.warning).trim();
   if (warning) {
     descriptions.push({ label: 'warning', data: stripHTML(warning) });
   }
@@ -1110,16 +1109,48 @@ const NAMED_ENTITIES: Record<string, string> = {
 // so character references arrive undecoded; Go's encoding/xml decodes them for
 // free. STIG fix texts rely on this (an entity-encoded "<partition>" must
 // become a real tag before stripHTML can drop it). Only predefined and numeric
-// references are decoded; document-defined entities stay untouched.
+// references are decoded; document-defined entities stay untouched. A
+// reference to no valid code point becomes U+FFFD, as it does in Go.
 function decodeXmlEntities(s: string): string {
   return s.replace(
     /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));/g,
     (match, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
-      if (dec !== undefined) return String.fromCodePoint(Number.parseInt(dec, 10));
-      if (hex !== undefined) return String.fromCodePoint(Number.parseInt(hex, 16));
+      if (dec !== undefined) return codePointText(Number.parseInt(dec, 10));
+      if (hex !== undefined) return codePointText(Number.parseInt(hex, 16));
       return name !== undefined ? NAMED_ENTITIES[name] ?? match : match;
     },
   );
+}
+
+function codePointText(n: number): string {
+  return n > 0x10ffff || (n >= 0xd800 && n <= 0xdfff) ? '\uFFFD' : String.fromCodePoint(n);
+}
+
+function proseMarkupText(s: string): string {
+  return decodeXmlEntities(s.replace(/<!--[\s\S]*?-->|<\?[\s\S]*?\?>/g, ''));
+}
+
+// A prose element is a stop node, so its value is the raw inner XML: a string,
+// or under #text beside its attributes.
+function proseText(field: string | TextElement | FixtextElement | undefined): string {
+  if (field === undefined || field === null) {
+    return '';
+  }
+  return proseFromInnerXml(typeof field === 'string' ? field : (field['#text'] ?? ''));
+}
+
+// Turns raw inner XML into the text the parser would have produced for
+// character data, and the same text the Go converter produces from the same
+// bytes: line endings folded to LF (XML 1.0 §2.11), CDATA sections literal,
+// comments and processing instructions dropped (stripHTML would stop at the
+// first ">" inside one), and the predefined and numeric entities decoded
+// everywhere else. Element tags stay in place for stripHTML.
+function proseFromInnerXml(inner: string): string {
+  return inner
+    .replace(/\r\n?/g, '\n')
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((part, i) => (i % 2 === 1 ? part.slice('<![CDATA['.length, -']]>'.length) : proseMarkupText(part)))
+    .join('');
 }
 
 /**
@@ -1185,21 +1216,6 @@ function extractVersion(
     return field;
   }
   return (field as VersionElement)['#text'] ?? '';
-}
-
-/**
- * Extract fixtext content from fixtext field.
- */
-function extractFixtext(
-  field: string | FixtextElement | undefined
-): string {
-  if (field === undefined || field === null) {
-    return '';
-  }
-  if (typeof field === 'string') {
-    return decodeXmlEntities(field);
-  }
-  return decodeXmlEntities((field as FixtextElement)['#text'] ?? '');
 }
 
 /**
