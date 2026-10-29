@@ -15,7 +15,7 @@ describe('generateInSpecYml', () => {
 
   it('includes default inspec_version constraint', () => {
     const yml = generateInSpecYml(minimalBaseline);
-    expect(yml).toContain("inspec_version: '~>6.0'");
+    expect(yml).toContain("inspec_version: '>= 7.0'");
   });
 
   it('allows overriding inspec_version', () => {
@@ -87,6 +87,86 @@ describe('generateInSpecYml', () => {
     expect(yml).not.toContain("version: '1.0.0'");
   });
 
+  it('version uses the benchmark release as <version>.<release>.0', () => {
+    const baseline = makeBaseline({
+      name: 'my-profile',
+      version: '2',
+      extensions: { passthrough: { benchmarkRelease: '9' } },
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const yml = generateInSpecYml(baseline);
+    expect(yml).toContain("version: '2.9.0'");
+    expect(yml).not.toContain("version: '2'\n");
+  });
+
+  it('version stays plain when no benchmark release is carried', () => {
+    const baseline = makeBaseline({
+      name: 'my-profile',
+      version: '2',
+      extensions: { passthrough: { releaseInfo: 'Release: 9 Benchmark Date: 01 Jul 2026' } },
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const yml = generateInSpecYml(baseline);
+    expect(yml).toContain("version: '2'\n");
+  });
+
+  it('non-integer release leaves the version plain', () => {
+    const baseline = makeBaseline({
+      name: 'my-profile',
+      version: '3',
+      extensions: { passthrough: { benchmarkRelease: '3.5' } },
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const yml = generateInSpecYml(baseline);
+    expect(yml).toContain("version: '3'\n");
+    expect(yml).not.toContain('3.3.5');
+  });
+
+  it('quotes scalars that YAML would otherwise misread', () => {
+    const baseline = makeBaseline({
+      name: 'my-profile',
+      summary: "Comments go to: disa.stig_spt@mail.mil. It's required.",
+      maintainer: 'Team @ MITRE',
+      copyright: 'MITRE Corporation: 2026',
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const yml = generateInSpecYml(baseline);
+    expect(yml).toContain("summary: 'Comments go to: disa.stig_spt@mail.mil. It''s required.'");
+    expect(yml).toContain("maintainer: 'Team @ MITRE'");
+    expect(yml).toContain("copyright: 'MITRE Corporation: 2026'");
+  });
+
+  // Shared with the Go suite: the same Baseline must yield these bytes in both languages.
+  it('parity vector: identical bytes to the Go generator', () => {
+    const baseline = makeBaseline({
+      name: 'rhel-9-stig',
+      title: 'Red Hat Enterprise Linux 9 Security Technical Implementation Guide',
+      summary: "Comments go to: disa.stig_spt@mail.mil. It's required.",
+      version: '2',
+      extensions: { passthrough: { benchmarkRelease: '9' } },
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const expected =
+      'name: rhel-9-stig\n' +
+      'title: Red Hat Enterprise Linux 9 Security Technical Implementation Guide\n' +
+      "summary: 'Comments go to: disa.stig_spt@mail.mil. It''s required.'\n" +
+      "version: '2.9.0'\n" +
+      "inspec_version: '>= 7.0'\n";
+    expect(generateInSpecYml(baseline)).toBe(expected);
+  });
+
+  it('metadata version beats the benchmark release', () => {
+    const baseline = makeBaseline({
+      name: 'my-profile',
+      version: '2',
+      extensions: { passthrough: { benchmarkRelease: '9' } },
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const yml = generateInSpecYml(baseline, { metadata: { version: '3.0.0' } });
+    expect(yml).toContain("version: '3.0.0'");
+    expect(yml).not.toContain("version: '2.9.0'");
+  });
+
   it('renders supports array', () => {
     const baseline = makeBaseline({
       name: 'my-profile',
@@ -110,7 +190,7 @@ describe('generateInSpecYml', () => {
     const yml = generateInSpecYml(baseline);
     expect(yml).toContain('depends:');
     expect(yml).toContain('name: base-profile');
-    expect(yml).toContain('git: https://github.com/org/base.git');
+    expect(yml).toContain("git: 'https://github.com/org/base.git'");
   });
 
   it('renders inputs array', () => {
@@ -184,7 +264,7 @@ describe('generateInSpecYml', () => {
       requirements: [makeRequirement({ id: 'SV-001' })],
     });
     const yml = generateInSpecYml(baseline);
-    expect(yml).toContain('url: https://example.com/profile.tar.gz');
+    expect(yml).toContain("url: 'https://example.com/profile.tar.gz'");
   });
 
   it('renders inputs with number and string values', () => {
