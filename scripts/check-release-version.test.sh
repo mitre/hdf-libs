@@ -20,7 +20,8 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-work="$(mktemp -d)"
+# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
+work="$(mktemp -d "${TMPDIR:-/tmp}/check-release-version.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
 pass=0

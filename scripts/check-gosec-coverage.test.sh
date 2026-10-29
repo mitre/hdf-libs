@@ -25,7 +25,8 @@ for tool in go golangci-lint; do
   fi
 done
 
-work="$(mktemp -d)"
+# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
+work="$(mktemp -d "${TMPDIR:-/tmp}/check-gosec-coverage.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
 pass=0
