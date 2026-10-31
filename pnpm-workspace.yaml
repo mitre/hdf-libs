@@ -76,6 +76,9 @@ overrides:
   # <1.16.1 hold, which pinned into the range; goes when http-proxy resolves
   # ^1.16.2 itself.
   "follow-redirects@>=1.16.0 <1.16.2": "^1.16.2"
+  # GHSA-6pq8-jhm2-2vcw — qs 6.16.0 stringify TypeError on uncoercible array
+  # elements, via http-server and stryker (dev); goes when they declare ^6.16.1.
+  "qs@>=6.7.0 <6.16.1": "^6.16.1"
 auditConfig:
   ignoreGhsas:
     # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when
