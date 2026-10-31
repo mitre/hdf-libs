@@ -23,6 +23,10 @@ minimumReleaseAgeExclude:
   - source-map-js@1.2.2
   # Fixes both fast-uri URI-parsing advisories; remove after this patch ages past the cooldown.
   - fast-uri@3.1.9
+  # GHSA-mrwp-f3q8-3g9p's only patched follow-redirects (1.16.2) is a day short of
+  # the cooldown and the pre-commit audit blocks every commit until it is taken;
+  # goes when 1.16.2 ages past the window.
+  - follow-redirects@1.16.2
 # Forced patched versions for transitive advisories (see the security gate).
 # Every target is a RANGE, never an exact version: an exact pin names the floor
 # itself, so when the advisory's patched floor rises the pin becomes the new
@@ -65,10 +69,16 @@ overrides:
   # 7.29.1 but that release was skipped, so 7.29.7 is the real 7.x fix; goes when
   # stryker's babel plugins declare ^7.29.7 themselves.
   "@babel/core@<7.29.1": "^7.29.7"
-  # GHSA-q3jh-wrc6-jgq8 / GHSA-8r9p-f939-6h3c — follow-redirects 1.16.0 credential
-  # headers survive a cross-origin redirect, via http-server → http-proxy under
-  # hdf-schema (dev); goes when http-proxy resolves ^1.16.1 itself.
-  "follow-redirects@>=1.16.0 <1.16.1": "^1.16.1"
+  # GHSA-q3jh-wrc6-jgq8 / GHSA-8r9p-f939-6h3c / GHSA-mrwp-f3q8-3g9p — follow-redirects
+  # 1.16.0 and 1.16.1 let credential headers survive a cross-origin redirect
+  # (1.16.1 fixed the first pair, then missed cross-realm sensitiveHeaders
+  # arrays), via http-server → http-proxy under hdf-schema (dev). Supersedes the
+  # <1.16.1 hold, which pinned into the range; goes when http-proxy resolves
+  # ^1.16.2 itself.
+  "follow-redirects@>=1.16.0 <1.16.2": "^1.16.2"
+  # GHSA-6pq8-jhm2-2vcw — qs 6.16.0 stringify TypeError on uncoercible array
+  # elements, via http-server and stryker (dev); goes when they declare ^6.16.1.
+  "qs@>=6.7.0 <6.16.1": "^6.16.1"
 auditConfig:
   ignoreGhsas:
     # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when
