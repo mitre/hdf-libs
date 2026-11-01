@@ -281,10 +281,12 @@ func detectConvertSource(cmd *cobra.Command, data []byte, inputPath, fromFormat,
 // helper upgrades legacy→v3 itself, dropping the top-level target before we could
 // capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
 // for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
-// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
+// Gated to HDF/legacy/InSpec input so a scanner format that happens to carry a top-level
 // "target" key is untouched.
 func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byte, format, version string, err error) {
-	isHDF := strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")
+	// "inspec" is registered to the same legacy (exec-json) converter.
+	isHDF := strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf") ||
+		strings.EqualFold(fromFormat, "inspec")
 	if !isHDF || !hasSAFSupplement(data) {
 		return data, fromFormat, fromVersion, nil
 	}
