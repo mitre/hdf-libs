@@ -61,7 +61,7 @@
           "tags": { "cci": ["CCI-001891"], "nist": ["AU-8 (1)"], "severity": "low" },
           "sourceLocation": { "ref": "controls/stig.rb", "line": 80 },
           "results": [
-            { "status": "passed", "codeDesc": "chronyd service should be running", "startTime": "2024-02-01T00:00:04Z", "runTime": 0.02 }
+            { "status": "notApplicable", "codeDesc": "chronyd service is not applicable to this target", "startTime": "2024-02-01T00:00:04Z", "runTime": 0.02 }
           ]
         },
         {

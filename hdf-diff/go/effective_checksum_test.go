@@ -18,7 +18,8 @@ const ecRefTime = "2026-07-01T00:00:00Z"
 const (
 	ecVectorFailedHalf = "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021" // {"status":"failed","impact":0.5,"disposition":null}
 	ecVectorWaivedNA   = "40f165574efcca5a6bf5ff2c113e6d1bc2aea56e4251b70b68bdb2e05d1fef3b" // {"status":"notApplicable","impact":0.7,"disposition":"waiver"}
-	ecVectorZeroImpact = "de78ada7d86293d722efc2c30b0bac553303183ec9e784839c3c9a7745472ffc" // {"status":"notApplicable","impact":0,"disposition":null}
+	ecVectorPassedZero = "b14c991ae304e83d40daae9f9a70988e8e069b11343f17ab2da4a0587bad4d37" // {"status":"passed","impact":0,"disposition":null}
+	ecVectorNAZero     = "de78ada7d86293d722efc2c30b0bac553303183ec9e784839c3c9a7745472ffc" // {"status":"notApplicable","impact":0,"disposition":null}
 	ecVectorPassedHalf = "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217" // {"status":"passed","impact":0.5,"disposition":null}
 )
 
@@ -53,14 +54,28 @@ func TestComputeEffectiveChecksum_KnownVectors(t *testing.T) {
 		assert.Equal(t, ecVectorWaivedNA, cs.Value)
 	})
 
-	t.Run("impact zero resolves to notApplicable", func(t *testing.T) {
+	t.Run("impact zero hashes the result roll-up, not notApplicable", func(t *testing.T) {
+		// Impact is hashed but does not resolve the status, so a passing
+		// requirement at impact 0 hashes as passed.
 		req := stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 			r.Impact = 0
 			r.Results = []hdf.RequirementResult{stMakeResult(hdf.Passed)}
 		})
 		cs := ComputeEffectiveChecksum(req, ecRefTime)
 		require.NotNil(t, cs)
-		assert.Equal(t, ecVectorZeroImpact, cs.Value)
+		assert.Equal(t, ecVectorPassedZero, cs.Value)
+	})
+
+	t.Run("an explicit notApplicable result at impact zero", func(t *testing.T) {
+		// The shape legacyhdf-to-hdf emits for an InSpec control scored 0: the
+		// scope claim is a result, so it reaches the roll-up on its own.
+		req := stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+			r.Impact = 0
+			r.Results = []hdf.RequirementResult{stMakeResult(hdf.NotApplicable)}
+		})
+		cs := ComputeEffectiveChecksum(req, ecRefTime)
+		require.NotNil(t, cs)
+		assert.Equal(t, ecVectorNAZero, cs.Value)
 	})
 }
 

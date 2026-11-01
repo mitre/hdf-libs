@@ -109,7 +109,7 @@ func TestAggregate_StatusAliasAccepted(t *testing.T) {
 	if out.Aggregate.Total != 1 {
 		t.Errorf("not_applicable total = %d, want 1 (V-NA-04 only)", out.Aggregate.Total)
 	}
-	if got := out.Aggregate.Counts["no_impact"]["total"]; got != 1 {
+	if got := out.Aggregate.Counts["not_applicable"]["total"]; got != 1 {
 		t.Errorf("no_impact bucket = %d, want 1 (V-NA-04)", got)
 	}
 	for _, excluded := range []string{"passed", "failed", "error", "skipped"} {
@@ -146,7 +146,7 @@ func TestAggregate_SeverityNoneAliasAccepted(t *testing.T) {
 	if out.Aggregate.Total != 1 {
 		t.Errorf("severity none total = %d, want 1 (V-NA-04 only; V-PASS-01 high, V-FAIL-CRIT-02 critical, V-FAIL-MED-03 medium and V-ERR-LOW-05 low are excluded)", out.Aggregate.Total)
 	}
-	if got := out.Aggregate.Counts["no_impact"]["informational"]; got != 1 {
+	if got := out.Aggregate.Counts["not_applicable"]["informational"]; got != 1 {
 		t.Errorf("no_impact/informational = %d, want 1 (V-NA-04)", got)
 	}
 }

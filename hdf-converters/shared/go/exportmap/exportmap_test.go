@@ -108,11 +108,17 @@ func TestStatusOf_SuppressedMatrix(t *testing.T) {
 	assert.True(t, st.Overridden)
 	assert.False(t, st.Suppressed, "risk-adjusted failure stays actionable")
 
-	// structural impact-0 notApplicable is NOT acceptance-suppression
-	na := mkResults("failed")
+	// A notApplicable RESULT is a scope claim, not an acceptance decision, so it
+	// is not suppression either — and an impact of 0 alone changes nothing.
+	na := mkResults("notApplicable")
 	na["impact"] = float64(0)
 	assert.False(t, StatusOf(na).Suppressed)
 	assert.Equal(t, "notApplicable", StatusOf(na).Rollup)
+
+	zeroImpact := mkResults("failed")
+	zeroImpact["impact"] = float64(0)
+	assert.False(t, StatusOf(zeroImpact).Suppressed)
+	assert.Equal(t, "failed", StatusOf(zeroImpact).Rollup, "impact does not reach the status")
 
 	// a passing finding is never suppressed regardless of overrides
 	pass := mkResults("passed")

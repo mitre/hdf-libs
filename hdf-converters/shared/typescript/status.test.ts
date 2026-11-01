@@ -26,10 +26,13 @@ const adjustment = (value: number, appliedAt: string, expiresAt?: string) => ({
 });
 
 describe('requirementEffectiveStatus', () => {
-  it('walks the ladder: override, error roll-up, impact-0, worst-wins', () => {
+  it('walks the ladder: override, then worst-wins — impact never reaches it', () => {
     expect(requirementEffectiveStatus(req({ impact: 0.5, results: [{ status: 'passed' }, { status: 'failed' }] }))).toBe('failed');
     expect(requirementEffectiveStatus(req({ impact: 0.5 }))).toBe('notReviewed');
-    expect(requirementEffectiveStatus(req({ impact: 0, results: [{ status: 'failed' }] }))).toBe('notApplicable');
+    expect(requirementEffectiveStatus(req({ impact: 0, results: [{ status: 'failed' }] }))).toBe('failed');
+    expect(requirementEffectiveStatus(req({ impact: 0, results: [{ status: 'notApplicable' }] }))).toBe(
+      'notApplicable'
+    );
     expect(requirementEffectiveStatus(req({ impact: 0, results: [{ status: 'error' }] }))).toBe('error');
     expect(
       requirementEffectiveStatus(

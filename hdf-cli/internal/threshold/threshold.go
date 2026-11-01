@@ -221,7 +221,7 @@ func AssertionCount(config *hdfengine.ThresholdConfig) int {
 			count++
 		}
 	}
-	for _, severity := range []*hdfengine.ThresholdSeverity{config.Passed, config.Failed, config.Skipped, config.Error, config.NoImpact} {
+	for _, severity := range []*hdfengine.ThresholdSeverity{config.Passed, config.Failed, config.Skipped, config.Error, config.NotApplicable, config.NoImpact} {
 		if severity == nil {
 			continue
 		}

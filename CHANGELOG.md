@@ -12,6 +12,32 @@ All notable changes to this project will be documented in this file.
 
   The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
 
+### Changed
+
+- **The threshold and compliance bucket for `notApplicable` is now spelled `not_applicable`. `no_impact` keeps working on input, permanently.**
+
+  `no_impact` names a severity score, but the bucket counts the `notApplicable` **status** and always has — the name is InSpec heritage from the convention that an impact of 0 meant not-applicable, which this release removes from the status ladder. The bucket's contents are unchanged; only the key is new.
+
+  Both spellings are accepted wherever a threshold section is named, in files and in `-I` inline specs, and a violation names whichever one your file uses. `no_impact` is **not** deprecated: SAF CLI writes it, SAF threshold files are a supported input, and that will not change. A spec setting both spellings is refused rather than resolved, since they name one bucket and honouring one would drop a bound you wrote.
+
+  **Source-breaking for library consumers.** The count-set field is renamed with the key: `hdfengine.StatusCounts.NoImpact` → `.NotApplicable` in Go, `StatusCounts.noImpact` → `.notApplicable` in TypeScript. Code reading the old field no longer compiles. `ThresholdConfig` keeps both — `NotApplicable` is what this tool writes, `NoImpact` is the SAF spelling it still reads.
+
+  **What this breaks.** Everything this tool *writes* now says `not_applicable`: the `counts` object in `hdf compliance --json` and `hdf validate threshold --format json`, the `hdf_compliance` and `hdf_aggregate` MCP response envelopes, the HTML dashboard's summary table, and the templates `hdf generate threshold` produces. A dashboard or `jq` pipeline keyed on `no_impact` reads zero and must be updated. Interoperability now runs one way only: SAF's threshold files work here, and a file generated here is not readable by `saf validate threshold`.
+
+- **An impact of 0 no longer means "not applicable". The canonical effective-status ladder ignores impact entirely, and the InSpec convention is translated at import.**
+
+  The ladder is now two rungs — a governing override, else the worst-wins roll-up of the results. The `impact === 0 → notApplicable` rung is gone, along with the `error` rung it needed (`error` already outranks every other status in the worst-wins order, so that rung was doing nothing once impact stopped being consulted). A status now says only what the assessment established; impact says only how much risk the requirement carries.
+
+  "Impact 0 means not applicable" was one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band, so the rung applied InSpec's reading to every format that had never agreed to it — a clean scan, a never-run scan and a genuinely inapplicable control all reported `notApplicable`. `legacyhdf-to-hdf`, the single ingest point for InSpec exec JSON and legacy HDF, now emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else, so the verdict travels in `results[]` where every consumer can see it. It does **not** rewrite `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where a profile zeroed it. Because `notApplicable` ranks below `passed` and `failed`, the translation can never bury evidence that a check actually ran.
+
+  **What this means for documents you already have.** A document converted by an older binary carries impact 0 with a `notReviewed` roll-up and no translated result. Recomputed under the new ladder it reports `notReviewed`, while the stored `effectiveStatus` on the same requirement still says `notApplicable`. Both are behaving correctly — the document was written under the older semantics. **Re-conversion from the original source is the only remedy offered;** there is no migration tool, and nothing we ship rewrites an existing document.
+
+  Scope it honestly: this affects documents whose source set impact 0 to signal not-applicable, which in practice means InSpec-family output. A document from any of the converters that derive impact through the shared severity map is not drifting — for those, impact 0 meant informational severity, and the change is a fix. Clean scans in particular now report `passed` rather than `notApplicable`.
+
+  Effective checksums hash the resolved status, so a requirement-change-event chain anchored before this change reports `chainGap` on the affected keys afterwards — a **checksum epoch**, in the sense `site/docs/architecture/status-determination.md` already defines, remedied by re-deriving the chain from a fresh rescan. In practice almost nothing is anchored on an affected status.
+
+  One knock-on worth naming: `hdf diff` reports an impact-only change through `changeReasons`, `fieldChanges` and `drift`, but a matched pair's `state` tracks the effective status alone, so re-scoring a passing requirement to 0.0 now reads `unchanged` where it previously read `updated`. Teaching the diff engine to key on any changed field is tracked separately.
+
 ### Fixed
 
 - **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.

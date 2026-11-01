@@ -146,7 +146,7 @@ describe('computeEffectiveStatus', () => {
   // --- effectiveStatus already set ---
 
   it('tolerates null result elements (out-of-contract input from untyped consumers)', () => {
-    expect(computeEffectiveStatus(req(0, [null]))).toBe('notApplicable');
+    expect(computeEffectiveStatus(req(0, [null]))).toBe('notReviewed');
   });
 
   it('ignores a stored effectiveStatus (output cache — canonical ladder governs)', () => {
@@ -158,7 +158,7 @@ describe('computeEffectiveStatus', () => {
   it('ignores a stored effectiveStatus at impact 0 too', () => {
     expect(
       computeEffectiveStatus(req(0, [{ status: 'passed' }], 'failed'))
-    ).toBe('notApplicable');
+    ).toBe('passed');
   });
 
   it('honors a governing override (the sanctioned divergence channel)', () => {
@@ -171,22 +171,26 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(r)).toBe('passed');
   });
 
-  // --- impact === 0 ---
+  // --- impact is not consulted ---
 
-  it('should return notApplicable when impact is 0 and no effectiveStatus', () => {
-    expect(computeEffectiveStatus(req(0, [{ status: 'passed' }]))).toBe(
+  it('rolls the results up normally at impact 0', () => {
+    expect(computeEffectiveStatus(req(0, [{ status: 'passed' }]))).toBe('passed');
+  });
+
+  it('reports notApplicable at impact 0 only when a result says so', () => {
+    expect(computeEffectiveStatus(req(0, [{ status: 'notApplicable' }]))).toBe(
       'notApplicable'
     );
   });
 
-  it('should return notApplicable when impact is 0 with no results', () => {
-    expect(computeEffectiveStatus(req(0, []))).toBe('notApplicable');
+  it('should return notReviewed when impact is 0 with no results', () => {
+    expect(computeEffectiveStatus(req(0, []))).toBe('notReviewed');
   });
 
   it('should return error when impact is 0 but a result errored', () => {
-    // An execution error means the check never ran, so nothing was established
-    // about applicability — error ranks above the impact-0 short-circuit,
-    // aligned with the canonical @mitre/hdf-utilities computeEffectiveStatus.
+    // error outranks every other status in the worst-wins order, so this holds
+    // without a dedicated rung, aligned with the canonical
+    // @mitre/hdf-utilities computeEffectiveStatus.
     expect(computeEffectiveStatus(req(0, [{ status: 'error' }]))).toBe('error');
     expect(
       computeEffectiveStatus(req(0, [{ status: 'passed' }, { status: 'error' }]))
@@ -294,9 +298,7 @@ describe('computeEffectiveStatus', () => {
   });
 
   it('should handle impact exactly at boundary (0.0)', () => {
-    expect(computeEffectiveStatus(req(0.0, [{ status: 'failed' }]))).toBe(
-      'notApplicable'
-    );
+    expect(computeEffectiveStatus(req(0.0, [{ status: 'failed' }]))).toBe('failed');
   });
 
   it('should handle very small positive impact', () => {

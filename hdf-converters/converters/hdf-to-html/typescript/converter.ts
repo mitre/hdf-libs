@@ -720,7 +720,7 @@ class Renderer {
           `${checks.failedUnderFailed} failed out of ${plural(checks.total, 'total check')}`,
       ),
     );
-    this.line(stat('not-applicable', all.noImpact.total, 'Not Applicable', ''));
+    this.line(stat('not-applicable', all.notApplicable.total, 'Not Applicable', ''));
     this.line(stat('not-reviewed', all.skipped.total, 'Not Reviewed', ''));
     this.line(stat('error', all.error.total, 'Error', ''));
     this.line(`<li class="stat stat-total"><span class="num">${severities.total}</span><span class="lbl">Total</span></li>`);
@@ -729,7 +729,7 @@ class Renderer {
       bar('Requirements by status', [
         ['passed', 'passed', all.passed.total],
         ['failed', 'failed', all.failed.total],
-        ['not-applicable', 'not applicable', all.noImpact.total],
+        ['not-applicable', 'not applicable', all.notApplicable.total],
         ['not-reviewed', 'not reviewed', all.skipped.total],
         ['error', 'error', all.error.total],
       ]),
@@ -1415,7 +1415,7 @@ function identity(value: unknown): string {
 
 /** A summary table row; `name` is already HTML. */
 function summaryRow(name: string, c: StatusCounts): string {
-  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.noImpact.total, c.error.total, severityTotals(c).total]
+  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.notApplicable.total, c.error.total, severityTotals(c).total]
     .map((n) => `<td>${n}</td>`)
     .join('');
   return `<tr><th scope="row">${name}</th>${cells}<td>${compliance(c)}</td></tr>`;

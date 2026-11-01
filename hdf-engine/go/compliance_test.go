@@ -70,8 +70,8 @@ func TestCompliance_CountsAndPercentage(t *testing.T) {
 	assert.Equal(t, 1, counts.Error.Total)
 	// Was counts.Error.None before 3.7.0 renamed the bucket.
 	assert.Equal(t, 1, counts.Error.Informational)
-	assert.Equal(t, 1, counts.NoImpact.Total)
-	assert.Equal(t, 1, counts.NoImpact.Medium)
+	assert.Equal(t, 1, counts.NotApplicable.Total)
+	assert.Equal(t, 1, counts.NotApplicable.Medium)
 
 	// passed / (passed+failed+skipped+error) = 1/4 = 25.0; notApplicable excluded.
 	assert.Equal(t, 25.0, CalculateCompliance(counts))
@@ -158,23 +158,34 @@ func TestCountControlsByStatus_EffectiveWithAndWithoutAgent(t *testing.T) {
 
 // TestMapControlIDsByStatus_UsesInjectedResolver proves the injected-resolver
 // twin maps a control's ID to its resolved status, diverging from the raw
-// MapControlIDs where they disagree. An impact-0 notReviewed control is skipped
-// under raw counting but no_impact under the effective-status resolver.
-// src/compliance.test.ts mirrors this.
+// MapControlIDs where they disagree. A waived failing control is failed under
+// raw counting but not_applicable under the effective-status resolver — an
+// override is the only channel that moves a status, so it is the only way the
+// two can disagree. src/compliance.test.ts mirrors this.
 func TestMapControlIDsByStatus_UsesInjectedResolver(t *testing.T) {
-	na := hdf.EvaluatedRequirement{ID: "SV-NA", Impact: 0.0, Results: resultsWith(hdf.NotReviewed)}
+	waived := hdf.NotApplicable
+	na := hdf.EvaluatedRequirement{
+		ID:      "SV-NA",
+		Impact:  0.5,
+		Results: resultsWith(hdf.Failed),
+		StatusOverrides: []hdf.StatusOverride{{
+			Status:    &waived,
+			AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+		}},
+	}
 	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Requirements: []hdf.EvaluatedRequirement{na}}}}
 
 	raw := MapControlIDs(results)
 	require.Len(t, raw, 1)
-	assert.Equal(t, ThresholdSkipped, raw[0].Status, "raw mapping counts impact-0 notReviewed as skipped")
+	assert.Equal(t, ThresholdFailed, raw[0].Status, "raw mapping ignores the override")
 
 	eff := MapControlIDsByStatus(results, func(req hdf.EvaluatedRequirement) string {
 		return hdfutil.ComputeEffectiveStatus(statusInput(req), time.Time{})
 	})
 	require.Len(t, eff, 1)
 	assert.Equal(t, "SV-NA", eff[0].ID)
-	assert.Equal(t, ThresholdNoImpact, eff[0].Status, "effective resolver maps impact-0 to no_impact")
+	assert.Equal(t, ThresholdNotApplicable, eff[0].Status, "effective resolver honours the waiver")
 
 	// A nil resolver maps everything to skipped.
 	nilMapped := MapControlIDsByStatus(results, nil)
@@ -200,7 +211,7 @@ func TestMapControlIDsByStatus_ImpactZeroErrorIsError(t *testing.T) {
 
 	counts := CountControlsByStatus(results, resolver)
 	assert.Equal(t, 1, counts.Error.Total)
-	assert.Equal(t, 0, counts.NoImpact.Total)
+	assert.Equal(t, 0, counts.NotApplicable.Total)
 }
 
 func ptrInt(i int) *int           { return &i }
@@ -283,8 +294,8 @@ func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	zero := 0
 	counts := StatusCounts{}
-	counts.NoImpact.Informational = 3
-	counts.NoImpact.Total = 3
+	counts.NotApplicable.Informational = 3
+	counts.NotApplicable.Total = 3
 
 	legacy := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
 	violations := ValidateThresholds(legacy, &counts, 100, nil)
@@ -312,8 +323,8 @@ func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 func TestValidateThresholds_LegacyNoneSurvivesConfigReuse(t *testing.T) {
 	zero := 0
 	counts := StatusCounts{}
-	counts.NoImpact.Informational = 3
-	counts.NoImpact.Total = 3
+	counts.NotApplicable.Informational = 3
+	counts.NotApplicable.Total = 3
 	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
 
 	first := ValidateThresholds(config, &counts, 100, nil)
@@ -331,7 +342,7 @@ func TestValidateThresholds_LegacyNoneSurvivesConfigReuse(t *testing.T) {
 // path names the author's key; the comparison names the bucket.
 func TestValidateThresholds_LegacyNonePathKeepsCanonicalComparison(t *testing.T) {
 	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Controls: []string{"C-1"}}}}
-	controlMap := []ControlIDMapping{{ID: "C-1", Status: ThresholdNoImpact, Severity: "low"}}
+	controlMap := []ControlIDMapping{{ID: "C-1", Status: SAFNotApplicableKey, Severity: "low"}}
 
 	violations := ValidateThresholds(config, &StatusCounts{}, 100, controlMap)
 	require.Len(t, violations, 1)
@@ -452,7 +463,7 @@ func TestCountControls_DuplicateIDsCountPerEntry(t *testing.T) {
 	assert.Equal(t, 273, counts.Failed.Total)
 	assert.Equal(t, 246, counts.Failed.Medium)
 	assert.Equal(t, 134, counts.Passed.Total)
-	assert.Equal(t, 1603, counts.Passed.Total+counts.Failed.Total+counts.Skipped.Total+counts.Error.Total+counts.NoImpact.Total)
+	assert.Equal(t, 1603, counts.Passed.Total+counts.Failed.Total+counts.Skipped.Total+counts.Error.Total+counts.NotApplicable.Total)
 }
 
 // A threshold naming a control id must hold for EVERY entry carrying that id.
@@ -592,4 +603,53 @@ func TestEffectiveImpactReadsTheGoZeroTimeAsNeverSet(t *testing.T) {
 
 	assert.Equal(t, 0.0, EffectiveImpactOf(req, time.Time{}),
 		"an unset expiry must leave the override governing, not read as expired")
+}
+
+// Both spellings of the notApplicable section are accepted, and a violation
+// names whichever one the author wrote: a spec saying no_impact must not send
+// its author hunting for a not_applicable key that is not in their file.
+//
+// The satisfied case alone could not fail — dropping the alias leaves the bound
+// unchecked, which also reports nothing. The violated case is what pins the
+// bound as APPLIED.
+func TestValidateThresholds_BothNotApplicableSpellingsAreAccepted(t *testing.T) {
+	zero := 0
+	counts := StatusCounts{}
+	counts.NotApplicable.Low = 2
+	counts.NotApplicable.Total = 2
+	controlMap := []ControlIDMapping{
+		{ID: "C-1", Status: ThresholdNotApplicable, Severity: "low"},
+		{ID: "C-2", Status: ThresholdNotApplicable, Severity: "low"},
+	}
+
+	canonical := &ThresholdConfig{NotApplicable: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}}}
+	violations := ValidateThresholds(canonical, &counts, 100, controlMap)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "not_applicable.total: 2 exceeds maximum 0", violations[0])
+
+	saf := &ThresholdConfig{NoImpact: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}}}
+	violations = ValidateThresholds(saf, &counts, 100, controlMap)
+	require.Len(t, violations, 1, "SAF's spelling must be applied, not merely parsed")
+	assert.Equal(t, "no_impact.total: 2 exceeds maximum 0", violations[0],
+		"the violation must name the key the author wrote")
+
+	// A named-control bound resolves its offenders through the control map,
+	// which records the canonical status whichever spelling the spec used.
+	named := &ThresholdConfig{NoImpact: &ThresholdSeverity{Low: &ThresholdBound{Controls: []string{"C-1"}}}}
+	violations = ValidateThresholds(named, &counts, 100, controlMap)
+	assert.Empty(t, violations, "C-1 is counted under notApplicable/low, so the bound is satisfied")
+}
+
+// They name one bucket, so honouring one would drop a bound the author wrote.
+func TestValidateThresholds_BothNotApplicableSpellingsIsRefused(t *testing.T) {
+	zero := 0
+	config := &ThresholdConfig{
+		NotApplicable: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}},
+		NoImpact:      &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}},
+	}
+	violations := ValidateThresholds(config, &StatusCounts{}, 100, nil)
+	require.NotEmpty(t, violations)
+	// Pinned to the same bytes the TypeScript peer pins, so the two surfaces
+	// cannot drift on wording a user reads.
+	assert.Equal(t, "both 'no_impact' and 'not_applicable' are set; they name the same bucket", violations[0])
 }

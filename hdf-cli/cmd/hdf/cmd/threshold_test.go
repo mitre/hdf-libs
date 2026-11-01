@@ -117,34 +117,34 @@ func writeTestResults(t *testing.T) string {
 	return path
 }
 
-// Impact-0 requirements whose RAW result status is notReviewed, not
-// notApplicable — the InSpec skip shape (a skip serialises as a notReviewed
-// result; Not Applicable is signalled by impact==0, with an explicit non-zero
-// STIG severity tag still present). Raw counting miscounts these as skipped;
-// effective-status counting resolves impact==0 to notApplicable (no_impact).
+// The shape the InSpec importer emits for a control its profile scored 0: the
+// skip it recorded (a skip serialises as a notReviewed result) plus the explicit
+// notApplicable result that states the scope claim, with the original STIG
+// severity preserved in the severity field. Raw counting miscounts these as
+// skipped; effective-status counting rolls them up to notApplicable.
 // Effective distribution: 1 passed(high), 1 failed(high), 1 skipped(medium,
-// genuine notReviewed at impact 0.5), 2 no_impact(1 high + 1 medium).
+// genuine notReviewed at impact 0.5), 2 not_applicable(1 high + 1 medium).
 const testResultsImpactZeroNotReviewed = `{
 	"baselines": [{
 		"name": "impact-zero-threshold-test",
 		"requirements": [
 			{
 				"id": "SV-NA-1",
-				"title": "NA via impact 0, raw notReviewed, high severity",
+				"title": "Translated out of scope, raw notReviewed, high severity",
 				"descriptions": [{"label": "default", "data": "test"}],
 				"impact": 0.0,
 				"severity": "high",
 				"tags": {},
-				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"},{"status": "notApplicable", "codeDesc": "out of scope for this target", "startTime": "2024-01-01T00:00:00Z"}]
 			},
 			{
 				"id": "SV-NA-2",
-				"title": "NA via impact 0, raw notReviewed, medium severity",
+				"title": "Translated out of scope, raw notReviewed, medium severity",
 				"descriptions": [{"label": "default", "data": "test"}],
 				"impact": 0.0,
 				"severity": "medium",
 				"tags": {},
-				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"},{"status": "notApplicable", "codeDesc": "out of scope for this target", "startTime": "2024-01-01T00:00:00Z"}]
 			},
 			{
 				"id": "SV-SKIP",
@@ -190,20 +190,19 @@ func writeImpactZeroResults(t *testing.T) string {
 	return path
 }
 
-// TestCountByStatusSeverity_ImpactZeroNotReviewedIsNoImpact is the lj0g.8
-// regression guard: impact-0 requirements whose raw result status is notReviewed
-// must count as no_impact (Not Applicable), never skipped, and must leave the
-// compliance denominator. Fails on the pre-fix raw-counting path (which would
-// report no_impact.total=0, skipped.total=3, compliance=20%).
-func TestCountByStatusSeverity_ImpactZeroNotReviewedIsNoImpact(t *testing.T) {
+// A control the InSpec importer translated — the skip it recorded plus an explicit
+// notApplicable result — must count as not_applicable, never skipped, and must
+// leave the compliance denominator. Counting raw result statuses instead would
+// report not_applicable.total=0 and skipped.total=3.
+func TestCountByStatusSeverity_TranslatedControlIsNotApplicable(t *testing.T) {
 	data := []byte(testResultsImpactZeroNotReviewed)
 
 	counts, err := countControlsByStatusSeverity(data)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, counts.NoImpact.Total, "impact-0 notReviewed controls are Not Applicable")
-	assert.Equal(t, 1, counts.NoImpact.High)
-	assert.Equal(t, 1, counts.NoImpact.Medium)
+	assert.Equal(t, 2, counts.NotApplicable.Total, "the translated controls are Not Applicable")
+	assert.Equal(t, 1, counts.NotApplicable.High)
+	assert.Equal(t, 1, counts.NotApplicable.Medium)
 	assert.Equal(t, 1, counts.Skipped.Total, "only the genuine impact>0 notReviewed control is skipped")
 	assert.Equal(t, 1, counts.Skipped.Medium)
 	assert.Equal(t, 1, counts.Passed.Total)
@@ -225,10 +224,10 @@ func TestThresholdCounting_ParseError(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestMapControlIDs_ImpactZeroNotReviewedIsNoImpact guards the per-control
-// listing path (used by --include-controls and per-control threshold checks):
-// impact-0 notReviewed controls must map to the no_impact key, matching counts.
-func TestMapControlIDs_ImpactZeroNotReviewedIsNoImpact(t *testing.T) {
+// Guards the per-control listing path (used by --include-controls and per-control
+// threshold checks): a translated control must map to the not_applicable key,
+// matching counts.
+func TestMapControlIDs_TranslatedControlIsNotApplicable(t *testing.T) {
 	data := []byte(testResultsImpactZeroNotReviewed)
 
 	mappings, err := mapControlIDs(data)
@@ -238,18 +237,17 @@ func TestMapControlIDs_ImpactZeroNotReviewedIsNoImpact(t *testing.T) {
 	for _, m := range mappings {
 		byID[m.ID] = m
 	}
-	assert.Equal(t, thresholdNoImpact, byID["SV-NA-1"].Status)
-	assert.Equal(t, thresholdNoImpact, byID["SV-NA-2"].Status)
+	assert.Equal(t, thresholdNotApplicable, byID["SV-NA-1"].Status)
+	assert.Equal(t, thresholdNotApplicable, byID["SV-NA-2"].Status)
 	assert.Equal(t, thresholdSkipped, byID["SV-SKIP"].Status)
 	assert.Equal(t, thresholdPassed, byID["SV-PASS"].Status)
 	assert.Equal(t, thresholdFailed, byID["SV-FAIL"].Status)
 }
 
-// TestValidateThreshold_NoImpactSectionIsLive proves the no_impact.* threshold
-// section is no longer dead: a no_impact.total bound is satisfiable against a
-// document with impact-0 notReviewed controls. On the pre-fix path no_impact was
-// always 0, so no_impact.total.min:2 could never pass.
-func TestValidateThreshold_NoImpactSectionIsLive(t *testing.T) {
+// Proves the notApplicable threshold section is not dead: a bound on it is
+// satisfiable against a document whose controls carry an explicit notApplicable
+// result. Written with SAF's no_impact spelling, which stays accepted on input.
+func TestValidateThreshold_NotApplicableSectionIsLive(t *testing.T) {
 	resultsPath := writeImpactZeroResults(t)
 
 	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.total.min: 2}, {skipped.total.max: 1}")
@@ -258,7 +256,7 @@ func TestValidateThreshold_NoImpactSectionIsLive(t *testing.T) {
 
 // An impact-0 requirement whose scan CRASHED (raw result status error) — the
 // impact-0-errored shape. Effective distribution must be 1 error(high), 1
-// passed(high); the errored control must never land in no_impact.
+// passed(high); the errored control must never land in not_applicable.
 const testResultsImpactZeroError = `{
 	"baselines": [{
 		"name": "impact-zero-error-threshold-test",
@@ -299,7 +297,7 @@ func TestCountByStatusSeverity_ImpactZeroErrorIsError(t *testing.T) {
 
 	assert.Equal(t, 1, counts.Error.Total, "impact-0 errored control counts as error")
 	assert.Equal(t, 1, counts.Error.High)
-	assert.Equal(t, 0, counts.NoImpact.Total, "the crashed check must not be Not Applicable")
+	assert.Equal(t, 0, counts.NotApplicable.Total, "the crashed check must not be Not Applicable")
 	assert.Equal(t, 1, counts.Passed.Total)
 }
 
@@ -331,7 +329,7 @@ func TestCountByStatusSeverity(t *testing.T) {
 	assert.Equal(t, 1, counts.Passed.Medium)
 	assert.Equal(t, 1, counts.Failed.Total)
 	assert.Equal(t, 1, counts.Failed.High)
-	assert.Equal(t, 1, counts.NoImpact.Total)
+	assert.Equal(t, 1, counts.NotApplicable.Total)
 	assert.Equal(t, 0, counts.Skipped.Total)
 	assert.Equal(t, 0, counts.Error.Total)
 }
@@ -355,7 +353,7 @@ func TestCalculateCompliance_AllPassed(t *testing.T) {
 
 func TestCalculateCompliance_NoneRelevant(t *testing.T) {
 	counts := &StatusCounts{
-		NoImpact: SeverityCounts{Total: 5},
+		NotApplicable: SeverityCounts{Total: 5},
 	}
 	assert.Equal(t, 0.0, hdfengine.CalculateCompliance(counts))
 }
@@ -378,6 +376,29 @@ func TestGenerateThreshold_BasicUsage(t *testing.T) {
 	assert.Contains(t, yaml, "compliance:")
 	assert.Contains(t, yaml, "passed:")
 	assert.Contains(t, yaml, "failed:")
+}
+
+// generate writes the spelling this tool emits, never SAF's. Both are accepted
+// on input, so a test that only checks the section is present would pass with
+// either — this pins which one is written, and that a round trip validates.
+func TestGenerateThreshold_EmitsNotApplicableNotNoImpact(t *testing.T) {
+	resultsPath := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsImpactZeroNotReviewed), 0o644))
+	thresholdPath := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	_, _, err := executeCommand("generate", "threshold", resultsPath, "-o", thresholdPath)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(thresholdPath)
+	require.NoError(t, err)
+	yaml := string(content)
+
+	assert.Contains(t, yaml, "not_applicable:", "generate must write this tool's spelling")
+	assert.NotContains(t, yaml, "no_impact:", "SAF's spelling is accepted on input, never written")
+
+	// The generated file must still validate the document it came from.
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", thresholdPath)
+	require.NoError(t, err, "a generated template must validate its own document")
 }
 
 func TestGenerateThreshold_Stdout(t *testing.T) {
@@ -900,7 +921,7 @@ func TestThresholdCounting_InformationalIsItsOwnBucket(t *testing.T) {
 	resultsPath := filepath.Join(dir, "results.json")
 	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.informational.min: 2}")
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{skipped.informational.min: 2}")
 	require.NoError(t, err, "both the explicit and the impact-derived informational must land in informational")
 }
 
@@ -933,14 +954,14 @@ func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) 
 	resultsPath := filepath.Join(dir, "results.json")
 	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.min: 2}")
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{skipped.none.min: 2}")
 	require.NoError(t, err, "legacy none: must still resolve")
 
-	_, _, err = executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.max: 1}")
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-I", "{skipped.none.max: 1}")
 	require.Error(t, err, "the legacy bound must be applied, not merely parsed")
-	assert.Contains(t, err.Error(), "no_impact.none: 2 exceeds maximum 1",
+	assert.Contains(t, err.Error(), "skipped.none: 2 exceeds maximum 1",
 		"the violation must name the key the author wrote")
-	assert.NotContains(t, err.Error(), "no_impact.informational",
+	assert.NotContains(t, err.Error(), "skipped.informational",
 		"a key the author never wrote must not appear in their violation")
 }
 
@@ -953,9 +974,9 @@ func TestValidateThreshold_InlineBothNamesIsRefused(t *testing.T) {
 	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
 
 	_, _, err := executeCommand("validate", "threshold", resultsPath,
-		"-I", "{no_impact.none.max: 1}, {no_impact.informational.max: 2}")
+		"-I", "{skipped.none.max: 1}, {skipped.informational.max: 2}")
 	require.Error(t, err, "a spec naming one bucket twice must be refused, not silently resolved")
-	assert.Contains(t, err.Error(), "no_impact: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket")
+	assert.Contains(t, err.Error(), "skipped: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket")
 }
 
 // A dotted path with junk appended used to be accepted and acted on by its
@@ -987,11 +1008,12 @@ func TestParseInlineThreshold_RejectsOverlongPath(t *testing.T) {
 // parse succeeded, is what makes the sweep able to fail.
 func TestParseInlineThreshold_AcceptsEveryLegalPathShape(t *testing.T) {
 	statusSection := map[string]func(*ThresholdConfig) *hdfengine.ThresholdSeverity{
-		"passed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Passed },
-		"failed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Failed },
-		"skipped":   func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Skipped },
-		"error":     func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Error },
-		"no_impact": func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.NoImpact },
+		"passed":         func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Passed },
+		"failed":         func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Failed },
+		"skipped":        func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Skipped },
+		"error":          func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Error },
+		"no_impact":      func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.NoImpact },
+		"not_applicable": func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.NotApplicable },
 	}
 	severityBound := map[string]func(*hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound{
 		"critical":      func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Critical },

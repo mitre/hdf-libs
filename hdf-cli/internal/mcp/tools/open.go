@@ -156,7 +156,7 @@ func resultsSummary(r *hdf.HDFResults) map[string]any {
 		StatusBreakdown: resultsStatusBreakdown{
 			Passed:        counts.Passed.Total,
 			Failed:        counts.Failed.Total,
-			NotApplicable: counts.NoImpact.Total,
+			NotApplicable: counts.NotApplicable.Total,
 			NotReviewed:   counts.Skipped.Total,
 			Error:         counts.Error.Total,
 		},

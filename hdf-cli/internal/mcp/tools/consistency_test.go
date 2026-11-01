@@ -24,11 +24,12 @@ import (
 // Pre-fix demonstration (lj0g.4, verified live on the corpus doc
 // vanilla-container-none-debian-11-8230d95.json.hdf.json): before the effective-
 // status fix, hdf_open reported {notApplicable:0, notReviewed:119} and
-// hdf_compliance {no_impact:0, skipped:119} while the document's own
+// hdf_compliance {not_applicable:0, skipped:119} while the document's own
 // effectiveStatus gave {notApplicable:113, notReviewed:6}. This harness asserts
 // against that derived ground truth, so it FAILS on that pre-fix code.
 //
-// Vocabulary note: hdf_compliance.counts uses SAF keys (skipped/no_impact); they
+// Vocabulary note: hdf_compliance.counts uses threshold-file keys
+// (skipped/not_applicable); they
 // are translated to the schema vocabulary here per the documented mapping
 // (lj0g.7). Severity note: hdf_open/hdf_inspect expose status only (no
 // per-requirement severity), so the severity distribution is asserted for the
@@ -36,8 +37,8 @@ import (
 // exception, not a skipped assertion.
 
 // groundTruth computes the canonical effective-status and severity distribution
-// for a results document straight from its requirements (impact-0 → notApplicable
-// and overrides via hdfutil.ComputeEffectiveStatus; severity via
+// for a results document straight from its requirements (overrides and the
+// worst-wins roll-up via hdfutil.ComputeEffectiveStatus; severity via
 // hdfengine.DeriveSeverity). Deriving it from the fixture — not a hand-written
 // literal — keeps the fixture and the expectation from drifting apart.
 func groundTruth(t *testing.T, content []byte) (status, severity map[string]int) {
@@ -151,7 +152,7 @@ func TestAllToolsAgreeOnStatusDistribution(t *testing.T) {
 			cStatus := map[string]int{
 				"passed":        c.Counts["passed"]["total"],
 				"failed":        c.Counts["failed"]["total"],
-				"notApplicable": c.Counts["no_impact"]["total"],
+				"notApplicable": c.Counts["not_applicable"]["total"],
 				"notReviewed":   c.Counts["skipped"]["total"],
 				"error":         c.Counts["error"]["total"],
 			}
