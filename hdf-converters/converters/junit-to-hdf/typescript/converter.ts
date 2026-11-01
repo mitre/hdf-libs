@@ -231,7 +231,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
     // than silently dropping the loose ones. Mirrors Go's parseJUnitXML.
     const looseCases = parsed.testsuites.testcase ?? [];
     if (looseCases.length > 0) {
-      suites.push({ '@_name': name, testcase: looseCases });
+      suites.push({ '@_name': parsed.testsuites['@_name'], testcase: looseCases });
     }
     return { suites, name };
   }
@@ -268,15 +268,42 @@ function buildRequirements(suites: JUnitTestSuite[], scanTime: Date): EvaluatedR
       console.warn(`WARNING: Input truncated at ${limitedTestCases.length} test case items (original: ${testcases.length})`);
     }
     for (const tc of limitedTestCases) {
-      requirements.push(testCaseToRequirement(tc, scanTime));
+      requirements.push(testCaseToRequirement(tc, suite, scanTime));
     }
   }
 
   return requirements;
 }
 
+// Matches the "<framework> scan" name Checkov gives each framework's suite.
+const CHECKOV_SUITE_NAME = /^([a-z0-9_]+) scan$/;
+
+/**
+ * The framework a Checkov-emitted suite scanned. The suite name alone is not
+ * enough — a human can name a suite "terraform scan" — so the testcases must
+ * also carry Checkov's bracketed prefix. The value is what checkov-to-hdf
+ * records under check_type, so the two Checkov paths agree.
+ */
+export function checkovFramework(suite: JUnitTestSuite): string | undefined {
+  const m = CHECKOV_SUITE_NAME.exec(String(suite['@_name'] ?? ''));
+  if (!m) return undefined;
+  const checkovCases = (suite.testcase ?? []).some((tc) => isCheckovTestCaseName(String(tc['@_name'] ?? '')));
+  return checkovCases ? m[1] : undefined;
+}
+
+// Records the owning suite on a requirement: its name verbatim under
+// test_suite, and for a Checkov suite the framework under check_type. A suite
+// is a grouping, so this is the only place it reaches the output.
+function suiteTags(suite: JUnitTestSuite, tags: Record<string, unknown>): void {
+  const name = suite['@_name'] ? decodeXmlEntities(String(suite['@_name'])).trim() : '';
+  if (name) tags['test_suite'] = name;
+  const framework = checkovFramework(suite);
+  if (framework) tags['check_type'] = [framework];
+}
+
 function testCaseToRequirement(
   tc: JUnitTestCase,
+  suite: JUnitTestSuite,
   scanTime: Date
 ): EvaluatedRequirement {
   const id = buildID(tc);
@@ -315,9 +342,9 @@ function testCaseToRequirement(
     descriptions.push({ label: 'system-err', data: systemErr });
   }
 
-  const req = createRequirement(id, name, descriptions, 0.5, [result], {
-    tags: { nist: DEFAULT_NIST },
-  }) as EvaluatedRequirement;
+  const tags: Record<string, unknown> = { nist: DEFAULT_NIST };
+  suiteTags(suite, tags);
+  const req = createRequirement(id, name, descriptions, 0.5, [result], { tags }) as EvaluatedRequirement;
   const controlType = deriveControlTypeFromTags(DEFAULT_NIST);
   if (controlType !== undefined) {
     req.controlType = controlType;
