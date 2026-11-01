@@ -52,20 +52,18 @@ jobs:
       - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
+      # The consumer install below runs the same pinned npm client as publishing.
+      - uses: $/.github/actions/setup-npm
       - name: Build TypeScript (pack reads dist/)
         run: pnpm build:ts
 
       - name: Pack all publishable packages
         run: |
           mkdir -p /tmp/tarballs
-          PACKAGES=(
-            hdf-schema hdf-utilities hdf-mappings hdf-validators
-            hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi
-          )
-          for pkg in "${PACKAGES[@]}"; do
+          inventory=$(bash scripts/list-npm-packages.sh)
+          while read -r pkg; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
-          done
+          done <<< "$inventory"
           ls -la /tmp/tarballs
 
       - name: Install and import every packed package via npm

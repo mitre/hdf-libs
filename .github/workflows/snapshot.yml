@@ -30,9 +30,11 @@ jobs:
       attempt: ${{ github.run_attempt }}
       artifact: ${{ steps.metadata.outputs.artifact-id }}
     steps:
+      # The triggering commit, not the branch tip: npm provenance and the build
+      # attestation are signed under github.sha, so that is what must be built.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -42,53 +44,34 @@ jobs:
       - name: Prepare snapshot
         id: prepare
         run: |
-          [[ "$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*\.[1-9][0-9]*$ ]]
-          source=$(git rev-parse HEAD)
-          stable=$(git tag --merged HEAD --sort=-version:refname --list 'v*' | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ && !found { print; found=1 }')
-          test -n "$stable" || { echo 'No reachable stable release' >&2; exit 1; }
-          IFS=. read -r major minor patch <<< "${stable#v}"
-          if git diff --quiet "$stable" HEAD -- hdf-schema/src/schemas; then
-            base="$major.$minor.$((patch + 1))"
-          else
-            base="$major.$((minor + 1)).0"
-          fi
-          VERSION="$base-next.$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"
-          artifact="$RUNNER_TEMP/snapshot"
-          mkdir -p "$artifact"
-          manifests=()
-          for manifest in hdf-*/package.json; do
-            if jq -e '.private != true and (.name | startswith("@mitre/hdf-"))' "$manifest" >/dev/null; then
-              jq --arg version "$VERSION" '
-                .version = $version |
-                reduce ["dependencies", "peerDependencies", "optionalDependencies"][] as $field (.;
-                  if .[$field] then .[$field] |= with_entries(
-                    if .key | startswith("@mitre/hdf-") then .value = $version else . end
-                  ) else . end)
-              ' "$manifest" > "$artifact/package.json"
-              mv "$artifact/package.json" "$manifest"
-              manifests+=("$manifest")
-              dirname "$manifest" >> "$artifact/packages.txt"
-            fi
-          done
-          test "${#manifests[@]}" -gt 0
-          bash scripts/set-go-module-versions.sh "v$VERSION"
-          git ls-files '**/go.mod' > "$artifact/gomods.txt"
-          test -s "$artifact/gomods.txt"
-          gomods=()
-          while read -r gomod; do gomods+=("$gomod"); done < "$artifact/gomods.txt"
-          git status --short
-          git add -- "${manifests[@]}" "${gomods[@]}"
-          prepared=$(git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit-tree "$(git write-tree)" -p "$source" -m "chore(snapshot): prepare $VERSION" -m "Snapshot-Source: $source")
-          git checkout --detach "$prepared"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          # A rerun of an older run, or a run that lost a race with a newer push,
+          # would move next back to older code; the newer commit's own run covers it.
+          git fetch --quiet origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || {
+            echo 'main has moved past this commit; its snapshot is superseded, not republished' >&2
+            exit 1
+          }
+          # Snapshots take over next, which stable v3 converter installs used to
+          # follow; nothing is tagged or published until stable exists for them.
+          tags=$(curl --fail --silent --show-error --retry 3 --max-time 60 \
+            'https://registry.npmjs.org/-/package/@mitre%2fhdf-converters/dist-tags') || {
+            echo 'Could not read the dist-tags of @mitre/hdf-converters from the registry' >&2
+            exit 1
+          }
+          jq -e '.stable | type == "string"' <<< "$tags" >/dev/null || {
+            echo 'Initialize the stable dist-tag on @mitre/hdf-converters before publishing snapshots' >&2
+            exit 1
+          }
+          version=$(bash scripts/derive-snapshot-version.sh "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
+          prepared=$(bash scripts/prepare-snapshot.sh "$version" "$RUNNER_TEMP/snapshot")
           git update-ref refs/heads/snapshot "$prepared"
-          git bundle create "$artifact/source.bundle" refs/heads/snapshot "^$source"
-          jq -n --arg source "$source" --arg prepared "$prepared" --arg version "$VERSION" \
-            '{source: $source, prepared: $prepared, version: $version}' > "$artifact/snapshot.json"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "prepared=$prepared" >> "$GITHUB_OUTPUT"
-          echo "source=$source" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          git bundle create "$RUNNER_TEMP/snapshot/source.bundle" refs/heads/snapshot "^$GITHUB_SHA"
+          {
+            echo "source=$GITHUB_SHA"
+            echo "prepared=$prepared"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: metadata
         with:
@@ -124,10 +107,9 @@ jobs:
         with:
           go-version-file: go.work
           cache: false
+      # The lockfile belongs to the source commit, so dependencies install there.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build TypeScript
-        run: pnpm build:ts
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           artifact-ids: ${{ needs.prepare.outputs.artifact }}
@@ -137,6 +119,11 @@ jobs:
           git fetch snapshot-metadata/source.bundle refs/heads/snapshot
           test "$(git rev-parse FETCH_HEAD)" = "$PREPARED"
           git checkout --detach "$PREPARED"
+      # Built after the checkout so the stamped version constants reach dist/.
+      # The prepared manifests pin siblings at a version no registry has yet, so
+      # pnpm must not reconcile node_modules against them before running.
+      - name: Build TypeScript
+        run: pnpm --config.verify-deps-before-run=false build:ts
       - name: Pack and import npm packages
         run: |
           artifact="$RUNNER_TEMP/snapshot-packages"
@@ -237,38 +224,9 @@ jobs:
           BUILT_ATTEMPT: ${{ needs.prepare.outputs.attempt }}
         run: |
           test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
-          number='(0|[1-9][0-9]*)'
-          [[ "$VERSION" =~ ^$number\.$number\.$number-next\.$GITHUB_RUN_ID\.$GITHUB_RUN_ATTEMPT$ ]] || exit 1
-          shopt -s nullglob
-          packages=()
-          for manifest in hdf-*/package.json; do
-            jq -e '.private != true and (.name | startswith("@mitre/hdf-"))' "$manifest" >/dev/null || continue
-            pkg=${manifest%/package.json}
-            jq -e --arg name "@mitre/$pkg" '.name == $name' "$manifest" >/dev/null
-            archive="snapshot-artifacts/mitre-$pkg-$VERSION.tgz"
-            test -f "$archive" && test ! -L "$archive"
-            tar -tzf "$archive" > "$RUNNER_TEMP/members.txt"
-            awk '
-              $0 !~ /^package(\/|$)/ || /\\/ || /\/\// || /(^|\/)\.\.?($|\/)/ { bad=1 }
-              $0 == "package/package.json" { manifests++ }
-              END { exit (bad || manifests != 1) }
-            ' "$RUNNER_TEMP/members.txt"
-            tar -tvzf "$archive" > "$RUNNER_TEMP/member-types.txt"
-            awk 'substr($0,1,1) !~ /^[-d]$/ { bad=1 } END { exit bad }' "$RUNNER_TEMP/member-types.txt"
-            tar -xOzf "$archive" package/package.json | jq -es --arg name "@mitre/$pkg" --arg version "$VERSION" '
-              length == 1 and (.[0] |
-                .name == $name and .version == $version and
-                ((.publishConfig // {}) | . == {} or . == {access:"public"}) and
-                ([.dependencies, .optionalDependencies, .peerDependencies] |
-                  all(.[]; (. // {} | to_entries |
-                    all(.[]; (.key | startswith("@mitre/hdf-") | not) or .value == $version))))
-              )
-            ' >/dev/null
-            packages+=("$pkg")
-          done
-          archives=(snapshot-artifacts/*.tgz)
-          test "${#packages[@]}" -gt 0 && test "${#archives[@]}" -eq "${#packages[@]}"
-          printf '%s\n' "${packages[@]}" > "$RUNNER_TEMP/packages.txt"
+          [[ "$VERSION" == *"-next.$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT" ]]
+          bash scripts/check-snapshot-archives.sh snapshot-artifacts "$VERSION" > "$RUNNER_TEMP/packages.txt"
+          test -s "$RUNNER_TEMP/packages.txt"
       - name: Publish packages and advance next
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
@@ -276,14 +234,13 @@ jobs:
           SOURCE: ${{ needs.prepare.outputs.source }}
         run: |
           test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
-          # npm provenance must identify the revision actually checked out from main.
-          export GITHUB_SHA="$SOURCE"
+          # npm provenance names github.sha; the published tree must descend from exactly that commit.
+          test "$SOURCE" = "$GITHUB_SHA"
+          registry=(--registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org)
           while read -r pkg; do
             npm publish "snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
-              --access public --provenance --ignore-scripts --tag snapshot-staging \
-              --registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org
+              --access public --provenance --ignore-scripts --tag snapshot-staging "${registry[@]}"
           done < "$RUNNER_TEMP/packages.txt"
           while read -r pkg; do
-            npm dist-tag add "@mitre/$pkg@$VERSION" next \
-              --registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org
+            npm dist-tag add "@mitre/$pkg@$VERSION" next "${registry[@]}"
           done < "$RUNNER_TEMP/packages.txt"

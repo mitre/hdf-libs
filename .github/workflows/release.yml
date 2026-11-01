@@ -96,21 +96,12 @@ jobs:
         # permission and the correct public repository field in each
         # package.json).
         run: |
-          # Publish order matters: dependencies first
-          PACKAGES=(
-            hdf-schema
-            hdf-utilities
-            hdf-mappings
-            hdf-validators
-            hdf-parsers
-            hdf-converters
-            hdf-generators
-            hdf-diff
-            hdf-extension-graph
-            hdf-engine
-            hdf-fixtures
-            hdf-openapi
-          )
+          # Publish order matters: dependencies first. The lister is the one
+          # inventory every publication path reads.
+          inventory=$(bash scripts/list-npm-packages.sh)
+          PACKAGES=()
+          while read -r pkg; do PACKAGES+=("$pkg"); done <<< "$inventory"
+          test "${#PACKAGES[@]}" -gt 0
 
           # Formal RCs use rc; stable converters use stable because Heimdall's
           # v2 line owns latest. Other stable packages retain latest.
