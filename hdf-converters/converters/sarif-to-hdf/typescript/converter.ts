@@ -493,9 +493,9 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   const cvssImpact = securitySeverityImpact(rule);
   const severitySource = cvssImpact === undefined ? levelSource : SEVERITY_SOURCE_SECURITY_SEVERITY;
   const rawImpact = cvssImpact ?? severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0);
-  // Impact 0 is floored so an unrecognized level does not read as "not applicable",
-  // which is what the effective-status ladder makes of it. An explicit "none" is
-  // exempt: §3.27.10 means severity genuinely does not apply there.
+  // An unrecognized level is floored off 0 so it does not claim the informational
+  // band the shared severity map reserves for a level that said so. An explicit
+  // "none" is exempt: §3.27.10 means severity genuinely does not apply there.
   const impact = rawImpact === 0 && ruleLevel !== LEVEL_NONE ? 0.1 : rawImpact;
 
   // Source location from first result's first location

@@ -436,8 +436,8 @@ func firstCVSSSeverity(cvss []hdf.Cvss) string {
 
 // effectiveOrRollup returns the v1 status string for a requirement's
 // effective status, computed by the canonical shared helper in hdf-utilities
-// (impact==0, governing override, stored effectiveStatus, worst-wins rollup —
-// see status-determination.md).
+// (a governing override, else the worst-wins roll-up — see
+// status-determination.md).
 func effectiveOrRollup(r hdf.EvaluatedRequirement) string {
 	input := shared.RequirementStatusInput(r)
 	return v2StatusString(hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(input, time.Time{})))

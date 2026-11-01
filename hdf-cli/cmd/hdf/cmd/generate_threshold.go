@@ -106,7 +106,7 @@ func buildThresholdConfig(counts *StatusCounts, compliance float64, exact bool) 
 	config.Failed = buildSeverityThreshold(&counts.Failed, exact, true)
 	config.Skipped = buildSeverityThreshold(&counts.Skipped, exact, true)
 	config.Error = buildSeverityThreshold(&counts.Error, exact, true)
-	config.NoImpact = buildSeverityThreshold(&counts.NoImpact, exact, false)
+	config.NotApplicable = buildSeverityThreshold(&counts.NotApplicable, exact, false)
 
 	return config
 }
@@ -167,11 +167,11 @@ func addControlIDsToConfig(config *ThresholdConfig, mappings []ControlIDMapping)
 				config.Error = &ThresholdSeverity{}
 			}
 			ts = config.Error
-		case thresholdNoImpact:
-			if config.NoImpact == nil {
-				config.NoImpact = &ThresholdSeverity{}
+		case thresholdNotApplicable:
+			if config.NotApplicable == nil {
+				config.NotApplicable = &ThresholdSeverity{}
 			}
-			ts = config.NoImpact
+			ts = config.NotApplicable
 		default:
 			continue
 		}

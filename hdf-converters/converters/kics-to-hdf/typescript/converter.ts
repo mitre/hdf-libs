@@ -77,11 +77,11 @@ interface KicsReport {
  * KICS publishes five severities. SARIF collapses CRITICAL and HIGH into
  * `error`; converting the native format keeps them apart, which is a large part
  * of why this converter exists. The shared standard map covers four of them,
- * with INFO at the canonical 0.0 tier like every other converter: the
- * effective-status layer maps impact-0 requirements to notApplicable, so
- * info-tier findings stay visible in the output without entering the
- * compliance ratio. TRACE is KICS-specific and joins the info tier as an
- * alias — the Go peer of this table is kicsSeverityAliases.
+ * with INFO at the canonical 0.0 tier like every other converter. An
+ * info-tier finding is a finding: it carries a failed result and counts in
+ * the compliance ratio, because the severity band says how much it matters,
+ * not whether it applies. TRACE is KICS-specific and joins the info tier as
+ * an alias — the Go peer of this table is kicsSeverityAliases.
  */
 const KICS_SEVERITY_ALIASES: Record<string, number> = { trace: 0.0 };
 
@@ -215,14 +215,11 @@ function tagsFor(query: KicsQuery): Record<string, unknown> {
  * of 2,034 queries fired renders as 100% failed. This requirement carries the
  * denominator so the ratio is legible.
  *
- * Impact 0 and status notApplicable both keep it out of the score: the
- * effective-status layer (computeEffectiveStatus) maps impact-0 requirements
- * to notApplicable before statuses are counted, and notApplicable is the one
- * status the compliance rollup excludes from both numerator and denominator.
- * Emitting notApplicable as the raw status too keeps raw-status consumers
- * agreeing with the effective view — Passed would export to CKL as
- * NotAFinding, a compliant-looking control that was never checked, and count
- * as a free pass in raw status rollups.
+ * The notApplicable RESULT is what keeps this record out of the score, and it
+ * is the one status the compliance rollup excludes from both numerator and
+ * denominator. Impact 0 says only that it carries no risk. Passed would export
+ * to CKL as NotAFinding, a compliant-looking control that was never checked,
+ * and count as a free pass in raw status rollups.
  */
 function buildCoverageRequirement(report: KicsReport, startTime: Date): EvaluatedRequirement {
   const executed = report.queries_total ?? 0;

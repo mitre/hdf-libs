@@ -71,14 +71,15 @@ export function isFailing(status: string): boolean {
 
 export interface Status {
   raw: string; // worstOf(results[].status) — the RAW verdict
-  rollup: string; // canonical effective status (ladder: override → error → impact-0 → roll-up)
+  rollup: string; // canonical effective status (ladder: override → worst-wins roll-up)
   overridden: boolean; // statusOverride records present
   // Acceptance axis, orthogonal to the raw verdict: a GOVERNING override drove
   // a failing raw verdict non-failing (waiver / falsePositive / attestation).
-  // The ladder's own impact-0 rule also yields a non-failing status, but that
-  // is structural Not Applicable, not an acceptance decision. A riskAdjustment
-  // / operationalRequirement / poam that leaves the effective status failing is
-  // NOT suppressed — it stays actionable, only its impact is re-scored.
+  // A notApplicable result reaching the roll-up also yields a non-failing
+  // status, but that is a scope claim, not an acceptance decision. A
+  // riskAdjustment / operationalRequirement / poam that leaves the effective
+  // status failing is NOT suppressed — it stays actionable, only its impact is
+  // re-scored.
   suppressed: boolean;
 }
 
@@ -102,10 +103,8 @@ export function statusOf(req: Obj): Status {
     ];
   });
 
-  // impact is schema-required; when a malformed map lacks it, do not read the
-  // absence as 0 (which would force notApplicable) — skip the impact-0 rung
-  // instead, matching hdf-diff's wrapper.
-  const impact = typeof req.impact === 'number' ? req.impact : 1;
+  // The ladder ignores impact; it is carried only by the shared input shape.
+  const impact = typeof req.impact === 'number' ? req.impact : 0;
 
   const rollup = computeEffectiveStatus({
     impact,

@@ -90,7 +90,7 @@ func IsFailing(status string) bool { return status == "failed" }
 // Status carries the resolved status context for one requirement.
 type Status struct {
 	Raw        string // worstOf(results[].status) — the RAW verdict
-	Rollup     string // canonical effective status (ladder: override → error → impact-0 → roll-up)
+	Rollup     string // canonical effective status (ladder: override → worst-wins roll-up)
 	Overridden bool   // statusOverride records present
 	// Suppressed is the acceptance axis, orthogonal to the raw verdict: the raw
 	// result is failing but an override drove the effective status non-failing
@@ -108,13 +108,8 @@ func StatusOf(req map[string]interface{}) Status {
 	raw := WorstOfResults(req)
 	overrides, _ := AsSlice(req["statusOverrides"])
 
-	// impact is schema-required; when a malformed map lacks it, do not read
-	// the absence as 0 (which would force notApplicable) — skip the impact-0
-	// rung instead, matching hdf-diff's wrapper.
-	impact := 1.0
-	if v, ok := req["impact"].(float64); ok {
-		impact = v
-	}
+	// The ladder ignores impact; it is carried only by the shared input shape.
+	impact, _ := req["impact"].(float64)
 
 	overrideIns := overrideInputs(overrides)
 	rollup := hdfutil.ComputeEffectiveStatus(hdfutil.EffectiveStatusInput{
@@ -124,10 +119,9 @@ func StatusOf(req map[string]interface{}) Status {
 	}, time.Time{})
 
 	// Suppression is the ACCEPTANCE axis: a governing override drove a failing
-	// raw verdict non-failing. The ladder's own impact-0 rule also yields a
-	// non-failing status, but that is structural Not Applicable, not an
-	// acceptance decision — so suppression additionally requires a governing
-	// override.
+	// raw verdict non-failing. A notApplicable result reaching the roll-up also
+	// yields a non-failing status, but that is a scope claim, not an acceptance
+	// decision — so suppression additionally requires a governing override.
 	governed := hdfutil.GoverningStatusOverride(overrideIns, time.Time{}) != nil
 
 	return Status{

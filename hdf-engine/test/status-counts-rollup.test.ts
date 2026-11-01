@@ -39,7 +39,7 @@ function counts(partial: Partial<Record<keyof StatusCounts, Partial<SeverityCoun
     failed: severity(partial.failed),
     skipped: severity(partial.skipped),
     error: severity(partial.error),
-    noImpact: severity(partial.noImpact),
+    notApplicable: severity(partial.notApplicable),
   };
 }
 

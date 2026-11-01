@@ -83,7 +83,7 @@
           "id": "V-242376",
           "impact": 0,
           "severity": "informational",
-          "status": "notApplicable",
+          "status": "notReviewed",
           "tags": {
             "cci": [
               "CCI-000068"
@@ -127,7 +127,7 @@
           "id": "V-242377",
           "impact": 0,
           "severity": "informational",
-          "status": "notApplicable",
+          "status": "notReviewed",
           "tags": {
             "cci": [
               "CCI-000068"

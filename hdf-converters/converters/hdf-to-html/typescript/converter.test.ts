@@ -403,7 +403,7 @@ describe('hdf-to-html converter', () => {
         testhdf.req('A', { impact: 0.5, status: 'passed' }),
         testhdf.req('B', { impact: 0.5, status: 'passed' }),
         testhdf.req('C', { impact: 0.5, status: 'failed' }),
-        testhdf.req('D', { impact: 0, status: 'passed' }),
+        testhdf.req('D', { impact: 0, status: 'notApplicable' }),
       ),
       testhdf.baseline(
         'two',
@@ -467,7 +467,7 @@ describe('hdf-to-html converter', () => {
         testhdf.req('P1', { impact: 0.7, status: 'passed' }),
         testhdf.req('P2', { impact: 0.5, status: 'passed' }),
         failing as never,
-        testhdf.req('N', { impact: 0, status: 'passed' }),
+        testhdf.req('N', { impact: 0, status: 'notApplicable' }),
       ),
       'executive',
     );
@@ -860,7 +860,7 @@ describe('hdf-to-html helpers', () => {
         failed: bucket(failed),
         skipped: bucket(notReviewed),
         error: bucket(errored),
-        noImpact: bucket(notApplicable),
+        notApplicable: bucket(notApplicable),
       });
     expect(c(0)).toBe('0.00%');
     expect(c(0, 0, 0, 0, 4)).toBe('0.00%');

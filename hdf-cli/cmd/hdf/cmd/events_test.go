@@ -129,11 +129,15 @@ func TestEventsDerive_EnvelopeIdentity(t *testing.T) {
 		assert.Equal(t, "2024-02-01T00:00:00Z", ev.Timestamp.UTC().Format("2006-01-02T15:04:05Z07:00"))
 	}
 
-	// SV-005's posture moved via impact only.
+	// SV-005 went out of scope: the rescan records an explicit notApplicable
+	// result and drops the impact to 0, so the event carries both reasons.
 	for _, ev := range events {
 		if ev.RequirementID == "SV-005" {
-			require.Len(t, ev.ChangeReasons, 1)
-			assert.Equal(t, "impactChanged", string(ev.ChangeReasons[0]))
+			reasons := make([]string, 0, len(ev.ChangeReasons))
+			for _, r := range ev.ChangeReasons {
+				reasons = append(reasons, string(r))
+			}
+			assert.ElementsMatch(t, []string{"resultChanged", "impactChanged"}, reasons)
 		}
 	}
 }
