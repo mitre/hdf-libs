@@ -102,6 +102,28 @@ Evidence package written to evidence-package.json (5 documents)
 
 Five documents: the system, the three converted results, and the SBOM. For this example we left the original unconverted data that we passed to `hdf convert` earlier present in the directory to demonstrate that they're not included in the package, only HDF data is. The four files that are not HDF are each named, with the command that would carry them as external references.
 
+### Add native reports in bulk
+
+Use repeatable `--file` selectors to add local files or quoted globs without a shell loop. Local selectors use filesystem paths relative to your working directory; existing `--uri` values remain literal URI references relative to the package. For example, with SARIF reports under `reports/` and JUnit reports under `tests/`:
+
+```bash
+hdf evidence add-evidence evidence-package.json \
+  --file 'reports/*.sarif' --file 'tests/*.xml' \
+  --format x-sarif --format x-junit
+```
+
+A single `--format` applies to the whole selection. To assign different formats, supply one per selector group, in this order: `--uri` values, `--file` values, then `--from-dir` values, preserving repeat order within each flag. Each glob's matches inherit its group's format; the format count is not the expanded file count. Formats are explicit, not inferred from extensions. `--infer` remains an opt-in for supported content discriminators such as CycloneDX and SPDX.
+
+For a directory containing log evidence, select its immediate files or opt into recursive discovery:
+
+```bash
+hdf evidence add-evidence evidence-package.json --from-dir logs --format raw-log
+```
+
+Add `--recursive` to include nested directories. Quote globs for consistent CLI expansion; `*` does not cross directory boundaries. Discovery is deterministic and excludes the input package and `-o` output. Selected symlinks are refused, including directory links, so traversal cannot follow a link cycle. Same-format overlaps between discovered selections are deduplicated; conflicting formats, literal duplicates, and already-recorded references are errors. Remove an existing reference deliberately before re-attesting a changed artifact.
+
+Each selected local file must be readable and regular and receives its own SHA-512 checksum; `--checksum` cannot be supplied with local selectors. The command validates and hashes the batch before one atomic write. A failing selection leaves the package unchanged. No matches or an empty selection exits 4; other selection/read failures exit 1. For mixed native reports like a CI run's SARIF and JUnit outputs, group the selectors by the known producer format as above.
+
 Give the package a name while you are here:
 
 ```console

@@ -90,6 +90,9 @@ func validateEvidenceFormat(format string) error {
 }
 
 type addEvidenceOpts struct {
+	files         []string
+	directories   []string
+	recursive     bool
 	uris          []string
 	formats       []string
 	infer         bool
@@ -108,7 +111,7 @@ func newEvidenceAddEvidenceCmd() *cobra.Command {
 	opts := addEvidenceOpts{recordCount: -1}
 
 	cmd := &cobra.Command{
-		Use:   "add-evidence <package> --uri <uri>... [--format <format>...] [flags]",
+		Use:   "add-evidence <package> [--uri <uri>...] [--file <path-or-glob>...] [--from-dir <dir>...] [flags]",
 		Short: "Reference external native-format evidence (logs/telemetry) in an evidence package",
 		Long: `Append an external evidence reference to an HDF evidence package. The referenced
 artifact (an ECS/OCSF log corpus, or other native-format evidence) is carried by
@@ -123,13 +126,28 @@ the artifact would support or contradict a finding it is evidence; if it only
 explains one it is a reference. To attach context to a RESULTS document's findings
 rather than to the package, use 'hdf enrich <document> <bundle>'.
 
---uri is repeatable. --format takes one value for every artifact, or one per
---uri matched in the order they were given; any other count is refused rather
-than guessed. Omit --format and pass --infer to accept a format read from the
+--uri is repeatable. With URI inputs alone, --format takes one value for every
+artifact, or one per --uri in order; any other count is refused rather than
+guessed. Omit --format and pass --infer to accept a format read from the
 artifact's own content discriminator (CycloneDX bomFormat, SPDX 2.x spdxVersion) —
 never from its filename. Without --infer a missing format is an error that names
 what it would have inferred, because a mislabelled artifact is worse than an
 unlabelled one.
+
+--file selects local filesystem paths or quoted globs relative to the working
+directory. --from-dir selects its immediate files; --recursive includes nested
+directories. Symlink entries are refused, and directory symlinks are not followed.
+Glob and directory discovery exclude the input package and -o output. Quote
+patterns so the CLI expands them consistently; * does not cross directories.
+
+Formats are assigned BEFORE expansion: one --format covers everything, or give
+one per selector in this order: --uri values, --file values, then --from-dir values
+(repeat order within each flag). Every file in a group inherits that group's
+format. Same-format discovery overlaps are deduplicated; conflicting formats and
+literal duplicates are refused. --uri never expands globs, including URL queries.
+--checksum cannot be combined with local selectors, which hash each selected file.
+The batch is written once, after validation and hashing; a failure writes nothing.
+No matches or an empty selection exits 4; other selection/read failures exit 1.
 
 The same URI twice is refused, not ignored: a repeat add usually means the
 artifact CHANGED, and its differing checksum must be recorded deliberately
@@ -161,16 +179,22 @@ Examples:
   hdf evidence add-evidence pkg.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
   hdf evidence add-evidence pkg.json --uri https://lake/ocsf/q1/ --format ocsf --checksum sha256:<hex>
   hdf evidence add-evidence pkg.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
-  hdf evidence add-evidence pkg.json --uri sbom.cdx.json --infer`,
+  hdf evidence add-evidence pkg.json --uri sbom.cdx.json --infer
+  hdf evidence add-evidence pkg.json --file 'reports/*.sarif' --format x-sarif
+  hdf evidence add-evidence pkg.json --file 'reports/*.sarif' --file 'tests/*.xml' --format x-sarif --format x-junit
+  hdf evidence add-evidence pkg.json --from-dir logs --recursive --format raw-log`,
 		Args: evidencePackageArg,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return runEvidenceAddEvidence(args[0], opts)
 		},
 	}
 
-	cmd.Flags().StringArrayVar(&opts.uris, "uri", nil, "URI of an external evidence artifact (repeatable, required)")
+	cmd.Flags().StringArrayVar(&opts.uris, "uri", nil, "URI of an external evidence artifact (repeatable; not glob-expanded)")
+	cmd.Flags().StringArrayVar(&opts.files, "file", nil, "Local file or quoted glob, relative to the working directory (repeatable)")
+	cmd.Flags().StringArrayVar(&opts.directories, "from-dir", nil, "Local directory of evidence files (repeatable; excludes package and output)")
+	cmd.Flags().BoolVar(&opts.recursive, "recursive", false, "Include subdirectories selected by --from-dir; symlinks are refused")
 	cmd.Flags().StringArrayVar(&opts.formats, "format", nil,
-		"Format: ecs | ocsf | cyclonedx | spdx | raw-log | x-<custom>. Give one for all artifacts, or one per --uri in order")
+		"Format: ecs | ocsf | cyclonedx | spdx | raw-log | x-<custom>. Give one for all artifacts, or one per selector in --uri, --file, --from-dir order")
 	cmd.Flags().BoolVar(&opts.infer, "infer", false,
 		"Accept a format inferred from an artifact's own content discriminator when --format is absent")
 	cmd.Flags().StringVar(&opts.checksum, "checksum", "",
@@ -326,8 +350,13 @@ func formatFromContent(data []byte) string {
 }
 
 func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
+	var expandErr error
+	opts, expandErr = expandEvidenceInputs(file, opts)
+	if expandErr != nil {
+		return expandErr
+	}
 	if len(opts.uris) == 0 {
-		return fmt.Errorf("--uri is required")
+		return fmt.Errorf("at least one --uri, --file, or --from-dir is required")
 	}
 	// Refused HERE, ahead of any format resolution: the format error for a blank name
 	// reads as a lost argument rather than as a rejected one. Whitespace-only counts as

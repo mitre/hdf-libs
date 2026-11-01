@@ -689,6 +689,9 @@ EXAMPLES
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri sbom.cdx.json --infer
+  hdf evidence add-evidence q1.hdf-evidence-package.json --file 'reports/*.sarif' --format x-sarif
+  hdf evidence add-evidence q1.hdf-evidence-package.json --file 'reports/*.sarif' --file 'tests/*.xml' --format x-sarif --format x-junit
+  hdf evidence add-evidence q1.hdf-evidence-package.json --from-dir logs --recursive --format raw-log
   hdf evidence add-reference q1.hdf-evidence-package.json --source-name stix --kind threat-intel --href cti/bundle.json
   hdf evidence add-ref q1.hdf-evidence-package.json --source-name cve --external-id CVE-2021-44228 --rel reference
   hdf evidence update q1.hdf-evidence-package.json --results scans/q4.json -o q4.hdf-evidence-package.json
@@ -721,7 +724,9 @@ To attach context to a **results** document's findings instead of to the package
 
 Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
 
-`--uri` is repeatable. `--format` takes one value for every artifact, or one per `--uri` in the order given; any other count is refused rather than guessed. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred. The same URI twice is refused rather than ignored, because a repeat add usually means the artifact changed and its new checksum must be recorded deliberately.
+`--uri` is repeatable and stays literal. For local discovery, repeat `--file` with filesystem paths or quoted globs relative to the working directory, or use `--from-dir` (immediate files, with `--recursive` to include nested directories). Give one `--format` for everything or one per selector group in `--uri`, `--file`, `--from-dir` order, preserving repeat order within each flag. Formats are assigned before expansion, so every file matched by a selector gets its group's format. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred.
+
+Discovery excludes the package and output file and refuses selected symlinks and non-regular files. Same-format discovery overlaps are deduplicated; literal duplicates, conflicting formats, and already-recorded references are refused. Selected local files are independently hashed with SHA-512, so `--checksum` is unavailable with local selectors. A selection/read/validation failure writes nothing; an empty selection exits 4. See [bulk native report examples](../site/docs/guides/evidence-package-workflow.md#add-native-reports-in-bulk) for mixed formats and recursion.
 
 Example output:
 
