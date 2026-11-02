@@ -14,6 +14,26 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**
+
+  A suppressed finding keeps its failing result — the verdict is evidence — and the acceptance now travels as a `waiver` override whose status is `passed`, so `effectiveStatus` resolves non-failing through the one sanctioned channel. Previously the suppression was recorded only by forcing `impact: 0`, which the removed ladder rung read as `notApplicable`; with that rung gone such a finding reported `failed`.
+
+  `impact` is now the finding's real severity. `appliedAt` is the finding's `UpdatedAt`, `expiresAt` is one calendar year later (Security Hub suppressions do not expire, so the horizon makes them resurface for review), and `appliedBy` records the tool rather than a person ASFF does not name. Because ASFF folds findings sharing a control id into one requirement and an override governs the whole requirement, no override is emitted when an unsuppressed failure shares that id.
+
+  Re-export restores `Workflow.Status: SUPPRESSED` on the round trip, which the previous shape lost.
+
+- **`hdf-to-asff` reports the raw verdict in `Compliance.Status` for a suppressed finding, not the roll-up.**
+
+  Security Hub keeps the two axes orthogonal: `Compliance.Status` is the check result, `Workflow.Status` the triage state, and suppressing a finding there never rewrites its verdict. The exporter previously reported the rolled-up status for every finding, so a failed check that had been suppressed came out `PASSED` — rewriting the verdict on the strength of a triage decision, and lossy because the verdict `asff-to-hdf` reads back was gone. (Suppressing a finding that genuinely passed is ordinary and still reports `PASSED`.)
+
+  Only suppression is affected; everything else still reports the roll-up, including an escalating override. `ASFF -> HDF -> ASFF` now preserves `Compliance.Status`, `Workflow.Status` and `Severity`; the override's own timestamps still drift across a round trip, because the exporter derives `UpdatedAt` from the result time rather than from `appliedAt`.
+
+- **`grype-to-hdf` states `notApplicable` for a match an ignore rule suppressed, instead of `notReviewed`.**
+
+  A `.grype.yaml` ignore rule suppresses evaluation itself, so no verdict exists: `notReviewed` claimed the scan still owed an answer it was told not to give. The claim now travels in `results[]` where every consumer reads it, rather than relying on the impact-0 ladder rung this release removes.
+
+  `impact` is untouched — it was always the match's real severity here, never a status flag. Exported status for those findings moves from CKL `Not_Reviewed` to `Not_Applicable`, and they leave the compliance denominator. No ratio moves in practice: grype reports violations only, so a grype document has no `passed` results and its compliance was already 0%.
+
 - **The threshold and compliance bucket for `notApplicable` is now spelled `not_applicable`. `no_impact` keeps working on input, permanently.**
 
   `no_impact` names a severity score, but the bucket counts the `notApplicable` **status** and always has — the name is InSpec heritage from the convention that an impact of 0 meant not-applicable, which this release removes from the status ladder. The bucket's contents are unchanged; only the key is new.

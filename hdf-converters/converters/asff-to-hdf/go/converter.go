@@ -16,6 +16,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -418,6 +419,9 @@ func buildRequirement(id string, group []asffFinding) hdf.EvaluatedRequirement {
 	if cvss := vulnCvss(primary); len(cvss) > 0 {
 		req.Cvss = cvss
 	}
+	if ov, ok := suppressionOverride(group, results); ok {
+		req.StatusOverrides = []hdf.StatusOverride{ov}
+	}
 	if code := buildRequirementCode(primary); code != "" {
 		req.Code = hdfutil.Ptr(code)
 	}
@@ -650,16 +654,14 @@ func severityLabelToImpact(label string) float64 {
 	return hdfutil.SeverityToImpact(label, 0.0)
 }
 
-// findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.
-// When a standards control is matched, its severity rating wins; otherwise the
+// findingImpact derives a 0.0–1.0 impact. Suppression is carried by a
+// statusOverride, not by zeroing impact, so a suppressed finding keeps its real
+// severity. When a standards control is matched, its severity rating wins; otherwise the
 // finding's severity is used, with Security Hub's INFORMATIONAL up-graded to
 // MEDIUM (Security Hub over-marks findings INFORMATIONAL without context).
 // FindingProviderFields.Severity — the provider's own rating — is preferred over
 // the top-level Severity, which Security Hub may overwrite on ingest.
 func findingImpact(f asffFinding, control *standardsControl) float64 {
-	if f.Workflow.Status == "SUPPRESSED" {
-		return 0.0
-	}
 	if control != nil && control.SeverityRating != "" {
 		return severityLabelToImpact(control.SeverityRating)
 	}
@@ -678,6 +680,66 @@ func findingImpact(f asffFinding, control *standardsControl) float64 {
 		return hdfutil.RoundImpact(*sev.Normalized / 100.0)
 	}
 	return 0.0
+}
+
+const workflowSuppressed = "SUPPRESSED"
+
+// suppressionOverride builds the acceptance override for a group that has at
+// least one suppressed FAILING finding and no unsuppressed failing one. Both
+// halves matter: a suppression over a passing or warning finding adjudicates no
+// adverse verdict and must not be read as accepting one. ASFF folds findings
+// sharing a control id into one requirement and an override governs the whole
+// requirement, so one live failure beside a suppressed one yields no override —
+// waiving it would clear a finding nobody accepted. Security Hub states that a
+// finding was suppressed but never why, so the type is the generic waiver and
+// appliedBy records the tool rather than a person it does not name.
+func suppressionOverride(group []asffFinding, results []hdf.RequirementResult) (hdf.StatusOverride, bool) {
+	var appliedAt time.Time
+	anySuppressedFailure := false
+
+	for i, f := range group {
+		suppressed := f.Workflow.Status == workflowSuppressed
+		status := string(results[i].Status)
+		if !suppressed {
+			// An unsuppressed failure keeps governing the requirement. An
+			// indeterminate one does too: a verdict we cannot read is not a
+			// verdict we may waive.
+			if exportmap.IsFailing(status) || results[i].Status == hdf.Error {
+				return hdf.StatusOverride{}, false
+			}
+			continue
+		}
+		if !exportmap.IsFailing(status) {
+			// Only a failing verdict can be accepted. Suppressing a passed,
+			// warning or indeterminate finding adjudicates nothing adverse, and
+			// overriding here would drive the requirement to passed and into the
+			// compliance numerator on the strength of a decision about nothing.
+			continue
+		}
+		anySuppressedFailure = true
+		// Recency decides which override governs, so take the latest.
+		if t := hdfutil.ParseTimestamp(f.UpdatedAt); t.After(appliedAt) {
+			appliedAt = t
+		}
+	}
+	if !anySuppressedFailure {
+		return hdf.StatusOverride{}, false
+	}
+	if appliedAt.IsZero() {
+		// UpdatedAt is the suppression's tightest proxy; with none parseable,
+		// fall back to the result time rather than emit a zero timestamp.
+		appliedAt = results[0].StartTime
+	}
+
+	status := hdf.Passed
+	return hdf.StatusOverride{
+		Type:      hdf.OverrideTypeWaiver,
+		Status:    &status,
+		Reason:    "Suppressed in AWS Security Hub (Workflow.Status: SUPPRESSED). Security Hub records the suppression but not its justification.",
+		AppliedBy: hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "aws security hub suppression"},
+		AppliedAt: appliedAt,
+		ExpiresAt: shared.DefaultOverrideExpiry(appliedAt),
+	}, true
 }
 
 // baselineName is the Level-1 grouping key, per product.

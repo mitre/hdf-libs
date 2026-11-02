@@ -524,10 +524,12 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 
 	// Determine status. Severity never changes it (unknown-severity
 	// convention): a detected vulnerability is failed regardless of rating
-	// confidence; only the ignore-rules triage axis differs.
+	// confidence; only the ignore-rules triage axis differs. An ignore rule
+	// suppresses evaluation rather than adjudicating a verdict, so there is no
+	// verdict to override — the claim belongs in results[] as notApplicable.
 	var status hdf.ResultStatus
 	if isIgnored {
-		status = hdf.NotReviewed // Ignored by configured rules
+		status = hdf.NotApplicable
 	} else {
 		status = hdf.Failed
 	}

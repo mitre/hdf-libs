@@ -183,7 +183,7 @@ func buildFinding(req map[string]interface{}, ctx findingContext) map[string]int
 		"Severity":      severity(req),
 		"Resources":     resources(ctx.component, id),
 		"RecordState":   "ACTIVE",
-		"Compliance":    complianceBlock(req, st.Rollup),
+		"Compliance":    complianceBlock(req, complianceSource(st)),
 	}
 	// The acceptance axis (waiver / falsePositive / attestation drove a failing
 	// result non-failing) maps to Security Hub's SUPPRESSED workflow state.
@@ -213,11 +213,25 @@ func buildFinding(req map[string]interface{}, ctx findingContext) map[string]int
 	return finding
 }
 
-// complianceBlock builds the ASFF Compliance object: the rolled-up status, the
+// complianceSource picks the status ASFF's Compliance block reports. Security
+// Hub keeps the two axes orthogonal — Compliance.Status is the check result,
+// Workflow.Status the triage state — and suppressing a finding there never
+// rewrites its verdict. So a suppressed finding reports its RAW status: the
+// rolled-up one would rewrite a failed check as PASSED on the strength of a
+// triage decision, and lose the verdict asff-to-hdf reads back. Everything else
+// reports the roll-up, which is what the effective status is for.
+func complianceSource(st exportmap.Status) string {
+	if st.Suppressed {
+		return st.Raw
+	}
+	return st.Rollup
+}
+
+// complianceBlock builds the ASFF Compliance object: the reported status, the
 // NIST/CCI control ids as RelatedRequirements, and the parsed status-reason
 // message as StatusReasons (the reverse of asff-to-hdf's statusReason flatten).
-func complianceBlock(req map[string]interface{}, rollup string) map[string]interface{} {
-	comp := map[string]interface{}{"Status": complianceStatus(rollup)}
+func complianceBlock(req map[string]interface{}, status string) map[string]interface{} {
+	comp := map[string]interface{}{"Status": complianceStatus(status)}
 	if rr := relatedRequirements(req); len(rr) > 0 {
 		comp["RelatedRequirements"] = rr
 	}
