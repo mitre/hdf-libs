@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/smithy-go"
+
 	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +26,8 @@ type mockConfigClient struct {
 	describeRulesErr   error
 	// Per-rule compliance pages; keyed by rule name.
 	compliancePages map[string][]configservice.GetComplianceDetailsByConfigRuleOutput
-	complianceErr   error
+	complianceErr   error            // returned for every rule: the fatal case
+	complianceErrs  map[string]error // returned for one rule by name: the per-rule case
 	// Counts calls for pagination verification.
 	describeCalls   int
 	complianceCalls map[string]int
@@ -91,6 +94,9 @@ func (m *mockConfigClient) GetComplianceDetailsByConfigRule(
 		return nil, m.complianceErr
 	}
 	name := aws.ToString(in.ConfigRuleName)
+	if err, ok := m.complianceErrs[name]; ok {
+		return nil, err
+	}
 	if m.complianceCalls == nil {
 		m.complianceCalls = make(map[string]int)
 	}
@@ -652,26 +658,21 @@ func TestAWSConfigFetcher_Fetch_DescribeConfigRulesError(t *testing.T) {
 	assert.Contains(t, err.Error(), "DescribeConfigRules")
 }
 
+// A throttle says nothing about the rule, so it must abort the whole fetch. Two
+// rules and a check on the message shape keep this test honest: with one rule a
+// swallowed throttle would also end in an error naming it, via the all-failed
+// path, and the test would pass while proving nothing.
 func TestAWSConfigFetcher_Fetch_ComplianceError(t *testing.T) {
 	mock := &mockConfigClient{
-		t: t,
-		describeRulesPages: []configservice.DescribeConfigRulesOutput{
-			{ConfigRules: []types.ConfigRule{
-				{
-					ConfigRuleId:    aws.String("config-rule-abc"),
-					ConfigRuleName:  aws.String("some-rule"),
-					ConfigRuleArn:   aws.String("arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc"),
-					Source:          &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
-					InputParameters: aws.String("{}"),
-				},
-			}},
-		},
-		complianceErr: fmt.Errorf("throttled"),
+		t:                  t,
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErr:      &smithy.GenericAPIError{Code: "ThrottlingException", Message: "throttled"},
 	}
 	f := NewAWSConfigFetcherWithClient(mock)
 	_, err := f.Fetch(context.Background())
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "some-rule")
+	assert.Contains(t, err.Error(), "fetching results for rule", "a throttle takes the abort path, not the degrade path")
+	assert.NotContains(t, err.Error(), "could not be read", "the fetch must not have degraded its way to an empty result")
 }
 
 func TestAWSConfigFetcher_Fetch_NilAnnotation(t *testing.T) {
@@ -1000,11 +1001,73 @@ func TestAWSConfigFetcher_ReadabilityFollowsEvaluationVisibility(t *testing.T) {
 	rules, skipped, err := NewAWSConfigFetcherWithClient(mock).fetchAllConfigRules(context.Background())
 	require.NoError(t, err)
 	require.Len(t, skipped, 1, "only the INTERNAL rule is unreadable")
-	assert.Equal(t, unreadableRule{name: "securityhub-rule", owner: "securityhub.amazonaws.com"}, skipped[0],
+	assert.Equal(t, unreadableRule{name: "securityhub-rule", detail: "securityhub.amazonaws.com"}, skipped[0],
 		"the warning names the rule and the service that provisioned it")
 	names := make([]string, 0, len(rules))
 	for _, r := range rules {
 		names = append(names, r.ConfigRuleName)
 	}
 	assert.ElementsMatch(t, []string{"org-managed-rule", "pack-rule"}, names)
+}
+
+// twoRules is a page with one readable rule whose compliance read will succeed
+// and a second whose read the mock fails by name.
+func twoRules() []types.ConfigRule {
+	second := testRule
+	second.ConfigRuleId = aws.String("config-rule-def")
+	second.ConfigRuleName = aws.String("other-rule")
+	return []types.ConfigRule{testRule, second}
+}
+
+// A rule the API will not let this principal read, or that vanished between
+// listing and reading, must cost that one rule and a warning, not the fetch:
+// the blanket skip this epic narrows existed because the first AccessDenied
+// used to abort everything.
+func TestAWSConfigFetcher_Fetch_PerRuleReadFailureDegrades(t *testing.T) {
+	for name, perRule := range map[string]error{
+		"not found":               &types.NoSuchConfigRuleException{Message: aws.String("gone")},
+		"insufficient permission": &types.InsufficientPermissionsException{Message: aws.String("denied")},
+		"access denied":           &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &mockConfigClient{
+				describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+				complianceErrs:     map[string]error{"other-rule": perRule},
+			}
+			out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+			require.NoError(t, err, "one unreadable rule must not abort the fetch")
+			file := mustUnmarshal(t, out)
+			require.Len(t, file.ConfigRules, 1, "the rule that failed to read is dropped, not emitted empty")
+			assert.Equal(t, "some-rule", file.ConfigRules[0].ConfigRuleName)
+		})
+	}
+}
+
+// Errors that say nothing about the rule stay fatal: a throttle or a dead
+// network is not a reason to report a partial document as the account's state.
+func TestAWSConfigFetcher_Fetch_OtherPerRuleErrorsStayFatal(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErrs:     map[string]error{"other-rule": &smithy.GenericAPIError{Code: "ThrottlingException", Message: "slow down"}},
+	}
+	_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "other-rule")
+}
+
+// When every rule degrades, the outcome composes with the empty-result rule:
+// an error naming the cause, never a null document.
+func TestAWSConfigFetcher_Fetch_AllRulesFailToReadIsAnError(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{testRule}}},
+		complianceErrs:     map[string]error{"some-rule": &types.NoSuchConfigRuleException{Message: aws.String("gone")}},
+	}
+	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
+	data, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "no Config rules could be read in us-east-1")
+	assert.Contains(t, err.Error(), "1 failed to read")
+	assert.Contains(t, err.Error(), "some-rule")
 }

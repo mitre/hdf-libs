@@ -5,11 +5,14 @@ package awsconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/aws/smithy-go"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -154,12 +157,31 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 			f.where(), len(skipped), describeUnreadable(skipped))
 	}
 
+	// A rule the API refuses to this principal, or that vanished since listing,
+	// costs that rule and a warning. Anything else — throttling, a dead network,
+	// a cancelled context — says nothing about the rule and stays fatal.
+	kept := rules[:0]
+	var failed []unreadableRule
 	for i := range rules {
 		results, err := f.fetchEvaluationResults(ctx, rules[i].ConfigRuleName)
 		if err != nil {
-			return nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
+			if !ruleUnreadableAtRead(err) {
+				return nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
+			}
+			failed = append(failed, unreadableRule{name: rules[i].ConfigRuleName, detail: err.Error()})
+			continue
 		}
 		rules[i].EvaluationResults = results
+		kept = append(kept, rules[i])
+	}
+	rules = kept
+	if len(failed) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: aws-config: %d rule(s) could not be read and were dropped: %s\n",
+			len(failed), describeUnreadable(failed))
+	}
+	if len(rules) == 0 {
+		return nil, fmt.Errorf("no Config rules could be read%s: %d skipped as unreadable, %d failed to read: %s",
+			f.where(), len(skipped), len(failed), describeUnreadable(failed))
 	}
 
 	// Remediation is optional enrichment: merge in each rule's remediation
@@ -189,10 +211,25 @@ func (f *AWSConfigFetcher) where() string {
 	return " in " + f.region
 }
 
-// unreadableRule is a rule whose evaluations the Config API will not return.
+// unreadableRule is a rule whose evaluations could not be obtained, with the
+// detail worth telling the user: the provisioning service for a rule the API
+// marks unreadable, or the error text for one that failed to read.
 type unreadableRule struct {
-	name  string
-	owner string // CreatedBy: the service that provisioned the rule, when known
+	name   string
+	detail string
+}
+
+// ruleUnreadableAtRead reports whether a compliance-read error is about this
+// one rule rather than the call: it no longer exists, or this principal may not
+// read it. Those degrade; everything else aborts the fetch.
+func ruleUnreadableAtRead(err error) bool {
+	var notFound *types.NoSuchConfigRuleException
+	var noPermission *types.InsufficientPermissionsException
+	if errors.As(err, &notFound) || errors.As(err, &noPermission) {
+		return true
+	}
+	var api smithy.APIError
+	return errors.As(err, &api) && api.ErrorCode() == "AccessDeniedException"
 }
 
 // evaluationsReadable is the API's own answer to whether GetComplianceDetails
@@ -203,14 +240,14 @@ func evaluationsReadable(r types.ConfigRule) bool {
 	return r.RuleEvaluationVisibility != types.RuleEvaluationVisibilityInternal
 }
 
-// describeUnreadable renders the skipped rules for the warning, naming the
-// service that provisioned each one when the API reported it.
-func describeUnreadable(skipped []unreadableRule) string {
-	parts := make([]string, len(skipped))
-	for i, u := range skipped {
+// describeUnreadable renders rules as "name (detail)" for a warning or error,
+// omitting the parenthesis when there is no detail to give.
+func describeUnreadable(rules []unreadableRule) string {
+	parts := make([]string, len(rules))
+	for i, u := range rules {
 		parts[i] = u.name
-		if u.owner != "" {
-			parts[i] += " (" + u.owner + ")"
+		if u.detail != "" {
+			parts[i] += " (" + u.detail + ")"
 		}
 	}
 	return strings.Join(parts, ", ")
@@ -246,8 +283,8 @@ func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfig
 		for _, r := range out.ConfigRules {
 			if !evaluationsReadable(r) {
 				skipped = append(skipped, unreadableRule{
-					name:  aws.ToString(r.ConfigRuleName),
-					owner: aws.ToString(r.CreatedBy),
+					name:   aws.ToString(r.ConfigRuleName),
+					detail: aws.ToString(r.CreatedBy),
 				})
 				continue
 			}
