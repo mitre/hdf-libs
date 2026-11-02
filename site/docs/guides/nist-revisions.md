@@ -122,13 +122,6 @@ pnpm mappings:awsconfig          # regenerate the AWS Config table (includes the
 pnpm mappings:awsconfig:check    # compare the committed tables against upstream
 ```
 
-Neither `:check` is a commit gate. Both fetch their sources live — NIST's
-comparison workbooks and AWS's Config and Security Hub documentation — so they
-report whether upstream has moved since the tables were generated, which is not
-a question about the commit being made. Run them when refreshing a table, and
-read a failure as "upstream moved". The gate that does run on every commit is
-`mappings:hipcheck:check`, whose generator needs no network; no check compares
-copies of a table, because each table exists only once.
-`hdf-mappings/README.md` records which checks gate and why the rest do not.
+Neither `:check` is enforced. Both fetch their sources live — NIST's comparison workbooks and AWS's Config and Security Hub documentation — so they report whether upstream has moved since the tables were generated, which is not a question about the commit being made. Run them when refreshing a table, and read a failure as "upstream moved". The one that is enforced is `mappings:hipcheck:check`, whose generator reads repo files alone: it runs in the pre-commit hook and in CI's TypeScript job. So a pull request cannot merge with a table that no longer matches its generator, a fork's pull request included — the hook never runs there — short of an organization admin bypassing the `main` ruleset, and a `--no-verify` commit pushed straight to `main` turns CI red there rather than being refused. No check compares copies of a table, because each table exists only once. `hdf-mappings/README.md` records which checks are enforced, why the rest are not, and what that enforcement does and does not buy.
 
 Provenance (source URLs, tier precedence, derivation rules) is documented in the generator headers and the `hdf-mappings` README.

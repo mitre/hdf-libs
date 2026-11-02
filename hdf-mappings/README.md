@@ -96,8 +96,8 @@ Translates control IDs between 800-53 Rev 4 and Rev 5 using NIST's own
 comparison workbooks (the Rev 4→Rev 5 comparison workbook and the Appendix J
 privacy-control comparison, both from the SP 800-53 Rev 5 final publication
 page). Regenerated via `scripts/generate-nist-crosswalk.mjs`, which writes the
-one copy both languages read (`--check` reports drift against NIST, and is not a
-commit gate — see the gate table below). The full
+one copy both languages read (`--check` reports drift against NIST, and is not
+enforced — see the table below). The full
 revision contract — selection, guarantees, and data-consumer guidance — is
 documented in the site guide
 [NIST 800-53 revision handling](../site/docs/guides/nist-revisions.md).
@@ -331,7 +331,7 @@ const analyses = getAllHipcheckAnalyses();
 > table is a hand-curated, NIST-RMF-reviewed mapping — each row carries a
 > `Rationale`. It is the single source of truth in
 > `scripts/generate-hipcheck-mappings.mjs`, which writes the one copy both
-> languages read (`--check` gates drift in `pnpm check`). As with the other
+> languages read (`--check` gates drift in the hook and in CI). As with the other
 > mappings, these are candidate control associations for triage, not evidence a
 > control is assessed or satisfied.
 
@@ -511,21 +511,33 @@ One thing deliberately stays out of `go/datasets/`: `go/nist/testdata/` holds sh
 cross-language *test* case tables, which already exist once and which Go excludes
 from embedding by convention.
 
-### Which drift checks gate a commit
+### Which drift checks are enforced
 
 Every generator supports `--check`, which regenerates in memory and fails if the
-committed table differs. Only one of them is wired into `pnpm check`:
+committed table differs. Only one of them is enforced, and in two places — the
+pre-commit hook and CI's TypeScript job. So a pull request cannot merge with a
+drifted table, including one from a fork where the hook never runs, and a
+`--no-verify` commit pushed straight to `main` turns CI red there rather than
+passing unnoticed:
 
-| Script | Reads | Gates `pnpm check` |
+| Script | Reads | Enforced |
 |---|---|---|
-| `mappings:hipcheck:check` | repo files only | **yes** |
+| `mappings:hipcheck:check` | repo files only | **hook + CI** |
 | `mappings:awsconfig:check` | `docs.aws.amazon.com` Config OBP page + 84 Security Hub pages, live | no |
 | `mappings:crosswalk:check` | two NIST comparison workbooks, live | no |
 | `mappings:descriptions:check` | `usnistgov/oscal-content@main`, live | no |
 
+CI runs on pull requests and on pushes to `main`, so a branch with no pull
+request open gets no CI run at all and the hook is the only check there. The
+`main` ruleset itself requires no pull request and can be bypassed by an
+organization admin: a direct commit to `main` lands and then fails CI after the
+fact rather than being refused, and an admin can likewise merge a pull request
+over the red check. `.github/workflows/ci.yml` records that branch-protection
+setup, and is the copy to trust if this one falls out of date.
+
 The three networked checks are deliberately excluded, and should stay excluded
-(the gate invokes them as `lint:mappings-offline`, named so that adding one is
-an obvious contradiction). They fetch sources that move without us — an AWS
+(the gate runs as `lint:mappings-offline`, named so that adding a networked
+check to it is an obvious contradiction). They fetch sources that move without us — an AWS
 docs page at `latest`, a GitHub branch at `main` — so their result depends on
 when they run rather than on what the commit changed, and they would start
 failing the moment AWS or NIST published. Run them by hand when refreshing a
