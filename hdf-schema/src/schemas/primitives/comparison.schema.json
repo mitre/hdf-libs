@@ -474,6 +474,21 @@
       "description": "Summary statistics for the overall comparison.",
       "title": "Comparison Summary"
     },
+    "Baseline_Diff_State": {
+      "type": "string",
+      "enum": [
+        "new",
+        "absent",
+        "unchanged",
+        "updated"
+      ],
+      "description": "How a baseline or component fared across the compared documents: new (only in the newer), absent (only in the older), unchanged, or updated (present in both with a changed version).",
+      "title": "Baseline Diff State",
+      "examples": [
+        "updated"
+      ],
+      "$comment": "Examples, in order: 1) a baseline present in both documents whose version moved."
+    },
     "Baseline_Diff": {
       "type": "object",
       "unevaluatedProperties": false,
@@ -487,14 +502,7 @@
           "description": "Name of the baseline being compared."
         },
         "state": {
-          "type": "string",
-          "title": "Baseline Diff State",
-          "enum": [
-            "new",
-            "absent",
-            "unchanged",
-            "updated"
-          ],
+          "$ref": "#/$defs/Baseline_Diff_State",
           "description": "The state of this baseline in the comparison."
         },
         "oldVersion": {
@@ -526,14 +534,7 @@
           "description": "Component name used for matching across system versions."
         },
         "state": {
-          "type": "string",
-          "title": "Baseline Diff State",
-          "enum": [
-            "new",
-            "absent",
-            "unchanged",
-            "updated"
-          ],
+          "$ref": "#/$defs/Baseline_Diff_State",
           "description": "The state of this component in the comparison."
         },
         "before": {

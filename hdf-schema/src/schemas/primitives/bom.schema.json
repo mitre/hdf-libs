@@ -252,6 +252,25 @@
         }
       ]
     },
+    "Modality": {
+      "type": [
+        "string",
+        "array"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "description": "A content modality such as text, image, audio, tabular or timeseries: one string, or a list when the content spans several.",
+      "title": "Modality",
+      "examples": [
+        "text",
+        [
+          "text",
+          "image"
+        ]
+      ],
+      "$comment": "Examples, in order: 1) a single modality; 2) multimodal content listed in full."
+    },
     "AI_Model_Extension": {
       "type": "object",
       "additionalProperties": true,
@@ -353,13 +372,7 @@
               "description": "Input/output data types. Examples: string, byte[], float32, image."
             },
             "modality": {
-              "type": [
-                "string",
-                "array"
-              ],
-              "items": {
-                "type": "string"
-              },
+              "$ref": "#/$defs/Modality",
               "description": "Input/output modalities. String or array of strings. Examples: text, image, audio. Symmetric with Dataset_Extension.modality."
             },
             "contextLength": {
@@ -399,13 +412,7 @@
           "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
         },
         "modality": {
-          "type": [
-            "string",
-            "array"
-          ],
-          "items": {
-            "type": "string"
-          },
+          "$ref": "#/$defs/Modality",
           "description": "Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text, image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not physical format. String or array of strings."
         },
         "provenance": {

@@ -79,6 +79,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **SCHEMA — the three enums that were declared inline at two sites each are now named definitions.** `Baseline_Diff.state` and `Component_Diff.state` reference a shared `Baseline_Diff_State`, the two `modality` fields of the BOM extensions reference a shared `Modality`, and the `encoding` of `External_Reference` and `Raw_Source_Record` reference a shared `External_Reference_Encoding`. What validates is identical; the per-field descriptions stay on the referencing sites. The generated Go and TypeScript type names are unchanged, and their doc comments now carry the definition's own description instead of the two field descriptions set-unioned together, which is what the type-doc guard pins for every shared definition.
+
 - **SCHEMA — `Input_Constraints.allowedValues` declares its element schema.** It was a bare `type: array`, which JSON Schema 2020-12 reads as "any element" but which every array lint flags as under-specified. It now carries `items: true` with a description saying why: `Input.value` admits any JSON value and an Array or Hash input enumerates container values, so no element type is imposed. Nothing that validated before is rejected now.
 
 - **SCHEMA — `Hash_Algorithm` records why md5 and sha1 are excluded.** The enum stays `sha256`, `sha384`, `sha512`, `blake3`. Its description now states that the exclusion is deliberate (a tamper-detection digest in a collision-broken algorithm proves nothing), that a source digest in an excluded algorithm is not recorded as a checksum, and that admitting weak hashes as an application-level decision was considered and rejected. Description only; nothing about what validates changed.

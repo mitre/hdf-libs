@@ -2527,14 +2527,8 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
-// How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON,
-// plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8
-// text.
-//
-// Required whenever `content` is present, and meaningless without it — an embedded copy
-// whose encoding a consumer has to guess is not lossless.
-//
-// How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text.
+// How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not
+// valid UTF-8 text.
 type ExternalReferenceEncoding string
 
 const (
@@ -2843,9 +2837,8 @@ const (
 	ScannerNote                   AnnotationCategory = "scannerNote"
 )
 
-// The state of this baseline in the comparison.
-//
-// The state of this component in the comparison.
+// How a baseline or component fared across the compared documents: new (only in the newer), absent
+// (only in the older), unchanged, or updated (present in both with a changed version).
 type BaselineDiffState string
 
 const (
@@ -3101,13 +3094,8 @@ func (x *Ref) MarshalJSON() ([]byte, error) {
 	return marshalUnion(nil, nil, nil, x.String, x.AnythingMapArray != nil, x.AnythingMapArray, false, nil, false, nil, false, nil, false)
 }
 
-// Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text,
-// image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical
-// encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not
-// physical format. String or array of strings.
-//
-// Input/output modalities. String or array of strings. Examples: text, image, audio.
-// Symmetric with Dataset_Extension.modality.
+// A content modality such as text, image, audio, tabular or timeseries: one string, or a list when
+// the content spans several.
 type Modality struct {
 	String      *string
 	StringArray []string

@@ -4,6 +4,19 @@
   "title": "HDF Common Primitives",
   "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
   "$defs": {
+    "External_Reference_Encoding": {
+      "type": "string",
+      "enum": [
+        "utf-8",
+        "base64"
+      ],
+      "description": "How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not valid UTF-8 text.",
+      "title": "External Reference Encoding",
+      "examples": [
+        "base64"
+      ],
+      "$comment": "Examples, in order: 1) a binary artifact, embedded base64-encoded."
+    },
     "External_Reference": {
       "type": "object",
       "title": "External Reference",
@@ -119,12 +132,7 @@
           "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
         },
         "encoding": {
-          "type": "string",
-          "title": "External Reference Encoding",
-          "enum": [
-            "utf-8",
-            "base64"
-          ],
+          "$ref": "#/$defs/External_Reference_Encoding",
           "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
         }
       },

@@ -349,6 +349,19 @@
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "External_Reference_Encoding": {
+          "type": "string",
+          "enum": [
+            "utf-8",
+            "base64"
+          ],
+          "description": "How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not valid UTF-8 text.",
+          "title": "External Reference Encoding",
+          "examples": [
+            "base64"
+          ],
+          "$comment": "Examples, in order: 1) a binary artifact, embedded base64-encoded."
+        },
         "External_Reference": {
           "type": "object",
           "title": "External Reference",
@@ -464,12 +477,7 @@
               "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
             },
             "encoding": {
-              "type": "string",
-              "title": "External Reference Encoding",
-              "enum": [
-                "utf-8",
-                "base64"
-              ],
+              "$ref": "#/$defs/External_Reference_Encoding",
               "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
             }
           },
@@ -2031,6 +2039,21 @@
           "description": "Summary statistics for the overall comparison.",
           "title": "Comparison Summary"
         },
+        "Baseline_Diff_State": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "unchanged",
+            "updated"
+          ],
+          "description": "How a baseline or component fared across the compared documents: new (only in the newer), absent (only in the older), unchanged, or updated (present in both with a changed version).",
+          "title": "Baseline Diff State",
+          "examples": [
+            "updated"
+          ],
+          "$comment": "Examples, in order: 1) a baseline present in both documents whose version moved."
+        },
         "Baseline_Diff": {
           "type": "object",
           "unevaluatedProperties": false,
@@ -2044,14 +2067,7 @@
               "description": "Name of the baseline being compared."
             },
             "state": {
-              "type": "string",
-              "title": "Baseline Diff State",
-              "enum": [
-                "new",
-                "absent",
-                "unchanged",
-                "updated"
-              ],
+              "$ref": "#/$defs/Baseline_Diff_State",
               "description": "The state of this baseline in the comparison."
             },
             "oldVersion": {
@@ -2083,14 +2099,7 @@
               "description": "Component name used for matching across system versions."
             },
             "state": {
-              "type": "string",
-              "title": "Baseline Diff State",
-              "enum": [
-                "new",
-                "absent",
-                "unchanged",
-                "updated"
-              ],
+              "$ref": "#/$defs/Baseline_Diff_State",
               "description": "The state of this component in the comparison."
             },
             "before": {
@@ -3663,11 +3672,7 @@
               "description": "The source tool's own record for this result, carrying every field the record had.\n\nCOMPLETE, NOT NECESSARILY BYTE-EXACT. A producer SHOULD write the record's bytes unchanged where it can. A producer that cannot — notably one implemented in two languages whose JSON serializers disagree on key order, HTML escaping and number rendering, and which therefore MUST canonicalize to stay byte-identical with its twin — MAY write a canonically serialized form instead. Such a form preserves every field and value but not the original key order, insignificant whitespace, or duplicate keys. A consumer MUST therefore compare records by parsing them, not by comparing bytes, and MUST NOT checksum this field and expect the result to match a checksum of the input.\n\nFor carriage that IS byte-exact, use `extensions.rawSourceArtifacts[]`, which forbids a parsed `document` precisely so the bytes and their checksum survive; `pointer` ties this record to its position within that artifact."
             },
             "encoding": {
-              "type": "string",
-              "enum": [
-                "utf-8",
-                "base64"
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference_Encoding",
               "description": "How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text."
             },
             "mediaType": {
@@ -5021,6 +5026,25 @@
             }
           ]
         },
+        "Modality": {
+          "type": [
+            "string",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "A content modality such as text, image, audio, tabular or timeseries: one string, or a list when the content spans several.",
+          "title": "Modality",
+          "examples": [
+            "text",
+            [
+              "text",
+              "image"
+            ]
+          ],
+          "$comment": "Examples, in order: 1) a single modality; 2) multimodal content listed in full."
+        },
         "AI_Model_Extension": {
           "type": "object",
           "additionalProperties": true,
@@ -5122,13 +5146,7 @@
                   "description": "Input/output data types. Examples: string, byte[], float32, image."
                 },
                 "modality": {
-                  "type": [
-                    "string",
-                    "array"
-                  ],
-                  "items": {
-                    "type": "string"
-                  },
+                  "$ref": "#/$defs/Modality",
                   "description": "Input/output modalities. String or array of strings. Examples: text, image, audio. Symmetric with Dataset_Extension.modality."
                 },
                 "contextLength": {
@@ -5168,13 +5186,7 @@
               "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
             },
             "modality": {
-              "type": [
-                "string",
-                "array"
-              ],
-              "items": {
-                "type": "string"
-              },
+              "$ref": "#/$defs/Modality",
               "description": "Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text, image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not physical format. String or array of strings."
             },
             "provenance": {
