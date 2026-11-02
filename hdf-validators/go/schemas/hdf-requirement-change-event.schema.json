@@ -1492,6 +1492,10 @@
               "type": "string",
               "description": "The title - should be human readable."
             },
+            "description": {
+              "type": "string",
+              "description": "Prose description of the baseline, more detailed than summary. Carried verbatim, like every HDF prose field."
+            },
             "maintainer": {
               "type": "string",
               "description": "The maintainer(s)."
@@ -2180,10 +2184,6 @@
             "parentBaseline": {
               "type": "string",
               "description": "The name of the parent baseline if this is a dependency of another."
-            },
-            "description": {
-              "type": "string",
-              "description": "The description - should be more detailed than the summary."
             },
             "integrity": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",

@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
+
 - **`junit-to-hdf` records the owning `<testsuite>` on every requirement.** Each requirement now carries `tags.test_suite`, the suite's `name` attribute verbatim (the suite that directly owns the testcase, so nested suites attribute correctly); a suite with no name records nothing. A Checkov-emitted suite — named `<framework> scan` with testcases carrying Checkov's `[SEVERITY][CHECK_ID]` prefix — additionally carries `tags.check_type: ["<framework>"]`, the same key and value `checkov-to-hdf` emits, so a multi-framework `checkov -o junitxml` run is distinguishable per framework in HDF and comparable with the JSON path. A generic suite (a test class) gets no `check_type`; nothing is inferred from a name alone. **Output change:** every existing JUnit conversion with named suites gains `tags.test_suite`; requirement ids, statuses and counts are unchanged.
 - **Comment length is now gated.** `pnpm lint:comments` fails when a declaration's doc comment (or a file header) exceeds 10 lines, any other comment run exceeds 5, or a comment line exceeds 90 characters.
 

@@ -252,6 +252,17 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('baselines array (Evaluated_Baseline)', () => {
+    // description is inherited from Baseline_Metadata now, not declared here.
+    it('should accept a baseline description inherited from Baseline_Metadata', () => {
+      const description = 'Hardening requirements for Ubuntu 22.04 LTS hosts in the CUI enclave.';
+      expect(validate(createMinimalResultsDoc({
+        baselines: [createMinimalEvaluatedBaseline({ description })],
+      }))).toBe(true);
+      expect(validate(createMinimalResultsDoc({
+        baselines: [createMinimalEvaluatedBaseline({ description: 42 })],
+      }))).toBe(false);
+    });
+
     // The amendment-integrity anchor is the root preAmendmentChecksum; a field
     // named currentChecksum exists on no HDF schema, so a description sending
     // consumers to it prescribes a comparison nobody can perform.

@@ -242,7 +242,7 @@ Security requirements without results (before assessment).
 
 **Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.8.0`
 
-Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`description`, `statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
+Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -255,6 +255,7 @@ Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_R
 | remediation | Remediation | no | Reference to automated fix resources |
 | generator | Generator | no | Tool that produced this file |
 | title | string | no | Human-readable title |
+| description | string | no | Prose description, more detailed than summary |
 | version | string | no | Baseline version |
 | maintainer | string | no | Maintainer name/contact |
 | summary | string | no | e.g. STIG header |

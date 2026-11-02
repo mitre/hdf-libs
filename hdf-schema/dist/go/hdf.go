@@ -172,8 +172,6 @@ type HDFResults struct {
 type EvaluatedBaseline struct {
 	// The set of dependencies this baseline depends on.                                                              
 	Depends                                                                                    []Dependency           `json:"depends,omitempty"`
-	// The description - should be more detailed than the summary.                                                    
-	Description                                                                                *string                `json:"description,omitempty"`
 	// Producer data outside the HDF model that belongs to this baseline rather than to the                           
 	// document, and the pre-converted source artifact(s) this baseline was built from.                               
 	Extensions                                                                                 *Extensions            `json:"extensions,omitempty"`
@@ -209,6 +207,9 @@ type EvaluatedBaseline struct {
 	Copyright                                                                                  *string                `json:"copyright,omitempty"`
 	// The email address or other contact information of the copyright holder(s).                                     
 	CopyrightEmail                                                                             *string                `json:"copyrightEmail,omitempty"`
+	// Prose description of the baseline, more detailed than summary. Carried verbatim, like                          
+	// every HDF prose field.                                                                                         
+	Description                                                                                *string                `json:"description,omitempty"`
 	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                 
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                       
 	// definition. Inert context; see External_Reference.                                                             
@@ -1531,6 +1532,9 @@ type HDFBaseline struct {
 	Copyright                                                                                  *string               `json:"copyright,omitempty"`
 	// The email address or other contact information of the copyright holder(s).                                    
 	CopyrightEmail                                                                             *string               `json:"copyrightEmail,omitempty"`
+	// Prose description of the baseline, more detailed than summary. Carried verbatim, like                         
+	// every HDF prose field.                                                                                        
+	Description                                                                                *string               `json:"description,omitempty"`
 	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                      
 	// definition. Inert context; see External_Reference.                                                            

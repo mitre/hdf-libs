@@ -196,10 +196,6 @@
           "type": "string",
           "description": "The name of the parent baseline if this is a dependency of another."
         },
-        "description": {
-          "type": "string",
-          "description": "The description - should be more detailed than the summary."
-        },
         "integrity": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
           "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."

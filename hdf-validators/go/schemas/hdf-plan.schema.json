@@ -1017,6 +1017,10 @@
               "type": "string",
               "description": "The title - should be human readable."
             },
+            "description": {
+              "type": "string",
+              "description": "Prose description of the baseline, more detailed than summary. Carried verbatim, like every HDF prose field."
+            },
             "maintainer": {
               "type": "string",
               "description": "The maintainer(s)."
