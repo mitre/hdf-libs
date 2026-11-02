@@ -410,6 +410,19 @@ func TestBuildDraftFromResults_RiskAdjustmentStub(t *testing.T) {
 	assert.NotContains(t, stub, "cvss", "non-CVE riskAdjustment must not scaffold cvss")
 }
 
+// An operationalRequirement adjudicates nothing, so its stub must not scaffold
+// the status placeholder the other types get: the schema forbids the key, and
+// a blank one would have to be deleted rather than filled in.
+func TestBuildDraftFromResults_OperationalRequirementStub(t *testing.T) {
+	doc := draftResultsDoc()
+	draft, err := buildDraftFromResults(doc, "operationalRequirement", "", "", "", fixedNow())
+	require.NoError(t, err)
+	stub := draft["overrides"].([]map[string]interface{})[0]
+	assert.NotContains(t, stub, "status")
+	assert.NotContains(t, stub, "impact")
+	assert.Contains(t, stub, "reason")
+}
+
 func TestBuildDraftFromResults_RiskAdjustmentStub_CveEcosystem(t *testing.T) {
 	doc := map[string]interface{}{
 		"baselines": []interface{}{

@@ -2606,18 +2606,48 @@
             "appliedAt",
             "expiresAt"
           ],
-          "anyOf": [
-            {
-              "required": [
-                "status"
-              ]
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "operationalRequirement"
+                ]
+              }
             },
-            {
-              "required": [
-                "impact"
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "status"
+                  ]
+                },
+                {
+                  "required": [
+                    "impact"
+                  ]
+                }
               ]
             }
-          ],
+          },
+          "else": {
+            "anyOf": [
+              {
+                "required": [
+                  "status"
+                ]
+              },
+              {
+                "required": [
+                  "impact"
+                ]
+              }
+            ]
+          },
           "properties": {
             "externalReferences": {
               "type": "array",
@@ -2632,11 +2662,11 @@
             },
             "status": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
-              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
+              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden; forbidden on an operationalRequirement, which adjudicates nothing."
             },
             "impact": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Impact_Override",
-              "description": "Override to the requirement's impact score. At least one of status or impact must be set."
+              "description": "Override to the requirement's impact score. For every type except operationalRequirement, at least one of status or impact must be set; an operationalRequirement carries neither."
             },
             "reason": {
               "type": "string",
@@ -2681,7 +2711,7 @@
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
-          "$comment": "Example 3: Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+          "$comment": "Example 3: Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute. Example 7: operationalRequirement as it sits on the requirement after apply: no status, no impact; the finding stays failed and disposition reports operationalRequirement.",
           "examples": [
             {
               "type": "waiver",
@@ -2781,9 +2811,19 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "operationalRequirement",
+              "reason": "Air-gapped ingest requires USB transfer per operational procedure OP-2026-003. Ports are physically secured, transfers are logged and need two-person integrity.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "system-owner@agency.gov"
+              },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
             }
           ],
-          "description": "An intentional change to a requirement's compliance status and/or impact score. At least one of status or impact must be set. Overrides change the effectiveStatus or impact of the requirement. All overrides must have an expiration date to enforce periodic review.",
+          "description": "An intentional change to a requirement's compliance status and/or impact score, as it sits on the requirement once applied. The same type-conditional rule as Standalone_Override: when type is 'operationalRequirement', neither status nor impact may be set, because the override records an accepted deviation without adjudicating the finding; it still governs disposition, and effectiveStatus stays what the results decided. For every other type, at least one of status or impact must be set. All overrides must have an expiration date to enforce periodic review.",
           "title": "Status Override"
         },
         "POAM": {
@@ -5786,7 +5826,6 @@
               "statusOverrides": [
                 {
                   "type": "operationalRequirement",
-                  "status": "failed",
                   "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
                   "appliedBy": {
                     "type": "email",

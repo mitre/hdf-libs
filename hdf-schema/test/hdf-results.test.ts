@@ -1332,6 +1332,49 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('override with impact and new types', () => {
+    const inlineOverride = (extra: Record<string, unknown>) => createMinimalResultsDoc({
+      baselines: [
+        createMinimalEvaluatedBaseline({
+          requirements: [
+            createMinimalRequirement({
+              results: [createMinimalResult({ status: 'failed' })],
+              statusOverrides: [
+                {
+                  type: 'operationalRequirement',
+                  reason: 'Air-gapped ingest requires USB transfer per OP-2026-003; ports are physically secured.',
+                  appliedBy: { identifier: 'system-owner@agency.gov', type: 'email' },
+                  appliedAt: '2026-01-20T10:00:00Z',
+                  expiresAt: '2099-12-31T00:00:00Z',
+                  ...extra,
+                },
+              ],
+              effectiveStatus: 'failed',
+              disposition: 'operationalRequirement',
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // An operationalRequirement records an accepted deviation and adjudicates
+    // nothing, so once merged it carries neither status nor impact.
+    it('should accept an inline operationalRequirement carrying neither status nor impact', () => {
+      expect(validate(inlineOverride({}))).toBe(true);
+    });
+
+    it('should reject an inline operationalRequirement carrying status', () => {
+      expect(validate(inlineOverride({ status: 'failed' }))).toBe(false);
+    });
+
+    it('should reject an inline operationalRequirement carrying impact', () => {
+      expect(validate(inlineOverride({ impact: { value: 0.3 } }))).toBe(false);
+    });
+
+    it('should still require status or impact on every other inline override type', () => {
+      expect(validate(inlineOverride({ type: 'waiver' }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'waiver', status: 'passed' }))).toBe(true);
+    });
+
     it('should accept requirement with falsePositive override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [

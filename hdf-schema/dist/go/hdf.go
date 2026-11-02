@@ -960,9 +960,12 @@ type SourceLocation struct {
 	Ref                                                       *string  `json:"ref,omitempty"`
 }
 
-// An intentional change to a requirement's compliance status and/or impact score. At least one of
-// status or impact must be set. Overrides change the effectiveStatus or impact of the requirement.
-// All overrides must have an expiration date to enforce periodic review.
+// An intentional change to a requirement's compliance status and/or impact score, as it sits on the
+// requirement once applied. The same type-conditional rule as Standalone_Override: when type is
+// 'operationalRequirement', neither status nor impact may be set, because the override records an
+// accepted deviation without adjudicating the finding; it still governs disposition, and
+// effectiveStatus stays what the results decided. For every other type, at least one of status or
+// impact must be set. All overrides must have an expiration date to enforce periodic review.
 type StatusOverride struct {
 	// Timestamp when this override was applied. ISO 8601 format.                                                   
 	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
@@ -984,7 +987,8 @@ type StatusOverride struct {
 	// `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences                    
 	// for the inline (results-embedded) override carrier.                                                          
 	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
-	// Override to the requirement's impact score. At least one of status or impact must be set.                    
+	// Override to the requirement's impact score. For every type except operationalRequirement,                    
+	// at least one of status or impact must be set; an operationalRequirement carries neither.                     
 	Impact                                                                                      *ImpactOverride     `json:"impact,omitempty"`
 	// Structured controlled-vocabulary classification for why this override applies.                               
 	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                    
@@ -1006,7 +1010,7 @@ type StatusOverride struct {
 	// methods.                                                                                                     
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`
 	// The new status this override sets for the requirement. Optional when only impact is being                    
-	// overridden.                                                                                                  
+	// overridden; forbidden on an operationalRequirement, which adjudicates nothing.                               
 	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
 	// The type of override applied to this requirement.                                                            
 	Type                                                                                        OverrideType        `json:"type"`

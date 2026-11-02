@@ -578,7 +578,6 @@
           "statusOverrides": [
             {
               "type": "operationalRequirement",
-              "status": "failed",
               "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
               "appliedBy": {
                 "type": "email",
