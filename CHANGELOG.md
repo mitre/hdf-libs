@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **SCHEMA — `Evaluated_Baseline.resultsChecksum`'s description no longer sends consumers to a `currentChecksum` field that no HDF schema declares.** It names the root `preAmendmentChecksum` as the amendment-integrity anchor: `hdf amend apply` writes that as the hash of the raw document bytes immediately before the most recent amendment application, one step back only. Description text only; nothing about what validates changed.
+
 - **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.
 
   `readInput` reads `""` as a request for stdin, so a pipeline passing an unset shell variable waited indefinitely rather than reporting the input it never got. `-` remains the explicit stdin spelling and is unchanged. A whitespace-only path is refused on the same grounds. This covers the evidence subcommands only; the rest of the CLI shares the same reader and is tracked separately. (hdf-libs-52n0c.49)

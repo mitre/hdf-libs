@@ -195,8 +195,10 @@ type EvaluatedBaseline struct {
 	// requirement.                                                                                                   
 	Requirements                                                                               []EvaluatedRequirement `json:"requirements"`
 	// SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs).                          
-	// Used to detect tampering with test results. Compare with currentChecksum to verify                             
-	// amendment integrity.                                                                                           
+	// Used to detect tampering with test results. Amendment integrity is checked against the                         
+	// document-level preAmendmentChecksum at the root, not this per-baseline value: hdf amend                        
+	// apply writes it as the hash of the raw document bytes immediately before the most recent                       
+	// amendment application, one step back only.                                                                     
 	ResultsChecksum                                                                            *Checksum              `json:"resultsChecksum,omitempty"`
 	// An explanation of the baseline status. Example: why it was skipped, failed to load, or                         
 	// any other status details.                                                                                      

@@ -252,6 +252,20 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('baselines array (Evaluated_Baseline)', () => {
+    // The amendment-integrity anchor is the root preAmendmentChecksum; a field
+    // named currentChecksum exists on no HDF schema, so a description sending
+    // consumers to it prescribes a comparison nobody can perform.
+    it('resultsChecksum sends consumers to preAmendmentChecksum, not a currentChecksum that does not exist', () => {
+      const schema = loadSchema('hdf-results.schema.json') as {
+        properties: Record<string, unknown>;
+        $defs: Record<string, { properties: Record<string, { description: string }> }>;
+      };
+      const description = schema.$defs['Evaluated_Baseline']!.properties['resultsChecksum']!.description;
+      expect(description).not.toContain('currentChecksum');
+      expect(description).toContain('preAmendmentChecksum');
+      expect(schema.properties).toHaveProperty('preAmendmentChecksum');
+    });
+
     it('should validate baseline with minimal required fields', () => {
       const doc = createMinimalResultsDoc({ baselines: [createMinimalEvaluatedBaseline()] });
       expect(validate(doc)).toBe(true);
