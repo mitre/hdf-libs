@@ -235,10 +235,11 @@ jobs:
         run: |
           test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
           # npm provenance names github.sha; the published tree must descend from exactly that commit.
+          # The ./ keeps npm from reading a bare dir/file.tgz spec as a GitHub owner/repo shorthand.
           test "$SOURCE" = "$GITHUB_SHA"
           registry=(--registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org)
           while read -r pkg; do
-            npm publish "snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
+            npm publish "./snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
               --access public --provenance --ignore-scripts --tag snapshot-staging "${registry[@]}"
           done < "$RUNNER_TEMP/packages.txt"
           while read -r pkg; do
