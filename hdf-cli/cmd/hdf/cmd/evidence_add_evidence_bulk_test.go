@@ -115,8 +115,15 @@ func TestEvidenceAddEvidence_DiscoveryRejectsSymlink(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	dir := filepath.Dir(pkg)
 	require.NoError(t, os.Symlink(dir, filepath.Join(dir, "cycle")))
-	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", dir, "--recursive", "--format", "raw-log")
-	require.ErrorContains(t, err, "symlink")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "real.log"), []byte("real"), 0o600))
+	// A symlink that would cycle is skipped with a notice, not followed and not fatal; the
+	// walk sees one real file exactly once.
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", dir, "--recursive", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "a symlink")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "real.log", refs[0].(map[string]interface{})["uri"])
 }
 
 func TestEvidenceAddEvidence_DiscoveryExcludesOutput(t *testing.T) {
@@ -183,7 +190,9 @@ func TestEvidenceAddEvidence_DiscoveryUnreadable(t *testing.T) {
 	before, err := os.ReadFile(pkg)
 	require.NoError(t, err)
 	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--file", path, "--format", "raw-log")
-	require.ErrorContains(t, err, "read selected evidence")
+	// Readability is proven by the one open the hasher performs, not by a probe
+	// beforehand; the error therefore names the checksum step.
+	require.ErrorContains(t, err, "to checksum it")
 	after, err := os.ReadFile(pkg)
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
@@ -267,4 +276,119 @@ func TestEvidenceAddEvidence_DiscoveryContainmentThroughSymlinkedBase(t *testing
 	require.NoError(t, os.WriteFile(outside, []byte("out"), 0o600))
 	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--file", outside, "--format", "raw-log")
 	assert.ErrorContains(t, err, "outside the package")
+}
+
+// ---- card hdf-libs-xfhfs.3: one symlink and non-regular policy ----
+
+// A symlinked --from-dir root is resolved and walked the way evidence build's
+// --from-dir is, so both spellings record the same package-relative references,
+// named by the resolved directory; no lexical check on the typed string decides it.
+func TestEvidenceAddEvidence_DirectorySymlinkRootResolvedLikeBuild(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Mkdir("logs", 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("logs", "a.log"), []byte("a"), 0o600))
+	require.NoError(t, os.Symlink("logs", "logslink"))
+	before, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	for _, spelling := range []string{"logslink", "logslink/"} {
+		require.NoError(t, os.WriteFile(pkg, before, 0o600))
+		_, _, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", spelling, "--format", "raw-log")
+		require.NoError(t, err, "spelling %q", spelling)
+		refs := readEvidenceExternal(t, pkg)
+		require.Len(t, refs, 1, "spelling %q", spelling)
+		assert.Equal(t, "logs/a.log", refs[0].(map[string]interface{})["uri"], "spelling %q", spelling)
+	}
+}
+
+// A subdirectory met without --recursive is reported the way a glob reports one,
+// so the two selectors never disagree about a directory entry.
+func TestEvidenceAddEvidence_FromDirReportsSkippedSubdirectoryLikeGlob(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.MkdirAll(filepath.Join("logs", "sub"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("logs", "l.txt"), []byte("l"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "logs", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "Skipped logs/sub: a directory")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "logs/l.txt", refs[0].(map[string]interface{})["uri"])
+}
+
+// A glob that matches a subdirectory skips it the way the directory walk does, instead
+// of aborting the whole batch — a reports folder with one subfolder is the common case.
+func TestEvidenceAddEvidence_GlobSkipsSubdirectoryLikeTheWalk(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.MkdirAll(filepath.Join("logs", "archive"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("logs", "l.txt"), []byte("l"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--file", "logs/*", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "Skipped")
+	assert.Contains(t, stderr, "a directory")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "logs/l.txt", refs[0].(map[string]interface{})["uri"])
+}
+
+// A discovered symlink is skipped with a notice naming its kind and the batch continues
+// — the same skip-and-report `evidence build --from-dir` gives it — not aborted.
+func TestEvidenceAddEvidence_DiscoveredSymlinkSkippedWithNotice(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Mkdir("evidence", 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("evidence", "in.log"), []byte("in"), 0o600))
+	require.NoError(t, os.Symlink("in.log", filepath.Join("evidence", "link.log")))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "evidence", "--format", "raw-log")
+	require.NoError(t, err, "a discovered symlink is skipped, not fatal")
+	assert.Contains(t, stderr, "Skipped")
+	assert.Contains(t, stderr, "a symlink")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "evidence/in.log", refs[0].(map[string]interface{})["uri"])
+}
+
+// --no-follow-symlinks is the CLI's one symlink policy; the --uri hashing path must
+// honor it rather than open the file directly past readFromFile's gate.
+func TestEvidenceAddEvidence_URIHonoursNoFollowSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "in.log"), []byte("in"), 0o600))
+	require.NoError(t, os.Symlink("in.log", filepath.Join(dir, "link.log")))
+	_, _, err := executeCommand("--no-follow-symlinks", "evidence", "add-evidence", pkg, "--uri", "link.log", "--format", "raw-log")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "refusing to follow symlink")
+	assert.Empty(t, readEvidenceExternal(t, pkg))
+}
+
+// One Lstat first, its FileInfo handed to both checks: a symlink that points AT the
+// package is classified as a symlink — refused when named literally, skipped with the
+// symlink notice when discovered — never silently absorbed as "the package itself".
+func TestEvidenceAddEvidence_SymlinkToPackageIsASymlinkFirst(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Mkdir("only", 0o700))
+	require.NoError(t, os.Symlink(filepath.Join("..", filepath.Base(pkg)), filepath.Join("only", "l.json")))
+	_, _, literal := executeCommand("evidence", "add-evidence", pkg, "--file", filepath.Join("only", "l.json"), "--format", "raw-log")
+	require.Error(t, literal)
+	assert.ErrorContains(t, literal, "symlink")
+	assert.NotContains(t, literal.Error(), "package or output itself")
+	_, stderr, discovered := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "only", "--format", "raw-log")
+	require.Error(t, discovered, "the sole entry was skipped, so nothing was selected")
+	assert.ErrorContains(t, discovered, "no files selected")
+	assert.Contains(t, stderr, "a symlink")
+	assert.NotContains(t, stderr, "package or output itself")
 }

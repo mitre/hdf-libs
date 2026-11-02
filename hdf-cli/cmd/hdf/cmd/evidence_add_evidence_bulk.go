@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
@@ -71,6 +72,7 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	// package-relative by contract, so containment is measured from here.
 	pkgDir := filepath.Dir(pkg)
 	seen := make(map[string]string)
+	var skipped []skippedKind
 	for i, s := range selectors {
 		if strings.TrimSpace(s.value) == "" {
 			return opts, fmt.Errorf("local selector %d is blank", i+1)
@@ -87,14 +89,25 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 			if err != nil {
 				return opts, err
 			}
-			if isExcludedEvidenceFile(abs, excluded) {
+			// One Lstat, its FileInfo handed to both checks. Kind first, so a symlink
+			// is reported as a symlink rather than dropped silently as excluded.
+			info, err := os.Lstat(abs)
+			if err != nil {
+				return opts, fmt.Errorf("read selected evidence %q: %w", path, err)
+			}
+			if !info.Mode().IsRegular() {
+				kind := nonRegularKind(info.Mode())
+				if discovered {
+					skipped = append(skipped, skippedKind{path: abs, kind: kind, mode: info.Mode()})
+					continue
+				}
+				return opts, fmt.Errorf("selected evidence %q is %s; select a regular file directly", path, kind)
+			}
+			if isExcludedEvidenceFile(info, excluded) {
 				if discovered {
 					continue
 				}
 				return opts, fmt.Errorf("cannot add the package or output itself as evidence: %q", path)
-			}
-			if err := checkEvidenceSelectionFile(abs); err != nil {
-				return opts, err
 			}
 			selected++
 			if previous, exists := seen[abs]; exists && discovered {
@@ -127,22 +140,33 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 			}
 		}
 		if selected == 0 {
+			// Say what was skipped BEFORE saying nothing was selected, or a selector whose
+			// only entry was a symlink reads as if it matched nothing at all.
+			reportSkippedSelections(pkgDir, skipped)
 			return opts, &exitCodeError{code: exitNothingToDo, message: fmt.Sprintf("no files selected by %q after excluding the package and output", s.value), report: true}
 		}
 	}
+	reportSkippedSelections(pkgDir, skipped)
 	opts.uris = uris
 	opts.formats = formats
 	return opts, nil
 }
 
-func isExcludedEvidenceFile(path string, excluded map[string]os.FileInfo) bool {
-	if _, ok := excluded[path]; ok {
-		return true
+// reportSkippedSelections prints each entry discovery passed over by kind, so nothing
+// is dropped in silence — the same shape evidence build gives its irregular entries,
+// shown under the package directory the way the recorded references are.
+func reportSkippedSelections(pkgDir string, skipped []skippedKind) {
+	sort.Slice(skipped, func(i, j int) bool { return skipped[i].path < skipped[j].path })
+	for _, l := range skipped {
+		advice := ""
+		if l.mode&os.ModeSymlink != 0 {
+			advice = " Name its target explicitly if it belongs in the package."
+		}
+		fmt.Fprintf(os.Stderr, "Skipped %s: %s.%s\n", displayUnderBase(pkgDir, l.path), l.kind, advice)
 	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
+}
+
+func isExcludedEvidenceFile(info os.FileInfo, excluded map[string]os.FileInfo) bool {
 	for _, other := range excluded {
 		if other != nil && os.SameFile(info, other) {
 			return true
@@ -155,47 +179,44 @@ func evidenceSelectionPaths(s evidenceSelection, recursive bool) ([]string, erro
 	if !s.directory {
 		return expandGlobs([]string{s.value})
 	}
-	info, err := os.Lstat(s.value)
+	// The root is resolved and walked as scanEvidenceDir walks evidence build's
+	// --from-dir, so every spelling of it is decided on the same resolved form.
+	base, err := resolvedAbs(s.value)
 	if err != nil {
 		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
 	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("%q is not a directory (symlinks are not followed)", s.value)
+	if info, statErr := os.Stat(base); statErr != nil {
+		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, statErr)
+	} else if !info.IsDir() {
+		return nil, fmt.Errorf("%q is not a directory", s.value)
 	}
+	root, err := os.OpenRoot(base)
+	if err != nil {
+		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
+	}
+	defer func() { _ = root.Close() }()
 	var paths []string
-	err = filepath.WalkDir(s.value, func(path string, entry fs.DirEntry, walkErr error) error {
+	err = fs.WalkDir(root.FS(), ".", func(rel string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() {
-			if path != s.value && !recursive {
-				return filepath.SkipDir
-			}
+		if rel == "." {
 			return nil
 		}
-		paths = append(paths, path)
+		// A subdirectory met without --recursive is returned as a path so the caller
+		// classifies and reports it exactly as it does a glob match on a directory.
+		if entry.IsDir() && !recursive {
+			paths = append(paths, filepath.Join(base, rel))
+			return fs.SkipDir
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		paths = append(paths, filepath.Join(base, rel))
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
 	}
 	return paths, nil
-}
-
-func checkEvidenceSelectionFile(path string) error {
-	info, err := os.Lstat(path)
-	if err != nil {
-		return fmt.Errorf("read selected evidence %q: %w", path, err)
-	}
-	if info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("selected evidence %q is a symlink; select a regular file directly", path)
-	}
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("selected evidence %q is not a regular file", path)
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("read selected evidence %q: %w", path, err)
-	}
-	return f.Close()
 }

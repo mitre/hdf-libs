@@ -136,7 +136,10 @@ unlabelled one.
 
 --file selects local filesystem paths or quoted globs relative to the working
 directory. --from-dir selects its immediate files; --recursive includes nested
-directories. Symlink entries are refused, and directory symlinks are not followed.
+directories. A discovered symlink or other non-regular entry is skipped with a
+notice; one named by --file is refused. The --from-dir root is resolved before the
+walk, as evidence build resolves its own, and links met inside the walk are never
+followed.
 Glob and directory discovery exclude the input package and -o output. Quote
 patterns so the CLI expands them consistently; * does not cross directories.
 
@@ -192,7 +195,7 @@ Examples:
 	cmd.Flags().StringArrayVar(&opts.uris, "uri", nil, "URI of an external evidence artifact (repeatable; not glob-expanded)")
 	cmd.Flags().StringArrayVar(&opts.files, "file", nil, "Local file or quoted glob, relative to the working directory (repeatable)")
 	cmd.Flags().StringArrayVar(&opts.directories, "from-dir", nil, "Local directory of evidence files (repeatable; excludes package and output)")
-	cmd.Flags().BoolVar(&opts.recursive, "recursive", false, "Include subdirectories selected by --from-dir; symlinks are refused")
+	cmd.Flags().BoolVar(&opts.recursive, "recursive", false, "Include subdirectories selected by --from-dir; symlinks met in the walk are skipped")
 	cmd.Flags().StringArrayVar(&opts.formats, "format", nil,
 		"Format: ecs | ocsf | cyclonedx | spdx | raw-log | x-<custom>. Give one for all artifacts, or one per selector in --uri, --file, --from-dir order")
 	cmd.Flags().BoolVar(&opts.infer, "infer", false,
@@ -649,6 +652,9 @@ func streamingHasher(algorithm string) (hash.Hash, error) {
 }
 
 func fileChecksumHex(path string) (value, algorithm string, err error) {
+	if err := refuseSymlinkIfConfigured(path); err != nil {
+		return "", "", err
+	}
 	f, err := os.Open(path) // #nosec G304 -- CLI reads user-provided file path; streamed, not slurped
 	if err != nil {
 		return "", "", err
