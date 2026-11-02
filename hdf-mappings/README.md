@@ -95,8 +95,9 @@ const family = getNISTFamily('AC-01');
 Translates control IDs between 800-53 Rev 4 and Rev 5 using NIST's own
 comparison workbooks (the Rev 4→Rev 5 comparison workbook and the Appendix J
 privacy-control comparison, both from the SP 800-53 Rev 5 final publication
-page). Regenerated via `scripts/generate-nist-crosswalk.mjs`; both the Go and
-TS copies are written byte-identically (`--check` gates drift). The full
+page). Regenerated via `scripts/generate-nist-crosswalk.mjs`, which writes the
+one copy both languages read (`--check` reports drift against NIST, and is not a
+commit gate — see the gate table below). The full
 revision contract — selection, guarantees, and data-consumer guidance — is
 documented in the site guide
 [NIST 800-53 revision handling](../site/docs/guides/nist-revisions.md).
@@ -329,8 +330,8 @@ const analyses = getAllHipcheckAnalyses();
 > **Provenance.** Hipcheck publishes no analysis-to-controls crosswalk, so this
 > table is a hand-curated, NIST-RMF-reviewed mapping — each row carries a
 > `Rationale`. It is the single source of truth in
-> `scripts/generate-hipcheck-mappings.mjs`, which writes both the Go and TS
-> copies byte-identically (`--check` gates drift in CI). As with the other
+> `scripts/generate-hipcheck-mappings.mjs`, which writes the one copy both
+> languages read (`--check` gates drift in `pnpm check`). As with the other
 > mappings, these are candidate control associations for triage, not evidence a
 > control is assessed or satisfied.
 
@@ -472,6 +473,59 @@ translated, unmapped := nist.TranslateControls([]string{"AC-1", "IR-10", "SC-19"
 | Hadolint→NIST | heimdall2 mapping tables |
 | AWS Config→NIST | AWS Config OBP for NIST 800-53 docs + Security Hub NIST r5 standard + derived (see Coverage tiers) |
 | NIST Rev 4↔5 crosswalk | NIST SP 800-53 Rev 4→Rev 5 comparison workbook + Appendix J comparison (csrc.nist.gov, Rev 5 final) |
+
+### Where the datasets live
+
+Every dataset this package ships lives exactly once, under `go/datasets/`, in a
+directory that holds data and no logic:
+
+| Path | Holds | Wrong means |
+|------|-------|-------------|
+| `go/datasets/catalogs/` | an authority's own text, transcribed — the NIST control titles and prose | stale against upstream |
+| `go/datasets/mappings/` | correspondences between two identifier spaces — tool checks, CWE, OWASP and CCI to NIST, and the Rev 4↔5 crosswalk | mistaken; each row is an editorial judgement |
+
+Go reads them through one exported `[]byte` var per dataset in `go/datasets`,
+TypeScript imports the same files directly, so within this repository the two
+languages cannot read different bytes and no drift check is needed to keep them
+honest. One var per dataset rather than an `embed.FS`, deliberately: a filename
+typo is a compile error, the bytes are the binary image rather than a heap copy,
+and the linker drops the datasets a program never names — a single FS behind a
+lookup forfeits all three and charges every consumer the whole corpus.
+
+It is under `go/` because `go:embed` patterns may not contain `..` and cannot
+reach outside the package directory, so a dataset Go must embed has to sit in a
+Go package. TypeScript has no such restriction; the constrained consumer picks
+the location. `src/data/` keeps only `awsconfig-suppressions.json`, which is
+TypeScript-side configuration with no Go consumer, not a dataset.
+
+One thing deliberately stays out of `go/datasets/`: `go/nist/testdata/` holds shared
+cross-language *test* case tables, which already exist once and which Go excludes
+from embedding by convention.
+
+### Which drift checks gate a commit
+
+Every generator supports `--check`, which regenerates in memory and fails if the
+committed table differs. Only one of them is wired into `pnpm check`:
+
+| Script | Reads | Gates `pnpm check` |
+|---|---|---|
+| `mappings:hipcheck:check` | repo files only | **yes** |
+| `mappings:awsconfig:check` | `docs.aws.amazon.com` Config OBP page + 84 Security Hub pages, live | no |
+| `mappings:crosswalk:check` | two NIST comparison workbooks, live | no |
+| `mappings:descriptions:check` | `usnistgov/oscal-content@main`, live | no |
+
+The three networked checks are deliberately excluded, and should stay excluded
+(the gate invokes them as `lint:mappings-offline`, named so that adding one is
+an obvious contradiction). They fetch sources that move without us — an AWS
+docs page at `latest`, a GitHub branch at `main` — so their result depends on
+when they run rather than on what the commit changed, and they would start
+failing the moment AWS or NIST published. Run them by hand when refreshing a
+table, and read a failure as "upstream moved", not "this commit is wrong".
+
+Cross-language agreement needs no drift check at all now. Every dataset lives
+once, in `go/datasets/`, which Go embeds and TypeScript imports, so the two
+languages cannot read different bytes. See [Where the datasets
+live](#where-the-datasets-live).
 
 ## License
 

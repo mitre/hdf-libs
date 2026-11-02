@@ -2,17 +2,16 @@
 package nikto
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
-//go:embed nikto-nist-mappings.json
-var mappingsData []byte
+var mappingsData = datasets.NiktoNIST
 
 var (
 	niktoData     map[string]string // Nikto test ID → NIST control

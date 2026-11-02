@@ -1,12 +1,12 @@
 package cci
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
@@ -21,8 +21,9 @@ type CCIItem struct {
 // CCIMappings represents the complete CCI to NIST mapping database
 type CCIMappings map[string]CCIItem
 
-//go:embed cci-mappings.json
-var cciMappingsData []byte
+var cciMappingsData = datasets.CCIMappings
+
+var nistCCIMappingsData = datasets.NISTCCIMappings
 
 var (
 	cciData     CCIMappings
@@ -102,9 +103,6 @@ func GetAllCCIIDs() []string {
 
 // NistCCIMappings is the curated NIST control → CCI mapping table.
 type NistCCIMappings map[string][]string
-
-//go:embed nist-cci-mappings.json
-var nistCCIMappingsData []byte
 
 var (
 	nistCCIData     NistCCIMappings

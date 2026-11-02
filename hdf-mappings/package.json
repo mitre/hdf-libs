@@ -26,6 +26,8 @@
     "mappings:crosswalk:check": "node scripts/generate-nist-crosswalk.mjs --check",
     "mappings:descriptions": "node scripts/generate-nist-descriptions.mjs",
     "mappings:descriptions:check": "node scripts/generate-nist-descriptions.mjs --check",
+    "mappings:hipcheck": "node scripts/generate-hipcheck-mappings.mjs",
+    "mappings:hipcheck:check": "node scripts/generate-hipcheck-mappings.mjs --check",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",

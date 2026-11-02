@@ -2,11 +2,11 @@
 package awsconfig
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
@@ -22,8 +22,7 @@ type Mapping struct {
 	Source string `json:"Source"`
 }
 
-//go:embed awsconfig-mappings.json
-var mappingsData []byte
+var mappingsData = datasets.AWSConfigMappings
 
 var (
 	// keyed by revision → name/identifier → mapping

@@ -7,7 +7,7 @@
 
 import type { AwsConfigNistMapping, AwsConfigNistMappings, AwsConfigSuppressions } from './types.js';
 import { getCurrentNistRevision, SUPPORTED_NIST_REVISIONS } from '../nist/index.js';
-import rawMappings from '../data/awsconfig-mappings.json';
+import rawMappings from '../../go/datasets/mappings/awsconfig-mappings.json';
 import rawSuppressions from '../data/awsconfig-suppressions.json';
 
 const mappings = rawMappings as AwsConfigNistMappings;

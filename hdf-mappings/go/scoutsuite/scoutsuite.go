@@ -2,21 +2,20 @@
 package scoutsuite
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed scoutsuite-nist-mappings.json
-var mappingsData []byte
 
 type mapping struct {
 	Rule   string `json:"RULE"`
 	NistID string `json:"NIST-ID"`
 }
+
+var mappingsData = datasets.ScoutSuiteNIST
 
 var (
 	scoutsuiteData     map[string]string // rule name → NIST control(s)

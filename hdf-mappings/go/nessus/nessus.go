@@ -2,17 +2,14 @@
 package nessus
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed nessus-nist-mappings.json
-var mappingsData []byte
 
 // nessusMapping represents a single entry in the Nessus-NIST mapping data.
 // pluginID may be a number or "*" (wildcard) in the JSON, so we unmarshal it as json.RawMessage.
@@ -27,6 +24,8 @@ type lookupKey struct {
 	family   string
 	pluginID string
 }
+
+var mappingsData = datasets.NessusNIST
 
 var (
 	exactMap    map[lookupKey]string // family+pluginID → NIST-ID

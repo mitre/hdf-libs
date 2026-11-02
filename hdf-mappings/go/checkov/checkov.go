@@ -8,16 +8,13 @@
 package checkov
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed checkov-cci-nist-mappings.json
-var datasetData []byte
 
 // Mapping is the CCI and NIST control lists for one Checkov check.
 type Mapping struct {
@@ -45,6 +42,8 @@ type dataset struct {
 	Provenance
 	Mappings map[string]Mapping `json:"mappings"`
 }
+
+var datasetData = datasets.CheckovCCINIST
 
 var (
 	loaded   dataset

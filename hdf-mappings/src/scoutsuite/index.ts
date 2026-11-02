@@ -3,7 +3,7 @@
  */
 
 import type { ScoutsuiteNistMapping, ScoutsuiteNistMappings } from './types.js';
-import rawMappings from '../data/scoutsuite-nist-mappings.json';
+import rawMappings from '../../go/datasets/mappings/scoutsuite-nist-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // Authored against Rev 4 (heimdall2's mapping; every control it carries is

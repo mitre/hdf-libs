@@ -2,12 +2,12 @@
 package cwe
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
@@ -18,8 +18,7 @@ type cweMapping struct {
 	Rev    int    `json:"Rev"`
 }
 
-//go:embed cwe-nist-mappings.json
-var cweMappingsData []byte
+var cweMappingsData = datasets.CWENIST
 
 var (
 	cweData     map[int]map[int][]string // revision → CWE numeric ID → NIST controls

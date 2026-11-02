@@ -1,12 +1,13 @@
 package nist
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 )
 
 // Relations a Translation can carry. Identity means the control exists at both
@@ -36,9 +37,6 @@ type Translation struct {
 	Detail string
 }
 
-//go:embed nist-revision-crosswalk.json
-var crosswalkData []byte
-
 type crosswalkEdge struct {
 	From     int      `json:"from"`
 	Control  string   `json:"control"`
@@ -47,6 +45,8 @@ type crosswalkEdge struct {
 	Family   string   `json:"family,omitempty"`
 	Detail   string   `json:"detail"`
 }
+
+var crosswalkData = datasets.NISTRevisionCrosswalk
 
 var (
 	xwRosters    map[int]map[string]bool
