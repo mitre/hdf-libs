@@ -22,13 +22,17 @@ import (
 	"lukechampine.com/blake3"
 )
 
+// evidenceSchemaBytes is the schema reader behind the --format vocabulary; a
+// variable so a test can count how many times a batch reaches the schema.
+var evidenceSchemaBytes = validators.SchemaBytes
+
 // externalEvidenceFormatConstraints derives the allowed --format vocabulary from
 // the single source of truth — hdf-evidence-package.schema.json
 // #/$defs/External_Evidence_Format (an `anyOf` of a reserved enum plus an
 // x-<custom> pattern) — so the command-boundary check can never drift from the
 // schema. Reads the embedded schema (or the --schema-dir override).
 func externalEvidenceFormatConstraints() ([]string, *regexp.Regexp, error) {
-	raw, err := validators.SchemaBytes(validators.TypeEvidencePackage)
+	raw, err := evidenceSchemaBytes(validators.TypeEvidencePackage)
 	if err != nil {
 		return nil, nil, fmt.Errorf("load evidence-package schema: %w", err)
 	}
@@ -139,7 +143,9 @@ directory. --from-dir selects its immediate files; --recursive includes nested
 directories. A discovered symlink or other non-regular entry is skipped with a
 notice; one named by --file is refused. The --from-dir root is resolved before the
 walk, as evidence build resolves its own, and links met inside the walk are never
-followed.
+followed. Discovery skips hidden entries (names starting with ".") and whole hidden
+subtrees such as .git/, reporting how many; a dotfile named literally by --file is
+selected.
 Glob and directory discovery exclude the input package and -o output. Quote
 patterns so the CLI expands them consistently; * does not cross directories.
 
@@ -266,7 +272,14 @@ func resolveEvidenceFormats(pkgDir string, opts addEvidenceOpts) ([]string, erro
 		return nil, fmt.Errorf("%d --format values for %d --uri values; give one --format for all "+
 			"artifacts, or one per --uri in order", len(opts.formats), len(opts.uris))
 	}
+	// After expansion there is one entry per selected file; validate each distinct
+	// value once rather than re-reading the schema per file.
+	checked := make(map[string]bool, len(opts.formats))
 	for _, f := range opts.formats {
+		if checked[f] {
+			continue
+		}
+		checked[f] = true
 		if err := validateEvidenceFormat(f); err != nil {
 			return nil, err
 		}

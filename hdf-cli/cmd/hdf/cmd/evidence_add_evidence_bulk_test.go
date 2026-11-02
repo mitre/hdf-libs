@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -391,4 +393,74 @@ func TestEvidenceAddEvidence_SymlinkToPackageIsASymlinkFirst(t *testing.T) {
 	assert.ErrorContains(t, discovered, "no files selected")
 	assert.Contains(t, stderr, "a symlink")
 	assert.NotContains(t, stderr, "package or output itself")
+}
+
+// ---- card hdf-libs-xfhfs.5: hidden entries and one validation per format ----
+
+// Discovery skips hidden entries and whole hidden subtrees, and says how many; the
+// README's own --from-dir --recursive example must not attest .DS_Store or .git/.
+func TestEvidenceAddEvidence_DiscoverySkipsDotfiles(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.MkdirAll(filepath.Join("d", ".git", "objects"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("d", ".git", "objects", "x"), []byte("x"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join("d", ".DS_Store"), []byte("ds"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join("d", "r.txt"), []byte("r"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "d", "--recursive", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "Skipped 2 hidden")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "d/r.txt", refs[0].(map[string]interface{})["uri"])
+}
+
+// A glob is discovery too: it never selects a hidden entry.
+func TestEvidenceAddEvidence_GlobSkipsDotfiles(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Mkdir("d", 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join("d", ".hidden.log"), []byte("h"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join("d", "r.log"), []byte("r"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--file", "d/*", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.Contains(t, stderr, "Skipped 1 hidden")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, "d/r.log", refs[0].(map[string]interface{})["uri"])
+}
+
+// Characterization: a dotfile the operator names literally is selected — the skip is
+// discovery's rule, not --file's.
+func TestEvidenceAddEvidence_LiteralDotfileSelected(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile(".env.log", []byte("e"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--file", ".env.log", "--format", "raw-log")
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "hidden")
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	assert.Equal(t, ".env.log", refs[0].(map[string]interface{})["uri"])
+}
+
+// A batch validates each DISTINCT --format value once; the schema is not re-read
+// per selected file.
+func TestEvidenceAddEvidence_FormatValidatedOncePerDistinctValue(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Mkdir("logs", 0o700))
+	for i := 0; i < 50; i++ {
+		require.NoError(t, os.WriteFile(filepath.Join("logs", fmt.Sprintf("%02d.log", i)), []byte("l"), 0o600))
+	}
+	loads := 0
+	underlying := evidenceSchemaBytes
+	evidenceSchemaBytes = func(kind validators.SchemaType) ([]byte, error) {
+		loads++
+		return underlying(kind)
+	}
+	t.Cleanup(func() { evidenceSchemaBytes = underlying })
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "logs", "--format", "raw-log")
+	require.NoError(t, err)
+	require.Len(t, readEvidenceExternal(t, pkg), 50)
+	assert.Equal(t, 1, loads, "one schema read per distinct format value")
 }

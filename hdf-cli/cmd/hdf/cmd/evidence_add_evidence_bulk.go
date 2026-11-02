@@ -73,15 +73,17 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	pkgDir := filepath.Dir(pkg)
 	seen := make(map[string]string)
 	var skipped []skippedKind
+	hidden := 0
 	for i, s := range selectors {
 		if strings.TrimSpace(s.value) == "" {
 			return opts, fmt.Errorf("local selector %d is blank", i+1)
 		}
 		format := formatAt(len(opts.uris) + i)
-		paths, err := evidenceSelectionPaths(s, opts.recursive)
+		paths, hiddenHere, err := evidenceSelectionPaths(s, opts.recursive)
 		if err != nil {
 			return opts, err
 		}
+		hidden += hiddenHere
 		discovered := s.directory || containsGlobChars(s.value)
 		selected := 0
 		for _, path := range paths {
@@ -142,11 +144,11 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 		if selected == 0 {
 			// Say what was skipped BEFORE saying nothing was selected, or a selector whose
 			// only entry was a symlink reads as if it matched nothing at all.
-			reportSkippedSelections(pkgDir, skipped)
+			reportSkippedSelections(pkgDir, skipped, hidden)
 			return opts, &exitCodeError{code: exitNothingToDo, message: fmt.Sprintf("no files selected by %q after excluding the package and output", s.value), report: true}
 		}
 	}
-	reportSkippedSelections(pkgDir, skipped)
+	reportSkippedSelections(pkgDir, skipped, hidden)
 	opts.uris = uris
 	opts.formats = formats
 	return opts, nil
@@ -155,7 +157,10 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 // reportSkippedSelections prints each entry discovery passed over by kind, so nothing
 // is dropped in silence — the same shape evidence build gives its irregular entries,
 // shown under the package directory the way the recorded references are.
-func reportSkippedSelections(pkgDir string, skipped []skippedKind) {
+func reportSkippedSelections(pkgDir string, skipped []skippedKind, hidden int) {
+	if hidden > 0 {
+		fmt.Fprintf(os.Stderr, "Skipped %d hidden entries; name one with --file to select it.\n", hidden)
+	}
 	sort.Slice(skipped, func(i, j int) bool { return skipped[i].path < skipped[j].path })
 	for _, l := range skipped {
 		advice := ""
@@ -175,32 +180,51 @@ func isExcludedEvidenceFile(info os.FileInfo, excluded map[string]os.FileInfo) b
 	return false
 }
 
-func evidenceSelectionPaths(s evidenceSelection, recursive bool) ([]string, error) {
+// evidenceSelectionPaths lists what a selector names, and how many hidden entries
+// discovery passed over. A literal --file is never filtered: the operator named it.
+func evidenceSelectionPaths(s evidenceSelection, recursive bool) (paths []string, hidden int, err error) {
 	if !s.directory {
-		return expandGlobs([]string{s.value})
+		matched, err := expandGlobs([]string{s.value})
+		if err != nil || !containsGlobChars(s.value) {
+			return matched, 0, err
+		}
+		for _, m := range matched {
+			if hiddenName(filepath.Base(m)) {
+				hidden++
+				continue
+			}
+			paths = append(paths, m)
+		}
+		return paths, hidden, nil
 	}
 	// The root is resolved and walked as scanEvidenceDir walks evidence build's
 	// --from-dir, so every spelling of it is decided on the same resolved form.
 	base, err := resolvedAbs(s.value)
 	if err != nil {
-		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
+		return nil, 0, fmt.Errorf("read evidence directory %q: %w", s.value, err)
 	}
 	if info, statErr := os.Stat(base); statErr != nil {
-		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, statErr)
+		return nil, 0, fmt.Errorf("read evidence directory %q: %w", s.value, statErr)
 	} else if !info.IsDir() {
-		return nil, fmt.Errorf("%q is not a directory", s.value)
+		return nil, 0, fmt.Errorf("%q is not a directory", s.value)
 	}
 	root, err := os.OpenRoot(base)
 	if err != nil {
-		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
+		return nil, 0, fmt.Errorf("read evidence directory %q: %w", s.value, err)
 	}
 	defer func() { _ = root.Close() }()
-	var paths []string
 	err = fs.WalkDir(root.FS(), ".", func(rel string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 		if rel == "." {
+			return nil
+		}
+		if hiddenName(entry.Name()) {
+			hidden++
+			if entry.IsDir() {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		// A subdirectory met without --recursive is returned as a path so the caller
@@ -216,7 +240,7 @@ func evidenceSelectionPaths(s evidenceSelection, recursive bool) ([]string, erro
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("read evidence directory %q: %w", s.value, err)
+		return nil, 0, fmt.Errorf("read evidence directory %q: %w", s.value, err)
 	}
-	return paths, nil
+	return paths, hidden, nil
 }
