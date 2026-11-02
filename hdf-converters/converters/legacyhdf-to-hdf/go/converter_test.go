@@ -807,10 +807,11 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		assert.Equal(t, hdf.Passed, *reqs[1].EffectiveStatus) // derived from results
 	})
 
-	t.Run("control-level status does not bypass the impact-0 rule", func(t *testing.T) {
+	t.Run("a passing result at impact 0 reports passed, not notApplicable", func(t *testing.T) {
 		// Write-path guarantee: the emitted effectiveStatus equals the ladder's
-		// answer — a non-errored impact-0 control is notApplicable regardless
-		// of the v1 control-level claim.
+		// answer. A passing result outranks the synthesized notApplicable in
+		// worst-wins, so the scope translation cannot bury evidence that the
+		// check ran.
 		passed := "passed"
 		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
@@ -824,7 +825,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
-		assert.Equal(t, hdf.NotApplicable, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("classifies 27 impact-0 controls as notApplicable in Three_Layer fixture", func(t *testing.T) {
@@ -1374,8 +1375,12 @@ func TestConvertV1ToV2_EffectiveStatusMatchesLadder(t *testing.T) {
 			v1Control(0, "not_applicable", "error"), hdf.Error},
 		{"stale optimistic control-level passed over a failed result yields failed",
 			v1Control(0.5, "passed", "failed"), hdf.Failed},
-		{"control-level passed at impact 0 yields notApplicable",
-			v1Control(0, "passed", "passed"), hdf.NotApplicable},
+		// A passing result outranks the synthesized notApplicable in worst-wins,
+		// so the scope translation cannot bury evidence that the check ran. No
+		// InSpec source in hdf-fixtures/inspec/ carries this shape — every
+		// impact-0 control there reports no pass or fail at all.
+		{"control-level passed at impact 0 yields passed, not notApplicable",
+			v1Control(0, "passed", "passed"), hdf.Passed},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1408,6 +1413,82 @@ func TestConvertV1ToV2_SynthesizesErroredResultFromControlStatus(t *testing.T) {
 	// No synthesis when the results already carry the error.
 	v2 = ConvertLegacyHDF(v1Control(0.5, "error", "error"), "1.0.0")
 	assert.Len(t, v2.Baselines[0].Requirements[0].Results, 1)
+}
+
+// InSpec scores a control it considers inapplicable 0 and then reports no pass
+// or fail for it. That is a verdict ("reviewed, not applicable"), not missing
+// data, so this importer — the only ingest point for InSpec exec JSON — states
+// it as an explicit notApplicable result. The canonical ladder no longer reads
+// impact, so the claim has to travel in results[] to survive.
+func TestConvertV1ToV2_TranslatesInSpecImpactZeroToNotApplicableResult(t *testing.T) {
+	t.Run("a skipped impact-0 control gains an explicit notApplicable result", func(t *testing.T) {
+		v2 := ConvertLegacyHDF(v1Control(0, "", "skipped"), "1.0.0")
+		req := v2.Baselines[0].Requirements[0]
+
+		require.Len(t, req.Results, 2, "expected a synthesized notApplicable result appended")
+		synth := req.Results[1]
+		assert.Equal(t, hdf.NotApplicable, synth.Status)
+		assert.NotEmpty(t, synth.CodeDesc)
+		assert.Equal(t, req.Results[0].StartTime, synth.StartTime,
+			"synthesized result reuses the earliest recorded result time")
+
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus,
+			"the roll-up reaches notApplicable through the result, not through the ladder")
+
+		assert.Equal(t, float64(0), req.Impact,
+			"impact is a fact about the source data and is not rewritten")
+	})
+
+	t.Run("an impact-0 control with no results at all gains one", func(t *testing.T) {
+		v2 := ConvertLegacyHDF(v1Control(0, ""), "1.0.0")
+		req := v2.Baselines[0].Requirements[0]
+
+		require.Len(t, req.Results, 1)
+		assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	})
+
+	t.Run("no translation above impact 0", func(t *testing.T) {
+		v2 := ConvertLegacyHDF(v1Control(0.5, "", "skipped"), "1.0.0")
+		req := v2.Baselines[0].Requirements[0]
+
+		require.Len(t, req.Results, 1, "a scored control that was skipped is genuinely not reviewed")
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotReviewed, *req.EffectiveStatus)
+	})
+
+	t.Run("no translation when the results establish something", func(t *testing.T) {
+		// failed, passed and error all outrank notApplicable in worst-wins, so
+		// appending would be inert; not appending keeps results[] honest about
+		// what the tool actually reported.
+		for _, tc := range []struct {
+			result string
+			want   hdf.ResultStatus
+		}{
+			{"failed", hdf.Failed},
+			{"passed", hdf.Passed},
+			{"error", hdf.Error},
+			{"not_applicable", hdf.NotApplicable},
+		} {
+			v2 := ConvertLegacyHDF(v1Control(0, "", tc.result), "1.0.0")
+			req := v2.Baselines[0].Requirements[0]
+			assert.Len(t, req.Results, 1, "result %q: no synthesis expected", tc.result)
+			require.NotNil(t, req.EffectiveStatus)
+			assert.Equal(t, tc.want, *req.EffectiveStatus, "result %q", tc.result)
+		}
+	})
+
+	t.Run("the error synthesis still wins at impact 0", func(t *testing.T) {
+		// A control-level error at impact 0 means the check never ran, so
+		// nothing was established about applicability. The errored result is
+		// synthesized and outranks any scope claim.
+		v2 := ConvertLegacyHDF(v1Control(0, "error", "skipped"), "1.0.0")
+		req := v2.Baselines[0].Requirements[0]
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.Error, *req.EffectiveStatus)
+	})
 }
 
 // TestUpPinSynthesizesDefaultDescription: the v3 results schema

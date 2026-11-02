@@ -73,10 +73,10 @@
         {
           "id": "V-E-NA",
           "title": "Informational note not applicable to this node",
-          "descriptions": [{"label": "default", "data": "Impact 0 → notApplicable under effective status."}],
+          "descriptions": [{"label": "default", "data": "An explicit notApplicable result keeps this out of the compliance denominator."}],
           "impact": 0.0,
           "tags": {"nist": ["SC-7"]},
-          "results": [{"status": "passed", "codeDesc": "n/a", "startTime": "2025-01-15T10:00:00Z"}]
+          "results": [{"status": "notApplicable", "codeDesc": "n/a", "startTime": "2025-01-15T10:00:00Z"}]
         }
       ]
     }

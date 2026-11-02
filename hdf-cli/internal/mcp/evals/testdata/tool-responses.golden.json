@@ -29,7 +29,7 @@
         "medium": 1,
         "total": 1
       },
-      "no_impact": {
+      "not_applicable": {
         "informational": 1,
         "total": 1
       },
@@ -61,7 +61,7 @@
         "medium": 1,
         "total": 2
       },
-      "no_impact": {
+      "not_applicable": {
         "informational": 1,
         "total": 1
       },
@@ -90,7 +90,7 @@
             "medium": 1,
             "total": 1
           },
-          "no_impact": {
+          "not_applicable": {
             "informational": 1,
             "total": 1
           },
@@ -113,7 +113,7 @@
           "failed": {
             "total": 0
           },
-          "no_impact": {
+          "not_applicable": {
             "total": 0
           },
           "passed": {
@@ -139,7 +139,7 @@
             "high": 1,
             "total": 1
           },
-          "no_impact": {
+          "not_applicable": {
             "total": 0
           },
           "passed": {

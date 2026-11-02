@@ -360,10 +360,15 @@ func TestAbsentRequirement(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Updated requirement (impact changed)
+// 6. Impact-only change (reported, but not a state change)
 // ---------------------------------------------------------------------------
 
-func TestUpdatedRequirement_ImpactChanged(t *testing.T) {
+// State reports whether the effective STATUS moved, and impact does not reach
+// the status, so re-scoring a passing requirement leaves it unchanged while the
+// re-score is still reported through changeReasons and fieldChanges. Widening
+// State to every field is its own work; it would also collide with Drift, which
+// is the bucket for exactly this shape.
+func TestImpactOnlyChange_IsReportedWithoutAStateChange(t *testing.T) {
 	oldBaseline := makeBaseline("test-baseline", version100,
 		makeRequirement("SV-001", hdf.Passed, 0.3),
 	)
@@ -376,9 +381,11 @@ func TestUpdatedRequirement_ImpactChanged(t *testing.T) {
 	if req == nil {
 		t.Fatal("SV-001 not found in diffs")
 	}
-	// Impact changed from 0.3 (passed) to 0.0 (notApplicable) -> "updated" state
-	if req.State != StateUpdated {
-		t.Errorf("expected state 'updated', got %q", req.State)
+	if req.State != StateUnchanged {
+		t.Errorf("expected state 'unchanged', got %q", req.State)
+	}
+	if req.OldImpact == nil || req.NewImpact == nil || *req.OldImpact == *req.NewImpact {
+		t.Errorf("expected the impact delta to be carried, got old=%v new=%v", req.OldImpact, req.NewImpact)
 	}
 
 	foundImpactChanged := false
@@ -434,11 +441,14 @@ func TestSummaryCountsMixed(t *testing.T) {
 	if comp.Summary.Absent != 1 {
 		t.Errorf("expected absent=1, got %d", comp.Summary.Absent)
 	}
-	if comp.Summary.Unchanged != 1 {
-		t.Errorf("expected unchanged=1, got %d", comp.Summary.Unchanged)
+	// SV-002 is untouched and SV-005 is re-scored 0.3 -> 0.0 while still
+	// passing; impact does not reach the status, so both are unchanged and
+	// nothing in this scenario is 'updated'.
+	if comp.Summary.Unchanged != 2 {
+		t.Errorf("expected unchanged=2, got %d", comp.Summary.Unchanged)
 	}
-	if comp.Summary.Updated != 1 {
-		t.Errorf("expected updated=1, got %d", comp.Summary.Updated)
+	if comp.Summary.Updated != 0 {
+		t.Errorf("expected updated=0, got %d", comp.Summary.Updated)
 	}
 	if comp.Summary.Total != 6 {
 		t.Errorf("expected total=6, got %d", comp.Summary.Total)

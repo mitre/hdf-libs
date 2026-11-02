@@ -460,7 +460,7 @@ func TestConvertHDFToHTML_SummaryCountsAndCompliance(t *testing.T) {
 			testhdf.Req("A", testhdf.Impact(0.5), testhdf.Status(hdf.Passed)),
 			testhdf.Req("B", testhdf.Impact(0.5), testhdf.Status(hdf.Passed)),
 			testhdf.Req("C", testhdf.Impact(0.5), testhdf.Status(hdf.Failed)),
-			testhdf.Req("D", testhdf.Impact(0), testhdf.Status(hdf.Passed)),
+			testhdf.Req("D", testhdf.Impact(0), testhdf.Status(hdf.NotApplicable)),
 		),
 		testhdf.Baseline("two",
 			testhdf.Req("E", testhdf.Impact(0.5), testhdf.Status(hdf.NotReviewed)),
@@ -517,11 +517,11 @@ func TestConvertHDFToHTML_ComplianceComesFromTheEngine(t *testing.T) {
 // columns show; the severity split inside each bucket does not reach compliance.
 func counts(passed, failed, notReviewed, errored, notApplicable int) *hdfengine.StatusCounts {
 	return &hdfengine.StatusCounts{
-		Passed:   hdfengine.SeverityCounts{Total: passed},
-		Failed:   hdfengine.SeverityCounts{Total: failed},
-		Skipped:  hdfengine.SeverityCounts{Total: notReviewed},
-		Error:    hdfengine.SeverityCounts{Total: errored},
-		NoImpact: hdfengine.SeverityCounts{Total: notApplicable},
+		Passed:        hdfengine.SeverityCounts{Total: passed},
+		Failed:        hdfengine.SeverityCounts{Total: failed},
+		Skipped:       hdfengine.SeverityCounts{Total: notReviewed},
+		Error:         hdfengine.SeverityCounts{Total: errored},
+		NotApplicable: hdfengine.SeverityCounts{Total: notApplicable},
 	}
 }
 
@@ -716,7 +716,7 @@ func TestConvertHDFToHTML_Dashboard(t *testing.T) {
 		testhdf.Req("P1", testhdf.Impact(0.7), testhdf.Status(hdf.Passed)),
 		testhdf.Req("P2", testhdf.Impact(0.5), testhdf.Status(hdf.Passed)),
 		failing,
-		testhdf.Req("N", testhdf.Impact(0), testhdf.Status(hdf.Passed)),
+		testhdf.Req("N", testhdf.Impact(0), testhdf.Status(hdf.NotApplicable)),
 	)
 	out := renderDoc(t, doc, Executive)
 

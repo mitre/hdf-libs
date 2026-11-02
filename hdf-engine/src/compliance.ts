@@ -14,7 +14,16 @@ export const THRESHOLD_PASSED = 'passed';
 export const THRESHOLD_FAILED = 'failed';
 export const THRESHOLD_SKIPPED = 'skipped';
 export const THRESHOLD_ERROR = 'error';
-export const THRESHOLD_NO_IMPACT = 'no_impact';
+export const THRESHOLD_NOT_APPLICABLE = 'not_applicable';
+
+/**
+ * SAF CLI's name for the notApplicable bucket. It names a severity score
+ * rather than the status the bucket counts, so this tool emits
+ * not_applicable, but SAF's own threshold files are a supported input — so it
+ * is a permanent second spelling on input, not a deprecation.
+ * Parity: safNotApplicableKey in go/compliance.go.
+ */
+export const SAF_NOT_APPLICABLE_KEY = 'no_impact';
 
 /**
  * The name the informational severity bucket had before 3.7.0 renamed it.
@@ -38,7 +47,7 @@ export interface StatusCounts {
   failed: SeverityCounts;
   skipped: SeverityCounts;
   error: SeverityCounts;
-  noImpact: SeverityCounts;
+  notApplicable: SeverityCounts;
 }
 
 export interface ControlIDMapping {
@@ -89,6 +98,9 @@ export interface ThresholdConfig {
   failed?: ThresholdSeverity;
   skipped?: ThresholdSeverity;
   error?: ThresholdSeverity;
+  notApplicable?: ThresholdSeverity;
+  /** SAF CLI's spelling of notApplicable, accepted so a SAF threshold file
+   * validates unchanged. Resolved by resolveSafSection; never written. */
   noImpact?: ThresholdSeverity;
   /**
    * The additive half: a filter predicate plus a bound, for the policies the
@@ -107,7 +119,7 @@ function newStatusCounts(): StatusCounts {
     failed: newSeverityCounts(),
     skipped: newSeverityCounts(),
     error: newSeverityCounts(),
-    noImpact: newSeverityCounts(),
+    notApplicable: newSeverityCounts(),
   };
 }
 
@@ -170,7 +182,7 @@ function statusBucket(counts: StatusCounts, status: string): SeverityCounts {
     case 'error':
       return counts.error;
     case 'notApplicable':
-      return counts.noImpact;
+      return counts.notApplicable;
     case 'notReviewed':
       return counts.skipped;
     default:
@@ -217,7 +229,8 @@ function thresholdKeyToStatus(key: string): string {
       return 'notReviewed';
     case THRESHOLD_ERROR:
       return 'error';
-    case THRESHOLD_NO_IMPACT:
+    case THRESHOLD_NOT_APPLICABLE:
+    case SAF_NOT_APPLICABLE_KEY:
       return 'notApplicable';
     default:
       return key;
@@ -235,7 +248,7 @@ function statusToThresholdKey(status: string): string {
     case 'error':
       return THRESHOLD_ERROR;
     case 'notApplicable':
-      return THRESHOLD_NO_IMPACT;
+      return THRESHOLD_NOT_APPLICABLE;
     default:
       return THRESHOLD_SKIPPED;
   }
@@ -425,6 +438,7 @@ export function normalizeThresholdConfig(config: ThresholdConfig): ThresholdConf
     failed: section(config.failed),
     skipped: section(config.skipped),
     error: section(config.error),
+    notApplicable: section(config.notApplicable),
     noImpact: section(config.noImpact),
   };
 }
@@ -434,7 +448,7 @@ export function normalizeThresholdConfig(config: ThresholdConfig): ThresholdConf
  * and cannot miss one. Parity: statusBuckets in go/compliance.go.
  */
 function statusBuckets(counts: StatusCounts): SeverityCounts[] {
-  return [counts.passed, counts.failed, counts.skipped, counts.error, counts.noImpact];
+  return [counts.passed, counts.failed, counts.skipped, counts.error, counts.notApplicable];
 }
 
 function addSeverities(dst: SeverityCounts, src: SeverityCounts): void {
@@ -520,6 +534,54 @@ interface ResolvedSection {
  * name a one-shot property of the config object: the same spec reported the
  * author's key on its first validate pass and the canonical one on every pass
  * after, which is the confusion naming the author's key exists to remove.
+ */
+
+/**
+ * Picks the notApplicable section from whichever of the two accepted spellings
+ * the author wrote, carrying that spelling into the section's name so a
+ * violation names the key they will find in their own file. A spec setting both
+ * is refused rather than resolved: they name one bucket, so honouring one would
+ * drop a bound the author wrote.
+ * Parity: resolveSAFSection in go/compliance.go.
+ */
+function resolveSafSection(
+  config: ThresholdConfig,
+  counts: StatusCounts
+): { section: ResolvedSection; refusal: string } {
+  const base = { counts: counts.notApplicable, wroteNone: false };
+  if (config.notApplicable !== undefined && config.noImpact !== undefined) {
+    return {
+      section: { name: THRESHOLD_NOT_APPLICABLE, threshold: config.notApplicable, ...base },
+      refusal: `both '${SAF_NOT_APPLICABLE_KEY}' and '${THRESHOLD_NOT_APPLICABLE}' are set; they name the same bucket`,
+    };
+  }
+  if (config.noImpact !== undefined) {
+    return {
+      section: { name: SAF_NOT_APPLICABLE_KEY, threshold: config.noImpact, ...base },
+      refusal: '',
+    };
+  }
+  return {
+    section: { name: THRESHOLD_NOT_APPLICABLE, threshold: config.notApplicable, ...base },
+    refusal: '',
+  };
+}
+
+/**
+ * Renders a control map's status in the spelling the spec's section used, so
+ * both halves of an "expected X but found Y" message speak one vocabulary. Only
+ * the notApplicable bucket has two spellings.
+ * Parity: statusKeyFor in go/compliance.go.
+ */
+function statusKeyFor(mapped: string, sectionKey: string): string {
+  if (mapped === THRESHOLD_NOT_APPLICABLE && sectionKey === SAF_NOT_APPLICABLE_KEY) {
+    return SAF_NOT_APPLICABLE_KEY;
+  }
+  return mapped;
+}
+
+/**
+ * Folds a section's pre-3.7 "none" key into "informational".
  * Parity: resolveLegacySeverity in go/compliance.go.
  */
 function resolveLegacySeverity(
@@ -622,12 +684,17 @@ export function validateGrid(
   // Every construction path lands here, so the former name is resolved once
   // rather than in each caller. Resolved before the compliance bounds so a
   // refusal is reported ahead of them.
+  const { section: naSection, refusal: naRefusal } = resolveSafSection(config, counts);
+  if (naRefusal) {
+    violations.push({ message: naRefusal, findings: [] });
+  }
+
   const sections: ResolvedSection[] = [
     { name: THRESHOLD_PASSED, threshold: config.passed, counts: counts.passed, wroteNone: false },
     { name: THRESHOLD_FAILED, threshold: config.failed, counts: counts.failed, wroteNone: false },
     { name: THRESHOLD_SKIPPED, threshold: config.skipped, counts: counts.skipped, wroteNone: false },
     { name: THRESHOLD_ERROR, threshold: config.error, counts: counts.error, wroteNone: false },
-    { name: THRESHOLD_NO_IMPACT, threshold: config.noImpact, counts: counts.noImpact, wroteNone: false },
+    naSection,
   ];
   for (const section of sections) {
     const { threshold, wroteNone, refusal } = resolveLegacySeverity(section.name, section.threshold);
@@ -703,11 +770,19 @@ function checkSeverityThreshold(
   const pathLabel = (label: string): string =>
     wroteNone && label === 'informational' ? LEGACY_INFORMATIONAL_KEY : label;
 
+  // Both sides are normalized to the schema status, because a bucket has two
+  // accepted key spellings and the section carries whichever one the author
+  // wrote while the control map always records the canonical one.
+  const wantStatus = thresholdKeyToStatus(status);
+
   // The requirements a count bound counted, so a breached bound can name them.
   // `total` is the whole status bucket; a severity label narrows it further.
   const inBucket = (label: string): Match[] =>
     controlMap
-      .filter((m) => m.status === status && (label === 'total' || m.severity === label))
+      .filter(
+        (m) =>
+          thresholdKeyToStatus(m.status) === wantStatus && (label === 'total' || m.severity === label)
+      )
       .map((m) => ({
         id: m.id,
         title: m.title ?? '',
@@ -742,12 +817,12 @@ function checkSeverityThreshold(
       // Fail-closed: every entry carrying the id must satisfy the assertion. One
       // passing finding out of three must not green a gate.
       matches.forEach((ac, i) => {
-        if (ac.status === status && ac.severity === label) {
+        if (thresholdKeyToStatus(ac.status) === wantStatus && ac.severity === label) {
           return;
         }
         const entry = matches.length > 1 ? ` (entry ${i + 1} of ${matches.length})` : '';
         violations.push({
-          message: `${path}: control ${expectedID} expected ${status}/${label} but found ${ac.status}/${ac.severity}${entry}`,
+          message: `${path}: control ${expectedID} expected ${status}/${label} but found ${statusKeyFor(ac.status, status)}/${ac.severity}${entry}`,
           findings: [],
         });
       });

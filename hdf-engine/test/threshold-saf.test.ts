@@ -38,7 +38,7 @@ describe('SAF threshold-file compatibility — parity with go/threshold_saf_test
       failed: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
       skipped: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
       error: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
-      noImpact: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
+      notApplicable: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
     });
     expect(validateThresholds(config, counts(2), 100, [])).toEqual([]);
     expect(validateThresholds(config, counts(3), 100, [])).not.toEqual([]);
@@ -81,7 +81,7 @@ describe('a scalar bound reaching validateThresholds unnormalized', () => {
     failed: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
     skipped: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
     error: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
-    noImpact: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
+    notApplicable: { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 },
   });
 
   it('is applied, not silently skipped', () => {

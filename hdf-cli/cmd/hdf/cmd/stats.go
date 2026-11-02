@@ -5,10 +5,10 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
-// determineControlStatus derives a display status string from a requirement
-// via the canonical effective-status computation in hdf-utilities (impact==0,
-// governing override, stored effectiveStatus, worst-wins rollup — see
-// status-determination.md). Used by list, diff, and query commands.
+// determineControlStatus derives a display status string from a requirement via
+// the canonical effective-status computation in hdf-utilities (a governing
+// override, else the worst-wins roll-up — see status-determination.md). Used by
+// list, diff, and query commands.
 func determineControlStatus(control hdf.EvaluatedRequirement) string {
 	return SchemaStatusToDisplay(hdf.ResultStatus(shared.RequirementEffectiveStatus(control)))
 }

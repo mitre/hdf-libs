@@ -751,9 +751,9 @@ export function buildNotAnalyzedRequirement(
 
 // Synthesized error placeholder for a scan whose own run reported that it failed.
 // Distinct from both siblings: the tool neither ran clean nor declined to analyze,
-// so neither passed nor notReviewed is honest. error is also the one status the
-// canonical ladder ranks above every other rung, including impact 0, so the failure
-// stays visible in a roll-up.
+// so neither passed nor notReviewed is honest. error also outranks every other
+// status in the canonical worst-wins order, so the failure stays visible in a
+// roll-up.
 export function buildRunFailedRequirement(
   id: string,
   codeDesc: string,
