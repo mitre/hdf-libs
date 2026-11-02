@@ -372,8 +372,8 @@ func TestHdfCompliance_GroupByNistFamily(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "nistFamily"})
 	// Effective: AC{A passed}=100, CM{B passed}=100, IA{C passed}=100, AU{D failed}=0,
-	// SC{E notApplicable, relevant 0}=0. E is informational severity AND
-	// notApplicable; the severity does not cause the status.
+	// SC{E notApplicable, relevant 0}=0. E carries an explicit notApplicable
+	// result; its informational severity does not cause that status.
 	want := map[string]float64{"AC": 100.0, "CM": 100.0, "IA": 100.0, "AU": 0.0, "SC": 0.0}
 	if len(out.Groups) != len(want) {
 		t.Errorf("expected %d nistFamily groups, got %d (%v)", len(want), len(out.Groups), out.Groups)
@@ -436,11 +436,10 @@ func TestHdfCompliance_ThresholdAmbiguous(t *testing.T) {
 	assertArgError(t, res, "threshold sets both path and inline")
 }
 
-// TestHdfCompliance_PerControlThresholdUsesEffectiveStatus is the lj0g.11
-// regression guard: a per-control controls: list is validated against EFFECTIVE
-// status, matching the aggregate counts and the CLI threshold path. An impact-0
-// notReviewed control listed under no_impact must satisfy the check (effective
-// notApplicable → no_impact), not fail as skipped. Fails on pre-fix code, which
+// A per-control `controls:` list is validated against EFFECTIVE status, matching
+// the aggregate counts and the CLI threshold path. A control whose results carry
+// an explicit notApplicable, listed under not_applicable, must satisfy the
+// check and not fail as skipped. Fails on pre-fix code, which
 // passed the raw MapControlIDs to ValidateThresholds while counting effectively.
 func TestHdfCompliance_PerControlThresholdUsesEffectiveStatus(t *testing.T) {
 	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
@@ -454,7 +453,7 @@ func TestHdfCompliance_PerControlThresholdUsesEffectiveStatus(t *testing.T) {
 		t.Fatal("expected a threshold verdict")
 	}
 	if !out.ThresholdVerdict.Pass {
-		t.Errorf("V-NA-1 (impact 0, medium, notReviewed) must satisfy no_impact.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
+		t.Errorf("V-NA-1 (medium, explicit notApplicable result) must satisfy not_applicable.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
 	}
 }
 

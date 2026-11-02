@@ -667,6 +667,33 @@ describe('the two notApplicable key spellings — parity with go/compliance_test
     ).toEqual([]);
   });
 
+  // Parity: TestValidateThresholds_MismatchNamesTheAuthorsSpelling in go/.
+  // The FOUND bucket is reported in the spelling the author wrote; the control
+  // map always records not_applicable, and a SAF-spelled spec must not be told
+  // about a key absent from its own file.
+  it('names the author spelling on both sides of a mismatch', () => {
+    const counts: StatusCounts = {
+      ...zeroStatusCounts(),
+      notApplicable: { ...zeroSeverityCounts(), low: 1, total: 1 },
+    };
+    const controlMap = [{ id: 'C-1', title: 'C-1', status: 'not_applicable', severity: 'low' }];
+
+    expect(
+      validateThresholds({ noImpact: { high: { controls: ['C-1'] } } }, counts, 100, controlMap),
+    ).toEqual(['no_impact.high: control C-1 expected no_impact/high but found no_impact/low']);
+
+    expect(
+      validateThresholds(
+        { notApplicable: { high: { controls: ['C-1'] } } },
+        counts,
+        100,
+        controlMap,
+      ),
+    ).toEqual([
+      'not_applicable.high: control C-1 expected not_applicable/high but found not_applicable/low',
+    ]);
+  });
+
   // Byte-identical to the string Go's
   // TestValidateThresholds_BothNotApplicableSpellingsIsRefused pins.
   it('refuses a spec setting both spellings', () => {

@@ -20,7 +20,7 @@ import {
   canonicalJson,
   worstStatus,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -333,19 +333,6 @@ function computeEffectiveStatus(impact: number, results: V2Result[]): string {
 }
 
 /**
- * The earliest recorded result time. startTime is schema-required; the Go
- * converter's zero time serializes as 0001-01-01T00:00:00Z, so mirror that when
- * no result carries a time.
- */
-function earliestResultTime(results: V2Result[]): string {
-  const times = results
-    .map((r) => r.startTime)
-    .filter((t): t is string => typeof t === 'string' && t !== '' && t !== '0001-01-01T00:00:00Z')
-    .sort();
-  return times[0] ?? '0001-01-01T00:00:00Z';
-}
-
-/**
  * Encodes a control-level execution error the source tool reported but did not
  * record as a result (matching the Go converter).
  */
@@ -354,7 +341,7 @@ function synthesizedErrorResult(results: V2Result[]): V2Result {
     status: 'error',
     codeDesc:
       'Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result',
-    startTime: earliestResultTime(results),
+    startTime: (earliestResultStartTime(results) ?? GO_ZERO_TIME),
   };
 }
 
@@ -367,7 +354,7 @@ function synthesizedNotApplicableResult(results: V2Result[]): V2Result {
     status: 'notApplicable',
     codeDesc:
       'Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it',
-    startTime: earliestResultTime(results),
+    startTime: (earliestResultStartTime(results) ?? GO_ZERO_TIME),
   };
 }
 

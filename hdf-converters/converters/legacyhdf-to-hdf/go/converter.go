@@ -37,29 +37,13 @@ func hasErroredResult(results []hdf.RequirementResult) bool {
 	return false
 }
 
-// earliestResultTime is the earliest recorded result time, zero when no result
-// carries one (results carry no time when the source had none).
-func earliestResultTime(results []hdf.RequirementResult) time.Time {
-	var earliest time.Time
-	for i := range results {
-		st := results[i].StartTime
-		if st.IsZero() {
-			continue
-		}
-		if earliest.IsZero() || st.Before(earliest) {
-			earliest = st
-		}
-	}
-	return earliest
-}
-
 // synthesizedErrorResult encodes a control-level execution error the source
 // tool reported but did not record as a result.
 func synthesizedErrorResult(results []hdf.RequirementResult) hdf.RequirementResult {
 	return hdf.RequirementResult{
 		Status:    hdf.Error,
 		CodeDesc:  "Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result",
-		StartTime: earliestResultTime(results),
+		StartTime: shared.EarliestResultTime(results),
 	}
 }
 
@@ -69,7 +53,7 @@ func synthesizedNotApplicableResult(results []hdf.RequirementResult) hdf.Require
 	return hdf.RequirementResult{
 		Status:    hdf.NotApplicable,
 		CodeDesc:  "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
-		StartTime: earliestResultTime(results),
+		StartTime: shared.EarliestResultTime(results),
 	}
 }
 

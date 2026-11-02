@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isGoZeroTime, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -747,6 +747,39 @@ export function buildNotAnalyzedRequirement(
     ],
     tags: {},
   };
+}
+
+export const GO_ZERO_TIME = '0001-01-01T00:00:00Z';
+
+/**
+ * The earliest result's startTime, returned as the ORIGINAL value so a caller
+ * never reformats a source value. Results reach this either as a schema `Date`
+ * or as a legacy wire `string`, so the value type travels through unchanged.
+ * Go's zero time means "no time recorded" — and parses to a real year-1 instant
+ * in both representations — so it is skipped rather than reported as the
+ * earliest assessment, matching EarliestResultTime's IsZero() check in
+ * shared/go/converterutil.go.
+ */
+export function earliestResultStartTime<V extends string | Date>(
+  results: ReadonlyArray<{ startTime?: V }> | undefined,
+): V | undefined {
+  let bestRaw: V | undefined;
+  let bestAt: Date | undefined;
+
+  for (const result of results ?? []) {
+    const raw = result?.startTime;
+    if (raw === undefined || raw === '') continue;
+
+    const parsed = raw instanceof Date ? raw : parseTimestamp(String(raw));
+    if (!parsed || Number.isNaN(parsed.getTime()) || isGoZeroTime(parsed)) continue;
+
+    if (bestAt === undefined || parsed < bestAt) {
+      bestAt = parsed;
+      bestRaw = raw;
+    }
+  }
+
+  return bestRaw;
 }
 
 // Synthesized error placeholder for a scan whose own run reported that it failed.

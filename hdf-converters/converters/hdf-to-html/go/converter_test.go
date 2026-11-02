@@ -475,6 +475,26 @@ func TestConvertHDFToHTML_SummaryCountsAndCompliance(t *testing.T) {
 	assert.Contains(t, out, wantSummaryRow("All baselines", "2", "1", "1", "1", "1", "6", "40.00%"))
 }
 
+// A requirement at impact 0 whose result passed is counted as PASSED and enters
+// the compliance numerator: impact is a severity band, not a scope claim. The
+// guard matters because the same requirement leaves this repo as CKL
+// NotAFinding, an affirmative compliance claim a consumer scores — and because
+// the only in-repo assertion of that was once removed by changing the case's
+// input instead of its expectation.
+func TestConvertHDFToHTML_ImpactZeroPassedCountsAsPassed(t *testing.T) {
+	doc := testhdf.Doc(
+		testhdf.Baseline("one",
+			testhdf.Req("Z", testhdf.Impact(0), testhdf.Status(hdf.Passed)),
+		),
+	)
+	out := renderDoc(t, doc, Executive)
+
+	// passed, failed, notReviewed, notApplicable, error, total, compliance
+	assert.Contains(t, out, wantSummaryRow("one", "1", "0", "0", "0", "0", "1", "100.00%"))
+	assert.NotContains(t, out, wantSummaryRow("one", "0", "0", "0", "1", "0", "1", "0.00%"),
+		"the pre-change shape — counted Not Applicable and scored 0%")
+}
+
 func wantSummaryRow(name string, cells ...string) string {
 	var b strings.Builder
 	b.WriteString("<tr><th scope=\"row\">" + name + "</th>")

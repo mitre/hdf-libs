@@ -513,7 +513,6 @@ export function calculateCompliance(counts: StatusCounts): number {
   return Math.round(pct * 100) / 100;
 }
 
-/**
 /** One status category of a spec after the former severity name has been resolved. */
 interface ResolvedSection {
   name: string;
@@ -521,20 +520,6 @@ interface ResolvedSection {
   counts: SeverityCounts;
   wroteNone: boolean;
 }
-
-/**
- * resolveLegacySeverity folds a section's pre-3.7 `none` key into
- * `informational`, reporting whether the bound was written that way so a
- * violation can name the key the author will find in their own file. A spec
- * setting both is refused rather than resolved: 3.7.0 renamed the bucket, so the
- * two name one thing and silently honouring one would drop a bound the author
- * wrote.
- *
- * The caller's section is COPIED, never rewritten. Folding in place made the
- * name a one-shot property of the config object: the same spec reported the
- * author's key on its first validate pass and the canonical one on every pass
- * after, which is the confusion naming the author's key exists to remove.
- */
 
 /**
  * Picks the notApplicable section from whichever of the two accepted spellings
@@ -581,7 +566,17 @@ function statusKeyFor(mapped: string, sectionKey: string): string {
 }
 
 /**
- * Folds a section's pre-3.7 "none" key into "informational".
+ * Folds a section's pre-3.7 `none` key into `informational`, reporting whether
+ * the bound was written that way so a violation can name the key the author will
+ * find in their own file. A spec setting both is refused rather than resolved:
+ * 3.7.0 renamed the bucket, so the two name one thing and silently honouring one
+ * would drop a bound the author wrote.
+ *
+ * The caller's section is COPIED, never rewritten. Folding in place made the
+ * name a one-shot property of the config object: the same spec reported the
+ * author's key on its first validate pass and the canonical one on every pass
+ * after, which is the confusion naming the author's key exists to remove.
+ *
  * Parity: resolveLegacySeverity in go/compliance.go.
  */
 function resolveLegacySeverity(

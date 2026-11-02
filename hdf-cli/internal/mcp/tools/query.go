@@ -346,8 +346,7 @@ func countByEffectiveStatus(results hdf.HDFResults) *hdfengine.StatusCounts {
 // baselineAsResults projects a baseline document's requirements onto the
 // HDFResults shape the engine filters, carrying the fields the engine and status
 // resolver read (id, title, impact, tags, descriptions). A baseline requirement
-// has no results or overrides, so it resolves to notReviewed (notApplicable at
-// impact 0).
+// has no results or overrides, so it resolves to notReviewed at any impact.
 func baselineAsResults(b *hdf.HDFBaseline) hdf.HDFResults {
 	reqs := make([]hdf.EvaluatedRequirement, 0, len(b.Requirements))
 	for i := range b.Requirements {

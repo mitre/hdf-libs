@@ -428,6 +428,23 @@ func BuildNotAnalyzedRequirement(id, codeDesc string, startTime time.Time) hdf.E
 	}
 }
 
+// EarliestResultTime is the earliest non-zero StartTime across a requirement's
+// results, and the zero time when none carries one. A synthesized result reuses
+// it so an added result never claims a time the scan did not record.
+func EarliestResultTime(results []hdf.RequirementResult) time.Time {
+	var earliest time.Time
+	for i := range results {
+		start := results[i].StartTime
+		if start.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || start.Before(earliest) {
+			earliest = start
+		}
+	}
+	return earliest
+}
+
 // BuildRunFailedRequirement synthesizes an error placeholder for a scan whose
 // own run reported that it failed. Distinct from both siblings: the tool neither
 // ran clean nor declined to analyze, so neither passed nor notReviewed is honest.

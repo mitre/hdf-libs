@@ -731,8 +731,8 @@ const rankOf = (level: string): number => LEVEL_RANK[level] ?? 0;
 // §3.27.10 defines "none" as "the concept of severity does not apply to this result
 // because the kind property has a value other than fail". So a "none" on a failing
 // result contradicts the spec's own definition and is ignored rather than honoured —
-// honouring it would put a reported FAILURE at impact 0, which the effective-status
-// ladder reads as notApplicable, dropping a real finding out of the denominator.
+// honouring it would put a reported FAILURE in the informational band, understating
+// a real finding's severity everywhere a consumer reads it.
 //
 // A group's level is its WORST failing member, not its first. SARIF scopes severity
 // to the result; HDF scopes it to the requirement, and a result says only that a

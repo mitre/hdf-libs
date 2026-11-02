@@ -364,7 +364,10 @@ An empty `where` is **not** refused — it matches every requirement in the docu
 ```console
 $ hdf query grype.json --search CVE-2018-12698
 Found 1 matching requirement(s):
-Grype/CVE-2018-20657  not_applicable  INFO  Grype found a vulnerability to CVE-2018-20657 in ten...
+
+ID                    Status  Severity  Title
+--------------------  ------  --------  -------------------------------------------------------
+Grype/CVE-2018-20657  failed  INFO      Grype found a vulnerability to CVE-2018-20657 in ten...
 ```
 
 That is one false positive and **zero** true positives — `CVE-2018-12698` is not a requirement in this document at all; the string sits in another finding's prose. A gate written that way fires on an unrelated vulnerability.
@@ -741,7 +744,9 @@ Worth knowing before you adopt it: the two rules are not interchangeable. `poams
 
 A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured.
 
-This tool spells SAF's `no_impact` section `not_applicable`, because the bucket counts the `notApplicable` **status** and has nothing to do with an impact score. Both spellings are accepted on input and `no_impact` always will be — it is SAF's wire key, not a deprecation — and a violation names whichever one your file uses. A spec setting both is refused rather than resolved, since they name one bucket. What this tool **writes** — `hdf compliance --json`, the MCP compliance envelopes and `hdf generate threshold` — uses `not_applicable`, so the interoperability runs one way: SAF's files work here, and a file generated here is not readable by `saf validate threshold`.
+This tool spells SAF's `no_impact` section `not_applicable`, because the bucket counts the `notApplicable` **status** and has nothing to do with an impact score. Both spellings are accepted on input and `no_impact` always will be — it is SAF's wire key, not a deprecation — and a violation names whichever one your file uses. A spec setting both is refused rather than resolved, since they name one bucket. What this tool **writes** uses `not_applicable`: the templates `hdf generate threshold` produces, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP envelopes, and `engine.statusCounts` in the MCP contract. The violation text is not in that list — as above, it echoes your file's own spelling.
+
+So the interoperability runs one way. A SAF threshold file works here unchanged. A file written by `hdf generate threshold` is **silently degraded** by `saf validate threshold` rather than rejected — SAF checks a fixed list of bound paths and has no unknown-key check, so its `compliance`, `passed`, `failed`, `skipped` and `error` bounds are honoured while every `not_applicable` bound is dropped with no diagnostic and the command exits 0. Rewrite the section as `no_impact` before handing a generated file to SAF.
 
 
 ```yaml

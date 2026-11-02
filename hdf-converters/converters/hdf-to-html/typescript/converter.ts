@@ -644,9 +644,9 @@ class Renderer {
   private effectiveStatus(req: Json): string {
     return computeEffectiveStatus(
       {
-        // Go's typed decode gives an absent impact the zero value, so the ladder
-        // there reads it as notApplicable; the same defaulting keeps the two
-        // languages agreeing on a document that omits impact.
+        // The ladder ignores impact; it is carried only by the shared input
+        // shape, and defaulted to Go's zero value so the two languages hand it
+        // the same input for a document that omits it.
         impact: numeric(req.impact),
         resultStatuses: list(req.results).map(obj).map((res) => text(res.status)),
         overrides: overrideInputs(list(req.statusOverrides).map(obj)),

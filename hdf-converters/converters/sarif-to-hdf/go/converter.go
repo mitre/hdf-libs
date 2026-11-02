@@ -999,8 +999,8 @@ func isFailing(r SarifResult) bool { return r.Kind == "" || r.Kind == "fail" }
 // non-failing result, where it is the spec-mandated value and carries no information
 // beyond "severity does not apply". A "none" on a failing result contradicts the
 // spec's own definition, so it is ignored rather than honoured — honouring it would
-// put a reported FAILURE at impact 0, which the effective-status ladder reads as
-// notApplicable, dropping a real finding out of the compliance denominator.
+// put a reported FAILURE in the informational band, understating a real finding's
+// severity everywhere a consumer reads it.
 //
 // A group's level is its WORST failing member, not its first. SARIF scopes severity
 // to the result; HDF scopes it to the requirement, and a result says only that a

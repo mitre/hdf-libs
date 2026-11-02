@@ -640,6 +640,27 @@ func TestValidateThresholds_BothNotApplicableSpellingsAreAccepted(t *testing.T) 
 	assert.Empty(t, violations, "C-1 is counted under notApplicable/low, so the bound is satisfied")
 }
 
+// A named-control mismatch reports the FOUND bucket in the spelling the author
+// wrote, not the canonical one. The control map always records not_applicable;
+// a spec written in SAF's spelling must not be told about a key absent from its
+// own file. Mutating statusKeyFor to `return mapped` fails this.
+func TestValidateThresholds_MismatchNamesTheAuthorsSpelling(t *testing.T) {
+	counts := StatusCounts{}
+	counts.NotApplicable.Low = 1
+	counts.NotApplicable.Total = 1
+	controlMap := []ControlIDMapping{{ID: "C-1", Status: ThresholdNotApplicable, Severity: "low"}}
+
+	saf := &ThresholdConfig{NoImpact: &ThresholdSeverity{High: &ThresholdBound{Controls: []string{"C-1"}}}}
+	violations := ValidateThresholds(saf, &counts, 100, controlMap)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "no_impact.high: control C-1 expected no_impact/high but found no_impact/low", violations[0])
+
+	canonical := &ThresholdConfig{NotApplicable: &ThresholdSeverity{High: &ThresholdBound{Controls: []string{"C-1"}}}}
+	violations = ValidateThresholds(canonical, &counts, 100, controlMap)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "not_applicable.high: control C-1 expected not_applicable/high but found not_applicable/low", violations[0])
+}
+
 // They name one bucket, so honouring one would drop a bound the author wrote.
 func TestValidateThresholds_BothNotApplicableSpellingsIsRefused(t *testing.T) {
 	zero := 0
