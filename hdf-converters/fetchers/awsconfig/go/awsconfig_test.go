@@ -824,14 +824,16 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-user2"),
 		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
 	}
-	// Service-linked rule (CreatedBy set) — must be excluded from the remediation
-	// query so it can't poison the batch with "not supported".
+	// A rule whose evaluations the API marks INTERNAL must stay out of the
+	// remediation query so it can't poison the batch with "not supported".
 	serviceLinked := types.ConfigRule{
 		ConfigRuleId:   aws.String("cr-sh"),
 		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
 		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
 		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
 		CreatedBy:      aws.String("securityhub.amazonaws.com"),
+		// Security Hub standards rules report INTERNAL: their evaluations are not readable.
+		RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
 	}
 
 	mock := &mockConfigClient{
@@ -859,18 +861,18 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 		byName[r.ConfigRuleName] = r
 	}
 
-	// Service-linked rule → excluded from output entirely (unreadable via Config).
-	require.Len(t, file.ConfigRules, 2, "service-linked rule must not appear in output")
+	// INTERNAL rule → excluded from output entirely: the API will not return its evaluations.
+	require.Len(t, file.ConfigRules, 2, "an INTERNAL rule must not appear in output")
 	_, present := byName["securityhub-access-keys-rotated-cce23527"]
-	assert.False(t, present, "service-linked rule must be excluded from output")
+	assert.False(t, present, "an INTERNAL rule must be excluded from output")
 	for _, batch := range mock.remediationBatches {
 		assert.NotContains(t, batch, "securityhub-access-keys-rotated-cce23527",
-			"service-linked rules must be excluded from the remediation query")
+			"an INTERNAL rule must be excluded from the remediation query")
 	}
-	// Never queried for compliance either (that call rejects service-linked rules
-	// and was the pre-existing hard-fail this exclusion fixes).
+	// Never queried for compliance either: the API has already said it would
+	// return nothing for an INTERNAL rule.
 	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"],
-		"service-linked rules must not be queried for compliance")
+		"an INTERNAL rule must not be queried for compliance")
 
 	// Rule with a remediation → populated, fields carried from the SDK shape.
 	rem := byName["s3-bucket-public-read-prohibited"].Remediation
@@ -898,6 +900,8 @@ func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
 		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
 		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
 		CreatedBy:      aws.String("securityhub.amazonaws.com"),
+		// Security Hub standards rules report INTERNAL: their evaluations are not readable.
+		RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
 	}
 
 	mock := &mockConfigClient{
@@ -925,7 +929,7 @@ func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
 
 	require.Len(t, mock.remediationBatches, 1)
 	assert.Equal(t, []string{"ec2-volume-inuse-check-conformance-pack-abc123"}, mock.remediationBatches[0],
-		"a conformance-pack rule is remediation-eligible; the service-linked one stays out")
+		"a conformance-pack rule is remediation-eligible; the INTERNAL one stays out")
 	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"])
 }
 
@@ -942,4 +946,39 @@ func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
 	file := mustUnmarshal(t, out)
 	require.Len(t, file.ConfigRules, 1)
 	assert.Nil(t, file.ConfigRules[0].Remediation, "no remediation on API error")
+}
+
+// Readability is the API's own signal, not who created the rule: an
+// Organizations-deployed rule with EXTERNAL visibility is readable, a Security
+// Hub rule with INTERNAL visibility is not, and a rule carrying no visibility
+// value (older API responses) is treated as readable rather than dropped.
+func TestAWSConfigFetcher_ReadabilityFollowsEvaluationVisibility(t *testing.T) {
+	mk := func(id, name, createdBy string, vis types.RuleEvaluationVisibility) types.ConfigRule {
+		return types.ConfigRule{
+			ConfigRuleId:             aws.String(id),
+			ConfigRuleName:           aws.String(name),
+			ConfigRuleArn:            aws.String("arn:aws:config:us-east-1:123456789012:config-rule/" + id),
+			Source:                   &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+			CreatedBy:                aws.String(createdBy),
+			RuleEvaluationVisibility: vis,
+		}
+	}
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{
+			mk("cr-org", "org-managed-rule", "organizations.amazonaws.com", types.RuleEvaluationVisibilityExternal),
+			mk("cr-sh", "securityhub-rule", "securityhub.amazonaws.com", types.RuleEvaluationVisibilityInternal),
+			mk("cr-cp", "pack-rule", "config-conforms.amazonaws.com", ""),
+		}}},
+	}
+
+	rules, skipped, err := NewAWSConfigFetcherWithClient(mock).fetchAllConfigRules(context.Background())
+	require.NoError(t, err)
+	require.Len(t, skipped, 1, "only the INTERNAL rule is unreadable")
+	assert.Equal(t, unreadableRule{name: "securityhub-rule", owner: "securityhub.amazonaws.com"}, skipped[0],
+		"the warning names the rule and the service that provisioned it")
+	names := make([]string, 0, len(rules))
+	for _, r := range rules {
+		names = append(names, r.ConfigRuleName)
+	}
+	assert.ElementsMatch(t, []string{"org-managed-rule", "pack-rule"}, names)
 }

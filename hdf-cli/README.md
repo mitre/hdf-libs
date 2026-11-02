@@ -852,7 +852,7 @@ Fetch AWS Config compliance evaluation results and convert to HDF.
 
 Credentials are resolved via the standard AWS credential chain: environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), shared credentials file (`~/.aws/credentials`), or IAM instance role.
 
-**Service-linked rules are excluded.** Config rules owned by an AWS service (`CreatedBy` set — e.g. Security Hub, Organizations) can't be read via the Config API by a customer principal, so they're skipped (a `WARNING: skipped N service-linked rule(s)` is printed to stderr). Fetch their findings through the owning service instead — e.g. `hdf fetch aws-securityhub` for Security Hub controls. Rules deployed by a conformance pack (`CreatedBy: config-conforms.amazonaws.com`) are the exception: they stay customer-owned and readable, so they're fetched like any other rule.
+**Rules whose evaluations the Config API will not return are skipped.** AWS marks each rule's evaluations as readable or not through `RuleEvaluationVisibility`; a rule reporting `INTERNAL` (Security Hub standards rules, for example) is skipped with a `WARNING: aws-config: skipped N rule(s) ...` on stderr that names each rule and the service that provisioned it. Fetch those findings through the owning service instead, such as `hdf fetch aws-securityhub`. Rules deployed by a conformance pack are service-linked and read-only, but their evaluations and remediation configurations are readable, so they are fetched like any other rule.
 
 **Remediation surfaces as a `fix` description.** A customer-managed rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation.
 
