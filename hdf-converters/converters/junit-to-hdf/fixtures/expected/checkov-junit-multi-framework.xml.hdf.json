@@ -1,0 +1,1291 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes) in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access. in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access. in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+              "message": "failure: Ensure no security groups allow ingress from 0.0.0.0:0 to port 80\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-15\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-security-groups-do-not-allow-ingress-from-00000-to-port-80\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name        = \"wide-open\"\n\t\t7  |   description = \"Allows everything in\"\n\t\t8  | \n\t\t9  |   ingress {\n\t\t10 |     from_port   = 0\n\t\t11 |     to_port     = 65535\n\t\t12 |     protocol    = \"tcp\"\n\t\t13 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t14 |   }\n\t\t15 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+              "message": "failure: Ensure no security groups allow ingress from 0.0.0.0:0 to port 22\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-15\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-1-port-security\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name        = \"wide-open\"\n\t\t7  |   description = \"Allows everything in\"\n\t\t8  | \n\t\t9  |   ingress {\n\t\t10 |     from_port   = 0\n\t\t11 |     to_port     = 65535\n\t\t12 |     protocol    = \"tcp\"\n\t\t13 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t14 |   }\n\t\t15 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_23] Ensure every security group and rule has a description in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+              "message": "failure: Ensure every security group and rule has a description\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-15\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-31\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name        = \"wide-open\"\n\t\t7  |   description = \"Allows everything in\"\n\t\t8  | \n\t\t9  |   ingress {\n\t\t10 |     from_port   = 0\n\t\t11 |     to_port     = 65535\n\t\t12 |     protocol    = \"tcp\"\n\t\t13 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t14 |   }\n\t\t15 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+              "message": "failure: Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-15\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-2\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name        = \"wide-open\"\n\t\t7  |   description = \"Allows everything in\"\n\t\t8  | \n\t\t9  |   ingress {\n\t\t10 |     from_port   = 0\n\t\t11 |     to_port     = 65535\n\t\t12 |     protocol    = \"tcp\"\n\t\t13 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t14 |   }\n\t\t15 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+              "message": "failure: Ensure that Security Groups are attached to another resource\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-15\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-that-security-groups-are-attached-to-ec2-instances-or-elastic-network-interfaces-enis\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name        = \"wide-open\"\n\t\t7  |   description = \"Allows everything in\"\n\t\t8  | \n\t\t9  |   ingress {\n\t\t10 |     from_port   = 0\n\t\t11 |     to_port     = 65535\n\t\t12 |     protocol    = \"tcp\"\n\t\t13 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t14 |   }\n\t\t15 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+              "message": "failure: Ensure S3 buckets should have event notifications enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-62\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+              "message": "failure: Ensure that an S3 bucket has a lifecycle configuration\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-61\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+              "message": "failure: Ensure the S3 bucket has access logging enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-13-enable-logging\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+              "message": "failure: Ensure that S3 bucket has a Public Access block\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/s3-bucket-should-have-public-access-blocks-defaults-to-false-if-the-public-access-block-is-not-attached\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+              "message": "failure: Ensure that S3 buckets are encrypted with KMS by default\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-buckets-are-encrypted-with-kms-by-default\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+              "message": "failure: Ensure that S3 bucket has cross-region replication enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-bucket-has-cross-region-replication-enabled\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+              "message": "failure: Ensure all data stored in the S3 bucket have versioning enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-16-enable-versioning\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-fixture-bucket\"\n\t\t3 | }",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "terraform"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "terraform scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_11] Ensure From Alias are unique for multistage builds. in /Dockerfile./Dockerfile.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile. :: [NONE][CKV_DOCKER_11] Ensure From Alias are unique for multistage builds.",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile..[NONE][CKV_DOCKER_11] Ensure From Alias are unique for multistage builds.",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_11] Ensure From Alias are unique for multistage builds.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_5] Ensure update instructions are not use alone in the Dockerfile in /Dockerfile./Dockerfile.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile. :: [NONE][CKV_DOCKER_5] Ensure update instructions are not use alone in the Dockerfile",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile..[NONE][CKV_DOCKER_5] Ensure update instructions are not use alone in the Dockerfile",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_5] Ensure update instructions are not use alone in the Dockerfile",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_9] Ensure that APT isn't used in /Dockerfile./Dockerfile.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile. :: [NONE][CKV_DOCKER_9] Ensure that APT isn't used",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile..[NONE][CKV_DOCKER_9] Ensure that APT isn't used",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_9] Ensure that APT isn't used",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_1] Ensure that sudo isn't used in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_1] Ensure that sudo isn't used",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_1] Ensure that sudo isn't used",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_1] Ensure that sudo isn't used",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_6] Ensure that certificate validation isn't disabled with the NODE_TLS_REJECT_UNAUTHORIZED environment variable in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_6] Ensure that certificate validation isn't disabled with the NODE_TLS_REJECT_UNAUTHORIZED environment variable",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_6] Ensure that certificate validation isn't disabled with the NODE_TLS_REJECT_UNAUTHORIZED environment variable",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_6] Ensure that certificate validation isn't disabled with the NODE_TLS_REJECT_UNAUTHORIZED environment variable",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_12] Ensure that certificate validation isn't disabled for npm via the 'NPM_CONFIG_STRICT_SSL' environment variable in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_12] Ensure that certificate validation isn't disabled for npm via the 'NPM_CONFIG_STRICT_SSL' environment variable",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_12] Ensure that certificate validation isn't disabled for npm via the 'NPM_CONFIG_STRICT_SSL' environment variable",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_12] Ensure that certificate validation isn't disabled for npm via the 'NPM_CONFIG_STRICT_SSL' environment variable",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_5] Ensure that certificate validation isn't disabled with the PYTHONHTTPSVERIFY environment variable in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_5] Ensure that certificate validation isn't disabled with the PYTHONHTTPSVERIFY environment variable",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_5] Ensure that certificate validation isn't disabled with the PYTHONHTTPSVERIFY environment variable",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_5] Ensure that certificate validation isn't disabled with the PYTHONHTTPSVERIFY environment variable",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_13] Ensure that certificate validation isn't disabled for npm or yarn by setting the option strict-ssl to false in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_13] Ensure that certificate validation isn't disabled for npm or yarn by setting the option strict-ssl to false",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_13] Ensure that certificate validation isn't disabled for npm or yarn by setting the option strict-ssl to false",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_13] Ensure that certificate validation isn't disabled for npm or yarn by setting the option strict-ssl to false",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_9] Ensure that packages with untrusted or missing GPG signatures are not used by dnf, tdnf, or yum via the '--nogpgcheck' option in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_9] Ensure that packages with untrusted or missing GPG signatures are not used by dnf, tdnf, or yum via the '--nogpgcheck' option",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_9] Ensure that packages with untrusted or missing GPG signatures are not used by dnf, tdnf, or yum via the '--nogpgcheck' option",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_9] Ensure that packages with untrusted or missing GPG signatures are not used by dnf, tdnf, or yum via the '--nogpgcheck' option",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_8] Ensure that packages with untrusted or missing signatures are not used by apt-get via the '--allow-unauthenticated' option in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_8] Ensure that packages with untrusted or missing signatures are not used by apt-get via the '--allow-unauthenticated' option",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_8] Ensure that packages with untrusted or missing signatures are not used by apt-get via the '--allow-unauthenticated' option",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_8] Ensure that packages with untrusted or missing signatures are not used by apt-get via the '--allow-unauthenticated' option",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_15] Ensure that the yum and dnf package managers are not configured to disable SSL certificate validation via the 'sslverify' configuration option in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_15] Ensure that the yum and dnf package managers are not configured to disable SSL certificate validation via the 'sslverify' configuration option",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_15] Ensure that the yum and dnf package managers are not configured to disable SSL certificate validation via the 'sslverify' configuration option",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_15] Ensure that the yum and dnf package managers are not configured to disable SSL certificate validation via the 'sslverify' configuration option",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_10] Ensure that packages with untrusted or missing signatures are not used by rpm via the '--nodigest', '--nosignature', '--noverify', or '--nofiledigest' options in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_10] Ensure that packages with untrusted or missing signatures are not used by rpm via the '--nodigest', '--nosignature', '--noverify', or '--nofiledigest' options",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_10] Ensure that packages with untrusted or missing signatures are not used by rpm via the '--nodigest', '--nosignature', '--noverify', or '--nofiledigest' options",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_10] Ensure that packages with untrusted or missing signatures are not used by rpm via the '--nodigest', '--nosignature', '--noverify', or '--nofiledigest' options",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_17] Ensure that 'chpasswd' is not used to set or remove passwords in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_17] Ensure that 'chpasswd' is not used to set or remove passwords",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_17] Ensure that 'chpasswd' is not used to set or remove passwords",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_17] Ensure that 'chpasswd' is not used to set or remove passwords",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_3] Ensure that certificate validation isn't disabled with wget in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_3] Ensure that certificate validation isn't disabled with wget",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_3] Ensure that certificate validation isn't disabled with wget",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_3] Ensure that certificate validation isn't disabled with wget",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_16] Ensure that certificate validation isn't disabled with pip via the 'PIP_TRUSTED_HOST' environment variable in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_16] Ensure that certificate validation isn't disabled with pip via the 'PIP_TRUSTED_HOST' environment variable",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_16] Ensure that certificate validation isn't disabled with pip via the 'PIP_TRUSTED_HOST' environment variable",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_16] Ensure that certificate validation isn't disabled with pip via the 'PIP_TRUSTED_HOST' environment variable",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_14] Ensure that certificate validation isn't disabled for git by setting the environment variable 'GIT_SSL_NO_VERIFY' to any value in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_14] Ensure that certificate validation isn't disabled for git by setting the environment variable 'GIT_SSL_NO_VERIFY' to any value",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_14] Ensure that certificate validation isn't disabled for git by setting the environment variable 'GIT_SSL_NO_VERIFY' to any value",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_14] Ensure that certificate validation isn't disabled for git by setting the environment variable 'GIT_SSL_NO_VERIFY' to any value",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_4] Ensure that certificate validation isn't disabled with the pip '--trusted-host' option in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_4] Ensure that certificate validation isn't disabled with the pip '--trusted-host' option",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_4] Ensure that certificate validation isn't disabled with the pip '--trusted-host' option",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_4] Ensure that certificate validation isn't disabled with the pip '--trusted-host' option",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_11] Ensure that the '--force-yes' option is not used, as it disables signature validation and allows packages to be downgraded which can leave the system in a broken or inconsistent state in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_11] Ensure that the '--force-yes' option is not used, as it disables signature validation and allows packages to be downgraded which can leave the system in a broken or inconsistent state",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_11] Ensure that the '--force-yes' option is not used, as it disables signature validation and allows packages to be downgraded which can leave the system in a broken or inconsistent state",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_11] Ensure that the '--force-yes' option is not used, as it disables signature validation and allows packages to be downgraded which can leave the system in a broken or inconsistent state",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_7] Ensure that packages with untrusted or missing signatures are not used by apk via the '--allow-untrusted' option in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_7] Ensure that packages with untrusted or missing signatures are not used by apk via the '--allow-untrusted' option",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_7] Ensure that packages with untrusted or missing signatures are not used by apk via the '--allow-untrusted' option",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_7] Ensure that packages with untrusted or missing signatures are not used by apk via the '--allow-untrusted' option",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_DOCKER_2] Ensure that certificate validation isn't disabled with curl in /Dockerfile./Dockerfile.RUN",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.RUN :: [NONE][CKV2_DOCKER_2] Ensure that certificate validation isn't disabled with curl",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.RUN.[NONE][CKV2_DOCKER_2] Ensure that certificate validation isn't disabled with curl",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_DOCKER_2] Ensure that certificate validation isn't disabled with curl",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_7] Ensure the base image uses a non latest version tag in /Dockerfile./Dockerfile.FROM",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.FROM :: [NONE][CKV_DOCKER_7] Ensure the base image uses a non latest version tag",
+              "message": "failure: Ensure the base image uses a non latest version tag\nResource: /Dockerfile.FROM\nFile: /Dockerfile: 1-1\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-the-base-image-uses-a-non-latest-version-tag\n\n\t\t1 | FROM ubuntu:latest",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.FROM.[NONE][CKV_DOCKER_7] Ensure the base image uses a non latest version tag",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_7] Ensure the base image uses a non latest version tag",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_4] Ensure that COPY is used instead of ADD in Dockerfiles in /Dockerfile./Dockerfile.ADD",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.ADD :: [NONE][CKV_DOCKER_4] Ensure that COPY is used instead of ADD in Dockerfiles",
+              "message": "failure: Ensure that COPY is used instead of ADD in Dockerfiles\nResource: /Dockerfile.ADD\nFile: /Dockerfile: 3-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-copy-is-used-instead-of-add-in-dockerfiles\n\n\t\t3 | ADD app.tar.gz /opt/app",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.ADD.[NONE][CKV_DOCKER_4] Ensure that COPY is used instead of ADD in Dockerfiles",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_4] Ensure that COPY is used instead of ADD in Dockerfiles",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_1] Ensure port 22 is not exposed in /Dockerfile./Dockerfile.EXPOSE",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile.EXPOSE :: [NONE][CKV_DOCKER_1] Ensure port 22 is not exposed",
+              "message": "failure: Ensure port 22 is not exposed\nResource: /Dockerfile.EXPOSE\nFile: /Dockerfile: 4-4\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-port-22-is-not-exposed\n\n\t\t4 | EXPOSE 22",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile.EXPOSE.[NONE][CKV_DOCKER_1] Ensure port 22 is not exposed",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_1] Ensure port 22 is not exposed",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images in /Dockerfile./Dockerfile.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile. :: [NONE][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images",
+              "message": "failure: Ensure that HEALTHCHECK instructions have been added to container images\nResource: /Dockerfile.\nFile: /Dockerfile: 1-5\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-healthcheck-instructions-have-been-added-to-container-images\n\n\t\t1 | FROM ubuntu:latest\n\t\t2 | RUN apt-get update \u0026\u0026 apt-get install -y curl\n\t\t3 | ADD app.tar.gz /opt/app\n\t\t4 | EXPOSE 22\n\t\t5 | CMD [\"/opt/app/run.sh\"]",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile..[NONE][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_DOCKER_3] Ensure that a user for the container has been created in /Dockerfile./Dockerfile.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/Dockerfile./Dockerfile. :: [NONE][CKV_DOCKER_3] Ensure that a user for the container has been created",
+              "message": "failure: Ensure that a user for the container has been created\nResource: /Dockerfile.\nFile: /Dockerfile: 1-5\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-a-user-for-the-container-has-been-created\n\n\t\t1 | FROM ubuntu:latest\n\t\t2 | RUN apt-get update \u0026\u0026 apt-get install -y curl\n\t\t3 | ADD app.tar.gz /opt/app\n\t\t4 | EXPOSE 22\n\t\t5 | CMD [\"/opt/app/run.sh\"]",
+              "startTime": "2026-10-30T00:19:46.469503Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/Dockerfile./Dockerfile..[NONE][CKV_DOCKER_3] Ensure that a user for the container has been created",
+          "impact": 0.5,
+          "tags": {
+            "check_type": [
+              "dockerfile"
+            ],
+            "nist": [
+              "SA-11"
+            ],
+            "test_suite": "dockerfile scan"
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_DOCKER_3] Ensure that a user for the container has been created",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "cceb4d8888b5d24bd76434c4df6d4184990c677b50db6a2911343f1017835f71"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-30T00:19:46.469503Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}
