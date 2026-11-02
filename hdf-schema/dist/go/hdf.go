@@ -2491,7 +2491,12 @@ const (
 
 // Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers
 // container-image and other artifact digests that use it. HDF tooling verifies every algorithm in
-// this enum, so any of them may be recorded where the checksum needs to be verifiable.
+// this enum, so any of them may be recorded where the checksum needs to be verifiable. md5 and sha1
+// are excluded deliberately: a checksum or integrity record exists to detect tampering, and both
+// are collision-broken, so a digest in either would look verifiable while proving nothing. A source
+// tool digest in an excluded algorithm is not recorded as a checksum. Admitting weak hashes as an
+// application-level accept/reject decision was considered and rejected; widening this enum is a
+// schema decision, not an oversight.
 type HashAlgorithm string
 
 const (
