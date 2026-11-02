@@ -334,14 +334,15 @@ describe('2020-12 features pass through untouched', () => {
   //
   // dependentRequired is 0 because ADR-0017 re-expressed Integrity's
   // algorithm/checksum pairing as two if/then members of an allOf. Equivalent
-  // constraint, which is why `if` rose by the same change. The 14th `if` is
-  // Status_Override's operationalRequirement rule, mirrored from Standalone_Override.
+  // constraint, which is why `if` rose by the same change. Ifs 14 to 16 are the
+  // type-conditional override rules: operationalRequirement mirrored onto
+  // Status_Override, and riskAdjustment forbidding status on both override shapes.
   it('matches the tracked keyword baseline', () => {
     expect({
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 77, if: 14, dependentRequired: 0 });
+    }).toEqual({ unevaluatedProperties: 77, if: 16, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {

@@ -89,7 +89,6 @@ end</code>
           <statusOverrides>
             <statusOverride>
               <type>riskAdjustment</type>
-              <status>passed</status>
               <impact>
                 <value>0.3</value>
               </impact>
@@ -116,7 +115,7 @@ end</code>
             </statusOverride>
           </statusOverrides>
           <disposition>riskAdjustment</disposition>
-          <effectiveStatus>passed</effectiveStatus>
+          <effectiveStatus>failed</effectiveStatus>
           <effectiveImpact>0.3</effectiveImpact>
           <cvss>
             <cvss>

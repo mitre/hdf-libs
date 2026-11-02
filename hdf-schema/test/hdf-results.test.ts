@@ -1370,6 +1370,12 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(inlineOverride({ impact: { value: 0.3 } }))).toBe(false);
     });
 
+    it('should reject an inline riskAdjustment carrying status, and accept one carrying impact', () => {
+      expect(validate(inlineOverride({ type: 'riskAdjustment', status: 'passed', impact: { value: 0.3 } }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'riskAdjustment', status: 'passed' }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'riskAdjustment', impact: { value: 0.3 } }))).toBe(true);
+    });
+
     it('should still require status or impact on every other inline override type', () => {
       expect(validate(inlineOverride({ type: 'waiver' }))).toBe(false);
       expect(validate(inlineOverride({ type: 'waiver', status: 'passed' }))).toBe(true);

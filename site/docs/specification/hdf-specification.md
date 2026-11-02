@@ -419,7 +419,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | appliedBy | Identity | **yes** | Identity of who applied this amendment |
 | appliedAt | date-time | **yes** | When this amendment was applied |
 | expiresAt | date-time | **yes** | When this amendment expires. No permanent amendments |
-| status | ResultStatus | conditional | New effective status. At least one of `status` or `impact` must be set, **except** when `type: operationalRequirement` (which forbids both) |
+| status | ResultStatus | conditional | New effective status. At least one of `status` or `impact` must be set, **except** when `type: operationalRequirement` (which forbids both) or `type: riskAdjustment` (which forbids `status`: it re-rates impact only) |
 | impact | Impact_Override | conditional | Override to the requirement's impact score (`{value: 0.0–1.0}`). At least one of `status` or `impact` must be set; forbidden when `type: operationalRequirement` |
 | baselineRef | string | no | Name of the baseline containing the requirement; needed when the system has multiple baselines with overlapping IDs |
 | componentRef | UUID | no | componentId this amendment is scoped to; omit for system-wide |

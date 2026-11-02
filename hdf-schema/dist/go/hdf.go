@@ -964,8 +964,10 @@ type SourceLocation struct {
 // requirement once applied. The same type-conditional rule as Standalone_Override: when type is
 // 'operationalRequirement', neither status nor impact may be set, because the override records an
 // accepted deviation without adjudicating the finding; it still governs disposition, and
-// effectiveStatus stays what the results decided. For every other type, at least one of status or
-// impact must be set. All overrides must have an expiration date to enforce periodic review.
+// effectiveStatus stays what the results decided. When type is 'riskAdjustment', status may not be
+// set: it re-rates the risk through impact and never changes pass/fail. For every other type, at
+// least one of status or impact must be set. All overrides must have an expiration date to enforce
+// periodic review.
 type StatusOverride struct {
 	// Timestamp when this override was applied. ISO 8601 format.                                                   
 	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
@@ -1010,7 +1012,8 @@ type StatusOverride struct {
 	// methods.                                                                                                     
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`
 	// The new status this override sets for the requirement. Optional when only impact is being                    
-	// overridden; forbidden on an operationalRequirement, which adjudicates nothing.                               
+	// overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a                      
+	// riskAdjustment, which re-rates impact only.                                                                  
 	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
 	// The type of override applied to this requirement.                                                            
 	Type                                                                                        OverrideType        `json:"type"`
@@ -2186,11 +2189,13 @@ type HDFAmendments struct {
 	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
-// A standalone override to a requirement's compliance status or risk impact. Validation has two
-// branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact'
-// may be set — the override records accepted risk without changing the finding
-// (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This
-// rule aligns with: - OSCAL Assessment Results — finding.target.status and
+// A standalone override to a requirement's compliance status or risk impact. Validation is gated on
+// 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the
+// override records accepted risk without changing the finding (documentation-only). When type is
+// 'riskAdjustment', 'status' may not be set — it re-rates the risk through 'impact' and never
+// changes the finding's pass/fail; an override that must change status is a waiver or
+// falsePositive. For all other types, at least one of 'status' or 'impact' must be set. This rule
+// aligns with: - OSCAL Assessment Results — finding.target.status and
 // finding.associated-risk[].facet[] are separate axes
 // (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/) - FedRAMP
 // deviation request types — Risk Adjustment changes impact only, Operational Requirement documents
@@ -2263,7 +2268,9 @@ type StandaloneOverride struct {
 	RequirementID                                                                               string              `json:"requirementId"`
 	// Digital signature for non-repudiation.                                                                       
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`
-	// The new status this amendment sets. Optional when only impact is being overridden.                           
+	// The new status this override sets for the requirement. Optional when only impact is being                    
+	// overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a                      
+	// riskAdjustment, which re-rates impact only.                                                                  
 	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
 	// The type of amendment.                                                                                       
 	Type                                                                                        OverrideType        `json:"type"`
@@ -2648,10 +2655,11 @@ const (
 // to 'notApplicable'. The disposition field on the requirement distinguishes false positives from
 // genuinely not-applicable findings. - 'riskAdjustment': impact score adjusted based on
 // environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact
-// via the impact field. - 'operationalRequirement': deviation required by operational constraints
-// (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires
-// the affected functionality. Remains an open risk. Migration note: 'exception' was removed in
-// v3.1.0 — use 'waiver' with status 'notApplicable' instead.
+// via the impact field; a status on it is rejected by validation. - 'operationalRequirement':
+// deviation required by operational constraints (FedRAMP Operational Requirement); the finding
+// cannot be remediated because the system requires the affected functionality. Remains an open
+// risk. Migration note: 'exception' was removed in v3.1.0 — use 'waiver' with status
+// 'notApplicable' instead.
 type OverrideType string
 
 const (

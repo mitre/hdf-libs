@@ -168,9 +168,13 @@ describe('amendments.schema.json — Standalone_Override', () => {
 
   it('should accept all override types', () => {
     // Types that may carry status/impact (else branch of the type-conditional rule)
-    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment']) {
+    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive']) {
       expect(validate({ ...valid, type })).toBe(true);
     }
+    // riskAdjustment re-rates impact and may not carry a status.
+    const impactOnly = { ...valid } as Record<string, unknown>;
+    delete impactOnly.status;
+    expect(validate({ ...impactOnly, type: 'riskAdjustment', impact: { value: 0.3 } })).toBe(true);
     // operationalRequirement is documentation-only — must NOT carry status/impact
     const docOnly = { ...valid } as Record<string, unknown>;
     delete docOnly.status;
@@ -407,6 +411,19 @@ describe('amendments.schema.json — Standalone_Override', () => {
     const override = { ...valid } as Record<string, unknown>;
     delete override.status;
     expect(validate({ ...override, type: 'riskAdjustment', impact: { value: 0.3 } })).toBe(true);
+  });
+
+  // FedRAMP's Risk Adjustment changes the risk rating, never the finding's
+  // status; a riskAdjustment that flips status is a waiver wearing the wrong label.
+  it('should reject riskAdjustment carrying status', () => {
+    expect(validate({ ...valid, type: 'riskAdjustment', impact: { value: 0.3 } })).toBe(false);
+    expect(validate({ ...valid, type: 'riskAdjustment' })).toBe(false);
+  });
+
+  it('should reject riskAdjustment carrying neither status nor impact', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate({ ...override, type: 'riskAdjustment' })).toBe(false);
   });
 
   it('should accept operationalRequirement override type (documentation-only, no status/impact)', () => {
