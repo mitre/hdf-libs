@@ -449,14 +449,16 @@ type Input struct {
 
 // Validation constraints for an input value.
 type InputConstraints struct {
-	// Enumeration of permitted values.                                                  
-	AllowedValues                                                          []interface{} `json:"allowedValues,omitempty"`
-	// Maximum allowed value (for Numeric inputs).                                       
-	Max                                                                    *float64      `json:"max,omitempty"`
-	// Minimum allowed value (for Numeric inputs).                                       
-	Min                                                                    *float64      `json:"min,omitempty"`
-	// Regular expression pattern the value must match (for String inputs).              
-	Pattern                                                                *string       `json:"pattern,omitempty"`
+	// Enumeration of permitted values. Each entry may be any JSON value, the same freedom                  
+	// Input.value has: an Array or Hash input enumerates container values, so no element type              
+	// is imposed.                                                                                          
+	AllowedValues                                                                             []interface{} `json:"allowedValues,omitempty"`
+	// Maximum allowed value (for Numeric inputs).                                                          
+	Max                                                                                       *float64      `json:"max,omitempty"`
+	// Minimum allowed value (for Numeric inputs).                                                          
+	Min                                                                                       *float64      `json:"min,omitempty"`
+	// Regular expression pattern the value must match (for String inputs).                                 
+	Pattern                                                                                   *string       `json:"pattern,omitempty"`
 }
 
 // Cryptographic integrity information for verifying the HDF file has not been tampered with. If

@@ -6301,7 +6301,8 @@
             },
             "allowedValues": {
               "type": "array",
-              "description": "Enumeration of permitted values."
+              "items": true,
+              "description": "Enumeration of permitted values. Each entry may be any JSON value, the same freedom Input.value has: an Array or Hash input enumerates container values, so no element type is imposed."
             }
           },
           "description": "Validation constraints for an input value.",
