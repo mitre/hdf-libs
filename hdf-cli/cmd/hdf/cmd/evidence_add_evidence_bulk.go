@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 )
 
 type evidenceSelection struct {
@@ -65,6 +67,9 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 			excluded[p] = info
 		}
 	}
+	// The same directory the per-uri loop normalizes against; a reference is
+	// package-relative by contract, so containment is measured from here.
+	pkgDir := filepath.Dir(pkg)
 	seen := make(map[string]string)
 	for i, s := range selectors {
 		if strings.TrimSpace(s.value) == "" {
@@ -99,7 +104,24 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 				continue
 			}
 			seen[abs] = format
-			uris = append(uris, abs)
+			// A discovered name is a filesystem path, not a reference, but every consumer
+			// of opts.uris Decodes a uri as an already-encoded reference, so recording the
+			// raw path attested a%2Fb.json as a/b.json. It takes the two steps
+			// packageRelativeIfInside takes for an in-package --uri instead: confine,
+			// then Encode per segment.
+			rel, inside := packageSubtreeRef(pkgDir, evidenceref.Decoded(abs))
+			if !inside {
+				// Shown absolute: run from inside the package, pkgDir is "." and
+				// names nothing.
+				shown := pkgDir
+				if absDir, absErr := filepath.Abs(pkgDir); absErr == nil {
+					shown = absDir
+				}
+				return opts, fmt.Errorf("selected evidence %q is outside the package's directory %q; "+
+					"discovery records package-relative references, so use --uri to reference an "+
+					"external artifact deliberately", path, shown)
+			}
+			uris = append(uris, evidenceref.Encode(string(rel)))
 			if len(opts.formats) > 0 {
 				formats = append(formats, format)
 			}

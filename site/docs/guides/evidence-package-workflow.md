@@ -104,7 +104,7 @@ Five documents: the system, the three converted results, and the SBOM. For this 
 
 ### Add native reports in bulk
 
-Use repeatable `--file` selectors to add local files or quoted globs without a shell loop. Local selectors use filesystem paths relative to your working directory; existing `--uri` values remain literal URI references relative to the package. For example, with SARIF reports under `reports/` and JUnit reports under `tests/`:
+Use repeatable `--file` selectors to add local files or quoted globs without a shell loop. Local selectors use filesystem paths relative to your working directory, and each selected file is recorded as a package-relative reference; a selection outside the package's directory is refused, since discovery never records a host path — use `--uri` to reference an external artifact deliberately. Existing `--uri` values remain literal URI references relative to the package. For example, with SARIF reports under `reports/` and JUnit reports under `tests/`:
 
 ```bash
 hdf evidence add-evidence evidence-package.json \
