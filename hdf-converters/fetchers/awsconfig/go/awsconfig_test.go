@@ -288,11 +288,12 @@ func TestAWSConfigFetcher_ContextCancelled_BeforeFirstPage(t *testing.T) {
 
 func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 	// Verify that Fetch wraps a deadline-free context with a timeout by
-	// capturing the context that reaches the first API call.
+	// capturing the context that reaches the first API call. One readable rule
+	// keeps the fetch itself successful; the result is not what this test is about.
 	inner := &mockConfigClient{
 		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
-			{ConfigRules: []types.ConfigRule{}},
+			{ConfigRules: []types.ConfigRule{testRule}},
 		},
 	}
 	ccc := &contextCapturingClient{inner: inner}
@@ -311,6 +312,9 @@ func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 
 // ---- fetch tests ----
 
+// A Region with no rules cannot yield a document the converter accepts (it
+// requires a ConfigRules array and at least one requirement), so Fetch says so
+// instead of emitting {"ConfigRules":null} for the converter to reject.
 func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 	mock := &mockConfigClient{
 		t: t,
@@ -319,11 +323,33 @@ func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 		},
 	}
 	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
 	data, err := f.Fetch(context.Background())
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Nil(t, data, "no bytes are written alongside the error")
+	assert.Contains(t, err.Error(), "no Config rules in us-east-1")
+}
 
-	result := mustUnmarshal(t, data)
-	assert.Empty(t, result.ConfigRules)
+// When every rule is unreadable the outcome is the same, and the error must say
+// why nothing remained rather than letting the converter report a missing field.
+func TestAWSConfigFetcher_Fetch_AllSkippedIsAnError(t *testing.T) {
+	internal := testRule
+	internal.CreatedBy = aws.String("securityhub.amazonaws.com")
+	internal.RuleEvaluationVisibility = types.RuleEvaluationVisibilityInternal
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{internal}},
+		},
+	}
+	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
+	data, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "no readable Config rules in us-east-1")
+	assert.Contains(t, err.Error(), "1 skipped as unreadable (RuleEvaluationVisibility INTERNAL)")
+	assert.Contains(t, err.Error(), "some-rule (securityhub.amazonaws.com)", "the error names what was skipped and who provisioned it")
+	assert.Zero(t, mock.complianceCalls["some-rule"], "nothing is queried when nothing is readable")
 }
 
 func TestAWSConfigFetcher_Fetch_SingleRule(t *testing.T) {

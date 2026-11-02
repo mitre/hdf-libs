@@ -81,7 +81,8 @@ type AWSConfigParams struct {
 // returns it as ConfigRulesFile JSON, ready for ConvertAWSConfigToHDF.
 type AWSConfigFetcher struct {
 	client   ConfigServiceClient
-	maxPages int // 0 → defaultMaxPages
+	maxPages int    // 0 → defaultMaxPages
+	region   string // named in errors; empty when built from a caller-supplied client
 }
 
 // NewAWSConfigFetcher creates a fetcher using live AWS credentials.
@@ -113,6 +114,7 @@ func NewAWSConfigFetcher(ctx context.Context, params AWSConfigParams) (*AWSConfi
 
 	return &AWSConfigFetcher{
 		client: configservice.NewFromConfig(cfg),
+		region: params.Region,
 	}, nil
 }
 
@@ -141,6 +143,16 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipped %d rule(s) whose evaluations the Config API "+
 			"will not return (RuleEvaluationVisibility INTERNAL): %s\n", len(skipped), describeUnreadable(skipped))
 	}
+	// The converter requires a ConfigRules array with at least one requirement,
+	// so an empty result can only ever fail later with a message about a field
+	// the user never wrote. Say what actually happened instead.
+	if len(rules) == 0 {
+		if len(skipped) == 0 {
+			return nil, fmt.Errorf("no Config rules%s", f.where())
+		}
+		return nil, fmt.Errorf("no readable Config rules%s: %d skipped as unreadable (RuleEvaluationVisibility INTERNAL): %s",
+			f.where(), len(skipped), describeUnreadable(skipped))
+	}
 
 	for i := range rules {
 		results, err := f.fetchEvaluationResults(ctx, rules[i].ConfigRuleName)
@@ -167,6 +179,14 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 
 	file := awsconfigconv.ConfigRulesFile{ConfigRules: rules}
 	return json.Marshal(file)
+}
+
+// where names the Region for an error when the fetcher knows it.
+func (f *AWSConfigFetcher) where() string {
+	if f.region == "" {
+		return ""
+	}
+	return " in " + f.region
 }
 
 // unreadableRule is a rule whose evaluations the Config API will not return.
