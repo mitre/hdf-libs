@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { convertJunitToHdf } from './converter.js';
+import { convertJunitToHdf, checkovFramework } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import {
@@ -754,5 +754,81 @@ describe('testsuite-less JUnit (node --test)', () => {
     const hdf = await parseHdf('node-test-nested.xml');
     const hosts = (hdf.components ?? []).filter((c) => c.type === 'host').map((c) => c.name);
     expect(hosts).toEqual(['test-runner-01']);
+  });
+});
+
+// Twin of the Go TestCheckovFramework_MatchesSharedTable / TestTestSuiteTag_*
+// tests: the suite-name and framework tags are implemented twice, so the
+// vectors live in one shared file both languages read.
+const CHECKOV_SUITE_CASES = (
+  JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'junit-checkov-suite-cases.json'), 'utf-8'),
+  ) as { cases: Array<{ name: string; suiteName: string; testCaseName: string; want: string }> }
+).cases;
+
+describe('junit-to-hdf suite provenance', () => {
+  it('has a populated shared table', () => {
+    expect(CHECKOV_SUITE_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of CHECKOV_SUITE_CASES) {
+    it(`checkovFramework: ${tc.name}`, () => {
+      const suite = { '@_name': tc.suiteName, testcase: [{ '@_name': tc.testCaseName }] };
+      expect(checkovFramework(suite)).toBe(tc.want === '' ? undefined : tc.want);
+    });
+  }
+
+  it('records the framework for every testsuite (checkov-junit-multi-framework)', async () => {
+    const input = loadFixture('checkov-junit-multi-framework.xml');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
+    // Attribute order is the producer's choice, so read each attribute on its own.
+    const suites = [...input.matchAll(/<testsuite\b([^>]*)>/g)].map((m) => ({
+      name: /\bname="([^"]+)"/.exec(m[1]!)![1]!,
+      tests: Number(/\btests="(\d+)"/.exec(m[1]!)![1]),
+    }));
+    expect(suites, 'fixture must carry two frameworks').toHaveLength(2);
+    const wantByFramework = Object.fromEntries(suites.map((s) => [s.name.replace(/ scan$/, ''), s.tests]));
+    const wantTotal = suites.reduce((n, s) => n + s.tests, 0);
+
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs, 'every testcase from every suite converts').toHaveLength(wantTotal);
+    const gotByFramework: Record<string, number> = {};
+    for (const r of reqs) {
+      const types = r.tags['check_type'] as string[] | undefined;
+      expect(types, `${r.id}: check_type missing`).toBeDefined();
+      expect(types, `${r.id}: exactly one owning framework`).toHaveLength(1);
+      gotByFramework[types![0]!] = (gotByFramework[types![0]!] ?? 0) + 1;
+      expect(r.tags['test_suite'], `${r.id}: the suite name stays verbatim`).toBe(`${types![0]} scan`);
+    }
+    expect(gotByFramework).toEqual(wantByFramework);
+  });
+
+  it('keeps a generic suite name verbatim and invents no framework (testsuites-mixed)', async () => {
+    const hdf = await parseHdf('testsuites-mixed.xml');
+    for (const r of hdf.baselines[0]!.requirements) {
+      expect(r.tags['test_suite']).toBe(r.id.includes('.math.') ? 'MathTest' : 'StringTest');
+      expect(r.tags, `${r.id}: a test class is not a framework`).not.toHaveProperty('check_type');
+    }
+  });
+
+  it('attributes nested testcases to the suite that owns them (node-test-nested)', async () => {
+    const hdf = await parseHdf('node-test-nested.xml');
+    const got = Object.fromEntries(hdf.baselines[0]!.requirements.map((r) => [r.title, r.tags['test_suite']]));
+    expect(got).toEqual({
+      'outer direct case': 'outer suite',
+      'inner passing case': 'inner suite',
+      'inner failing case': 'inner suite',
+      'deep case': 'deepest suite',
+    });
+  });
+
+  it('records no suite when none is named (node-test-mixed)', async () => {
+    const hdf = await parseHdf('node-test-mixed.xml');
+    expect(hdf.baselines[0]!.requirements.length).toBeGreaterThan(0);
+    for (const r of hdf.baselines[0]!.requirements) {
+      expect(r.tags, `${r.id}: no suite name to record`).not.toHaveProperty('test_suite');
+      expect(r.tags, `${r.id}: no framework to record`).not.toHaveProperty('check_type');
+    }
   });
 });

@@ -142,7 +142,7 @@ jobs:
             "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz"
           echo "$ZIZMOR_SHA256  $tmp/zizmor.tar.gz" | sha256sum -c -
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
-          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
+          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
@@ -373,6 +373,15 @@ jobs:
           name: scan-ts
           path: scan-artifacts/
           retention-days: 7
+      - name: Repository lint guards
+        run: |
+          pnpm run lint:timestamps
+          pnpm run lint:generated-html
+          pnpm run lint:package-names
+      # The consumer check installs with the same pinned npm client as publishing.
+      - uses: $/.github/actions/setup-npm
+      - name: Shared npm consumer smoke tests
+        run: pnpm run test:release-smoke
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
       - name: npm audit (prod moderate+, dev high+)
@@ -478,6 +487,11 @@ jobs:
         # release.yml --checks them on the tag, where a regression is found by
         # the release; its test runs here instead.
         run: pnpm run lint:go-module-versions
+      - name: The snapshot scripts still fail closed
+        # snapshot.yml derives, prepares and validates every main snapshot with
+        # these scripts, where a regression is found by the first publication;
+        # their tests run here (the prepare test needs the Go toolchain).
+        run: pnpm run lint:snapshot-scripts
       - name: Every module is tidy and every sibling pin is a real version
         # A downgrading go get drops a sibling require and tidy re-adds it at the
         # zero pseudo-version, which no release can publish; caught here, not at
@@ -913,14 +927,10 @@ jobs:
       - name: Pack all publishable packages
         run: |
           mkdir -p /tmp/tarballs
-          PACKAGES=(
-            hdf-schema hdf-utilities hdf-mappings hdf-validators
-            hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi
-          )
-          for pkg in "${PACKAGES[@]}"; do
+          inventory=$(bash scripts/list-npm-packages.sh)
+          while read -r pkg; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
-          done
+          done <<< "$inventory"
 
       - name: publint each tarball
         # `pnpm exec` (not dlx): publint is a root devDependency so the verdict

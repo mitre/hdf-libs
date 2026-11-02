@@ -22,7 +22,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "MathTest"
           },
           "controlType": "management",
           "title": "testAddition",
@@ -49,7 +50,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "MathTest"
           },
           "controlType": "management",
           "title": "testDivisionByZero",
@@ -76,7 +78,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "MathTest"
           },
           "controlType": "management",
           "title": "testSquareRoot",
@@ -102,7 +105,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "StringTest"
           },
           "controlType": "management",
           "title": "testConcat",
@@ -129,7 +133,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "StringTest"
           },
           "controlType": "management",
           "title": "testParseInt",
