@@ -11,6 +11,6 @@ import _ "embed"
 // Raw is the FIRST MacroVector lookup and max tables, verbatim. A var rather
 // than an embed.FS behind a lookup: a filename typo is then a compile error and
 // the bytes are the image rather than a heap copy.
-
+//
 //go:embed cvss40-data.json
 var Raw []byte
