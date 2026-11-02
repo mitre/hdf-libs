@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -349,6 +348,18 @@ describe('computeCvss40Score (CVSS 4.0)', () => {
     expect(s.temporalScore).toBe(9.3);
   });
 
+  it('still has all 270 MacroVector lookup entries', () => {
+    // Mirrors the Go cardinality guard. The table is one shared file now, so a
+    // truncation has to fail in both suites rather than only Go's.
+    const table = JSON.parse(
+      readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), '..', 'go', 'cvss40data', 'cvss40-data.json'),
+        'utf-8',
+      ),
+    ) as { lookup: Record<string, number> };
+    expect(Object.keys(table.lookup)).toHaveLength(270);
+  });
+
   it('matches the Go peer on every shared parity vector (byte-identical output)', () => {
     // The Go test (TestComputeCvss40Score) asserts the identical fixture values;
     // both languages reading the same testdata guarantees Go output == TS output.
@@ -376,18 +387,5 @@ describe('computeCvss40Score (CVSS 4.0)', () => {
     expect(() =>
       computeCvss40Score('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:Z'),
     ).toThrow();
-  });
-});
-
-describe('CVSS 4.0 data table parity', () => {
-  it('go/cvss40-data.json and src/cvss/cvss40-data.json are byte-identical', () => {
-    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-    const goHash = createHash('sha256')
-      .update(readFileSync(join(root, 'go', 'cvss40-data.json')))
-      .digest('hex');
-    const tsHash = createHash('sha256')
-      .update(readFileSync(join(root, 'src', 'cvss', 'cvss40-data.json')))
-      .digest('hex');
-    expect(tsHash).toBe(goHash);
   });
 });

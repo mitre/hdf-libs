@@ -1,5 +1,5 @@
 {
-  "_comment": "CVSS 4.0 scoring data tables extracted VERBATIM from the FIRST reference calculator (https://github.com/FIRSTdotorg/cvss-v4-calculator; cvss_lookup.js / max_composed.js / max_severity.js). Regenerate via scratchpad/extract-data.mjs. Consumed byte-identical by Go (go/cvss40-data.json, //go:embed) and TS (src/cvss/cvss40-data.json).",
+  "_comment": "CVSS 4.0 scoring data tables extracted VERBATIM from the FIRST reference calculator (https://github.com/FIRSTdotorg/cvss-v4-calculator; cvss_lookup.js / max_composed.js / max_severity.js). Extracted once by hand; nothing regenerates this file automatically. Single copy, in a data-only package: Go embeds it from here and TypeScript imports this same file, because an embed pattern cannot reach outside the package directory that declares it.",
   "lookup": {
     "100000": 9.8,
     "100001": 9.5,
