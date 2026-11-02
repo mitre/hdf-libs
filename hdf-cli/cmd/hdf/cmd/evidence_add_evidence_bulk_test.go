@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/sha512"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -35,8 +33,7 @@ func TestEvidenceAddEvidence_LocalGlobAddsEveryMatchedArtifact(t *testing.T) {
 		assert.Equal(t, "x-json", ref["format"])
 		data, readErr := os.ReadFile(filepath.Join(dir, name))
 		require.NoError(t, readErr)
-		sum := sha512.Sum512(data)
-		assert.Equal(t, map[string]interface{}{"algorithm": "sha512", "value": hex.EncodeToString(sum[:])}, ref["checksum"])
+		assert.Equal(t, map[string]interface{}{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(data)}, ref["checksum"])
 	}
 }
 
@@ -75,37 +72,85 @@ func TestEvidenceAddEvidence_Discovery(t *testing.T) {
 	}
 }
 
-func TestEvidenceAddEvidence_DiscoveryFailureIsAtomic(t *testing.T) {
+// Every row here is refused inside expandEvidenceInputs, before the package is opened,
+// so what each pins is the refusal and its exit code — not atomicity, which a package
+// nothing has read cannot demonstrate. The Long text promises 4 when nothing matched
+// and 1 for every other refusal. "Before the package is opened" is asserted, not
+// trusted: each row runs against a package of garbage bytes, which the read refuses
+// with a different message than the one expected here.
+func TestEvidenceAddEvidence_ExpansionRefusals(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		args    []string
 		message string
+		code    int
 	}{
-		{"missing", []string{"--file", "absent.txt", "--format", "raw-log"}, "absent.txt"},
-		{"unmatched", []string{"--file", "*.absent", "--format", "raw-log"}, "no files matched"},
-		{"malformed", []string{"--file", "[", "--format", "raw-log"}, "invalid glob"},
-		{"literal duplicate", []string{"--file", "a.txt", "--file", "a.txt", "--format", "raw-log"}, "selected twice"},
-		{"format overlap", []string{"--file", "*.txt", "--file", "a*.txt", "--format", "raw-log", "--format", "x-other"}, "conflicting formats"},
-		{"format count", []string{"--file", "*.txt", "--format", "raw-log", "--format", "x-other"}, "selector"},
-		{"directory as file", []string{"--file", "nested", "--format", "raw-log"}, "regular file"},
-		{"file as directory", []string{"--from-dir", "a.txt", "--format", "raw-log"}, "directory"},
-		{"recursion without directory", []string{"--file", "a.txt", "--recursive", "--format", "raw-log"}, "--from-dir"},
-		{"supplied checksum", []string{"--file", "a.txt", "--format", "raw-log", "--checksum", "sha256:bad"}, "--checksum"},
-		{"empty directory", []string{"--from-dir", "nested", "--format", "raw-log"}, "no files"},
-		{"blank selector", []string{"--file", "", "--format", "raw-log"}, "blank"},
+		{"missing", []string{"--file", "absent.txt", "--format", "raw-log"}, "absent.txt", 1},
+		{"unmatched", []string{"--file", "*.absent", "--format", "raw-log"}, "no files matched", 4},
+		{"malformed", []string{"--file", "[", "--format", "raw-log"}, "invalid glob", 1},
+		{"literal duplicate", []string{"--file", "a.txt", "--file", "a.txt", "--format", "raw-log"}, "selected twice", 1},
+		{"format overlap", []string{"--file", "*.txt", "--file", "a*.txt", "--format", "raw-log", "--format", "x-other"}, "conflicting formats", 1},
+		{"format count", []string{"--file", "*.txt", "--format", "raw-log", "--format", "x-other"}, "selector", 1},
+		{"directory as file", []string{"--file", "nested", "--format", "raw-log"}, "regular file", 1},
+		{"file as directory", []string{"--from-dir", "a.txt", "--format", "raw-log"}, "is not a directory", 1},
+		{"recursion without directory", []string{"--file", "a.txt", "--recursive", "--format", "raw-log"}, "--from-dir", 1},
+		{"supplied checksum", []string{"--file", "a.txt", "--format", "raw-log", "--checksum", "sha256:bad"}, "--checksum", 1},
+		{"empty directory", []string{"--from-dir", "nested", "--format", "raw-log"}, "no files", 4},
+		{"blank selector", []string{"--file", "", "--format", "raw-log"}, "blank", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := writeTestEvidence(t)
 			t.Chdir(filepath.Dir(pkg))
 			require.NoError(t, os.WriteFile("a.txt", []byte("bytes"), 0o600))
 			require.NoError(t, os.Mkdir("nested", 0o700))
+			require.NoError(t, os.WriteFile(pkg, []byte("not a package"), 0o600))
+			_, _, err := executeCommand(append([]string{"evidence", "add-evidence", pkg}, tc.args...)...)
+			require.ErrorContains(t, err, tc.message)
+			assert.NotContains(t, err.Error(), "evidence package", "the package must not have been read")
+			assert.Equal(t, tc.code, exitCodeOf(t, err))
+		})
+	}
+}
+
+// A failure AFTER the package is read must write nothing — the only place atomicity can
+// be seen. Each row's setup leaves a batch that expansion accepts and the per-uri loop
+// then refuses: a reference the package already carries, and a file the hasher cannot
+// open after an earlier one in the same batch hashed fine.
+func TestEvidenceAddEvidence_DiscoveryFailureIsAtomic(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		setup   func(t *testing.T, pkg string)
+		args    []string
+		message string
+	}{
+		{"already referenced", func(t *testing.T, pkg string) {
+			_, _, err := executeCommand("evidence", "add-evidence", pkg, "--file", "a.txt", "--format", "raw-log")
+			require.NoError(t, err)
+		}, []string{"--file", "a.txt", "--format", "raw-log"}, "already referenced"},
+		{"unreadable after a hashed sibling", func(t *testing.T, pkg string) {
+			if runtime.GOOS == "windows" {
+				t.Skip("POSIX mode bits do not enforce Windows ACLs")
+			}
+			require.NoError(t, os.WriteFile("locked.txt", []byte("bytes"), 0o000))
+			t.Cleanup(func() { _ = os.Chmod("locked.txt", 0o600) })
+			if f, err := os.Open("locked.txt"); err == nil {
+				_ = f.Close()
+				t.Skip("process can bypass filesystem permissions")
+			}
+		}, []string{"--file", "*.txt", "--format", "raw-log"}, "to checksum it"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := writeTestEvidence(t)
+			t.Chdir(filepath.Dir(pkg))
+			require.NoError(t, os.WriteFile("a.txt", []byte("bytes"), 0o600))
+			tc.setup(t, pkg)
 			before, err := os.ReadFile(pkg)
 			require.NoError(t, err)
 			_, _, err = executeCommand(append([]string{"evidence", "add-evidence", pkg}, tc.args...)...)
 			require.ErrorContains(t, err, tc.message)
 			after, err := os.ReadFile(pkg)
 			require.NoError(t, err)
-			assert.Equal(t, before, after)
+			assert.Equal(t, before, after, "a failure after the package was read must write nothing")
 		})
 	}
 }
@@ -207,7 +252,7 @@ func TestEvidenceAddEvidence_DiscoveryUnreadable(t *testing.T) {
 func TestEvidenceAddEvidence_DiscoveryEncodesFilesystemNames(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	t.Chdir(filepath.Dir(pkg))
-	for _, name := range []string{"a%2Fb.log", "report x.log", "100%.log"} {
+	for _, name := range []string{"a%2Fb.log", "report x.log", "100%.log", "x#y.log"} {
 		require.NoError(t, os.WriteFile(name, []byte("bytes for "+name), 0o600))
 	}
 	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--file", "*.log", "--format", "raw-log")
@@ -217,12 +262,19 @@ func TestEvidenceAddEvidence_DiscoveryEncodesFilesystemNames(t *testing.T) {
 	for _, r := range refs {
 		uris = append(uris, r.(map[string]interface{})["uri"].(string))
 	}
-	assert.ElementsMatch(t, []string{"100%25.log", "a%252Fb.log", "report%20x.log"}, uris)
+	assert.ElementsMatch(t, []string{"100%25.log", "a%252Fb.log", "report%20x.log", "x%23y.log"}, uris)
 	for _, u := range uris {
 		decoded, decErr := evidenceref.Decode(u)
 		require.NoError(t, decErr)
 		_, statErr := os.Stat(string(decoded))
 		assert.NoError(t, statErr, "recorded uri %q must decode to a file that exists", u)
+	}
+	// The read side must resolve every recorded name, not merely a test's own Decode.
+	// Asserted per reference: the seeded package carries a results.json that exists
+	// nowhere, so the run as a whole is never clean.
+	stdout, _, _ := executeCommand("evidence", "info", pkg, "--verify")
+	for _, u := range uris {
+		assert.Contains(t, stdout, "✓ "+u+" ("+evidenceDigestAlgo+" match)", "info --verify must reach %q", u)
 	}
 }
 
@@ -239,6 +291,7 @@ func TestEvidenceAddEvidence_DiscoveryRefusesOutOfPackage(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "outside the package")
 	assert.ErrorContains(t, err, "--uri")
+	assert.Equal(t, 1, exitCodeOf(t, err))
 	assert.ErrorContains(t, err, outside, "the refused file is named")
 	pkgDirAbs, absErr := filepath.Abs(filepath.Dir(pkg))
 	require.NoError(t, absErr)
@@ -330,8 +383,7 @@ func TestEvidenceAddEvidence_GlobSkipsSubdirectoryLikeTheWalk(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join("logs", "l.txt"), []byte("l"), 0o600))
 	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--file", "logs/*", "--format", "raw-log")
 	require.NoError(t, err)
-	assert.Contains(t, stderr, "Skipped")
-	assert.Contains(t, stderr, "a directory")
+	assert.Contains(t, stderr, "Skipped logs/archive: a directory.")
 	refs := readEvidenceExternal(t, pkg)
 	require.Len(t, refs, 1)
 	assert.Equal(t, "logs/l.txt", refs[0].(map[string]interface{})["uri"])
@@ -350,8 +402,7 @@ func TestEvidenceAddEvidence_DiscoveredSymlinkSkippedWithNotice(t *testing.T) {
 	require.NoError(t, os.Symlink("in.log", filepath.Join("evidence", "link.log")))
 	_, stderr, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "evidence", "--format", "raw-log")
 	require.NoError(t, err, "a discovered symlink is skipped, not fatal")
-	assert.Contains(t, stderr, "Skipped")
-	assert.Contains(t, stderr, "a symlink")
+	assert.Contains(t, stderr, "Skipped evidence/link.log: a symlink. Name its target explicitly if it belongs in the package.")
 	refs := readEvidenceExternal(t, pkg)
 	require.Len(t, refs, 1)
 	assert.Equal(t, "evidence/in.log", refs[0].(map[string]interface{})["uri"])
@@ -550,4 +601,57 @@ func TestEvidenceAddEvidence_FormatCountRuleHasOneWording(t *testing.T) {
 		require.Error(t, err, "selectors %v", sel)
 		assert.ErrorContains(t, err, "--uri, --file, --from-dir order", "selectors %v", sel)
 	}
+}
+
+// ---- card hdf-libs-xfhfs.1: load-bearing tests ----
+
+// A --from-dir root that cannot be resolved is refused with the directory named.
+func TestEvidenceAddEvidence_FromDirRootLinkCycleRefused(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.Symlink("cycle", "cycle"))
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--from-dir", "cycle", "--format", "raw-log")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "read evidence directory \"cycle\"")
+	assert.Equal(t, 1, exitCodeOf(t, err))
+}
+
+// Without --no-follow-symlinks a --uri symlink is followed and the TARGET's bytes are
+// attested — the default the flag exists to turn off.
+func TestEvidenceAddEvidence_URISymlinkHashedWithoutFlag(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires Windows privileges")
+	}
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile("in.log", []byte("target bytes"), 0o600))
+	require.NoError(t, os.Symlink("in.log", "link.log"))
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "link.log", "--format", "raw-log")
+	require.NoError(t, err)
+	refs := readEvidenceExternal(t, pkg)
+	require.Len(t, refs, 1)
+	ref := refs[0].(map[string]interface{})
+	assert.Equal(t, "link.log", ref["uri"])
+	assert.Equal(t, map[string]interface{}{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex([]byte("target bytes"))}, ref["checksum"])
+}
+
+// Every DISTINCT format is validated, not only the first: a batch whose second value is
+// invalid is refused, and nothing is written.
+func TestEvidenceAddEvidence_EachDistinctFormatValidated(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile("a.txt", []byte("a"), 0o600))
+	require.NoError(t, os.WriteFile("b.txt", []byte("b"), 0o600))
+	before, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--file", "a.txt", "--file", "b.txt", "--format", "raw-log", "--format", "x-Not-Lower")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "x-Not-Lower")
+	assert.ErrorContains(t, err, "not valid")
+	after, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
 }
