@@ -147,7 +147,7 @@
         "requirementId": {
           "type": "string",
           "minLength": 1,
-          "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
+          "description": "The id of the requirement being amended. An id names the requirement, not one finding, so the override applies to every requirement entry carrying that id in the baseline(s) it targets."
         },
         "baselineRef": {
           "type": "string",

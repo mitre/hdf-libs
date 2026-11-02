@@ -1000,7 +1000,7 @@
         },
         "id": {
           "type": "string",
-          "description": "The requirement identifier. Example: 'SV-238196'."
+          "description": "The requirement identifier, naming the requirement itself rather than one finding of it. Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id (one scanner reporting one CVE against several packages, or an overlay restating what it inherits), so an id is not an instance key: index requirements as id to list, never id to one, and an amendment addressing an id applies to every entry carrying it."
         },
         "title": {
           "type": "string",

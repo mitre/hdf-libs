@@ -1484,7 +1484,7 @@
           },
           "id": {
             "type": "string",
-            "description": "The requirement identifier. Example: 'SV-238196'."
+            "description": "The requirement identifier, naming the requirement itself rather than one finding of it. Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id (one scanner reporting one CVE against several packages, or an overlay restating what it inherits), so an id is not an instance key: index requirements as id to list, never id to one, and an amendment addressing an id applies to every entry carrying it."
           },
           "title": {
             "type": "string",
@@ -3896,7 +3896,7 @@
           "requirementId": {
             "type": "string",
             "minLength": 1,
-            "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
+            "description": "The id of the requirement being amended. An id names the requirement, not one finding, so the override applies to every requirement entry carrying that id in the baseline(s) it targets."
           },
           "baselineRef": {
             "type": "string",
@@ -5568,7 +5568,7 @@
           "total": {
             "type": "integer",
             "minimum": 0,
-            "description": "Total number of unique requirements across all sources."
+            "description": "Total number of distinct requirement ids across all sources; an id carried by several entries counts once."
           },
           "matchedCount": {
             "type": "integer",

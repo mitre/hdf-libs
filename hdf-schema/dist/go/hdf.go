@@ -549,7 +549,11 @@ type EvaluatedRequirement struct {
 	// enforces it and producers commonly append, so position is frequently the opposite of                             
 	// recency. Preserves full audit trail.                                                                             
 	StatusOverrides                                                                             []StatusOverride        `json:"statusOverrides,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                                
+	// The requirement identifier, naming the requirement itself rather than one finding of it.                         
+	// Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id                         
+	// (one scanner reporting one CVE against several packages, or an overlay restating what it                         
+	// inherits), so an id is not an instance key: index requirements as id to list, never id to                        
+	// one, and an amendment addressing an id applies to every entry carrying it.                                       
 	ID                                                                                          string                  `json:"id"`
 	// The impactfulness or severity (0.0 to 1.0).                                                                      
 	Impact                                                                                      float64                 `json:"impact"`
@@ -1574,7 +1578,11 @@ type BaselineRequirement struct {
 	// Explicit severity rating. Typically derived from impact score but provided explicitly for                        
 	// clarity.                                                                                                         
 	Severity                                                                                    *Severity               `json:"severity,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                                
+	// The requirement identifier, naming the requirement itself rather than one finding of it.                         
+	// Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id                         
+	// (one scanner reporting one CVE against several packages, or an overlay restating what it                         
+	// inherits), so an id is not an instance key: index requirements as id to list, never id to                        
+	// one, and an amendment addressing an id applies to every entry carrying it.                                       
 	ID                                                                                          string                  `json:"id"`
 	// The impactfulness or severity (0.0 to 1.0).                                                                      
 	Impact                                                                                      float64                 `json:"impact"`
@@ -1874,40 +1882,41 @@ type BaselineRef struct {
 
 // Summary statistics for the overall comparison.
 type ComparisonSummary struct {
-	// Number of requirements present only in the old source.                                        
-	Absent                                                                        *int64             `json:"absent,omitempty"`
-	// Average confidence score across all requirement matches (0-1).                                
-	AverageMatchConfidence                                                        *float64           `json:"averageMatchConfidence,omitempty"`
-	// State counts broken down by severity level.                                                   
-	BySeverity                                                                    *SeverityBreakdown `json:"bySeverity,omitempty"`
-	// Change in compliance percentage (new - old).                                                  
-	ComplianceDelta                                                               *float64           `json:"complianceDelta,omitempty"`
-	// Number of requirements that changed from failing to passing.                                  
-	Fixed                                                                         *int64             `json:"fixed,omitempty"`
-	// Number of requirements successfully matched between sources.                                  
-	MatchedCount                                                                  int64              `json:"matchedCount"`
-	// Number of requirements that were reorganized without content change.                          
-	Moved                                                                         *int64             `json:"moved,omitempty"`
-	// Number of requirements present only in the new source.                                        
-	New                                                                           *int64             `json:"new,omitempty"`
-	// Compliance percentage of the new source (0-100).                                              
-	NewCompliancePercent                                                          *float64           `json:"newCompliancePercent,omitempty"`
-	// Compliance percentage of the old source (0-100).                                              
-	OldCompliancePercent                                                          *float64           `json:"oldCompliancePercent,omitempty"`
-	// Summary statistics for each individual source in a multi-source comparison.                   
-	PerSource                                                                     []PerSourceSummary `json:"perSource,omitempty"`
-	// Number of requirements that changed from passing to failing.                                  
-	Regressed                                                                     *int64             `json:"regressed,omitempty"`
-	// Total number of unique requirements across all sources.                                       
-	Total                                                                         int64              `json:"total"`
-	// Number of requirements with the same effective status.                                        
-	Unchanged                                                                     *int64             `json:"unchanged,omitempty"`
-	// Number of requirements in the new source with no match in the old source.                     
-	UnmatchedNewCount                                                             int64              `json:"unmatchedNewCount"`
-	// Number of requirements in the old source with no match in the new source.                     
-	UnmatchedOldCount                                                             int64              `json:"unmatchedOldCount"`
-	// Number of requirements with a generic status change.                                          
-	Updated                                                                       *int64             `json:"updated,omitempty"`
+	// Number of requirements present only in the old source.                                                  
+	Absent                                                                                  *int64             `json:"absent,omitempty"`
+	// Average confidence score across all requirement matches (0-1).                                          
+	AverageMatchConfidence                                                                  *float64           `json:"averageMatchConfidence,omitempty"`
+	// State counts broken down by severity level.                                                             
+	BySeverity                                                                              *SeverityBreakdown `json:"bySeverity,omitempty"`
+	// Change in compliance percentage (new - old).                                                            
+	ComplianceDelta                                                                         *float64           `json:"complianceDelta,omitempty"`
+	// Number of requirements that changed from failing to passing.                                            
+	Fixed                                                                                   *int64             `json:"fixed,omitempty"`
+	// Number of requirements successfully matched between sources.                                            
+	MatchedCount                                                                            int64              `json:"matchedCount"`
+	// Number of requirements that were reorganized without content change.                                    
+	Moved                                                                                   *int64             `json:"moved,omitempty"`
+	// Number of requirements present only in the new source.                                                  
+	New                                                                                     *int64             `json:"new,omitempty"`
+	// Compliance percentage of the new source (0-100).                                                        
+	NewCompliancePercent                                                                    *float64           `json:"newCompliancePercent,omitempty"`
+	// Compliance percentage of the old source (0-100).                                                        
+	OldCompliancePercent                                                                    *float64           `json:"oldCompliancePercent,omitempty"`
+	// Summary statistics for each individual source in a multi-source comparison.                             
+	PerSource                                                                               []PerSourceSummary `json:"perSource,omitempty"`
+	// Number of requirements that changed from passing to failing.                                            
+	Regressed                                                                               *int64             `json:"regressed,omitempty"`
+	// Total number of distinct requirement ids across all sources; an id carried by several                   
+	// entries counts once.                                                                                    
+	Total                                                                                   int64              `json:"total"`
+	// Number of requirements with the same effective status.                                                  
+	Unchanged                                                                               *int64             `json:"unchanged,omitempty"`
+	// Number of requirements in the new source with no match in the old source.                               
+	UnmatchedNewCount                                                                       int64              `json:"unmatchedNewCount"`
+	// Number of requirements in the old source with no match in the new source.                               
+	UnmatchedOldCount                                                                       int64              `json:"unmatchedOldCount"`
+	// Number of requirements with a generic status change.                                                    
+	Updated                                                                                 *int64             `json:"updated,omitempty"`
 }
 
 // Breakdown of state counts by severity level.
@@ -2267,8 +2276,9 @@ type StandaloneOverride struct {
 	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
 	// Justification for this amendment.                                                                            
 	Reason                                                                                      string              `json:"reason"`
-	// The ID of the requirement being amended. Must match a requirement ID in the referenced                       
-	// baseline.                                                                                                    
+	// The id of the requirement being amended. An id names the requirement, not one finding, so                    
+	// the override applies to every requirement entry carrying that id in the baseline(s) it                       
+	// targets.                                                                                                     
 	RequirementID                                                                               string              `json:"requirementId"`
 	// Digital signature for non-repudiation.                                                                       
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`

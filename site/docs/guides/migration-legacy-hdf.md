@@ -268,7 +268,7 @@ In v1 groups, `controls` is an array of control ID strings. In v2, the group fie
 
 ### Overlay flattening
 
-v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter automatically flattens these overlays so each requirement appears exactly once in the output. If you are writing your own converter, you may need to handle this deduplication.
+v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter flattens these overlays into one requirement per id with a result per layer that evaluated it, so no layer's verdict is dropped. If you are writing your own converter, roll layers up the same way rather than keeping one entry and discarding the rest; a repeated id is legal HDF (see the specification's Requirement identity convention), so a consumer must cope with it either way.
 
 ### Timestamps
 

@@ -389,7 +389,7 @@
         "total": {
           "type": "integer",
           "minimum": 0,
-          "description": "Total number of unique requirements across all sources."
+          "description": "Total number of distinct requirement ids across all sources; an id carried by several entries counts once."
         },
         "matchedCount": {
           "type": "integer",
