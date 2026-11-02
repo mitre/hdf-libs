@@ -18,30 +18,34 @@ type cweMapping struct {
 	Rev    int    `json:"Rev"`
 }
 
-var cweMappingsData = datasets.CWENIST
-
 var (
 	cweData     map[int]map[int][]string // revision → CWE numeric ID → NIST controls
 	cweDataOnce sync.Once
 )
 
+// parseCWEData keeps the JSON shape testable without a mutable package var: the
+// dataset is read inside the loader so the linker can drop it from a consumer
+// that never looks a CWE up.
+func parseCWEData(data []byte) map[int]map[int][]string {
+	parsed := make(map[int]map[int][]string)
+	var list []cweMapping
+	if err := json.Unmarshal(data, &list); err != nil {
+		return parsed
+	}
+	for _, m := range list {
+		if m.NISTID == "" {
+			continue
+		}
+		if parsed[m.Rev] == nil {
+			parsed[m.Rev] = make(map[int][]string)
+		}
+		parsed[m.Rev][m.CWEID] = append(parsed[m.Rev][m.CWEID], m.NISTID)
+	}
+	return parsed
+}
+
 func loadCWEData() map[int]map[int][]string {
-	cweDataOnce.Do(func() {
-		cweData = make(map[int]map[int][]string)
-		var list []cweMapping
-		if err := json.Unmarshal(cweMappingsData, &list); err != nil {
-			return
-		}
-		for _, m := range list {
-			if m.NISTID == "" {
-				continue
-			}
-			if cweData[m.Rev] == nil {
-				cweData[m.Rev] = make(map[int][]string)
-			}
-			cweData[m.Rev][m.CWEID] = append(cweData[m.Rev][m.CWEID], m.NISTID)
-		}
-	})
+	cweDataOnce.Do(func() { cweData = parseCWEData(datasets.CWENIST) })
 	return cweData
 }
 

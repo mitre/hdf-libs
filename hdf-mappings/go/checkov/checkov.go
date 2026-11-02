@@ -43,8 +43,6 @@ type dataset struct {
 	Mappings map[string]Mapping `json:"mappings"`
 }
 
-var datasetData = datasets.CheckovCCINIST
-
 var (
 	loaded   dataset
 	checkIDs []string
@@ -53,7 +51,7 @@ var (
 
 func load() *dataset {
 	loadOnce.Do(func() {
-		if err := json.Unmarshal(datasetData, &loaded); err != nil {
+		if err := json.Unmarshal(datasets.CheckovCCINIST, &loaded); err != nil {
 			return
 		}
 		checkIDs = make([]string, 0, len(loaded.Mappings))

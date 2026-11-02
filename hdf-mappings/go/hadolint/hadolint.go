@@ -43,8 +43,6 @@ type dataset struct {
 	Mappings map[string]Mapping `json:"mappings"`
 }
 
-var datasetData = datasets.HadolintNIST
-
 var (
 	loaded   dataset
 	ruleIDs  []string
@@ -53,7 +51,7 @@ var (
 
 func load() *dataset {
 	loadOnce.Do(func() {
-		if err := json.Unmarshal(datasetData, &loaded); err != nil {
+		if err := json.Unmarshal(datasets.HadolintNIST, &loaded); err != nil {
 			return
 		}
 		ruleIDs = make([]string, 0, len(loaded.Mappings))

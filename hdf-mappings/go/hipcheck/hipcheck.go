@@ -24,8 +24,6 @@ type Mapping struct {
 	Rationale string `json:"Rationale"`
 }
 
-var mappingsData = datasets.HipcheckNIST
-
 var (
 	byAnalysis map[string]*Mapping
 	loadOnce   sync.Once
@@ -35,7 +33,7 @@ func load() map[string]*Mapping {
 	loadOnce.Do(func() {
 		byAnalysis = make(map[string]*Mapping)
 		var list []Mapping
-		if err := json.Unmarshal(mappingsData, &list); err != nil {
+		if err := json.Unmarshal(datasets.HipcheckNIST, &list); err != nil {
 			return
 		}
 		for i := range list {

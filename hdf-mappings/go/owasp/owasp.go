@@ -16,8 +16,6 @@ type owaspMapping struct {
 	NistID  string `json:"NIST-ID"`
 }
 
-var owaspMappingsData = datasets.OWASPNIST
-
 var (
 	owaspData     map[string]string // OWASP ID → NIST control
 	owaspDataOnce sync.Once
@@ -26,7 +24,7 @@ var (
 func loadOwaspData() map[string]string {
 	owaspDataOnce.Do(func() {
 		var list []owaspMapping
-		if err := json.Unmarshal(owaspMappingsData, &list); err != nil {
+		if err := json.Unmarshal(datasets.OWASPNIST, &list); err != nil {
 			owaspData = make(map[string]string)
 			return
 		}

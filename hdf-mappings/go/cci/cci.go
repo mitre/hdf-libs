@@ -21,10 +21,6 @@ type CCIItem struct {
 // CCIMappings represents the complete CCI to NIST mapping database
 type CCIMappings map[string]CCIItem
 
-var cciMappingsData = datasets.CCIMappings
-
-var nistCCIMappingsData = datasets.NISTCCIMappings
-
 var (
 	cciData     CCIMappings
 	cciDataOnce sync.Once
@@ -33,7 +29,7 @@ var (
 // loadCCIData lazily loads and parses the CCI mappings data
 func loadCCIData() CCIMappings {
 	cciDataOnce.Do(func() {
-		if err := json.Unmarshal(cciMappingsData, &cciData); err != nil {
+		if err := json.Unmarshal(datasets.CCIMappings, &cciData); err != nil {
 			// This should never happen with embedded data, but handle gracefully
 			cciData = make(CCIMappings)
 		}
@@ -111,7 +107,7 @@ var (
 
 func loadNistCCIData() NistCCIMappings {
 	nistCCIDataOnce.Do(func() {
-		if err := json.Unmarshal(nistCCIMappingsData, &nistCCIData); err != nil {
+		if err := json.Unmarshal(datasets.NISTCCIMappings, &nistCCIData); err != nil {
 			nistCCIData = make(NistCCIMappings)
 		}
 	})

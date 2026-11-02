@@ -46,7 +46,17 @@ type crosswalkEdge struct {
 	Detail   string   `json:"detail"`
 }
 
-var crosswalkData = datasets.NISTRevisionCrosswalk
+// Set by TestCrosswalkParseFailure in a child process to drive the parse-failure
+// path; nil means the embedded dataset. Declared without an initialiser so the
+// linker can still drop the dataset from a consumer that never translates.
+var crosswalkData []byte
+
+func crosswalkBytes() []byte {
+	if crosswalkData != nil {
+		return crosswalkData
+	}
+	return datasets.NISTRevisionCrosswalk
+}
 
 var (
 	xwRosters    map[int]map[string]bool
@@ -61,7 +71,7 @@ func loadCrosswalk() {
 			Rosters map[string][]string `json:"rosters"`
 			Edges   []crosswalkEdge     `json:"edges"`
 		}
-		if err := json.Unmarshal(crosswalkData, &file); err != nil {
+		if err := json.Unmarshal(crosswalkBytes(), &file); err != nil {
 			errCrosswalk = fmt.Errorf("parse embedded nist-revision-crosswalk.json: %w", err)
 			return
 		}

@@ -489,8 +489,17 @@ TypeScript imports the same files directly, so within this repository the two
 languages cannot read different bytes and no drift check is needed to keep them
 honest. One var per dataset rather than an `embed.FS`, deliberately: a filename
 typo is a compile error, the bytes are the binary image rather than a heap copy,
-and the linker drops the datasets a program never names — a single FS behind a
+and the linker drops a dataset no reachable code reads — a single FS behind a
 lookup forfeits all three and charges every consumer the whole corpus.
+
+That last property is conditional, and the condition is easy to break: read the
+`[]byte` var *inside* the loader that parses it. Aliasing one at package scope
+(`var mappingsData = datasets.NiktoNIST`) moves the load into package init,
+which is always reachable, so the linker can never drop it — that mistake once
+charged every consumer of this module 529 KB it had no way to use. Two tests
+enforce it: `TestNoPackageScopeAliasOfADataset` reads every sibling package's
+source, and `TestAConsumerLinksOnlyTheDatasetsItCanReach` builds a one-import
+program and inspects which datasets survived into the binary.
 
 It is under `go/` because `go:embed` patterns may not contain `..` and cannot
 reach outside the package directory, so a dataset Go must embed has to sit in a

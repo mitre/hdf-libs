@@ -2,6 +2,7 @@ package datasets_test
 
 import (
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -67,6 +68,13 @@ func TestPackageHoldsOnlyTheDeclaredDirectories(t *testing.T) {
 	var dirs, files []string
 	for _, e := range entries {
 		if e.IsDir() {
+			// testdata is the Go tooling's own convention and is excluded from
+			// the embed patterns; it holds the dead-strip probe, not a dataset.
+			// It is still checked for datasets, which TypeScript could import.
+			if e.Name() == "testdata" {
+				assertNoDatasetsUnder(t, e.Name())
+				continue
+			}
 			dirs = append(dirs, e.Name())
 			continue
 		}
@@ -161,5 +169,23 @@ func TestEachVarMatchesItsFileOnDisk(t *testing.T) {
 		if string(raw) != string(onDisk) {
 			t.Errorf("%s: embedded bytes (%d) differ from the file on disk (%d)", name, len(raw), len(onDisk))
 		}
+	}
+}
+
+// A dataset parked under testdata would escape the embed patterns and the
+// per-directory checks, while TypeScript could still import it by path.
+func assertNoDatasetsUnder(t *testing.T, dir string) {
+	t.Helper()
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(path) == ".json" {
+			t.Errorf("%s holds %q; a dataset belongs in catalogs/ or mappings/", dir, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking %s: %v", dir, err)
 	}
 }
