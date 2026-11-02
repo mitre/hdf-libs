@@ -38,6 +38,10 @@
     "@mitre/hdf-utilities": "workspace:^",
     "@mitre/hdf-validators": "workspace:^"
   },
+  "devDependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.0"
+  },
   "engines": {
     "node": ">=24.0.0"
   },

@@ -1740,6 +1740,10 @@ type RequirementDiff struct {
 	AfterSensitive                                                                               map[string]interface{} `json:"afterSensitive,omitempty"`
 	// IDs of annotations attached to this requirement diff.                                                            
 	AnnotationIDS                                                                                []string               `json:"annotationIds,omitempty"`
+	// Name of the baseline the requirement belongs to, so a consumer can group diffs the way                           
+	// hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one                             
+	// baseline of the same document.                                                                                   
+	Baseline                                                                                     *string                `json:"baseline,omitempty"`
 	// The requirement as it appeared in the old/reference source. Null when state is 'new'.                            
 	Before                                                                                       interface{}            `json:"before"`
 	// Sensitive data from the old source that should not be included in the main before                                

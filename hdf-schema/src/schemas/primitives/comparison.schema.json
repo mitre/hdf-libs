@@ -775,6 +775,10 @@
           "type": "string",
           "description": "The requirement title for human readability."
         },
+        "baseline": {
+          "type": "string",
+          "description": "Name of the baseline the requirement belongs to, so a consumer can group diffs the way hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one baseline of the same document."
+        },
         "oldEffectiveStatus": {
           "type": "string",
           "description": "The effective status of the requirement in the old source."
@@ -840,7 +844,79 @@
         }
       },
       "description": "A comparison of a single requirement between sources, including state, changes, and full before/after snapshots.",
-      "title": "Requirement Diff"
+      "title": "Requirement Diff",
+      "examples": [
+        {
+          "id": "SV-257777",
+          "baseline": "rhel9-stig-baseline",
+          "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+          "state": "fixed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "id": "SV-257777",
+            "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+            "impact": 0.5,
+            "tags": {
+              "nist": [
+                "CM-7"
+              ]
+            },
+            "sourceLocation": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "USB mass storage must be disabled unless an operational need is documented."
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "Kernel module usb-storage is loadable",
+                "startTime": "2026-03-01T10:00:00Z"
+              }
+            ]
+          },
+          "after": {
+            "id": "SV-257777",
+            "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+            "impact": 0.5,
+            "tags": {
+              "nist": [
+                "CM-7"
+              ]
+            },
+            "sourceLocation": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "USB mass storage must be disabled unless an operational need is documented."
+              }
+            ],
+            "results": [
+              {
+                "status": "passed",
+                "codeDesc": "Kernel module usb-storage is blacklisted",
+                "startTime": "2026-03-30T10:00:00Z"
+              }
+            ]
+          },
+          "oldEffectiveStatus": "failed",
+          "newEffectiveStatus": "passed",
+          "fieldChanges": [
+            {
+              "op": "replace",
+              "path": "/results/0/status",
+              "oldValue": "failed",
+              "newValue": "passed"
+            }
+          ],
+          "matchStrategy": "exactId",
+          "matchConfidence": 1.0
+        }
+      ],
+      "$comment": "Examples, in order: 1) a requirement fixed between two scans of the same baseline, carrying the owning baseline name and the exact-id match that paired it."
     }
   }
 }
