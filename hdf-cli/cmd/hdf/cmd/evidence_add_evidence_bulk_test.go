@@ -84,7 +84,7 @@ func TestEvidenceAddEvidence_DiscoveryFailureIsAtomic(t *testing.T) {
 		{"missing", []string{"--file", "absent.txt", "--format", "raw-log"}, "absent.txt"},
 		{"unmatched", []string{"--file", "*.absent", "--format", "raw-log"}, "no files matched"},
 		{"malformed", []string{"--file", "[", "--format", "raw-log"}, "invalid glob"},
-		{"literal duplicate", []string{"--file", "a.txt", "--file", "a.txt", "--format", "raw-log"}, "already referenced"},
+		{"literal duplicate", []string{"--file", "a.txt", "--file", "a.txt", "--format", "raw-log"}, "selected twice"},
 		{"format overlap", []string{"--file", "*.txt", "--file", "a*.txt", "--format", "raw-log", "--format", "x-other"}, "conflicting formats"},
 		{"format count", []string{"--file", "*.txt", "--format", "raw-log", "--format", "x-other"}, "selector"},
 		{"directory as file", []string{"--file", "nested", "--format", "raw-log"}, "regular file"},
@@ -463,4 +463,91 @@ func TestEvidenceAddEvidence_FormatValidatedOncePerDistinctValue(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, readEvidenceExternal(t, pkg), 50)
 	assert.Equal(t, 1, loads, "one schema read per distinct format value")
+}
+
+// ---- card hdf-libs-xfhfs.4: order-independent dedup, one exclusion, one count rule ----
+
+// The same two selections in either order yield the same entries and the same exit.
+func TestEvidenceAddEvidence_DedupIsOrderIndependent(t *testing.T) {
+	for _, order := range [][]string{
+		{"--file", "a.txt", "--file", "*.txt"},
+		{"--file", "*.txt", "--file", "a.txt"},
+	} {
+		pkg := writeTestEvidence(t)
+		t.Chdir(filepath.Dir(pkg))
+		require.NoError(t, os.WriteFile("a.txt", []byte("a"), 0o600))
+		require.NoError(t, os.WriteFile("b.txt", []byte("b"), 0o600))
+		args := append([]string{"evidence", "add-evidence", pkg}, order...)
+		_, _, err := executeCommand(append(args, "--format", "raw-log")...)
+		require.NoError(t, err, "order %v", order)
+		refs := readEvidenceExternal(t, pkg)
+		uris := make([]string, 0, len(refs))
+		for _, r := range refs {
+			uris = append(uris, r.(map[string]interface{})["uri"].(string))
+		}
+		assert.ElementsMatch(t, []string{"a.txt", "b.txt"}, uris, "order %v", order)
+	}
+}
+
+// A literal duplicate is the operator's slip, refused by name before the package is
+// read — never reported as an entry the package does not contain.
+func TestEvidenceAddEvidence_LiteralDuplicateRefusedBeforePackageRead(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile("a.txt", []byte("a"), 0o600))
+	before, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--file", "a.txt", "--file", "./a.txt", "--format", "raw-log")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "selected twice")
+	assert.ErrorContains(t, err, "--file")
+	assert.NotContains(t, err.Error(), "already referenced")
+	after, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+// The never-the-package-itself rule holds for --uri exactly as for --file.
+func TestEvidenceAddEvidence_URIToPackageRefused(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	before, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--uri", filepath.Base(pkg), "--format", "raw-log")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "package or output itself")
+	after, err := os.ReadFile(pkg)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+// A --uri naming the -o output is refused before any bytes are hashed, so an existing
+// output is neither attested with a digest the write then invalidates nor overwritten.
+func TestEvidenceAddEvidence_URIToOutputRefusedBeforeHash(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile("out.json", []byte("stale output"), 0o600))
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "out.json", "-o", "out.json", "--format", "raw-log")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "package or output itself")
+	after, err := os.ReadFile("out.json")
+	require.NoError(t, err)
+	assert.Equal(t, "stale output", string(after), "the output must not be overwritten")
+}
+
+// The --format count rule has one implementation and one wording, whether the
+// selectors are --uri only or mixed.
+func TestEvidenceAddEvidence_FormatCountRuleHasOneWording(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	t.Chdir(filepath.Dir(pkg))
+	require.NoError(t, os.WriteFile("a.txt", []byte("a"), 0o600))
+	for _, sel := range [][]string{
+		{"--uri", "a.txt", "--uri", "b.txt"},
+		{"--uri", "a.txt", "--file", "a.txt"},
+	} {
+		args := append([]string{"evidence", "add-evidence", pkg}, sel...)
+		_, _, err := executeCommand(append(args, "--format", "raw-log", "--format", "x-a", "--format", "x-b")...)
+		require.Error(t, err, "selectors %v", sel)
+		assert.ErrorContains(t, err, "--uri, --file, --from-dir order", "selectors %v", sel)
+	}
 }

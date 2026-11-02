@@ -16,19 +16,28 @@ type evidenceSelection struct {
 	directory bool
 }
 
+type seenSelection struct {
+	format  string
+	literal bool
+}
+
 func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, error) {
 	if opts.recursive && len(opts.directories) == 0 {
 		return opts, fmt.Errorf("--recursive requires --from-dir")
 	}
+	// The one --format count rule, for every invocation: one value for all selectors,
+	// or one per selector. A per-entry list is built below only for the latter; the
+	// former is left for resolveEvidenceFormats to broadcast or infer.
+	groups := len(opts.uris) + len(opts.files) + len(opts.directories)
+	if n := len(opts.formats); groups > 0 && n != 0 && n != 1 && n != groups {
+		return opts, fmt.Errorf("give one --format for all selectors or %d formats in --uri, --file, --from-dir order; got %d", groups, n)
+	}
+	perSelector := len(opts.formats) == groups && groups > 0
 	if len(opts.files)+len(opts.directories) == 0 {
 		return opts, nil
 	}
 	if opts.checksum != "" {
 		return opts, fmt.Errorf("--checksum cannot be used with local selectors; selected files are hashed independently")
-	}
-	groups := len(opts.uris) + len(opts.files) + len(opts.directories)
-	if n := len(opts.formats); n != 0 && n != 1 && n != groups {
-		return opts, fmt.Errorf("give one --format for all selectors or %d formats in --uri, --file, --from-dir order; got %d", groups, n)
 	}
 	formatAt := func(i int) string {
 		if len(opts.formats) == 0 {
@@ -43,7 +52,7 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	uris := append([]string(nil), opts.uris...)
 	var formats []string
 	for i := range opts.uris {
-		if len(opts.formats) > 0 {
+		if perSelector {
 			formats = append(formats, formatAt(i))
 		}
 	}
@@ -54,24 +63,12 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	for _, v := range opts.directories {
 		selectors = append(selectors, evidenceSelection{value: v, directory: true})
 	}
-	excluded := make(map[string]os.FileInfo)
-	for _, v := range []string{pkg, opts.outputPath} {
-		if v != "" {
-			p, err := filepath.Abs(v)
-			if err != nil {
-				return opts, err
-			}
-			info, statErr := os.Stat(p)
-			if statErr != nil && !os.IsNotExist(statErr) {
-				return opts, fmt.Errorf("inspect package/output %q: %w", p, statErr)
-			}
-			excluded[p] = info
-		}
-	}
 	// The same directory the per-uri loop normalizes against; a reference is
 	// package-relative by contract, so containment is measured from here.
 	pkgDir := filepath.Dir(pkg)
-	seen := make(map[string]string)
+	// Keyed on the absolute path so a repeat is recognized however it was reached;
+	// a repeat is a slip only when BOTH namings were literal.
+	seen := make(map[string]seenSelection)
 	var skipped []skippedKind
 	hidden := 0
 	for i, s := range selectors {
@@ -105,20 +102,25 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 				}
 				return opts, fmt.Errorf("selected evidence %q is %s; select a regular file directly", path, kind)
 			}
-			if isExcludedEvidenceFile(info, excluded) {
+			// The same predicate bundle uses for -o, so a hard link or alias of the
+			// package is the package; a discovered one is passed over, a named one refused.
+			if samePath(abs, pkg) || (opts.outputPath != "" && samePath(abs, opts.outputPath)) {
 				if discovered {
 					continue
 				}
 				return opts, fmt.Errorf("cannot add the package or output itself as evidence: %q", path)
 			}
 			selected++
-			if previous, exists := seen[abs]; exists && discovered {
-				if previous != format {
-					return opts, fmt.Errorf("%q is selected with conflicting formats %q and %q", path, previous, format)
+			if previous, exists := seen[abs]; exists {
+				if previous.format != format {
+					return opts, fmt.Errorf("%q is selected with conflicting formats %q and %q", path, previous.format, format)
+				}
+				if previous.literal && !discovered {
+					return opts, fmt.Errorf("%q is selected twice by --file; name it once", path)
 				}
 				continue
 			}
-			seen[abs] = format
+			seen[abs] = seenSelection{format: format, literal: !discovered}
 			// A discovered name is a filesystem path, not a reference, but every consumer
 			// of opts.uris Decodes a uri as an already-encoded reference, so recording the
 			// raw path attested a%2Fb.json as a/b.json. It takes the two steps
@@ -137,7 +139,7 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 					"external artifact deliberately", path, shown)
 			}
 			uris = append(uris, evidenceref.Encode(string(rel)))
-			if len(opts.formats) > 0 {
+			if perSelector {
 				formats = append(formats, format)
 			}
 		}
@@ -150,7 +152,9 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	}
 	reportSkippedSelections(pkgDir, skipped, hidden)
 	opts.uris = uris
-	opts.formats = formats
+	if perSelector {
+		opts.formats = formats
+	}
 	return opts, nil
 }
 
@@ -169,15 +173,6 @@ func reportSkippedSelections(pkgDir string, skipped []skippedKind, hidden int) {
 		}
 		fmt.Fprintf(os.Stderr, "Skipped %s: %s.%s\n", displayUnderBase(pkgDir, l.path), l.kind, advice)
 	}
-}
-
-func isExcludedEvidenceFile(info os.FileInfo, excluded map[string]os.FileInfo) bool {
-	for _, other := range excluded {
-		if other != nil && os.SameFile(info, other) {
-			return true
-		}
-	}
-	return false
 }
 
 // evidenceSelectionPaths lists what a selector names, and how many hidden entries

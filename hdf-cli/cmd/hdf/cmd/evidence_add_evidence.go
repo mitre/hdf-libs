@@ -130,8 +130,8 @@ the artifact would support or contradict a finding it is evidence; if it only
 explains one it is a reference. To attach context to a RESULTS document's findings
 rather than to the package, use 'hdf enrich <document> <bundle>'.
 
---uri is repeatable. With URI inputs alone, --format takes one value for every
-artifact, or one per --uri in order; any other count is refused rather than
+--uri is repeatable. --format takes one value for every selector, or one per
+selector in --uri, --file, --from-dir order; any other count is refused rather than
 guessed. Omit --format and pass --infer to accept a format read from the
 artifact's own content discriminator (CycloneDX bomFormat, SPDX 2.x spdxVersion) —
 never from its filename. Without --infer a missing format is an error that names
@@ -269,8 +269,9 @@ func resolveEvidenceFormats(pkgDir string, opts addEvidenceOpts) ([]string, erro
 		}
 		opts.formats = inferred
 	default:
-		return nil, fmt.Errorf("%d --format values for %d --uri values; give one --format for all "+
-			"artifacts, or one per --uri in order", len(opts.formats), len(opts.uris))
+		// Unreachable: expandEvidenceInputs refuses every other count first.
+		return nil, fmt.Errorf("internal: %d --format values for %d artifacts after expansion",
+			len(opts.formats), len(opts.uris))
 	}
 	// After expansion there is one entry per selected file; validate each distinct
 	// value once rather than re-reading the schema per file.
@@ -417,6 +418,13 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	pkgDir := filepath.Dir(file)
 	added := make([]interface{}, 0, len(opts.uris))
 	for i, uri := range opts.uris {
+		// The package and the output are never evidence of themselves: the digest of
+		// either would be invalidated by this very write. Asked before anything is hashed.
+		if path, local := localArtifactPath(pkgDir, uri); local && !isRemoteURI(path) {
+			if samePath(path, file) || (opts.outputPath != "" && samePath(path, opts.outputPath)) {
+				return fmt.Errorf("cannot add the package or output itself as evidence: %q", uri)
+			}
+		}
 		normalized := filepath.ToSlash(packageRelativeIfInside(pkgDir, uri))
 		// Asked in the same terms the map is keyed in. packageRelativeIfInside returns a
 		// uri-reference, so the lookup decodes it back to the artifact it names.
