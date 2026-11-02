@@ -46,11 +46,5 @@
     "NIST-ID": "SA-15",
     "Rev": 5,
     "Rationale": "Peer-review-before-merge discipline is a development-process and standards practice."
-  },
-  {
-    "Analysis": "typo",
-    "NIST-ID": "SR-11|SR-4",
-    "Rev": 5,
-    "Rationale": "Typosquatted dependencies are a component-authenticity failure (SR-11) delivering a component of false provenance (SR-4)."
   }
 ]
