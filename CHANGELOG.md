@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file.
 
   The SAF-supplement normalizer read the component name only from `target.id`; it now falls back to `target.name`, and carries the target's string `labels`. When the document's only component is the one the v2 upgrade derives from `platform` (same type, no `componentId`, OS name standing in as its name), the target merges into it: the component takes the target's name and keeps `osName`/`osVersion`. Any other existing component is never renamed. `--from inspec` now absorbs the target too; it previously skipped the normalizer and dropped `target` silently. (#500)
 
+- **`hdf fetch aws-config` keeps rules deployed by a conformance pack.** It treated every rule with `CreatedBy` set as an unreadable service-linked rule, so an account whose rules all come from conformance packs fetched none and failed with `ConfigRules field is required`.
+
+  A conformance pack stamps `CreatedBy: config-conforms.amazonaws.com`, but the rule stays customer-owned: `GetComplianceDetailsByConfigRule` and `DescribeRemediationConfigurations` both accept it. Those rules are now fetched with their results and remediation; rules owned by another service, such as Security Hub, are still skipped. (#513)
+
 - **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.
 
   `readInput` reads `""` as a request for stdin, so a pipeline passing an unset shell variable waited indefinitely rather than reporting the input it never got. `-` remains the explicit stdin spelling and is unchanged. A whitespace-only path is refused on the same grounds. This covers the evidence subcommands only; the rest of the CLI shares the same reader and is tracked separately. (hdf-libs-52n0c.49)

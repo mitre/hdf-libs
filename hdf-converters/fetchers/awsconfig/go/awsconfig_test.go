@@ -884,6 +884,51 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 	assert.Nil(t, byName["access-keys-rotated"].Remediation)
 }
 
+func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
+	conformancePackRule := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-cp"),
+		ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-cp"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("EC2_VOLUME_INUSE_CHECK")},
+		CreatedBy:      aws.String("config-conforms.amazonaws.com"),
+	}
+	serviceLinked := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-sh"),
+		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+		CreatedBy:      aws.String("securityhub.amazonaws.com"),
+	}
+
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{conformancePackRule, serviceLinked}},
+		},
+		compliancePages: map[string][]configservice.GetComplianceDetailsByConfigRuleOutput{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {
+				{EvaluationResults: []types.EvaluationResult{
+					{ComplianceType: types.ComplianceTypeCompliant},
+				}},
+			},
+		},
+	}
+
+	out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	file := mustUnmarshal(t, out)
+
+	require.Len(t, file.ConfigRules, 1, "only the conformance-pack rule is readable")
+	cp := file.ConfigRules[0]
+	assert.Equal(t, "ec2-volume-inuse-check-conformance-pack-abc123", cp.ConfigRuleName)
+	require.Len(t, cp.EvaluationResults, 1)
+	assert.Equal(t, "COMPLIANT", cp.EvaluationResults[0].ComplianceType)
+
+	require.Len(t, mock.remediationBatches, 1)
+	assert.Equal(t, []string{"ec2-volume-inuse-check-conformance-pack-abc123"}, mock.remediationBatches[0],
+		"a conformance-pack rule is remediation-eligible; the service-linked one stays out")
+	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"])
+}
+
 func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
 	mock := &mockConfigClient{
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{

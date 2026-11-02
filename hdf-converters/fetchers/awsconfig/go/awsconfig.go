@@ -151,7 +151,7 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	// Remediation is optional enrichment: merge in each rule's remediation
 	// configuration when present. Never fatal — a fetch must still succeed for
 	// accounts with no remediations, or when the remediation API is unavailable.
-	// Every fetched rule is customer-managed (service-linked ones were skipped),
+	// Every fetched rule is customer-readable (service-linked ones were skipped),
 	// so all are remediation-eligible.
 	ruleNames := make([]string, len(rules))
 	for i := range rules {
@@ -168,14 +168,17 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	return json.Marshal(file)
 }
 
+// conformancePackCreatedBy marks a rule a conformance pack provisioned: CreatedBy is set,
+// yet the rule stays customer-owned and readable through the Config APIs.
+const conformancePackCreatedBy = "config-conforms.amazonaws.com"
+
 // fetchAllConfigRules pages through DescribeConfigRules and returns the
-// customer-managed rules plus a count of the service-linked rules it skipped.
-// Service-linked rules (CreatedBy set — e.g. Security Hub, conformance packs,
-// Organizations) are owned by an AWS service: a customer principal cannot read
-// their compliance or remediation via the Config APIs (GetComplianceDetails and
-// DescribeRemediationConfigurations both reject them), so they are excluded
-// entirely. Their evaluations are available through the owning service's
-// fetcher instead (e.g. Security Hub via the aws-securityhub fetcher).
+// customer-readable rules plus a count of the service-linked rules it skipped.
+// A service-linked rule (CreatedBy set by e.g. Security Hub or Organizations) is
+// owned by that service: GetComplianceDetails and DescribeRemediationConfigurations
+// both reject it, so it is excluded and its findings come through the owning
+// service's fetcher (e.g. aws-securityhub). Conformance-pack rules are not
+// service-linked in that sense and are kept.
 func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, int, error) {
 	limit := f.maxPages
 	if limit <= 0 {
@@ -202,7 +205,7 @@ func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfig
 		}
 
 		for _, r := range out.ConfigRules {
-			if r.CreatedBy != nil {
+			if r.CreatedBy != nil && aws.ToString(r.CreatedBy) != conformancePackCreatedBy {
 				skipped++
 				continue
 			}
