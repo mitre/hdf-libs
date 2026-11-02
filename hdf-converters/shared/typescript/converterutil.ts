@@ -487,7 +487,10 @@ export interface HdfResultsOptions {
    * members and an empty one says nothing.
    */
   extensions?: Record<string, unknown>;
-  /** Links to artifacts outside the document, such as the source tool's own report pages. */
+  /**
+   * Links to artifacts outside the document, such as the source tool's own
+   * report pages.
+   */
   externalReferences?: ExternalReference[];
 }
 
