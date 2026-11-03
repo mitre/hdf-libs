@@ -5,10 +5,14 @@ package awsconfig
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/aws/smithy-go"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -22,13 +26,13 @@ import (
 const (
 	// defaultMaxPages caps pagination in both DescribeConfigRules and
 	// GetComplianceDetailsByConfigRule to prevent unbounded memory growth or
-	// infinite loops if the API returns malformed continuation tokens.
-	// AWS Config limits accounts to 500 rules, so 1000 pages is a generous
-	// ceiling that will never be reached in practice.
+	// infinite loops if the API returns malformed continuation tokens. AWS caps a
+	// Region at 1000 rules, conformance-pack rules included, and a page holds up
+	// to 100, so this ceiling is never reached in practice.
 	defaultMaxPages = 1000
 
 	// defaultFetchTimeout is applied when the caller has not set a deadline on
-	// the context. Five minutes is generous for accounts with hundreds of rules.
+	// the context. A Region may hold up to 1000 rules, each read in turn.
 	defaultFetchTimeout = 5 * time.Minute
 )
 
@@ -80,7 +84,8 @@ type AWSConfigParams struct {
 // returns it as ConfigRulesFile JSON, ready for ConvertAWSConfigToHDF.
 type AWSConfigFetcher struct {
 	client   ConfigServiceClient
-	maxPages int // 0 → defaultMaxPages
+	maxPages int    // 0 → defaultMaxPages
+	region   string // named in errors; empty when built from a caller-supplied client
 }
 
 // NewAWSConfigFetcher creates a fetcher using live AWS credentials.
@@ -112,6 +117,7 @@ func NewAWSConfigFetcher(ctx context.Context, params AWSConfigParams) (*AWSConfi
 
 	return &AWSConfigFetcher{
 		client: configservice.NewFromConfig(cfg),
+		region: params.Region,
 	}, nil
 }
 
@@ -132,27 +138,56 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		defer cancel()
 	}
 
-	rules, skippedServiceLinked, err := f.fetchAllConfigRules(ctx)
+	rules, skipped, err := f.fetchAllConfigRules(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if skippedServiceLinked > 0 {
-		fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipped %d service-linked rule(s) (owned by an AWS service, unreadable via the Config API — fetch their findings through the owning service, e.g. hdf fetch aws-securityhub)\n", skippedServiceLinked)
+	if len(skipped) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipped %d rule(s) whose evaluations the Config API "+
+			"will not return (RuleEvaluationVisibility INTERNAL): %s\n", len(skipped), describeUnreadable(skipped))
+	}
+	// The converter requires a ConfigRules array with at least one requirement,
+	// so an empty result can only ever fail later with a message about a field
+	// the user never wrote. Say what actually happened instead.
+	if len(rules) == 0 {
+		if len(skipped) == 0 {
+			return nil, fmt.Errorf("no Config rules%s", f.where())
+		}
+		return nil, fmt.Errorf("no readable Config rules%s: %d skipped as unreadable (RuleEvaluationVisibility INTERNAL): %s",
+			f.where(), len(skipped), describeUnreadable(skipped))
 	}
 
+	// A rule the API refuses to this principal, or that vanished since listing,
+	// costs that rule and a warning. Anything else — throttling, a dead network,
+	// a cancelled context — says nothing about the rule and stays fatal.
+	kept := rules[:0]
+	var failed []unreadableRule
 	for i := range rules {
 		results, err := f.fetchEvaluationResults(ctx, rules[i].ConfigRuleName)
 		if err != nil {
-			return nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
+			if !ruleUnreadableAtRead(err) {
+				return nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
+			}
+			failed = append(failed, unreadableRule{name: rules[i].ConfigRuleName, detail: err.Error()})
+			continue
 		}
 		rules[i].EvaluationResults = results
+		kept = append(kept, rules[i])
+	}
+	rules = kept
+	if len(failed) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: aws-config: %d rule(s) could not be read and were dropped: %s\n",
+			len(failed), describeUnreadable(failed))
+	}
+	if len(rules) == 0 {
+		return nil, fmt.Errorf("no Config rules could be read%s: %d skipped as unreadable, %d failed to read: %s",
+			f.where(), len(skipped), len(failed), describeUnreadable(failed))
 	}
 
 	// Remediation is optional enrichment: merge in each rule's remediation
 	// configuration when present. Never fatal — a fetch must still succeed for
 	// accounts with no remediations, or when the remediation API is unavailable.
-	// Every fetched rule is customer-managed (service-linked ones were skipped),
-	// so all are remediation-eligible.
+	// Every fetched rule has readable evaluations, so all are remediation-eligible.
 	ruleNames := make([]string, len(rules))
 	for i := range rules {
 		ruleNames[i] = rules[i].ConfigRuleName
@@ -168,42 +203,89 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	return json.Marshal(file)
 }
 
-// fetchAllConfigRules pages through DescribeConfigRules and returns the
-// customer-managed rules plus a count of the service-linked rules it skipped.
-// Service-linked rules (CreatedBy set — e.g. Security Hub, conformance packs,
-// Organizations) are owned by an AWS service: a customer principal cannot read
-// their compliance or remediation via the Config APIs (GetComplianceDetails and
-// DescribeRemediationConfigurations both reject them), so they are excluded
-// entirely. Their evaluations are available through the owning service's
-// fetcher instead (e.g. Security Hub via the aws-securityhub fetcher).
-func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, int, error) {
+// where names the Region for an error when the fetcher knows it.
+func (f *AWSConfigFetcher) where() string {
+	if f.region == "" {
+		return ""
+	}
+	return " in " + f.region
+}
+
+// unreadableRule is a rule whose evaluations could not be obtained, with the
+// detail worth telling the user: the provisioning service for a rule the API
+// marks unreadable, or the error text for one that failed to read.
+type unreadableRule struct {
+	name   string
+	detail string
+}
+
+// ruleUnreadableAtRead reports whether a compliance-read error is about this
+// one rule rather than the call: it no longer exists, or this principal may not
+// read it. Those degrade; everything else aborts the fetch.
+func ruleUnreadableAtRead(err error) bool {
+	var notFound *types.NoSuchConfigRuleException
+	var noPermission *types.InsufficientPermissionsException
+	if errors.As(err, &notFound) || errors.As(err, &noPermission) {
+		return true
+	}
+	var api smithy.APIError
+	return errors.As(err, &api) && api.ErrorCode() == "AccessDeniedException"
+}
+
+// evaluationsReadable is the API's own answer to whether GetComplianceDetails
+// can return results: RuleEvaluationVisibility INTERNAL means it cannot. An
+// unset value counts as readable so an older response never drops a rule; a
+// read that then fails is handled per rule rather than guessed at here.
+func evaluationsReadable(r types.ConfigRule) bool {
+	return r.RuleEvaluationVisibility != types.RuleEvaluationVisibilityInternal
+}
+
+// describeUnreadable renders rules as "name (detail)" for a warning or error,
+// omitting the parenthesis when there is no detail to give.
+func describeUnreadable(rules []unreadableRule) string {
+	parts := make([]string, len(rules))
+	for i, u := range rules {
+		parts[i] = u.name
+		if u.detail != "" {
+			parts[i] += " (" + u.detail + ")"
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// fetchAllConfigRules pages through DescribeConfigRules, returning the rules
+// whose evaluations are readable and the ones skipped because they are not.
+func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, []unreadableRule, error) {
 	limit := f.maxPages
 	if limit <= 0 {
 		limit = defaultMaxPages
 	}
 
 	var rules []awsconfigconv.ConfigRule
-	skipped := 0
+	var skipped []unreadableRule
 	var nextToken *string
 
 	for page := 0; ; page++ {
 		if err := ctx.Err(); err != nil {
-			return nil, 0, err
+			return nil, nil, err
 		}
 		if page >= limit {
-			return nil, 0, fmt.Errorf("DescribeConfigRules: exceeded maximum page limit (%d)", limit)
+			return nil, nil, fmt.Errorf("DescribeConfigRules: exceeded maximum page limit (%d)", limit)
 		}
 
 		out, err := f.client.DescribeConfigRules(ctx, &configservice.DescribeConfigRulesInput{
 			NextToken: nextToken,
 		})
 		if err != nil {
-			return nil, 0, fmt.Errorf("DescribeConfigRules: %w", err)
+			return nil, nil, fmt.Errorf("DescribeConfigRules: %w", err)
 		}
 
 		for _, r := range out.ConfigRules {
-			if r.CreatedBy != nil {
-				skipped++
+			if !evaluationsReadable(r) {
+				skipped = append(skipped, unreadableRule{
+					name:   aws.ToString(r.ConfigRuleName),
+					detail: aws.ToString(r.CreatedBy),
+				})
 				continue
 			}
 			rules = append(rules, convertSDKConfigRule(r))

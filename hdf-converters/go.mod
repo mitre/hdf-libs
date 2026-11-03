@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.6
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.1
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.83.0
+	github.com/aws/smithy-go v1.28.1
 	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.2
 	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
 	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.2
@@ -35,7 +36,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.38.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1 // indirect
-	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
