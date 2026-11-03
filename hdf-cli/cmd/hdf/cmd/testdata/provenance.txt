@@ -1,20 +1,21 @@
 # Provenance — threshold smoke-test fixtures
 
-SCOPE: this record covers ONLY the three files named below. Other fixtures in this
+SCOPE: this record covers ONLY the four files named below. Other fixtures in this
 directory (agent-overrides/, evidence-verify/) predate it and carry no provenance
 record; that gap is pre-existing and is not claimed to be covered here.
 
 ## threshold-smoke-amendments.json
 ## threshold-smoke-expired-amendment.json
 ## threshold-smoke-risk-adjustment.json
+## threshold-smoke-operational-requirement.json
 
 AUTHORED test data, schema-confirmed. NOT real tool output, and this record says
 so plainly rather than implying otherwise.
 
 What is real and what is not:
 
-  REAL      Every requirementId. Each was derived by running the repo's own
-            command against the real Grype fixture rather than hand-typed:
+  REAL      In the original three files, each requirementId was derived by running
+            the repo's own command against the real Grype fixture rather than hand-typed:
               hdf amend draft --from hdf-fixtures/results/merge-grype.json \
                 --type <type> --select <CVE> --expires 2099-12-31
             so an id that does not exist in that document cannot appear here.
@@ -32,22 +33,17 @@ What is real and what is not:
               hdf amend verify  -> Total 7, Valid 7, Expired 0, Invalid 0
               hdf amend apply   -> Applied 7 of 7 override(s)
 
-Amendment types covered, and the two that are NOT, with reasons:
+Amendment types covered, and the remaining coverage limit:
 
   waiver              in force; moves its requirement to passed
   attestation         in force; manually verified as not reachable
   falsePositive       in force; resolves to notApplicable
   inherited           in force; adjudicated by a platform boundary
   poam                in force, with a pending milestone
-  riskAdjustment      EXPIRED only (in the second file) — an in-force one would
-                      re-score a finding this corpus wants left alone
+  riskAdjustment      in force in its own file; expired in the second file
 
-  operationalRequirement  ABSENT, and not by oversight. It is valid to AUTHOR and
-                      invalid once APPLIED: Standalone_Override forbids it
-                      carrying a status, while Status_Override (the shape inside
-                      a results document) requires status or impact of every
-                      override. 'hdf amend apply' therefore refuses the merged
-                      output. Tracked as hdf-libs-r42je.
+  operationalRequirement  in force in its own file; records the deviation without
+                      changing status or impact, so the finding remains failed
 
   POA&M KIND          (remediation / mitigation / riskAcceptance /
                       vendorDependency) is NOT covered at this layer, and cannot
@@ -60,8 +56,8 @@ waiver applied 2024-06-01 and a POA&M applied 2025-01-01, so the newer entry mus
 govern its disposition. That is the resolution hdf-libs-wft3f.14 settled, and it
 had no CLI-level coverage before this.
 
-Why two files rather than one: 'hdf amend apply' refuses a document carrying ANY
-expired override, so deliberately-lapsed amendments cannot ride along with the
+The expired fixture is separate because 'hdf amend apply' refuses a document
+carrying ANY expired override, so deliberately-lapsed amendments cannot ride along with the
 ones meant to be applied. threshold-smoke-expired-amendment.json carries two
 kinds (riskAdjustment and waiver) so "lapsed" is not a single-type accident, and
 exists to assert that refusal — the CLI-level half of "a lapsed amendment no
@@ -91,3 +87,28 @@ expiry of 2099-12-31. Confirmed with `hdf amend verify`: All amendments are vali
 The requirement id appears twice in merge-grype (one CVE, two packages), so the
 override governs both entries. That is the intended behaviour and the test
 asserts against it rather than around it.
+
+## threshold-smoke-operational-requirement.json — origin and validation
+
+AUTHORED, schema-confirmed test data. It uses the same Grype/CVE-2022-42919 id
+as the risk-adjustment fixture. The name, reason, appliedBy and dates are test
+values, not an assessor's decision or real tool output. On 2026-11-03, the id
+was independently confirmed against the source and sha256 recorded above with:
+  hdf amend draft --from hdf-fixtures/results/merge-grype.json \
+    --type operationalRequirement --select CVE-2022-42919 --expires 2099-12-31
+The draft returned two entries with that id; the single override governs both.
+
+Validated on 2026-11-03 with a freshly built CLI and its embedded schemas:
+  hdf validate hdf-cli/cmd/hdf/cmd/testdata/threshold-smoke-operational-requirement.json --type amendments
+    -> valid HDF amendments file
+  hdf amend verify hdf-cli/cmd/hdf/cmd/testdata/threshold-smoke-operational-requirement.json
+    -> Total 1, Valid 1, Expired 0, Invalid 0; chain not established
+  hdf amend apply --results hdf-fixtures/results/merge-grype.json \
+    --amendments hdf-cli/cmd/hdf/cmd/testdata/threshold-smoke-operational-requirement.json -o <output>
+    -> Applied 1 of 1 override(s); merged output passes schema validation
+  hdf query <output> --id Grype/CVE-2022-42919 --status failed --disposition operationalRequirement
+    -> 2 matching requirements, both failed
+
+TestSmoke_OperationalRequirementRecordsWithoutAdjudicating exercises this same
+verify/apply/query flow. It checks that the deviation governs disposition while
+the finding stays failed.
