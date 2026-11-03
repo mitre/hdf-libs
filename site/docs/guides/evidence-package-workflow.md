@@ -288,7 +288,7 @@ Six of six, on a different machine, with no path rewriting. That property holds 
 
 The repository's CI workflow assembles the normalized scan and test documents, the dependency SBOM, and the native scanner and JUnit reports into the `hdf-evidence-package` artifact. Its `run.json` records the source commit, run URL, CLI identity, and upstream gate outcomes. The ZIP and its SHA-512 checksum are retained for 90 days.
 
-Failed gates still leave an evidence package when enough input was produced to build one. Check `run.json` before interpreting it: an archive that verifies has intact recorded files, but that does not mean the tests passed or every job produced evidence. A run with no normalized HDF or SBOM fails packaging rather than emitting an empty package.
+Native reports are selected per artifact directory with `--file` and an explicit format for each, in one `add-evidence` call, so the set is recorded atomically; a directory an upstream job did not produce is named in the job log and left out, and a report no selector names fails the job rather than vanishing. Failed gates still leave an evidence package when enough input was produced to build one. Check `run.json` before interpreting it: an archive that verifies has intact recorded files, but that does not mean the tests passed or every job produced evidence. A run with no normalized HDF or SBOM fails packaging rather than emitting an empty package.
 
 To inspect a run, set `RUN_ID` to its numeric Actions run ID. With GitHub CLI, `unzip`, `sha512sum`, and an HDF CLI supporting these evidence commands installed:
 

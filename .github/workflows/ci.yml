@@ -55,7 +55,7 @@ env:
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
-  HDF_CLI_SOURCE_SHA: '9c81f348c127edd1a6a25bb9ee5a7d2b955624e9'
+  HDF_CLI_SOURCE_SHA: '5f248c0bfd81d812ad16d4ea53f26c8965895eff'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -883,18 +883,36 @@ jobs:
           hdf evidence set evidence-package.json \
             --name "hdf-libs CI $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" \
             --description "Evidence for $GITHUB_SHA; run.json records gate outcomes and missing upstream jobs."
-          references=(evidence add-evidence evidence-package.json)
-          for report in scan-*/* test-results-*/* run.json; do
-            [ -f "$report" ] || continue
-            case "$report" in
-              *.sarif) format=x-sarif ;;
-              *.xml) format=x-junit ;;
-              */semgrep.json) format=x-semgrep ;;
-              *) format=x-github-actions ;;
-            esac
-            references+=(--uri "$report" --format "$format")
-          done
-          hdf "${references[@]}"
+          # One selector per artifact directory, each with its explicit format, in a
+          # single add-evidence so the batch is atomic. A directory an upstream job never
+          # produced is named here and left out; run.json records which jobs those were.
+          selectors=()
+          present_dirs=()
+          while read -r dir glob format; do
+            if [ -d "$dir" ]; then
+              selectors+=(--file "$dir/$glob" --format "$format")
+              present_dirs+=("$dir")
+            else
+              echo "::warning::$dir was not produced by this run; its reports are not in the package (see run.json)"
+            fi
+          done <<'TABLE'
+          scan-code semgrep.json x-semgrep
+          scan-deps *.sarif x-sarif
+          scan-go *.sarif x-sarif
+          scan-ts *.sarif x-sarif
+          scan-workflows *.sarif x-sarif
+          test-results-go-ubuntu-latest *.xml x-junit
+          test-results-go-windows-latest *.xml x-junit
+          test-results-ts-ubuntu-latest *.xml x-junit
+          test-results-ts-windows-latest *.xml x-junit
+          TABLE
+          hdf evidence add-evidence evidence-package.json "${selectors[@]}" --file run.json --format x-github-actions
+          # Every native report present is recorded exactly once: a file a selector does
+          # not name fails the job instead of vanishing from the package.
+          present=0
+          [ "${#present_dirs[@]}" -eq 0 ] || present=$(find "${present_dirs[@]}" -type f | wc -l | tr -d ' ')
+          recorded=$(jq '.externalEvidence | length' evidence-package.json)
+          [ "$recorded" -eq $((present + 1)) ] || { echo "::error::$present native reports present but $recorded references recorded (expected $((present + 1)) with run.json)"; exit 1; }
           hdf validate evidence-package.json
           hdf evidence info evidence-package.json --verify --require-checksums --require-reachable
           mkdir -p ../evidence-dist
