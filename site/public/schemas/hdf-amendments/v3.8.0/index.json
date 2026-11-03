@@ -111,6 +111,19 @@
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
+        "External_Reference_Encoding": {
+          "type": "string",
+          "enum": [
+            "utf-8",
+            "base64"
+          ],
+          "description": "How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not valid UTF-8 text.",
+          "title": "External Reference Encoding",
+          "examples": [
+            "base64"
+          ],
+          "$comment": "Examples, in order: 1) a binary artifact, embedded base64-encoded."
+        },
         "External_Reference": {
           "type": "object",
           "title": "External Reference",
@@ -226,12 +239,7 @@
               "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
             },
             "encoding": {
-              "type": "string",
-              "title": "External Reference Encoding",
-              "enum": [
-                "utf-8",
-                "base64"
-              ],
+              "$ref": "#/$defs/External_Reference_Encoding",
               "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
             }
           },
@@ -315,7 +323,7 @@
             "sha512",
             "blake3"
           ],
-          "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable.",
+          "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable. md5 and sha1 are excluded deliberately: a checksum or integrity record exists to detect tampering, and both are collision-broken, so a digest in either would look verifiable while proving nothing. A source tool digest in an excluded algorithm is not recorded as a checksum. Admitting weak hashes as an application-level accept/reject decision was considered and rejected; widening this enum is a schema decision, not an oversight.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {
@@ -1017,6 +1025,10 @@
               "type": "string",
               "description": "The title - should be human readable."
             },
+            "description": {
+              "type": "string",
+              "description": "Prose description of the baseline, more detailed than summary. Carried verbatim, like every HDF prose field."
+            },
             "maintainer": {
               "type": "string",
               "description": "The maintainer(s)."
@@ -1095,7 +1107,7 @@
             },
             "id": {
               "type": "string",
-              "description": "The requirement identifier. Example: 'SV-238196'."
+              "description": "The requirement identifier, naming the requirement itself rather than one finding of it. Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id (one scanner reporting one CVE against several packages, or an overlay restating what it inherits), so an id is not an instance key: index requirements as id to list, never id to one, and an amendment addressing an id applies to every entry carrying it."
             },
             "title": {
               "type": "string",
@@ -1330,7 +1342,7 @@
             "riskAdjustment",
             "operationalRequirement"
           ],
-          "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
+          "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field; a status on it is rejected by validation.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
           "title": "Override Type"
         },
         "Justification": {
@@ -1370,7 +1382,7 @@
         },
         "Standalone_Override": {
           "type": "object",
-          "description": "A standalone override to a requirement's compliance status or risk impact.\n\nValidation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set.\n\nThis rule aligns with:\n- OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/)\n- FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/)\n- NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
+          "description": "A standalone override to a requirement's compliance status or risk impact.\n\nValidation is gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). When type is 'riskAdjustment', 'status' may not be set — it re-rates the risk through 'impact' and never changes the finding's pass/fail; an override that must change status is a waiver or falsePositive. For all other types, at least one of 'status' or 'impact' must be set.\n\nThis rule aligns with:\n- OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/)\n- FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/)\n- NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
           "unevaluatedProperties": false,
           "required": [
             "type",
@@ -1380,48 +1392,73 @@
             "appliedAt",
             "expiresAt"
           ],
-          "if": {
-            "properties": {
-              "type": {
-                "enum": [
-                  "operationalRequirement"
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "operationalRequirement"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "status"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "impact"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "else": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "status"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "impact"
+                    ]
+                  }
                 ]
               }
             },
-            "required": [
-              "type"
-            ]
-          },
-          "then": {
-            "not": {
-              "anyOf": [
-                {
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "riskAdjustment"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "not": {
                   "required": [
                     "status"
                   ]
-                },
-                {
-                  "required": [
-                    "impact"
-                  ]
                 }
-              ]
-            }
-          },
-          "else": {
-            "anyOf": [
-              {
-                "required": [
-                  "status"
-                ]
-              },
-              {
-                "required": [
-                  "impact"
-                ]
               }
-            ]
-          },
+            }
+          ],
           "properties": {
             "externalReferences": {
               "type": "array",
@@ -1437,7 +1474,7 @@
             "requirementId": {
               "type": "string",
               "minLength": 1,
-              "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
+              "description": "The id of the requirement being amended. An id names the requirement, not one finding, so the override applies to every requirement entry carrying that id in the baseline(s) it targets."
             },
             "baselineRef": {
               "type": "string",
@@ -1445,7 +1482,7 @@
             },
             "status": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
-              "description": "The new status this amendment sets. Optional when only impact is being overridden."
+              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a riskAdjustment, which re-rates impact only."
             },
             "impact": {
               "$ref": "#/$defs/Impact_Override",
@@ -1761,11 +1798,7 @@
               "description": "The source tool's own record for this result, carrying every field the record had.\n\nCOMPLETE, NOT NECESSARILY BYTE-EXACT. A producer SHOULD write the record's bytes unchanged where it can. A producer that cannot — notably one implemented in two languages whose JSON serializers disagree on key order, HTML escaping and number rendering, and which therefore MUST canonicalize to stay byte-identical with its twin — MAY write a canonically serialized form instead. Such a form preserves every field and value but not the original key order, insignificant whitespace, or duplicate keys. A consumer MUST therefore compare records by parsing them, not by comparing bytes, and MUST NOT checksum this field and expect the result to match a checksum of the input.\n\nFor carriage that IS byte-exact, use `extensions.rawSourceArtifacts[]`, which forbids a parsed `document` precisely so the bytes and their checksum survive; `pointer` ties this record to its position within that artifact."
             },
             "encoding": {
-              "type": "string",
-              "enum": [
-                "utf-8",
-                "base64"
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference_Encoding",
               "description": "How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text."
             },
             "mediaType": {
@@ -2337,16 +2370,71 @@
             "appliedAt",
             "expiresAt"
           ],
-          "anyOf": [
+          "allOf": [
             {
-              "required": [
-                "status"
-              ]
+              "if": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "operationalRequirement"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "status"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "impact"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "else": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "status"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "impact"
+                    ]
+                  }
+                ]
+              }
             },
             {
-              "required": [
-                "impact"
-              ]
+              "if": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "riskAdjustment"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "not": {
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
             }
           ],
           "properties": {
@@ -2363,11 +2451,11 @@
             },
             "status": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
-              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
+              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a riskAdjustment, which re-rates impact only."
             },
             "impact": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Impact_Override",
-              "description": "Override to the requirement's impact score. At least one of status or impact must be set."
+              "description": "Override to the requirement's impact score. For every type except operationalRequirement, at least one of status or impact must be set; an operationalRequirement carries neither."
             },
             "reason": {
               "type": "string",
@@ -2412,7 +2500,7 @@
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
-          "$comment": "Example 3: Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
+          "$comment": "Example 3: Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute. Example 7: operationalRequirement as it sits on the requirement after apply: no status, no impact; the finding stays failed and disposition reports operationalRequirement.",
           "examples": [
             {
               "type": "waiver",
@@ -2512,9 +2600,19 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "operationalRequirement",
+              "reason": "Air-gapped ingest requires USB transfer per operational procedure OP-2026-003. Ports are physically secured, transfers are logged and need two-person integrity.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "system-owner@agency.gov"
+              },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
             }
           ],
-          "description": "An intentional change to a requirement's compliance status and/or impact score. At least one of status or impact must be set. Overrides change the effectiveStatus or impact of the requirement. All overrides must have an expiration date to enforce periodic review.",
+          "description": "An intentional change to a requirement's compliance status and/or impact score, as it sits on the requirement once applied. The same type-conditional rule as Standalone_Override: when type is 'operationalRequirement', neither status nor impact may be set, because the override records an accepted deviation without adjudicating the finding; it still governs disposition, and effectiveStatus stays what the results decided. When type is 'riskAdjustment', status may not be set: it re-rates the risk through impact and never changes pass/fail. For every other type, at least one of status or impact must be set. All overrides must have an expiration date to enforce periodic review.",
           "title": "Status Override"
         },
         "POAM": {

@@ -594,7 +594,6 @@
           {
             "type": "riskAdjustment",
             "requirementId": "CVE-2024-3094",
-            "status": "passed",
             "reason": "Not reachable in this deployment",
             "appliedBy": {
               "type": "email",

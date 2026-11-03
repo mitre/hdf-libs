@@ -334,6 +334,31 @@ export function extractDrift(requirementDiffs: RequirementDiff[]): RequirementDi
     .map(r => ({ ...r }));
 }
 
+/** An id that sits in more than one baseline; parity: Go baselineMultiple. */
+const BASELINE_MULTIPLE = '(multiple)';
+
+function requirementBaselineMap(baselines: BaselineLike[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const baseline of baselines) {
+    for (const req of baseline.requirements) {
+      const id = (req as unknown as Record<string, unknown>)['id'];
+      if (typeof id !== 'string') continue;
+      const existing = map.get(id);
+      if (existing === undefined) {
+        map.set(id, baseline.name);
+      } else if (existing !== baseline.name && existing !== BASELINE_MULTIPLE) {
+        map.set(id, BASELINE_MULTIPLE);
+      }
+    }
+  }
+  return map;
+}
+
+/** The new document's baseline for the id, else the old one's; undefined if neither. */
+function resolveBaseline(id: string, newMap: Map<string, string>, oldMap: Map<string, string>): string | undefined {
+  return newMap.get(id) ?? oldMap.get(id);
+}
+
 /**
  * Core pairwise comparison between two normalized HDF documents.
  * Returns baseline diffs and requirement diffs without sorting or wrapping.
@@ -392,6 +417,9 @@ function comparePair(
     }
   }
 
+  const oldReqBaseline = requirementBaselineMap(oldBaselines);
+  const newReqBaseline = requirementBaselineMap(newBaselines);
+
   // Collect all requirements across all baselines
   const oldReqs: Record<string, unknown>[] = [];
   for (const baseline of oldBaselines) {
@@ -441,6 +469,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title ?? oldReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: diffState,
       oldEffectiveStatus: oldStatus,
       newEffectiveStatus: newStatus,
@@ -466,6 +495,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: oldReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: 'absent',
       oldEffectiveStatus: oldStatus,
       changeReasons: [],
@@ -487,6 +517,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: 'new',
       newEffectiveStatus: newStatus,
       changeReasons: [],

@@ -95,9 +95,11 @@ describe('Requirement_Result.rawSourceRecord — structure', () => {
     ]);
   });
 
-  it('admits exactly the two encodings the artifact carriage uses', () => {
+  it('admits exactly the two encodings the artifact carriage uses, through the shared definition', () => {
     const encoding = properties(rawSourceRecordDef()).encoding as Node;
-    expect(encoding.enum).toEqual(['utf-8', 'base64']);
+    expect(encoding.$ref).toMatch(/\/primitives\/common\/v[\d.]+#\/\$defs\/External_Reference_Encoding$/);
+    const common = loadSchema('primitives/common.schema.json') as Node;
+    expect((defs(common).External_Reference_Encoding as Node).enum).toEqual(['utf-8', 'base64']);
   });
 
   it('carries examples and a $comment describing them, per the schema convention', () => {

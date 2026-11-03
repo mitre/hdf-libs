@@ -85,7 +85,7 @@ func TestConvertHDFToXML(t *testing.T) {
 		assert.Contains(t, out, "<expiresAt>2099-12-31T00:00:00Z</expiresAt>")
 		assert.Contains(t, out, "<justification>inline_mitigations_already_exist</justification>")
 		assert.Contains(t, out, "<disposition>riskAdjustment</disposition>")
-		assert.Contains(t, out, "<effectiveStatus>passed</effectiveStatus>")
+		assert.Contains(t, out, "<effectiveStatus>failed</effectiveStatus>")
 		assert.Contains(t, out, "<effectiveImpact>0.3</effectiveImpact>")
 		assert.Contains(t, out, "<severity>high</severity>")
 

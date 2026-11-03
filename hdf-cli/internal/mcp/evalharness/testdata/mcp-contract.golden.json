@@ -2082,6 +2082,13 @@
         "uri": "hdf://enum/Authorization_Status"
       },
       {
+        "description": "How a baseline or component fared across the compared documents: new (only in the newer), absent (only in the older), unchanged, or updated (present in both with a changed version).",
+        "mimeType": "application/json",
+        "name": "hdf-enum-Baseline_Diff_State",
+        "title": "HDF enum: Baseline_Diff_State",
+        "uri": "hdf://enum/Baseline_Diff_State"
+      },
+      {
         "description": "FIPS 199 security categorization level (impact level).",
         "mimeType": "application/json",
         "name": "hdf-enum-Categorization_Level",
@@ -2152,7 +2159,14 @@
         "uri": "hdf://enum/Event_Requirement_State"
       },
       {
-        "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable.",
+        "description": "How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not valid UTF-8 text.",
+        "mimeType": "application/json",
+        "name": "hdf-enum-External_Reference_Encoding",
+        "title": "HDF enum: External_Reference_Encoding",
+        "uri": "hdf://enum/External_Reference_Encoding"
+      },
+      {
+        "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable. md5 and sha1 are excluded deliberately: a checksum or integrity record exists to detect tampering, and both are collision-broken, so a digest in either would look verifiable while proving nothing. A source tool digest in an excluded algorithm is not recorded as a checksum. Admitting weak hashes as an application-level accept/reject decision was considered and rejected; widening this enum is a schema decision, not an oversight.",
         "mimeType": "application/json",
         "name": "hdf-enum-Hash_Algorithm",
         "title": "HDF enum: Hash_Algorithm",
@@ -2187,7 +2201,7 @@
         "uri": "hdf://enum/Original_Format"
       },
       {
-        "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
+        "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field; a status on it is rejected by validation.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
         "mimeType": "application/json",
         "name": "hdf-enum-Override_Type",
         "title": "HDF enum: Override_Type",

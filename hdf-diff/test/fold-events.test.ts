@@ -3,6 +3,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { validateComparison } from '@mitre/hdf-validators';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 import { diffHdf } from '../src/diff.js';
 import type { RequirementDiff, ChangeReason } from '../src/types.js';
 import { changeEventFromPrevious, type KeyState } from '../src/change-event.js';
@@ -137,6 +139,24 @@ describe('foldChangeEventsIntoComparison', () => {
     await foldLawCheck('scan-before.json', 'scan-with-override.json');
   });
 
+  it('names the last seed baseline carrying an id that repeats, as Go does', async () => {
+    const duplicate = (json: string): string => {
+      const doc = JSON.parse(json) as { baselines: { name: string }[] };
+      doc.baselines.push({ ...doc.baselines[0]!, name: 'overlay-baseline' });
+      return JSON.stringify(doc);
+    };
+    const seedJson = duplicate(load('scan-before.json'));
+    const events = await deriveStream(seedJson, duplicate(load('scan-after.json')));
+    const { comparison } = await foldChangeEventsIntoComparison(seedJson, events);
+    const diffs = comparison['requirementDiffs'] as RequirementDiff[];
+    const seedIds = new Set(requirementsOf(JSON.parse(seedJson) as Req).map((r) => r['id'] as string));
+    expect(diffs.length).toBeGreaterThan(0);
+    for (const rd of diffs) {
+      // A key the seed does not carry falls back to the first baseline, as in Go.
+      expect(rd.baseline, rd.id).toBe(seedIds.has(rd.id) ? 'overlay-baseline' : 'rhel9-stig-baseline');
+    }
+  });
+
   it('produces a deterministic, schema-valid systemDrift comparison', async () => {
     const seedJson = load('scan-before.json');
     const events = await deriveStream(seedJson, load('scan-after.json'));
@@ -147,6 +167,16 @@ describe('foldChangeEventsIntoComparison', () => {
     expect(comparison['formatVersion']).toBe('1.0.0');
     expect(comparison['timestamp']).toBe('2024-02-01T00:00:00Z');
     expect((comparison['requirementDiffs'] as RequirementDiff[]).length).toBe(5);
+    for (const rd of comparison['requirementDiffs'] as RequirementDiff[]) {
+      expect(rd.baseline, `${rd.id} carries the seed's baseline`).toBe('rhel9-stig-baseline');
+    }
+    // The shipped validator ignores unevaluatedProperties; a 2020-12 engine does not.
+    const ajv = new Ajv2020({ strict: false, allErrors: true });
+    addFormats(ajv);
+    const strict = ajv.compile(
+      JSON.parse(readFileSync(join(FIXTURES, '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-comparison.schema.json'), 'utf-8')),
+    );
+    expect(strict(comparison), JSON.stringify(strict.errors?.slice(0, 3))).toBe(true);
 
     const validation = validateComparison(comparison);
     expect(validation.valid, JSON.stringify(validation.errors)).toBe(true);

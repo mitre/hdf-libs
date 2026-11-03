@@ -172,8 +172,6 @@ type HDFResults struct {
 type EvaluatedBaseline struct {
 	// The set of dependencies this baseline depends on.                                                              
 	Depends                                                                                    []Dependency           `json:"depends,omitempty"`
-	// The description - should be more detailed than the summary.                                                    
-	Description                                                                                *string                `json:"description,omitempty"`
 	// Producer data outside the HDF model that belongs to this baseline rather than to the                           
 	// document, and the pre-converted source artifact(s) this baseline was built from.                               
 	Extensions                                                                                 *Extensions            `json:"extensions,omitempty"`
@@ -195,8 +193,10 @@ type EvaluatedBaseline struct {
 	// requirement.                                                                                                   
 	Requirements                                                                               []EvaluatedRequirement `json:"requirements"`
 	// SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs).                          
-	// Used to detect tampering with test results. Compare with currentChecksum to verify                             
-	// amendment integrity.                                                                                           
+	// Used to detect tampering with test results. Amendment integrity is checked against the                         
+	// document-level preAmendmentChecksum at the root, not this per-baseline value: hdf amend                        
+	// apply writes it as the hash of the raw document bytes immediately before the most recent                       
+	// amendment application, one step back only.                                                                     
 	ResultsChecksum                                                                            *Checksum              `json:"resultsChecksum,omitempty"`
 	// An explanation of the baseline status. Example: why it was skipped, failed to load, or                         
 	// any other status details.                                                                                      
@@ -207,6 +207,9 @@ type EvaluatedBaseline struct {
 	Copyright                                                                                  *string                `json:"copyright,omitempty"`
 	// The email address or other contact information of the copyright holder(s).                                     
 	CopyrightEmail                                                                             *string                `json:"copyrightEmail,omitempty"`
+	// Prose description of the baseline, more detailed than summary. Carried verbatim, like                          
+	// every HDF prose field.                                                                                         
+	Description                                                                                *string                `json:"description,omitempty"`
 	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                 
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                       
 	// definition. Inert context; see External_Reference.                                                             
@@ -447,14 +450,16 @@ type Input struct {
 
 // Validation constraints for an input value.
 type InputConstraints struct {
-	// Enumeration of permitted values.                                                  
-	AllowedValues                                                          []interface{} `json:"allowedValues,omitempty"`
-	// Maximum allowed value (for Numeric inputs).                                       
-	Max                                                                    *float64      `json:"max,omitempty"`
-	// Minimum allowed value (for Numeric inputs).                                       
-	Min                                                                    *float64      `json:"min,omitempty"`
-	// Regular expression pattern the value must match (for String inputs).              
-	Pattern                                                                *string       `json:"pattern,omitempty"`
+	// Enumeration of permitted values. Each entry may be any JSON value, the same freedom                  
+	// Input.value has: an Array or Hash input enumerates container values, so no element type              
+	// is imposed.                                                                                          
+	AllowedValues                                                                             []interface{} `json:"allowedValues,omitempty"`
+	// Maximum allowed value (for Numeric inputs).                                                          
+	Max                                                                                       *float64      `json:"max,omitempty"`
+	// Minimum allowed value (for Numeric inputs).                                                          
+	Min                                                                                       *float64      `json:"min,omitempty"`
+	// Regular expression pattern the value must match (for String inputs).                                 
+	Pattern                                                                                   *string       `json:"pattern,omitempty"`
 }
 
 // Cryptographic integrity information for verifying the HDF file has not been tampered with. If
@@ -544,7 +549,11 @@ type EvaluatedRequirement struct {
 	// enforces it and producers commonly append, so position is frequently the opposite of                             
 	// recency. Preserves full audit trail.                                                                             
 	StatusOverrides                                                                             []StatusOverride        `json:"statusOverrides,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                                
+	// The requirement identifier, naming the requirement itself rather than one finding of it.                         
+	// Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id                         
+	// (one scanner reporting one CVE against several packages, or an overlay restating what it                         
+	// inherits), so an id is not an instance key: index requirements as id to list, never id to                        
+	// one, and an amendment addressing an id applies to every entry carrying it.                                       
 	ID                                                                                          string                  `json:"id"`
 	// The impactfulness or severity (0.0 to 1.0).                                                                      
 	Impact                                                                                      float64                 `json:"impact"`
@@ -955,9 +964,14 @@ type SourceLocation struct {
 	Ref                                                       *string  `json:"ref,omitempty"`
 }
 
-// An intentional change to a requirement's compliance status and/or impact score. At least one of
-// status or impact must be set. Overrides change the effectiveStatus or impact of the requirement.
-// All overrides must have an expiration date to enforce periodic review.
+// An intentional change to a requirement's compliance status and/or impact score, as it sits on the
+// requirement once applied. The same type-conditional rule as Standalone_Override: when type is
+// 'operationalRequirement', neither status nor impact may be set, because the override records an
+// accepted deviation without adjudicating the finding; it still governs disposition, and
+// effectiveStatus stays what the results decided. When type is 'riskAdjustment', status may not be
+// set: it re-rates the risk through impact and never changes pass/fail. For every other type, at
+// least one of status or impact must be set. All overrides must have an expiration date to enforce
+// periodic review.
 type StatusOverride struct {
 	// Timestamp when this override was applied. ISO 8601 format.                                                   
 	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
@@ -979,7 +993,8 @@ type StatusOverride struct {
 	// `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences                    
 	// for the inline (results-embedded) override carrier.                                                          
 	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
-	// Override to the requirement's impact score. At least one of status or impact must be set.                    
+	// Override to the requirement's impact score. For every type except operationalRequirement,                    
+	// at least one of status or impact must be set; an operationalRequirement carries neither.                     
 	Impact                                                                                      *ImpactOverride     `json:"impact,omitempty"`
 	// Structured controlled-vocabulary classification for why this override applies.                               
 	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                    
@@ -1001,7 +1016,8 @@ type StatusOverride struct {
 	// methods.                                                                                                     
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`
 	// The new status this override sets for the requirement. Optional when only impact is being                    
-	// overridden.                                                                                                  
+	// overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a                      
+	// riskAdjustment, which re-rates impact only.                                                                  
 	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
 	// The type of override applied to this requirement.                                                            
 	Type                                                                                        OverrideType        `json:"type"`
@@ -1527,6 +1543,9 @@ type HDFBaseline struct {
 	Copyright                                                                                  *string               `json:"copyright,omitempty"`
 	// The email address or other contact information of the copyright holder(s).                                    
 	CopyrightEmail                                                                             *string               `json:"copyrightEmail,omitempty"`
+	// Prose description of the baseline, more detailed than summary. Carried verbatim, like                         
+	// every HDF prose field.                                                                                        
+	Description                                                                                *string               `json:"description,omitempty"`
 	// Optional references to external artifacts relevant to this baseline (CTI/STIX,                                
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                      
 	// definition. Inert context; see External_Reference.                                                            
@@ -1559,7 +1578,11 @@ type BaselineRequirement struct {
 	// Explicit severity rating. Typically derived from impact score but provided explicitly for                        
 	// clarity.                                                                                                         
 	Severity                                                                                    *Severity               `json:"severity,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                                
+	// The requirement identifier, naming the requirement itself rather than one finding of it.                         
+	// Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id                         
+	// (one scanner reporting one CVE against several packages, or an overlay restating what it                         
+	// inherits), so an id is not an instance key: index requirements as id to list, never id to                        
+	// one, and an amendment addressing an id applies to every entry carrying it.                                       
 	ID                                                                                          string                  `json:"id"`
 	// The impactfulness or severity (0.0 to 1.0).                                                                      
 	Impact                                                                                      float64                 `json:"impact"`
@@ -1725,6 +1748,10 @@ type RequirementDiff struct {
 	AfterSensitive                                                                               map[string]interface{} `json:"afterSensitive,omitempty"`
 	// IDs of annotations attached to this requirement diff.                                                            
 	AnnotationIDS                                                                                []string               `json:"annotationIds,omitempty"`
+	// Name of the baseline the requirement belongs to, so a consumer can group diffs the way                           
+	// hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one                             
+	// baseline of the same document.                                                                                   
+	Baseline                                                                                     *string                `json:"baseline,omitempty"`
 	// The requirement as it appeared in the old/reference source. Null when state is 'new'.                            
 	Before                                                                                       interface{}            `json:"before"`
 	// Sensitive data from the old source that should not be included in the main before                                
@@ -1855,40 +1882,41 @@ type BaselineRef struct {
 
 // Summary statistics for the overall comparison.
 type ComparisonSummary struct {
-	// Number of requirements present only in the old source.                                        
-	Absent                                                                        *int64             `json:"absent,omitempty"`
-	// Average confidence score across all requirement matches (0-1).                                
-	AverageMatchConfidence                                                        *float64           `json:"averageMatchConfidence,omitempty"`
-	// State counts broken down by severity level.                                                   
-	BySeverity                                                                    *SeverityBreakdown `json:"bySeverity,omitempty"`
-	// Change in compliance percentage (new - old).                                                  
-	ComplianceDelta                                                               *float64           `json:"complianceDelta,omitempty"`
-	// Number of requirements that changed from failing to passing.                                  
-	Fixed                                                                         *int64             `json:"fixed,omitempty"`
-	// Number of requirements successfully matched between sources.                                  
-	MatchedCount                                                                  int64              `json:"matchedCount"`
-	// Number of requirements that were reorganized without content change.                          
-	Moved                                                                         *int64             `json:"moved,omitempty"`
-	// Number of requirements present only in the new source.                                        
-	New                                                                           *int64             `json:"new,omitempty"`
-	// Compliance percentage of the new source (0-100).                                              
-	NewCompliancePercent                                                          *float64           `json:"newCompliancePercent,omitempty"`
-	// Compliance percentage of the old source (0-100).                                              
-	OldCompliancePercent                                                          *float64           `json:"oldCompliancePercent,omitempty"`
-	// Summary statistics for each individual source in a multi-source comparison.                   
-	PerSource                                                                     []PerSourceSummary `json:"perSource,omitempty"`
-	// Number of requirements that changed from passing to failing.                                  
-	Regressed                                                                     *int64             `json:"regressed,omitempty"`
-	// Total number of unique requirements across all sources.                                       
-	Total                                                                         int64              `json:"total"`
-	// Number of requirements with the same effective status.                                        
-	Unchanged                                                                     *int64             `json:"unchanged,omitempty"`
-	// Number of requirements in the new source with no match in the old source.                     
-	UnmatchedNewCount                                                             int64              `json:"unmatchedNewCount"`
-	// Number of requirements in the old source with no match in the new source.                     
-	UnmatchedOldCount                                                             int64              `json:"unmatchedOldCount"`
-	// Number of requirements with a generic status change.                                          
-	Updated                                                                       *int64             `json:"updated,omitempty"`
+	// Number of requirements present only in the old source.                                                  
+	Absent                                                                                  *int64             `json:"absent,omitempty"`
+	// Average confidence score across all requirement matches (0-1).                                          
+	AverageMatchConfidence                                                                  *float64           `json:"averageMatchConfidence,omitempty"`
+	// State counts broken down by severity level.                                                             
+	BySeverity                                                                              *SeverityBreakdown `json:"bySeverity,omitempty"`
+	// Change in compliance percentage (new - old).                                                            
+	ComplianceDelta                                                                         *float64           `json:"complianceDelta,omitempty"`
+	// Number of requirements that changed from failing to passing.                                            
+	Fixed                                                                                   *int64             `json:"fixed,omitempty"`
+	// Number of requirements successfully matched between sources.                                            
+	MatchedCount                                                                            int64              `json:"matchedCount"`
+	// Number of requirements that were reorganized without content change.                                    
+	Moved                                                                                   *int64             `json:"moved,omitempty"`
+	// Number of requirements present only in the new source.                                                  
+	New                                                                                     *int64             `json:"new,omitempty"`
+	// Compliance percentage of the new source (0-100).                                                        
+	NewCompliancePercent                                                                    *float64           `json:"newCompliancePercent,omitempty"`
+	// Compliance percentage of the old source (0-100).                                                        
+	OldCompliancePercent                                                                    *float64           `json:"oldCompliancePercent,omitempty"`
+	// Summary statistics for each individual source in a multi-source comparison.                             
+	PerSource                                                                               []PerSourceSummary `json:"perSource,omitempty"`
+	// Number of requirements that changed from passing to failing.                                            
+	Regressed                                                                               *int64             `json:"regressed,omitempty"`
+	// Total number of distinct requirement ids across all sources; an id carried by several                   
+	// entries counts once.                                                                                    
+	Total                                                                                   int64              `json:"total"`
+	// Number of requirements with the same effective status.                                                  
+	Unchanged                                                                               *int64             `json:"unchanged,omitempty"`
+	// Number of requirements in the new source with no match in the old source.                               
+	UnmatchedNewCount                                                                       int64              `json:"unmatchedNewCount"`
+	// Number of requirements in the old source with no match in the new source.                               
+	UnmatchedOldCount                                                                       int64              `json:"unmatchedOldCount"`
+	// Number of requirements with a generic status change.                                                    
+	Updated                                                                                 *int64             `json:"updated,omitempty"`
 }
 
 // Breakdown of state counts by severity level.
@@ -2174,11 +2202,13 @@ type HDFAmendments struct {
 	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
-// A standalone override to a requirement's compliance status or risk impact. Validation has two
-// branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact'
-// may be set — the override records accepted risk without changing the finding
-// (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This
-// rule aligns with: - OSCAL Assessment Results — finding.target.status and
+// A standalone override to a requirement's compliance status or risk impact. Validation is gated on
+// 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the
+// override records accepted risk without changing the finding (documentation-only). When type is
+// 'riskAdjustment', 'status' may not be set — it re-rates the risk through 'impact' and never
+// changes the finding's pass/fail; an override that must change status is a waiver or
+// falsePositive. For all other types, at least one of 'status' or 'impact' must be set. This rule
+// aligns with: - OSCAL Assessment Results — finding.target.status and
 // finding.associated-risk[].facet[] are separate axes
 // (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/) - FedRAMP
 // deviation request types — Risk Adjustment changes impact only, Operational Requirement documents
@@ -2246,12 +2276,15 @@ type StandaloneOverride struct {
 	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
 	// Justification for this amendment.                                                                            
 	Reason                                                                                      string              `json:"reason"`
-	// The ID of the requirement being amended. Must match a requirement ID in the referenced                       
-	// baseline.                                                                                                    
+	// The id of the requirement being amended. An id names the requirement, not one finding, so                    
+	// the override applies to every requirement entry carrying that id in the baseline(s) it                       
+	// targets.                                                                                                     
 	RequirementID                                                                               string              `json:"requirementId"`
 	// Digital signature for non-repudiation.                                                                       
 	Signature                                                                                   *Signature          `json:"signature,omitempty"`
-	// The new status this amendment sets. Optional when only impact is being overridden.                           
+	// The new status this override sets for the requirement. Optional when only impact is being                    
+	// overridden; forbidden on an operationalRequirement, which adjudicates nothing, and on a                      
+	// riskAdjustment, which re-rates impact only.                                                                  
 	Status                                                                                      *ResultStatus       `json:"status,omitempty"`
 	// The type of amendment.                                                                                       
 	Type                                                                                        OverrideType        `json:"type"`
@@ -2489,7 +2522,12 @@ const (
 
 // Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers
 // container-image and other artifact digests that use it. HDF tooling verifies every algorithm in
-// this enum, so any of them may be recorded where the checksum needs to be verifiable.
+// this enum, so any of them may be recorded where the checksum needs to be verifiable. md5 and sha1
+// are excluded deliberately: a checksum or integrity record exists to detect tampering, and both
+// are collision-broken, so a digest in either would look verifiable while proving nothing. A source
+// tool digest in an excluded algorithm is not recorded as a checksum. Admitting weak hashes as an
+// application-level accept/reject decision was considered and rejected; widening this enum is a
+// schema decision, not an oversight.
 type HashAlgorithm string
 
 const (
@@ -2499,14 +2537,8 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
-// How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON,
-// plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8
-// text.
-//
-// Required whenever `content` is present, and meaningless without it — an embedded copy
-// whose encoding a consumer has to guess is not lossless.
-//
-// How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text.
+// How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not
+// valid UTF-8 text.
 type ExternalReferenceEncoding string
 
 const (
@@ -2631,10 +2663,11 @@ const (
 // to 'notApplicable'. The disposition field on the requirement distinguishes false positives from
 // genuinely not-applicable findings. - 'riskAdjustment': impact score adjusted based on
 // environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact
-// via the impact field. - 'operationalRequirement': deviation required by operational constraints
-// (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires
-// the affected functionality. Remains an open risk. Migration note: 'exception' was removed in
-// v3.1.0 — use 'waiver' with status 'notApplicable' instead.
+// via the impact field; a status on it is rejected by validation. - 'operationalRequirement':
+// deviation required by operational constraints (FedRAMP Operational Requirement); the finding
+// cannot be remediated because the system requires the affected functionality. Remains an open
+// risk. Migration note: 'exception' was removed in v3.1.0 — use 'waiver' with status
+// 'notApplicable' instead.
 type OverrideType string
 
 const (
@@ -2814,9 +2847,8 @@ const (
 	ScannerNote                   AnnotationCategory = "scannerNote"
 )
 
-// The state of this baseline in the comparison.
-//
-// The state of this component in the comparison.
+// How a baseline or component fared across the compared documents: new (only in the newer), absent
+// (only in the older), unchanged, or updated (present in both with a changed version).
 type BaselineDiffState string
 
 const (
@@ -3072,13 +3104,8 @@ func (x *Ref) MarshalJSON() ([]byte, error) {
 	return marshalUnion(nil, nil, nil, x.String, x.AnythingMapArray != nil, x.AnythingMapArray, false, nil, false, nil, false, nil, false)
 }
 
-// Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text,
-// image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical
-// encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not
-// physical format. String or array of strings.
-//
-// Input/output modalities. String or array of strings. Examples: text, image, audio.
-// Symmetric with Dataset_Extension.modality.
+// A content modality such as text, image, audio, tabular or timeseries: one string, or a list when
+// the content spans several.
 type Modality struct {
 	String      *string
 	StringArray []string

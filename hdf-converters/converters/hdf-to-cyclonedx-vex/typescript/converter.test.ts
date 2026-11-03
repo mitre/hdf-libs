@@ -616,7 +616,6 @@ describe('convertHdfToCyclonedxVex — impact override to rating', () => {
         {
           type: 'riskAdjustment',
           requirementId: 'CVE-2026-4243',
-          status: 'failed',
           appliedAt: '2026-01-01T00:00:00Z',
           expiresAt: '2099-12-31T00:00:00Z',
           appliedBy: { type: 'simple', identifier: 'team' },
