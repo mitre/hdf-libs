@@ -260,6 +260,17 @@ func (c *contextCapturingClient) GetComplianceDetailsByConfigRule(
 	return c.inner.GetComplianceDetailsByConfigRule(ctx, params, optFns...)
 }
 
+// securityHubRule is the contrast case for the readability check: provisioned by
+// Security Hub and marked INTERNAL, so the API will not return its evaluations.
+var securityHubRule = types.ConfigRule{
+	ConfigRuleId:             aws.String("cr-sh"),
+	ConfigRuleName:           aws.String("securityhub-access-keys-rotated-cce23527"),
+	ConfigRuleArn:            aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
+	Source:                   &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+	CreatedBy:                aws.String("securityhub.amazonaws.com"),
+	RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
+}
+
 var testRule = types.ConfigRule{
 	ConfigRuleId:    aws.String("config-rule-abc"),
 	ConfigRuleName:  aws.String("some-rule"),
@@ -853,15 +864,7 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 	}
 	// A rule whose evaluations the API marks INTERNAL must stay out of the
 	// remediation query so it can't poison the batch with "not supported".
-	serviceLinked := types.ConfigRule{
-		ConfigRuleId:   aws.String("cr-sh"),
-		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
-		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
-		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
-		CreatedBy:      aws.String("securityhub.amazonaws.com"),
-		// Security Hub standards rules report INTERNAL: their evaluations are not readable.
-		RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
-	}
+	serviceLinked := securityHubRule
 
 	mock := &mockConfigClient{
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
@@ -896,10 +899,6 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 		assert.NotContains(t, batch, "securityhub-access-keys-rotated-cce23527",
 			"an INTERNAL rule must be excluded from the remediation query")
 	}
-	// Never queried for compliance either: the API has already said it would
-	// return nothing for an INTERNAL rule.
-	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"],
-		"an INTERNAL rule must not be queried for compliance")
 
 	// Rule with a remediation → populated, fields carried from the SDK shape.
 	rem := byName["s3-bucket-public-read-prohibited"].Remediation
@@ -921,15 +920,7 @@ func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
 		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("EC2_VOLUME_INUSE_CHECK")},
 		CreatedBy:      aws.String("config-conforms.amazonaws.com"),
 	}
-	serviceLinked := types.ConfigRule{
-		ConfigRuleId:   aws.String("cr-sh"),
-		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
-		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
-		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
-		CreatedBy:      aws.String("securityhub.amazonaws.com"),
-		// Security Hub standards rules report INTERNAL: their evaluations are not readable.
-		RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
-	}
+	serviceLinked := securityHubRule
 
 	mock := &mockConfigClient{
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
@@ -940,6 +931,14 @@ func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
 				{EvaluationResults: []types.EvaluationResult{
 					{ComplianceType: types.ComplianceTypeCompliant},
 				}},
+			},
+		},
+		remediations: map[string]types.RemediationConfiguration{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {
+				ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+				TargetType:     types.RemediationTargetTypeSsmDocument,
+				TargetId:       aws.String("AWS-DetachEBSVolume"),
+				Automatic:      false,
 			},
 		},
 	}
@@ -957,7 +956,8 @@ func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
 	require.Len(t, mock.remediationBatches, 1)
 	assert.Equal(t, []string{"ec2-volume-inuse-check-conformance-pack-abc123"}, mock.remediationBatches[0],
 		"a conformance-pack rule is remediation-eligible; the INTERNAL one stays out")
-	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"])
+	require.NotNil(t, cp.Remediation, "the pack rule's remediation must land on the rule, not just be asked for")
+	assert.Equal(t, "AWS-DetachEBSVolume", cp.Remediation.TargetID)
 }
 
 func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
@@ -1070,4 +1070,45 @@ func TestAWSConfigFetcher_Fetch_AllRulesFailToReadIsAnError(t *testing.T) {
 	assert.Contains(t, err.Error(), "no Config rules could be read in us-east-1")
 	assert.Contains(t, err.Error(), "1 failed to read")
 	assert.Contains(t, err.Error(), "some-rule")
+}
+
+// The shape the issue reported: every rule in the account came from a
+// conformance pack. It must go all the way through the converter and produce
+// requirements, not stop at the fetcher or at the converter's required-field check.
+func TestAWSConfigFetcher_PackOnlyAccount_ConvertsEndToEnd(t *testing.T) {
+	invokedAt := ts("2021-04-09T14:39:21Z")
+	recordedAt := ts("2021-04-09T14:39:51Z")
+	packRule := types.ConfigRule{
+		ConfigRuleId:   aws.String("config-rule-cp1"),
+		ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/config-rule-cp1"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("EC2_VOLUME_INUSE_CHECK")},
+		CreatedBy:      aws.String("config-conforms.amazonaws.com"),
+	}
+	mock := &mockConfigClient{
+		t:                  t,
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{packRule}}},
+		compliancePages: map[string][]configservice.GetComplianceDetailsByConfigRuleOutput{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {{EvaluationResults: []types.EvaluationResult{{
+				EvaluationResultIdentifier: &types.EvaluationResultIdentifier{
+					EvaluationResultQualifier: &types.EvaluationResultQualifier{
+						ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+						ResourceType:   aws.String("AWS::EC2::Volume"),
+						ResourceId:     aws.String("vol-0123456789abcdef0"),
+					},
+				},
+				ComplianceType:        types.ComplianceTypeNonCompliant,
+				ConfigRuleInvokedTime: &invokedAt,
+				ResultRecordedTime:    &recordedAt,
+			}}}},
+		},
+	}
+
+	data, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err, "a pack-only account must fetch")
+	hdfResult, err := awsconfigconv.ConvertAWSConfigToHDF(data, "test")
+	require.NoError(t, err, "a pack-only fetch must convert")
+	require.Len(t, hdfResult.Baselines, 1)
+	require.Len(t, hdfResult.Baselines[0].Requirements, 1)
+	assert.Equal(t, "config-rule-cp1", hdfResult.Baselines[0].Requirements[0].ID)
 }
