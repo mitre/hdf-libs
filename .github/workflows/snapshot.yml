@@ -238,7 +238,8 @@ jobs:
           test "$SOURCE" = "$GITHUB_SHA"
           registry=(--registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org)
           while read -r pkg; do
-            npm publish "snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
+            # ./ keeps npm from reading dir/file.tgz as a GitHub owner/repo shorthand.
+            npm publish "./snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
               --access public --provenance --ignore-scripts --tag snapshot-staging "${registry[@]}"
           done < "$RUNNER_TEMP/packages.txt"
           while read -r pkg; do
