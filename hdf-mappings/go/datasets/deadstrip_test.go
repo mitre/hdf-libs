@@ -33,6 +33,12 @@ func TestAConsumerLinksOnlyTheDatasetsItCanReach(t *testing.T) {
 	}
 
 	corpus := readCorpus(t)
+	for rel := range reachableFromProbe {
+		if _, ok := corpus[rel]; !ok {
+			t.Fatalf("reachableFromProbe names %q, which is not in the corpus; the "+
+				"expectation cannot be matched and every verdict below would be inverted", rel)
+		}
+	}
 	for rel, data := range corpus {
 		marker := uniqueMarker(t, rel, data, corpus)
 		switch present := bytes.Contains(linked, marker); {
@@ -56,7 +62,9 @@ func readCorpus(t *testing.T) map[string][]byte {
 			if err != nil {
 				t.Fatalf("reading %s: %v", rel, err)
 			}
-			corpus[rel] = data
+			// Keyed with forward slashes so reachableFromProbe matches on
+			// Windows, where filepath.Join yields a backslash.
+			corpus[filepath.ToSlash(rel)] = data
 		}
 	}
 	return corpus
