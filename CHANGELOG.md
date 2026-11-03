@@ -22,6 +22,14 @@ All notable changes to this project will be documented in this file.
 
   Re-export restores `Workflow.Status: SUPPRESSED` on the round trip, which the previous shape lost.
 
+- **`msft-secure-score-to-hdf` reports `notReviewed` for an unscored control instead of `passed`.**
+
+  `getStatus` compared a control's score to its profile's `maxScore`. The Graph schema types `maxScore` optional and an absent JSON number decodes to zero, so a profile without one made its control pass on `0 == 0` — an affirmative compliance claim for something that was never scored. It exported as CKL `NotAFinding`, ASFF `PASSED` and XCCDF `pass`; it now exports as `Not_Reviewed`, `WARNING` and `notchecked`.
+
+  Its impact is `0.5` rather than `0` for the same reason: with no `maxScore` there is no basis for a severity, and `0` asserted that the control carries none. That matches the existing fallback for a control with no matching profile at all.
+
+  No other converter was affected. An audit of all 28 importers that can emit `passed` — 22 that derive it in converter code, plus six that inherit it from the shared checklist and VEX mappings — found every other one either maps a source verdict, reads a format where absence *is* the pass signal (JUnit), uses the override channel, or already guards the unassessed case. The convention this establishes is now in `site/docs/architecture/status-determination.md`.
+
 - **`hdf-to-asff` reports the raw verdict in `Compliance.Status` for a suppressed finding, not the roll-up.**
 
   Security Hub keeps the two axes orthogonal: `Compliance.Status` is the check result, `Workflow.Status` the triage state, and suppressing a finding there never rewrites its verdict. The exporter previously reported the rolled-up status for every finding, so a failed check that had been suppressed came out `PASSED` — rewriting the verdict on the strength of a triage decision, and lossy because the verdict `asff-to-hdf` reads back was gone. (Suppressing a finding that genuinely passed is ordinary and still reports `PASSED`.)

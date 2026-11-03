@@ -47,7 +47,7 @@ interface SecureScore {
   averageComparativeScores?: unknown[];
 }
 
-interface ControlScore {
+export interface ControlScore {
   controlCategory: string;
   controlName: string;
   description: string;
@@ -64,7 +64,7 @@ interface ProfileResponse {
   value: SecureScoreControlProfile[];
 }
 
-interface SecureScoreControlProfile {
+export interface SecureScoreControlProfile {
   id: string;
   azureTenantId?: string;
   actionType?: string;
@@ -115,11 +115,22 @@ function getTitle(
 }
 
 /**
- * Computes impact from profile maxScore (maxScore / 10.0).
- * Falls back to 0.5 when no matching profile exists.
- * Capped at 1.0.
+ * Highest maxScore among matched profiles. Zero means unscored: the Graph schema
+ * types maxScore optional, so an absent value and an explicit zero are
+ * indistinguishable here (buildTags assumes the same).
+ * Parity: maxProfileScore in go/converter.go.
  */
-function getImpact(
+function maxProfileScore(matched: SecureScoreControlProfile[]): number {
+  return Math.max(...matched.map(p => p.maxScore ?? 0));
+}
+
+/**
+ * Computes impact from profile maxScore (maxScore / 10.0), capped at 1.0. Falls
+ * back to 0.5 when no matching profile exists, and for the same reason when the
+ * matched profile is unscored: with no maxScore there is no basis for a
+ * severity, and 0 would assert that the control carries none.
+ */
+export function getImpact(
   profiles: SecureScoreControlProfile[],
   cs: ControlScore,
 ): number {
@@ -128,14 +139,20 @@ function getImpact(
     return 0.5;
   }
 
-  const maxScore = Math.max(...matched.map(p => p.maxScore ?? 0));
+  const maxScore = maxProfileScore(matched);
+  if (maxScore === 0) {
+    return 0.5;
+  }
   return Math.min(roundImpact(maxScore / 10.0), 1.0);
 }
 
 /**
  * Determines the result status based on scoreInPercentage and profile maxScore.
+ * An unscored profile yields notReviewed: comparing the control's score to a
+ * maxScore of 0 would pass every unscored control on 0 === 0, which claims
+ * compliance for something Graph never assessed.
  */
-function getStatus(
+export function getStatus(
   profiles: SecureScoreControlProfile[],
   cs: ControlScore,
 ): ResultStatus {
@@ -148,7 +165,10 @@ function getStatus(
     return ResultStatus.Failed;
   }
 
-  const maxScore = Math.max(...matched.map(p => p.maxScore ?? 0));
+  const maxScore = maxProfileScore(matched);
+  if (maxScore === 0) {
+    return ResultStatus.NotReviewed;
+  }
   if (cs.score === maxScore) {
     return ResultStatus.Passed;
   }

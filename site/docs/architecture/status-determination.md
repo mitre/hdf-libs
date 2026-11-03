@@ -12,6 +12,44 @@ How hdf-libs determines the overall status of a control/requirement from its ind
 | `notApplicable` | Control is not applicable to this target |
 | `notReviewed` | Control was not evaluated (skipped, no results) |
 
+### What a converter may claim
+
+`passed` is the only status that makes an affirmative claim: this requirement was checked and met. Every exporter carries it as one — CKL `NotAFinding`, ASFF `PASSED`, XCCDF `pass`, ECS `success`, OSCAL-SAR `satisfied` — and `NotAFinding` is a compliance claim eMASS scores. So a converter may emit `passed` only where the **source** assessed the requirement.
+
+That is not the same as forbidding a default branch. Some formats encode a pass as the absence of anything else, and reading them correctly means returning `passed` from the fall-through:
+
+- JUnit: a `<testcase>` with no `<failure>`, `<error>` or `<skipped>` child passed. That is the format's own convention.
+- A scanner that reports only violations: a clean run with no findings did assess the target and found nothing.
+- A tool whose score encodes the verdict, where zero means "no finding" rather than "no data".
+
+What is forbidden is a `passed` the converter invents because the source said nothing. The failure mode is a degenerate comparison of two empty values — this was `msft-secure-score-to-hdf`, where an unscored profile's `maxScore` decodes to 0 and the control's score is 0 too:
+
+```go
+// WRONG — an unscored control has maxScore 0, so this passes on 0 == 0
+if cs.Score == maxScore {
+    return hdf.Passed
+}
+```
+
+Guard the unassessed case first and report `notReviewed`, which is what `scoutsuite-to-hdf` does:
+
+```go
+if checkedItems == 0 {
+    return hdf.NotReviewed   // nothing was checked; that is not a pass
+}
+if flaggedItems == 0 {
+    return hdf.Passed        // items were checked and none flagged
+}
+```
+
+`conveyor-to-hdf` does the same for an absent score: its `Score` is a pointer, and a nil one yields `notReviewed` with the reason in the message rather than reaching the zero-means-clean comparison.
+
+`notReviewed` is the honest substitute because it keeps the requirement in the compliance denominator: an unassessed requirement is outstanding work. `notApplicable` would be worse than wrong — it is excluded from the ratio entirely, so it flatters the number while asserting a scope decision nobody made. `error` claims a failure that did not happen.
+
+The same rule governs a **derived** impact. Where a converter computes impact from a source field and that field is absent, do not let the arithmetic yield `0` — that asserts the requirement carries no risk, on the same missing evidence. Use the converter's unknown-severity default instead, as `msft-secure-score-to-hdf` does for a control with no matching profile and for one whose profile is unscored.
+
+This applies to a derivation, not to a record the converter synthesizes itself. A placeholder requirement — `shared.BuildNoFindingsRequirement`'s clean-scan record, or `conveyor-to-hdf`'s stand-in for a service entry carrying no score — is informational by nature, and `impact: 0` describes the record honestly rather than making a claim about a control's risk.
+
 ## Precedence Order
 
 When a control has multiple test results with different statuses, the overall status is determined by precedence (highest wins):
