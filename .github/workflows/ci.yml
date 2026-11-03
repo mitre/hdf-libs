@@ -140,7 +140,7 @@ jobs:
             "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz"
           echo "$ZIZMOR_SHA256  $tmp/zizmor.tar.gz" | sha256sum -c -
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
-          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
+          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
@@ -371,6 +371,15 @@ jobs:
           name: scan-ts
           path: scan-artifacts/
           retention-days: 7
+      - name: Repository lint guards
+        run: |
+          pnpm run lint:timestamps
+          pnpm run lint:generated-html
+          pnpm run lint:package-names
+      # The consumer check installs with the same pinned npm client as publishing.
+      - uses: $/.github/actions/setup-npm
+      - name: Shared npm consumer smoke tests
+        run: pnpm run test:release-smoke
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
       - name: npm audit (prod moderate+, dev high+)
@@ -476,6 +485,11 @@ jobs:
         # release.yml --checks them on the tag, where a regression is found by
         # the release; its test runs here instead.
         run: pnpm run lint:go-module-versions
+      - name: The snapshot scripts still fail closed
+        # snapshot.yml derives, prepares and validates every main snapshot with
+        # these scripts, where a regression is found by the first publication;
+        # their tests run here (the prepare test needs the Go toolchain).
+        run: pnpm run lint:snapshot-scripts
       - name: Every module is tidy and every sibling pin is a real version
         # A downgrading go get drops a sibling require and tidy re-adds it at the
         # zero pseudo-version, which no release can publish; caught here, not at
@@ -560,12 +574,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: scan-*
           path: scan-artifacts
           merge-multiple: true
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: gate-cli
           path: ${{ runner.temp }}/gate-cli
@@ -691,7 +705,7 @@ jobs:
       - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
       # The ubuntu leg IS the coverage run (the dedicated coverage job used
@@ -741,7 +755,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
       # One gotestsum pass per go.work module (replaces the pnpm test:go +
@@ -792,12 +806,12 @@ jobs:
           persist-credentials: false
       # merge-multiple is safe: the collectors qualify every JUnit filename
       # with its OS, so the legs cannot collide in one directory.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: test-results-*
           path: test-artifacts-dl
           merge-multiple: true
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: gate-cli
           path: ${{ runner.temp }}/gate-cli
@@ -922,10 +936,10 @@ jobs:
           fetch-depth: 0
       # The uploads preserve their repo-relative paths, so the profiles land
       # exactly where sonar-project.properties expects them.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-reports-ts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-reports-go
       # vitest writes lcov SF: paths relative to each package, but the Sonar
@@ -980,20 +994,16 @@ jobs:
       - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
       - name: Pack all publishable packages
         run: |
           mkdir -p /tmp/tarballs
-          PACKAGES=(
-            hdf-schema hdf-utilities hdf-mappings hdf-validators
-            hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine hdf-fixtures hdf-openapi
-          )
-          for pkg in "${PACKAGES[@]}"; do
+          inventory=$(bash scripts/list-npm-packages.sh)
+          while read -r pkg; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
-          done
+          done <<< "$inventory"
 
       - name: publint each tarball
         # `pnpm exec` (not dlx): publint is a root devDependency so the verdict
@@ -1052,7 +1062,7 @@ jobs:
       - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
       - name: Generate schema pages

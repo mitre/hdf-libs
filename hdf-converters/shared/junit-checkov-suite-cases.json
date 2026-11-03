@@ -1,0 +1,12 @@
+{
+  "$comment": "Shared table for checkovFramework (junit-to-hdf): which <testsuite> names a Checkov framework. Read by both converters/junit-to-hdf/go/converter_test.go and typescript/converter.test.ts so the two implementations are asserted against one definition and cannot drift apart. A suite names a framework only when its name is '<framework> scan' AND its testcases carry Checkov's bracketed prefix; the value matches checkov-to-hdf's check_type.",
+  "cases": [
+    { "name": "terraform suite with Checkov-prefixed cases", "suiteName": "terraform scan", "testCaseName": "[HIGH][CKV_AWS_16] Ensure that RDS instances have encryption enabled", "want": "terraform" },
+    { "name": "dockerfile suite", "suiteName": "dockerfile scan", "testCaseName": "[LOW][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images", "want": "dockerfile" },
+    { "name": "sca suite with a CVE-shaped case", "suiteName": "sca_package scan", "testCaseName": "[HIGH][CVE-2023-12345] requests: 2.25.1", "want": "sca_package" },
+    { "name": "the scan suffix alone is not enough; the cases must be Checkov-shaped", "suiteName": "terraform scan", "testCaseName": "testPlanApplies", "want": "" },
+    { "name": "a test class is not a framework", "suiteName": "com.example.math.MathTest", "testCaseName": "testAddition", "want": "" },
+    { "name": "Checkov names its suites in lower case", "suiteName": "Terraform Scan", "testCaseName": "[HIGH][CKV_AWS_16] x", "want": "" },
+    { "name": "an unnamed suite names nothing", "suiteName": "", "testCaseName": "[HIGH][CKV_AWS_16] x", "want": "" }
+  ]
+}

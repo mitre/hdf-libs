@@ -1,5 +1,5 @@
 {
-  "name": "waivers-2026-10-21",
+  "name": "waivers-2026-10-31",
   "overrides": [
     {
       "appliedAt": "2026-09-07T15:01:58Z",
@@ -124,6 +124,38 @@
       "requirementId": "CVE-2026-112946",
       "status": "notApplicable",
       "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-31T21:32:45Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "e1b95007055f2fa11b21e46947ffeda163d57ec58724e1c465ec550de5bca423"
+      },
+      "reason": "GHSA-3g3m-2fjr-6pw4: glob 13.0.6 keeps reading directories after its AbortSignal fires, so a caller that passes signal or AbortSignal.timeout() to bound a walk still pays the I/O. The vulnerable branch is only entered when a signal is supplied. glob reaches this repo solely through rimraf 6.1.3 (dev), whose only use is the per-package 'clean' scripts invoking the rimraf CLI on literal paths; the CLI exposes no signal option and rimraf forwards one to glob only when its caller supplies it, so the abort branch is never taken. 'pnpm why -r --prod glob' returns no paths. The fix (14.0.2) is a new major published 2026-10-27 that also pulls in a path-scurry major and a brand-new package, all inside the seven-day release cooldown; it is taken once they clear the cooldown, and this waiver goes with it.",
+      "requirementId": "CVE-2026-118773",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-10-31T21:32:45Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "51ee1d92e9c118fdf500b365296b1b0ca9f36c0f9f204ba1e938b538b38bbfed"
+      },
+      "reason": "GHSA-g3hv-75wg-m249: minimatch below 11.0.1 lets an attacker-controlled glob pattern amplify globParts in firstPhasePreProcess and then pay quadratic pairwise work, so it is a CPU/memory denial of service against whoever compiles the pattern. Every minimatch in this tree is dev (3.1.4 under eslint 8 via the SARIF formatter, 5.1.9 under @redocly/openapi-core, 10.2.3 under stryker, 10.2.6 under eslint 10 and typescript-eslint); 'pnpm why -r --prod minimatch' returns no paths. Every pattern those consumers compile comes from checked-in configuration (eslint ignore globs, stryker mutate globs, the OpenAPI tooling config), none from input a third party supplies, so the precondition is not met. The only fix (11.0.1) is a new major published 2026-10-27 that depends on a brand-new package, both inside the seven-day release cooldown; it is taken once they clear the cooldown, and this adjustment goes with it.",
+      "requirementId": "CVE-2026-118764",
+      "status": "notApplicable",
+      "type": "riskAdjustment"
     }
   ]
 }
