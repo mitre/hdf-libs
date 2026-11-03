@@ -292,10 +292,12 @@ func TestEvidenceAddEvidence_DiscoveryRefusesOutOfPackage(t *testing.T) {
 	assert.ErrorContains(t, err, "outside the package")
 	assert.ErrorContains(t, err, "--uri")
 	assert.Equal(t, 1, exitCodeOf(t, err))
-	assert.ErrorContains(t, err, outside, "the refused file is named")
+	// Both names travel through %q, which escapes a Windows separator; the expectation
+	// takes the same route so the comparison is of the string the command printed.
+	assert.ErrorContains(t, err, fmt.Sprintf("%q", outside), "the refused file is named")
 	pkgDirAbs, absErr := filepath.Abs(filepath.Dir(pkg))
 	require.NoError(t, absErr)
-	assert.ErrorContains(t, err, pkgDirAbs, "the package directory is named, absolute")
+	assert.ErrorContains(t, err, fmt.Sprintf("%q", pkgDirAbs), "the package directory is named, absolute")
 	after, err := os.ReadFile(pkg)
 	require.NoError(t, err)
 	assert.Equal(t, before, after, "a refused selection must write nothing")
