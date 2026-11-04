@@ -506,6 +506,9 @@ func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, pag
 	if err := json.Unmarshal(body, &issuesResp); err != nil {
 		return nil, fmt.Errorf("parsing API response: %w", err)
 	}
+	if issuesResp.Issues == nil {
+		return nil, fmt.Errorf("parsing API response: missing or null issues field")
+	}
 
 	return &issuesResp, nil
 }

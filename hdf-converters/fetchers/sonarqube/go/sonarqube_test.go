@@ -491,6 +491,41 @@ func TestSonarqubeFetcher_InvalidJSONResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "parsing API response")
 }
 
+func TestSonarqubeFetcher_RejectsMissingOrNullIssues(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+	}{
+		{name: "missing", body: `{}`},
+		{name: "null", body: `{"issues":null}`},
+	} {
+		for _, invalidPage := range []int{1, 2} {
+			t.Run(fmt.Sprintf("%s/page-%d", tc.name, invalidPage), func(t *testing.T) {
+				calls := 0
+				srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, "/api/issues/search", r.URL.Path)
+					calls++
+					if invalidPage == 2 && r.URL.Query().Get("p") == "1" {
+						writeIssuesPage(w, []sonarqubeconv.Issue{{Key: "issue-1"}}, nil, nil, 2, 1)
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = fmt.Fprint(w, tc.body)
+				})
+				f := newTestFetcher(t, srv.URL)
+				t.Setenv("SONARQUBE_TOKEN", "tok")
+
+				data, err := f.Fetch(context.Background())
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "missing or null issues field")
+				assert.Contains(t, err.Error(), fmt.Sprintf("fetching page %d", invalidPage))
+				assert.Nil(t, data, "malformed pages must not yield an empty or partial scan")
+				assert.Equal(t, invalidPage, calls)
+			})
+		}
+	}
+}
+
 // ---- Rule enrichment tests (SonarQube 26+ /api/rules/show) ----
 
 const (
