@@ -1,0 +1,219 @@
+{
+  "baselines": [
+    {
+      "name": "Rule-result disposition coverage",
+      "requirements": [
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:1\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:1",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_pass",
+          "impact": 0.5,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_pass",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "passed"
+            }
+          ],
+          "severity": "medium",
+          "tags": {
+            "nist": []
+          },
+          "title": "A rule that passes"
+        },
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:2\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:2",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_fail",
+          "impact": 0.7,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_fail",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "tags": {
+            "nist": []
+          },
+          "title": "A rule that fails"
+        },
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:3\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:3",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_notselected",
+          "impact": 0.7,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_notselected",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "notApplicable"
+            }
+          ],
+          "severity": "high",
+          "tags": {
+            "nist": []
+          },
+          "title": "A high-severity rule this profile did not select"
+        },
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:4\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:4",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_notapplicable",
+          "impact": 0.5,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_notapplicable",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "notApplicable"
+            }
+          ],
+          "severity": "medium",
+          "tags": {
+            "nist": []
+          },
+          "title": "A rule that does not apply to this target"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_notchecked",
+          "impact": 0.3,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_notchecked",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "notReviewed"
+            }
+          ],
+          "severity": "low",
+          "tags": {
+            "nist": []
+          },
+          "title": "A rule with no automated check"
+        },
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:5\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:5",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_informational",
+          "impact": 0,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_informational",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "notApplicable"
+            }
+          ],
+          "severity": "informational",
+          "tags": {
+            "nist": []
+          },
+          "title": "A rule that reports information rather than a verdict"
+        },
+        {
+          "code": "{\n  \"system\": \"http://oval.mitre.org/XMLSchema/oval-definitions-5\",\n  \"checkContentRef\": {\n    \"name\": \"oval:x:def:6\",\n    \"href\": \"oval.xml\"\n  }\n}",
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            },
+            {
+              "data": "oval:x:def:6",
+              "label": "check"
+            }
+          ],
+          "id": "xccdf_org.mitre.hdf_rule_info_severity_fail",
+          "impact": 0,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_org.mitre.hdf_rule_info_severity_fail",
+              "startTime": "2026-01-02T03:04:05Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "informational",
+          "tags": {
+            "nist": []
+          },
+          "title": "An info-severity rule that fails"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "1ef4e4e33b4e3852ada06d092210d3b0859e0623f17d80a429aeaa1b73cf1328"
+      },
+      "status": "loaded",
+      "summary": "",
+      "title": "Rule-result disposition coverage",
+      "version": "1.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "test-target",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "statistics": {
+    "duration": 61
+  },
+  "timestamp": "2026-01-02T03:04:05Z",
+  "tool": {
+    "format": "XCCDF",
+    "name": "XCCDF"
+  }
+}

@@ -1089,13 +1089,13 @@ describe('XCCDF branch coverage', () => {
   it('should handle rule-result with "notselected" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'notselected' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "informational" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'informational' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "fixed" status', async () => {

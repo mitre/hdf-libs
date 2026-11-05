@@ -22,6 +22,18 @@ All notable changes to this project will be documented in this file.
 
   Re-export restores `Workflow.Status: SUPPRESSED` on the round trip, which the previous shape lost.
 
+- **`xccdf-results-to-hdf` maps `notselected` and `informational` rule-results to `notApplicable`, so a benchmark's unselected tail stays out of the compliance ratio.**
+
+  Both previously mapped to `notReviewed`, which sits in the compliance denominator. A SCAP benchmark commonly carries thousands of rules while a profile selects a few hundred, and `oscap` returns `notselected` for every rule a `--reference`, `--skip-rule` or tailoring selection excludes. On a real OpenSCAP RHEL 7 scan (43 passed, 137 failed, 23.89%), an unselected tail of 1,820 rules would have reported **2.15%** for the same posture.
+
+  `notselected` was never meant to be assessed and `informational` produces no verdict to score, so neither belongs in the ratio. `notchecked` is unchanged and stays `notReviewed` — a rule with no automated check is genuinely outstanding work.
+
+  **Impact is no longer zeroed** for these dispositions. A deselected high-severity rule is still a high-severity rule that was not evaluated, so impact stays the severity the benchmark assigned and the disposition travels in the result status alone. An `info` severity still maps to `0.0`, and an info-severity rule that failed still reports `failed`.
+
+  That moves these rules twice, not once, in a threshold file: a deselected high-severity rule previously counted under `skipped.informational` (`notReviewed` at impact 0) and now counts under `not_applicable.high`. A SCAP threshold pinning the old bucket or severity band needs updating on both axes.
+
+  This is the ingest path for DISA/SCAP content, so a stored compliance figure computed from a scan with a deselected tail will move. None of the committed fixtures carried any of these rule-results, which is why the change was not visible earlier; a schema-confirmed input now covers all five cases.
+
 - **`msft-secure-score-to-hdf` reports `notReviewed` for an unscored control instead of `passed`.**
 
   `getStatus` compared a control's score to its profile's `maxScore`. The Graph schema types `maxScore` optional and an absent JSON number decodes to zero, so a profile without one made its control pass on `0 == 0` — an affirmative compliance claim for something that was never scored. It exported as CKL `NotAFinding`, ASFF `PASSED` and XCCDF `pass`; it now exports as `Not_Reviewed`, `WARNING` and `notchecked`.
