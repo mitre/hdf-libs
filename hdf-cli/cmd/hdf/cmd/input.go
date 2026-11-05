@@ -136,21 +136,32 @@ func readFromStdin(allowEmpty bool) ([]byte, error) {
 	return data, nil
 }
 
+// refuseSymlinkIfConfigured is the CLI's one symlink policy, applied when a file is
+// about to be read: with --no-follow-symlinks a symlink is refused, otherwise it is
+// followed. Every reader goes through it, including the streaming evidence hasher,
+// so --uri, --file and build cannot disagree about what the flag means.
+func refuseSymlinkIfConfigured(path string) error {
+	if !noFollowSymlinks {
+		return nil
+	}
+	linkInfo, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file not found: %s", path)
+		}
+		return fmt.Errorf("cannot stat file: %w", err)
+	}
+	if linkInfo.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to follow symlink: %s (use without --no-follow-symlinks to allow)", path)
+	}
+	return nil
+}
+
 // readFromFile reads a file with security validations. When allowEmpty is false,
 // a zero-byte file is rejected.
 func readFromFile(path string, allowEmpty bool) ([]byte, error) {
-	// Check for symlinks if --no-follow-symlinks is set
-	if noFollowSymlinks {
-		linkInfo, err := os.Lstat(path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil, fmt.Errorf("file not found: %s", path)
-			}
-			return nil, fmt.Errorf("cannot stat file: %w", err)
-		}
-		if linkInfo.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("refusing to follow symlink: %s (use without --no-follow-symlinks to allow)", path)
-		}
+	if err := refuseSymlinkIfConfigured(path); err != nil {
+		return nil, err
 	}
 
 	// Open file first to get handle

@@ -102,6 +102,28 @@ Evidence package written to evidence-package.json (5 documents)
 
 Five documents: the system, the three converted results, and the SBOM. For this example we left the original unconverted data that we passed to `hdf convert` earlier present in the directory to demonstrate that they're not included in the package, only HDF data is. The four files that are not HDF are each named, with the command that would carry them as external references.
 
+### Add native reports in bulk
+
+Use repeatable `--file` selectors to add local files or quoted globs without a shell loop. Local selectors use filesystem paths relative to your working directory, and each selected file is recorded as a package-relative reference; a selection outside the package's directory is refused, since discovery never records a host path — use `--uri` to reference an external artifact deliberately. Existing `--uri` values remain literal URI references relative to the package. For example, with SARIF reports under `reports/` and JUnit reports under `tests/`:
+
+```bash
+hdf evidence add-evidence evidence-package.json \
+  --file 'reports/*.sarif' --file 'tests/*.xml' \
+  --format x-sarif --format x-junit
+```
+
+A single `--format` applies to the whole selection. To assign different formats, supply one per selector group, in this order: `--uri` values, `--file` values, then `--from-dir` values, preserving repeat order within each flag. Each glob's matches inherit its group's format; the format count is not the expanded file count. Formats are explicit, not inferred from extensions. `--infer` remains an opt-in for supported content discriminators such as CycloneDX and SPDX.
+
+For a directory containing log evidence, select its immediate files or opt into recursive discovery:
+
+```bash
+hdf evidence add-evidence evidence-package.json --from-dir logs --format raw-log
+```
+
+Add `--recursive` to include nested directories. Quote globs for consistent CLI expansion; `*` does not cross directory boundaries. Discovery is deterministic, excludes the input package and `-o` output, and skips hidden entries and whole hidden subtrees such as `.git/`, reporting how many it skipped; a dotfile you name literally with `--file` is selected. A discovered symlink or other non-regular entry is skipped with a notice, a symlink named by `--file` is refused, and links met inside the walk are never followed, so traversal cannot enter a link cycle; the `--from-dir` root itself is resolved first, as `evidence build --from-dir` resolves its own, so a symlinked root records references under the directory it points at. Same-format overlaps between discovered selections are deduplicated; conflicting formats, literal duplicates, and already-recorded references are errors. Remove an existing reference deliberately before re-attesting a changed artifact.
+
+Each selected local file must be readable and regular and receives its own SHA-512 checksum; `--checksum` cannot be supplied with local selectors. The command validates and hashes the batch before one atomic write. A failing selection leaves the package unchanged. No matches or an empty selection exits 4; other selection/read failures exit 1. For mixed native reports like a CI run's SARIF and JUnit outputs, group the selectors by the known producer format as above.
+
 Give the package a name while you are here:
 
 ```console
@@ -261,6 +283,26 @@ Note: no planRef in evidence package — skipping completeness check
 ```
 
 Six of six, on a different machine, with no path rewriting. That property holds because every reference the package records is relative to the package's own directory — which is what makes an evidence package a deliverable rather than a directory listing.
+
+## Evidence from hdf-libs CI
+
+The repository's CI workflow assembles the normalized scan and test documents, the dependency SBOM, and the native scanner and JUnit reports into the `hdf-evidence-package` artifact. Its `run.json` records the source commit, run URL, CLI identity, and upstream gate outcomes. The ZIP and its SHA-512 checksum are retained for 90 days.
+
+Native reports are selected per artifact directory with `--file` and an explicit format for each, in one `add-evidence` call, so the set is recorded atomically; a directory an upstream job did not produce is named in the job log and left out, and a report no selector names fails the job rather than vanishing. Failed gates still leave an evidence package when enough input was produced to build one. Check `run.json` before interpreting it: an archive that verifies has intact recorded files, but that does not mean the tests passed or every job produced evidence. A run with no normalized HDF or SBOM fails packaging rather than emitting an empty package.
+
+To inspect a run, set `RUN_ID` to its numeric Actions run ID. With GitHub CLI, `unzip`, `sha512sum`, and an HDF CLI supporting these evidence commands installed:
+
+```bash
+gh run download "$RUN_ID" --repo mitre/hdf-libs --name hdf-evidence-package --dir evidence-download
+cd evidence-download
+sha512sum -c hdf-libs-evidence.zip.sha512
+unzip -q hdf-libs-evidence.zip -d extracted
+hdf evidence info extracted/evidence-package.json --verify --require-checksums --require-reachable
+```
+
+Formal releases attach the same ZIP and checksum from a successful **main push** CI run for the tagged commit. The release workflow refuses a different commit's evidence and does not consume pull-request artifacts. If the matching CI run has not passed, or its evidence has expired, the release stops before npm publishing; rerun CI for that commit first.
+
+Until 3.8.0 provides the required commands, CI builds its gate CLI from a fixed, reviewed main commit in an isolated checkout. It does not build that trusted CLI from the pull request being assessed.
 
 ## Where to go next
 
