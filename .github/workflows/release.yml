@@ -139,15 +139,15 @@ jobs:
           }
           REGISTRY="https://registry.npmjs.org"
           for pkg in "${PACKAGES[@]}"; do
-            TAG_FLAG=""
+            TAG_FLAG=()
             if [[ "$pkg" == "hdf-converters" ]]; then
               if [[ "$VERSION" == *"-rc"* ]]; then
-                TAG_FLAG="--tag rc"
+                TAG_FLAG=(--tag rc)
               else
-                TAG_FLAG="--tag stable"
+                TAG_FLAG=(--tag stable)
               fi
             elif [[ "$VERSION" == *"-rc"* ]]; then
-              TAG_FLAG="--tag rc"
+              TAG_FLAG=(--tag rc)
             fi
 
             name="@mitre/$pkg"
@@ -173,9 +173,9 @@ jobs:
                 ;;
             esac
 
-            echo "Publishing $name@$VERSION ${TAG_FLAG:-"(latest)"}..."
+            echo "Publishing $name@$VERSION ${TAG_FLAG[*]:-(latest)}..."
             cd "$pkg"
-            pnpm publish --access public --no-git-checks --provenance $TAG_FLAG
+            pnpm publish --access public --no-git-checks --provenance "${TAG_FLAG[@]}"
             cd ..
           done
 
@@ -347,9 +347,11 @@ jobs:
           else
             NOTES=$(git log --oneline HEAD~20..HEAD)
           fi
-          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$NOTES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Collect release assets
         id: assets
