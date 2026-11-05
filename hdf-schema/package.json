@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-schema",
-  "version": "3.7.2",
+  "version": "3.8.0-next.42108193016.1",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "publishConfig": {
     "access": "public"
@@ -79,7 +79,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-utilities": "workspace:^",
+    "@mitre/hdf-utilities": "3.8.0-next.42108193016.1",
     "ajv": "^8.17.0",
     "ajv-formats": "^3.0.0"
   },
