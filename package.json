@@ -30,6 +30,7 @@
     "lint:overrides": "node --test scripts/test/check-override-freshness.test.mjs && node scripts/check-override-freshness.mjs",
     "lint:generated-html": "node scripts/check-generated-html.mjs",
     "lint:comments": "node --test scripts/test/check-comment-length.test.mjs && node scripts/check-comment-length.mjs",
+    "lint:workflows": "for t in actionlint shellcheck; do command -v \"$t\" >/dev/null 2>&1 || { echo \"lint:workflows: $t is not installed; run: brew install actionlint (its formula brings shellcheck)\" >&2; exit 1; }; done; actionlint",
     "lint:package-names": "node scripts/check-package-names.mjs",
     "lint:mappings-offline": "pnpm --filter @mitre/hdf-mappings run mappings:hipcheck:check",
     "lint:fix": "eslint . --fix",

@@ -137,6 +137,8 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 `.husky/pre-commit` runs `pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
 
+One of those lint scripts, `lint:workflows`, runs actionlint (with shellcheck) over `.github/workflows`; install it with `brew install actionlint`. A missing binary fails the stage rather than skipping it, and CI runs the same release, pinned by sha256 in `ci.yml`'s env block, so local and CI agree.
+
 **It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader: it lints and runs govulncheck across all 13 modules, runs every Go test, and reaches all 13 with gosec — there is no standalone gosec step, but golangci-lint inherits the root `.golangci.yml` in any module that does not override it (only `hdf-cli` does), and `scripts/check-gosec-coverage.sh` fails the build if a module ever resolves a config without gosec. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `golangci-lint run` in the module you touched.
 
 ## Security Requirements
