@@ -17,6 +17,54 @@ env:
   GO_VERSION: '1.26.10'
 
 jobs:
+  # The release_tags ruleset requires a signature on every v* tag, but every
+  # tag pusher is on its bypass team, and `gh release create --verify-tag`
+  # only checks that the tag exists at the pushed commit. GitHub's verdict on
+  # the tag object is the guarantee consumers get, so every job that publishes
+  # needs this one. Lightweight tags are refused: they are commits, not
+  # signable tag objects.
+  verify-tag-signature:
+    name: Tag is signature-verified by GitHub
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+      - name: GitHub reports the tag object as verified
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # GITHUB_SHA is the tagged commit even for an annotated tag, so the tag
+          # object is read from the ref checkout fetched (+refs/tags/X:refs/tags/X).
+          sha=$(git rev-parse "refs/tags/$TAG")
+          kind=$(git cat-file -t "$sha")
+          if [ "$kind" != tag ]; then
+            echo "::error::$TAG is a lightweight tag: refs/tags/$TAG is a $kind ($sha), not a tag object, so it carries no signature. Re-create it signed (git tag -s) on the same commit and push it again."
+            exit 1
+          fi
+          tag_json="$RUNNER_TEMP/tag-object.json"
+          if ! gh api "repos/$GH_REPO/git/tags/$sha" > "$tag_json" 2> "$RUNNER_TEMP/gh-api.err"; then
+            if [ "$(jq -r '.status // empty' "$tag_json")" = 404 ]; then
+              echo "::error::GitHub has no tag object $sha for $TAG: the tag GitHub holds is a commit (a lightweight tag, which carries no signature) or was replaced after this run started. Re-create it signed (git tag -s) on the same commit and push it again."
+            else
+              echo "::error::could not read tag object $sha for $TAG from GitHub: $(cat "$RUNNER_TEMP/gh-api.err")"
+            fi
+            exit 1
+          fi
+          verified=$(jq -r '.verification.verified' "$tag_json")
+          reason=$(jq -r '.verification.reason' "$tag_json")
+          if [ "$verified" != true ]; then
+            echo "::error::GitHub does not verify the signature on $TAG (tag object $sha): verification.reason=$reason. Sign the tag with a key GitHub verifies for a maintainer (git tag -s), re-create it on the same commit and push it again; do not bypass this job."
+            exit 1
+          fi
+          echo "$TAG (tag object $sha, commit $(jq -r .object.sha "$tag_json")) is signature-verified by GitHub: verification.reason=$reason"
+
   # Go reads each module's go.mod from the tagged commit and ignores its replace
   # directives, so a tag on any commit but its version's prepare commit publishes
   # modules whose requires name a version no tag provides — go get succeeds and
@@ -45,7 +93,7 @@ jobs:
     name: Publish npm packages
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [check-module-versions, release-evidence]
+    needs: [check-module-versions, release-evidence, verify-tag-signature]
     environment: npm-publish
     permissions:
       contents: read
@@ -139,15 +187,15 @@ jobs:
           }
           REGISTRY="https://registry.npmjs.org"
           for pkg in "${PACKAGES[@]}"; do
-            TAG_FLAG=""
+            TAG_FLAG=()
             if [[ "$pkg" == "hdf-converters" ]]; then
               if [[ "$VERSION" == *"-rc"* ]]; then
-                TAG_FLAG="--tag rc"
+                TAG_FLAG=(--tag rc)
               else
-                TAG_FLAG="--tag stable"
+                TAG_FLAG=(--tag stable)
               fi
             elif [[ "$VERSION" == *"-rc"* ]]; then
-              TAG_FLAG="--tag rc"
+              TAG_FLAG=(--tag rc)
             fi
 
             name="@mitre/$pkg"
@@ -173,9 +221,9 @@ jobs:
                 ;;
             esac
 
-            echo "Publishing $name@$VERSION ${TAG_FLAG:-"(latest)"}..."
+            echo "Publishing $name@$VERSION ${TAG_FLAG[*]:-(latest)}..."
             cd "$pkg"
-            pnpm publish --access public --no-git-checks --provenance $TAG_FLAG
+            pnpm publish --access public --no-git-checks --provenance "${TAG_FLAG[@]}"
             cd ..
           done
 
@@ -183,7 +231,7 @@ jobs:
     name: Build CLI binaries
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: check-module-versions
+    needs: [check-module-versions, verify-tag-signature]
     permissions:
       contents: read
       id-token: write      # ambient OIDC for cosign keyless signing + attestation
@@ -309,7 +357,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [publish-npm, build-cli, build-schemas, release-evidence]
+    needs: [publish-npm, build-cli, build-schemas, release-evidence, verify-tag-signature]
     permissions:
       contents: write  # create GitHub Release + push Go module tags
     steps:
@@ -347,9 +395,11 @@ jobs:
           else
             NOTES=$(git log --oneline HEAD~20..HEAD)
           fi
-          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$NOTES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Collect release assets
         id: assets

@@ -10,6 +10,7 @@ import (
 
 	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -425,6 +426,31 @@ func TestSonarqubeFetcher_EmptyResults(t *testing.T) {
 	assert.Equal(t, 0, result.Total)
 }
 
+func TestSonarqubeFetcher_EmptyResults_FetchAndConvert(t *testing.T) {
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeIssuesPage(w, []sonarqubeconv.Issue{}, nil, nil, 0, 1)
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	raw, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	var envelope map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(raw, &envelope))
+	assert.JSONEq(t, `[]`, string(envelope["issues"]), "a clean scan must carry an empty issues array, not null")
+
+	result, err := sonarqubeconv.ConvertSonarqubeToHDF(raw, "test-version")
+	require.NoError(t, err, "a clean scan must convert, not fail")
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "sonarqube-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+}
+
 func TestSonarqubeFetcher_ResponseExceedsMaxSize(t *testing.T) {
 	// Return a response body larger than the 10MB limit.
 	// The fetcher should return an explicit size-limit error rather than
@@ -463,6 +489,41 @@ func TestSonarqubeFetcher_InvalidJSONResponse(t *testing.T) {
 	_, err := f.Fetch(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parsing API response")
+}
+
+func TestSonarqubeFetcher_RejectsMissingOrNullIssues(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+	}{
+		{name: "missing", body: `{}`},
+		{name: "null", body: `{"issues":null}`},
+	} {
+		for _, invalidPage := range []int{1, 2} {
+			t.Run(fmt.Sprintf("%s/page-%d", tc.name, invalidPage), func(t *testing.T) {
+				calls := 0
+				srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, "/api/issues/search", r.URL.Path)
+					calls++
+					if invalidPage == 2 && r.URL.Query().Get("p") == "1" {
+						writeIssuesPage(w, []sonarqubeconv.Issue{{Key: "issue-1"}}, nil, nil, 2, 1)
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = fmt.Fprint(w, tc.body)
+				})
+				f := newTestFetcher(t, srv.URL)
+				t.Setenv("SONARQUBE_TOKEN", "tok")
+
+				data, err := f.Fetch(context.Background())
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "missing or null issues field")
+				assert.Contains(t, err.Error(), fmt.Sprintf("fetching page %d", invalidPage))
+				assert.Nil(t, data, "malformed pages must not yield an empty or partial scan")
+				assert.Equal(t, invalidPage, calls)
+			})
+		}
+	}
 }
 
 // ---- Rule enrichment tests (SonarQube 26+ /api/rules/show) ----
