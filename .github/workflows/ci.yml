@@ -373,6 +373,13 @@ jobs:
       # unrelated PR runs next — so the gate has to live here as well.
       - name: Dependency overrides are range-targeted and documented
         run: pnpm run lint:overrides
+      # The hipcheck table's generator is its only integrity gate, and it reads
+      # repo files alone — so unlike the three networked mapping checks it can
+      # run here, and has to: --no-verify and a fork PR both skip the hook, and
+      # a table that no longer matches its generator is wrong in the commit, not
+      # upstream.
+      - name: The generated mapping table matches its generator
+        run: pnpm run lint:mappings-offline
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.

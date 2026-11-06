@@ -29,8 +29,8 @@ func legacyV2Compiled() (*gojsonschema.Schema, error) {
 	return legacyV2Schema, errLegacyV2
 }
 
-// LegacyV2SchemaBytes returns the raw pinned v2 schema JSON, so callers (and the
-// cross-language parity test) can read the single source of truth.
+// LegacyV2SchemaBytes returns the raw pinned v2 schema JSON. Exported API with no
+// caller in this repo; removing it would break consumers.
 func LegacyV2SchemaBytes() []byte {
 	return legacyV2SchemaBytes
 }

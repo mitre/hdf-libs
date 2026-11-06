@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Regenerates the AWS Config -> NIST 800-53 mapping (awsconfig-mappings.json) from
 // authoritative AWS sources. This is the "repeatable refresh" for the mapping: run
-// it, review the printed summary plus `git diff`, commit. Output is written
-// byte-identically to both the Go and TS copies. Deterministically sorted, so
-// future diffs stay clean.
+// it, review the printed summary plus `git diff`, commit. Output is the one copy
+// both languages read. Deterministically sorted, so future diffs stay clean.
 //
 //   node scripts/generate-awsconfig-mappings.mjs [--check]
 //
-//     (no flag)  rewrite both mapping files and print a row-count + added/removed summary
-//     --check    report drift only; exit 1 if regenerating would change EITHER copy (CI gate)
+//     (no flag)  rewrite the mapping file and print a row-count + added/removed summary
+//     --check    report drift only; exit 1 if regenerating would change the committed
+//                table. NOT a commit gate: it fetches AWS's docs live, so a failure
+//                means upstream moved. See the README's gate table.
 //
 // Provenance / tiers (a row's mapping comes from exactly one, in precedence order;
 // each row records its tier in the Source field):
@@ -39,10 +40,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..');
-const OUT_FILES = [
-  join(REPO, 'hdf-mappings', 'go', 'awsconfig', 'awsconfig-mappings.json'),
-  join(REPO, 'hdf-mappings', 'src', 'data', 'awsconfig-mappings.json'),
-];
+const OUT_FILES = [join(REPO, 'hdf-mappings', 'go', 'datasets', 'mappings', 'awsconfig-mappings.json')];
 
 const CONFIG_DOCS = {
   5: 'https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-nist-800-53_rev_5.html',
@@ -88,7 +86,7 @@ async function fetchText(url) {
 
 // --- tier 4 support: NIST r4<->r5 crosswalk translation ---
 
-const CROSSWALK_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'nist-revision-crosswalk.json');
+const CROSSWALK_FILE = join(REPO, 'hdf-mappings', 'go', 'datasets', 'mappings', 'nist-revision-crosswalk.json');
 const SUPPRESSIONS_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'awsconfig-suppressions.json');
 
 // --- final pass: maintainer-reviewed suppressions ---
@@ -380,7 +378,7 @@ async function main() {
   const knownSourceId = new Map(committed.map((r) => [r.AwsConfigRuleName, r.AwsConfigRuleSourceIdentifier]));
 
   // Lexical (code-unit) sort — matches Go sort.Strings byte order for the ASCII
-  // control IDs, so the two mapping copies and both converters stay in lockstep.
+  // control IDs, so both converters stay in lockstep.
   const rowFor = (rule, controls, rev, source) => ({
     AwsConfigRuleSourceIdentifier: sourceIdFor(rule, knownSourceId),
     AwsConfigRuleName: rule,
@@ -488,11 +486,10 @@ async function main() {
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';
 
-  // Compare EVERY output copy, not just the first — a drifted or hand-edited TS copy
-  // must still be caught (and rewritten) even when the Go copy already matches.
+  // One output, read by both languages.
   const current = OUT_FILES.map((f) => readFileSync(f, 'utf-8'));
   if (current.every((c) => c === json)) {
-    console.log(`awsconfig-mappings.json is up to date (${OUT_FILES.length} copies).`);
+    console.log('awsconfig-mappings.json is up to date.');
     return;
   }
   const b = JSON.parse(current[0]);
@@ -509,7 +506,7 @@ async function main() {
     process.exit(1);
   }
   for (const f of OUT_FILES) writeFileSync(f, json);
-  console.log(`wrote ${OUT_FILES.length} files.`);
+  console.log(`wrote ${OUT_FILES[0]}`);
 }
 
 // Run only when executed directly — the suppression pass above is imported by

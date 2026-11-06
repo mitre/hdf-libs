@@ -200,53 +200,20 @@ func TestLazyLoading(t *testing.T) {
 	}
 }
 
-// TestLoadWithCorruptJSON exercises the JSON unmarshal error path in load().
-// When mappingsData contains invalid JSON, load() must set empty maps rather
-// than panic, and all public functions must return nil/nil gracefully.
-func TestLoadWithCorruptJSON(t *testing.T) {
-	// Save original state. sync.Once is not copy-safe, so we reset it
-	// in the defer rather than save/restore; load() is idempotent.
-	origByRuleName := byRuleName
-	origByIdentifier := byIdentifier
-	origMappingsData := mappingsData
-
-	defer func() {
-		byRuleName = origByRuleName
-		byIdentifier = origByIdentifier
-		mappingsData = origMappingsData
-		loadOnce = sync.Once{}
-	}()
-
-	// Reset to unloaded state and inject invalid JSON.
-	byRuleName = nil
-	byIdentifier = nil
-	loadOnce = sync.Once{}
-	mappingsData = []byte("NOT VALID JSON {{{")
-
-	// GetByRuleName must not panic and must return nil.
-	m := GetByRuleName("iam-password-policy")
-	if m != nil {
-		t.Errorf("Expected nil from GetByRuleName with corrupt JSON, got %+v", m)
+// Corrupt JSON must yield empty maps rather than nil ones, so every lookup is a
+// miss instead of a panic. The public-API side of that is covered by the
+// unknown-rule and unknown-identifier cases above.
+func TestParseMappingsWithCorruptJSON(t *testing.T) {
+	names, identifiers := parseMappings([]byte("NOT VALID JSON {{{"))
+	if names == nil {
+		t.Error("Expected non-nil name map (empty) after unmarshal error")
 	}
-
-	// Maps must be initialised (not nil) — load() creates them even on error.
-	if byRuleName == nil {
-		t.Error("Expected byRuleName to be non-nil (empty map) after unmarshal error")
+	if identifiers == nil {
+		t.Error("Expected non-nil identifier map (empty) after unmarshal error")
 	}
-	if byIdentifier == nil {
-		t.Error("Expected byIdentifier to be non-nil (empty map) after unmarshal error")
-	}
-
-	// GetByIdentifier must also not panic and return nil.
-	id := GetByIdentifier("IAM_PASSWORD_POLICY")
-	if id != nil {
-		t.Errorf("Expected nil from GetByIdentifier with corrupt JSON, got %+v", id)
-	}
-
-	// NISTControls must also not panic and return nil.
-	controls := NISTControls("iam-password-policy")
-	if controls != nil {
-		t.Errorf("Expected nil from NISTControls with corrupt JSON, got %v", controls)
+	if len(names) != 0 || len(identifiers) != 0 {
+		t.Errorf("Expected empty maps on unmarshal error, got %d names and %d identifiers",
+			len(names), len(identifiers))
 	}
 }
 

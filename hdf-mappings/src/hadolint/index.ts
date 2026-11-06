@@ -3,13 +3,13 @@
  *
  * One table covers both hadolint's own DL rules and the SC rules it surfaces
  * from its embedded shellcheck. The dataset is the JSON file the Go loader
- * embeds (go/hadolint/), imported directly so both languages read one file;
+ * embeds (go/datasets/mappings/), imported directly so both languages read one file;
  * the bundler inlines it into dist.
  */
 
 import type { HadolintMappingDataset, HadolintMappingProvenance, HadolintNistMapping } from './types.js';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
-import rawDataset from '../../go/hadolint/hadolint-nist-mappings.json';
+import rawDataset from '../../go/datasets/mappings/hadolint-nist-mappings.json';
 
 const dataset = rawDataset as HadolintMappingDataset;
 
