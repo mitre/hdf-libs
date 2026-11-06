@@ -284,6 +284,7 @@ jobs:
         run: |
           test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
           # npm provenance names github.sha; the published tree must descend from exactly that commit.
+          # The ./ keeps npm from reading a bare dir/file.tgz spec as a GitHub owner/repo shorthand.
           test "$SOURCE" = "$GITHUB_SHA"
           registry=(--registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org)
           while read -r pkg; do
