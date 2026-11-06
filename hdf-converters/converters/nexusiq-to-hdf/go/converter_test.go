@@ -324,13 +324,23 @@ func TestPackageForNonPypiFormat(t *testing.T) {
 	assert.Equal(t, "lodash", *p.Name)
 	assert.Equal(t, "4.17.20", *p.Version)
 	assert.Equal(t, hdf.Npm, *p.Ecosystem)
-	assert.Nil(t, p.Purl, "a purl is only built for formats a real fixture covers")
+	assert.Nil(t, p.Purl, "purl generation currently supports pypi only")
 
 	p, ok = affectedPackage(ComponentFact{
 		ComponentIdentifier: &ComponentIdentifier{Format: "a-name", Coordinates: map[string]any{"name": "openssl", "version": "1.0"}},
 	})
 	require.True(t, ok)
 	assert.Equal(t, hdf.Generic, *p.Ecosystem)
+}
+
+func TestMavenPackageIdentityIncludesGroup(t *testing.T) {
+	out := convert(t, "maven-policy-evaluation.json")
+	r := out.Baselines[0].Requirements[0]
+	require.Len(t, r.AffectedPackages, 1)
+	assert.Equal(t, "org.apache.tomcat.embed:tomcat-embed-websocket", *r.AffectedPackages[0].Name)
+	assert.Nil(t, r.AffectedPackages[0].Purl)
+	assert.Equal(t, "org.apache.tomcat.embed:tomcat-embed-websocket@9.0.45", *r.Results[0].ResourceID)
+	assert.Equal(t, "org.apache.tomcat.embed:tomcat-embed-websocket 9.0.45 (jar) — Architecture-Quality", *r.Title)
 }
 
 func TestPypiPurlNormalizesTheName(t *testing.T) {
@@ -360,46 +370,80 @@ func TestEmptyScanIsANoFindingsDocument(t *testing.T) {
 	assert.Equal(t, "nexusiq-no-findings", reqs[0].ID)
 	require.Len(t, reqs[0].Results, 1)
 	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
-	assert.Contains(t, reqs[0].Results[0].CodeDesc, "example-org_example-app_dev")
+	assert.Contains(t, reqs[0].Results[0].CodeDesc, "producer_cc")
 }
 
-func TestNullOrMissingAlertsWithZeroCountsIsClean(t *testing.T) {
-	for _, in := range []string{
-		`{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":null,"criticalPolicyViolationCount":0}}`,
-		`{"applicationId":"a","scanId":"s","policyEvaluationResult":{}}`,
-	} {
-		out, err := ConvertNexusIQToHDF([]byte(in), testVersion)
-		require.NoError(t, err, in)
-		assert.Equal(t, "nexusiq-no-findings", out.Baselines[0].Requirements[0].ID, in)
+func assertRejected(t *testing.T, input []byte, message string) {
+	t.Helper()
+	out, err := ConvertNexusIQToHDF(input, testVersion)
+	require.ErrorContains(t, err, message)
+	assert.Nil(t, out)
+	count, _, err := ExpectedRequirementCount(input)
+	require.ErrorContains(t, err, message)
+	assert.Zero(t, count)
+}
+
+func TestRejectsScanHistorySummary(t *testing.T) {
+	assertRejected(t, fixture(t, "scan-history-summary.json"), "policy violations but carries no alerts")
+}
+
+func corruptEvaluation(t *testing.T, name string, patch map[string]json.RawMessage) []byte {
+	t.Helper()
+	var doc map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(fixture(t, name), &doc))
+	var result map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(doc["policyEvaluationResult"], &result))
+	for key, value := range patch {
+		if value == nil {
+			delete(result, key)
+		} else {
+			result[key] = value
+		}
+	}
+	var err error
+	doc["policyEvaluationResult"], err = json.Marshal(result)
+	require.NoError(t, err)
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return input
+}
+
+// Mutated inputs below exercise rejection, not the validity of an IQ report shape.
+func TestRejectsUnconfirmedCleanResults(t *testing.T) {
+	for _, alerts := range []string{"[]", "null", "missing"} {
+		for _, key := range []string{"criticalPolicyViolationCount", "severePolicyViolationCount", "moderatePolicyViolationCount"} {
+			for _, count := range []string{"missing", "null", `"0"`, "-1", "0.5", "1"} {
+				t.Run(alerts+"/"+key+"/"+count, func(t *testing.T) {
+					patch := map[string]json.RawMessage{"alerts": json.RawMessage(alerts), key: json.RawMessage(count)}
+					if alerts == "missing" {
+						patch["alerts"] = nil
+					}
+					if count == "missing" {
+						patch[key] = nil
+					}
+					assertRejected(t, corruptEvaluation(t, "empty.json", patch), "nexusiq:")
+				})
+			}
+		}
 	}
 }
 
-func TestNullAlertsWithViolationCountsIsRejected(t *testing.T) {
-	in := `{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":null,"criticalPolicyViolationCount":2,"severePolicyViolationCount":1}}`
-	_, err := ConvertNexusIQToHDF([]byte(in), testVersion)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "3 policy violations")
+func TestRejectsUnsupportedSastAlerts(t *testing.T) {
+	for _, name := range []string{"empty.json", "policy-evaluation.json"} {
+		t.Run(name, func(t *testing.T) {
+			input := corruptEvaluation(t, name, map[string]json.RawMessage{"sastAlerts": json.RawMessage(`[{}]`)})
+			assertRejected(t, input, "SAST alerts are not supported")
+		})
+	}
 }
 
-func TestSastAlertsAreReportedNotDropped(t *testing.T) {
-	in := `{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":[],"sastAlerts":[{},{}]}}`
-	out, err := ConvertNexusIQToHDF([]byte(in), testVersion)
-	require.NoError(t, err)
-	b := out.Baselines[0]
-	require.NotNil(t, b.StatusMessage)
-	assert.Contains(t, *b.StatusMessage, "2 SAST alerts")
-	ctx := b.Extensions.Passthrough["nexusiq"].(map[string]any)
-	assert.EqualValues(t, 2, ctx["unconvertedSastAlerts"])
-}
-
-func TestAlertWithoutViolationIDGetsPositionalID(t *testing.T) {
-	in := `{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":[{"trigger":{"policyName":"P","threatLevel":5,"componentFacts":[]},"actions":[]}]}}`
-	out, err := ConvertNexusIQToHDF([]byte(in), testVersion)
-	require.NoError(t, err)
-	r := out.Baselines[0].Requirements[0]
-	assert.Equal(t, "nexusiq-alert-0", r.ID)
-	assert.Equal(t, "Unknown component — P", *r.Title)
-	assert.Equal(t, "Unknown component", r.Results[0].CodeDesc[:len("Unknown component")])
+func TestRejectsMalformedSastAlerts(t *testing.T) {
+	for _, value := range []string{`{}`, `"unknown"`, `1`} {
+		t.Run(value, func(t *testing.T) {
+			input := corruptEvaluation(t, "empty.json", map[string]json.RawMessage{"sastAlerts": json.RawMessage(value)})
+			assertRejected(t, input, "nexusiq:")
+		})
+	}
 }
 
 // ---- Expected count ----
@@ -440,47 +484,4 @@ func TestSnapshots(t *testing.T) {
 func itoa(i int) string {
 	b, _ := json.Marshal(i)
 	return string(b)
-}
-
-// Every optional field absent or empty: the shapes a trimmed or older result
-// file could carry. TypeScript asserts the same document in its sparse-input test.
-const sparse = `{"applicationId":"app","scanId":"scan","policyEvaluationResult":{"alerts":[
-	{},
-	{"trigger":{"policyName":"P","componentFacts":[{"componentIdentifier":{"format":"maven"},"displayName":{"name":"shown"}}]}},
-	{"trigger":{"componentFacts":[{"componentIdentifier":{"format":"npm","coordinates":{}}}]}},
-	{"trigger":{"componentFacts":[{"componentIdentifier":null,"constraintFacts":[{"conditionFacts":[{"summary":"s"}]}]}]}},
-	{"trigger":{"componentFacts":[{"componentIdentifier":{"format":"pypi","coordinates":{"name":"n"}},"constraintFacts":[{}]}]}}
-]}}`
-
-func TestSparseAlerts(t *testing.T) {
-	out, err := ConvertNexusIQToHDF([]byte(sparse), testVersion)
-	require.NoError(t, err)
-	reqs := out.Baselines[0].Requirements
-	require.Len(t, reqs, 5)
-
-	var titles []string
-	for i, r := range reqs {
-		titles = append(titles, *r.Title)
-		assert.Equal(t, "nexusiq-alert-"+itoa(i), r.ID)
-	}
-	assert.Equal(t, []string{
-		"Unknown component — ", "shown — P", "Unknown component — ", "Unknown component — ", "n — ",
-	}, titles)
-	assert.InDelta(t, 0.0, reqs[0].Impact, 1e-9)
-	assert.Equal(t, "none", reqs[0].Tags["threatCategory"])
-	assert.Equal(t, "Unknown component violated ", reqs[0].Results[0].CodeDesc)
-	assert.Empty(t, reqs[1].AffectedPackages)
-	assert.Equal(t, ":\ns", reqs[3].Descriptions[1].Data)
-	assert.Equal(t, ":", reqs[4].Descriptions[1].Data)
-
-	assert.Equal(t, "Nexus IQ policy evaluation of app", *out.Baselines[0].Title)
-	assert.Empty(t, out.ExternalReferences)
-	assert.Equal(t, map[string]any{"applicationId": "app", "scanId": "scan", "summary": map[string]any{}},
-		out.Baselines[0].Extensions.Passthrough["nexusiq"])
-
-	data, err := json.Marshal(out)
-	require.NoError(t, err)
-	assert.Contains(t, string(data), `"componentIdentifier":[{"coordinates":{"name":"n"},"format":"pypi"}]`)
-	v := validators.ValidateResults(data)
-	assert.Truef(t, v.Valid, "%s", v.Error())
 }

@@ -182,68 +182,6 @@ describe('nexusiq-to-hdf alerts', () => {
     expect(r.tags).not.toHaveProperty('componentIdentifier');
   });
 
-  it('gives an alert without a violation id a positional id', async () => {
-    const doc = JSON.parse(
-      await convertNexusIQToHdf(
-        '{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":[{"trigger":{"policyName":"P","threatLevel":5,"componentFacts":[]},"actions":[]}]}}',
-      ),
-    );
-    const r = doc.baselines[0].requirements[0];
-    expect(r.id).toBe('nexusiq-alert-0');
-    expect(r.title).toBe('Unknown component — P');
-    expect(r.results[0].codeDesc).toBe('Unknown component violated P');
-  });
-});
-
-// Every optional field absent or empty: the shapes a trimmed or older result
-// file could carry. Go asserts the same document in TestSparseAlerts.
-const SPARSE = JSON.stringify({
-  applicationId: 'app',
-  scanId: 'scan',
-  policyEvaluationResult: {
-    alerts: [
-      {},
-      { trigger: { policyName: 'P', componentFacts: [{ componentIdentifier: { format: 'maven' }, displayName: { name: 'shown' } }] } },
-      { trigger: { componentFacts: [{ componentIdentifier: { format: 'npm', coordinates: {} } }] } },
-      { trigger: { componentFacts: [{ componentIdentifier: null, constraintFacts: [{ conditionFacts: [{ summary: 's' }] }] }] } },
-      { trigger: { componentFacts: [{ componentIdentifier: { format: 'pypi', coordinates: { name: 'n' } }, constraintFacts: [{}] }] } },
-    ],
-  },
-});
-
-describe('nexusiq-to-hdf sparse input', () => {
-  it('converts alerts with every optional field missing', async () => {
-    const doc = JSON.parse(await convertNexusIQToHdf(SPARSE));
-    const reqs = doc.baselines[0].requirements;
-    expect(reqs.map((r: Doc) => r.title)).toEqual([
-      'Unknown component — ',
-      'shown — P',
-      'Unknown component — ',
-      'Unknown component — ',
-      'n — ',
-    ]);
-    expect(reqs.map((r: Doc) => r.id)).toEqual([
-      'nexusiq-alert-0', 'nexusiq-alert-1', 'nexusiq-alert-2', 'nexusiq-alert-3', 'nexusiq-alert-4',
-    ]);
-    expect(reqs[0].impact).toBe(0);
-    expect(reqs[0].tags.threatCategory).toBe('none');
-    expect(reqs[1]).not.toHaveProperty('affectedPackages');
-    expect(reqs[3].descriptions[1].data).toBe(':\ns');
-    expect(reqs[4].descriptions[1].data).toBe(':');
-    expect(reqs[4].tags.componentIdentifier).toEqual([{ format: 'pypi', coordinates: { name: 'n' } }]);
-    expect(doc.baselines[0].title).toBe('Nexus IQ policy evaluation of app');
-    expect(doc).not.toHaveProperty('externalReferences');
-    expect(doc.baselines[0].extensions.passthrough.nexusiq).toEqual({ applicationId: 'app', scanId: 'scan', summary: {} });
-    expect(validateResults(doc).valid).toBe(true);
-  });
-
-  it('registers its fingerprint once', async () => {
-    const { register } = await import('./fingerprint.js');
-    const { getFingerprint } = await import('../../../shared/typescript/registry.js');
-    register();
-    register();
-    expect(getFingerprint('nexusiq-to-hdf')?.label).toBe('Nexus IQ');
-  });
 });
 
 describe('nexusiq-to-hdf helpers', () => {
@@ -271,6 +209,15 @@ describe('nexusiq-to-hdf helpers', () => {
     expect(affectedPackage({ componentIdentifier: null })).toBeUndefined();
   });
 
+  it('preserves the Maven group in package and resource identities', async () => {
+    const r = (await convert('maven-policy-evaluation.json')).baselines[0].requirements[0];
+    expect(r.affectedPackages).toEqual([{
+      name: 'org.apache.tomcat.embed:tomcat-embed-websocket', version: '9.0.45', ecosystem: 'maven',
+    }]);
+    expect(r.results[0].resourceId).toBe('org.apache.tomcat.embed:tomcat-embed-websocket@9.0.45');
+    expect(r.title).toBe('org.apache.tomcat.embed:tomcat-embed-websocket 9.0.45 (jar) — Architecture-Quality');
+  });
+
   it('does not call a non-CVE vulnerability id a CVE', () => {
     const refs = externalReferences({
       componentFacts: [{ constraintFacts: [{ conditionFacts: [{ reference: { value: 'sonatype-2024-0001', type: 'SECURITY_VULNERABILITY_REFID' } }] }] }],
@@ -285,32 +232,44 @@ describe('nexusiq-to-hdf no findings', () => {
     expect(reqs).toHaveLength(1);
     expect(reqs[0].id).toBe('nexusiq-no-findings');
     expect(reqs[0].results[0].status).toBe('passed');
-    expect(reqs[0].results[0].codeDesc).toContain('example-org_example-app_dev');
+    expect(reqs[0].results[0].codeDesc).toContain('producer_cc');
   });
 
-  it.each([
-    '{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":null,"criticalPolicyViolationCount":0}}',
-    '{"applicationId":"a","scanId":"s","policyEvaluationResult":{}}',
-  ])('treats null or missing alerts with zero counters as clean: %s', async (input) => {
-    const doc = JSON.parse(await convertNexusIQToHdf(input));
-    expect(doc.baselines[0].requirements[0].id).toBe('nexusiq-no-findings');
+  it('rejects a published scan-history summary with violations but no alert details', async () => {
+    const input = fixture('scan-history-summary.json');
+    await expect(convertNexusIQToHdf(input)).rejects.toThrow('policy violations but carries no alerts');
+    expect(() => expectedRequirementCount(input)).toThrow('policy violations but carries no alerts');
   });
 
-  it('rejects null alerts when the counters report violations', async () => {
-    await expect(
-      convertNexusIQToHdf(
-        '{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":null,"criticalPolicyViolationCount":2,"severePolicyViolationCount":1}}',
-      ),
-    ).rejects.toThrow('3 policy violations');
+  // These mutations test rejection, not the validity of an IQ report shape.
+  it.each(['empty', 'null', 'missing'])('requires zero counters with %s alerts', async (alerts) => {
+    for (const key of ['criticalPolicyViolationCount', 'severePolicyViolationCount', 'moderatePolicyViolationCount']) {
+      for (const value of [undefined, null, '0', -1, 0.5, 1]) {
+        const doc = JSON.parse(fixture('empty.json'));
+        if (alerts === 'null') doc.policyEvaluationResult.alerts = null;
+        if (alerts === 'missing') delete doc.policyEvaluationResult.alerts;
+        doc.policyEvaluationResult[key] = value;
+        const input = JSON.stringify(doc);
+        await expect(convertNexusIQToHdf(input)).rejects.toThrow('nexusiq:');
+        expect(() => expectedRequirementCount(input)).toThrow('nexusiq:');
+      }
+    }
   });
 
-  it('reports SAST alerts it does not convert', async () => {
-    const doc = JSON.parse(
-      await convertNexusIQToHdf('{"applicationId":"a","scanId":"s","policyEvaluationResult":{"alerts":[],"sastAlerts":[{},{}]}}'),
-    );
-    const b = doc.baselines[0];
-    expect(b.statusMessage).toContain('2 SAST alerts');
-    expect(b.extensions.passthrough.nexusiq.unconvertedSastAlerts).toBe(2);
+  it.each(['empty.json', 'policy-evaluation.json'])('rejects unsupported SAST alerts in %s', async (name) => {
+    const doc = JSON.parse(fixture(name));
+    doc.policyEvaluationResult.sastAlerts = [{}];
+    const input = JSON.stringify(doc);
+    await expect(convertNexusIQToHdf(input)).rejects.toThrow('SAST alerts are not supported');
+    expect(() => expectedRequirementCount(input)).toThrow('SAST alerts are not supported');
+  });
+
+  it.each([{}, 'unknown', 1])('rejects malformed SAST alerts: %j', async (value) => {
+    const doc = JSON.parse(fixture('empty.json'));
+    doc.policyEvaluationResult.sastAlerts = value;
+    const input = JSON.stringify(doc);
+    await expect(convertNexusIQToHdf(input)).rejects.toThrow('sastAlerts is not an array');
+    expect(() => expectedRequirementCount(input)).toThrow('sastAlerts is not an array');
   });
 
   it('counts the requirements a result must convert to', () => {
@@ -321,6 +280,14 @@ describe('nexusiq-to-hdf no findings', () => {
 });
 
 describe('nexusiq fingerprint', () => {
+  it('registers its fingerprint once', async () => {
+    const { register } = await import('./fingerprint.js');
+    const { getFingerprint } = await import('../../../shared/typescript/registry.js');
+    register();
+    register();
+    expect(getFingerprint('nexusiq-to-hdf')?.label).toBe('Nexus IQ');
+  });
+
   it('matches result files and rejects other shapes', () => {
     expect(nexusiqFingerprint.fingerprint(JSON.parse(fixture('policy-evaluation.json')))).toBe(1);
     expect(nexusiqFingerprint.fingerprint(JSON.parse(fixture('empty.json')))).toBe(0.9);

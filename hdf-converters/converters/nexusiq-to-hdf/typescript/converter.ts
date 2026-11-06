@@ -149,6 +149,11 @@ function coordinate(id: ComponentIdentifier | null | undefined, key: string): st
 
 /** The coordinate IQ uses for the format, then the display name IQ renders. */
 function packageName(cf: ComponentFact): string {
+  if (cf.componentIdentifier?.format?.toLowerCase() === 'maven') {
+    const group = coordinate(cf.componentIdentifier, 'groupId');
+    const artifact = coordinate(cf.componentIdentifier, 'artifactId');
+    if (group && artifact) return `${group}:${artifact}`;
+  }
   for (const key of ['name', 'packageId', 'artifactId']) {
     const v = coordinate(cf.componentIdentifier, key);
     if (v) return v;
@@ -156,11 +161,7 @@ function packageName(cf: ComponentFact): string {
   return cf.displayName?.name ?? '';
 }
 
-/**
- * The purl spec's pypi rule (lowercase, "_" to "-"). Only pypi is built because
- * only pypi has a real fixture behind it; a name or version that would need
- * percent-encoding gets no purl rather than a guessed one.
- */
+/** Names or versions needing percent-encoding have no purl until that is supported. */
 function pypiPurl(name: string, version: string): string {
   if (!PURL_SAFE.test(name) || !PURL_SAFE.test(version)) return '';
   return `pkg:pypi/${name.toLowerCase().replace(/_/g, '-')}@${version}`;
@@ -369,14 +370,23 @@ function parseInput(input: string): Report {
     throw new Error(`${CONVERTER}: policyEvaluationResult.alerts is not an array`);
   }
 
-  // IQ's counters let a missing alerts list be told apart from a clean scan.
-  if (!Array.isArray(result.alerts)) {
-    const total = VIOLATION_COUNTERS.reduce((sum, key) => {
+  if (result.sastAlerts !== undefined && result.sastAlerts !== null && !Array.isArray(result.sastAlerts)) {
+    throw new Error(`${CONVERTER}: policyEvaluationResult.sastAlerts is not an array`);
+  }
+  if (Array.isArray(result.sastAlerts) && result.sastAlerts.length > 0) {
+    throw new Error(`${CONVERTER}: SAST alerts are not supported; cannot convert this result completely`);
+  }
+
+  // Summary-only exports can have an empty array even when violations exist.
+  if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
+    for (const key of VIOLATION_COUNTERS) {
       const n = result[key];
-      return sum + (typeof n === 'number' && Number.isInteger(n) ? n : 0);
-    }, 0);
-    if (total > 0) {
-      throw new Error(`${CONVERTER}: the result reports ${total} policy violations but carries no alerts`);
+      if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) {
+        throw new Error(`${CONVERTER}: cannot confirm a clean result: missing or invalid ${key}`);
+      }
+      if (n !== 0) {
+        throw new Error(`${CONVERTER}: the result reports policy violations but carries no alerts (${key}=${n})`);
+      }
     }
   }
   return doc as unknown as Report;
@@ -451,13 +461,6 @@ export async function convertNexusIQToHdf(input: string, converterVersion = '1.0
     requirements,
     resultsChecksum: await inputChecksum(input),
   };
-  // No real SAST alert has been seen, so none is mapped; say so rather than let
-  // them vanish.
-  const sast = Array.isArray(result.sastAlerts) ? result.sastAlerts.length : 0;
-  if (sast > 0) {
-    context.unconvertedSastAlerts = sast;
-    baseline.statusMessage = `${sast} SAST alerts in the result were not converted; this converter maps component policy alerts only.`;
-  }
   baseline.extensions = { passthrough: { nexusiq: context } };
 
   const links = reportLinks(report);

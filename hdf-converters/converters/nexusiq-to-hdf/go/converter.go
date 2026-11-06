@@ -104,6 +104,13 @@ func coordinate(id *ComponentIdentifier, key string) string {
 // packageName prefers the coordinate IQ uses for the format, then the display
 // name IQ renders for every identified component.
 func packageName(cf ComponentFact) string {
+	if cf.ComponentIdentifier != nil && strings.EqualFold(cf.ComponentIdentifier.Format, "maven") {
+		group := coordinate(cf.ComponentIdentifier, "groupId")
+		artifact := coordinate(cf.ComponentIdentifier, "artifactId")
+		if group != "" && artifact != "" {
+			return group + ":" + artifact
+		}
+	}
 	for _, key := range []string{"name", "packageId", "artifactId"} {
 		if v := coordinate(cf.ComponentIdentifier, key); v != "" {
 			return v
@@ -117,9 +124,7 @@ func packageName(cf ComponentFact) string {
 
 var purlSafe = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
-// pypiPurl follows the purl spec's pypi rule (lowercase, "_" to "-"). Only pypi
-// is built because only pypi has a real fixture behind it; a name or version
-// that would need percent-encoding gets no purl rather than a guessed one.
+// Names or versions needing percent-encoding have no purl until that is supported.
 func pypiPurl(name, version string) string {
 	if !purlSafe.MatchString(name) || !purlSafe.MatchString(version) {
 		return ""
@@ -461,17 +466,20 @@ func parseInput(input []byte) (*parsed, error) {
 		return nil, fmt.Errorf("%s: failed to parse result file: %w", converterName, err)
 	}
 
-	// IQ's counters let a missing alerts list be told apart from a clean scan.
-	if out.report.PolicyEvaluationResult.Alerts == nil {
-		total := 0
+	if len(out.report.PolicyEvaluationResult.SastAlerts) > 0 {
+		return nil, fmt.Errorf("%s: SAST alerts are not supported; cannot convert this result completely", converterName)
+	}
+
+	// Summary-only exports can have an empty array even when violations exist.
+	if len(out.report.PolicyEvaluationResult.Alerts) == 0 {
 		for _, key := range violationCounters {
-			var n int
-			if json.Unmarshal(raw[key], &n) == nil {
-				total += n
+			var n *float64
+			if json.Unmarshal(raw[key], &n) != nil || n == nil || *n < 0 {
+				return nil, fmt.Errorf("%s: cannot confirm a clean result: missing or invalid %s", converterName, key)
 			}
-		}
-		if total > 0 {
-			return nil, fmt.Errorf("%s: the result reports %d policy violations but carries no alerts", converterName, total)
+			if *n != 0 {
+				return nil, fmt.Errorf("%s: the result reports policy violations but carries no alerts (%s=%g)", converterName, key, *n)
+			}
 		}
 	}
 
@@ -568,13 +576,6 @@ func ConvertNexusIQToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		Title:           &title,
 		Requirements:    requirements,
 		ResultsChecksum: shared.InputChecksum(input),
-	}
-	// No real SAST alert has been seen, so none is mapped; say so rather than
-	// let them vanish.
-	if n := len(result.SastAlerts); n > 0 {
-		context["unconvertedSastAlerts"] = n
-		baseline.StatusMessage = hdfutil.Ptr(fmt.Sprintf(
-			"%d SAST alerts in the result were not converted; this converter maps component policy alerts only.", n))
 	}
 	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"nexusiq": context}}
 

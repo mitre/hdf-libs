@@ -1,0 +1,144 @@
+{
+  "baselines": [
+    {
+      "extensions": {
+        "passthrough": {
+          "nexusiq": {
+            "applicationId": "petclinic",
+            "policyAction": "None",
+            "scanId": "e389c69b79ae401996db0173cc91484e",
+            "summary": {
+              "affectedComponentCount": 11,
+              "criticalComponentCount": 4,
+              "criticalPolicyViolationCount": 4,
+              "grandfatheredPolicyViolationCount": 0,
+              "moderateComponentCount": 1,
+              "moderatePolicyViolationCount": 1,
+              "severeComponentCount": 6,
+              "severePolicyViolationCount": 26,
+              "totalComponentCount": 79
+            }
+          }
+        }
+      },
+      "requirements": [
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "org.apache.tomcat.embed:tomcat-embed-websocket",
+              "version": "9.0.45"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Architecture-Quality (threat level 1, low) was violated by org.apache.tomcat.embed:tomcat-embed-websocket 9.0.45 (jar).",
+              "label": "default"
+            },
+            {
+              "data": "Version is unpopular:\nRelative Popularity (Percentage) \u003c= 10",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Relative popularity was \u003c= 10% (relative popularity = 0%)",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"17bf262a9b214ad9a5604372a2c78caa\",\n    \"policyName\": \"Architecture-Quality\",\n    \"threatLevel\": 1,\n    \"policyViolationId\": \"b56188d1e60e47a6beccb64b977d94a1\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"maven\",\n          \"coordinates\": {\n            \"artifactId\": \"tomcat-embed-websocket\",\n            \"classifier\": \"\",\n            \"extension\": \"jar\",\n            \"groupId\": \"org.apache.tomcat.embed\",\n            \"version\": \"9.0.45\"\n          }\n        },\n        \"hash\": \"05cefd0aab62e2938f51\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"611b1b38955e44199731c393ddabf67c\",\n            \"constraintName\": \"Version is unpopular\",\n            \"operatorName\": \"OR\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"RelativePopularity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Relative Popularity (Percentage) \u003c= 10\",\n                \"reason\": \"Relative popularity was \u003c= 10% (relative popularity = 0%)\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Group\",\n              \"value\": \"org.apache.tomcat.embed\"\n            },\n            {\n              \"value\": \" : \"\n            },\n            {\n              \"field\": \"Artifact\",\n              \"value\": \"tomcat-embed-websocket\"\n            },\n            {\n              \"value\": \" : \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"9.0.45\"\n            }\n          ],\n          \"name\": \"tomcat-embed-websocket\"\n        }\n      }\n    ]\n  },\n  \"actions\": []\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/0"
+              },
+              "resource": "package",
+              "resourceId": "org.apache.tomcat.embed:tomcat-embed-websocket@9.0.45",
+              "startTime": "2026-11-06T01:44:06.224678Z",
+              "status": "failed"
+            }
+          ],
+          "id": "b56188d1e60e47a6beccb64b977d94a1",
+          "impact": 0.1,
+          "tags": {
+            "componentHash": [
+              "05cefd0aab62e2938f51"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "artifactId": "tomcat-embed-websocket",
+                  "classifier": "",
+                  "extension": "jar",
+                  "groupId": "org.apache.tomcat.embed",
+                  "version": "9.0.45"
+                },
+                "format": "maven"
+              }
+            ],
+            "conditionTypes": [
+              "RelativePopularity"
+            ],
+            "constraints": [
+              "Version is unpopular"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "17bf262a9b214ad9a5604372a2c78caa",
+            "policyName": "Architecture-Quality",
+            "threatCategory": "low",
+            "threatLevel": 1
+          },
+          "title": "org.apache.tomcat.embed:tomcat-embed-websocket 9.0.45 (jar) — Architecture-Quality",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "9e2a4546d1eb016ecccfc17e793749a811cd5244cce132b84eae13da0f59ab8e"
+      },
+      "name": "Nexus IQ Policy Evaluation",
+      "title": "Nexus IQ policy evaluation of petclinic"
+    }
+  ],
+  "components": [
+    {
+      "externalIds": {
+        "nexus-iq": "petclinic"
+      },
+      "name": "petclinic",
+      "type": "application"
+    }
+  ],
+  "externalReferences": [
+    {
+      "description": "Nexus IQ application report",
+      "href": "https://lifecycle.example.com/ui/links/application/petclinic/report/e389c69b79ae401996db0173cc91484e",
+      "mediaType": "text/html",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    },
+    {
+      "description": "Nexus IQ application report (PDF)",
+      "href": "https://lifecycle.example.com/ui/links/application/petclinic/report/e389c69b79ae401996db0173cc91484e/pdf",
+      "mediaType": "application/pdf",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    },
+    {
+      "description": "Nexus IQ raw report data",
+      "href": "https://lifecycle.example.com/api/v2/applications/petclinic/reports/e389c69b79ae401996db0173cc91484e/raw",
+      "mediaType": "application/json",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    }
+  ],
+  "generator": {
+    "name": "nexusiq-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-11-06T01:44:06.224678Z",
+  "tool": {
+    "format": "json",
+    "name": "Nexus IQ Server"
+  }
+}

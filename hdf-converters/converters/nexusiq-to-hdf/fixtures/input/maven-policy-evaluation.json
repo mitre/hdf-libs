@@ -1,0 +1,86 @@
+{
+  "applicationId": "petclinic",
+  "scanId": "e389c69b79ae401996db0173cc91484e",
+  "reportHtmlUrl": "https://lifecycle.example.com/ui/links/application/petclinic/report/e389c69b79ae401996db0173cc91484e",
+  "reportPdfUrl": "https://lifecycle.example.com/ui/links/application/petclinic/report/e389c69b79ae401996db0173cc91484e/pdf",
+  "reportDataUrl": "https://lifecycle.example.com/api/v2/applications/petclinic/reports/e389c69b79ae401996db0173cc91484e/raw",
+  "policyAction": "None",
+  "policyEvaluationResult": {
+    "alerts": [
+      {
+        "trigger": {
+          "policyId": "17bf262a9b214ad9a5604372a2c78caa",
+          "policyName": "Architecture-Quality",
+          "threatLevel": 1,
+          "policyViolationId": "b56188d1e60e47a6beccb64b977d94a1",
+          "componentFacts": [
+            {
+              "componentIdentifier": {
+                "format": "maven",
+                "coordinates": {
+                  "artifactId": "tomcat-embed-websocket",
+                  "classifier": "",
+                  "extension": "jar",
+                  "groupId": "org.apache.tomcat.embed",
+                  "version": "9.0.45"
+                }
+              },
+              "hash": "05cefd0aab62e2938f51",
+              "constraintFacts": [
+                {
+                  "constraintId": "611b1b38955e44199731c393ddabf67c",
+                  "constraintName": "Version is unpopular",
+                  "operatorName": "OR",
+                  "conditionFacts": [
+                    {
+                      "conditionTypeId": "RelativePopularity",
+                      "conditionIndex": 0,
+                      "summary": "Relative Popularity (Percentage) <= 10",
+                      "reason": "Relative popularity was <= 10% (relative popularity = 0%)",
+                      "reference": null,
+                      "triggerJson": null
+                    }
+                  ]
+                }
+              ],
+              "pathnames": [],
+              "displayName": {
+                "parts": [
+                  {
+                    "field": "Group",
+                    "value": "org.apache.tomcat.embed"
+                  },
+                  {
+                    "value": " : "
+                  },
+                  {
+                    "field": "Artifact",
+                    "value": "tomcat-embed-websocket"
+                  },
+                  {
+                    "value": " : "
+                  },
+                  {
+                    "field": "Version",
+                    "value": "9.0.45"
+                  }
+                ],
+                "name": "tomcat-embed-websocket"
+              }
+            }
+          ]
+        },
+        "actions": []
+      }
+    ],
+    "affectedComponentCount": 11,
+    "criticalComponentCount": 4,
+    "severeComponentCount": 6,
+    "moderateComponentCount": 1,
+    "criticalPolicyViolationCount": 4,
+    "severePolicyViolationCount": 26,
+    "moderatePolicyViolationCount": 1,
+    "grandfatheredPolicyViolationCount": 0,
+    "totalComponentCount": 79
+  }
+}

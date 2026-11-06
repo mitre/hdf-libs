@@ -45,10 +45,44 @@ the alerts under Sonatype's threat-level bands: 7 critical (8-10), 6 severe
 (4-7), 2 moderate (2-3).
 
 ### `empty.json`
-Synthetic by construction (the `empty.*` convention): the envelope of
-`policy-evaluation.json` with `alerts` emptied, every counter set to 0, and
-`policyAction` removed, because the value IQ writes for an evaluation with no
-violations was not observed.
+Published clean result from sotudeko/producer, result.json at commit
+009b5cd0aad9ab0cb9fcfca2a4d2bf90dbddea81, retrieved 2026-11-05:
+https://github.com/sotudeko/producer/blob/009b5cd0aad9ab0cb9fcfca2a4d2bf90dbddea81/result.json
+Source sha256: 0a1e9ea41ee8f32f9ba93e79ffcb9d034b3fcee9311baaacb847519d0cfa9db9.
+No elements dropped. The three report URL origins (HTTP loopback host with a
+port) are redacted to https://lifecycle.example.com; a final newline is added.
+Other values, including the empty alerts, zero counters and policyAction None,
+are unchanged. This is a published artifact, not a scan run by this repository.
+
+### `maven-policy-evaluation.json`
+Published native report from sonatype-nexus-community/teamcity-nexusiq-plugin,
+teamcity-iq-plugin-server/src/test/resources/results.json at commit
+e4c6b713774bee3860d99b67b1802955ee134348, retrieved 2026-11-05:
+https://github.com/sonatype-nexus-community/teamcity-nexusiq-plugin/blob/e4c6b713774bee3860d99b67b1802955ee134348/teamcity-iq-plugin-server/src/test/resources/results.json
+Source sha256: 9c745c55de8219e788af813e6b78c00d3c0c0de5c1c6d1a9f0b051c163e885af.
+Keep the first complete alert; drop the other 66 whole alerts. Summary counters
+remain those of the original full report. The three report URL origins (an HTTP
+hostname with a port) are redacted to https://lifecycle.example.com. No string
+inside the retained alert is edited; JSON indentation is normalized. Its Maven
+groupId/artifactId/version map to affectedPackages and result resourceId; its
+policyViolationId remains the requirement id, and the whole alert is retained
+in rawSourceRecord. This sample does not expand purl generation beyond PyPI.
+
+### `scan-history-summary.json`
+Published example from Sonatype Report REST APIs, "Retrieving the Scan Report
+History", first Response, retrieved 2026-11-05:
+https://help.sonatype.com/en/report-rest-api.html#retrieving-the-scan-report-history
+Source HTML sha256: c71e148d99ca1527677165d4a0da8b3cb8ce3a793e03fbb596f026aa542aaf0b.
+Extract the first whole policyEvaluations element; drop its surrounding envelope
+and the second evaluation. No retained value or string is edited; indentation
+is adjusted. This is a REST history summary, not a CLI result. Its empty alerts
+and 54 reported violations exercise rejection, so it has no HDF golden.
+
+The rejection tests also deliberately corrupt these sourced inputs (missing or
+invalid counters and unsupported SAST payloads). Those mutations are negative
+robustness inputs, not examples claimed to be valid Nexus IQ output. The former
+invented sparse full-report acceptance tests have been removed; sparse/older
+native reports and real SAST content remain coverage gaps pending sourced data.
 
 ## `expected/`
 
@@ -63,7 +97,10 @@ no producer version, that is stated rather than guessed.
 - `policy-evaluation.json` — Nexus IQ CLI policy-evaluation result; the format
   carries no IQ server or CLI version, so the version is not determinable from
   file content. It also carries no evaluation time.
-- `empty.json` — synthetic; as above.
+- `empty.json` and `maven-policy-evaluation.json` — no producer version or
+  evaluation time is present in either published file.
+- `scan-history-summary.json` — the evaluationDate is present, but no producer
+  version is identified. This input is rejected rather than converted.
 
 ## Schema
 
@@ -71,3 +108,7 @@ Sonatype publishes no schema for the CLI result file. Searched 2026-10-21: the
 Nexus IQ CLI documentation describes `--result-file` only as machine-readable
 JSON, and the Policy Violation REST API documents a related but different shape
 (`constraintViolations` rather than `componentFacts`).
+The published scan-result and REST documentation were checked again on
+2026-11-05. The new fixtures are published examples, not schema-confirmed
+synthetic reports. Live validation against an unredacted IQ instance and a real
+SAST sample remain outstanding on the original feature card.
