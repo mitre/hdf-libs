@@ -97,6 +97,71 @@ describe('normalizeSafSupplement', () => {
     expect(doc.components[0].labels.boundary).toBe('sparc');
   });
 
+  // The component the v2→v3 upgrade derives from an InSpec `platform` object.
+  const platformDerived = () => ({ name: 'redhat', osName: 'redhat', osVersion: '9.8', type: 'host' });
+  const componentsOf = (extra: Record<string, unknown>) => {
+    const { output } = normalizeSafSupplement(validV3WithExtra(extra));
+    expect(parseResults(output).success).toBe(true);
+    return JSON.parse(output).components as Array<Record<string, unknown>>;
+  };
+
+  it('uses a legacy target name as the component identity', () => {
+    const comps = componentsOf({ target: { type: 'host', name: 'my-host-01', labels: {} } });
+    expect(comps).toHaveLength(1);
+    expect(comps[0].name).toBe('my-host-01');
+  });
+
+  it('prefers target.id over target.name', () => {
+    const comps = componentsOf({ target: { id: 'prod-account', name: 'Production', type: 'cloudAccount' } });
+    expect(comps[0]).toMatchObject({ name: 'prod-account', accountId: 'prod-account' });
+  });
+
+  // Component labels are string-valued, so a non-string target label is skipped.
+  it('carries string target labels alongside the boundary label', () => {
+    const comps = componentsOf({
+      target: { type: 'host', name: 'my-host-01', boundary: 'sparc', labels: { environment: 'prod', rack: 7 } },
+    });
+    expect(comps[0].labels).toEqual({ environment: 'prod', boundary: 'sparc' });
+  });
+
+  it('does not override labels the component already carries', () => {
+    const comps = componentsOf({
+      components: [{ name: 'my-host-01', type: 'host', labels: { environment: 'stage' } }],
+      target: { type: 'host', name: 'my-host-01', labels: { environment: 'prod', team: 'ops' } },
+    });
+    expect(comps).toHaveLength(1);
+    expect(comps[0].labels).toEqual({ environment: 'stage', team: 'ops' });
+  });
+
+  it('merges a target into the platform-derived component (one assessed host)', () => {
+    const comps = componentsOf({
+      components: [platformDerived()],
+      target: { type: 'host', name: 'my-host-01', labels: { environment: 'prod' } },
+    });
+    expect(comps).toEqual([{
+      name: 'my-host-01', type: 'host', osName: 'redhat', osVersion: '9.8', labels: { environment: 'prod' },
+    }]);
+  });
+
+  it('keeps the platform name when the target carries no identity', () => {
+    const comps = componentsOf({ components: [platformDerived()], target: { type: 'host', boundary: 'sparc' } });
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({ name: 'redhat', labels: { boundary: 'sparc' } });
+  });
+
+  // A component that carries its own identity is a distinct thing, never renamed.
+  it.each([
+    ['has componentId', [{ ...platformDerived(), componentId: '6f1c1c3e-8f43-4d2a-9a57-0d5a3c2b7e11' }]],
+    ['name is not the OS', [{ ...platformDerived(), name: 'web-01' }]],
+    ['different type', [{ name: 'redhat', osName: 'redhat', type: 'containerImage' }]],
+    ['more than one exists', [platformDerived(), { name: 'db-01', type: 'database' }]],
+  ])('does not merge into a distinct component (%s)', (_label, existing) => {
+    const comps = componentsOf({ components: existing, target: { type: 'host', name: 'my-host-01' } });
+    expect(comps).toHaveLength(existing.length + 1);
+    expect(comps.slice(0, existing.length)).toEqual(existing);
+    expect(comps[existing.length].name).toBe('my-host-01');
+  });
+
   it('leaves an unmapped target type in place for the schema to reject', () => {
     const { output, warnings } = normalizeSafSupplement(
       validV3WithExtra({ target: { id: 'x', type: 'not-a-real-type' } }),

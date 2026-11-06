@@ -14,6 +14,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A legacy exec-json document's `platform` and `target` now convert to one component, not two.** `hdf convert` of an InSpec/Heimdall v2 document carrying both a `platform` and a classic `{ type, name, labels }` top-level `target` produced a `platform`-derived component plus a second, nameless one.
+
+  The SAF-supplement normalizer read the component name only from `target.id`; it now falls back to `target.name`, and carries the target's string `labels`. When the document's only component is the one the v2 upgrade derives from `platform` (same type, no `componentId`, OS name standing in as its name), the target merges into it: the component takes the target's name and keeps `osName`/`osVersion`. Any other existing component is never renamed. `--from inspec` now absorbs the target too; it previously skipped the normalizer and dropped `target` silently. (#500)
+
+- **`hdf fetch aws-config` keeps rules deployed by a conformance pack.** It treated every rule with `CreatedBy` set as an unreadable service-linked rule, so an account whose rules all come from conformance packs fetched none and failed with `ConfigRules field is required`.
+
+  The fetcher now decides readability by the API's own signal, `RuleEvaluationVisibility`, instead of by who created the rule: a rule reporting `INTERNAL` (Security Hub standards rules, for example) is skipped with a warning naming it and the service that provisioned it, and every other rule is fetched with its results and remediation. Conformance-pack rules are service-linked and read-only, but their evaluations are readable, so they come through, and so does any other rule the API marks readable, whichever service created it. And when nothing readable remains, the fetch now fails with `no readable Config rules in <region>: N skipped ...` naming the skipped rules, instead of writing a null `ConfigRules` that the converter rejected with the field-is-required message the issue reported. A rule the API refuses to this principal, or that vanished between listing and reading, now costs that one rule and a warning naming it, where it used to abort the whole fetch and discard every rule that had read fine; throttling and network errors still abort. (#513)
+
 - **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.
 
   `readInput` reads `""` as a request for stdin, so a pipeline passing an unset shell variable waited indefinitely rather than reporting the input it never got. `-` remains the explicit stdin spelling and is unchanged. A whitespace-only path is refused on the same grounds. This covers the evidence subcommands only; the rest of the CLI shares the same reader and is tracked separately. (hdf-libs-52n0c.49)

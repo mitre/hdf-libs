@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/smithy-go"
+
 	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +26,8 @@ type mockConfigClient struct {
 	describeRulesErr   error
 	// Per-rule compliance pages; keyed by rule name.
 	compliancePages map[string][]configservice.GetComplianceDetailsByConfigRuleOutput
-	complianceErr   error
+	complianceErr   error            // returned for every rule: the fatal case
+	complianceErrs  map[string]error // returned for one rule by name: the per-rule case
 	// Counts calls for pagination verification.
 	describeCalls   int
 	complianceCalls map[string]int
@@ -91,6 +94,9 @@ func (m *mockConfigClient) GetComplianceDetailsByConfigRule(
 		return nil, m.complianceErr
 	}
 	name := aws.ToString(in.ConfigRuleName)
+	if err, ok := m.complianceErrs[name]; ok {
+		return nil, err
+	}
 	if m.complianceCalls == nil {
 		m.complianceCalls = make(map[string]int)
 	}
@@ -254,6 +260,17 @@ func (c *contextCapturingClient) GetComplianceDetailsByConfigRule(
 	return c.inner.GetComplianceDetailsByConfigRule(ctx, params, optFns...)
 }
 
+// securityHubRule is the contrast case for the readability check: provisioned by
+// Security Hub and marked INTERNAL, so the API will not return its evaluations.
+var securityHubRule = types.ConfigRule{
+	ConfigRuleId:             aws.String("cr-sh"),
+	ConfigRuleName:           aws.String("securityhub-access-keys-rotated-cce23527"),
+	ConfigRuleArn:            aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
+	Source:                   &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+	CreatedBy:                aws.String("securityhub.amazonaws.com"),
+	RuleEvaluationVisibility: types.RuleEvaluationVisibilityInternal,
+}
+
 var testRule = types.ConfigRule{
 	ConfigRuleId:    aws.String("config-rule-abc"),
 	ConfigRuleName:  aws.String("some-rule"),
@@ -288,11 +305,12 @@ func TestAWSConfigFetcher_ContextCancelled_BeforeFirstPage(t *testing.T) {
 
 func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 	// Verify that Fetch wraps a deadline-free context with a timeout by
-	// capturing the context that reaches the first API call.
+	// capturing the context that reaches the first API call. One readable rule
+	// keeps the fetch itself successful; the result is not what this test is about.
 	inner := &mockConfigClient{
 		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
-			{ConfigRules: []types.ConfigRule{}},
+			{ConfigRules: []types.ConfigRule{testRule}},
 		},
 	}
 	ccc := &contextCapturingClient{inner: inner}
@@ -311,6 +329,9 @@ func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 
 // ---- fetch tests ----
 
+// A Region with no rules cannot yield a document the converter accepts (it
+// requires a ConfigRules array and at least one requirement), so Fetch says so
+// instead of emitting {"ConfigRules":null} for the converter to reject.
 func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 	mock := &mockConfigClient{
 		t: t,
@@ -319,11 +340,33 @@ func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 		},
 	}
 	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
 	data, err := f.Fetch(context.Background())
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Nil(t, data, "no bytes are written alongside the error")
+	assert.Contains(t, err.Error(), "no Config rules in us-east-1")
+}
 
-	result := mustUnmarshal(t, data)
-	assert.Empty(t, result.ConfigRules)
+// When every rule is unreadable the outcome is the same, and the error must say
+// why nothing remained rather than letting the converter report a missing field.
+func TestAWSConfigFetcher_Fetch_AllSkippedIsAnError(t *testing.T) {
+	internal := testRule
+	internal.CreatedBy = aws.String("securityhub.amazonaws.com")
+	internal.RuleEvaluationVisibility = types.RuleEvaluationVisibilityInternal
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{internal}},
+		},
+	}
+	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
+	data, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "no readable Config rules in us-east-1")
+	assert.Contains(t, err.Error(), "1 skipped as unreadable (RuleEvaluationVisibility INTERNAL)")
+	assert.Contains(t, err.Error(), "some-rule (securityhub.amazonaws.com)", "the error names what was skipped and who provisioned it")
+	assert.Zero(t, mock.complianceCalls["some-rule"], "nothing is queried when nothing is readable")
 }
 
 func TestAWSConfigFetcher_Fetch_SingleRule(t *testing.T) {
@@ -626,26 +669,21 @@ func TestAWSConfigFetcher_Fetch_DescribeConfigRulesError(t *testing.T) {
 	assert.Contains(t, err.Error(), "DescribeConfigRules")
 }
 
+// A throttle says nothing about the rule, so it must abort the whole fetch. Two
+// rules and a check on the message shape keep this test honest: with one rule a
+// swallowed throttle would also end in an error naming it, via the all-failed
+// path, and the test would pass while proving nothing.
 func TestAWSConfigFetcher_Fetch_ComplianceError(t *testing.T) {
 	mock := &mockConfigClient{
-		t: t,
-		describeRulesPages: []configservice.DescribeConfigRulesOutput{
-			{ConfigRules: []types.ConfigRule{
-				{
-					ConfigRuleId:    aws.String("config-rule-abc"),
-					ConfigRuleName:  aws.String("some-rule"),
-					ConfigRuleArn:   aws.String("arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc"),
-					Source:          &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
-					InputParameters: aws.String("{}"),
-				},
-			}},
-		},
-		complianceErr: fmt.Errorf("throttled"),
+		t:                  t,
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErr:      &smithy.GenericAPIError{Code: "ThrottlingException", Message: "throttled"},
 	}
 	f := NewAWSConfigFetcherWithClient(mock)
 	_, err := f.Fetch(context.Background())
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "some-rule")
+	assert.Contains(t, err.Error(), "fetching results for rule", "a throttle takes the abort path, not the degrade path")
+	assert.NotContains(t, err.Error(), "could not be read", "the fetch must not have degraded its way to an empty result")
 }
 
 func TestAWSConfigFetcher_Fetch_NilAnnotation(t *testing.T) {
@@ -824,15 +862,9 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-user2"),
 		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
 	}
-	// Service-linked rule (CreatedBy set) — must be excluded from the remediation
-	// query so it can't poison the batch with "not supported".
-	serviceLinked := types.ConfigRule{
-		ConfigRuleId:   aws.String("cr-sh"),
-		ConfigRuleName: aws.String("securityhub-access-keys-rotated-cce23527"),
-		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-sh"),
-		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
-		CreatedBy:      aws.String("securityhub.amazonaws.com"),
-	}
+	// A rule whose evaluations the API marks INTERNAL must stay out of the
+	// remediation query so it can't poison the batch with "not supported".
+	serviceLinked := securityHubRule
 
 	mock := &mockConfigClient{
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
@@ -859,18 +891,14 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 		byName[r.ConfigRuleName] = r
 	}
 
-	// Service-linked rule → excluded from output entirely (unreadable via Config).
-	require.Len(t, file.ConfigRules, 2, "service-linked rule must not appear in output")
+	// INTERNAL rule → excluded from output entirely: the API will not return its evaluations.
+	require.Len(t, file.ConfigRules, 2, "an INTERNAL rule must not appear in output")
 	_, present := byName["securityhub-access-keys-rotated-cce23527"]
-	assert.False(t, present, "service-linked rule must be excluded from output")
+	assert.False(t, present, "an INTERNAL rule must be excluded from output")
 	for _, batch := range mock.remediationBatches {
 		assert.NotContains(t, batch, "securityhub-access-keys-rotated-cce23527",
-			"service-linked rules must be excluded from the remediation query")
+			"an INTERNAL rule must be excluded from the remediation query")
 	}
-	// Never queried for compliance either (that call rejects service-linked rules
-	// and was the pre-existing hard-fail this exclusion fixes).
-	assert.Zero(t, mock.complianceCalls["securityhub-access-keys-rotated-cce23527"],
-		"service-linked rules must not be queried for compliance")
 
 	// Rule with a remediation → populated, fields carried from the SDK shape.
 	rem := byName["s3-bucket-public-read-prohibited"].Remediation
@@ -882,6 +910,54 @@ func TestAWSConfigFetcher_Fetch_Remediation(t *testing.T) {
 
 	// Customer rule without a remediation → nil.
 	assert.Nil(t, byName["access-keys-rotated"].Remediation)
+}
+
+func TestAWSConfigFetcher_Fetch_ConformancePackRuleIncluded(t *testing.T) {
+	conformancePackRule := types.ConfigRule{
+		ConfigRuleId:   aws.String("cr-cp"),
+		ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/cr-cp"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("EC2_VOLUME_INUSE_CHECK")},
+		CreatedBy:      aws.String("config-conforms.amazonaws.com"),
+	}
+	serviceLinked := securityHubRule
+
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{conformancePackRule, serviceLinked}},
+		},
+		compliancePages: map[string][]configservice.GetComplianceDetailsByConfigRuleOutput{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {
+				{EvaluationResults: []types.EvaluationResult{
+					{ComplianceType: types.ComplianceTypeCompliant},
+				}},
+			},
+		},
+		remediations: map[string]types.RemediationConfiguration{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {
+				ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+				TargetType:     types.RemediationTargetTypeSsmDocument,
+				TargetId:       aws.String("AWS-DetachEBSVolume"),
+				Automatic:      false,
+			},
+		},
+	}
+
+	out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	file := mustUnmarshal(t, out)
+
+	require.Len(t, file.ConfigRules, 1, "only the conformance-pack rule is readable")
+	cp := file.ConfigRules[0]
+	assert.Equal(t, "ec2-volume-inuse-check-conformance-pack-abc123", cp.ConfigRuleName)
+	require.Len(t, cp.EvaluationResults, 1)
+	assert.Equal(t, "COMPLIANT", cp.EvaluationResults[0].ComplianceType)
+
+	require.Len(t, mock.remediationBatches, 1)
+	assert.Equal(t, []string{"ec2-volume-inuse-check-conformance-pack-abc123"}, mock.remediationBatches[0],
+		"a conformance-pack rule is remediation-eligible; the INTERNAL one stays out")
+	require.NotNil(t, cp.Remediation, "the pack rule's remediation must land on the rule, not just be asked for")
+	assert.Equal(t, "AWS-DetachEBSVolume", cp.Remediation.TargetID)
 }
 
 func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
@@ -897,4 +973,142 @@ func TestAWSConfigFetcher_Fetch_RemediationErrorIsNonFatal(t *testing.T) {
 	file := mustUnmarshal(t, out)
 	require.Len(t, file.ConfigRules, 1)
 	assert.Nil(t, file.ConfigRules[0].Remediation, "no remediation on API error")
+}
+
+// Readability is the API's own signal, not who created the rule: an
+// Organizations-deployed rule with EXTERNAL visibility is readable, a Security
+// Hub rule with INTERNAL visibility is not, and a rule carrying no visibility
+// value (older API responses) is treated as readable rather than dropped.
+func TestAWSConfigFetcher_ReadabilityFollowsEvaluationVisibility(t *testing.T) {
+	mk := func(id, name, createdBy string, vis types.RuleEvaluationVisibility) types.ConfigRule {
+		return types.ConfigRule{
+			ConfigRuleId:             aws.String(id),
+			ConfigRuleName:           aws.String(name),
+			ConfigRuleArn:            aws.String("arn:aws:config:us-east-1:123456789012:config-rule/" + id),
+			Source:                   &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+			CreatedBy:                aws.String(createdBy),
+			RuleEvaluationVisibility: vis,
+		}
+	}
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{
+			mk("cr-org", "org-managed-rule", "organizations.amazonaws.com", types.RuleEvaluationVisibilityExternal),
+			mk("cr-sh", "securityhub-rule", "securityhub.amazonaws.com", types.RuleEvaluationVisibilityInternal),
+			mk("cr-cp", "pack-rule", "config-conforms.amazonaws.com", ""),
+		}}},
+	}
+
+	rules, skipped, err := NewAWSConfigFetcherWithClient(mock).fetchAllConfigRules(context.Background())
+	require.NoError(t, err)
+	require.Len(t, skipped, 1, "only the INTERNAL rule is unreadable")
+	assert.Equal(t, unreadableRule{name: "securityhub-rule", detail: "securityhub.amazonaws.com"}, skipped[0],
+		"the warning names the rule and the service that provisioned it")
+	names := make([]string, 0, len(rules))
+	for _, r := range rules {
+		names = append(names, r.ConfigRuleName)
+	}
+	assert.ElementsMatch(t, []string{"org-managed-rule", "pack-rule"}, names)
+}
+
+// twoRules is a page with one readable rule whose compliance read will succeed
+// and a second whose read the mock fails by name.
+func twoRules() []types.ConfigRule {
+	second := testRule
+	second.ConfigRuleId = aws.String("config-rule-def")
+	second.ConfigRuleName = aws.String("other-rule")
+	return []types.ConfigRule{testRule, second}
+}
+
+// A rule the API will not let this principal read, or that vanished between
+// listing and reading, must cost that one rule and a warning, not the fetch:
+// the blanket skip this epic narrows existed because the first AccessDenied
+// used to abort everything.
+func TestAWSConfigFetcher_Fetch_PerRuleReadFailureDegrades(t *testing.T) {
+	for name, perRule := range map[string]error{
+		"not found":               &types.NoSuchConfigRuleException{Message: aws.String("gone")},
+		"insufficient permission": &types.InsufficientPermissionsException{Message: aws.String("denied")},
+		"access denied":           &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &mockConfigClient{
+				describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+				complianceErrs:     map[string]error{"other-rule": perRule},
+			}
+			out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+			require.NoError(t, err, "one unreadable rule must not abort the fetch")
+			file := mustUnmarshal(t, out)
+			require.Len(t, file.ConfigRules, 1, "the rule that failed to read is dropped, not emitted empty")
+			assert.Equal(t, "some-rule", file.ConfigRules[0].ConfigRuleName)
+		})
+	}
+}
+
+// Errors that say nothing about the rule stay fatal: a throttle or a dead
+// network is not a reason to report a partial document as the account's state.
+func TestAWSConfigFetcher_Fetch_OtherPerRuleErrorsStayFatal(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErrs:     map[string]error{"other-rule": &smithy.GenericAPIError{Code: "ThrottlingException", Message: "slow down"}},
+	}
+	_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "other-rule")
+}
+
+// When every rule degrades, the outcome composes with the empty-result rule:
+// an error naming the cause, never a null document.
+func TestAWSConfigFetcher_Fetch_AllRulesFailToReadIsAnError(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{testRule}}},
+		complianceErrs:     map[string]error{"some-rule": &types.NoSuchConfigRuleException{Message: aws.String("gone")}},
+	}
+	f := NewAWSConfigFetcherWithClient(mock)
+	f.region = "us-east-1"
+	data, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "no Config rules could be read in us-east-1")
+	assert.Contains(t, err.Error(), "1 failed to read")
+	assert.Contains(t, err.Error(), "some-rule")
+}
+
+// The shape the issue reported: every rule in the account came from a
+// conformance pack. It must go all the way through the converter and produce
+// requirements, not stop at the fetcher or at the converter's required-field check.
+func TestAWSConfigFetcher_PackOnlyAccount_ConvertsEndToEnd(t *testing.T) {
+	invokedAt := ts("2021-04-09T14:39:21Z")
+	recordedAt := ts("2021-04-09T14:39:51Z")
+	packRule := types.ConfigRule{
+		ConfigRuleId:   aws.String("config-rule-cp1"),
+		ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+		ConfigRuleArn:  aws.String("arn:aws:config:us-east-1:123456789012:config-rule/config-rule-cp1"),
+		Source:         &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("EC2_VOLUME_INUSE_CHECK")},
+		CreatedBy:      aws.String("config-conforms.amazonaws.com"),
+	}
+	mock := &mockConfigClient{
+		t:                  t,
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{packRule}}},
+		compliancePages: map[string][]configservice.GetComplianceDetailsByConfigRuleOutput{
+			"ec2-volume-inuse-check-conformance-pack-abc123": {{EvaluationResults: []types.EvaluationResult{{
+				EvaluationResultIdentifier: &types.EvaluationResultIdentifier{
+					EvaluationResultQualifier: &types.EvaluationResultQualifier{
+						ConfigRuleName: aws.String("ec2-volume-inuse-check-conformance-pack-abc123"),
+						ResourceType:   aws.String("AWS::EC2::Volume"),
+						ResourceId:     aws.String("vol-0123456789abcdef0"),
+					},
+				},
+				ComplianceType:        types.ComplianceTypeNonCompliant,
+				ConfigRuleInvokedTime: &invokedAt,
+				ResultRecordedTime:    &recordedAt,
+			}}}},
+		},
+	}
+
+	data, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err, "a pack-only account must fetch")
+	hdfResult, err := awsconfigconv.ConvertAWSConfigToHDF(data, "test")
+	require.NoError(t, err, "a pack-only fetch must convert")
+	require.Len(t, hdfResult.Baselines, 1)
+	require.Len(t, hdfResult.Baselines[0].Requirements, 1)
+	assert.Equal(t, "config-rule-cp1", hdfResult.Baselines[0].Requirements[0].ID)
 }

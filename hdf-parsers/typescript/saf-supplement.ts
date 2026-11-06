@@ -30,9 +30,10 @@ function isObject(v: unknown): v is Record<string, unknown> {
 /**
  * Rewrite the legacy SAF-supplement top-level keys into v3-native carriers so a
  * SAF-produced document becomes valid v3 before schema validation: `target` → a
- * components[] entry (type validated; id → name and, for cloudAccount, accountId;
- * boundary → labels.boundary; merged into a matching existing component rather
- * than duplicated); `passthrough` → extensions.passthrough.
+ * components[] entry (type validated; id → name and, for cloudAccount, accountId,
+ * falling back to name; labels and boundary → labels; merged into a matching or
+ * platform-derived component rather than duplicated); `passthrough` →
+ * extensions.passthrough.
  *
  * Deliberately narrow: input that is not a JSON object, or carries neither legacy
  * key, is returned BYTE-IDENTICAL with no warnings. A target whose type is not a
@@ -76,28 +77,64 @@ function rewriteTarget(doc: Record<string, unknown>): boolean {
   if (!isObject(tgt)) return false;
   const typ = typeof tgt.type === 'string' ? tgt.type : '';
   if (!VALID_COMPONENT_TYPES.has(typ)) return false;
-  const id = typeof tgt.id === 'string' ? tgt.id : '';
+  // SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
+  const id =
+    typeof tgt.id === 'string' && tgt.id !== '' ? tgt.id : typeof tgt.name === 'string' ? tgt.name : '';
   const boundary = typeof tgt.boundary === 'string' ? tgt.boundary : '';
 
   const comps: unknown[] = Array.isArray(doc.components) ? doc.components : [];
 
-  let merged = false;
-  for (const c of comps) {
-    if (isObject(c) && c.name === id && c.type === typ) {
-      applyBoundaryLabel(c, boundary);
-      merged = true;
-      break;
-    }
+  let c = findComponent(comps, id, typ);
+  if (!c) {
+    c = platformComponent(comps, typ);
+    if (c && id !== '') c.name = id;
   }
-  if (!merged) {
-    const c: Record<string, unknown> = { type: typ, name: id };
+  if (!c) {
+    c = { type: typ, name: id };
     if (typ === 'cloudAccount') c.accountId = id;
-    applyBoundaryLabel(c, boundary);
     comps.push(c);
   }
+  applyLabels(c, stringLabels(tgt.labels));
+  applyBoundaryLabel(c, boundary);
   doc.components = comps;
   delete doc.target;
   return true;
+}
+
+function findComponent(comps: unknown[], name: string, typ: string): Record<string, unknown> | undefined {
+  return comps.find((c): c is Record<string, unknown> => isObject(c) && c.name === name && c.type === typ);
+}
+
+/** The lone component the v2 upgrade derives from an InSpec `platform` (no
+ * componentId, OS name standing in as the name), which describes the same
+ * assessed thing as the target. Any other shape is a distinct component and is
+ * never renamed. */
+function platformComponent(comps: unknown[], typ: string): Record<string, unknown> | undefined {
+  if (comps.length !== 1) return undefined;
+  const c = comps[0];
+  if (!isObject(c) || 'componentId' in c || c.type !== typ) return undefined;
+  if (typeof c.name !== 'string' || c.name === '' || c.name !== c.osName) return undefined;
+  return c;
+}
+
+/** The string entries of a legacy target.labels; component labels admit only strings. */
+function stringLabels(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!isObject(v)) return out;
+  for (const [k, val] of Object.entries(v)) {
+    if (typeof val === 'string') out[k] = val;
+  }
+  return out;
+}
+
+/** Add target labels to a component without overriding its own. */
+function applyLabels(c: Record<string, unknown>, labels: Record<string, string>): void {
+  if (Object.keys(labels).length === 0) return;
+  const existing = isObject(c.labels) ? c.labels : {};
+  for (const [k, v] of Object.entries(labels)) {
+    if (!(k in existing)) existing[k] = v;
+  }
+  c.labels = existing;
 }
 
 /** Record the legacy target.boundary as a component label (the deferred

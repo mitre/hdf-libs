@@ -31,8 +31,9 @@ func validComponentType(s string) bool {
 // NormalizeSAFSupplement rewrites the legacy SAF-supplement top-level keys into
 // v3-native carriers so a SAF-produced document becomes valid v3 before schema
 // validation: `target` → a components[] entry (type validated; id → name and,
-// for cloudAccount, accountId; boundary → labels.boundary; merged into a
-// matching existing component rather than duplicated); `passthrough` →
+// for cloudAccount, accountId, falling back to name; labels and boundary →
+// labels; merged into a matching or platform-derived component rather than
+// duplicated); `passthrough` →
 // extensions.passthrough. It returns the (possibly rewritten) document plus a
 // deprecation warning per rewritten key.
 //
@@ -87,38 +88,105 @@ func rewriteTarget(doc map[string]any) bool {
 	if !validComponentType(typ) {
 		return false
 	}
+	// SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
 	id, _ := tgt["id"].(string)
+	if id == "" {
+		id, _ = tgt["name"].(string)
+	}
 	boundary, _ := tgt["boundary"].(string)
+	labels := stringLabels(tgt["labels"])
 
 	comps, _ := doc["components"].([]any)
 
-	// Merge into an existing component with the same name+type rather than
-	// duplicating; otherwise append a new one.
-	merged := false
+	c := findComponent(comps, id, typ)
+	if c == nil {
+		if c = platformComponent(comps, typ); c != nil && id != "" {
+			c["name"] = id
+		}
+	}
+	if c == nil {
+		c = map[string]any{"type": typ, "name": id}
+		if typ == string(hdf.CloudAccount) {
+			c["accountId"] = id
+		}
+		comps = append(comps, c)
+	}
+	applyLabels(c, labels)
+	applyBoundaryLabel(c, boundary)
+	doc["components"] = comps
+	delete(doc, "target")
+	return true
+}
+
+// findComponent returns the existing component with this name and type, or nil.
+func findComponent(comps []any, name, typ string) map[string]any {
 	for i := range comps {
 		c, ok := comps[i].(map[string]any)
 		if !ok {
 			continue
 		}
-		if name, _ := c["name"].(string); name == id {
-			if ct, _ := c["type"].(string); ct == typ {
-				applyBoundaryLabel(c, boundary)
-				merged = true
-				break
-			}
+		if n, _ := c["name"].(string); n != name {
+			continue
+		}
+		if ct, _ := c["type"].(string); ct == typ {
+			return c
 		}
 	}
-	if !merged {
-		c := map[string]any{"type": typ, "name": id}
-		if typ == string(hdf.CloudAccount) {
-			c["accountId"] = id
-		}
-		applyBoundaryLabel(c, boundary)
-		comps = append(comps, c)
+	return nil
+}
+
+// platformComponent returns the lone component the v2 upgrade derives from an
+// InSpec `platform` (no componentId, OS name standing in as the name), which
+// describes the same assessed thing as the target. Any other shape is a distinct
+// component and is never renamed.
+func platformComponent(comps []any, typ string) map[string]any {
+	if len(comps) != 1 {
+		return nil
 	}
-	doc["components"] = comps
-	delete(doc, "target")
-	return true
+	c, ok := comps[0].(map[string]any)
+	if !ok {
+		return nil
+	}
+	if _, hasID := c["componentId"]; hasID {
+		return nil
+	}
+	ct, _ := c["type"].(string)
+	name, _ := c["name"].(string)
+	osName, _ := c["osName"].(string)
+	if ct != typ || name == "" || name != osName {
+		return nil
+	}
+	return c
+}
+
+// stringLabels keeps the string-valued entries of a legacy target.labels;
+// component labels admit only strings.
+func stringLabels(v any) map[string]string {
+	raw, _ := v.(map[string]any)
+	out := map[string]string{}
+	for k, val := range raw {
+		if s, ok := val.(string); ok {
+			out[k] = s
+		}
+	}
+	return out
+}
+
+// applyLabels adds target labels to a component without overriding its own.
+func applyLabels(c map[string]any, labels map[string]string) {
+	if len(labels) == 0 {
+		return
+	}
+	existing, ok := c["labels"].(map[string]any)
+	if !ok {
+		existing = map[string]any{}
+	}
+	for k, v := range labels {
+		if _, exists := existing[k]; !exists {
+			existing[k] = v
+		}
+	}
+	c["labels"] = existing
 }
 
 // applyBoundaryLabel records the legacy target.boundary as a component label
