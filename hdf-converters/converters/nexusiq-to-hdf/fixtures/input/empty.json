@@ -1,0 +1,21 @@
+{
+  "applicationId" : "producer_cc",
+  "scanId" : "89680b8a38574f30921b2934a330838e",
+  "reportHtmlUrl" : "https://lifecycle.example.com/ui/links/application/producer_cc/report/89680b8a38574f30921b2934a330838e",
+  "reportPdfUrl" : "https://lifecycle.example.com/ui/links/application/producer_cc/report/89680b8a38574f30921b2934a330838e/pdf",
+  "reportDataUrl" : "https://lifecycle.example.com/api/v2/applications/producer_cc/reports/89680b8a38574f30921b2934a330838e/raw",
+  "policyAction" : "None",
+  "policyEvaluationResult" : {
+    "alerts" : [ ],
+    "affectedComponentCount" : 0,
+    "criticalComponentCount" : 0,
+    "severeComponentCount" : 0,
+    "moderateComponentCount" : 0,
+    "criticalPolicyViolationCount" : 0,
+    "severePolicyViolationCount" : 0,
+    "moderatePolicyViolationCount" : 0,
+    "legacyViolationCount" : 0,
+    "totalComponentCount" : 1,
+    "grandfatheredPolicyViolationCount" : 0
+  }
+}

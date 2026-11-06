@@ -1,0 +1,28 @@
+{
+    "stage": "develop",
+    "applicationId": "4537e6fe68c24dd5ac83efd97d4fc2f4",
+    "evaluationDate": "2020-06-03T13:43:10.816-03:00",
+    "latestReportHtmlUrl": "ui/links/application/MyApplicationID/latestReport/develop",
+    "reportHtmlUrl": "ui/links/application/MyApplicationID/report/53a99dd8b58e4d819c0791a8087df62c",
+    "embeddableReportHtmlUrl": "ui/links/application/MyApplicationID/report/53a99dd8b58e4d819c0791a8087df62c/embeddable",
+    "reportPdfUrl": "ui/links/application/MyApplicationID/report/53a99dd8b58e4d819c0791a8087df62c/pdf",
+    "reportDataUrl": "api/v2/applications/MyApplicationID/reports/53a99dd8b58e4d819c0791a8087df62c/raw",
+    "policyEvaluationId": "6ccd7900214f45d6b7fe5d99324b16c9",
+    "scanId": "53a99dd8b58e4d819c0791a8087df62c",
+    "isReevaluation": false,
+    "isForMonitoring": false,
+    "commitHash": "7951853e5d0f048ae48925820b138e0bcc4148f2",
+    "scanTriggerType": "WEB_UI",
+    "policyEvaluationResult": {
+        "alerts": [],
+        "affectedComponentCount": 14,
+        "criticalComponentCount": 9,
+        "severeComponentCount": 4,
+        "moderateComponentCount": 1,
+        "criticalPolicyViolationCount": 35,
+        "severePolicyViolationCount": 17,
+        "moderatePolicyViolationCount": 2,
+        "grandfatheredPolicyViolationCount": 0,
+        "legacyViolationCount": 0
+    }
+}

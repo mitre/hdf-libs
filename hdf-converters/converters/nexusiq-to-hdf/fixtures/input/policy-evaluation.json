@@ -1,0 +1,1091 @@
+{
+  "applicationId" : "example-org_example-app_dev",
+  "scanId" : "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "stage" : "build",
+  "reportHtmlUrl" : "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "reportPdfUrl" : "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9/pdf",
+  "reportDataUrl" : "https://lifecycle.example.com/api/v2/applications/example-org_example-app_dev/reports/0a1b2c3d4e5f60718293a4b5c6d7e8f9/raw",
+  "policyAction" : "Warning",
+  "prioritiesUrl" : "https://lifecycle.example.com/ui/links/developer/integrations/example-org_example-app_dev/0a1b2c3d4e5f60718293a4b5c6d7e8f9/cli",
+  "policyEvaluationResult" : {
+    "alerts" : [ {
+      "trigger" : {
+        "policyId" : "1d84ac1e5c7a4e199aaea84e7158006f",
+        "policyName" : "Other-Component-Unknown",
+        "threatLevel" : 10,
+        "policyViolationId" : "23b1b964c6544fae9b48d92f121b13e8",
+        "componentFacts" : [ {
+          "componentIdentifier" : null,
+          "hash" : "20f1efaefeae4a001d46",
+          "constraintFacts" : [ {
+            "constraintId" : "9b09578d0bca484688c74e30400e40e0",
+            "constraintName" : "Unknown Component",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "MatchState",
+              "conditionIndex" : 0,
+              "summary" : "Match State is unknown",
+              "reason" : "Match state was 'Unknown'",
+              "reference" : null,
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "Proprietary",
+              "conditionIndex" : 0,
+              "summary" : "Proprietary is false",
+              "reason" : "Component does not contain proprietary packages",
+              "reference" : null,
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "./app/module-a.zip" ],
+          "displayName" : null
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "1d84ac1e5c7a4e199aaea84e7158006f",
+        "policyName" : "Other-Component-Unknown",
+        "threatLevel" : 10,
+        "policyViolationId" : "20c90c5898bf4d6e857aed5ec8e9b5c2",
+        "componentFacts" : [ {
+          "componentIdentifier" : null,
+          "hash" : "81839e0805d7871f5ff5",
+          "constraintFacts" : [ {
+            "constraintId" : "9b09578d0bca484688c74e30400e40e0",
+            "constraintName" : "Unknown Component",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "MatchState",
+              "conditionIndex" : 0,
+              "summary" : "Match State is unknown",
+              "reason" : "Match state was 'Unknown'",
+              "reference" : null,
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "Proprietary",
+              "conditionIndex" : 0,
+              "summary" : "Proprietary is false",
+              "reason" : "Component does not contain proprietary packages",
+              "reference" : null,
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "./app/module-b.zip" ],
+          "displayName" : null
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "1d84ac1e5c7a4e199aaea84e7158006f",
+        "policyName" : "Other-Component-Unknown",
+        "threatLevel" : 10,
+        "policyViolationId" : "ca6d58f8c0974938b4be3711f14374c7",
+        "componentFacts" : [ {
+          "componentIdentifier" : null,
+          "hash" : "9c27e492320fe96946cc",
+          "constraintFacts" : [ {
+            "constraintId" : "9b09578d0bca484688c74e30400e40e0",
+            "constraintName" : "Unknown Component",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "MatchState",
+              "conditionIndex" : 0,
+              "summary" : "Match State is unknown",
+              "reason" : "Match state was 'Unknown'",
+              "reference" : null,
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "Proprietary",
+              "conditionIndex" : 0,
+              "summary" : "Proprietary is false",
+              "reason" : "Component does not contain proprietary packages",
+              "reference" : null,
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "./app/module-c.zip" ],
+          "displayName" : null
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "269898a7af3840a7a925368807d79556",
+        "policyName" : "Security-High",
+        "threatLevel" : 9,
+        "policyViolationId" : "e27fb118b0d940248ae27e451b1e9314",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "urllib3",
+              "qualifier" : "py3-none-any",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "bd774de92f860e8e0cc6",
+          "constraintFacts" : [ {
+            "constraintId" : "85bf0b8ad540443eb8c04d66d32c56fc",
+            "constraintName" : "CVSS >=7 and <10",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 7",
+              "reason" : "Found security vulnerability CVE-2026-97687 with severity >= 7 (severity = 8.1)",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 10",
+              "reason" : "Found security vulnerability CVE-2026-97687 with severity < 10 (severity = 8.1)",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "269898a7af3840a7a925368807d79556",
+        "policyName" : "Security-High",
+        "threatLevel" : 9,
+        "policyViolationId" : "8305ae136fdb433a92405da903504a7a",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "urllib3",
+              "qualifier" : "py3-none-any",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "bd774de92f860e8e0cc6",
+          "constraintFacts" : [ {
+            "constraintId" : "85bf0b8ad540443eb8c04d66d32c56fc",
+            "constraintName" : "CVSS >=7 and <10",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 7",
+              "reason" : "Found security vulnerability CVE-2026-97689 with severity >= 7 (severity = 7.5)",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 10",
+              "reason" : "Found security vulnerability CVE-2026-97689 with severity < 10 (severity = 7.5)",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "269898a7af3840a7a925368807d79556",
+        "policyName" : "Security-High",
+        "threatLevel" : 9,
+        "policyViolationId" : "dda0346a9a71412890af075da3a50c60",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "urllib3",
+              "qualifier" : "",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "c57dd149bed207e69106",
+          "constraintFacts" : [ {
+            "constraintId" : "85bf0b8ad540443eb8c04d66d32c56fc",
+            "constraintName" : "CVSS >=7 and <10",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 7",
+              "reason" : "Found security vulnerability CVE-2026-97687 with severity >= 7 (severity = 8.1)",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 10",
+              "reason" : "Found security vulnerability CVE-2026-97687 with severity < 10 (severity = 8.1)",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97687",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "269898a7af3840a7a925368807d79556",
+        "policyName" : "Security-High",
+        "threatLevel" : 9,
+        "policyViolationId" : "0a7f7b2d3ef842c5b324658bde9dc04b",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "urllib3",
+              "qualifier" : "",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "c57dd149bed207e69106",
+          "constraintFacts" : [ {
+            "constraintId" : "85bf0b8ad540443eb8c04d66d32c56fc",
+            "constraintName" : "CVSS >=7 and <10",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 7",
+              "reason" : "Found security vulnerability CVE-2026-97689 with severity >= 7 (severity = 7.5)",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 10",
+              "reason" : "Found security vulnerability CVE-2026-97689 with severity < 10 (severity = 7.5)",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97689",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "cd2b50dd9a93461e9c17b7f67f1d0090",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "soupsieve",
+              "qualifier" : "py3-none-any",
+              "version" : "2.8.4"
+            }
+          },
+          "hash" : "ad3f31abbd8751ce84f0",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-85999 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-85999 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4", "dependency:/./app/requirements.txt/soupsieve==2.8.4" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "soupsieve"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.8.4"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "soupsieve"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "0b68767c72a5474b9f4dc84fa5454459",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "soupsieve",
+              "qualifier" : "py3-none-any",
+              "version" : "2.8.4"
+            }
+          },
+          "hash" : "ad3f31abbd8751ce84f0",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-86000 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-86000 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4", "dependency:/./app/requirements.txt/soupsieve==2.8.4" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "soupsieve"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.8.4"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "soupsieve"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "1b7e2dd454684b6a8ca5ebfe49c1d047",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "urllib3",
+              "qualifier" : "py3-none-any",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "bd774de92f860e8e0cc6",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-97688 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-97688 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "06f41be64d7c4ddeb66c2832ac564ef2",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "urllib3",
+              "qualifier" : "",
+              "version" : "2.7.0"
+            }
+          },
+          "hash" : "c57dd149bed207e69106",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-97688 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-97688 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-97688",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0", "dependency:/./app/requirements.txt/urllib3==2.7.0" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "urllib3"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.7.0"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "urllib3"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "896582a72f5c4baeac054693ff00e474",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "soupsieve",
+              "qualifier" : "",
+              "version" : "2.8.4"
+            }
+          },
+          "hash" : "ced28a557ac97788fbff",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-85999 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-85999 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-85999",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4", "dependency:/./app/requirements.txt/soupsieve==2.8.4" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "soupsieve"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.8.4"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "soupsieve"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "9e1adaecefc24119992513550af24e9b",
+        "policyName" : "Security-Medium",
+        "threatLevel" : 7,
+        "policyViolationId" : "c2f66102f58e4f99843bedd6dd63d9f9",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "soupsieve",
+              "qualifier" : "",
+              "version" : "2.8.4"
+            }
+          },
+          "hash" : "ced28a557ac97788fbff",
+          "constraintFacts" : [ {
+            "constraintId" : "d99b61a2a9074bc19c4829572074a086",
+            "constraintName" : "CVSS >=4 and <7",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity >= 4",
+              "reason" : "Found security vulnerability CVE-2026-86000 with severity >= 4 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilitySeverity",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Severity < 7",
+              "reason" : "Found security vulnerability CVE-2026-86000 with severity < 7 (severity = 5.3)",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "SecurityVulnerabilityStatus",
+              "conditionIndex" : 0,
+              "summary" : "Security Vulnerability Status is not NOT_APPLICABLE",
+              "reason" : "Found security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'",
+              "reference" : {
+                "value" : "CVE-2026-86000",
+                "type" : "SECURITY_VULNERABILITY_REFID"
+              },
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4", "dependency:/./app/requirements.txt/soupsieve==2.8.4" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "soupsieve"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "2.8.4"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "soupsieve"
+          }
+        } ]
+      },
+      "actions" : [ {
+        "actionTypeId" : "warn",
+        "target" : null
+      } ]
+    }, {
+      "trigger" : {
+        "policyId" : "c42f9e7c2b094438a9ae7e56b333d8f8",
+        "policyName" : "Quality-Architecture-Age GT 5 Years",
+        "threatLevel" : 3,
+        "policyViolationId" : "63fd0bc6f1764894a1259b87ba3da80a",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "tar.gz",
+              "name" : "defusedxml",
+              "qualifier" : "",
+              "version" : "0.7.1"
+            }
+          },
+          "hash" : "37667af1dc1357eb96b0",
+          "constraintFacts" : [ {
+            "constraintId" : "59b3d454828a4c0aa217ad5fc14fb1ee",
+            "constraintName" : "Too Old",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "AgeInDays",
+              "conditionIndex" : 0,
+              "summary" : "Age older than 1825 days",
+              "reason" : "Found component older than 5 years",
+              "reference" : null,
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "AgeInDays",
+              "conditionIndex" : 0,
+              "summary" : "Age younger than 3650 days",
+              "reason" : "Found component younger than 10 years",
+              "reference" : null,
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1", "dependency:/./app/requirements.txt/defusedxml==0.7.1" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "defusedxml"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "0.7.1"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "tar.gz"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "defusedxml"
+          }
+        } ]
+      },
+      "actions" : [ ]
+    }, {
+      "trigger" : {
+        "policyId" : "c42f9e7c2b094438a9ae7e56b333d8f8",
+        "policyName" : "Quality-Architecture-Age GT 5 Years",
+        "threatLevel" : 3,
+        "policyViolationId" : "8a4c190401da45eb812e58cc1b9ab084",
+        "componentFacts" : [ {
+          "componentIdentifier" : {
+            "format" : "pypi",
+            "coordinates" : {
+              "extension" : "whl",
+              "name" : "defusedxml",
+              "qualifier" : "py2.py3-none-any",
+              "version" : "0.7.1"
+            }
+          },
+          "hash" : "e23475023105199c3e59",
+          "constraintFacts" : [ {
+            "constraintId" : "59b3d454828a4c0aa217ad5fc14fb1ee",
+            "constraintName" : "Too Old",
+            "operatorName" : "AND",
+            "conditionFacts" : [ {
+              "conditionTypeId" : "AgeInDays",
+              "conditionIndex" : 0,
+              "summary" : "Age older than 1825 days",
+              "reason" : "Found component older than 5 years",
+              "reference" : null,
+              "triggerJson" : null
+            }, {
+              "conditionTypeId" : "AgeInDays",
+              "conditionIndex" : 0,
+              "summary" : "Age younger than 3650 days",
+              "reason" : "Found component younger than 10 years",
+              "reference" : null,
+              "triggerJson" : null
+            } ]
+          } ],
+          "pathnames" : [ "dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1", "dependency:/./app/requirements.txt/defusedxml==0.7.1" ],
+          "displayName" : {
+            "parts" : [ {
+              "field" : "Name",
+              "value" : "defusedxml"
+            }, {
+              "value" : " ("
+            }, {
+              "field" : "Qualifier",
+              "value" : "py2.py3-none-any"
+            }, {
+              "value" : ")"
+            }, {
+              "value" : " "
+            }, {
+              "field" : "Version",
+              "value" : "0.7.1"
+            }, {
+              "value" : " (."
+            }, {
+              "field" : "Extension",
+              "value" : "whl"
+            }, {
+              "value" : ")"
+            } ],
+            "name" : "defusedxml"
+          }
+        } ]
+      },
+      "actions" : [ ]
+    } ],
+    "affectedComponentCount" : 9,
+    "criticalComponentCount" : 5,
+    "severeComponentCount" : 2,
+    "moderateComponentCount" : 2,
+    "criticalPolicyViolationCount" : 7,
+    "severePolicyViolationCount" : 6,
+    "moderatePolicyViolationCount" : 2,
+    "legacyViolationCount" : 0,
+    "totalComponentCount" : 150,
+    "sastAlerts" : [ ],
+    "criticalSastPolicyViolationCount" : 0,
+    "severeSastPolicyViolationCount" : 0,
+    "moderateSastPolicyViolationCount" : 0,
+    "totalSastFindingCount" : 0,
+    "grandfatheredPolicyViolationCount" : 0
+  }
+}

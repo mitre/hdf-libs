@@ -1,0 +1,1330 @@
+{
+  "baselines": [
+    {
+      "extensions": {
+        "passthrough": {
+          "nexusiq": {
+            "applicationId": "example-org_example-app_dev",
+            "policyAction": "Warning",
+            "scanId": "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+            "stage": "build",
+            "summary": {
+              "affectedComponentCount": 9,
+              "criticalComponentCount": 5,
+              "criticalPolicyViolationCount": 7,
+              "criticalSastPolicyViolationCount": 0,
+              "grandfatheredPolicyViolationCount": 0,
+              "legacyViolationCount": 0,
+              "moderateComponentCount": 2,
+              "moderatePolicyViolationCount": 2,
+              "moderateSastPolicyViolationCount": 0,
+              "severeComponentCount": 2,
+              "severePolicyViolationCount": 6,
+              "severeSastPolicyViolationCount": 0,
+              "totalComponentCount": 150,
+              "totalSastFindingCount": 0
+            }
+          }
+        }
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Other-Component-Unknown (threat level 10, critical) was violated by Unknown component ./app/module-a.zip.",
+              "label": "default"
+            },
+            {
+              "data": "Unknown Component:\nMatch State is unknown\nProprietary is false",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Match state was 'Unknown'\nComponent does not contain proprietary packages",
+              "message": "./app/module-a.zip",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"1d84ac1e5c7a4e199aaea84e7158006f\",\n    \"policyName\": \"Other-Component-Unknown\",\n    \"threatLevel\": 10,\n    \"policyViolationId\": \"23b1b964c6544fae9b48d92f121b13e8\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": null,\n        \"hash\": \"20f1efaefeae4a001d46\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"9b09578d0bca484688c74e30400e40e0\",\n            \"constraintName\": \"Unknown Component\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"MatchState\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Match State is unknown\",\n                \"reason\": \"Match state was 'Unknown'\",\n                \"reference\": null,\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"Proprietary\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Proprietary is false\",\n                \"reason\": \"Component does not contain proprietary packages\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"./app/module-a.zip\"\n        ],\n        \"displayName\": null\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/0"
+              },
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "23b1b964c6544fae9b48d92f121b13e8",
+          "impact": 1,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "componentHash": [
+              "20f1efaefeae4a001d46"
+            ],
+            "conditionTypes": [
+              "MatchState",
+              "Proprietary"
+            ],
+            "constraints": [
+              "Unknown Component"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "1d84ac1e5c7a4e199aaea84e7158006f",
+            "policyName": "Other-Component-Unknown",
+            "threatCategory": "critical",
+            "threatLevel": 10
+          },
+          "title": "Unknown component ./app/module-a.zip — Other-Component-Unknown",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Other-Component-Unknown (threat level 10, critical) was violated by Unknown component ./app/module-b.zip.",
+              "label": "default"
+            },
+            {
+              "data": "Unknown Component:\nMatch State is unknown\nProprietary is false",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Match state was 'Unknown'\nComponent does not contain proprietary packages",
+              "message": "./app/module-b.zip",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"1d84ac1e5c7a4e199aaea84e7158006f\",\n    \"policyName\": \"Other-Component-Unknown\",\n    \"threatLevel\": 10,\n    \"policyViolationId\": \"20c90c5898bf4d6e857aed5ec8e9b5c2\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": null,\n        \"hash\": \"81839e0805d7871f5ff5\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"9b09578d0bca484688c74e30400e40e0\",\n            \"constraintName\": \"Unknown Component\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"MatchState\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Match State is unknown\",\n                \"reason\": \"Match state was 'Unknown'\",\n                \"reference\": null,\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"Proprietary\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Proprietary is false\",\n                \"reason\": \"Component does not contain proprietary packages\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"./app/module-b.zip\"\n        ],\n        \"displayName\": null\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/1"
+              },
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "20c90c5898bf4d6e857aed5ec8e9b5c2",
+          "impact": 1,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "componentHash": [
+              "81839e0805d7871f5ff5"
+            ],
+            "conditionTypes": [
+              "MatchState",
+              "Proprietary"
+            ],
+            "constraints": [
+              "Unknown Component"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "1d84ac1e5c7a4e199aaea84e7158006f",
+            "policyName": "Other-Component-Unknown",
+            "threatCategory": "critical",
+            "threatLevel": 10
+          },
+          "title": "Unknown component ./app/module-b.zip — Other-Component-Unknown",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Other-Component-Unknown (threat level 10, critical) was violated by Unknown component ./app/module-c.zip.",
+              "label": "default"
+            },
+            {
+              "data": "Unknown Component:\nMatch State is unknown\nProprietary is false",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Match state was 'Unknown'\nComponent does not contain proprietary packages",
+              "message": "./app/module-c.zip",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"1d84ac1e5c7a4e199aaea84e7158006f\",\n    \"policyName\": \"Other-Component-Unknown\",\n    \"threatLevel\": 10,\n    \"policyViolationId\": \"ca6d58f8c0974938b4be3711f14374c7\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": null,\n        \"hash\": \"9c27e492320fe96946cc\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"9b09578d0bca484688c74e30400e40e0\",\n            \"constraintName\": \"Unknown Component\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"MatchState\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Match State is unknown\",\n                \"reason\": \"Match state was 'Unknown'\",\n                \"reference\": null,\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"Proprietary\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Proprietary is false\",\n                \"reason\": \"Component does not contain proprietary packages\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"./app/module-c.zip\"\n        ],\n        \"displayName\": null\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/2"
+              },
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "ca6d58f8c0974938b4be3711f14374c7",
+          "impact": 1,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "componentHash": [
+              "9c27e492320fe96946cc"
+            ],
+            "conditionTypes": [
+              "MatchState",
+              "Proprietary"
+            ],
+            "constraints": [
+              "Unknown Component"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "1d84ac1e5c7a4e199aaea84e7158006f",
+            "policyName": "Other-Component-Unknown",
+            "threatCategory": "critical",
+            "threatLevel": 10
+          },
+          "title": "Unknown component ./app/module-c.zip — Other-Component-Unknown",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-High (threat level 9, critical) was violated by urllib3 2.7.0 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=7 and \u003c10:\nSecurity Vulnerability Severity \u003e= 7\nSecurity Vulnerability Severity \u003c 10\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97687 with severity \u003e= 7 (severity = 8.1)\nFound security vulnerability CVE-2026-97687 with severity \u003c 10 (severity = 8.1)\nFound security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"269898a7af3840a7a925368807d79556\",\n    \"policyName\": \"Security-High\",\n    \"threatLevel\": 9,\n    \"policyViolationId\": \"e27fb118b0d940248ae27e451b1e9314\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"py3-none-any\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"bd774de92f860e8e0cc6\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"85bf0b8ad540443eb8c04d66d32c56fc\",\n            \"constraintName\": \"CVSS \u003e=7 and \u003c10\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with severity \u003e= 7 (severity = 8.1)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 10\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with severity \u003c 10 (severity = 8.1)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/3"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "e27fb118b0d940248ae27e451b1e9314",
+          "impact": 0.9,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "bd774de92f860e8e0cc6"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "urllib3",
+                  "qualifier": "py3-none-any",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=7 and \u003c10"
+            ],
+            "cve": [
+              "CVE-2026-97687"
+            ],
+            "cvssScore": 8.1,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "269898a7af3840a7a925368807d79556",
+            "policyName": "Security-High",
+            "threatCategory": "critical",
+            "threatLevel": 9
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97687",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97687"
+            }
+          ],
+          "title": "urllib3 2.7.0 (whl) — Security-High",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-High (threat level 9, critical) was violated by urllib3 2.7.0 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=7 and \u003c10:\nSecurity Vulnerability Severity \u003e= 7\nSecurity Vulnerability Severity \u003c 10\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97689 with severity \u003e= 7 (severity = 7.5)\nFound security vulnerability CVE-2026-97689 with severity \u003c 10 (severity = 7.5)\nFound security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"269898a7af3840a7a925368807d79556\",\n    \"policyName\": \"Security-High\",\n    \"threatLevel\": 9,\n    \"policyViolationId\": \"8305ae136fdb433a92405da903504a7a\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"py3-none-any\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"bd774de92f860e8e0cc6\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"85bf0b8ad540443eb8c04d66d32c56fc\",\n            \"constraintName\": \"CVSS \u003e=7 and \u003c10\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with severity \u003e= 7 (severity = 7.5)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 10\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with severity \u003c 10 (severity = 7.5)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/4"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "8305ae136fdb433a92405da903504a7a",
+          "impact": 0.9,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "bd774de92f860e8e0cc6"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "urllib3",
+                  "qualifier": "py3-none-any",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=7 and \u003c10"
+            ],
+            "cve": [
+              "CVE-2026-97689"
+            ],
+            "cvssScore": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "269898a7af3840a7a925368807d79556",
+            "policyName": "Security-High",
+            "threatCategory": "critical",
+            "threatLevel": 9
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97689",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97689"
+            }
+          ],
+          "title": "urllib3 2.7.0 (whl) — Security-High",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-High (threat level 9, critical) was violated by urllib3 2.7.0 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=7 and \u003c10:\nSecurity Vulnerability Severity \u003e= 7\nSecurity Vulnerability Severity \u003c 10\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97687 with severity \u003e= 7 (severity = 8.1)\nFound security vulnerability CVE-2026-97687 with severity \u003c 10 (severity = 8.1)\nFound security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"269898a7af3840a7a925368807d79556\",\n    \"policyName\": \"Security-High\",\n    \"threatLevel\": 9,\n    \"policyViolationId\": \"dda0346a9a71412890af075da3a50c60\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"c57dd149bed207e69106\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"85bf0b8ad540443eb8c04d66d32c56fc\",\n            \"constraintName\": \"CVSS \u003e=7 and \u003c10\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with severity \u003e= 7 (severity = 8.1)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 10\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with severity \u003c 10 (severity = 8.1)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97687 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97687\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/5"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "dda0346a9a71412890af075da3a50c60",
+          "impact": 0.9,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "c57dd149bed207e69106"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "urllib3",
+                  "qualifier": "",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=7 and \u003c10"
+            ],
+            "cve": [
+              "CVE-2026-97687"
+            ],
+            "cvssScore": 8.1,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "269898a7af3840a7a925368807d79556",
+            "policyName": "Security-High",
+            "threatCategory": "critical",
+            "threatLevel": 9
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97687",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97687"
+            }
+          ],
+          "title": "urllib3 2.7.0 (tar.gz) — Security-High",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-High (threat level 9, critical) was violated by urllib3 2.7.0 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=7 and \u003c10:\nSecurity Vulnerability Severity \u003e= 7\nSecurity Vulnerability Severity \u003c 10\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97689 with severity \u003e= 7 (severity = 7.5)\nFound security vulnerability CVE-2026-97689 with severity \u003c 10 (severity = 7.5)\nFound security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"269898a7af3840a7a925368807d79556\",\n    \"policyName\": \"Security-High\",\n    \"threatLevel\": 9,\n    \"policyViolationId\": \"0a7f7b2d3ef842c5b324658bde9dc04b\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"c57dd149bed207e69106\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"85bf0b8ad540443eb8c04d66d32c56fc\",\n            \"constraintName\": \"CVSS \u003e=7 and \u003c10\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with severity \u003e= 7 (severity = 7.5)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 10\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with severity \u003c 10 (severity = 7.5)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97689 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97689\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/6"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "0a7f7b2d3ef842c5b324658bde9dc04b",
+          "impact": 0.9,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "c57dd149bed207e69106"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "urllib3",
+                  "qualifier": "",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=7 and \u003c10"
+            ],
+            "cve": [
+              "CVE-2026-97689"
+            ],
+            "cvssScore": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "269898a7af3840a7a925368807d79556",
+            "policyName": "Security-High",
+            "threatCategory": "critical",
+            "threatLevel": 9
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97689",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97689"
+            }
+          ],
+          "title": "urllib3 2.7.0 (tar.gz) — Security-High",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "soupsieve",
+              "purl": "pkg:pypi/soupsieve@2.8.4",
+              "version": "2.8.4"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by soupsieve 2.8.4 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-85999 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-85999 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\ndependency:/./app/requirements.txt/soupsieve==2.8.4",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"cd2b50dd9a93461e9c17b7f67f1d0090\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"soupsieve\",\n            \"qualifier\": \"py3-none-any\",\n            \"version\": \"2.8.4\"\n          }\n        },\n        \"hash\": \"ad3f31abbd8751ce84f0\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\",\n          \"dependency:/./app/requirements.txt/soupsieve==2.8.4\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"soupsieve\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.8.4\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"soupsieve\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/7"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/soupsieve@2.8.4",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "cd2b50dd9a93461e9c17b7f67f1d0090",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "ad3f31abbd8751ce84f0"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "soupsieve",
+                  "qualifier": "py3-none-any",
+                  "version": "2.8.4"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-85999"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-85999",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-85999"
+            }
+          ],
+          "title": "soupsieve 2.8.4 (whl) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "soupsieve",
+              "purl": "pkg:pypi/soupsieve@2.8.4",
+              "version": "2.8.4"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by soupsieve 2.8.4 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-86000 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-86000 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\ndependency:/./app/requirements.txt/soupsieve==2.8.4",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"0b68767c72a5474b9f4dc84fa5454459\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"soupsieve\",\n            \"qualifier\": \"py3-none-any\",\n            \"version\": \"2.8.4\"\n          }\n        },\n        \"hash\": \"ad3f31abbd8751ce84f0\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\",\n          \"dependency:/./app/requirements.txt/soupsieve==2.8.4\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"soupsieve\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.8.4\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"soupsieve\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/8"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/soupsieve@2.8.4",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "0b68767c72a5474b9f4dc84fa5454459",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "ad3f31abbd8751ce84f0"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "soupsieve",
+                  "qualifier": "py3-none-any",
+                  "version": "2.8.4"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-86000"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-86000",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-86000"
+            }
+          ],
+          "title": "soupsieve 2.8.4 (whl) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by urllib3 2.7.0 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97688 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-97688 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"1b7e2dd454684b6a8ca5ebfe49c1d047\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"py3-none-any\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"bd774de92f860e8e0cc6\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/9"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "1b7e2dd454684b6a8ca5ebfe49c1d047",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "bd774de92f860e8e0cc6"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "urllib3",
+                  "qualifier": "py3-none-any",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-97688"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97688",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97688"
+            }
+          ],
+          "title": "urllib3 2.7.0 (whl) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "urllib3",
+              "purl": "pkg:pypi/urllib3@2.7.0",
+              "version": "2.7.0"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by urllib3 2.7.0 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-97688 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-97688 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\ndependency:/./app/requirements.txt/urllib3==2.7.0",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"06f41be64d7c4ddeb66c2832ac564ef2\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"urllib3\",\n            \"qualifier\": \"\",\n            \"version\": \"2.7.0\"\n          }\n        },\n        \"hash\": \"c57dd149bed207e69106\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-97688 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-97688\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/urllib3==2.7.0\",\n          \"dependency:/./app/requirements.txt/urllib3==2.7.0\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"urllib3\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.7.0\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"urllib3\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/10"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@2.7.0",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "06f41be64d7c4ddeb66c2832ac564ef2",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "c57dd149bed207e69106"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "urllib3",
+                  "qualifier": "",
+                  "version": "2.7.0"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-97688"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-97688",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-97688"
+            }
+          ],
+          "title": "urllib3 2.7.0 (tar.gz) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "soupsieve",
+              "purl": "pkg:pypi/soupsieve@2.8.4",
+              "version": "2.8.4"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by soupsieve 2.8.4 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-85999 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-85999 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\ndependency:/./app/requirements.txt/soupsieve==2.8.4",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"896582a72f5c4baeac054693ff00e474\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"soupsieve\",\n            \"qualifier\": \"\",\n            \"version\": \"2.8.4\"\n          }\n        },\n        \"hash\": \"ced28a557ac97788fbff\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-85999 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-85999\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\",\n          \"dependency:/./app/requirements.txt/soupsieve==2.8.4\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"soupsieve\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.8.4\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"soupsieve\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/11"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/soupsieve@2.8.4",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "896582a72f5c4baeac054693ff00e474",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "ced28a557ac97788fbff"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "soupsieve",
+                  "qualifier": "",
+                  "version": "2.8.4"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-85999"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-85999",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-85999"
+            }
+          ],
+          "title": "soupsieve 2.8.4 (tar.gz) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "soupsieve",
+              "purl": "pkg:pypi/soupsieve@2.8.4",
+              "version": "2.8.4"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Security-Medium (threat level 7, severe) was violated by soupsieve 2.8.4 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "CVSS \u003e=4 and \u003c7:\nSecurity Vulnerability Severity \u003e= 4\nSecurity Vulnerability Severity \u003c 7\nSecurity Vulnerability Status is not NOT_APPLICABLE",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found security vulnerability CVE-2026-86000 with severity \u003e= 4 (severity = 5.3)\nFound security vulnerability CVE-2026-86000 with severity \u003c 7 (severity = 5.3)\nFound security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\ndependency:/./app/requirements.txt/soupsieve==2.8.4",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"9e1adaecefc24119992513550af24e9b\",\n    \"policyName\": \"Security-Medium\",\n    \"threatLevel\": 7,\n    \"policyViolationId\": \"c2f66102f58e4f99843bedd6dd63d9f9\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"soupsieve\",\n            \"qualifier\": \"\",\n            \"version\": \"2.8.4\"\n          }\n        },\n        \"hash\": \"ced28a557ac97788fbff\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"d99b61a2a9074bc19c4829572074a086\",\n            \"constraintName\": \"CVSS \u003e=4 and \u003c7\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003e= 4\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with severity \u003e= 4 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilitySeverity\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Severity \u003c 7\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with severity \u003c 7 (severity = 5.3)\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"SecurityVulnerabilityStatus\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Security Vulnerability Status is not NOT_APPLICABLE\",\n                \"reason\": \"Found security vulnerability CVE-2026-86000 with status 'Open', not 'Not Applicable'\",\n                \"reference\": {\n                  \"value\": \"CVE-2026-86000\",\n                  \"type\": \"SECURITY_VULNERABILITY_REFID\"\n                },\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/soupsieve==2.8.4\",\n          \"dependency:/./app/requirements.txt/soupsieve==2.8.4\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"soupsieve\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"2.8.4\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"soupsieve\"\n        }\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"actionTypeId\": \"warn\",\n      \"target\": null\n    }\n  ]\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/12"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/soupsieve@2.8.4",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "c2f66102f58e4f99843bedd6dd63d9f9",
+          "impact": 0.7,
+          "tags": {
+            "actions": [
+              "warn"
+            ],
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "componentHash": [
+              "ced28a557ac97788fbff"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "soupsieve",
+                  "qualifier": "",
+                  "version": "2.8.4"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "SecurityVulnerabilitySeverity",
+              "SecurityVulnerabilityStatus"
+            ],
+            "constraints": [
+              "CVSS \u003e=4 and \u003c7"
+            ],
+            "cve": [
+              "CVE-2026-86000"
+            ],
+            "cvssScore": 5.3,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "9e1adaecefc24119992513550af24e9b",
+            "policyName": "Security-Medium",
+            "threatCategory": "severe",
+            "threatLevel": 7
+          },
+          "externalReferences": [
+            {
+              "externalId": "CVE-2026-86000",
+              "rel": "definition",
+              "sourceName": "cve"
+            }
+          ],
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-86000"
+            }
+          ],
+          "title": "soupsieve 2.8.4 (tar.gz) — Security-Medium",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "defusedxml",
+              "purl": "pkg:pypi/defusedxml@0.7.1",
+              "version": "0.7.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Quality-Architecture-Age GT 5 Years (threat level 3, moderate) was violated by defusedxml 0.7.1 (tar.gz).",
+              "label": "default"
+            },
+            {
+              "data": "Too Old:\nAge older than 1825 days\nAge younger than 3650 days",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found component older than 5 years\nFound component younger than 10 years",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1\ndependency:/./app/requirements.txt/defusedxml==0.7.1",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"c42f9e7c2b094438a9ae7e56b333d8f8\",\n    \"policyName\": \"Quality-Architecture-Age GT 5 Years\",\n    \"threatLevel\": 3,\n    \"policyViolationId\": \"63fd0bc6f1764894a1259b87ba3da80a\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"tar.gz\",\n            \"name\": \"defusedxml\",\n            \"qualifier\": \"\",\n            \"version\": \"0.7.1\"\n          }\n        },\n        \"hash\": \"37667af1dc1357eb96b0\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"59b3d454828a4c0aa217ad5fc14fb1ee\",\n            \"constraintName\": \"Too Old\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"AgeInDays\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Age older than 1825 days\",\n                \"reason\": \"Found component older than 5 years\",\n                \"reference\": null,\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"AgeInDays\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Age younger than 3650 days\",\n                \"reason\": \"Found component younger than 10 years\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1\",\n          \"dependency:/./app/requirements.txt/defusedxml==0.7.1\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"defusedxml\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"0.7.1\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"tar.gz\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"defusedxml\"\n        }\n      }\n    ]\n  },\n  \"actions\": []\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/13"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/defusedxml@0.7.1",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "63fd0bc6f1764894a1259b87ba3da80a",
+          "impact": 0.3,
+          "tags": {
+            "componentHash": [
+              "37667af1dc1357eb96b0"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "tar.gz",
+                  "name": "defusedxml",
+                  "qualifier": "",
+                  "version": "0.7.1"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "AgeInDays"
+            ],
+            "constraints": [
+              "Too Old"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "c42f9e7c2b094438a9ae7e56b333d8f8",
+            "policyName": "Quality-Architecture-Age GT 5 Years",
+            "threatCategory": "moderate",
+            "threatLevel": 3
+          },
+          "title": "defusedxml 0.7.1 (tar.gz) — Quality-Architecture-Age GT 5 Years",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "defusedxml",
+              "purl": "pkg:pypi/defusedxml@0.7.1",
+              "version": "0.7.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Nexus IQ policy Quality-Architecture-Age GT 5 Years (threat level 3, moderate) was violated by defusedxml 0.7.1 (whl).",
+              "label": "default"
+            },
+            {
+              "data": "Too Old:\nAge older than 1825 days\nAge younger than 3650 days",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Found component older than 5 years\nFound component younger than 10 years",
+              "message": "dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1\ndependency:/./app/requirements.txt/defusedxml==0.7.1",
+              "rawSourceRecord": {
+                "content": "{\n  \"trigger\": {\n    \"policyId\": \"c42f9e7c2b094438a9ae7e56b333d8f8\",\n    \"policyName\": \"Quality-Architecture-Age GT 5 Years\",\n    \"threatLevel\": 3,\n    \"policyViolationId\": \"8a4c190401da45eb812e58cc1b9ab084\",\n    \"componentFacts\": [\n      {\n        \"componentIdentifier\": {\n          \"format\": \"pypi\",\n          \"coordinates\": {\n            \"extension\": \"whl\",\n            \"name\": \"defusedxml\",\n            \"qualifier\": \"py2.py3-none-any\",\n            \"version\": \"0.7.1\"\n          }\n        },\n        \"hash\": \"e23475023105199c3e59\",\n        \"constraintFacts\": [\n          {\n            \"constraintId\": \"59b3d454828a4c0aa217ad5fc14fb1ee\",\n            \"constraintName\": \"Too Old\",\n            \"operatorName\": \"AND\",\n            \"conditionFacts\": [\n              {\n                \"conditionTypeId\": \"AgeInDays\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Age older than 1825 days\",\n                \"reason\": \"Found component older than 5 years\",\n                \"reference\": null,\n                \"triggerJson\": null\n              },\n              {\n                \"conditionTypeId\": \"AgeInDays\",\n                \"conditionIndex\": 0,\n                \"summary\": \"Age younger than 3650 days\",\n                \"reason\": \"Found component younger than 10 years\",\n                \"reference\": null,\n                \"triggerJson\": null\n              }\n            ]\n          }\n        ],\n        \"pathnames\": [\n          \"dependency:/./app/module-a.zip/requirements.txt/defusedxml==0.7.1\",\n          \"dependency:/./app/requirements.txt/defusedxml==0.7.1\"\n        ],\n        \"displayName\": {\n          \"parts\": [\n            {\n              \"field\": \"Name\",\n              \"value\": \"defusedxml\"\n            },\n            {\n              \"value\": \" (\"\n            },\n            {\n              \"field\": \"Qualifier\",\n              \"value\": \"py2.py3-none-any\"\n            },\n            {\n              \"value\": \")\"\n            },\n            {\n              \"value\": \" \"\n            },\n            {\n              \"field\": \"Version\",\n              \"value\": \"0.7.1\"\n            },\n            {\n              \"value\": \" (.\"\n            },\n            {\n              \"field\": \"Extension\",\n              \"value\": \"whl\"\n            },\n            {\n              \"value\": \")\"\n            }\n          ],\n          \"name\": \"defusedxml\"\n        }\n      }\n    ]\n  },\n  \"actions\": []\n}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/policyEvaluationResult/alerts/14"
+              },
+              "resource": "package",
+              "resourceId": "pkg:pypi/defusedxml@0.7.1",
+              "startTime": "2026-10-21T14:08:45.30902Z",
+              "status": "failed"
+            }
+          ],
+          "id": "8a4c190401da45eb812e58cc1b9ab084",
+          "impact": 0.3,
+          "tags": {
+            "componentHash": [
+              "e23475023105199c3e59"
+            ],
+            "componentIdentifier": [
+              {
+                "coordinates": {
+                  "extension": "whl",
+                  "name": "defusedxml",
+                  "qualifier": "py2.py3-none-any",
+                  "version": "0.7.1"
+                },
+                "format": "pypi"
+              }
+            ],
+            "conditionTypes": [
+              "AgeInDays"
+            ],
+            "constraints": [
+              "Too Old"
+            ],
+            "nist": [
+              "CM-8"
+            ],
+            "nistMapping": "static-fallback",
+            "policyId": "c42f9e7c2b094438a9ae7e56b333d8f8",
+            "policyName": "Quality-Architecture-Age GT 5 Years",
+            "threatCategory": "moderate",
+            "threatLevel": 3
+          },
+          "title": "defusedxml 0.7.1 (whl) — Quality-Architecture-Age GT 5 Years",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "565e7f73ccf7ad5b12076f4ba975cd4618afea5b648a938a2a5699578071b3dc"
+      },
+      "name": "Nexus IQ Policy Evaluation",
+      "title": "Nexus IQ policy evaluation of example-org_example-app_dev (build stage)"
+    }
+  ],
+  "components": [
+    {
+      "externalIds": {
+        "nexus-iq": "example-org_example-app_dev"
+      },
+      "name": "example-org_example-app_dev",
+      "type": "application"
+    }
+  ],
+  "externalReferences": [
+    {
+      "description": "Nexus IQ application report",
+      "href": "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+      "mediaType": "text/html",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    },
+    {
+      "description": "Nexus IQ application report (PDF)",
+      "href": "https://lifecycle.example.com/ui/links/application/example-org_example-app_dev/report/0a1b2c3d4e5f60718293a4b5c6d7e8f9/pdf",
+      "mediaType": "application/pdf",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    },
+    {
+      "description": "Nexus IQ raw report data",
+      "href": "https://lifecycle.example.com/api/v2/applications/example-org_example-app_dev/reports/0a1b2c3d4e5f60718293a4b5c6d7e8f9/raw",
+      "mediaType": "application/json",
+      "rel": "investigate",
+      "sourceName": "nexus-iq"
+    }
+  ],
+  "generator": {
+    "name": "nexusiq-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-21T14:08:45.30902Z",
+  "tool": {
+    "format": "json",
+    "name": "Nexus IQ Server"
+  }
+}

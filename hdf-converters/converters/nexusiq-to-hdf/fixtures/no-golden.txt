@@ -1,0 +1,1 @@
+scan-history-summary.json — TestRejectsScanHistorySummary and the TypeScript counterpart assert rejection of this published incomplete summary.
