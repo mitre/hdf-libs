@@ -146,8 +146,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: snapshot-tags
+    # The push uses an App token minted below, so the job's own token stays read-only.
     permissions:
-      contents: write
+      contents: read
       id-token: write
       attestations: write
     steps:
@@ -172,9 +173,41 @@ jobs:
             echo 'Rerun all jobs or start a new workflow; partial-job retries cannot reuse snapshot versions.' >&2
             exit 1
           }
+      # Snapshot tags are signed by the MITRE snapshot key, a software key used
+      # with no human present. Its keyring lives outside the checkout for the
+      # length of the job, and git signs through a wrapper that supplies the
+      # passphrase on a file descriptor, so no gpg call can prompt or log it.
+      - name: Import the snapshot signing key
+        env:
+          SNAPSHOT_GPG_PRIVATE_KEY: ${{ secrets.SNAPSHOT_GPG_PRIVATE_KEY }}
+          SNAPSHOT_GPG_PASSPHRASE: ${{ secrets.SNAPSHOT_GPG_PASSPHRASE }}
+        run: |
+          GNUPGHOME=$(mktemp -d)
+          export GNUPGHOME
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          cat > "$GNUPGHOME/gpg-sign" <<'EOF'
+          #!/usr/bin/env bash
+          exec gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@" 3<<< "$SNAPSHOT_GPG_PASSPHRASE"
+          EOF
+          chmod 700 "$GNUPGHOME/gpg-sign"
+          # The secret must hold exactly the key consumers are told to verify against.
+          published=$(gpg --batch --with-colons --show-keys .github/snapshot-signing-key.asc)
+          test "$(grep -c '^pub:' <<< "$published")" = 1
+          fingerprint=$(awk -F: '$1 == "fpr" { print $10; exit }' <<< "$published")
+          "$GNUPGHOME/gpg-sign" --quiet --import <<< "$SNAPSHOT_GPG_PRIVATE_KEY"
+          gpg --batch --quiet --list-secret-keys "$fingerprint" > /dev/null
+          echo "SNAPSHOT_SIGNING_FINGERPRINT=$fingerprint" >> "$GITHUB_ENV"
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.SNAPSHOT_APP_ID }}
+          private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
       - name: Publish snapshot tags
         env:
-          GH_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          SNAPSHOT_GPG_PASSPHRASE: ${{ secrets.SNAPSHOT_GPG_PASSPHRASE }}
           VERSION: ${{ needs.prepare.outputs.version }}
           PREPARED: ${{ needs.prepare.outputs.prepared }}
           SOURCE: ${{ needs.prepare.outputs.source }}
@@ -185,11 +218,26 @@ jobs:
           test "$(git show -s --format=%P "$PREPARED")" = "$SOURCE"
           refs=("refs/tags/snapshots/v$VERSION")
           while read -r gomod; do refs+=("refs/tags/${gomod%/go.mod}/v$VERSION"); done < snapshot-metadata/gomods.txt
-          for ref in "${refs[@]}"; do git update-ref "$ref" "$PREPARED" 0000000000000000000000000000000000000000; done
-          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
-          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | openssl base64 -A)
-          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          export GIT_CONFIG_COUNT=5 \
+            GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0='mitre-hdf-libs[bot]' \
+            GIT_CONFIG_KEY_1=user.email GIT_CONFIG_VALUE_1='353107672+mitre-hdf-libs[bot]@users.noreply.github.com' \
+            GIT_CONFIG_KEY_2=user.signingkey GIT_CONFIG_VALUE_2="$SNAPSHOT_SIGNING_FINGERPRINT" \
+            GIT_CONFIG_KEY_3=gpg.program GIT_CONFIG_VALUE_3="$GNUPGHOME/gpg-sign" \
+            GIT_CONFIG_KEY_4=http.https://github.com/.extraheader
+          auth=$(printf 'x-access-token:%s' "$APP_TOKEN" | openssl base64 -A)
+          export GIT_CONFIG_VALUE_4="AUTHORIZATION: basic $auth"
+          # git tag refuses an existing name, so a replay cannot move a published tag.
+          for ref in "${refs[@]}"; do
+            git tag -s -a "${ref#refs/tags/}" "$PREPARED" -m "Snapshot $VERSION from main at $SOURCE"
+            git tag -v "${ref#refs/tags/}"
+          done
           git push --atomic origin "${refs[@]}"
+      - name: Remove the signing keyring
+        if: always()
+        run: |
+          if [ -z "${GNUPGHOME:-}" ] || [ ! -f "$GNUPGHOME/gpg-sign" ]; then exit 0; fi
+          gpgconf --kill all
+          rm -rf "$GNUPGHOME"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
