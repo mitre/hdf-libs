@@ -463,7 +463,7 @@ A hierarchy forces one grouping dimension. Labels support unlimited dimensions s
 
 ### How Labels Work
 
-Components and baselines carry optional `labels: Record<string, string>`:
+Documents, components, and baselines carry optional `labels: Record<string, string>` on independent owners. Root labels are supported on amendments, baseline, evidence-package, plan, and system documents. They are not inherited by contained or referenced objects; see [label scopes and external IDs](../guides/label-keys-reference.md#scope-and-ownership). The following example describes component grouping:
 
 ```json
 {
@@ -663,7 +663,7 @@ hdf
 ├── fetch <source>                # Pull from live APIs (aws-config, splunk, sonarqube, gitlab)
 ├── version                       # Print version info
 │
-├── label                         # Manage labels on any HDF document
+├── label                         # Manage component or supported document metadata
 │   ├── show <file>               # Display labels
 │   ├── set <file> <k>=<v>...     # Add or update labels
 │   └── remove <file> <k>...      # Remove labels

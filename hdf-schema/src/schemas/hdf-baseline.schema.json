@@ -57,6 +57,10 @@
     "extensions": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
       "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this baseline was converted from."
+    },
+    "externalIds": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_IDs",
+      "description": "External identities associated with this baseline document, such as its producing CI run or external catalog record."
     }
   },
   "examples": [
@@ -80,7 +84,9 @@
           "title": "Ubuntu 22.04 LTS must enforce password complexity",
           "impact": 0.5,
           "tags": {
-            "nist": ["IA-5"],
+            "nist": [
+              "IA-5"
+            ],
             "severity": "medium",
             "gtitle": "SRG-OS-000069-GPOS-00037"
           },
@@ -104,7 +110,10 @@
           "title": "Ubuntu 22.04 LTS must configure audit logging",
           "impact": 0.7,
           "tags": {
-            "nist": ["AU-3", "AU-12"],
+            "nist": [
+              "AU-3",
+              "AU-12"
+            ],
             "severity": "high",
             "gtitle": "SRG-OS-000037-GPOS-00015"
           },
@@ -120,9 +129,17 @@
         {
           "id": "controls/SV-260476.rb",
           "title": "Password Configuration",
-          "requirements": ["SV-260476"]
+          "requirements": [
+            "SV-260476"
+          ]
         }
-      ]
+      ],
+      "labels": {
+        "team": "security"
+      },
+      "externalIds": {
+        "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+      }
     }
   ],
   "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",

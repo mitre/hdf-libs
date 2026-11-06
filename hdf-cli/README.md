@@ -22,7 +22,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
   - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
   - [enrich](#enrich) -- Attach external context (STIX CTI) to a document
   - [evidence](#evidence) -- Build and inspect evidence packages
-  - [label](#label) -- Add, remove, or show labels on targets
+  - [label](#label) -- Manage component or document metadata
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
@@ -744,16 +744,19 @@ Contents (4):
 
 ### label
 
-Add, remove, or show key=value labels and external IDs on the targets of an HDF document.
+Add, remove, or show grouping labels and external IDs. The default `--scope component` edits components in results and system documents. Use `--scope document` for root metadata on amendments, baseline, evidence-package, plan, and system documents. These scopes are independent; metadata does not propagate. See [label scopes and pipeline identity](../site/docs/guides/label-keys-reference.md#scope-and-ownership).
 
 ```
 USAGE
   hdf label <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  show     Display labels and external IDs on all targets
-  set      Set labels and external IDs on all targets
-  remove   Remove labels and external IDs from all targets
+  show     Display labels and external IDs in the selected scope
+  set      Set labels and external IDs in the selected scope
+  remove   Remove labels and external IDs in the selected scope
+
+FLAGS (all label subcommands)
+      --scope string           Metadata owner: component (default) or document
 
 FLAGS (set)
       --component-id string     Set componentId (a UUID) on all components
@@ -769,19 +772,21 @@ FLAGS (remove)
 
 EXAMPLES
   hdf label show results.json
+  hdf label set package.json --scope document pipeline=nightly --external-id ci-run=project/run-4821
+  hdf label show package.json --scope document --json
   hdf label set results.json system=Portal environment=production -o labeled.json
   hdf label remove results.json system environment -o cleaned.json
   hdf label set results.json --external-id cmdb=CI0012345 --external-id emass=1234
   hdf label remove results.json --external-id cmdb
 ```
 
-Labels group and select components; an external ID is a foreign key into another
+Labels group their owning objects; an external ID is a foreign key into another
 system (CMDB asset ID, eMASS system ID, cloud resource ID) and is written to
-`components[].externalIds`, never to `labels`. `--external-id` merges: a scheme
+`externalIds` on the selected owner, never to `labels`. In default component scope this is `components[].externalIds`. `--external-id` merges: a scheme
 named on the command line is overwritten and the others are left alone. The value
-is carried verbatim and may be any non-empty string. `set` exits non-zero and
+is carried verbatim and may be any non-empty string. Setting external IDs exits non-zero and
 writes nothing when the pair is malformed, a scheme is given twice, the document
-has no components, or `--component-name` matches none or more than one.
+has no components in component scope, or `--component-name` matches none or more than one.
 `--component-id` and `--generate-component-id` are refused on a document with no
 components for the same reason — there is nothing to stamp, and rewriting the
 file while reporting success would claim an id was attached when it was not.
