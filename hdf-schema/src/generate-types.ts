@@ -314,7 +314,7 @@ export async function generateTypes(): Promise<void> {
 
     const ext = lang.name === 'go' ? 'go' : 'ts';
     const outputPath = join(outputDir, `hdf.${ext}`);
-    let output = result.lines.join('\n');
+    let output = result.lines.map((line) => line.trimEnd()).join('\n');
     output = normalizeSharedTypeDocs(output, lang.name as 'go' | 'typescript');
     if (lang.name === 'typescript') {
       output = reinstateComponentIdentityFields(output);

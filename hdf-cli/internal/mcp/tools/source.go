@@ -169,7 +169,7 @@ func resolveHandle(encoded string, ldr *loader.Loader, slot string) (*Resolved, 
 	}
 	if verr := handle.Verify(h, content); verr != nil {
 		return nil, mcperr.New(mcperr.HandleStale, "the file changed since the handle was minted", map[string]any{"path": h.Path}).
-			WithNextCall(fmt.Sprintf("the content changed — re-open the `%s` with hdf_open to mint a fresh handle", slot))
+			WithNextCall(fmt.Sprintf("the content changed — re-open the %#q with hdf_open to mint a fresh handle", slot))
 	}
 	res, lerr := ldr.Load(content)
 	if lerr != nil {
@@ -254,7 +254,7 @@ func registerProduced(ldr *loader.Loader, doc []byte, writtenPath string) string
 // the caller actually passed (source / results / amendments / from / to) so the
 // advice never references a parameter the emitting tool lacks (jobi.4 / D3).
 func notFoundNextCall(slot string) string {
-	return fmt.Sprintf("verify the path exists, then retry with a valid `%s` (or call hdf_open)", slot)
+	return fmt.Sprintf("verify the path exists, then retry with a valid %#q (or call hdf_open)", slot)
 }
 
 // sizeOrLoadError maps a loader hard error (only the size guard today) to a

@@ -1,18 +1,10 @@
 # Applies to: JUnit from test-ts and test-go, both matrix legs, one document per suite file.
+# Shared rules only; the skip budget is per platform in tests-<os>.yaml, passed as a second -T.
 rules:
     - name: no requirement errored
       where:
           status: error
       max: 0
-    # Some tests skip by design; 20 is the windows hdf-cli count measured on run 39866226876, the
-    # first fully green windows leg — the windows cmd package did not compile before 2026-10-20, so
-    # no earlier run could measure it. Re-measure on a green run, never on the run being gated.
-    # One budget is set by the highest platform, so ubuntu (13) carries invisible headroom and a
-    # platform could stop running tests unnoticed: per-platform split tracked in hdf-libs-nm8bc.
-    - name: skipped stays within budget
-      where:
-          status: notReviewed
-      max: 20
     - name: nothing failing is unadjudicated
       where:
           status: failed

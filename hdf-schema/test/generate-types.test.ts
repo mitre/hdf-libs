@@ -24,6 +24,15 @@ describe('generate-types', () => {
     createIndex();
   });
 
+  it.each([['go', 'hdf.go'], ['ts', 'hdf.ts']])(
+    'emits %s types without trailing horizontal whitespace',
+    (directory, filename) => {
+      const content = readFileSync(join(DIST_DIR, directory, filename), 'utf-8');
+      expect(content.length).toBeGreaterThan(0);
+      expect(content).not.toMatch(/[\t ]+$/m);
+    },
+  );
+
   describe('TypeScript output (combined hdf.ts)', () => {
     it('should create dist/ts directory', () => {
       expect(existsSync(join(DIST_DIR, 'ts'))).toBe(true);
