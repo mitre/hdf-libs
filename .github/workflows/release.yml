@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
-  GO_VERSION: '1.26.10'
+  GO_VERSION: '1.27.3'
 
 jobs:
   # The release_tags ruleset requires a signature on every v* tag, but every

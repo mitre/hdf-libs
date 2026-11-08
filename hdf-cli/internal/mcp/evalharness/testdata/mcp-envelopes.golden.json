@@ -53,7 +53,7 @@
     "hdf_query": {
       "docType": "results",
       "engineSchemaVersion": "3.7.2",
-      "handle": "eyJwYXRoIjoiaGRmLWZpeHR1cmVzL3Jlc3VsdHMvaW5zcGVjLW11bHRpbGF5ZXJlZC5qc29uIiwic2l6ZSI6NzEwMzkyOSwiY29udGVudFNoYTI1NiI6IjYwNjgzMzhjZTRmYTNjYjE4OWYwNDUzNjE5MGNkYjFmODRhN2IyZjk1MGJhZWNhNDA1N2U0YmZkNWRjOWFhNWYiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjcuMiJ9",
+      "handle": "eyJwYXRoIjoiaGRmLWZpeHR1cmVzL3Jlc3VsdHMvaW5zcGVjLW11bHRpbGF5ZXJlZC5qc29uIiwic2l6ZSI6NzEwMzkzMiwiY29udGVudFNoYTI1NiI6IjUwZGE3OGI3NjNhMWNlMjY2MmJlMzkwODQzZDYwMjE5ZjFhNmI5N2NlNDRkMzAzMTQ2NmYzZGQwNTliZWUxMWUiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjcuMiJ9",
       "notice": "Showing 2 of 1603 requirements (capped by limit). Raise or remove limit to see the rest — a larger result then pages with page=N; a smaller limit shows fewer, not more. Or tighten a status/severity/nist/id/search filter to shrink the set.",
       "requirements": [
         {

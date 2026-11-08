@@ -1,0 +1,24 @@
+# SIEM harness inputs
+
+cases.json references existing files without copying or rewriting their data.
+The source provenance remains at each descriptor's provenance path.
+
+inspec-overlay is real InSpec output with a documented schema adaptation, not
+an untouched original capture. hdf-fixtures/README.md records its origin,
+pre-adaptation source URL/SHA256, and the targets-to-components rename.
+override and negative-zero are schema-confirmed existing fixtures, not new
+scanner captures. Their owning converter provenance describes the adaptations.
+
+The artifact preparation helper validates every referenced document using the
+current built CLI and records its byte length and SHA256. An invalid input stops
+preparation. Numeric tokens are retained by reading bytes, never by serializing
+the parsed document. Further target-specific boundary variants belong to the
+target suites and must add their validation and provenance before use.
+
+Splunk license readiness unit cases use the documented server/info licenseState
+contract (OK or Expired), with explicitly invalid/missing states as rejection
+cases. These are authored protocol-state unit inputs, not scanner captures:
+https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/10.4/introspection-endpoints/introspection-endpoint-descriptions
+The field and OK state were also observed from the pinned Splunk10.6.1 image
+(runtime reports10.6.1.1) during authenticated local qualification. No license
+keys, signatures, host identifiers or private API responses are committed.

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -164,9 +165,9 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
-	// baseline title + integrity checksum, previously dropped by the fixed allowlist.
+	// The bundle retains modern integrity without reinterpreting the legacy checksum alias.
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc123"}, hdf["baseline_checksum"])
+	assert.NotContains(t, hdf, "baseline_checksum")
 	overrides, ok := hdf["status_overrides"].([]interface{})
 	require.True(t, ok, "hdf.status_overrides present")
 	require.Len(t, overrides, 1)
@@ -379,4 +380,19 @@ func TestConvertHDFToECS_DispositionIsResolvedNotRead(t *testing.T) {
 	labels := sub(t, objs[0], "labels")
 	assert.Equal(t, "riskAdjustment", labels["hdf_disposition"],
 		"the governing override's type, though the document stamps no disposition field")
+}
+
+func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
+	input := fixture(t, "input", "override.json")
+	bundle, err := ConvertHDFToECSBundle(input, converterVersion)
+	require.NoError(t, err)
+	event := parseLines(t, bundle.Events)[0]
+	envelope, err := json.Marshal(sub(t, event, "hdf")["source"])
+	require.NoError(t, err)
+	resolved, err := exportmap.ResolveExportSource(envelope, bundle.Manifest, []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
+	require.NoError(t, err)
+	require.Equal(t, input, resolved.Source)
+	var baseline map[string]interface{}
+	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
+	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
 }

@@ -496,3 +496,10 @@ func buildEvidences(req map[string]interface{}) []interface{} {
 func floatMetric(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }
+
+// ConvertHDFToOCSFBundle exports finding events with their original source artifact.
+func ConvertHDFToOCSFBundle(input []byte, converterVersion string) (*exportmap.ExportBundle, error) {
+	return exportmap.ProjectExportBundle(input, "ocsf", func(source []byte) ([]byte, error) {
+		return ConvertHDFToOCSF(source, converterVersion)
+	})
+}

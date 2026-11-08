@@ -4,8 +4,43 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **CLI producer metadata now follows the declared schema.** `hdf plan create` and `hdf system create` store creation time at `extensions.passthrough.createdAt` instead of the undeclared root `createdAt`. Baseline conversion output passes through without results-only effective-checksum stamping. Consumers reading the former root timestamp must use the new path.
+
+- **Archive filesystem requirement.** Without `--overwrite`, `hdf evidence bundle` and `hdf convert --bundle` require hard-link support to publish complete archives atomically without replacing a concurrently created destination. Unsupported filesystems fail safely; write the archive on a supported filesystem before copying it elsewhere.
+
+- **Explicit source-preserving SIEM bundle APIs in Go and TypeScript.** ECS,
+  Splunk and OCSF bundle functions return finding NDJSON, the exact original HDF
+  bytes and a SHA512 manifest. Complete requirement records travel beside stable
+  native projections; baseline integrity, signatures and newly accepted source
+  fields remain available through verified artifact readback. Existing exporter
+  signatures stay intact. New TypeScript APIs are asynchronous and reuse Web
+  Crypto hashing with independent byte snapshots. Unicode validation uses a
+  maintained tokenizer to handle large strings without regex stack overflow,
+  while retaining strict JSON syntax checks. This is the additive profile;
+  live SIEM ingestion verification remains separate integration work.
+
+- **Shared SIEM JSON serialization preserves source strings and object members.**
+  Native raw-number emission avoids treating SOH-delimited text as a number;
+  canonicalization retains own `__proto__` members and sorts numeric-looking keys
+  consistently with Go. The latter corrects JSON key ordering without changing
+  member values or native projection semantics.
+
+- **Go consumers now require Go 1.27.3 or newer.** The workspace, published modules, generated schema module, and release/fuzz builds use this floor. It enables the standard strict JSON decoder needed for source-preserving SIEM bundles without an experimental build flag or a custom Unicode parser. Existing converter APIs and output defaults are unchanged.
+
 ### Added
 
+- `hdf convert --bundle` delivers ECS, Splunk or OCSF events, the exact original
+  HDF source and SIEM manifest inside a deterministic standard evidence-package
+  ZIP. `hdf evidence resolve` verifies the package's selected artifacts and
+  finding/source agreement before returning original bytes. Reuses existing HDF
+  inventory/checksum/archive machinery; missing, altered or unsafe references
+  fail. Ordinary conversion retains filenames such as `bundle`.
+
+- Development-only SIEM environment harness with Testcontainers-managed Elasticsearch and Splunk services, digest-pinned images, generated credentials, explicit Splunk consent, bounded readiness and scoped cleanup. Current CLI and packed TypeScript artifacts can be checked locally; product ingestion/readback and the approved GitHub Actions smoke/HDF reporting stages remain in progress.
+
+- CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
 - **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
 
 - CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
@@ -136,6 +171,15 @@ All notable changes to this project will be documented in this file.
 
 - **Generated Go and TypeScript types omit trailing whitespace.** Regenerating schema types produces patches that pass whitespace checks without changing their declarations.
 
+- Preserve the Go parser's trailing-data rejection and diagnostic meaning when strict
+  validation rejects bytes after a JSON document. Numeric precision and
+  rejection of extra values remain intact across schema-engine changes.
+  Missing required properties retain a separate, named diagnostic for each
+  property, including callers that verify amendment documents.
+  The CLI trailing-data wording changes from `unexpected data after end of object`
+  to `unexpected trailing data after end of JSON value`; rejection and exit
+  status are unchanged.
+
 - **SCHEMA — every `hdf diff` comparison document was off-schema: `Requirement_Diff` now declares the `baseline` the Go engine has always written.** `hdf diff -f json` put the owning baseline's name on each `requirementDiffs[]` entry, `--group-by baseline` depends on it, and `Requirement_Diff` sets `unevaluatedProperties: false` without declaring it, so a 2020-12 validator rejected every comparison the CLI produced while the shipped validators let it through. The property is now declared (with `(multiple)` for an id that sits in more than one baseline), the TypeScript engine writes it too so both languages agree, and `Requirement_Diff` gained its first example.
 
 - **SCHEMA, BEHAVIOR CHANGE — a `riskAdjustment` override may no longer carry a `status`.** The `Override_Type` contract has always said a risk adjustment changes impact only (FedRAMP's Risk Adjustment re-rates a finding; a deviation that changes its status is a Waiver or a False Positive), but nothing enforced it: `hdf amend verify` passed such an override and `hdf amend apply` honored the status. Both override shapes, `Standalone_Override` and `Status_Override`, now reject a `riskAdjustment` that carries `status`, so the Go and TypeScript validators refuse it from one source of truth and `amend verify` and `amend apply` report it. A document already carrying the combination fails validation under v3.8.0: re-author the override as a `waiver` or `falsePositive` with the status it meant, or drop the status and keep the impact. The repository's own CI amendments carry five such entries and are re-authored alongside this change. Older OSCAL POA&M exports carrying HDF `override-type=riskAdjustment` and `override-status` properties also fail output validation when reimported; intentionally re-author the source amendment and re-export it rather than bypassing validation. See the [migration guide](site/docs/guides/migration-legacy-hdf.md#risk-adjustments-in-older-amendments-and-oscal-exports).
@@ -143,6 +187,11 @@ All notable changes to this project will be documented in this file.
 - **SCHEMA — an `operationalRequirement` amendment can now be applied.** `Standalone_Override` forbade the type from carrying `status` or `impact` (it records an accepted deviation and adjudicates nothing), but `Status_Override`, the shape an override takes once merged into `statusOverrides[]`, required one of them, so the type was legal to author and illegal to apply: `hdf amend apply` refused the merged document. `Status_Override` now carries the same type-conditional rule, so the two shapes agree; every other type still needs `status` or `impact`. Once applied, the finding keeps the status its results decided, and `disposition` reports `operationalRequirement`. The results root example dropped the `status` its operationalRequirement override should never have carried, and `hdf amend draft --type operationalRequirement` no longer scaffolds a `status` placeholder the schema would reject.
 
 - **SCHEMA — `Evaluated_Baseline.resultsChecksum`'s description no longer sends consumers to a `currentChecksum` field that no HDF schema declares.** It names the root `preAmendmentChecksum` as the amendment-integrity anchor: `hdf amend apply` writes that as the hash of the raw document bytes immediately before the most recent amendment application, one step back only. Description text only; nothing about what validates changed.
+- Archive exports refuse a destination created concurrently while the ZIP is being built unless `--overwrite` was requested. Publishing a complete archive now enforces this refusal atomically.
+- SIEM package recovery matches manifest member names exactly, consistent with the library resolver, preventing case-variant keys from changing the target used for event-format verification.
+
+- Bounded CLI file reads reject excess bytes instead of silently returning a
+  truncated prefix if a file grows beyond the configured limit after its size check.
 
 - **A blank package path is refused instead of silently waiting on stdin.** `hdf evidence info|bundle|update|export|set|add-evidence|add-reference ""` now exits 1 naming the missing package.
 

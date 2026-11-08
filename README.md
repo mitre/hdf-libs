@@ -116,7 +116,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 |------|---------|---------|
 | [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
-| [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
+| [Go](https://go.dev/) | ≥1.27.3 | Go packages and CLI tool |
 | [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
 | [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
 | [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | latest | Go vulnerability scanner (required for `pnpm check`) |
@@ -140,9 +140,9 @@ curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt-get install -y nodejs
 corepack enable && corepack prepare pnpm@11.10.0 --activate
 
-# Go 1.26 — check https://go.dev/dl/ for the latest 1.26.x tarball
-wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
+# Go 1.27.3 — minimum supported version
+wget https://go.dev/dl/go1.27.3.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.3.linux-amd64.tar.gz
 echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
 
 # golangci-lint, gosec, govulncheck
@@ -200,7 +200,7 @@ pnpm build
 # Build TypeScript packages only (no Go required)
 pnpm build:ts
 
-# Build Go CLI only (requires Go 1.26+)
+# Build Go CLI only (requires Go 1.27.3+)
 pnpm build:go
 ```
 

@@ -6,6 +6,11 @@ allowBuilds:
   # tool must not phone home from a dev install.
   '@scarf/scarf': false
   esbuild: true
+  # Optional SSH native acceleration is unnecessary for local Docker tests.
+  cpu-features: false
+  ssh2: false
+  # This hook only warns about dependency version-range style.
+  protobufjs: false
 # Supply-chain cooldown: refuse dependency versions published within the last
 # 7 days (10080 min) AT RESOLUTION TIME, so a freshly-published compromised
 # version (the npm credential-harvester worm pattern) has time to be detected

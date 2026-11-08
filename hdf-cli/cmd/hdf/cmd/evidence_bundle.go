@@ -637,7 +637,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// Sorted order plus a fixed timestamp make the archive reproducible.
 	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
 
-	if err := writeArchiveAtomically(outputPath, entries, makeWriter); err != nil {
+	if err := writeArchiveAtomically(outputPath, entries, makeWriter, overwrite); err != nil {
 		return err
 	}
 
@@ -713,6 +713,10 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 // quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
 // the comment on the existence check.
 func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
+	return refuseArchiveOverInput(outputPath, pkgDir, pkgPath, "evidence package itself", refs, overwrite)
+}
+
+func refuseArchiveOverInput(outputPath, pkgDir, pkgPath, inputLabel string, refs []recordedRef, overwrite bool) error {
 	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
 		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
 	}
@@ -725,8 +729,8 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 		}
 	}
 	if samePath(outputPath, pkgPath) {
-		return fmt.Errorf("refusing to write the archive over the evidence package itself (%s); "+
-			"name a different -o", pkgPath)
+		return fmt.Errorf("refusing to write the archive over the %s (%s); "+
+			"name a different -o", inputLabel, pkgPath)
 	}
 	for _, r := range refs {
 		if r.uri == "" || isRemoteURI(r.uri) {
@@ -784,11 +788,11 @@ func samePath(a, b string) bool {
 // replaces this one function and nothing else.
 func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 
-// writeArchiveAtomically writes to a temporary file beside the target and renames it
+// writeArchiveAtomically writes to a temporary file beside the target and publishes it
 // into place, so a failure part-way cannot leave a partial archive that looks
 // complete. It takes the writer constructor so the seam is exercised by the command,
 // not merely implemented beside it.
-func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter) error {
+func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter, overwrite bool) error {
 	dir := filepath.Dir(outputPath)
 	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
 	if err != nil {
@@ -797,7 +801,7 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	tmpName := tmp.Name()
 	defer func() {
 		_ = tmp.Close()
-		_ = os.Remove(tmpName) // no-op once renamed
+		_ = os.Remove(tmpName) // removes the temporary link, or no-op after rename
 	}()
 
 	w := makeWriter(tmp)
@@ -809,9 +813,7 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("failed to finalize the archive: %w", err)
 	}
-	// Before the rename, not after: a crash can otherwise make the rename durable while the
-	// bytes are not, leaving a present-but-truncated archive — the exact failure the
-	// write-then-rename exists to prevent.
+	// Flush before publication so a crash cannot leave a complete-looking truncated archive.
 	if err := tmp.Sync(); err != nil {
 		return fmt.Errorf("failed to flush the archive to disk: %w", err)
 	}
@@ -821,7 +823,13 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	if err := os.Chmod(tmpName, 0o600); err != nil {
 		return fmt.Errorf("failed to set archive permissions: %w", err)
 	}
-	if err := os.Rename(tmpName, outputPath); err != nil {
+	if overwrite {
+		err = os.Rename(tmpName, outputPath)
+	} else {
+		// Linking publishes complete bytes atomically and refuses a concurrent output.
+		err = os.Link(tmpName, outputPath)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to write %s: %w", outputPath, err)
 	}
 	return nil

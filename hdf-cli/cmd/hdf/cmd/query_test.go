@@ -107,7 +107,7 @@ func buildQueryFixture(t *testing.T, requirements []map[string]any) string {
 		"baselines": []any{
 			map[string]any{
 				"name":         "Query Test Baseline",
-				"checksum":     map[string]any{"algorithm": "sha256", "value": "abc"},
+				"integrity":    map[string]any{"algorithm": "sha256", "checksum": "abc"},
 				"requirements": requirements,
 			},
 		},

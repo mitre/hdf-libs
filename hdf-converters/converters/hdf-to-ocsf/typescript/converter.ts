@@ -1,3 +1,4 @@
+import { projectExportBundle, type ExportBundle } from '../../../shared/typescript/exportbundle.js';
 import {
   type Obj,
   asMap,
@@ -391,3 +392,7 @@ function floatMetric(f: number): string {
   return formatJsonNumber(f);
 }
 
+
+export async function convertHdfToOcsfBundle(input: Uint8Array, converterVersion = '0.1.0'): Promise<ExportBundle> {
+  return projectExportBundle(input, 'ocsf', (text) => convertHdfToOcsf(text, converterVersion));
+}

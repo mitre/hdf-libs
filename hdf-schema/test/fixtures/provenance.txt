@@ -1,0 +1,21 @@
+# Schema test fixtures — provenance
+Recorded 2026-11-07. This entry documents the updated minimal-v2.json sample.
+
+## minimal-v2.json
+Schema-confirmed test document, not captured tool output. Adapted from this
+repository at commit a9a5901d4cb3473dcdfc2a50efcdcecc098b7955:
+hdf-schema/test/fixtures/minimal-v2.json.
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-schema/test/fixtures/minimal-v2.json
+SHA256 before adaptation: 384426ef16539ec0dd50178c2bc06b3c98f25771b359367575b5e329f1138197
+Adaptation: renamed the historical root targets array to components and added
+componentId 00000000-0000-0000-0000-000000000001 to its sole host. All existing
+values and requirement prose are retained. The historical filename is retained
+for consumers; it is a modern results document, not a legacy exec-json capture.
+
+## Tool and version
+No producer is declared in the file; none can be established from its contents.
+
+## Schema
+The official local bundle is hdf-schema/dist/schemas/hdf-results.schema.json
+(JSON Schema 2020-12). Validated successfully on 2026-11-07 using the built hdf validate CLI with the
+modern Go validator: --type results --json returned valid: true (exit 0).

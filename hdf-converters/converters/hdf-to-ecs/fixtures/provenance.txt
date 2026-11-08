@@ -53,3 +53,32 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 The inputs are HDF documents; their schema is this repository's own (`hdf-schema`), and every input is validated by the converter tests through `hdf-validators`. The exporter's target-format schema, where one is vendored, lives under this converter's `schemas/` directory with its own `provenance.json`.
+
+## Schema adaptation 2026-11-07 — input/override.json
+
+Schema-confirmed adaptation, not a new scanner capture. Original provenance above
+remains applicable. Source before adaptation:
+https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-converters/converters/hdf-to-ecs/fixtures/input/override.json
+Source SHA-256: 886bfed7eea5458825da0e50739db15353c24e26c5f948f5b49e09d6ecd4c620
+Renamed each baseline checksum/value pair to integrity/checksum; the digest values are historical metadata, not recalculated document hashes.
+All other decoded fields and every string value are unchanged.
+Validation: built hdf validate --json, JSON Schema 2020-12 results bundle,
+exit 0 and valid=true on 2026-11-07.
+
+## Schema adaptation 2026-11-07 — input/riskadjust.json
+
+Schema-confirmed adaptation, not a new scanner capture. Original provenance above
+remains applicable. Source before adaptation:
+https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-converters/converters/hdf-to-ecs/fixtures/input/riskadjust.json
+Source SHA-256: 446c9b26bbef04e95df4746413a727afa944ac341553c8bec5ab8350c4393537
+Renamed each baseline checksum/value pair to integrity/checksum; the digest values are historical metadata, not recalculated document hashes.
+All other decoded fields and every string value are unchanged.
+Validation: built hdf validate --json, JSON Schema 2020-12 results bundle,
+exit 0 and valid=true on 2026-11-07.
+
+## Bundle integration expectation correction (2026-11-07)
+The override and riskadjust inputs now carry the schema's Integrity object. Their legacy NDJSON
+goldens remove only baseline_checksum, which previously described the obsolete
+checksum input member; every other byte remains unchanged. New TS/Go bundle
+readback tests verify the complete original integrity object through source.json.
+No converter default was changed to reinterpret Integrity as Checksum.

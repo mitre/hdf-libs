@@ -1,11 +1,13 @@
 package hdfvalidators
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -144,4 +146,20 @@ func validRFC3339Time(s string) bool {
 		utcHour--
 	}
 	return (utcHour == 23 || utcHour == -1) && (utcMinute == 59 || utcMinute == -1)
+}
+
+func registerModernFormats(compiler *jsonschema.Compiler) {
+	for name, checker := range map[string]gojsonschema.FormatChecker{
+		"uuid": rfc4122Checker{}, "date-time": rfc3339Checker{},
+	} {
+		compiler.RegisterFormat(&jsonschema.Format{Name: name, Validate: func(value any) error {
+			if _, ok := value.(string); !ok {
+				return nil
+			}
+			if checker.IsFormat(value) {
+				return nil
+			}
+			return fmt.Errorf("invalid %s", name)
+		}})
+	}
 }

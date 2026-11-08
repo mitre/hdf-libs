@@ -56,7 +56,7 @@
       "version": "1.0"
     }
   ],
-  "dataSource": {
+  "tool": {
     "format": "XCCDF",
     "name": "XCCDF"
   },

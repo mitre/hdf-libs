@@ -22,6 +22,13 @@ import {
 import { requireHdfResults } from './converterutil.js';
 import { absentIfGoZeroTime } from './status.js';
 
+// Node 24 provides rawJSON; the pinned TypeScript library lacks its declaration.
+declare global {
+  interface JSON {
+    rawJSON(text: string): unknown;
+  }
+}
+
 export type Obj = Record<string, unknown>;
 
 // --- generic JSON access ---
@@ -174,11 +181,11 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
   return [comp, baselineName, controlID].join('|');
 }
 
-// --- lossless hdf.* block ---
+// --- legacy hdf.* projection ---
 
 /**
- * Build the lossless hdf.* namespace shared by the export converters: promoted
- * snake_case scalars plus the full requirement sub-objects preserved verbatim.
+ * Build the legacy hdf.* projection from selected requirement fields.
+ * Complete source preservation belongs to the explicit bundle APIs.
  * `status` is the lossless results roll-up (statusOf().raw); `suppressed` is the
  * acceptance axis (statusOf().suppressed).
  */
@@ -283,14 +290,6 @@ export function parseJSONPreservingNumbers(text: string): unknown {
   });
 }
 
-// SOH (U+0001) delimits a raw numeric token inside stringifyLine's intermediate
-// JSON. SOH is a control character that does not occur in HDF text, so in
-// practice it never collides. The only theoretical collision is a string whose
-// ENTIRE value is exactly SOH + <bare number> + SOH — unreachable from real HDF,
-// which carries no raw control characters.
-const RAWNUM_MARK = String.fromCharCode(1);
-const RAWNUM_RE = /"\\u0001(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\\u0001"/g;
-
 /**
  * Compare two strings by Unicode code point. This matches Go's `encoding/json`
  * key ordering, which is a bytewise comparison of the UTF-8 encoding \u2014 and UTF-8
@@ -322,17 +321,20 @@ export function canonicalize(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(canonicalize);
   const m = asMap(v);
   if (m) {
-    const out: Obj = {};
-    for (const k of Object.keys(m).sort(byCodePoint)) out[k] = canonicalize(m[k]);
-    return out;
+    const object = Object.fromEntries(Object.entries(m).map(([k, value]) => [k, canonicalize(value)]));
+    // Ordinary objects reorder integer-like keys. The Proxy lets native JSON
+    // encoding honor code-point order.
+    return new Proxy(object, {
+      ownKeys: (target) => Reflect.ownKeys(target).sort((a, b) => byCodePoint(String(a), String(b))),
+    });
   }
   return v;
 }
 
 /**
  * Emit compact JSON matching Go's encoder byte-for-byte. A RawNumber is rendered
- * as a bare numeric token (Go's json.Number) via an SOH-delimited placeholder
- * that is stripped back to the token afterward. Go's encoding/json escapes
+ * as a bare numeric token (Go's json.Number) through native JSON.rawJSON,
+ * without interpreting user strings as numeric placeholders. Go's encoding/json escapes
  * U+2028/U+2029 (JSONP safety) while JSON.stringify emits them raw, so we escape
  * them here. Key ordering is handled upstream by canonicalize (code point order).
  */
@@ -353,10 +355,9 @@ export function stringifyDocument(v: unknown): string {
 function stringifyWith(v: unknown, space: number | undefined): string {
   return JSON.stringify(
     v,
-    (_key, val) => (val instanceof RawNumber ? RAWNUM_MARK + val.token + RAWNUM_MARK : val),
+    (_key, val) => (val instanceof RawNumber ? JSON.rawJSON(val.token) : val),
     space,
   )
-    .replace(RAWNUM_RE, '$1')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 }

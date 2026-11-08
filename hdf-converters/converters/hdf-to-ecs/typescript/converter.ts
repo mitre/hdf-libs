@@ -1,3 +1,4 @@
+import { projectExportBundle, type ExportBundle } from '../../../shared/typescript/exportbundle.js';
 import {
   type Obj,
   asMap,
@@ -19,7 +20,7 @@ import {
  * HDF Results -> Elastic Common Schema (ECS) NDJSON exporter.
  *
  * One ECS event per Evaluated_Requirement, in the hybrid shape from ADR-0002:
- * a core-ECS-native projection plus a lossless hdf.* block, hot filter scalars
+ * a core-ECS-native projection plus a legacy hdf.* projection, hot filter scalars
  * promoted flat. Output is plain NDJSON (LF-delimited, trailing newline), ECS
  * 9.4.0.
  *
@@ -117,8 +118,7 @@ function buildEvent(
   const labels = buildLabels(req);
   if (labels) obj.labels = labels;
 
-  // hdf.* lossless block, plus the baseline fields the shared allowlist omits
-  // (title and integrity checksum) so the block stays genuinely lossless.
+  // Keep the existing aliases; complete modern integrity lives in the bundle artifact.
   const hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
   if ('title' in baseline) hdf.baseline_title = baseline.title;
   if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
@@ -276,4 +276,8 @@ function statusToOutcome(status: string): string {
     default:
       return 'unknown';
   }
+}
+
+export async function convertHdfToEcsBundle(input: Uint8Array, converterVersion = '0.1.0'): Promise<ExportBundle> {
+  return projectExportBundle(input, 'ecs', (text) => convertHdfToEcs(text, converterVersion));
 }

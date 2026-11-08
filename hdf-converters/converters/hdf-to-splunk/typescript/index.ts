@@ -1,1 +1,1 @@
-export { convertHdfToSplunk } from './converter.js';
+export { convertHdfToSplunk, convertHdfToSplunkBundle } from './converter.js';

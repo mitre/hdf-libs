@@ -38,7 +38,7 @@ const cases = (
 function documentFor(tc: ShippedExtensionsCase, atBaseline: boolean): Record<string, unknown> {
   const baseline: Record<string, unknown> = {
     name: 'CVE-Ecosystem Test Baseline',
-    checksum: { algorithm: 'sha256', value: 'abc123' },
+    integrity: { algorithm: 'sha256', checksum: 'abc123' },
     requirements: [
       {
         id: 'CVE-2024-12345',

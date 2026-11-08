@@ -98,6 +98,11 @@ describe('generate-types', () => {
   });
 
   describe('Go output', () => {
+    it('emits generated Go without trailing horizontal whitespace', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      expect(content).not.toMatch(/[\t ]+$/m);
+    });
+
     it('should create dist/go directory', () => {
       expect(existsSync(join(DIST_DIR, 'go'))).toBe(true);
     });

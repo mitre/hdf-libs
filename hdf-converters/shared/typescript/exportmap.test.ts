@@ -218,6 +218,13 @@ describe('exportmap shared driver + helpers', () => {
 });
 
 describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () => {
+  it('preserves prototype-named JSON members as ordinary source data', () => {
+    const value: unknown = JSON.parse('{"__proto__":{"source":"kept"},"constructor":null}');
+    expect(stringifyLine(canonicalize(value))).toBe(
+      '{"__proto__":{"source":"kept"},"constructor":null}',
+    );
+  });
+
   // Go's encoding/json sorts object keys bytewise (UTF-8), which equals
   // code-point order. A supplementary-plane key (U+1F600) has a UTF-16 lead
   // surrogate (0xD83D) that sorts BEFORE a BMP key in [0xE000,0xFFFF] under
@@ -252,6 +259,14 @@ describe('exportmap stringifyDocument (indented JSON documents)', () => {
 });
 
 describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
+  it('preserves strings that resemble numeric placeholders', () => {
+    const text = '\u00019007199254740993\u0001';
+    const value = { text, score: floatNumber(8) };
+    expect(JSON.parse(stringifyLine(value))).toEqual({ text, score: 8 });
+    expect(JSON.parse(stringifyDocument(value))).toEqual({ text, score: 8 });
+    expect(stringifyLine(value)).toContain('"score":8.0');
+  });
+
   it('floatNumber renders a bare decimal token, byte-identical to Go json.Number', () => {
     expect(stringifyLine({ base_score: floatNumber(0) })).toBe('{"base_score":0.0}');
     expect(stringifyLine({ base_score: floatNumber(7.5) })).toBe('{"base_score":7.5}');
@@ -399,4 +414,9 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
       expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
     }
   });
+});
+
+it('sorts numeric-looking member names by code point, matching Go map encoding', () => {
+  const value = JSON.parse('{"2":"two","10":"ten","nested":{"3":true,"20":null}}');
+  expect(stringifyLine(canonicalize(value))).toBe('{"10":"ten","2":"two","nested":{"20":null,"3":true}}');
 });

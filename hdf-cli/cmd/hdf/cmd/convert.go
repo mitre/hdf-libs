@@ -39,6 +39,14 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			bundle, _ := cmd.Flags().GetBool("bundle")
+			if bundle {
+				overwrite, _ := cmd.Flags().GetBool("overwrite")
+				return runConvertBundle(cmd, args, toFormat, outputPath, overwrite)
+			}
+			if cmd.Flags().Changed("overwrite") {
+				return fmt.Errorf("--overwrite requires --bundle")
+			}
 			return dispatchConvert(cmd, args, fromFormat, toFormat, outputPath)
 		},
 	}
@@ -46,6 +54,8 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Source format (auto-detected if omitted)")
 	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().Bool("bundle", false, "Deliver one ECS, Splunk or OCSF export with its source in an evidence-package ZIP")
+	cmd.Flags().Bool("overwrite", false, "Replace an existing bundle archive; requires --bundle and never overwrites the source")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets, --to hdf only (key=value pairs, e.g., --labels system=Portal,environment=production)")
 	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output, --to hdf only")

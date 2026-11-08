@@ -664,8 +664,8 @@
       "impact": 0.5
     }
   ],
-  "checksum": {
+  "integrity": {
     "algorithm": "sha256",
-    "value": "ca3ab7edf62a0d741bb72ffb730890715cc7bb45c46fe3e9544485585bf1e9b6"
+    "checksum": "ca3ab7edf62a0d741bb72ffb730890715cc7bb45c46fe3e9544485585bf1e9b6"
   }
 }

@@ -71,7 +71,7 @@ Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm6
 
 ### Build from source
 
-**Requirements:** Go 1.26+, pnpm
+**Requirements:** Go 1.27.3+, pnpm
 
 ```bash
 # From the hdf-libs monorepo root
@@ -502,6 +502,74 @@ On auto-detection the source format and a confidence score are reported on the `
 
 See [Supported Conversions](#supported-conversions) for the full list.
 
+#### convert --bundle
+
+Deliver one HDF assessment as searchable ECS, Splunk or OCSF findings together
+with its exact original source in a standard evidence-package ZIP:
+
+```bash
+hdf convert results.json --to ecs --bundle -o export.zip
+```
+
+Use `--to splunk` or `--to ocsf` for the other targets. The deterministic archive
+contains `evidence-package.json`, `events.ndjson`, byte-identical `source.json`
+and the existing SIEM `manifest.json`. The package records explicit SHA512
+checksums for all three artifacts. Empty assessments retain all four files,
+including a zero-byte event stream. No timestamp, system identity or completeness
+claim is invented for the package.
+
+Bundle mode requires one local source file and a file output. Directories,
+multiple inputs, stdin and transformation flags such as `--from`, `--force`,
+`--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
+archive but never the input or its filesystem aliases; it requires `--bundle`.
+Writes are atomic and the archive has mode 0600. Default no-overwrite publication requires filesystem hard-link support; if unavailable, the command fails without replacing the destination. Ordinary conversion remains
+unchanged, including input files named `bundle`.
+
+#### evidence resolve
+
+Verify the selected packaged export and recover the complete original source:
+
+```bash
+unzip export.zip -d retained
+head -n 1 retained/events.ndjson > retained/event.json
+hdf evidence resolve retained/evidence-package.json --event retained/event.json > recovered.json
+cmp retained/source.json recovered.json
+```
+
+This example requires at least one finding. Empty assessments have no event to
+resolve; their source remains in the archive and can be verified with
+`hdf evidence info retained/evidence-package.json --verify --require-checksums --require-reachable`.
+
+Recovery validates the package, selects one registered SIEM profile, verifies
+the source/events/manifest checksums and compares the finding's preserved
+requirement with its original occurrence. It writes the exact source bytes to
+stdout only after success. Missing or changed artifacts, unsupported checksums,
+wrong types/formats, ambiguous references and record disagreements fail.
+
+A package with multiple exports requires `--manifest` naming one registered
+package-relative profile URI. Keep each export in its own directory. References
+decode percent escapes exactly once, must agree between package and manifest,
+and remain within the package directory. Size limits and the configured symlink
+policy apply to all reads. Recovery does not fetch URLs or extract archives.
+It verifies the selected export, not unrelated package contents or completeness.
+Use `evidence info --verify` for whole-package verification.
+
+`--event` takes one complete event in the exporter's shape, not a vendor search
+response. For Elasticsearch, retain the raw `_source` JSON. For Splunk, retain
+the decoded `_raw` string and wrap that JSON as `{"event":<raw JSON>}` without
+parsing and reserializing its inner numbers. OCSF uses its complete event. Do not
+round numeric tokens through ordinary JavaScript object parsing before recovery.
+
+Retain the package and its artifacts for the lifetime of the finding events.
+NDJSON alone cannot recover baseline and document context. Checksums establish
+consistency with the supplied inventory, not authenticity of an unsigned
+package. Signatures are retained but not authenticated; source data is not
+automatically redacted. Shell redirection creates or truncates its destination
+before the command runs, so use a new recovery filename, never `source.json`.
+The initial `legacy-additive/1` profile retains native projections and legacy
+repeated fields. Real SIEM ingestion/readback remains separate integration
+verification.
+
 ### system
 
 View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and data flows.
@@ -721,6 +789,8 @@ EXAMPLES
 To attach context to a **results** document's findings instead of to the package, use `hdf enrich <document> <bundle>`, which matches STIX objects by CVE. `enrich` also accepts a system, plan or comparison document, attaching at the root. It refuses an evidence package and points back here, so only one command writes this array on this type.
 
 **`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
+
+Without `--overwrite`, both `hdf evidence bundle` and `hdf convert --bundle` require an output filesystem that supports hard links. This publishes a complete archive atomically while refusing a concurrently created destination. Unsupported filesystems fail without replacing the destination; write to a filesystem with hard-link support first, then copy the completed archive if needed.
 
 Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
 

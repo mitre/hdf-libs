@@ -1,1 +1,1 @@
-export { convertHdfToOcsf } from './converter.js';
+export { convertHdfToOcsf, convertHdfToOcsfBundle } from './converter.js';

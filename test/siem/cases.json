@@ -1,0 +1,20 @@
+[
+  {
+    "name": "inspec-overlay",
+    "path": "hdf-fixtures/results/inspec-multilayered.json",
+    "provenance": "hdf-fixtures/README.md",
+    "kind": "real-output-schema-adaptation"
+  },
+  {
+    "name": "override",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/override.json",
+    "provenance": "hdf-converters/converters/hdf-to-ecs/fixtures/provenance.txt",
+    "kind": "schema-confirmed"
+  },
+  {
+    "name": "negative-zero",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/negzero.json",
+    "provenance": "hdf-converters/converters/hdf-to-ecs/fixtures/provenance.txt",
+    "kind": "schema-confirmed"
+  }
+]

@@ -177,6 +177,10 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	}
 	defer func() { _ = f.Close() }()
 
+	return readOpenedFile(f, path, allowEmpty)
+}
+
+func readOpenedFile(f *os.File, path string, allowEmpty bool) ([]byte, error) {
 	// Validate file type and size
 	info, err := f.Stat()
 	if err != nil {
@@ -202,11 +206,22 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	}
 
 	// Read with limit as defense-in-depth
-	data, err := io.ReadAll(io.LimitReader(f, maxSize))
+	data, err := readAtMost(f, maxSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
+	return data, nil
+}
+
+func readAtMost(reader io.Reader, limit int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(reader, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("input too large: exceeds %d byte limit", limit)
+	}
 	return data, nil
 }
 

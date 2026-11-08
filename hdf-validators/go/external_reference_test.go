@@ -12,7 +12,7 @@ func resultsWithExtRefs(externalRefsJSON string) []byte {
 	return []byte(`{
 		"baselines": [{
 			"name": "Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],
@@ -65,7 +65,7 @@ const badRef = `[{ "externalId": "no-source" }]`
 func baselineWithExtRefs(rootRefs, reqRefs string) []byte {
 	return []byte(`{
 		"name": "B", "title": "T", "version": "1.0.0",
-		"checksum": { "algorithm": "sha256", "value": "abc" },
+		"integrity": { "algorithm": "sha256", "checksum": "abc" },
 		"externalReferences": ` + rootRefs + `,
 		"requirements": [{ "id": "R1", "title": "t", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.5, "tags": {}, "externalReferences": ` + reqRefs + ` }]
 	}`)
@@ -74,7 +74,7 @@ func baselineWithExtRefs(rootRefs, reqRefs string) []byte {
 func resultsSubCarrier(baselineRefs, reqRefs string) []byte {
 	return []byte(`{
 		"baselines": [{
-			"name": "B", "checksum": { "algorithm": "sha256", "value": "abc" },
+			"name": "B", "integrity": { "algorithm": "sha256", "checksum": "abc" },
 			"externalReferences": ` + baselineRefs + `,
 			"requirements": [{ "id": "R1", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.5, "tags": {}, "externalReferences": ` + reqRefs + `, "results": [{ "status": "passed", "codeDesc": "ok", "startTime": "2025-01-01T00:00:00Z" }] }]
 		}],
@@ -151,11 +151,11 @@ func TestExternalReferences_EnvelopeDocumentKind(t *testing.T) {
 }
 
 // resultsWithInlineOverride wraps externalReferences into a Status_Override on
-// Evaluated_Requirement.overrides[] — the carrier the enrich pass writes.
+// Evaluated_Requirement.statusOverrides[] — the carrier the enrich pass writes.
 func resultsWithInlineOverride(refs string) []byte {
 	return []byte(`{
 		"baselines": [{
-			"name": "B", "checksum": { "algorithm": "sha256", "value": "abc" },
+			"name": "B", "integrity": { "algorithm": "sha256", "checksum": "abc" },
 			"requirements": [{
 				"id": "CVE-2021-44228", "descriptions": [{ "label": "default", "data": "d" }], "impact": 0.5, "tags": {},
 				"results": [{ "status": "failed", "codeDesc": "x", "startTime": "2025-01-01T00:00:00Z" }],

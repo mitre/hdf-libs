@@ -1,0 +1,1169 @@
+{
+  "$comment": "Schema-confirmed HDF examples copied from hdf-schema/src/schemas/hdf-*.schema.json at a9a5901d4cb3473dcdfc2a50efcdcecc098b7955; not captured scanner output. Cases add only the indicated properties. All expected verdicts verified against the source draft-2020-12 schemas using Ajv2020 8.18.0 on 2026-11-07. Negative cases intentionally violate closed scopes. TypeScript and Go consume the identical table.",
+  "documents": {
+    "results": {
+      "baselines": [
+        {
+          "name": "web-server-hardening",
+          "title": "Web Server Security Baseline",
+          "version": "1.0.0",
+          "summary": "Security hardening checks for Apache HTTP Server",
+          "requirements": [
+            {
+              "id": "SV-100001",
+              "title": "Web server must use TLS 1.2 or higher",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "SC-8",
+                  "SC-23"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "SSL configuration is expected to include TLSv1.2",
+                  "startTime": "2025-06-15T14:30:00Z",
+                  "runTime": 0.042
+                }
+              ]
+            },
+            {
+              "id": "SV-100002",
+              "title": "Web server must have X-Frame-Options header set",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "SA-11",
+                  "RA-5"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
+                  "startTime": "2025-06-15T14:30:01Z",
+                  "message": "X-Frame-Options header not found in response"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "type": "application",
+          "name": "Apache HTTP Server 2.4"
+        }
+      ],
+      "generator": {
+        "name": "nikto-to-hdf",
+        "version": "1.0.0"
+      },
+      "tool": {
+        "name": "Nikto"
+      }
+    },
+    "baseline": {
+      "name": "ubuntu-2204-stig-baseline",
+      "title": "Canonical Ubuntu 22.04 LTS STIG Baseline",
+      "version": "1.2.0",
+      "maintainer": "DISA STIG Team",
+      "license": "Apache-2.0",
+      "summary": "Security Technical Implementation Guide for Ubuntu 22.04 LTS",
+      "supports": [
+        {
+          "platformName": "ubuntu",
+          "platformFamily": "debian",
+          "release": "22.04"
+        }
+      ],
+      "requirements": [
+        {
+          "id": "SV-260476",
+          "title": "Ubuntu 22.04 LTS must enforce password complexity",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "IA-5"
+            ],
+            "severity": "medium",
+            "gtitle": "SRG-OS-000069-GPOS-00037"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+            },
+            {
+              "label": "check",
+              "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+            },
+            {
+              "label": "fix",
+              "data": "Configure Ubuntu 22.04 LTS to enforce a minimum 15-character password length by adding 'minlen = 15' to /etc/security/pwquality.conf."
+            }
+          ]
+        },
+        {
+          "id": "SV-260477",
+          "title": "Ubuntu 22.04 LTS must configure audit logging",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "AU-3",
+              "AU-12"
+            ],
+            "severity": "high",
+            "gtitle": "SRG-OS-000037-GPOS-00015"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Without establishing what type of events occurred, it would be difficult to establish, correlate, and investigate security incidents."
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "controls/SV-260476.rb",
+          "title": "Password Configuration",
+          "requirements": [
+            "SV-260476"
+          ]
+        }
+      ]
+    },
+    "system": {
+      "name": "Enterprise Portal Production",
+      "identifier": "SYS-2024-00142",
+      "identifierScheme": "https://emass.mil",
+      "authorizationStatus": "authorized",
+      "authorizationDate": "2025-06-15T00:00:00Z",
+      "categorizationLevel": "moderate",
+      "boundaryDescription": "All resources in prod VPC (10.0.0.0/16)",
+      "components": [
+        {
+          "name": "WebTier",
+          "type": "application",
+          "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "description": "RHEL 9 web servers running the portal",
+          "baselineRefs": [
+            "RHEL9-STIG",
+            "DISA-Container-STIG"
+          ],
+          "boms": [
+            {
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json"
+            }
+          ]
+        },
+        {
+          "name": "DatabaseTier",
+          "type": "database",
+          "componentId": "11111111-2222-3333-4444-555555555555",
+          "baselineRefs": [
+            "PostgreSQL-15-STIG"
+          ]
+        }
+      ],
+      "dataFlows": [
+        {
+          "from": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "to": "11111111-2222-3333-4444-555555555555",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Web tier connects to database"
+        }
+      ]
+    },
+    "plan": {
+      "name": "Portal Monthly Assessment",
+      "type": "automated",
+      "systemRef": "portal-prod.hdf-system.json",
+      "assessments": [
+        {
+          "baselineRef": "RHEL9-STIG",
+          "targetSelector": {
+            "labels.component": "WebTier"
+          },
+          "inputs": {
+            "max_concurrent_sessions": 5,
+            "password_min_length": 15
+          },
+          "runner": {
+            "name": "cinc-auditor",
+            "version": "6.8.1"
+          }
+        }
+      ],
+      "schedule": {
+        "cron": "0 2 1 * *",
+        "notifyOnRegression": [
+          "security-team@agency.gov"
+        ]
+      }
+    },
+    "amendments": {
+      "name": "Portal Q1 2026 Waivers",
+      "systemRef": "portal-prod.hdf-system.json",
+      "approvedBy": {
+        "type": "email",
+        "identifier": "ao@agency.gov"
+      },
+      "overrides": [
+        {
+          "type": "waiver",
+          "requirementId": "SV-257777",
+          "baselineRef": "RHEL9-STIG",
+          "status": "passed",
+          "reason": "Compensating control: session timeout set to 15 min",
+          "appliedBy": {
+            "type": "email",
+            "identifier": "ao@agency.gov"
+          },
+          "appliedAt": "2026-01-15T10:00:00Z",
+          "expiresAt": "2026-06-30T00:00:00Z",
+          "evidence": [
+            {
+              "type": "url",
+              "data": "https://jira.agency.gov/CYBER-4521",
+              "description": "ISSM approval with compensating control documentation"
+            }
+          ]
+        }
+      ]
+    },
+    "comparison": {
+      "formatVersion": "1.0.0",
+      "comparisonMode": "temporal",
+      "sources": [
+        {
+          "role": "old",
+          "label": "trim-before.json"
+        },
+        {
+          "role": "new",
+          "label": "trim-after.json"
+        }
+      ],
+      "summary": {
+        "fixed": 1,
+        "regressed": 1,
+        "new": 1,
+        "absent": 0,
+        "unchanged": 0,
+        "updated": 0,
+        "total": 3,
+        "matchedCount": 2,
+        "unmatchedOldCount": 0,
+        "unmatchedNewCount": 1
+      },
+      "requirementDiffs": [
+        {
+          "id": "SV-001",
+          "state": "fixed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "descriptions": [
+              {
+                "data": "The system must disable root SSH login",
+                "label": "default"
+              }
+            ],
+            "id": "SV-001",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "SSH config PermitRootLogin should eq 'no'",
+                "message": "expected 'yes' to eq 'no'",
+                "runTime": 0.1,
+                "startTime": "2024-01-01T00:00:00Z",
+                "status": "failed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 1,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000366"
+              ],
+              "nist": [
+                "AC-6"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SSH root login is disabled"
+          },
+          "after": {
+            "descriptions": [
+              {
+                "data": "The system must disable root SSH login",
+                "label": "default"
+              }
+            ],
+            "id": "SV-001",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "SSH config PermitRootLogin should eq 'no'",
+                "runTime": 0.1,
+                "startTime": "2024-02-01T00:00:00Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 1,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000366"
+              ],
+              "nist": [
+                "AC-6"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SSH root login is disabled"
+          },
+          "fieldChanges": [],
+          "oldEffectiveStatus": "failed",
+          "newEffectiveStatus": "passed",
+          "title": "Ensure SSH root login is disabled"
+        },
+        {
+          "id": "SV-003",
+          "state": "regressed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "descriptions": [
+              {
+                "data": "The audit subsystem must be active",
+                "label": "default"
+              }
+            ],
+            "id": "SV-003",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "auditd service should be enabled",
+                "runTime": 0.08,
+                "startTime": "2024-01-01T00:00:02Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 40,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000130"
+              ],
+              "nist": [
+                "AU-3"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure audit logging is enabled"
+          },
+          "after": {
+            "descriptions": [
+              {
+                "data": "The audit subsystem must be active",
+                "label": "default"
+              }
+            ],
+            "id": "SV-003",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "auditd service should be enabled",
+                "message": "expected service to be enabled, got disabled",
+                "runTime": 0.07,
+                "startTime": "2024-02-01T00:00:02Z",
+                "status": "failed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 40,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-000130"
+              ],
+              "nist": [
+                "AU-3"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure audit logging is enabled"
+          },
+          "fieldChanges": [],
+          "oldEffectiveStatus": "passed",
+          "newEffectiveStatus": "failed",
+          "title": "Ensure audit logging is enabled"
+        },
+        {
+          "id": "SV-006",
+          "state": "new",
+          "changeReasons": [],
+          "before": null,
+          "after": {
+            "descriptions": [
+              {
+                "data": "SELinux must be in enforcing mode",
+                "label": "default"
+              }
+            ],
+            "id": "SV-006",
+            "impact": 0.7,
+            "results": [
+              {
+                "codeDesc": "getenforce should return Enforcing",
+                "runTime": 0.01,
+                "startTime": "2024-02-01T00:00:05Z",
+                "status": "passed"
+              }
+            ],
+            "sourceLocation": {
+              "line": 100,
+              "ref": "controls/stig.rb"
+            },
+            "tags": {
+              "cci": [
+                "CCI-002165"
+              ],
+              "nist": [
+                "AC-3 (4)"
+              ],
+              "severity": "high"
+            },
+            "title": "Ensure SELinux is enforcing"
+          },
+          "fieldChanges": [],
+          "newEffectiveStatus": "passed",
+          "title": "Ensure SELinux is enforcing"
+        }
+      ],
+      "baselineDiffs": [
+        {
+          "name": "rhel9-stig-baseline",
+          "oldVersion": "1.0.0",
+          "newVersion": "1.1.0",
+          "state": "updated"
+        }
+      ]
+    },
+    "evidence-package": {
+      "name": "Enterprise Portal ATO Evidence - Q1 2026",
+      "systemRef": "portal-prod.hdf-system.json",
+      "preparedBy": {
+        "type": "email",
+        "identifier": "compliance@agency.gov"
+      },
+      "preparedAt": "2026-03-31T12:00:00Z",
+      "contents": [
+        {
+          "type": "hdf-system",
+          "uri": "portal-prod.hdf-system.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "aaa111"
+          }
+        },
+        {
+          "type": "hdf-baseline",
+          "uri": "rhel9-stig.hdf-baseline.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "bbb222"
+          }
+        },
+        {
+          "type": "hdf-plan",
+          "uri": "portal-monthly-scan.hdf-plan.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "ccc333"
+          }
+        },
+        {
+          "type": "hdf-results",
+          "uri": "portal-scan-march.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "ddd444"
+          }
+        },
+        {
+          "type": "hdf-amendments",
+          "uri": "portal-waivers-q1.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "eee555"
+          }
+        },
+        {
+          "type": "hdf-comparison",
+          "uri": "portal-diff-feb-mar.json",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "fff666"
+          }
+        }
+      ],
+      "completenessCheck": {
+        "allBaselinesAssessed": true,
+        "allComponentsCovered": true,
+        "expiredWaivers": 0,
+        "unresolvedPoams": 2,
+        "compliancePercent": 95.8,
+        "sbomCoverage": {
+          "componentsWithSbom": 3,
+          "totalComponents": 5
+        }
+      }
+    },
+    "requirement-change-event": {
+      "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 412,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:11Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "fixed",
+      "changeReasons": [
+        "resultChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+          }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
+        }
+      }
+    },
+    "event-1": {
+      "eventId": "0190f6f2-3b6c-7f5e-c2d9-5a3f7b9c1e23",
+      "source": "reconciler://apptier/override-sweep",
+      "sequence": 97,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-21T00:00:05Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+      },
+      "requirementId": "SV-230365",
+      "state": "regressed",
+      "changeReasons": [
+        "overrideExpired"
+      ],
+      "before": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "SV-230365",
+        "title": "RHEL 9 passwords must have a minimum of 15 characters",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "IA-5 (1) (a)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify pwquality.conf minlen is 15 or greater."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+            "startTime": "2026-07-20T02:00:00Z",
+            "message": "expected 8 to be >= 15"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Compensating control: PIV/CAC smart card authentication enforced, password login disabled",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-20T10:00:00Z",
+            "expiresAt": "2026-07-20T00:00:00Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+        }
+      }
+    },
+    "event-2": {
+      "eventId": "0190f6f2-4c7d-8a6f-d3ea-6b4a8c0d2f34",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 1,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:12Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": null,
+      "requirementId": "RHEL-09-671010",
+      "state": "new",
+      "before": null,
+      "after": {
+        "id": "RHEL-09-671010",
+        "title": "RHEL 9 must implement DoD-approved encryption in the OpenSSL package",
+        "impact": 0.7,
+        "tags": {
+          "severity": "high",
+          "nist": [
+            "SC-13"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the system-wide crypto policy is FIPS."
+          }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "update-crypto-policies --show is expected to eq FIPS",
+            "startTime": "2026-07-22T14:03:12Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "4171cbc81dd74dedba74d3d51bf854602c1bd870d386dad1f830df9272d95557"
+        }
+      }
+    },
+    "event-3": {
+      "eventId": "0190f6f2-5d8e-9b7a-e4fb-7c5b9d1e3a45",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 413,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-23T08:00:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "absent",
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": null
+    },
+    "event-4": {
+      "eventId": "0190f6f2-6e9f-0c8b-f5ac-8d6c0e2f4b56",
+      "source": "reconciler://apptier/amend-apply",
+      "sequence": 414,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-24T10:15:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "updated",
+      "changeReasons": [
+        "overrideAdded",
+        "impactChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "riskAdjustment",
+            "impact": {
+              "value": 0.2
+            },
+            "reason": "Network segmentation limits exposure; management interface not internet-reachable",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "isso@agency.gov"
+            },
+            "appliedAt": "2026-07-24T10:15:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ],
+        "effectiveImpact": 0.2,
+        "disposition": "riskAdjustment",
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "872635e1dd14903c660ae7e863c599d31f55bfa60be19394a629c63f851841c4"
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "results: accepts declared fields",
+      "type": "results",
+      "document": "results",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "results: rejects undeclared root property",
+      "type": "results",
+      "document": "results",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "results: rejects undeclared nested property",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "baselines",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "baselines.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "baseline: accepts declared fields",
+      "type": "baseline",
+      "document": "baseline",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "baseline: rejects undeclared root property",
+      "type": "baseline",
+      "document": "baseline",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "baseline: rejects undeclared nested property",
+      "type": "baseline",
+      "document": "baseline",
+      "path": [
+        "requirements",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "requirements.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "system: accepts declared fields",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "system: rejects undeclared root property",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "system: rejects undeclared nested property",
+      "type": "system",
+      "document": "system",
+      "path": [
+        "dataFlows",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "dataFlows.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "plan: accepts declared fields",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "plan: rejects undeclared root property",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "plan: rejects undeclared nested property",
+      "type": "plan",
+      "document": "plan",
+      "path": [
+        "assessments",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "assessments.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "amendments: accepts declared fields",
+      "type": "amendments",
+      "document": "amendments",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "amendments: rejects undeclared root property",
+      "type": "amendments",
+      "document": "amendments",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "amendments: rejects undeclared nested property",
+      "type": "amendments",
+      "document": "amendments",
+      "path": [
+        "overrides",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "overrides.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "comparison: accepts declared fields",
+      "type": "comparison",
+      "document": "comparison",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "comparison: rejects undeclared root property",
+      "type": "comparison",
+      "document": "comparison",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "comparison: rejects undeclared nested property",
+      "type": "comparison",
+      "document": "comparison",
+      "path": [
+        "requirementDiffs",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "requirementDiffs.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "evidence-package: accepts declared fields",
+      "type": "evidence-package",
+      "document": "evidence-package",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "evidence-package: rejects undeclared root property",
+      "type": "evidence-package",
+      "document": "evidence-package",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "evidence-package: rejects undeclared nested property",
+      "type": "evidence-package",
+      "document": "evidence-package",
+      "path": [
+        "contents",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "contents.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "requirement-change-event: accepts declared fields",
+      "type": "requirement-change-event",
+      "document": "requirement-change-event",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "requirement-change-event: rejects undeclared root property",
+      "type": "requirement-change-event",
+      "document": "requirement-change-event",
+      "path": [],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "requirement-change-event: rejects undeclared nested property",
+      "type": "requirement-change-event",
+      "document": "requirement-change-event",
+      "path": [
+        "after"
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "after.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "results: rejects undeclared requirement property",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "baselines",
+        0,
+        "requirements",
+        0
+      ],
+      "properties": {
+        "undeclaredClosedScopeProbe": true
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "baselines.0.requirements.0.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "results: accepts passthrough at root",
+      "type": "results",
+      "document": "results",
+      "path": [],
+      "properties": {
+        "extensions": {
+          "passthrough": {
+            "custom": {
+              "nested": [
+                1,
+                "text",
+                null
+              ]
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "results: accepts passthrough at baseline",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "baselines",
+        0
+      ],
+      "properties": {
+        "extensions": {
+          "passthrough": {
+            "custom": {
+              "nested": [
+                1,
+                "text",
+                null
+              ]
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "requirement-change-event: accepts regressed state",
+      "type": "requirement-change-event",
+      "document": "event-1",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "requirement-change-event: accepts new state",
+      "type": "requirement-change-event",
+      "document": "event-2",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "requirement-change-event: accepts absent state",
+      "type": "requirement-change-event",
+      "document": "event-3",
+      "path": [],
+      "properties": {},
+      "valid": true
+    },
+    {
+      "name": "requirement-change-event: accepts updated state",
+      "type": "requirement-change-event",
+      "document": "event-4",
+      "path": [],
+      "properties": {},
+      "valid": true
+    }
+  ]
+}

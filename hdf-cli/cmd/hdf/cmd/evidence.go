@@ -47,6 +47,7 @@ Examples:
 	cmd.AddCommand(newEvidenceAddReferenceCmd())
 	cmd.AddCommand(newEvidenceUpdateCmd())
 	cmd.AddCommand(newEvidenceBundleCmd())
+	cmd.AddCommand(newEvidenceResolveCmd())
 
 	return cmd
 }

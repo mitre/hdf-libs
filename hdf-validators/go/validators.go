@@ -2,15 +2,22 @@
 package hdfvalidators
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 //go:embed schemas/*.schema.json
@@ -30,19 +37,7 @@ func SetSchemaDir(dir string) {
 	schemaMu.Lock()
 	defer schemaMu.Unlock()
 	schemaDir = dir
-	// Reset sync.Once instances so schemas reload from new source
-	schemaOnce = map[SchemaType]*sync.Once{
-		TypeResults:                new(sync.Once),
-		TypeBaseline:               new(sync.Once),
-		TypeComparison:             new(sync.Once),
-		TypeSystem:                 new(sync.Once),
-		TypePlan:                   new(sync.Once),
-		TypeAmendments:             new(sync.Once),
-		TypeEvidencePackage:        new(sync.Once),
-		TypeRequirementChangeEvent: new(sync.Once),
-	}
-	schemaCache = make(map[SchemaType]*gojsonschema.Schema)
-	schemaErrors = make(map[SchemaType]error)
+	schemaCache = make(map[SchemaType]*cachedSchema)
 }
 
 // GetSchemaDir returns the current schema directory, or empty if using embedded.
@@ -60,7 +55,7 @@ func SchemaBytes(schemaType SchemaType) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown schema type %q", schemaType)
 	}
-	data, _, err := readSchemaData(filename)
+	data, _, err := readSchemaData(filename, GetSchemaDir())
 	return data, err
 }
 
@@ -125,24 +120,15 @@ func (r ValidationResult) Error() string {
 	return strings.Join(msgs, "; ")
 }
 
-// schemaOnce ensures each schema is loaded exactly once (per SetSchemaDir cycle).
-var schemaOnce = map[SchemaType]*sync.Once{
-	TypeResults:                {},
-	TypeBaseline:               {},
-	TypeComparison:             {},
-	TypeSystem:                 {},
-	TypePlan:                   {},
-	TypeAmendments:             {},
-	TypeEvidencePackage:        {},
-	TypeRequirementChangeEvent: {},
+// Each cache entry belongs to one SetSchemaDir generation. In-flight callers
+// retain their entry after a reset and cannot publish into the new generation.
+type cachedSchema struct {
+	once   sync.Once
+	schema *jsonschema.Schema
+	err    error
 }
 
-// schemaCache stores compiled schemas keyed by type.
-var schemaCache = make(map[SchemaType]*gojsonschema.Schema)
-
-// schemaErrors stores load errors keyed by type, so subsequent callers
-// see the original error instead of a generic "not loaded" message.
-var schemaErrors = make(map[SchemaType]error)
+var schemaCache = make(map[SchemaType]*cachedSchema)
 
 // schemaFiles maps schema types to their filenames.
 var schemaFiles = map[SchemaType]string{
@@ -158,11 +144,7 @@ var schemaFiles = map[SchemaType]string{
 
 // readSchemaData reads schema bytes from either the filesystem (if schemaDir
 // is set) or from embedded schemas.
-func readSchemaData(filename string) ([]byte, string, error) {
-	schemaMu.RLock()
-	dir := schemaDir
-	schemaMu.RUnlock()
-
+func readSchemaData(filename, dir string) ([]byte, string, error) {
 	if dir != "" {
 		path := filepath.Join(dir, filename)
 		data, err := os.ReadFile(path) // #nosec G304 -- intentional for dev workflow
@@ -178,102 +160,54 @@ func readSchemaData(filename string) ([]byte, string, error) {
 	return data, "embedded:" + filename, nil
 }
 
-// loadSchema loads and compiles a schema. Bundled schemas use JSON Schema
-// 2020-12 bundling (external schemas embedded under their $id), but
-// gojsonschema doesn't support this. We extract the embedded schemas and
-// pre-register them so $ref URIs resolve locally.
-func loadSchema(filename string) (*gojsonschema.Schema, error) {
-	data, source, err := readSchemaData(filename)
+type offlineSchemaLoader struct{}
+
+func (offlineSchemaLoader) Load(url string) (any, error) {
+	return nil, fmt.Errorf("schema reference %q is not bundled; external loading is disabled", url)
+}
+
+func loadSchema(filename, dir string) (*jsonschema.Schema, error) {
+	data, source, err := readSchemaData(filename, dir)
 	if err != nil {
 		return nil, err
 	}
-
-	sl := gojsonschema.NewSchemaLoader()
-	sl.Validate = false
-
-	// Extract and register embedded schemas from the bundled document.
-	// Bundled schemas appear either as top-level keys or as $defs entries,
-	// keyed by their $id URI (e.g., "https://mitre.github.io/hdf-libs/schemas/primitives/...").
-	var doc map[string]interface{}
-	if jsonErr := json.Unmarshal(data, &doc); jsonErr == nil {
-		registerEmbeddedSchemas(sl, doc)
-		// Also check $defs for bundled sub-schemas
-		if defs, ok := doc["$defs"].(map[string]interface{}); ok {
-			registerEmbeddedSchemas(sl, defs)
-		}
+	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse schema %s: %w", source, err)
 	}
-
-	schema, err := sl.Compile(gojsonschema.NewBytesLoader(data))
+	compiler := jsonschema.NewCompiler()
+	compiler.UseLoader(offlineSchemaLoader{})
+	compiler.AssertFormat()
+	registerModernFormats(compiler)
+	resource := "https://hdf.invalid/" + filename
+	if err := compiler.AddResource(resource, doc); err != nil {
+		return nil, fmt.Errorf("failed to register schema %s: %w", source, err)
+	}
+	schema, err := compiler.Compile(resource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile schema %s: %w", source, err)
 	}
-
 	return schema, nil
 }
 
-// registerEmbeddedSchemas scans a map for URI-keyed sub-schemas and registers them
-// with the schema loader so $ref can resolve them.
-func registerEmbeddedSchemas(sl *gojsonschema.SchemaLoader, entries map[string]interface{}) {
-	for key, val := range entries {
-		if !strings.HasPrefix(key, "https://") {
-			continue
-		}
-		subSchema, ok := val.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		subBytes, marshalErr := json.Marshal(subSchema)
-		if marshalErr != nil {
-			continue
-		}
-		_ = sl.AddSchemas(gojsonschema.NewBytesLoader(subBytes))
-	}
-}
-
-// getSchema returns the compiled schema for the given type.
-// Thread-safe: uses sync.Once per schema type to ensure single initialization.
-func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
-	schemaMu.RLock()
-	once, ok := schemaOnce[schemaType]
-	schemaMu.RUnlock()
-
+// getSchema compiles lazily, once per type and schema-directory generation.
+func getSchema(schemaType SchemaType) (*jsonschema.Schema, error) {
+	filename, ok := schemaFiles[schemaType]
 	if !ok {
 		return nil, fmt.Errorf("unknown schema type: %s", schemaType)
 	}
-
-	once.Do(func() {
-		filename, exists := schemaFiles[schemaType]
-		if !exists {
-			schemaMu.Lock()
-			schemaErrors[schemaType] = fmt.Errorf("no filename for schema type: %s", schemaType)
-			schemaMu.Unlock()
-			return
-		}
-		schema, err := loadSchema(filename)
-		if err != nil {
-			schemaMu.Lock()
-			schemaErrors[schemaType] = err
-			schemaMu.Unlock()
-			return
-		}
-		schemaMu.Lock()
-		schemaCache[schemaType] = schema
-		schemaMu.Unlock()
+	schemaMu.Lock()
+	dir := schemaDir
+	entry := schemaCache[schemaType]
+	if entry == nil {
+		entry = &cachedSchema{}
+		schemaCache[schemaType] = entry
+	}
+	schemaMu.Unlock()
+	entry.once.Do(func() {
+		entry.schema, entry.err = loadSchema(filename, dir)
 	})
-
-	schemaMu.RLock()
-	s := schemaCache[schemaType]
-	e := schemaErrors[schemaType]
-	schemaMu.RUnlock()
-
-	if e != nil {
-		return nil, e
-	}
-	if s == nil {
-		return nil, fmt.Errorf("schema %s not loaded", schemaType)
-	}
-
-	return s, nil
+	return entry.schema, entry.err
 }
 
 // Validate validates JSON data against the specified HDF schema.
@@ -288,37 +222,96 @@ func Validate(data []byte, schemaType SchemaType) ValidationResult {
 		}
 	}
 
-	documentLoader := gojsonschema.NewBytesLoader(data)
-	result, err := s.Validate(documentLoader)
+	document, err := decodeDocument(data)
 	if err != nil {
-		return ValidationResult{
-			Valid: false,
-			Errors: []ValidationError{
-				{Description: fmt.Sprintf("validation error: %v", err)},
-			},
-		}
+		return ValidationResult{Errors: []ValidationError{{Description: fmt.Sprintf("validation error: %v", err)}}}
 	}
-
-	if result.Valid() {
+	err = s.Validate(document)
+	if err == nil {
 		return ValidationResult{Valid: true}
 	}
-
-	// Convert errors to our format
-	var errors []ValidationError
-	for _, desc := range result.Errors() {
-		errors = append(errors, ValidationError{
-			Field:       desc.Field(),
-			Description: desc.Description(),
-			Keyword:     desc.Type(),
-			Format:      formatName(desc),
-			Value:       desc.Value(),
-		})
+	var failure *jsonschema.ValidationError
+	if !errors.As(err, &failure) {
+		return ValidationResult{Errors: []ValidationError{{Description: fmt.Sprintf("validation error: %v", err)}}}
 	}
+	return ValidationResult{Errors: modernValidationErrors(failure, document)}
+}
 
-	return ValidationResult{
-		Valid:  false,
-		Errors: errors,
+// Keep JSON syntax diagnostics stable across schema-engine changes, without
+// losing numeric precision or accepting bytes after the first JSON value.
+func decodeDocument(data []byte) (any, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var document any
+	if err := decoder.Decode(&document); err != nil {
+		return nil, err
 	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, errors.New("unexpected trailing data after end of JSON value")
+	}
+	return document, nil
+}
+
+func modernValidationErrors(failure *jsonschema.ValidationError, document any) []ValidationError {
+	var result []ValidationError
+	if len(failure.Causes) != 0 {
+		for _, cause := range failure.Causes {
+			result = append(result, modernValidationErrors(cause, document)...)
+		}
+		return result
+	}
+	field := strings.Join(failure.InstanceLocation, ".")
+	if field == "" {
+		field = "(root)"
+	}
+	item := ValidationError{
+		Field:       field,
+		Description: failure.ErrorKind.LocalizedString(message.NewPrinter(language.English)),
+		Value:       instanceValue(document, failure.InstanceLocation),
+	}
+	path := failure.ErrorKind.KeywordPath()
+	if len(path) != 0 {
+		item.Keyword = path[0]
+	}
+	switch k := failure.ErrorKind.(type) {
+	case *kind.Required:
+		for _, property := range k.Missing {
+			missing := item
+			missing.Description = property + " is required"
+			result = append(result, missing)
+		}
+		return result
+	case *kind.Type:
+		item.Keyword = "invalid_type"
+	case *kind.Format:
+		item.Format = k.Want
+	case *kind.FalseSchema:
+		item.Keyword = "false"
+		if strings.HasSuffix(failure.SchemaURL, "/unevaluatedProperties") {
+			item.Keyword = "unevaluatedProperties"
+			item.Description = "is not allowed"
+		}
+	}
+	return append(result, item)
+}
+
+func instanceValue(document any, path []string) any {
+	value := document
+	for _, token := range path {
+		switch current := value.(type) {
+		case map[string]any:
+			value = current[token]
+		case []any:
+			index, err := strconv.Atoi(token)
+			if err != nil || index < 0 || index >= len(current) {
+				return nil
+			}
+			value = current[index]
+		default:
+			return nil
+		}
+	}
+	return value
 }
 
 // ValidateResults validates JSON data against the HDF results schema.
@@ -360,17 +353,4 @@ func ValidateAmendments(data []byte) ValidationResult {
 // ValidateEvidencePackage validates JSON data against the HDF evidence-package schema.
 func ValidateEvidencePackage(data []byte) ValidationResult {
 	return Validate(data, TypeEvidencePackage)
-}
-
-// formatName reports the expected format for a failed "format" assertion, and
-// empty for every other violation. gojsonschema carries it in the error details
-// rather than on the error type.
-func formatName(desc gojsonschema.ResultError) string {
-	if desc.Type() != "format" {
-		return ""
-	}
-	if f, ok := desc.Details()["format"]; ok {
-		return fmt.Sprintf("%v", f)
-	}
-	return ""
 }
