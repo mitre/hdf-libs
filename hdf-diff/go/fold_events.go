@@ -113,7 +113,7 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			for _, rRaw := range reqs {
 				if r, ok := rRaw.(map[string]interface{}); ok {
 					if id, _ := r["id"].(string); id != "" {
-						baselineByReq[id] = name
+						recordRequirementBaseline(baselineByReq, id, name)
 					}
 				}
 			}

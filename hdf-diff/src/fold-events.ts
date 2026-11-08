@@ -1,7 +1,7 @@
 import { formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
 import { computeSummary } from './summary.js';
 import { computeEffectiveStatus } from './status.js';
-import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS } from './diff.js';
+import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS, recordRequirementBaseline } from './diff.js';
 import { dedupEvents, groupEventChains, verifyEventChain } from './event-stream-common.js';
 import type { ApplyWarning } from './apply-events.js';
 import type { RequirementDiff, ChangeReason, RequirementState } from './types.js';
@@ -51,9 +51,8 @@ export async function foldChangeEventsIntoComparison(
   let asOfFromEvents = '';
   let systemRef = '';
 
-  // Baseline names for the baseline field: the seed requirement's own baseline (the
-  // last one listed when an id repeats), or the first baseline for keys the seed
-  // does not carry. Parity: Go fold_events.
+  // Share batch attribution, including ambiguous ids; keys absent from the seed
+  // fall back to its first baseline. Parity: Go fold_events.
   let firstBaselineName = '';
   const baselineByReq = new Map<string, string>();
   for (const [i, baseline] of ((doc['baselines'] as Doc[] | undefined) ?? []).entries()) {
@@ -61,7 +60,7 @@ export async function foldChangeEventsIntoComparison(
     if (i === 0) firstBaselineName = name;
     for (const req of (baseline['requirements'] as Doc[] | undefined) ?? []) {
       const id = req['id'];
-      if (typeof id === 'string') baselineByReq.set(id, name);
+      if (typeof id === 'string') recordRequirementBaseline(baselineByReq, id, name);
     }
   }
 

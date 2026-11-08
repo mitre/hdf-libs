@@ -337,18 +337,23 @@ export function extractDrift(requirementDiffs: RequirementDiff[]): RequirementDi
 /** An id that sits in more than one baseline; parity: Go baselineMultiple. */
 const BASELINE_MULTIPLE = '(multiple)';
 
+/** Shared batch/fold attribution: differing baseline names are ambiguous. */
+export function recordRequirementBaseline(map: Map<string, string>, id: string, name: string): void {
+  const existing = map.get(id);
+  if (existing === undefined) {
+    map.set(id, name);
+  } else if (existing !== name && existing !== BASELINE_MULTIPLE) {
+    map.set(id, BASELINE_MULTIPLE);
+  }
+}
+
 function requirementBaselineMap(baselines: BaselineLike[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const baseline of baselines) {
     for (const req of baseline.requirements) {
       const id = (req as unknown as Record<string, unknown>)['id'];
       if (typeof id !== 'string') continue;
-      const existing = map.get(id);
-      if (existing === undefined) {
-        map.set(id, baseline.name);
-      } else if (existing !== baseline.name && existing !== BASELINE_MULTIPLE) {
-        map.set(id, BASELINE_MULTIPLE);
-      }
+      recordRequirementBaseline(map, id, baseline.name);
     }
   }
   return map;
