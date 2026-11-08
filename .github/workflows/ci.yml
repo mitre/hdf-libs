@@ -33,7 +33,7 @@ concurrency:
 # go-version-file) — no separate pin to drift.
 env:
   NODE_VERSION: '24'
-  GOLANGCI_LINT_VERSION: 'v2.11.3'
+  GOLANGCI_LINT_VERSION: 'v2.14.0'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
   # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi's matrix

@@ -156,7 +156,7 @@ func main() {
  }
  if err := json.NewEncoder(os.Stdout).Encode(output); err != nil { panic(err) }
 }`);
-      const executable = join(scratch, 'bundles');
+      const executable = join(scratch, process.platform === 'win32' ? 'bundles.exe' : 'bundles');
       execFileSync('go', ['build', '-o', executable, program], { cwd: fileURLToPath(new URL('../../../', import.meta.url)), timeout: 60_000 });
       const original = readFileSync(fixture);
       const boundary = JSON.parse(original.toString('utf8'));

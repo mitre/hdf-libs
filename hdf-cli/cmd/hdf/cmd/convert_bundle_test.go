@@ -74,7 +74,11 @@ func TestConvertBundleRetainsEvidencePackage(t *testing.T) {
 			}
 			info, err := os.Stat(output)
 			require.NoError(t, err)
-			require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+			require.True(t, info.Mode().IsRegular())
+			// Windows Chmod controls the read-only attribute, not POSIX permission bits.
+			if runtime.GOOS != "windows" {
+				require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+			}
 		})
 	}
 }

@@ -53,7 +53,7 @@ Replace the unshipped `convert bundle` subcommand with an explicit option:
 
     hdf convert input.json --to ecs --bundle -o export.zip
 
-Without --bundle, current dispatch/output remains unchanged, including a bare input named bundle. Bundle mode requires one regular local input, a supported explicit target and a file output. Reject directories, multiple inputs, stdin, transformation flags and incompatible options explicitly. Default refuse an existing output; --overwrite is bundle-only explicit consent and never permits overwriting source or aliases; --force remains incompatible with bundle mode. Reuse current archive safety and atomic-write machinery, including its 0600 ZIP file mode.
+Without --bundle, current dispatch/output remains unchanged, including a bare input named bundle. Bundle mode requires one regular local input, a supported explicit target and a file output. Reject directories, multiple inputs, stdin, transformation flags and incompatible options explicitly. Default refuse an existing output; --overwrite is bundle-only explicit consent and never permits overwriting source or aliases; --force remains incompatible with bundle mode. Reuse current archive safety and atomic-write machinery, including its 0600 ZIP file mode on POSIX systems. Windows uses the output directory's inherited filesystem ACLs; Go Chmod does not establish owner-only ACLs there.
 
 Use a package-owned read operation:
 
