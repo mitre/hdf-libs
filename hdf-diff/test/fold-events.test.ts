@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { results } from '@mitre/hdf-fixtures';
 import { validateComparison } from '@mitre/hdf-validators';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 import { diffHdf } from '../src/diff.js';
 import type { RequirementDiff, ChangeReason } from '../src/types.js';
 import { changeEventFromPrevious, type KeyState } from '../src/change-event.js';
@@ -117,6 +120,7 @@ async function foldLawCheck(seedName: string, nextName: string): Promise<void> {
     expect(g!.oldImpact, `${id} oldImpact`).toBe(w.oldImpact);
     expect(g!.newImpact, `${id} newImpact`).toBe(w.newImpact);
     expect(g!.title, `${id} title`).toBe(w.title);
+    expect(g!.baseline, `${id} baseline`).toBe(w.baseline);
     expect(g!.fieldChanges, `${id} fieldChanges`).toEqual(w.fieldChanges);
     expect(g!.before, `${id} before`).toEqual(w.before);
     expect(g!.after, `${id} after`).toEqual(w.after);
@@ -137,6 +141,44 @@ describe('foldChangeEventsIntoComparison', () => {
     await foldLawCheck('scan-before.json', 'scan-with-override.json');
   });
 
+  it('labels repeated ids across real seed baselines as (multiple)', async () => {
+    // Unmodified published InSpec output; only the event is derived here.
+    const seedJson = results.inspecMultilayered.read();
+    const doc = JSON.parse(seedJson) as Req;
+    const req = requirementsOf(doc)[0]!;
+    const timestamp = '2026-03-25T22:56:27.736808Z';
+    const event = await changeEventFromPrevious({
+      effectiveStatus: computeEffectiveStatus(req, timestamp),
+      effectiveImpact: computeEffectiveImpact(req, timestamp),
+      checksum: await computeEffectiveChecksum(req, timestamp),
+    }, null, req, {
+      eventId: '0190f6f2-0000-7000-8000-000000000001',
+      source: 'inspec://fixture/scan', sequence: 1,
+      systemRef: 'fixture.hdf-system.json',
+      componentId: '6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60',
+      requirementId: req['id'] as string, timestamp,
+      referenceTimestamp: timestamp, prevReferenceTimestamp: timestamp,
+    });
+    if (!event) throw new Error('removal must emit an event');
+    const { comparison, warnings } = await foldChangeEventsIntoComparison(seedJson, [event]);
+    expect(warnings).toEqual([]);
+    const diffs = comparison['requirementDiffs'] as RequirementDiff[];
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0].baseline).toBe('(multiple)');
+    const batch = diffHdf(doc, doc, { comparisonMode: 'temporal' });
+    const matching = batch.requirementDiffs.filter((d) => d.id === req['id']);
+    expect(matching.length).toBeGreaterThan(0);
+    for (const d of matching) expect(d.baseline).toBe(diffs[0].baseline);
+    const newEvent = (await deriveStream(load('scan-before.json'), load('scan-after.json')))
+      .find((e) => e['state'] === 'new');
+    if (!newEvent) throw new Error('scan pair must emit a new requirement');
+    const added = await foldChangeEventsIntoComparison(seedJson, [newEvent]);
+    expect(added.warnings).toEqual([]);
+    const addedDiffs = added.comparison['requirementDiffs'] as RequirementDiff[];
+    expect(addedDiffs).toHaveLength(1);
+    expect(addedDiffs[0].baseline).toBe('metawrapper');
+  });
+
   it('produces a deterministic, schema-valid systemDrift comparison', async () => {
     const seedJson = load('scan-before.json');
     const events = await deriveStream(seedJson, load('scan-after.json'));
@@ -147,6 +189,16 @@ describe('foldChangeEventsIntoComparison', () => {
     expect(comparison['formatVersion']).toBe('1.0.0');
     expect(comparison['timestamp']).toBe('2024-02-01T00:00:00Z');
     expect((comparison['requirementDiffs'] as RequirementDiff[]).length).toBe(5);
+    for (const rd of comparison['requirementDiffs'] as RequirementDiff[]) {
+      expect(rd.baseline, `${rd.id} carries the seed's baseline`).toBe('rhel9-stig-baseline');
+    }
+    // The shipped validator ignores unevaluatedProperties; a 2020-12 engine does not.
+    const ajv = new Ajv2020({ strict: false, allErrors: true });
+    addFormats(ajv);
+    const strict = ajv.compile(
+      JSON.parse(readFileSync(join(FIXTURES, '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-comparison.schema.json'), 'utf-8')),
+    );
+    expect(strict(comparison), JSON.stringify(strict.errors?.slice(0, 3))).toBe(true);
 
     const validation = validateComparison(comparison);
     expect(validation.valid, JSON.stringify(validation.errors)).toBe(true);

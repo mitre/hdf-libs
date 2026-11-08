@@ -4,6 +4,19 @@
   "title": "HDF Common Primitives",
   "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
   "$defs": {
+    "External_Reference_Encoding": {
+      "type": "string",
+      "enum": [
+        "utf-8",
+        "base64"
+      ],
+      "description": "How an embedded copy's bytes are read back: 'utf-8' for text, 'base64' for anything that is not valid UTF-8 text.",
+      "title": "External Reference Encoding",
+      "examples": [
+        "base64"
+      ],
+      "$comment": "Examples, in order: 1) a binary artifact, embedded base64-encoded."
+    },
     "External_Reference": {
       "type": "object",
       "title": "External Reference",
@@ -119,12 +132,7 @@
           "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
         },
         "encoding": {
-          "type": "string",
-          "title": "External Reference Encoding",
-          "enum": [
-            "utf-8",
-            "base64"
-          ],
+          "$ref": "#/$defs/External_Reference_Encoding",
           "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
         }
       },
@@ -208,7 +216,7 @@
         "sha512",
         "blake3"
       ],
-      "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable.",
+      "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable. md5 and sha1 are excluded deliberately: a checksum or integrity record exists to detect tampering, and both are collision-broken, so a digest in either would look verifiable while proving nothing. A source tool digest in an excluded algorithm is not recorded as a checksum. Admitting weak hashes as an application-level accept/reject decision was considered and rejected; widening this enum is a schema decision, not an oversight.",
       "title": "Hash Algorithm"
     },
     "Requirement_Group": {
@@ -910,6 +918,10 @@
           "type": "string",
           "description": "The title - should be human readable."
         },
+        "description": {
+          "type": "string",
+          "description": "Prose description of the baseline, more detailed than summary. Carried verbatim, like every HDF prose field."
+        },
         "maintainer": {
           "type": "string",
           "description": "The maintainer(s)."
@@ -988,7 +1000,7 @@
         },
         "id": {
           "type": "string",
-          "description": "The requirement identifier. Example: 'SV-238196'."
+          "description": "The requirement identifier, naming the requirement itself rather than one finding of it. Example: 'SV-238196'. Several entries in one baseline may legitimately carry the same id (one scanner reporting one CVE against several packages, or an overlay restating what it inherits), so an id is not an instance key: index requirements as id to list, never id to one, and an amendment addressing an id applies to every entry carrying it."
         },
         "title": {
           "type": "string",

@@ -328,10 +328,10 @@ describe('every definition example validates against its extracted definition', 
     // The exact count, not a floor. A floor of 20 against an actual 42 would let half the
     // definitions lose their examples without the guard noticing — which is precisely the
     // vacuity it exists to prevent. Raise this deliberately when definitions gain examples.
-    // 46 definitions carrying 138 examples at schema v3.8.0 — Reference gained five
-    // when it was closed, which is why both numbers moved together.
-    expect(withExamples.length).toBe(46);
-    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(138);
+    // 50 definitions, 144 examples at v3.8.0: Reference +5 when closed, then one each
+    // for Status_Override, Requirement_Diff, Baseline_Diff_State, Encoding; Modality +2.
+    expect(withExamples.length).toBe(50);
+    expect(withExamples.reduce((total, [, schema]) => total + (schema.examples as unknown[]).length, 0)).toBe(144);
   });
 
   it.each(withExamples.map(([name]) => name))('%s', (name) => {

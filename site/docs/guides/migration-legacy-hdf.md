@@ -268,8 +268,18 @@ In v1 groups, `controls` is an array of control ID strings. In v2, the group fie
 
 ### Overlay flattening
 
-v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter automatically flattens these overlays so each requirement appears exactly once in the output. If you are writing your own converter, you may need to handle this deduplication.
+v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter flattens these overlays into one requirement per id with a result per layer that evaluated it, so no layer's verdict is dropped. If you are writing your own converter, roll layers up the same way rather than keeping one entry and discarding the rest; a repeated id is legal HDF (see the specification's Requirement identity convention), so a consumer must cope with it either way.
 
 ### Timestamps
 
 v1 uses formats like `"2017-09-22 14:12:15 -0400"` which are not valid ISO 8601. v2 requires ISO 8601 / RFC 3339 format (`"2017-09-22T18:12:15.000Z"`). The converter normalizes timestamps automatically. If you are producing v2 output directly, use ISO 8601.
+
+### Risk adjustments in older amendments and OSCAL exports
+
+Starting with hdf-libs v3.8.0, a `riskAdjustment` changes impact only and cannot carry `status`. This applies to standalone amendments and overrides already embedded in results.
+
+It also affects reimporting older OSCAL POA&M exports. If a risk carries the HDF vocabulary properties `override-type=riskAdjustment` and `override-status`, the importer preserves both values, and the CLI rejects the resulting HDF amendments during output validation. A document exported before this tightening can therefore fail on reimport even though its OSCAL structure is valid.
+
+Review the original decision before migrating it. If it changes compliance status, re-author the source amendment as the appropriate `waiver` or `falsePositive`, with the intended status. If it only changes impact, intentionally remove the status and retain the impact adjustment. Validate the revised amendment and export a new OSCAL POA&M; retain the original artifact for its audit history. Do not silently discard the status during import or bypass output validation to accept the old combination.
+
+For override semantics, see [Amendments](./amendments-workflow.md).

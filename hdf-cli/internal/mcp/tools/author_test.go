@@ -247,7 +247,7 @@ func validJudgmentOverride() map[string]any {
 		"type":          "riskAdjustment",
 		"requirementId": "V-1234",
 		"reason":        "Compensating control in place; residual risk accepted for this cycle.",
-		"status":        "notApplicable",
+		"impact":        map[string]any{"value": 0.3},
 		"expiresAt":     "2099-12-31T00:00:00Z",
 	}
 }

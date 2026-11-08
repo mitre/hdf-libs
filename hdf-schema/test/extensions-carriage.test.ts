@@ -224,10 +224,10 @@ describe('External_Reference — content and encoding', () => {
     expect(typeof content.description).toBe('string');
   });
 
-  it('declares an `encoding` limited to utf-8 and base64', () => {
+  it('declares an `encoding` limited to utf-8 and base64, through the shared definition', () => {
     const encoding = properties(externalReference()).encoding as Node;
-    expect(encoding).toBeDefined();
-    expect(encoding.enum).toEqual(['utf-8', 'base64']);
+    expect(encoding.$ref).toBe('#/$defs/External_Reference_Encoding');
+    expect((defs(commonSchema).External_Reference_Encoding as Node).enum).toEqual(['utf-8', 'base64']);
   });
 
   it('keeps `document` JSON-object-only — it is not widened to hold text', () => {

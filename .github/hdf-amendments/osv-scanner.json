@@ -11,7 +11,7 @@
       "reason": "GHSA-4w7w-66w2-5vf9: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-39365",
       "status": "notApplicable",
-      "type": "riskAdjustment"
+      "type": "waiver"
     },
     {
       "appliedAt": "2026-09-07T15:01:58Z",
@@ -22,12 +22,12 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "c9e4806f8543d18823e6f94c170c80bc040d7c3c911f1e20f81c912312c38b21"
+        "value": "ac058ca3f790987ad7486e4a7dc235eda712bab30b39b326038de0470a08c34f"
       },
       "reason": "GHSA-fx2h-pf6j-xcff: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-53571",
       "status": "notApplicable",
-      "type": "riskAdjustment"
+      "type": "waiver"
     },
     {
       "appliedAt": "2026-09-07T15:01:58Z",
@@ -38,12 +38,12 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "304cbb8e103bedd8fde53a82998f2e19d135a190449c94bdd12ab546fc267650"
+        "value": "462e8a38d7e3bcdd700be6a8ff9a87b9122842e7f00ec67888c63cd5a0a6f676"
       },
       "reason": "GHSA-v6wh-96g9-6wx3: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-53632",
       "status": "notApplicable",
-      "type": "riskAdjustment"
+      "type": "waiver"
     },
     {
       "appliedAt": "2026-10-21T15:47:08Z",
@@ -54,7 +54,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "daffb09ff0a827728f09ab25ec6d74cbd40556d72911275ed690684498586cf0"
+        "value": "056b8a80e7a0d08f0521ed2828ebc20a338cc9f131b33f9f17851a70a43f3eac"
       },
       "reason": "GHSA-587h-7wmj-h5pm: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
       "requirementId": "CVE-2026-112942",
@@ -70,7 +70,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "938d13eee364dbfaf39d37fd22e81f53071b35ae35bdc569a825583b4ced1e63"
+        "value": "a616458c44b1b7a3927edf5e8315e3961be68afbce8680403f34ea7f706dfa23"
       },
       "reason": "GHSA-698v-4r3x-3vcv: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
       "requirementId": "CVE-2026-112943",
@@ -86,7 +86,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "88fce7ce27c1779b6905d720f490b3af39c2613945ec0d0eb922264618fcf376"
+        "value": "b6a4de09a14a4f15b2ceb32c352d5302cd8b4c5d5224cadc6094f5b5f76340bb"
       },
       "reason": "GHSA-r825-w8mm-5pxw: the vulnerable code is launch-editor, which vite 5.4.21 bundles into its dist rather than resolving as a package — so it is absent from pnpm-lock.yaml while escapeCmdArgs, launchEditor and guessEditor are all present in dist/node/chunks/dep-BK3b2jBa.js, reachable through the dev server's __open-in-editor endpoint. Because the code is inlined, a pnpm override cannot substitute a patched launch-editor; the fix for the 5.x line is vite 6.4.4, gated on vitepress 2.x. Accepted rather than dismissed: exposure requires a developer to be running 'vitepress dev' locally, all three vectors are Windows-specific, vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site (the prod audit is clean), and the workspace's other vite is 8.3.4, above the 8.3.3 fix. Revisit when vitepress 2.x lands (hdf-libs-34nl).",
       "requirementId": "CVE-2026-112944",
@@ -102,7 +102,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "1f8d8b7cde7372f68e99ab68207e5af80061595da883d490a215f27296351ccb"
+        "value": "269d151bde2e9e93ca8d23d9167a7108b7ae400531de8db80d3180c0c13a28df"
       },
       "reason": "GHSA-9jrq-w75r-8gcw: cross-origin script execution through Vite custom middleware — a malicious site visited WHILE the dev server runs can load scripts in a page the dev server serves. CVSS 4.0 records UI:A and AT:P, so it needs the developer to visit the hostile page and the app to pass an unchanged browser request URL to server.transformIndexHtml; whether vitepress does that is NOT established here, so this waiver does not rest on it. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
       "requirementId": "CVE-2026-112945",
@@ -118,7 +118,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "17cff434a586538b474fcad28994969a1c013cf29941679a9d5d3bae199e5d48"
+        "value": "9aa8dd627dbe5422cb53a21db83ad761decf269b3459ad71c1f5ac924773c5f0"
       },
       "reason": "GHSA-rq7h-c2jc-7f22: files outside server.fs.allow can be served when a project path matches a system path, on non-Windows machines — the inverse exposure to the launch-editor three above, which are Windows-only. It needs the project to reference a path concatenated with root (the advisory's example is \u003croot\u003e/etc/hosts), which nothing in this repo's docs build does. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
       "requirementId": "CVE-2026-112946",
@@ -134,7 +134,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "e1b95007055f2fa11b21e46947ffeda163d57ec58724e1c465ec550de5bca423"
+        "value": "98458c80ef3f624997e2a326788cca8d84dd09e0e59d18ff609893bde190e7b2"
       },
       "reason": "GHSA-3g3m-2fjr-6pw4: glob 13.0.6 keeps reading directories after its AbortSignal fires, so a caller that passes signal or AbortSignal.timeout() to bound a walk still pays the I/O. The vulnerable branch is only entered when a signal is supplied. glob reaches this repo solely through rimraf 6.1.3 (dev), whose only use is the per-package 'clean' scripts invoking the rimraf CLI on literal paths; the CLI exposes no signal option and rimraf forwards one to glob only when its caller supplies it, so the abort branch is never taken. 'pnpm why -r --prod glob' returns no paths. The fix (14.0.2) is a new major published 2026-10-27 that also pulls in a path-scurry major and a brand-new package, all inside the seven-day release cooldown; it is taken once they clear the cooldown, and this waiver goes with it.",
       "requirementId": "CVE-2026-118773",
@@ -150,12 +150,12 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "51ee1d92e9c118fdf500b365296b1b0ca9f36c0f9f204ba1e938b538b38bbfed"
+        "value": "0571087668d90a1dc17e26f64081634be378e890ae0b3712325af51c490d075b"
       },
-      "reason": "GHSA-g3hv-75wg-m249: minimatch below 11.0.1 lets an attacker-controlled glob pattern amplify globParts in firstPhasePreProcess and then pay quadratic pairwise work, so it is a CPU/memory denial of service against whoever compiles the pattern. Every minimatch in this tree is dev (3.1.4 under eslint 8 via the SARIF formatter, 5.1.9 under @redocly/openapi-core, 10.2.3 under stryker, 10.2.6 under eslint 10 and typescript-eslint); 'pnpm why -r --prod minimatch' returns no paths. Every pattern those consumers compile comes from checked-in configuration (eslint ignore globs, stryker mutate globs, the OpenAPI tooling config), none from input a third party supplies, so the precondition is not met. The only fix (11.0.1) is a new major published 2026-10-27 that depends on a brand-new package, both inside the seven-day release cooldown; it is taken once they clear the cooldown, and this adjustment goes with it.",
+      "reason": "GHSA-g3hv-75wg-m249: minimatch below 11.0.1 lets an attacker-controlled glob pattern amplify globParts in firstPhasePreProcess and then pay quadratic pairwise work, so it is a CPU/memory denial of service against whoever compiles the pattern. Every minimatch in this tree is dev (3.1.4 under eslint 8 via the SARIF formatter, 5.1.9 under @redocly/openapi-core, 10.2.3 under stryker, 10.2.6 under eslint 10 and typescript-eslint); 'pnpm why -r --prod minimatch' returns no paths. Every pattern those consumers compile comes from checked-in configuration (eslint ignore globs, stryker mutate globs, the OpenAPI tooling config), none from input a third party supplies, so the precondition is not met. The only fix (11.0.1) is a new major published 2026-10-27 that depends on a brand-new package, both inside the seven-day release cooldown; it is taken once they clear the cooldown, and this waiver goes with it.",
       "requirementId": "CVE-2026-118764",
       "status": "notApplicable",
-      "type": "riskAdjustment"
+      "type": "waiver"
     }
   ]
 }

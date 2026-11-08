@@ -94,14 +94,14 @@ function preprocessSchemaForQuicktype(schemaJson: string): string {
 /** Collapse a title / generated type name to a casing- and separator-insensitive
  * key, so "External Evidence Reference", "ExternalEvidenceReference", and
  * "SBOMCoverage" all match their `$def`. */
-function normKey(s: string): string {
+export function normKey(s: string): string {
   return s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 }
 
 /** normKey(title) -> the `$def`'s own description, for every source `$def` that
  * carries both a title and a description. A title that collides on two different
  * descriptions is dropped (ambiguous — leave those types alone). */
-function canonicalTypeDescriptions(): Map<string, string> {
+export function canonicalTypeDescriptions(): Map<string, string> {
   const byKey = new Map<string, string>();
   const dropped = new Set<string>();
   const walkDir = (dir: string): string[] => {
@@ -314,7 +314,7 @@ export async function generateTypes(): Promise<void> {
 
     const ext = lang.name === 'go' ? 'go' : 'ts';
     const outputPath = join(outputDir, `hdf.${ext}`);
-    let output = result.lines.join('\n');
+    let output = result.lines.map((line) => line.trimEnd()).join('\n');
     output = normalizeSharedTypeDocs(output, lang.name as 'go' | 'typescript');
     if (lang.name === 'typescript') {
       output = reinstateComponentIdentityFields(output);
