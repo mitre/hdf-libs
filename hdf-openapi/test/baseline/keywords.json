@@ -6,18 +6,18 @@
     "oapi-codegen": "2.8.0"
   },
   "keywordCounts": {
-    "$comment": 45,
-    "$ref": 240,
-    "additionalProperties": 26,
+    "$comment": 52,
+    "$ref": 252,
+    "additionalProperties": 21,
     "allOf": 22,
     "anyOf": 13,
     "const": 24,
     "contains": 2,
     "contentEncoding": 1,
-    "description": 768,
+    "description": 774,
     "else": 6,
     "enum": 46,
-    "examples": 57,
+    "examples": 64,
     "format": 75,
     "if": 13,
     "items": 84,
@@ -32,7 +32,7 @@
     "required": 123,
     "then": 10,
     "title": 141,
-    "type": 664,
+    "type": 654,
     "unevaluatedProperties": 77
   },
   "lint": {

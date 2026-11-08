@@ -493,6 +493,40 @@
         "description": "A requirement that has been evaluated, including any findings.",
         "title": "Evaluated Requirement"
       },
+      "Labels": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Optional grouping and selection metadata on the object that owns this map. Root labels describe the document; component labels describe an assessed asset; baseline labels describe a baseline. Scopes are independent: labels are not inherited or copied between a document and its components, baselines, or referenced documents. Labels do not establish identity or provenance by themselves. Use externalIds for identifiers assigned by another system, including a producing CI run. Existing keys and values remain unrestricted strings; well-known grouping keys include system, component, environment, region, and team.",
+        "$comment": "Examples, in order: 1) document grouping for a recurring pipeline; 2) component grouping. A pipeline name groups runs; a particular run identity belongs in externalIds on the document it produced.",
+        "examples": [
+          {
+            "pipeline": "nightly",
+            "team": "security"
+          },
+          {
+            "environment": "production",
+            "component": "WebTier"
+          }
+        ]
+      },
+      "External_IDs": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Identifiers associated with the owning object in external systems, keyed by identifier scheme. On a document, these may identify the producing CI run or the document's record in a GRC system. On a component, these identify the asset in a CMDB or cloud provider. Use a scheme and value that distinguish the owning project or repository when an identifier is only locally unique. Values are opaque strings, not fetched or interpreted as paths. These identifiers do not replace HDF identity fields and are not component label selectors. Custom schemes are allowed; existing component schemes include aws, azure, cmdb, emass, and cve.",
+        "$comment": "Examples, in order: 1) a document's producing pipeline run, with project context in the URL; 2) a component's asset identity. The ci-run scheme is an example convention, not a required key.",
+        "examples": [
+          {
+            "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+          },
+          {
+            "cmdb": "CI0012345"
+          }
+        ]
+      },
       "External_Reference": {
         "type": "object",
         "title": "External Reference",
@@ -1435,11 +1469,19 @@
             "description": "The status. Example: 'loaded'."
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping metadata for this baseline. When embedded in results, labels stay on the baseline and are independent of document and component labels. Merge provenance keys tool, toolVersion, and sourceDocument retain their established meanings.",
+            "$comment": "Examples, in order: 1) baseline ownership; 2) evaluated-baseline merge provenance, independent of component labels.",
+            "examples": [
+              {
+                "team": "security"
+              },
+              {
+                "tool": "grype",
+                "toolVersion": "0.79.3",
+                "sourceDocument": "grype.hdf.json"
+              }
+            ]
           }
         },
         "examples": [
@@ -1739,18 +1781,11 @@
             "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
           },
           "externalIds": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+            "$ref": "#/components/schemas/External_IDs"
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping and selection metadata for this component. Document and baseline labels do not propagate here. Well-known keys include system, component, environment, region, and team."
           },
           "boms": {
             "type": "array",
@@ -6707,6 +6742,10 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions",
             "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this baseline was converted from."
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/External_IDs",
+            "description": "External identities associated with this baseline document, such as its producing CI run or external catalog record."
           }
         },
         "examples": [
@@ -6779,7 +6818,13 @@
                   "SV-260476"
                 ]
               }
-            ]
+            ],
+            "labels": {
+              "team": "security"
+            },
+            "externalIds": {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+            }
           }
         ],
         "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
@@ -7218,11 +7263,15 @@
             "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for grouping and querying systems."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping metadata for this document. It is independent of labels on components, baselines, and referenced documents.",
+            "$comment": "Examples, in order: 1) grouping this document without changing the labels of anything it describes or references.",
+            "examples": [
+              {
+                "environment": "production",
+                "team": "platform"
+              }
+            ]
           },
           "integrity": {
             "$ref": "#/components/schemas/Integrity",
@@ -7239,6 +7288,10 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions",
             "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this system document was converted from."
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/External_IDs",
+            "description": "External identities associated with this document, such as its producing CI run or GRC record. These are separate from grouping labels and from identifiers on components."
           }
         },
         "examples": [
@@ -7286,7 +7339,14 @@
                 "direction": "unidirectional",
                 "description": "Web tier connects to database"
               }
-            ]
+            ],
+            "labels": {
+              "environment": "production",
+              "team": "platform"
+            },
+            "externalIds": {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+            }
           }
         ]
       },
@@ -7342,11 +7402,15 @@
             "description": "Optional scheduling configuration for recurring assessments."
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for grouping and querying plans."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping metadata for this document. It is independent of labels on components, baselines, and referenced documents.",
+            "$comment": "Examples, in order: 1) grouping this document without changing the labels of anything it describes or references.",
+            "examples": [
+              {
+                "team": "assessment",
+                "campaign": "quarterly-review"
+              }
+            ]
           },
           "integrity": {
             "$ref": "#/components/schemas/Integrity",
@@ -7363,6 +7427,10 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions",
             "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this plan was converted from."
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/External_IDs",
+            "description": "External identities associated with this document, such as its producing CI run or GRC record. These are separate from grouping labels and from identifiers on components."
           }
         },
         "examples": [
@@ -7391,6 +7459,13 @@
               "notifyOnRegression": [
                 "security-team@agency.gov"
               ]
+            },
+            "labels": {
+              "team": "assessment",
+              "campaign": "quarterly-review"
+            },
+            "externalIds": {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
             }
           }
         ]
@@ -7440,11 +7515,15 @@
             "description": "The set of amendments (waivers, attestations, POA&Ms, and other overrides)."
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for grouping and querying amendments."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping metadata for this document. It is independent of labels on components, baselines, and referenced documents.",
+            "$comment": "Examples, in order: 1) grouping this document without changing the labels of anything it describes or references.",
+            "examples": [
+              {
+                "team": "security",
+                "campaign": "quarterly-review"
+              }
+            ]
           },
           "integrity": {
             "$ref": "#/components/schemas/Integrity",
@@ -7465,6 +7544,10 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions",
             "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) these amendments were converted from — the VEX family and oscal-poam-to-hdf all emit this document type."
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/External_IDs",
+            "description": "External identities associated with this document, such as its producing CI run or GRC record. These are separate from grouping labels and from identifiers on components."
           }
         },
         "examples": [
@@ -7496,7 +7579,14 @@
                   }
                 ]
               }
-            ]
+            ],
+            "labels": {
+              "team": "security",
+              "campaign": "quarterly-review"
+            },
+            "externalIds": {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+            }
           }
         ]
       },
@@ -7573,11 +7663,15 @@
             "description": "Digital signature covering the entire evidence package."
           },
           "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional key-value labels for grouping and querying evidence packages."
+            "$ref": "#/components/schemas/Labels",
+            "description": "Grouping metadata for this document. It is independent of labels on components, baselines, and referenced documents.",
+            "$comment": "Examples, in order: 1) grouping this document without changing the labels of anything it describes or references.",
+            "examples": [
+              {
+                "pipeline": "nightly",
+                "environment": "production"
+              }
+            ]
           },
           "integrity": {
             "$ref": "#/components/schemas/Integrity",
@@ -7594,6 +7688,10 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions",
             "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this package was assembled from."
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/External_IDs",
+            "description": "External identities associated with this document, such as its producing CI run or GRC record. These are separate from grouping labels and from identifiers on components."
           }
         },
         "examples": [
@@ -7665,6 +7763,13 @@
                 "componentsWithSbom": 3,
                 "totalComponents": 5
               }
+            },
+            "labels": {
+              "pipeline": "nightly",
+              "environment": "production"
+            },
+            "externalIds": {
+              "ci-run": "https://ci.example.org/projects/portal/runs/4821"
             }
           }
         ]

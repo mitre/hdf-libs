@@ -90,11 +90,15 @@
       "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
     "labels": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "string"
-      },
-      "description": "Optional key-value labels for grouping and querying systems."
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Labels",
+      "description": "Grouping metadata for this document. It is independent of labels on components, baselines, and referenced documents.",
+      "$comment": "Examples, in order: 1) grouping this document without changing the labels of anything it describes or references.",
+      "examples": [
+        {
+          "environment": "production",
+          "team": "platform"
+        }
+      ]
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
@@ -111,6 +115,10 @@
     "extensions": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
       "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this system document was converted from."
+    },
+    "externalIds": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_IDs",
+      "description": "External identities associated with this document, such as its producing CI run or GRC record. These are separate from grouping labels and from identifiers on components."
     }
   },
   "examples": [
@@ -128,7 +136,10 @@
           "type": "application",
           "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           "description": "RHEL 9 web servers running the portal",
-          "baselineRefs": ["RHEL9-STIG", "DISA-Container-STIG"],
+          "baselineRefs": [
+            "RHEL9-STIG",
+            "DISA-Container-STIG"
+          ],
           "boms": [
             {
               "bomType": "sbom",
@@ -141,7 +152,9 @@
           "name": "DatabaseTier",
           "type": "database",
           "componentId": "11111111-2222-3333-4444-555555555555",
-          "baselineRefs": ["PostgreSQL-15-STIG"]
+          "baselineRefs": [
+            "PostgreSQL-15-STIG"
+          ]
         }
       ],
       "dataFlows": [
@@ -153,7 +166,14 @@
           "direction": "unidirectional",
           "description": "Web tier connects to database"
         }
-      ]
+      ],
+      "labels": {
+        "environment": "production",
+        "team": "platform"
+      },
+      "externalIds": {
+        "ci-run": "https://ci.example.org/projects/portal/runs/4821"
+      }
     }
   ]
 }

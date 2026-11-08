@@ -211,8 +211,9 @@ type EvaluatedBaseline struct {
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                       
 	// definition. Inert context; see External_Reference.                                                             
 	ExternalReferences                                                                         []ExternalReference    `json:"externalReferences,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                           
-	// environment, region, team. Values must be strings.                                                             
+	// Grouping metadata for this baseline. When embedded in results, labels stay on the                              
+	// baseline and are independent of document and component labels. Merge provenance keys                           
+	// tool, toolVersion, and sourceDocument retain their established meanings.                                       
 	Labels                                                                                     map[string]string      `json:"labels,omitempty"`
 	// The copyright license. Example: 'Apache-2.0'.                                                                  
 	License                                                                                    *string                `json:"license,omitempty"`
@@ -1041,9 +1042,6 @@ type Component struct {
 	ComponentID                                                                                 *string           `json:"componentId,omitempty"`
 	// Description of this component's role or purpose.                                                           
 	Description                                                                                 *string           `json:"description,omitempty"`
-	// Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure                   
-	// (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are                        
-	// allowed.                                                                                                   
 	ExternalIDS                                                                                 map[string]string `json:"externalIds,omitempty"`
 	// System-specific overrides for baseline input values.                                                       
 	InputOverrides                                                                              []InputOverride   `json:"inputOverrides,omitempty"`
@@ -1059,8 +1057,8 @@ type Component struct {
 	// Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence                  
 	// Integrity type.                                                                                            
 	Integrity                                                                                   []Checksum        `json:"integrity,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                       
-	// environment, region, team. Values must be strings.                                                         
+	// Grouping and selection metadata for this component. Document and baseline labels do not                    
+	// propagate here. Well-known keys include system, component, environment, region, and team.                  
 	Labels                                                                                      map[string]string `json:"labels,omitempty"`
 	// Human-readable name for this component.                                                                    
 	Name                                                                                        string            `json:"name"`
@@ -1507,6 +1505,9 @@ type HDFBaseline struct {
 	// Producer data outside the HDF model, and the pre-converted source artifact(s) this                            
 	// baseline was converted from.                                                                                  
 	Extensions                                                                                 *Extensions           `json:"extensions,omitempty"`
+	// External identities associated with this baseline document, such as its producing CI run                      
+	// or external catalog record.                                                                                   
+	ExternalIDS                                                                                map[string]string     `json:"externalIds,omitempty"`
 	// The tool that generated this file.                                                                            
 	Generator                                                                                  *Generator            `json:"generator,omitempty"`
 	// A set of descriptions for the requirement groups.                                                             
@@ -1531,8 +1532,9 @@ type HDFBaseline struct {
 	// advisories, source catalogs, or any URI-addressable artifact). Travels with the baseline                      
 	// definition. Inert context; see External_Reference.                                                            
 	ExternalReferences                                                                         []ExternalReference   `json:"externalReferences,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                          
-	// environment, region, team. Values must be strings.                                                            
+	// Grouping metadata for this baseline. When embedded in results, labels stay on the                             
+	// baseline and are independent of document and component labels. Merge provenance keys                          
+	// tool, toolVersion, and sourceDocument retain their established meanings.                                      
 	Labels                                                                                     map[string]string     `json:"labels,omitempty"`
 	// The copyright license. Example: 'Apache-2.0'.                                                                 
 	License                                                                                    *string               `json:"license,omitempty"`
@@ -1976,6 +1978,9 @@ type HDFSystem struct {
 	// Producer data outside the HDF model, and the pre-converted source artifact(s) this system                     
 	// document was converted from.                                                                                  
 	Extensions                                                                                  *Extensions          `json:"extensions,omitempty"`
+	// External identities associated with this document, such as its producing CI run or GRC                        
+	// record. These are separate from grouping labels and from identifiers on components.                           
+	ExternalIDS                                                                                 map[string]string    `json:"externalIds,omitempty"`
 	// Optional references to external artifacts describing this system's threat environment or                      
 	// context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see                     
 	// External_Reference.                                                                                           
@@ -1991,7 +1996,8 @@ type HDFSystem struct {
 	// Cryptographic integrity information for verifying this system document has not been                           
 	// tampered with.                                                                                                
 	Integrity                                                                                   *Integrity           `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying systems.                                                  
+	// Grouping metadata for this document. It is independent of labels on components,                               
+	// baselines, and referenced documents.                                                                          
 	Labels                                                                                      map[string]string    `json:"labels,omitempty"`
 	// Human-readable system name. Example: 'Enterprise Portal Production'.                                          
 	Name                                                                                        string               `json:"name"`
@@ -2067,6 +2073,9 @@ type HDFPlan struct {
 	// Producer data outside the HDF model, and the pre-converted source artifact(s) this plan                      
 	// was converted from.                                                                                          
 	Extensions                                                                                  *Extensions         `json:"extensions,omitempty"`
+	// External identities associated with this document, such as its producing CI run or GRC                       
+	// record. These are separate from grouping labels and from identifiers on components.                          
+	ExternalIDS                                                                                 map[string]string   `json:"externalIds,omitempty"`
 	// Optional references to external artifacts relevant to this assessment plan (CTI/STIX,                        
 	// advisories, methodology docs, or any URI-addressable artifact). Inert context; see                           
 	// External_Reference.                                                                                          
@@ -2076,7 +2085,8 @@ type HDFPlan struct {
 	// Cryptographic integrity information for verifying this plan document has not been                            
 	// tampered with.                                                                                               
 	Integrity                                                                                   *Integrity          `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying plans.                                                   
+	// Grouping metadata for this document. It is independent of labels on components,                              
+	// baselines, and referenced documents.                                                                         
 	Labels                                                                                      map[string]string   `json:"labels,omitempty"`
 	// Human-readable plan name. Example: 'Portal Monthly Assessment'.                                              
 	Name                                                                                        string              `json:"name"`
@@ -2155,12 +2165,16 @@ type HDFAmendments struct {
 	// amendments were converted from — the VEX family and oscal-poam-to-hdf all emit this                         
 	// document type.                                                                                              
 	Extensions                                                                                *Extensions          `json:"extensions,omitempty"`
+	// External identities associated with this document, such as its producing CI run or GRC                      
+	// record. These are separate from grouping labels and from identifiers on components.                         
+	ExternalIDS                                                                               map[string]string    `json:"externalIds,omitempty"`
 	// Information about the tool that generated this document.                                                    
 	Generator                                                                                 *Generator           `json:"generator,omitempty"`
 	// Cryptographic integrity information for verifying this amendments document has not been                     
 	// tampered with.                                                                                              
 	Integrity                                                                                 *Integrity           `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying amendments.                                             
+	// Grouping metadata for this document. It is independent of labels on components,                             
+	// baselines, and referenced documents.                                                                        
 	Labels                                                                                    map[string]string    `json:"labels,omitempty"`
 	// Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'.                        
 	Name                                                                                      string               `json:"name"`
@@ -2274,6 +2288,9 @@ type HDFEvidencePackage struct {
 	// inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them                            
 	// here rather than transcoding them.                                                                                   
 	ExternalEvidence                                                                            []ExternalEvidenceReference `json:"externalEvidence,omitempty"`
+	// External identities associated with this document, such as its producing CI run or GRC                               
+	// record. These are separate from grouping labels and from identifiers on components.                                  
+	ExternalIDS                                                                                 map[string]string           `json:"externalIds,omitempty"`
 	// Optional references to external artifacts relevant to this evidence package (CTI/STIX,                               
 	// BOMs, advisories, or any URI-addressable artifact) beyond the document references it                                 
 	// already carries. Inert context; see External_Reference.                                                              
@@ -2283,7 +2300,8 @@ type HDFEvidencePackage struct {
 	// Cryptographic integrity information for verifying this evidence package has not been                                 
 	// tampered with.                                                                                                       
 	Integrity                                                                                   *Integrity                  `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying evidence packages.                                               
+	// Grouping metadata for this document. It is independent of labels on components,                                      
+	// baselines, and referenced documents.                                                                                 
 	Labels                                                                                      map[string]string           `json:"labels,omitempty"`
 	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                            
 	// Q1 2026'.                                                                                                            

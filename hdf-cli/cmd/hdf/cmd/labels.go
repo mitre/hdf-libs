@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 )
 
 // parseLabelsFlag parses a slice of "key=value" strings into a map.
@@ -66,47 +68,7 @@ func parseExternalIDSchemes(schemes []string) ([]string, error) {
 // removeLabels removes the specified keys from the "labels" field of every
 // target in the HDF JSON document. Missing keys are silently ignored.
 func removeLabels(data []byte, keys []string) ([]byte, error) {
-	if len(keys) == 0 {
-		return data, nil
-	}
-
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON for label removal: %w", err)
-	}
-
-	targetsRaw, ok := doc["components"]
-	if !ok {
-		return data, nil
-	}
-
-	targets, ok := targetsRaw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("targets field is not an array")
-	}
-
-	for i, tRaw := range targets {
-		target, ok := tRaw.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("target at index %d is not an object", i)
-		}
-
-		labelsRaw, ok := target["labels"]
-		if !ok {
-			continue
-		}
-		labelsMap, ok := labelsRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		for _, key := range keys {
-			delete(labelsMap, key)
-		}
-		target["labels"] = labelsMap
-	}
-
-	return json.MarshalIndent(doc, "", "  ")
+	return hdfdoc.UpdateMetadata(data, hdfdoc.ComponentScope, "", hdfdoc.MetadataChanges{RemoveLabels: keys})
 }
 
 // extractComponentLabels extracts component names, types, and labels from an HDF

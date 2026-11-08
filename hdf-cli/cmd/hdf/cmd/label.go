@@ -17,21 +17,29 @@ import (
 func NewLabelCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "label",
-		Short: "Manage labels and external IDs on HDF file targets",
-		Long: `Add, remove, or display labels and external IDs on targets in an HDF file.
+		Short: "Manage labels and external IDs on components or documents",
+		Long: `Add, remove, or display grouping labels and external identifiers.
 
-Labels are key=value pairs stored on each target in the HDF document, used for
-grouping and selection. External IDs are scheme=value foreign keys into other
-systems (a CMDB asset ID, an eMASS system ID, a cloud resource ID), stored in
-each target's externalIds and never used as a selector.
+The default --scope component manages components in results and system files.
+Use --scope document for root metadata on amendments, baseline, evidence-package,
+plan, and system files. Scopes are independent: metadata is never inherited or
+copied to components, baselines, or referenced documents.
+
+Labels are key=value grouping metadata, such as pipeline=nightly. External IDs
+are scheme=value identifiers from another system: a component's CMDB asset ID,
+or a document's producing CI run. They do not replace HDF identity fields and
+are never component label selectors.
 
 Examples:
   hdf label show results.json
+  hdf label set package.json --scope document pipeline=nightly --external-id ci-run=project/run-4821
   hdf label set results.json system=Portal environment=production
   hdf label remove results.json system environment
   hdf label set results.json env=prod -o labeled.json
   hdf label set results.json --external-id cmdb=CI0012345`,
 	}
+
+	cmd.PersistentFlags().String("scope", "component", "Metadata owner: component (results/system) or document (amendments/baseline/evidence-package/plan/system)")
 
 	cmd.AddCommand(newLabelShowCmd())
 	cmd.AddCommand(newLabelSetCmd())
@@ -43,12 +51,15 @@ Examples:
 func newLabelShowCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show <file>",
-		Short: "Display labels and external IDs on all targets",
-		Long: `Display the labels and external IDs currently set on all targets in an HDF file.
+		Short: "Display labels and external IDs in the selected scope",
+		Long: `Display metadata on components (default) or the document root (--scope document).
+With --json, component scope returns an array of component summaries; document
+scope returns an object with labels and externalIds maps.
 
 Examples:
   hdf label show results.json
-  hdf label show results.json --json`,
+  hdf label show results.json --json
+  hdf label show package.json --scope document --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: runLabelShow,
 	}
@@ -57,13 +68,15 @@ Examples:
 func newLabelSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <file> [<key>=<value>...]",
-		Short: "Set labels and external IDs on all targets",
-		Long: `Set one or more labels on all targets in an HDF file.
+		Short: "Set labels and external IDs in the selected scope",
+		Long: `Set labels on components (default) or the document root (--scope document).
+Document scope also writes --external-id to the root externalIds map and rejects
+--component-name, --component-id, and --generate-component-id.
 
 Labels are specified as key=value pairs. Existing labels with the same key
 are overwritten. The file is modified in-place unless --output is specified.
 
---external-id scheme=value writes a foreign key into each target's externalIds.
+In component scope, --external-id scheme=value writes each target's externalIds.
 Repeat the flag for several schemes. A scheme already present is overwritten;
 other schemes are left as they are. The value is carried verbatim, so it may be
 any non-empty string. By default every target gets the identifier; pass
@@ -75,6 +88,7 @@ nothing, when the document has no target to carry the identifier, or when
 way on a document with no target to stamp.
 
 Examples:
+  hdf label set package.json --scope document pipeline=nightly --external-id ci-run=project/run-4821
   hdf label set results.json system=Portal
   hdf label set results.json env=prod team=security
   hdf label set results.json env=prod -o labeled.json
@@ -98,19 +112,22 @@ Examples:
 func newLabelRemoveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove <file> [<key>...]",
-		Short: "Remove labels and external IDs from all targets",
-		Long: `Remove one or more label keys from all targets in an HDF file.
+		Short: "Remove labels and external IDs in the selected scope",
+		Long: `Remove metadata from components (default) or the document root (--scope document).
+Document scope removes --external-id schemes from the root and rejects
+--component-name.
 
 Missing keys are silently ignored. The file is modified in-place unless
 --output is specified.
 
---external-id scheme removes that scheme from each target's externalIds.
+In component scope, --external-id scheme removes each target's external ID.
 Repeat the flag for several schemes; pass --component-name to remove it from
 one target only. The name must match exactly one component: a name is not
 identity, so a document may carry two components with the same one, and an
 ambiguous name is rejected before anything is written.
 
 Examples:
+  hdf label remove package.json --scope document pipeline --external-id ci-run
   hdf label remove results.json system
   hdf label remove results.json system environment
   hdf label remove results.json system -o cleaned.json
@@ -126,13 +143,41 @@ Examples:
 	return cmd
 }
 
-// gateLabelInput enforces the label commands' input contract at the boundary:
-// the document must be a schema-valid HDF results or system document (labels
-// live on components[], which both carry). A legacy v2 / non-HDF / schema-invalid
-// document is rejected before any render (show) or mutation (set/remove), rather
-// than silently no-opping or rewriting a non-HDF file in place.
-func gateLabelInput(data []byte) error {
-	if _, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf label"); typeErr != nil {
+// labelScope validates scope and incompatible flags before any file IO.
+func labelScope(cmd *cobra.Command) (hdfdoc.MetadataScope, error) {
+	value, _ := cmd.Flags().GetString("scope")
+	scope := hdfdoc.MetadataScope(value)
+	if scope != hdfdoc.ComponentScope && scope != hdfdoc.DocumentScope {
+		return "", fmt.Errorf("invalid --scope %q: use component or document", value)
+	}
+	if scope == hdfdoc.DocumentScope {
+		for _, flag := range []string{"component-id", "generate-component-id", "component-name"} {
+			if cmd.Flags().Changed(flag) {
+				return "", fmt.Errorf("--%s is incompatible with --scope document", flag)
+			}
+		}
+	}
+	return scope, nil
+}
+
+// gateLabelInput rejects unsupported types and invalid documents before render
+// or mutation. Document metadata is supported only where the schema declares it.
+func gateLabelInput(data []byte, scope hdfdoc.MetadataScope) error {
+	documentTypes := []string{"amendments", "baseline", "evidence-package", "plan", "system"}
+	allowed := []string{"results", "system"}
+	command := "hdf label"
+	if scope == hdfdoc.DocumentScope {
+		allowed = documentTypes
+		command += " (document scope)"
+	}
+	if actual, typeErr := requireDocumentType(data, allowed, command); typeErr != nil {
+		if scope == hdfdoc.ComponentScope {
+			for _, kind := range documentTypes {
+				if actual == kind {
+					return fmt.Errorf("hdf label component scope does not support %s; use --scope document", articleFor(actual))
+				}
+			}
+		}
 		return typeErr
 	}
 	if valErr := validateHDFDocument(data); valErr != nil {
@@ -141,7 +186,11 @@ func gateLabelInput(data []byte) error {
 	return nil
 }
 
-func runLabelShow(_ *cobra.Command, args []string) error {
+func runLabelShow(cmd *cobra.Command, args []string) error {
+	scope, err := labelScope(cmd)
+	if err != nil {
+		return err
+	}
 	filePath := args[0]
 
 	data, err := readInputFile(filePath)
@@ -149,8 +198,12 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if gateErr := gateLabelInput(data); gateErr != nil {
+	if gateErr := gateLabelInput(data, scope); gateErr != nil {
 		return gateErr
+	}
+
+	if scope == hdfdoc.DocumentScope {
+		return showDocumentLabels(data)
 	}
 
 	infos, err := extractComponentLabels(data)
@@ -187,6 +240,36 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	return nil
+}
+
+func showDocumentLabels(data []byte) error {
+	var doc map[string]interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+	info := struct {
+		Labels      map[string]string `json:"labels"`
+		ExternalIDs map[string]string `json:"externalIds"`
+	}{stringMapField(doc, "labels"), stringMapField(doc, "externalIds")}
+	if jsonOutput {
+		output, err := json.MarshalIndent(info, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to serialize labels: %w", err)
+		}
+		fmt.Println(string(output))
+		return nil
+	}
+	fmt.Println("Document labels:")
+	if len(info.Labels) == 0 {
+		fmt.Println("  (no labels)")
+	}
+	printSortedPairs("  ", info.Labels)
+	fmt.Println("External IDs:")
+	if len(info.ExternalIDs) == 0 {
+		fmt.Println("  (no external IDs)")
+	}
+	printSortedPairs("  ", info.ExternalIDs)
 	return nil
 }
 
@@ -261,6 +344,10 @@ func parseLabelSetRequest(cmd *cobra.Command, labelPairs []string) (labelSetRequ
 }
 
 func runLabelSet(cmd *cobra.Command, args []string) error {
+	scope, err := labelScope(cmd)
+	if err != nil {
+		return err
+	}
 	filePath := args[0]
 
 	req, err := parseLabelSetRequest(cmd, args[1:])
@@ -273,11 +360,11 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if gateErr := gateLabelInput(data); gateErr != nil {
+	if gateErr := gateLabelInput(data, scope); gateErr != nil {
 		return gateErr
 	}
 
-	result, err := hdfdoc.ApplyLabels(data, req.labels)
+	result, err := hdfdoc.UpdateMetadata(data, scope, req.componentName, hdfdoc.MetadataChanges{Labels: req.labels, ExternalIDs: req.externalIDs})
 	if err != nil {
 		return err
 	}
@@ -287,11 +374,6 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	result, err = hdfdoc.ApplyExternalIDs(result, req.externalIDs, req.componentName)
-	if err != nil {
-		return err
 	}
 
 	outputPath, _ := cmd.Flags().GetString("output")
@@ -310,6 +392,10 @@ func checkComponentIDFlag(componentID string) error {
 }
 
 func runLabelRemove(cmd *cobra.Command, args []string) error {
+	scope, err := labelScope(cmd)
+	if err != nil {
+		return err
+	}
 	filePath := args[0]
 	keys := args[1:]
 
@@ -338,16 +424,11 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if gateErr := gateLabelInput(data); gateErr != nil {
+	if gateErr := gateLabelInput(data, scope); gateErr != nil {
 		return gateErr
 	}
 
-	result, err := removeLabels(data, keys)
-	if err != nil {
-		return err
-	}
-
-	result, err = hdfdoc.RemoveExternalIDs(result, schemes, componentName)
+	result, err := hdfdoc.UpdateMetadata(data, scope, componentName, hdfdoc.MetadataChanges{RemoveLabels: keys, RemoveExternalIDs: schemes})
 	if err != nil {
 		return err
 	}
