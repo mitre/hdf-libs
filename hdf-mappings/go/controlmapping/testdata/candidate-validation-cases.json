@@ -1,0 +1,1467 @@
+{
+  "description": "Candidate-corpus validation cases read by both the Go (go/controlmapping/validate_test.go) and TypeScript (test/control-mapping.test.ts) tests, which is what keeps the two validators refusing the same documents. codes is the complete set of refusal codes the document must produce, empty for a document the contract accepts. A case carries either doc, a JSON value, or raw, the literal document text — raw is for documents no JSON value can express, such as malformed input or a number outside the range a 64-bit float can hold. Control ids in these cases are real ids taken from the upstream KICS candidate corpus, so a case that claims a revision mismatch reflects one that actually occurs.",
+  "cases": [
+    {
+      "name": "valid-minimal",
+      "codes": [],
+      "why": "a concrete scanner version, a declared supported revision, a pinned catalog commit, and candidates spanning an enhancement (SA-10.4) and a statement sub-part (SA-15 a) — both real rows from the upstream corpus",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "source": "NIST SP 800-53",
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": 1
+        },
+        "checks": {
+          "a1bc27c6-7115-48d8-bf9d-5a7e836845ba": {
+            "query_name": "Run Using apt",
+            "candidates": [
+              {
+                "control": "SA-10.4",
+                "control_title": "Trusted Generation",
+                "score": 1.0
+              },
+              {
+                "control": "SA-15 a",
+                "control_title": "Development Process, Standards, and Tools",
+                "score": 0.594
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "valid-rev4-corpus",
+      "codes": [],
+      "why": "a corpus honestly declaring Rev 4 is accepted with ids Rev 5 withdrew; the contract pins the revision rather than preferring one",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "source": "NIST SP 800-53",
+          "revision": 4,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": 1
+        },
+        "checks": {
+          "check-a": {
+            "query_name": "Boundary protection",
+            "candidates": [
+              {
+                "control": "SC-7.2",
+                "score": 0.9
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "schema-unknown",
+      "codes": [
+        "schema_unknown"
+      ],
+      "why": "an unrecognised schema literal is refused before anything else is trusted",
+      "doc": {
+        "schema": "control-mapping/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-revision-missing",
+      "codes": [
+        "catalog_revision_missing"
+      ],
+      "why": "without a declared revision no control id can be checked against a catalog, so the corpus is unusable",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "source": "NIST SP 800-53 Rev 5",
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-revision-unsupported",
+      "codes": [
+        "catalog_revision_unsupported"
+      ],
+      "why": "a revision this repo carries no catalog for cannot be validated against",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 3,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-commit-missing",
+      "codes": [
+        "catalog_commit_missing"
+      ],
+      "why": "an unpinned catalog cannot be re-derived, so the scores are unreproducible",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-floating",
+      "codes": [
+        "scanner_version_floating"
+      ],
+      "why": "the upstream corpus declares checkmarx/kics:latest; a floating tag means the check catalog the scores were computed over is unknowable",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "latest"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-missing",
+      "codes": [
+        "scanner_version_missing"
+      ],
+      "why": "KICS stamps kics_version into every report, so a corpus that omits it cannot be cross-checked at convert time",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-name-missing",
+      "codes": [
+        "scanner_name_missing"
+      ],
+      "why": "the scanner name keys the published mapping, so it cannot be inferred",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "checks-empty",
+      "codes": [
+        "checks_empty"
+      ],
+      "why": "an empty corpus is a build failure upstream, not an empty-but-valid import",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {}
+      }
+    },
+    {
+      "name": "candidates-empty",
+      "codes": [
+        "candidates_empty"
+      ],
+      "why": "a check with no candidates must be absent rather than present and empty, so adjudication cannot mistake it for reviewed-and-rejected",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "query_name": "Run Using apt",
+            "candidates": []
+          }
+        }
+      }
+    },
+    {
+      "name": "control-wrong-revision",
+      "codes": [
+        "candidate_control_wrong_revision"
+      ],
+      "why": "the real upstream defect: a corpus declaring Rev 5 whose candidates include SC-7.2 and SC-9, which only Rev 4 defines. Named distinctly from an unknown id because the remedy is a revision declaration or a crosswalk translation, not a data correction",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SC-7.2",
+                "score": 1.0
+              },
+              {
+                "control": "SC-9",
+                "score": 0.4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "control-unknown",
+      "codes": [
+        "candidate_control_unknown"
+      ],
+      "why": "a well-spelled id no supported revision defines is a data error with no translation available",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "ZZ-99",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "control-unspellable",
+      "codes": [
+        "candidate_control_unspellable"
+      ],
+      "why": "a value that is not a NIST id spelling at all never reaches a catalog lookup",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "Trusted Generation",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "score-missing",
+      "codes": [
+        "candidate_score_missing"
+      ],
+      "why": "an unscored candidate cannot be ranked, and absent must not read as 0.0",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "score-out-of-range",
+      "codes": [
+        "candidate_score_range"
+      ],
+      "why": "upstream normalises scores per check into 0..1; a value outside it means the corpus was built by a different method than the one declared",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 27.82
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "all-or-nothing-reports-every-fault",
+      "codes": [
+        "scanner_version_floating",
+        "candidate_control_wrong_revision",
+        "candidate_score_range"
+      ],
+      "why": "refusal is per corpus, not per record: one pass reports every fault so the whole import is refused with a complete account rather than one error at a time",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "latest"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SC-9",
+                "score": 0.5
+              }
+            ]
+          },
+          "check-b": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 2.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-revision-inconsistent-undeclared",
+      "codes": [
+        "catalog_revision_missing",
+        "catalog_revision_inconsistent"
+      ],
+      "why": "the real upstream artifact declares no revision at all, so a missing declaration must not also suppress the mixed-catalog finding: SC-7.2 is Rev 4 only and SA-4.3 (a) is Rev 5 only, so no single supported revision explains the candidate set",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "source": "NIST SP 800-53",
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SC-7.2",
+                "score": 1.0
+              },
+              {
+                "control": "SA-4.3 (a)",
+                "score": 0.8
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-revision-inconsistent-declared",
+      "codes": [
+        "candidate_control_wrong_revision",
+        "catalog_revision_inconsistent"
+      ],
+      "why": "a declared revision is still checked for consistency, so a corpus labelled Rev 5 over a mixed catalog is told both which ids are at the wrong revision and that no revision would fit",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "source": "NIST SP 800-53",
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de",
+          "revision": 5
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SC-7.2",
+                "score": 1.0
+              },
+              {
+                "control": "SA-4.3 (a)",
+                "score": 0.8
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "revision-integral-float",
+      "codes": [],
+      "why": "JSON has one number type and the contract asks for an integer, which 5.0 is; a Python harness writing json.dump of an int-valued float must not be refused for its spelling",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5.0,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "revision-fractional",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "5.5 is a number but not the integer the contract asks for, so it is a type fault rather than an unsupported revision",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5.5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "revision-wrong-type",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "a revision written as a string is reported against that member; typed decoding would instead abort the whole document and the two languages would refuse it for different reasons",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": "5",
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "score-wrong-type",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "a score written as a string is reported against that candidate, not as an unparseable document",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": "0.5"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-wrong-type",
+      "codes": [
+        "field_type_invalid",
+        "catalog_revision_missing",
+        "catalog_commit_missing"
+      ],
+      "why": "a catalog given as prose rather than an object is reported as a type fault and still accounts for the members it therefore cannot carry",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": "NIST SP 800-53 Rev 5",
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "checks-wrong-type",
+      "codes": [
+        "field_type_invalid",
+        "checks_empty"
+      ],
+      "why": "checks given as an array rather than an object is a type fault, and the corpus is then also empty",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": []
+      }
+    },
+    {
+      "name": "candidates-wrong-type",
+      "codes": [
+        "field_type_invalid",
+        "candidates_empty"
+      ],
+      "why": "candidates given as an object rather than an array is a type fault, and the check then carries none",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": {
+              "0": {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-floating-image-ref",
+      "codes": [
+        "scanner_version_floating"
+      ],
+      "why": "the form the upstream artifact actually records, checkmarx/kics:latest: an image reference is accepted and its tag judged, so the floating tag is still caught",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "checkmarx/kics:latest"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-pinned-image-ref",
+      "codes": [],
+      "why": "the same image reference at a concrete tag is accepted, so judging the tag does not reject every image reference",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "checkmarx/kics:v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "check-id-blank",
+      "codes": [
+        "check_id_empty"
+      ],
+      "why": "a whitespace-only check id cannot key the published mapping",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "   ": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "valid-full",
+      "codes": [],
+      "why": "the real upstream check a1bc27c6-7115-48d8-bf9d-5a7e836845ba with every member it populates, its envelope reconciled as provenance.md records and the check object trimmed by dropping whole candidates only. It pins that the fields carried for adjudication — platform, cwe, category, control_title, matched_on — survive ingestion in both languages",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "a1bc27c6-7115-48d8-bf9d-5a7e836845ba": {
+            "query_name": "Run Using apt",
+            "platform": "Buildah",
+            "cwe": "1188",
+            "category": "Supply-Chain",
+            "candidates": [
+              {
+                "control": "SA-10.4",
+                "control_title": "Trusted Generation",
+                "score": 1.0,
+                "raw": 27.82,
+                "matched_on": [
+                  "statement",
+                  "objective",
+                  "guidance"
+                ]
+              },
+              {
+                "control": "SA-15 a",
+                "control_title": "Development Process, Standards, and Tools",
+                "score": 0.594,
+                "raw": 16.53,
+                "matched_on": [
+                  "statement"
+                ]
+              }
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "decided_utc": null,
+              "accepted": [],
+              "rejected": [],
+              "notes": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "revision-null",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "an explicit null must not read as absence: doing so suppressed the revision's own missing fault and admitted this very corpus, whose only candidate SC-9 is defined only at Rev 4, with no control-existence check run at all",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": null,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SC-9",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "commit-null",
+      "codes": [
+        "catalog_commit_missing",
+        "field_type_invalid"
+      ],
+      "why": "a nulled pinned commit is both the wrong type and an unpinned catalog",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": null
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "score-null",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "a nulled score must not read as absence and then be carried as 0.0, which the contract refuses by name",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "control-null",
+      "codes": [
+        "candidate_control_missing",
+        "field_type_invalid"
+      ],
+      "why": "a nulled control id is both the wrong type and a candidate that suggests nothing",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": null,
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-checks-wrong-type",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "the catalog size is read before the all-or-nothing gate, so a mistyped value cannot be recorded as a fault after the gate and then discarded by one language but returned by the other",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": "1811"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-checks-fractional",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "the contract declares the catalog size an integer; truncating 1811.5 would make an accepted document mean 1811 in Go and 1811.5 in TypeScript",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": 1811.5
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-checks-negative",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "a negative catalog size violates the contract's minimum and cannot describe any scanner",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": -5
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "catalog-source-wrong-type",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "the catalog source is prose the repo does not interpret, but it is still read before the gate so the two languages agree on a mistyped one",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de",
+          "source": 9
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-name-blank-nel",
+      "codes": [
+        "scanner_name_missing"
+      ],
+      "why": "a scanner name of only U+0085: Go's unicode.IsSpace and JavaScript's trim disagree on this character in opposite directions, so the contract defines its own blank set and both languages must refuse it",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-blank-nel",
+      "codes": [
+        "scanner_version_missing"
+      ],
+      "why": "a scanner version of only U+0085, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": ""
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "check-id-blank-nel",
+      "codes": [
+        "check_id_empty"
+      ],
+      "why": "a check id of only U+0085, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "control-blank-nel",
+      "codes": [
+        "candidate_control_missing"
+      ],
+      "why": "a control id of only U+0085, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-name-blank-bom",
+      "codes": [
+        "scanner_name_missing"
+      ],
+      "why": "a scanner name of only U+FEFF: Go's unicode.IsSpace and JavaScript's trim disagree on this character in opposite directions, so the contract defines its own blank set and both languages must refuse it",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "﻿",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-version-blank-bom",
+      "codes": [
+        "scanner_version_missing"
+      ],
+      "why": "a scanner version of only U+FEFF, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "﻿"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "check-id-blank-bom",
+      "codes": [
+        "check_id_empty"
+      ],
+      "why": "a check id of only U+FEFF, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "﻿": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "control-blank-bom",
+      "codes": [
+        "candidate_control_missing"
+      ],
+      "why": "a control id of only U+FEFF, for the same reason",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "﻿",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "check-id-undecodable",
+      "codes": [
+        "check_id_invalid"
+      ],
+      "why": "a check id carrying U+FFFD: Go's JSON decoder substitutes it for an unpaired surrogate, so such an id would key the published mapping differently in each language",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-�": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "scanner-checks-out-of-int-range",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "an integral but enormous catalog size: Go's float-to-int conversion is implementation-defined beyond int range and JavaScript has no integer type, so an unbounded count would be carried as two different values in one accepted document",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20",
+          "checks": 1e+308
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "score-boolean",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "a boolean where a number belongs, which exercises the one JSON type no other case uses",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "candidate-raw-wrong-type",
+      "codes": [
+        "field_type_invalid"
+      ],
+      "why": "the pre-normalisation score is declared a number by the contract and carried for provenance; a mistyped one is refused even though this repo never reads the value",
+      "doc": {
+        "schema": "control-mapping-candidates/v1",
+        "catalog": {
+          "revision": 5,
+          "pinned_commit": "78650f02ad9321bb7b817846f8fbd4f2bcd620de"
+        },
+        "scanner": {
+          "name": "kics",
+          "version": "v2.1.20"
+        },
+        "checks": {
+          "check-a": {
+            "candidates": [
+              {
+                "control": "SA-15",
+                "score": 1.0,
+                "raw": "27.82"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "document-malformed",
+      "codes": [
+        "document_unparseable"
+      ],
+      "why": "not JSON at all",
+      "raw": "{not json"
+    },
+    {
+      "name": "document-not-an-object",
+      "codes": [
+        "document_unparseable"
+      ],
+      "why": "valid JSON but not a document: the contract describes an object, and both languages must say so rather than one reporting a missing member",
+      "raw": "[]"
+    },
+    {
+      "name": "number-out-of-float-range",
+      "codes": [
+        "document_unparseable"
+      ],
+      "why": "1e400 exceeds what a 64-bit float holds: Go's decoder fails outright while JSON.parse yields Infinity, so TypeScript checks for a non-finite number to refuse it the same way. Expressible only as raw text, since no JSON value survives a round trip through both languages",
+      "raw": "{\"schema\":\"control-mapping-candidates/v1\",\"catalog\":{\"revision\":5,\"pinned_commit\":\"78650f02ad9321bb7b817846f8fbd4f2bcd620de\"},\"scanner\":{\"name\":\"kics\",\"version\":\"v2.1.20\"},\"checks\":{\"check-a\":{\"candidates\":[{\"control\":\"SA-15\",\"score\":1e400}]}}}"
+    }
+  ]
+}
