@@ -401,8 +401,10 @@ func buildScanRequirement(scan ScanSummary, analysis IonChannelAnalysis) hdf.Eva
 		Code:   hdfutil.Ptr(buildScanCode(scan.Results.Data)),
 		Results: []hdf.RequirementResult{
 			{
-				Status:    hdf.NotReviewed,
-				CodeDesc:  scan.Name + " scan summary",
+				Status: hdf.NotApplicable,
+				CodeDesc: scan.Name + " scan summary. This record reports what the " +
+					"analysis observed; it is not an evaluation of a requirement, so it " +
+					"asserts nothing about compliance and is excluded from the ratio.",
 				StartTime: scanStartTime(scan),
 			},
 		},
@@ -545,8 +547,11 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 			Code:        hdfutil.Ptr(code),
 			Results: []hdf.RequirementResult{
 				{
-					Status:    hdf.NotReviewed,
-					CodeDesc:  "Dependency inventory item",
+					Status: hdf.NotApplicable,
+					CodeDesc: "Dependency inventory item. This record states that the " +
+						"dependency was found, not that any requirement was evaluated " +
+						"against it, so it asserts nothing about compliance and is " +
+						"excluded from the ratio.",
 					StartTime: time.Time{},
 				},
 			},

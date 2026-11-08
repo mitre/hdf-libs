@@ -31,3 +31,24 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 No published schema for the Invicti (Netsparker) Enterprise XML export was located; the vendor documentation was not checked exhaustively (2026-09-20).
+
+## Recorded coverage gap: a "Best Practice" severity finding
+
+No fixture here carries one. Checked 2026-11-06: `sample-netsparker-invicti.xml`
+carries only `Low` (1) and `Medium` (8), and Invicti/Netsparker publishes no
+public XML schema to confirm an authored document against. There is no
+`hdf-to-netsparker` converter, so this repository cannot generate one either.
+Trimming the real sample is not available: changing a `<severity>` value would
+mean editing a string inside a kept element, which the fixture policy forbids.
+
+One further unknown, recorded because the ruled band depends on it: the alias key
+is `best_practice`, matched case-insensitively but exactly, so a real export
+spelling the value `Best Practice` with a space would miss the alias and fall to
+the `0.5` default. heimdall2 assumes the same spelling and no published sample
+carries the value either way, so which Invicti emits is unverified here.
+
+The `best_practice` alias is therefore pinned by a direct unit test of `getImpact`
+in both languages, with the severity passed as a function argument rather than
+read from a document. Those arguments are not captured tool output and must not
+be cited as such. A real export containing a Best Practice finding would be
+preferable and should replace the unit tests if one is obtained.

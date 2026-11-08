@@ -18,9 +18,8 @@ import {
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
   canonicalJson,
-  worstStatus,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -350,12 +349,7 @@ function synthesizedErrorResult(results: V2Result[]): V2Result {
  * result (matching the Go converter).
  */
 function synthesizedNotApplicableResult(results: V2Result[]): V2Result {
-  return {
-    status: 'notApplicable',
-    codeDesc:
-      'Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it',
-    startTime: (earliestResultStartTime(results) ?? GO_ZERO_TIME),
-  };
+  return sharedSynthesizedNotApplicableResult(results, GO_ZERO_TIME);
 }
 
 /**
@@ -363,7 +357,7 @@ function synthesizedNotApplicableResult(results: V2Result[]): V2Result {
  * only skipped/notReviewed entries.
  */
 function establishedNothing(results: V2Result[]): boolean {
-  return worstStatus(results.map((r) => r.status)) === 'notReviewed';
+  return inSpecEstablishedNothing(results.map((r) => r.status));
 }
 
 /**

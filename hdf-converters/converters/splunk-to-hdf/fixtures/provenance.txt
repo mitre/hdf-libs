@@ -32,3 +32,29 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 The inputs are HDF events exported to Splunk; the schema is this repository's own.
+
+### `splunk-impact-zero-skips.json`
+
+**Real, from a published upstream sample.** Trimmed 2026-11-06 from heimdall2
+`libs/hdf-converters/sample_jsons/splunk_reverse_mapper/splunk-query.json`,
+sha256 of the source as retrieved
+`f068798d1844aafecb54b65b0bb816447c9d41aab84ed8b30ef1a1b345510e65`.
+
+The trim dropped whole events only, no string value edited: 245 events reduced
+to 7 — the `header` event, the `profile` event, three `control` events carrying
+the impact-0 skip-only shape (`V-72317`, `V-72313`, `V-72305`), one passing
+control (`V-77825`) and one failing control (`V-78997`) as controls.
+
+Two mechanical differences from the source, neither touching a value: the file is
+re-indented from 4 spaces to 2, and the kept events appear in the order listed
+above rather than at their source positions (140, 71, 14, 15, 19, 1, 0) — the
+event array is unordered and the converter keys off `meta.subtype`. Every retained
+event was asserted structurally identical to its source element, keys and values
+and key order, before writing.
+
+Field map: each control event's `impact` and `results[].status` are what this
+fixture exists for — `impact: 0` with only `skipped` results is the InSpec
+score-0-and-skip convention, which `splunk-to-hdf` now translates into an
+explicit `notApplicable` result exactly as `legacyhdf-to-hdf` does. The two
+pre-existing inputs in this directory carry no impact-0 control at all, which is
+why the divergence between the two readers was invisible.

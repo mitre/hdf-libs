@@ -1,5 +1,5 @@
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildHdfResults, deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -291,6 +291,18 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
             req.controlType = controlType;
           }
           req.verificationMethod = VerificationMethodEnum.Automated;
+
+          // These are InSpec controls read from a store rather than a file, so
+          // the same score-0-and-skip convention applies and must produce the
+          // same document the file importer does.
+          if (
+            (control.impact ?? 0) === 0 &&
+            inSpecEstablishedNothing(req.results.map((r) => r.status))
+          ) {
+            req.results.push(
+              synthesizedNotApplicableResult(req.results, goZeroDate()),
+            );
+          }
 
           return req;
         },

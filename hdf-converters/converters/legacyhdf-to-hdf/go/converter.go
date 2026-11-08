@@ -47,26 +47,6 @@ func synthesizedErrorResult(results []hdf.RequirementResult) hdf.RequirementResu
 	}
 }
 
-// synthesizedNotApplicableResult encodes the scope declaration InSpec states as
-// an impact of 0 rather than as a result.
-func synthesizedNotApplicableResult(results []hdf.RequirementResult) hdf.RequirementResult {
-	return hdf.RequirementResult{
-		Status:    hdf.NotApplicable,
-		CodeDesc:  "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
-		StartTime: shared.EarliestResultTime(results),
-	}
-}
-
-// establishedNothing reports whether the results leave the requirement with no
-// verdict at all — empty, or only skipped/notReviewed entries.
-func establishedNothing(results []hdf.RequirementResult) bool {
-	statuses := make([]string, len(results))
-	for i, r := range results {
-		statuses[i] = string(r.Status)
-	}
-	return hdfutil.WorstStatus(statuses) == string(hdf.NotReviewed)
-}
-
 // normalizeStatus converts v1.0 status values to v2.0 ResultStatus.
 // Converts snake_case to camelCase and maps to enum values.
 func normalizeStatus(status string) hdf.ResultStatus {
@@ -330,8 +310,8 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// canonical ladder does not read impact — so the claim only survives if it
 	// is in results[]. Anything the results did establish, an execution error
 	// included, outranks notApplicable in worst-wins and is left alone.
-	if v1.Impact == 0 && establishedNothing(v2.Results) {
-		v2.Results = append(v2.Results, synthesizedNotApplicableResult(v2.Results))
+	if v1.Impact == 0 && shared.InSpecEstablishedNothing(v2.Results) {
+		v2.Results = append(v2.Results, shared.SynthesizedNotApplicableResult(v2.Results))
 	}
 
 	// Always compute effectiveStatus from the emitted results via the

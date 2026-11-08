@@ -110,7 +110,7 @@ The impact column is there to show that it changes nothing: every row would read
 
 \* The v3 HDF schema enforces `results.minItems=1`, so empty results arrays should not appear in schema-valid HDF documents — converters synthesize a `passed` placeholder for clean scans (see `../specification/hdf-specification.md` § "Clean-scan convention"). The empty-results rows above remain a safety net for legacy HDF v2 (InSpec-ExecJSON-shaped) input that did not enforce the invariant.
 
-† The shape `legacyhdf-to-hdf` emits for an InSpec control scored 0.0: the scope claim is a result, so the roll-up reaches `notApplicable` without the ladder needing to know anything about InSpec.
+† The shape an InSpec reader emits for a control scored 0.0: the scope claim is a result, so the roll-up reaches `notApplicable` without the ladder needing to know anything about InSpec.
 
 ## Where Status Is Computed
 
@@ -206,7 +206,7 @@ An earlier version of this ladder carried a third rung, `impact === 0 → notApp
 
 **The measurement was right about the data and wrong about the remedy.** "Impact 0 means not applicable" is one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band — so the rung applied InSpec's reading to every format that had never agreed to it, and a clean scan, a never-run scan and a genuinely inapplicable control all collapsed to one status. It also made a severity score carry an adjudication, which is the overloading this document warns about everywhere else.
 
-So the rung is gone, and the convention is translated where it is true: `legacyhdf-to-hdf`, the importer for InSpec exec JSON and legacy HDF, emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else. The verdict is then ground truth in `results[]` rather than a special case in the ladder — the same treatment a control-level error gets, and for the same reason. The importer does **not** rewrite `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where the profile zeroed it.
+So the rung is gone, and the convention is translated where it is true: every reader of an InSpec control payload emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else. That is `legacyhdf-to-hdf` for exec JSON and legacy HDF, and `splunk-to-hdf` for the same controls read back out of Splunk — one run must produce one document whichever way it is read, so the translation lives in `shared` and both call it. The verdict is then ground truth in `results[]` rather than a special case in the ladder — the same treatment a control-level error gets, and for the same reason. Neither reader rewrites `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where the profile zeroed it.
 
 Two consequences worth knowing. A document converted before this change carries impact 0 with a `notReviewed` roll-up and no translated result, so a consumer recomputing its status now reads `notReviewed` where the stored `effectiveStatus` says `notApplicable`; re-conversion from the original source is the remedy. And because a synthesized `notApplicable` ranks below `passed` and `failed` in worst-wins, the translation can never bury evidence that a check actually ran.
 

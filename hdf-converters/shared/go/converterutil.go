@@ -445,6 +445,29 @@ func EarliestResultTime(results []hdf.RequirementResult) time.Time {
 	return earliest
 }
 
+// InSpecEstablishedNothing reports whether a requirement's results leave it
+// with no verdict at all — empty, or only skipped/notReviewed entries.
+func InSpecEstablishedNothing(results []hdf.RequirementResult) bool {
+	statuses := make([]string, len(results))
+	for i, r := range results {
+		statuses[i] = string(r.Status)
+	}
+	return hdfutil.WorstStatus(statuses) == string(hdf.NotReviewed)
+}
+
+// SynthesizedNotApplicableResult encodes the scope declaration InSpec states as
+// an impact of 0 rather than as a result. Every reader of an InSpec control
+// payload needs this, not just the file importer: the same run read from a
+// different store must produce the same document, so the translation lives here
+// rather than in one converter.
+func SynthesizedNotApplicableResult(results []hdf.RequirementResult) hdf.RequirementResult {
+	return hdf.RequirementResult{
+		Status:    hdf.NotApplicable,
+		CodeDesc:  "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+		StartTime: EarliestResultTime(results),
+	}
+}
+
 // BuildRunFailedRequirement synthesizes an error placeholder for a scan whose
 // own run reported that it failed. Distinct from both siblings: the tool neither
 // ran clean nor declined to analyze, so neither passed nor notReviewed is honest.

@@ -22,6 +22,22 @@ All notable changes to this project will be documented in this file.
 
   Re-export restores `Workflow.Status: SUPPRESSED` on the round trip, which the previous shape lost.
 
+- **`splunk-to-hdf` applies InSpec's score-0-and-skip translation, so one scan reports the same statuses whichever way it is read.**
+
+  `legacyhdf-to-hdf` translates a control InSpec scored 0 that reports no verdict into an explicit `notApplicable` result. `splunk-to-hdf` reads the same InSpec control payload out of Splunk and did not, so the same run yielded `notApplicable` through one path and `notReviewed` through the other — and `notReviewed` is in the compliance denominator while `notApplicable` is not. A pipeline diffing a Splunk-sourced baseline against a file-sourced scan saw drift that came from the reader, not the system under assessment.
+
+  The translation now lives in `hdf-converters/shared` and both readers call it, so a third reader cannot diverge the same way.
+
+- **`ionchannel-to-hdf` states `notApplicable` on its inventory records instead of `notReviewed`.**
+
+  Every requirement this converter emits is an inventory record — a dependency it found, or a scan-summary line — not an assessment. All of them previously reported `notReviewed` and so entered the compliance denominator, which for an SBOM means the entire document did. They now state their own disposition, matching the coverage records `kics-to-hdf` and `semgrep-to-hdf` already emit. Merging an Ion Channel inventory with real assessment results no longer drags the merged percentage down with rows that assert nothing about compliance.
+
+  A `not_applicable.total` (or SAF-spelled `no_impact.total`) bound written against Ion Channel output reads correctly again; one written against the intervening behaviour will need updating.
+
+- **`netsparker-to-hdf` scores a "Best Practice" finding `0.3` instead of `0.0`.**
+
+  Invicti reports a large advisory bucket, and `0.0` is the *informational* band — it described no weight and relied on the removed impact-0 ladder rung to read as `notApplicable`. `0.3` is the low band and matches `semgrep-to-hdf`'s `INFO`, which reasons it the same way. Whether an advisory finding should carry a `failed` status at all is a separate question and unchanged here.
+
 - **`xccdf-results-to-hdf` maps `notselected` and `informational` rule-results to `notApplicable`, so a benchmark's unselected tail stays out of the compliance ratio.**
 
   Both previously mapped to `notReviewed`, which sits in the compliance denominator. A SCAP benchmark commonly carries thousands of rules while a profile selects a few hundred, and `oscap` returns `notselected` for every rule a `--reference`, `--skip-rule` or tailoring selection excludes. On a real OpenSCAP RHEL 7 scan (43 passed, 137 failed, 23.89%), an unselected tail of 1,820 rules would have reported **2.15%** for the same posture.
@@ -70,7 +86,7 @@ All notable changes to this project will be documented in this file.
 
   The ladder is now two rungs — a governing override, else the worst-wins roll-up of the results. The `impact === 0 → notApplicable` rung is gone, along with the `error` rung it needed (`error` already outranks every other status in the worst-wins order, so that rung was doing nothing once impact stopped being consulted). A status now says only what the assessment established; impact says only how much risk the requirement carries.
 
-  "Impact 0 means not applicable" was one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band, so the rung applied InSpec's reading to every format that had never agreed to it — a clean scan, a never-run scan and a genuinely inapplicable control all reported `notApplicable`. `legacyhdf-to-hdf`, the importer for InSpec exec JSON and legacy HDF, now emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else, so the verdict travels in `results[]` where every consumer can see it. It does **not** rewrite `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where a profile zeroed it. Because `notApplicable` ranks below `passed` and `failed`, the translation can never bury evidence that a check actually ran.
+  "Impact 0 means not applicable" was one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band, so the rung applied InSpec's reading to every format that had never agreed to it — a clean scan, a never-run scan and a genuinely inapplicable control all reported `notApplicable`. Every reader of an InSpec control payload — `legacyhdf-to-hdf` for exec JSON and legacy HDF, and `splunk-to-hdf` for the same controls read back out of Splunk — now emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else, so the verdict travels in `results[]` where every consumer can see it. It does **not** rewrite `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where a profile zeroed it. Because `notApplicable` ranks below `passed` and `failed`, the translation can never bury evidence that a check actually ran.
 
   **What this means for documents you already have.** A document converted by an older binary carries impact 0 with a `notReviewed` roll-up and no translated result. Recomputed under the new ladder it reports `notReviewed`, while the stored `effectiveStatus` on the same requirement still says `notApplicable`. Both are behaving correctly — the document was written under the older semantics. **Re-conversion from the original source is the only remedy offered;** there is no migration tool, and nothing we ship rewrites an existing document.
 
