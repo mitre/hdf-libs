@@ -3,9 +3,9 @@ module github.com/mitre/hdf-libs/hdf-parsers/go/v3
 go 1.26.10
 
 require (
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-next.42533588944.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-next.42533588944.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0-next.42533588944.1
 	github.com/stretchr/testify v1.12.1
 )
 
