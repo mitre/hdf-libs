@@ -1,0 +1,76 @@
+# One-off rehearsal for the snapshot signing identity. Proves two refusals and one
+# acceptance, then deletes itself from the branch it ran on by never being merged:
+#   1. the App token cannot create, move or delete a v* tag (release_tags ruleset);
+#   2. the App token cannot move or delete an existing snapshot tag (immutable ruleset);
+#   3. the App token CAN create a new snapshot-shaped tag, which is then deleted by the
+#      maintainer (the App itself cannot delete it, by design — that is proof 2).
+# Runs only by hand, only from main, because the snapshot-tags environment that holds
+# the App secrets deploys from main alone.
+name: Rehearse snapshot isolation
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  rehearse:
+    name: Prove the App identity is boxed in by the rulesets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: snapshot-tags
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.SNAPSHOT_APP_ID }}
+          private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+      - name: Attempt the three operations as the App
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN: ${{ github.run_id }}
+        run: |
+          api() { # method path [json]  -> prints "HTTP <code> <message>"
+            local m=$1 p=$2 body=${3:-}
+            local out code
+            out=$(curl -sS -o /tmp/body -w '%{http_code}' -X "$m" \
+              -H "Authorization: Bearer $APP_TOKEN" -H "Accept: application/vnd.github+json" \
+              ${body:+-d "$body"} "https://api.github.com/repos/$REPO/$p")
+            code=$out
+            echo "HTTP $code $(jq -r '.message // ""' /tmp/body 2>/dev/null | head -c 160)"
+          }
+          fail=0
+          echo "== 1. create a v* tag as the App (must be refused by release_tags)"
+          r=$(api POST git/refs "{\"ref\":\"refs/tags/v0.0.0-isolation-$RUN\",\"sha\":\"$SHA\"}"); echo "   $r"
+          case "$r" in HTTP\ 2*) echo "::error::the App created a v* tag; isolation is BROKEN"; fail=1;; esac
+          existing=$(git ls-remote --tags "https://x-access-token:${APP_TOKEN}@github.com/$REPO.git" 'refs/tags/snapshots/v*' | tail -1 | awk '{print $2}' | sed 's|refs/tags/||')
+          echo "== 2. delete an existing snapshot tag as the App ($existing) (must be refused by the immutable ruleset)"
+          if [ -n "$existing" ]; then
+            r=$(api DELETE "git/refs/tags/$existing"); echo "   $r"
+            case "$r" in HTTP\ 2*) echo "::error::the App deleted a published snapshot tag; immutability is BROKEN"; fail=1;; esac
+          else
+            echo "   no snapshot tag exists yet; proof 2 skipped"
+          fi
+          echo "== 3. create a new snapshot-shaped tag as the App (must succeed; the maintainer deletes it afterwards)"
+          r=$(api POST git/refs "{\"ref\":\"refs/tags/snapshots/v0.0.0-isolation-$RUN\",\"sha\":\"$SHA\"}"); echo "   $r"
+          case "$r" in HTTP\ 2*) echo "   maintainer: delete it with  git push origin :refs/tags/snapshots/v0.0.0-isolation-$RUN";; *) echo "::error::the App could not create a snapshot tag; the real snapshot push would fail too"; fail=1;; esac
+          echo "== 4. the App is not a bypass actor on either ruleset (read with the job's own token)"
+          exit $fail
+      - name: Rulesets name no Integration bypass actor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in 14977925 25679354; do
+            gh api "repos/${{ github.repository }}/rulesets/$id" --jq '"   \(.name): bypass=\([.bypass_actors[] | "\(.actor_type):\(.actor_id)"] | join(","))"'
+            gh api "repos/${{ github.repository }}/rulesets/$id" --jq '[.bypass_actors[] | select(.actor_type=="Integration")] | length' | grep -qx 0 || { echo "::error::an Integration (App) is a bypass actor on ruleset $id"; exit 1; }
+          done
