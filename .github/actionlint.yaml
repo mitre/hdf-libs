@@ -1,0 +1,14 @@
+# actionlint 1.7.12 does not recognise GitHub's `$/` self-repository `uses:`
+# form (upstream rhysd/actionlint#711 is open, its PR unmerged, no release
+# accepts it). The repo keeps `$/`: GitHub documents it as the recommended
+# form, and zizmor 1.30.0's self-repository audit flags `./` while the zizmor
+# threshold fails CI on any finding. Only the two format errors the alias
+# produces are ignored, scoped to this repo's own paths; every other check
+# still runs. Accepted loss: actionlint cannot resolve a `$/` target, so it
+# checks neither that it exists nor its `with:` inputs. Delete this file once
+# a pinned actionlint release accepts `$/`.
+paths:
+  .github/workflows/**/*.yml:
+    ignore:
+      - '^specifying action "\$/\.github/actions/[A-Za-z0-9_.-]+" in invalid format because ref is missing'
+      - '^reusable workflow call "\$/\.github/workflows/[A-Za-z0-9_.-]+\.yml" at "uses" is not following the format'
