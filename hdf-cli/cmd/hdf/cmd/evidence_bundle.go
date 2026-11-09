@@ -720,9 +720,7 @@ func refuseArchiveOverInput(outputPath, pkgDir, pkgPath, inputLabel string, refs
 	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
 		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
 	}
-	// Checked here rather than left to os.CreateTemp, which fails after every read and
-	// hash with an "open <dir>/.hdf-bundle-NNN" naming a temp path the operator never
-	// typed.
+	// Report the requested destination before reading and hashing its inputs.
 	if parent := filepath.Dir(outputPath); parent != "" {
 		if _, err := os.Stat(parent); err != nil {
 			return fmt.Errorf("-o %s: the directory %s does not exist", outputPath, parent)
@@ -794,7 +792,7 @@ func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 // not merely implemented beside it.
 func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter, overwrite bool) error {
 	dir := filepath.Dir(outputPath)
-	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
+	tmp, err := createArchiveTemp(dir)
 	if err != nil {
 		return fmt.Errorf("failed to create the archive: %w", err)
 	}

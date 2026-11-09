@@ -487,6 +487,17 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
+      - name: Windows CLI lint and security (SARIF; findings gate via HDF)
+        working-directory: hdf-cli
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        run: |
+          rc=0
+          golangci-lint run --output.text.path stdout \
+            --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-hdf-cli-windows.sarif" ./... || rc=$?
+          [ "$rc" -le 1 ] || exit "$rc"
       # In SARIF mode govulncheck exits 0 even with findings — by design, so
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own

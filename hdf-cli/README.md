@@ -522,7 +522,14 @@ Bundle mode requires one local source file and a file output. Directories,
 multiple inputs, stdin and transformation flags such as `--from`, `--force`,
 `--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
 archive but never the input or its filesystem aliases; it requires `--bundle`.
-Writes are atomic. On POSIX systems the archive has mode 0600; Windows uses filesystem ACLs inherited from the output directory, so choose a directory with suitable access controls. Default no-overwrite publication requires filesystem hard-link support; if unavailable, the command fails without replacing the destination. Ordinary conversion remains
+Writes are atomic. On POSIX systems the archive has mode 0600. On Windows,
+both bundle commands create a protected DACL granting access only to the
+effective user, then verify filesystem ACL support and the actual DACL before
+writing archive contents. If that protection cannot be established, creation
+fails; use an ACL-capable volume such as NTFS. Administrator privileges are
+outside this protection, and the output directory must still be trusted.
+Default no-overwrite publication requires filesystem hard-link support; if
+unavailable, the command fails without replacing the destination. Ordinary conversion remains
 unchanged, including input files named `bundle`.
 
 #### evidence resolve
