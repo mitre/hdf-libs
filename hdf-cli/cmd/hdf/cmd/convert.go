@@ -284,10 +284,7 @@ func detectConvertSource(cmd *cobra.Command, data []byte, inputPath, fromFormat,
 // Gated to HDF/legacy/InSpec input so a scanner format that happens to carry a top-level
 // "target" key is untouched.
 func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byte, format, version string, err error) {
-	// "inspec" is registered to the same legacy (exec-json) converter.
-	isHDF := strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf") ||
-		strings.EqualFold(fromFormat, "inspec")
-	if !isHDF || !hasSAFSupplement(data) {
+	if !isLegacyCapableSource(fromFormat) || !hasSAFSupplement(data) {
 		return data, fromFormat, fromVersion, nil
 	}
 	if legacyhdf.IsLegacyHDF(data) {
@@ -554,6 +551,17 @@ func reattachSAFSupplement(data []byte, supp map[string]json.RawMessage) ([]byte
 	return json.Marshal(doc)
 }
 
+// isLegacyCapableSource reports whether a --from format (or auto-detected
+// fingerprint) names HDF input that may be the legacy v2 exec-json shape:
+// explicit hdf (with or without an @version), the legacyhdf fingerprint, or
+// inspec, which is registered to the same legacy converter. Both legacy gates
+// in the convert path consult this so an input route never works only when the
+// document happens to carry a SAF supplement.
+func isLegacyCapableSource(fromFormat string) bool {
+	return strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf") ||
+		strings.EqualFold(fromFormat, "inspec")
+}
+
 // normalizeLegacyHDFInput upgrades legacy HDF (v2, the InSpec exec-json
 // profiles/platform shape, which has no `baselines`) to modern HDF (v3) before a
 // non-hdf export converter consumes it. Conversions to hdf are left untouched —
@@ -564,10 +572,9 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	if strings.EqualFold(toFormat, "hdf") {
 		return data, fromFormat, fromVersion, nil
 	}
-	// Only HDF-source conversions are candidates: explicit --from hdf (with or
-	// without an @version) or the auto-detected legacyhdf fingerprint. Whether
-	// the bytes are actually v1 is decided by content below, not by the version.
-	if !strings.EqualFold(fromFormat, "hdf") && !strings.EqualFold(fromFormat, "legacyhdf") {
+	// Only HDF-source conversions are candidates. Whether the bytes are actually
+	// legacy is decided by content below, not by the format name or version.
+	if !isLegacyCapableSource(fromFormat) {
 		return data, fromFormat, fromVersion, nil
 	}
 	// Skip when there is no hdf→target export converter to feed — let the normal

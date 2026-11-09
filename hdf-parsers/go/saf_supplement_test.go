@@ -273,6 +273,33 @@ func TestNormalizeSAFSupplement_TargetIDWinsOverName(t *testing.T) {
 	assert.Equal(t, "prod-account", c["accountId"])
 }
 
+// accountId is the provider's account identifier, so only target.id may fill it;
+// a classic target's display name becomes the component name and nothing else.
+func TestNormalizeSAFSupplement_DisplayNameIsNotAnAccountID(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"name": "Production", "type": "cloudAccount"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "Production", c["name"])
+	_, hasAccountID := c["accountId"]
+	assert.False(t, hasAccountID, "a display name must not be stamped into accountId")
+}
+
+// The first-class target.boundary is the SAF carrier; a labels.boundary entry on
+// the same target does not displace it.
+func TestNormalizeSAFSupplement_BoundaryFieldWinsOverBoundaryLabel(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{
+			"type": "host", "name": "my-host-01", "boundary": "sparc",
+			"labels": map[string]any{"boundary": "legacy-zone", "environment": "prod"},
+		},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"boundary": "sparc", "environment": "prod"}, labels)
+}
+
 // Component labels are string-valued, so a non-string target label is skipped
 // rather than producing a document the schema rejects.
 func TestNormalizeSAFSupplement_CarriesTargetLabels(t *testing.T) {

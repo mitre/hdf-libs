@@ -163,3 +163,23 @@ func TestConvertCommand_LegacyTargetMergesWithPlatform(t *testing.T) {
 		})
 	}
 }
+
+// The legacy upgrade must not depend on a SAF supplement being present: a plain
+// exec-json scan routed with --from inspec to a non-hdf export has no `target`
+// for the absorb step to rewrite, so the upgrade gate alone has to carry it.
+func TestConvertCommand_FromInspecToExport_WithoutSupplement(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "plain.json")
+	if err := os.WriteFile(path, fixtures.Inspec.Ubi9Scan, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, err := executeCommand("convert", path, "--from", "inspec", "--to", "oscal-sar")
+	if err != nil {
+		t.Fatalf("convert --from inspec --to oscal-sar failed on a plain scan: %v (stderr: %s)", err, stderr)
+	}
+	if !strings.Contains(stdout, "assessment-results") {
+		t.Errorf("expected an OSCAL assessment-results document; stdout=%.200s", stdout)
+	}
+	if strings.Contains(stderr, "normalized into") {
+		t.Errorf("no SAF deprecation warning should fire without a supplement; stderr=%s", stderr)
+	}
+}

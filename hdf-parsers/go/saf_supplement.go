@@ -30,10 +30,10 @@ func validComponentType(s string) bool {
 
 // NormalizeSAFSupplement rewrites the legacy SAF-supplement top-level keys into
 // v3-native carriers so a SAF-produced document becomes valid v3 before schema
-// validation: `target` → a components[] entry (type validated; id → name and,
-// for cloudAccount, accountId, falling back to name; labels and boundary →
-// labels; merged into a matching or platform-derived component rather than
-// duplicated); `passthrough` →
+// validation: `target` → a components[] entry (type validated; id, or failing
+// that name, → name; id alone → accountId for cloudAccount; labels and boundary
+// → labels, boundary winning; merged into a matching or platform-derived
+// component rather than duplicated); `passthrough` →
 // extensions.passthrough. It returns the (possibly rewritten) document plus a
 // deprecation warning per rewritten key.
 //
@@ -89,30 +89,35 @@ func rewriteTarget(doc map[string]any) bool {
 		return false
 	}
 	// SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
+	// Only an `id` is a provider identifier; a display name never becomes one.
 	id, _ := tgt["id"].(string)
-	if id == "" {
-		id, _ = tgt["name"].(string)
+	name := id
+	if name == "" {
+		name, _ = tgt["name"].(string)
 	}
-	boundary, _ := tgt["boundary"].(string)
 	labels := stringLabels(tgt["labels"])
+	// The first-class boundary field is the SAF carrier, so it wins over a
+	// `labels.boundary` entry (the deferred first-class-field decision — ADR-0015).
+	if boundary, _ := tgt["boundary"].(string); boundary != "" {
+		labels["boundary"] = boundary
+	}
 
 	comps, _ := doc["components"].([]any)
 
-	c := findComponent(comps, id, typ)
+	c := findComponent(comps, name, typ)
 	if c == nil {
-		if c = platformComponent(comps, typ); c != nil && id != "" {
-			c["name"] = id
+		if c = platformComponent(comps, typ); c != nil && name != "" {
+			c["name"] = name
 		}
 	}
 	if c == nil {
-		c = map[string]any{"type": typ, "name": id}
-		if typ == string(hdf.CloudAccount) {
+		c = map[string]any{"type": typ, "name": name}
+		if typ == string(hdf.CloudAccount) && id != "" {
 			c["accountId"] = id
 		}
 		comps = append(comps, c)
 	}
 	applyLabels(c, labels)
-	applyBoundaryLabel(c, boundary)
 	doc["components"] = comps
 	delete(doc, "target")
 	return true
@@ -187,23 +192,6 @@ func applyLabels(c map[string]any, labels map[string]string) {
 		}
 	}
 	c["labels"] = existing
-}
-
-// applyBoundaryLabel records the legacy target.boundary as a component label
-// (the deferred first-class-field decision — ADR-0015). No-op for an empty
-// boundary.
-func applyBoundaryLabel(c map[string]any, boundary string) {
-	if boundary == "" {
-		return
-	}
-	labels, ok := c["labels"].(map[string]any)
-	if !ok {
-		labels = map[string]any{}
-	}
-	if _, exists := labels["boundary"]; !exists {
-		labels["boundary"] = boundary
-	}
-	c["labels"] = labels
 }
 
 // rewritePassthrough moves the legacy top-level `passthrough` under

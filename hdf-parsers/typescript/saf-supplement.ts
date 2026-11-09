@@ -30,9 +30,10 @@ function isObject(v: unknown): v is Record<string, unknown> {
 /**
  * Rewrite the legacy SAF-supplement top-level keys into v3-native carriers so a
  * SAF-produced document becomes valid v3 before schema validation: `target` → a
- * components[] entry (type validated; id → name and, for cloudAccount, accountId,
- * falling back to name; labels and boundary → labels; merged into a matching or
- * platform-derived component rather than duplicated); `passthrough` →
+ * components[] entry (type validated; id, or failing that name, → name; id alone →
+ * accountId for cloudAccount; labels and boundary → labels, boundary winning;
+ * merged into a matching or platform-derived component rather than duplicated);
+ * `passthrough` →
  * extensions.passthrough.
  *
  * Deliberately narrow: input that is not a JSON object, or carries neither legacy
@@ -78,24 +79,27 @@ function rewriteTarget(doc: Record<string, unknown>): boolean {
   const typ = typeof tgt.type === 'string' ? tgt.type : '';
   if (!VALID_COMPONENT_TYPES.has(typ)) return false;
   // SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
-  const id =
-    typeof tgt.id === 'string' && tgt.id !== '' ? tgt.id : typeof tgt.name === 'string' ? tgt.name : '';
-  const boundary = typeof tgt.boundary === 'string' ? tgt.boundary : '';
+  // Only an `id` is a provider identifier; a display name never becomes one.
+  const id = typeof tgt.id === 'string' ? tgt.id : '';
+  const name = id !== '' ? id : typeof tgt.name === 'string' ? tgt.name : '';
+  const labels = stringLabels(tgt.labels);
+  // The first-class boundary field is the SAF carrier, so it wins over a
+  // `labels.boundary` entry (the deferred first-class-field decision — ADR-0015).
+  if (typeof tgt.boundary === 'string' && tgt.boundary !== '') labels.boundary = tgt.boundary;
 
   const comps: unknown[] = Array.isArray(doc.components) ? doc.components : [];
 
-  let c = findComponent(comps, id, typ);
+  let c = findComponent(comps, name, typ);
   if (!c) {
     c = platformComponent(comps, typ);
-    if (c && id !== '') c.name = id;
+    if (c && name !== '') c.name = name;
   }
   if (!c) {
-    c = { type: typ, name: id };
-    if (typ === 'cloudAccount') c.accountId = id;
+    c = { type: typ, name };
+    if (typ === 'cloudAccount' && id !== '') c.accountId = id;
     comps.push(c);
   }
-  applyLabels(c, stringLabels(tgt.labels));
-  applyBoundaryLabel(c, boundary);
+  applyLabels(c, labels);
   doc.components = comps;
   delete doc.target;
   return true;
@@ -135,15 +139,6 @@ function applyLabels(c: Record<string, unknown>, labels: Record<string, string>)
     if (!(k in existing)) existing[k] = v;
   }
   c.labels = existing;
-}
-
-/** Record the legacy target.boundary as a component label (the deferred
- * first-class-field decision — ADR-0015). No-op for an empty boundary. */
-function applyBoundaryLabel(c: Record<string, unknown>, boundary: string): void {
-  if (boundary === '') return;
-  const labels = isObject(c.labels) ? c.labels : {};
-  if (!('boundary' in labels)) labels.boundary = boundary;
-  c.labels = labels;
 }
 
 /** The only keys `extensions` admits. Anything else a producer wrote beside them

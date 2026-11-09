@@ -116,6 +116,22 @@ describe('normalizeSafSupplement', () => {
     expect(comps[0]).toMatchObject({ name: 'prod-account', accountId: 'prod-account' });
   });
 
+  // accountId is the provider's account identifier, so only target.id may fill it.
+  it('does not stamp a display name into accountId', () => {
+    const comps = componentsOf({ target: { name: 'Production', type: 'cloudAccount' } });
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toEqual({ type: 'cloudAccount', name: 'Production' });
+  });
+
+  // The first-class target.boundary is the SAF carrier; a labels.boundary entry does not
+  // displace it.
+  it('lets the boundary field win over a boundary label', () => {
+    const comps = componentsOf({
+      target: { type: 'host', name: 'my-host-01', boundary: 'sparc', labels: { boundary: 'legacy-zone', environment: 'prod' } },
+    });
+    expect(comps[0].labels).toEqual({ boundary: 'sparc', environment: 'prod' });
+  });
+
   // Component labels are string-valued, so a non-string target label is skipped.
   it('carries string target labels alongside the boundary label', () => {
     const comps = componentsOf({
