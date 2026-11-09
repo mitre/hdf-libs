@@ -53,7 +53,8 @@ jobs:
           echo "== 1. create a v* tag as the App (must be refused by release_tags)"
           r=$(api POST git/refs "{\"ref\":\"refs/tags/v0.0.0-isolation-$RUN\",\"sha\":\"$SHA\"}"); echo "   $r"
           case "$r" in HTTP\ 2*) echo "::error::the App created a v* tag; isolation is BROKEN"; fail=1;; esac
-          existing=$(git ls-remote --tags "https://x-access-token:${APP_TOKEN}@github.com/$REPO.git" 'refs/tags/snapshots/v*' | tail -1 | awk '{print $2}' | sed 's|refs/tags/||')
+          # ls-remote lists an annotated tag twice, the second as a peeled "^{}" line; take only real refs.
+          existing=$(git ls-remote --tags "https://x-access-token:${APP_TOKEN}@github.com/$REPO.git" 'refs/tags/snapshots/v*' | awk '$2 !~ /\^\{\}$/ {print $2}' | tail -1 | sed 's|refs/tags/||')
           echo "== 2. delete an existing snapshot tag as the App ($existing) (must be refused by the immutable ruleset)"
           if [ -n "$existing" ]; then
             r=$(api DELETE "git/refs/tags/$existing"); echo "   $r"
@@ -64,13 +65,7 @@ jobs:
           echo "== 3. create a new snapshot-shaped tag as the App (must succeed; the maintainer deletes it afterwards)"
           r=$(api POST git/refs "{\"ref\":\"refs/tags/snapshots/v0.0.0-isolation-$RUN\",\"sha\":\"$SHA\"}"); echo "   $r"
           case "$r" in HTTP\ 2*) echo "   maintainer: delete it with  git push origin :refs/tags/snapshots/v0.0.0-isolation-$RUN";; *) echo "::error::the App could not create a snapshot tag; the real snapshot push would fail too"; fail=1;; esac
-          echo "== 4. the App is not a bypass actor on either ruleset (read with the job's own token)"
+          echo "== 4. bypass actors are read by the maintainer, not here: GET /rulesets needs administration read,"
+          echo "      which the job token cannot hold. Run: gh api repos/$REPO/rulesets/14977925 --jq .bypass_actors"
+          echo "      and the same for 25679354; neither may list an Integration."
           exit $fail
-      - name: Rulesets name no Integration bypass actor
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for id in 14977925 25679354; do
-            gh api "repos/${{ github.repository }}/rulesets/$id" --jq '"   \(.name): bypass=\([.bypass_actors[] | "\(.actor_type):\(.actor_id)"] | join(","))"'
-            gh api "repos/${{ github.repository }}/rulesets/$id" --jq '[.bypass_actors[] | select(.actor_type=="Integration")] | length' | grep -qx 0 || { echo "::error::an Integration (App) is a bypass actor on ruleset $id"; exit 1; }
-          done
