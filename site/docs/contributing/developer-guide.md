@@ -4,6 +4,36 @@ Patterns and practices for contributing to the HDF libraries.
 
 ---
 
+## Toolchain
+
+The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
+
+| Tool | Pin | How mise installs it |
+| --- | --- | --- |
+| Node.js | `node` in `mise.toml` (the Active LTS line); exact release in `mise.lock` | Official archive; SHA-256 from `SHASUMS256.txt` and the OpenPGP signature on that file |
+| pnpm | `packageManager` in `package.json` | Release binary; SHA-256 and the GitHub attestation from pnpm's release workflow |
+| Go | `go` line in `go.work` | Official archive, checked against the lock's SHA-256 |
+| golangci-lint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from golangci-lint's release workflow |
+| gosec | `mise.toml` | Official release binary; SHA-256 and the cosign signature on its checksum file |
+| govulncheck | `mise.toml` | `go install`, verified against the Go checksum database |
+
+Corepack is not used: mise installs pnpm itself, and Node.js stopped shipping Corepack in version 25. CI's shared setup action installs Node.js and pnpm through mise-action; the `check-go` job adds Go's scanners the same way. The formal release's publish job in `release.yml` still sets up Node.js with `setup-node` and `NODE_VERSION`, and moves to mise together with an RC pipeline validation run. npm itself stays pinned by the `setup-npm` action (SHA-512 checked), because mise's npm installer does not cover Windows.
+
+Setup, once per clone (mise 2026.10.9 or newer reads Go's version from `go.work`):
+
+```bash
+mise trust     # allow this repository's mise.toml
+mise install   # install the pinned tools, verified against mise.lock
+```
+
+The pre-commit hook runs `mise exec -- pnpm check`, so it uses these versions whether or not mise is activated in your shell. For a single command, prefix it the same way, for example `mise exec -- golangci-lint run` in a module directory.
+
+Why golangci-lint is pinned to a release binary: its formatters are compiled in from the Go that builds it. A golangci-lint built with a newer Go reports formatting that CI's accepts, so a local build from source (`go install`, Homebrew) can fail the hook on code CI passes. golangci-lint's own [install guide](https://golangci-lint.run/docs/welcome/install/local/) recommends the release binary for the same reason.
+
+To move a pin: edit `mise.toml`, the `go` line of `go.work` or `packageManager` in `package.json`, run `mise lock` to refresh `mise.lock` for every platform, and commit both. A new Node.js release on the same line needs no edit: `mise lock --bump node` moves the lock to it. A new golangci-lint or Go release can change gofmt's output; run `golangci-lint fmt` across the modules in the same change.
+
+---
+
 ## Dual Implementation Pattern (TS + Go)
 
 Every HDF library must be implemented in both TypeScript and Go simultaneously.
