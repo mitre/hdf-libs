@@ -756,12 +756,10 @@ function resultFingerprintsAt(req: Obj, ordinal: number): { fingerprints?: Obj; 
   const entries = tags ? asArr(tags['sarif-results']) : undefined;
   if (entries && ordinal >= 0 && ordinal < entries.length) {
     const entry = asMap(entries[ordinal]);
-    const fingerprints = asMap(entry?.fingerprints);
-    const partialFingerprints = asMap(entry?.partialFingerprints);
-    if ((fingerprints && Object.keys(fingerprints).length > 0)
-      || (partialFingerprints && Object.keys(partialFingerprints).length > 0)) {
-      return {fingerprints, partialFingerprints};
-    }
+    // stringValued already returns undefined for a map left empty.
+    const fingerprints = stringValued(asMap(entry?.fingerprints));
+    const partialFingerprints = stringValued(asMap(entry?.partialFingerprints));
+    if (fingerprints || partialFingerprints) return {fingerprints, partialFingerprints};
   }
   return resultFingerprints(req);
 }

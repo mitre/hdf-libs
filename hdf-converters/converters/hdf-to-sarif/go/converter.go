@@ -642,6 +642,7 @@ func resultFingerprintsAt(req map[string]interface{}, ordinal int) (map[string]i
 			if entry, ok := exportmap.AsMap(entries[ordinal]); ok {
 				fp, _ := exportmap.AsMap(entry["fingerprints"])
 				pfp, _ := exportmap.AsMap(entry["partialFingerprints"])
+				fp, pfp = stringValued(fp), stringValued(pfp)
 				if len(fp) > 0 || len(pfp) > 0 {
 					return fp, pfp
 				}

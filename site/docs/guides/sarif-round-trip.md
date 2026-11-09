@@ -102,6 +102,8 @@ the document never carried.
 | Document `generator` | re-stamped with the converter that produced the new file | both |
 | A requirement's `error` status | restored from the bag, gated on the kind | both |
 
+A bag value that does not fit its HDF field, such as a number where a string belongs or a timestamp that does not parse, is dropped and the field is left as if the key were absent. A `null` bag value is treated the same way. Go and TypeScript apply one rule, pinned by a shared table of mistyped values.
+
 Eight of those need the reason stated rather than the outcome alone.
 
 - **`impact`** is published through SARIF's `security-severity` convention, which is a

@@ -899,19 +899,24 @@ export { UNRATED_SEVERITY_TAG, UNRATED_SEVERITY_VALUE, markUnratedSeverity } fro
  * a null cvss entry or a null results array reaches the converter there and must
  * reach it here too — several parity goldens pin exactly that.
  */
-function typeViolations(result: {
+export function goDecodeRejections(result: {
   valid: boolean;
-  errors?: Array<{
-    field?: string;
-    message?: string;
-    keyword?: string;
-    format?: string;
-    value?: unknown;
-  }>;
-}): string[] {
+  errors?: SchemaViolation[];
+}): SchemaViolation[] {
   if (result.valid) return [];
   return (result.errors ?? [])
     .filter((e) => e.value !== null)
-    .filter((e) => e.keyword === 'type' || (e.keyword === 'format' && e.format === 'date-time'))
-    .map((e) => `${e.field ?? ''} ${e.message ?? ''}`.trim());
+    .filter((e) => e.keyword === 'type' || (e.keyword === 'format' && e.format === 'date-time'));
+}
+
+interface SchemaViolation {
+  field?: string;
+  message?: string;
+  keyword?: string;
+  format?: string;
+  value?: unknown;
+}
+
+function typeViolations(result: { valid: boolean; errors?: SchemaViolation[] }): string[] {
+  return goDecodeRejections(result).map((e) => `${e.field ?? ''} ${e.message ?? ''}`.trim());
 }
