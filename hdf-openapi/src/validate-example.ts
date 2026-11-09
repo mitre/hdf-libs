@@ -14,30 +14,43 @@ export interface ExampleFault {
 }
 
 /**
- * Faults in a schema's own examples. An empty array means every example validates.
+ * A checker for many schemas against one set of references. The engine and the
+ * references are set up once, so a whole document costs one setup, not one per schema.
  *
  * `references` supplies the components an example's schema may `$ref` — the ingest request
  * points at the eight document roots, so without them it cannot compile.
  */
-export function validateExample(
-  schema: Record<string, unknown>,
+export function createExampleValidator(
   references: Record<string, unknown> = {},
-): ExampleFault[] {
-  const examples = schema.examples;
-  if (!Array.isArray(examples)) return [];
-
+): (schema: Record<string, unknown>) => ExampleFault[] {
   const ajv = new Ajv2020({ strict: false, allErrors: true });
   addFormats(ajv);
   for (const [name, referenced] of Object.entries(references)) {
     ajv.addSchema(referenced as object, `#/components/schemas/${name}`);
   }
-  const validate = ajv.compile(schema);
 
-  const faults: ExampleFault[] = [];
-  examples.forEach((example, index) => {
-    if (!validate(example)) {
-      faults.push({ index, errors: JSON.stringify(validate.errors) });
-    }
-  });
-  return faults;
+  return (schema) => {
+    const examples = schema.examples;
+    if (!Array.isArray(examples)) return [];
+
+    const validate = ajv.compile(schema);
+    const faults: ExampleFault[] = [];
+    examples.forEach((example, index) => {
+      if (!validate(example)) {
+        faults.push({ index, errors: JSON.stringify(validate.errors) });
+      }
+    });
+    // Ajv caches a compiled schema by object: a schema changed after one check would be
+    // judged by its old form, and a long-lived checker would grow with every schema.
+    ajv.removeSchema(schema);
+    return faults;
+  };
+}
+
+/** Faults in a schema's own examples. An empty array means every example validates. */
+export function validateExample(
+  schema: Record<string, unknown>,
+  references: Record<string, unknown> = {},
+): ExampleFault[] {
+  return createExampleValidator(references)(schema);
 }
