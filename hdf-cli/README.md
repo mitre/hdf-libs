@@ -859,7 +859,11 @@ Credentials are resolved via the standard AWS credential chain: environment vari
 
 **Rules whose evaluations the Config API will not return are skipped.** AWS marks each rule's evaluations as readable or not through `RuleEvaluationVisibility`; a rule reporting `INTERNAL` (Security Hub standards rules, for example) is skipped with a `WARNING: aws-config: skipped N rule(s) ...` on stderr that names each rule and the service that provisioned it. Fetch those findings through the owning service instead, such as `hdf fetch aws-securityhub`. Rules deployed by a conformance pack are service-linked and read-only, but their evaluations and remediation configurations are readable, so they are fetched like any other rule.
 
-**Remediation surfaces as a `fix` description.** A customer-managed rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation.
+**Remediation surfaces as a `fix` description.** A rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation. Remediation is looked up in batches; a batch the API refuses is retried one rule at a time, so one rule without a readable remediation never costs the others theirs.
+
+**A Region with nothing readable is an empty export.** `--format raw` writes `{"ConfigRules":[]}`. HDF output refuses it with `no Config rules to convert in <region>`, because a results document needs at least one requirement; the warnings name every rule that was skipped or could not be read. A permission refusal before any rule has read fails the fetch at once, naming `config:GetComplianceDetailsByConfigRule`.
+
+**Deadline.** With no deadline on the command's context, listing is bounded to five minutes and reading grows with the number of rules listed (three seconds per rule on top of the listing budget), since each rule's evaluations are read in turn.
 
 ```
 USAGE

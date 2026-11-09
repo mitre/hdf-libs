@@ -70,16 +70,10 @@ Output defaults to stdout when no output path is given.`,
 				return writeConvertOutput(raw, outputPath)
 			}
 
-			result, err := awsconfigconv.ConvertAWSConfigToHDF(raw, version)
+			output, err := convertFetchedAWSConfig(raw, region)
 			if err != nil {
-				return fmt.Errorf("aws-config conversion failed: %w", err)
+				return err
 			}
-
-			output, err := json.MarshalIndent(result, "", "  ")
-			if err != nil {
-				return fmt.Errorf("failed to serialize HDF output: %w", err)
-			}
-
 			return writeValidatedHDFOutput(cmd, output, outputPath)
 		},
 	}
@@ -93,4 +87,28 @@ Output defaults to stdout when no output path is given.`,
 	_ = cmd.MarkFlagRequired("region")
 
 	return cmd
+}
+
+// convertFetchedAWSConfig turns the fetcher's export into serialized HDF. An
+// empty export is refused here, not in the fetcher: HDF needs at least one
+// requirement, so converting it could only fail later on a schema message about
+// a field the user never wrote, while a raw export is free to be empty.
+func convertFetchedAWSConfig(raw []byte, region string) ([]byte, error) {
+	count, _, err := awsconfigconv.ExpectedRequirementCount(raw)
+	if err != nil {
+		return nil, fmt.Errorf("aws-config conversion failed: %w", err)
+	}
+	if count == 0 {
+		return nil, fmt.Errorf("no Config rules to convert in %s: HDF requires at least one requirement; "+
+			"rules that were skipped or could not be read are named in the warnings above (--format raw keeps the empty export)", region)
+	}
+	result, err := awsconfigconv.ConvertAWSConfigToHDF(raw, version)
+	if err != nil {
+		return nil, fmt.Errorf("aws-config conversion failed: %w", err)
+	}
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+	return output, nil
 }

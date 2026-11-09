@@ -32,9 +32,11 @@ type mockConfigClient struct {
 	describeCalls   int
 	complianceCalls map[string]int
 	// Remediation lookups; keyed by rule name.
-	remediations       map[string]types.RemediationConfiguration
-	remediationErr     error
-	remediationBatches [][]string // captures each batch's requested rule names
+	remediations        map[string]types.RemediationConfiguration
+	remediationErr      error            // returned for every call
+	remediationBatchErr error            // returned only for a multi-name call: the all-or-nothing batch case
+	remediationErrs     map[string]error // returned for a single-name call by name
+	remediationBatches  [][]string       // captures each call's requested rule names
 }
 
 func (m *mockConfigClient) DescribeRemediationConfigurations(
@@ -45,6 +47,14 @@ func (m *mockConfigClient) DescribeRemediationConfigurations(
 	m.remediationBatches = append(m.remediationBatches, in.ConfigRuleNames)
 	if m.remediationErr != nil {
 		return nil, m.remediationErr
+	}
+	if m.remediationBatchErr != nil && len(in.ConfigRuleNames) > 1 {
+		return nil, m.remediationBatchErr
+	}
+	if len(in.ConfigRuleNames) == 1 {
+		if err, ok := m.remediationErrs[in.ConfigRuleNames[0]]; ok {
+			return nil, err
+		}
 	}
 	var rcs []types.RemediationConfiguration
 	for _, name := range in.ConfigRuleNames {
@@ -236,11 +246,13 @@ func (m *oneRuleInfiniteResultsClient) GetComplianceDetailsByConfigRule(
 	}, nil
 }
 
-// contextCapturingClient wraps an inner client and records the context passed
-// to DescribeConfigRules so tests can inspect it after Fetch returns.
+// contextCapturingClient wraps an inner client and records the contexts passed
+// to DescribeConfigRules and GetComplianceDetailsByConfigRule so tests can
+// inspect the two phases' deadlines after Fetch returns.
 type contextCapturingClient struct {
 	inner       ConfigServiceClient
-	capturedCtx context.Context
+	capturedCtx context.Context // the listing call
+	readCtx     context.Context // the first compliance read
 }
 
 func (c *contextCapturingClient) DescribeConfigRules(
@@ -257,6 +269,9 @@ func (c *contextCapturingClient) GetComplianceDetailsByConfigRule(
 	params *configservice.GetComplianceDetailsByConfigRuleInput,
 	optFns ...func(*configservice.Options),
 ) (*configservice.GetComplianceDetailsByConfigRuleOutput, error) {
+	if c.readCtx == nil {
+		c.readCtx = ctx
+	}
 	return c.inner.GetComplianceDetailsByConfigRule(ctx, params, optFns...)
 }
 
@@ -323,15 +338,40 @@ func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 	_, err := f.Fetch(ctx)
 	require.NoError(t, err)
 
-	_, deadlineSet := ccc.capturedCtx.Deadline()
+	listDeadline, deadlineSet := ccc.capturedCtx.Deadline()
 	assert.True(t, deadlineSet, "Fetch must wrap a deadline-free context with a timeout")
+	readDeadline, readDeadlineSet := ccc.readCtx.Deadline()
+	assert.True(t, readDeadlineSet, "the read phase must be bounded too")
+	assert.True(t, readDeadline.After(listDeadline), "the read phase gets its own, longer budget sized to the listed rules")
+}
+
+// A Region near the 1000-rule cap, read one rule at a time, cannot fit in the
+// listing budget; the read budget grows with the count.
+func TestReadPhaseTimeout_ScalesWithRuleCount(t *testing.T) {
+	assert.Equal(t, defaultFetchTimeout, readPhaseTimeout(0))
+	assert.Equal(t, defaultFetchTimeout+1000*perRuleReadBudget, readPhaseTimeout(1000))
+	assert.Greater(t, readPhaseTimeout(1000), 30*time.Minute, "a full Region gets well over the five-minute listing budget")
+}
+
+// A caller's own deadline is respected as given, not replaced by the defaults.
+func TestAWSConfigFetcher_CallerDeadlineKept(t *testing.T) {
+	inner := &mockConfigClient{describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{testRule}}}}
+	ccc := &contextCapturingClient{inner: inner}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+	want, _ := ctx.Deadline()
+
+	_, err := NewAWSConfigFetcherWithClient(ccc).Fetch(ctx)
+	require.NoError(t, err)
+	got, _ := ccc.readCtx.Deadline()
+	assert.Equal(t, want, got)
 }
 
 // ---- fetch tests ----
 
-// A Region with no rules cannot yield a document the converter accepts (it
-// requires a ConfigRules array and at least one requirement), so Fetch says so
-// instead of emitting {"ConfigRules":null} for the converter to reject.
+// A Region with no rules is an empty export, not an error: the array is
+// present and empty (never null, which the converter rejects as a missing
+// field), and whether an empty export is acceptable is the caller's call.
 func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 	mock := &mockConfigClient{
 		t: t,
@@ -339,17 +379,17 @@ func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 			{ConfigRules: []types.ConfigRule{}},
 		},
 	}
-	f := NewAWSConfigFetcherWithClient(mock)
-	f.region = "us-east-1"
-	data, err := f.Fetch(context.Background())
-	require.Error(t, err)
-	assert.Nil(t, data, "no bytes are written alongside the error")
-	assert.Contains(t, err.Error(), "no Config rules in us-east-1")
+	data, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"ConfigRules":[]}`, string(data))
+	count, _, err := awsconfigconv.ExpectedRequirementCount(data)
+	require.NoError(t, err, "the converter accepts the empty export")
+	assert.Zero(t, count)
 }
 
-// When every rule is unreadable the outcome is the same, and the error must say
-// why nothing remained rather than letting the converter report a missing field.
-func TestAWSConfigFetcher_Fetch_AllSkippedIsAnError(t *testing.T) {
+// When every rule is unreadable the outcome is the same empty export; the
+// warning, not an error, says why nothing remained.
+func TestAWSConfigFetcher_Fetch_AllSkippedIsAnEmptyExport(t *testing.T) {
 	internal := testRule
 	internal.CreatedBy = aws.String("securityhub.amazonaws.com")
 	internal.RuleEvaluationVisibility = types.RuleEvaluationVisibilityInternal
@@ -358,15 +398,11 @@ func TestAWSConfigFetcher_Fetch_AllSkippedIsAnError(t *testing.T) {
 			{ConfigRules: []types.ConfigRule{internal}},
 		},
 	}
-	f := NewAWSConfigFetcherWithClient(mock)
-	f.region = "us-east-1"
-	data, err := f.Fetch(context.Background())
-	require.Error(t, err)
-	assert.Nil(t, data)
-	assert.Contains(t, err.Error(), "no readable Config rules in us-east-1")
-	assert.Contains(t, err.Error(), "1 skipped as unreadable (RuleEvaluationVisibility INTERNAL)")
-	assert.Contains(t, err.Error(), "some-rule (securityhub.amazonaws.com)", "the error names what was skipped and who provisioned it")
+	data, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"ConfigRules":[]}`, string(data))
 	assert.Zero(t, mock.complianceCalls["some-rule"], "nothing is queried when nothing is readable")
+	assert.Empty(t, mock.remediationBatches, "no remediation lookup for an empty rule set")
 }
 
 func TestAWSConfigFetcher_Fetch_SingleRule(t *testing.T) {
@@ -1020,9 +1056,9 @@ func twoRules() []types.ConfigRule {
 }
 
 // A rule the API will not let this principal read, or that vanished between
-// listing and reading, must cost that one rule and a warning, not the fetch:
-// the blanket skip this epic narrows existed because the first AccessDenied
-// used to abort everything.
+// listing and reading, must cost that one rule and a warning, not the fetch.
+// The refusal cases come after a rule that read, which is what makes them
+// per-rule rather than a principal that cannot read anything.
 func TestAWSConfigFetcher_Fetch_PerRuleReadFailureDegrades(t *testing.T) {
 	for name, perRule := range map[string]error{
 		"not found":               &types.NoSuchConfigRuleException{Message: aws.String("gone")},
@@ -1055,26 +1091,84 @@ func TestAWSConfigFetcher_Fetch_OtherPerRuleErrorsStayFatal(t *testing.T) {
 	assert.Contains(t, err.Error(), "other-rule")
 }
 
-// When every rule degrades, the outcome composes with the empty-result rule:
-// an error naming the cause, never a null document.
-func TestAWSConfigFetcher_Fetch_AllRulesFailToReadIsAnError(t *testing.T) {
+// A refusal before any rule has read is a principal that lacks the read
+// permission altogether: one clear error, not a failed call per rule and a
+// thousand-entry warning.
+func TestAWSConfigFetcher_Fetch_RefusalBeforeAnyReadIsFatal(t *testing.T) {
+	for name, refusal := range map[string]error{
+		"insufficient permission": &types.InsufficientPermissionsException{Message: aws.String("denied")},
+		"access denied":           &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &mockConfigClient{
+				describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+				complianceErrs:     map[string]error{"some-rule": refusal},
+			}
+			_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "some-rule")
+			assert.Contains(t, err.Error(), "config:GetComplianceDetailsByConfigRule", "the error names the permission to grant")
+			assert.Zero(t, mock.complianceCalls["other-rule"], "the fetch stops at the first refusal")
+		})
+	}
+}
+
+// When every listed rule has vanished the outcome composes with the empty
+// export: an empty array and a warning, never a null document or an error.
+func TestAWSConfigFetcher_Fetch_AllRulesGoneIsAnEmptyExport(t *testing.T) {
 	mock := &mockConfigClient{
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: []types.ConfigRule{testRule}}},
 		complianceErrs:     map[string]error{"some-rule": &types.NoSuchConfigRuleException{Message: aws.String("gone")}},
 	}
-	f := NewAWSConfigFetcherWithClient(mock)
-	f.region = "us-east-1"
-	data, err := f.Fetch(context.Background())
-	require.Error(t, err)
-	assert.Nil(t, data)
-	assert.Contains(t, err.Error(), "no Config rules could be read in us-east-1")
-	assert.Contains(t, err.Error(), "1 failed to read")
-	assert.Contains(t, err.Error(), "some-rule")
+	data, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"ConfigRules":[]}`, string(data))
 }
 
-// The shape the issue reported: every rule in the account came from a
-// conformance pack. It must go all the way through the converter and produce
-// requirements, not stop at the fetcher or at the converter's required-field check.
+// A remediation batch is all-or-nothing, so one name the API refuses must not
+// cost the other rules in its batch their fix: the batch is retried one name at
+// a time and only the refused rule goes without.
+func TestAWSConfigFetcher_Fetch_RemediationBatchFailureRetriesPerRule(t *testing.T) {
+	mk := func(id, name string) types.ConfigRule {
+		r := testRule
+		r.ConfigRuleId, r.ConfigRuleName = aws.String(id), aws.String(name)
+		return r
+	}
+	pack := mk("cr-cp", "pack-rule")
+	pack.CreatedBy = aws.String("config-conforms.amazonaws.com")
+	rules := []types.ConfigRule{mk("cr-1", "rule-1"), mk("cr-2", "rule-2"), mk("cr-3", "rule-3"), pack}
+	rc := func(name string) types.RemediationConfiguration {
+		return types.RemediationConfiguration{
+			ConfigRuleName: aws.String(name), TargetType: types.RemediationTargetTypeSsmDocument,
+			TargetId: aws.String("AWS-FixIt"), TargetVersion: aws.String("1"),
+		}
+	}
+	mock := &mockConfigClient{
+		describeRulesPages:  []configservice.DescribeConfigRulesOutput{{ConfigRules: rules}},
+		remediations:        map[string]types.RemediationConfiguration{"rule-1": rc("rule-1"), "rule-2": rc("rule-2"), "rule-3": rc("rule-3")},
+		remediationBatchErr: &smithy.GenericAPIError{Code: "InvalidParameterValueException", Message: "pack-rule is service linked"},
+		remediationErrs:     map[string]error{"pack-rule": &smithy.GenericAPIError{Code: "InvalidParameterValueException", Message: "pack-rule is service linked"}},
+	}
+	out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	file := mustUnmarshal(t, out)
+	require.Len(t, file.ConfigRules, 4)
+	byName := map[string]*awsconfigconv.RemediationConfiguration{}
+	for _, r := range file.ConfigRules {
+		byName[r.ConfigRuleName] = r.Remediation
+	}
+	for _, name := range []string{"rule-1", "rule-2", "rule-3"} {
+		require.NotNil(t, byName[name], "%s keeps its remediation despite the failed batch", name)
+		assert.Equal(t, "AWS-FixIt", byName[name].TargetID)
+	}
+	assert.Nil(t, byName["pack-rule"], "only the refused rule goes without")
+	require.Len(t, mock.remediationBatches, 5, "one failed batch of four, then four single-name retries")
+	assert.Len(t, mock.remediationBatches[0], 4)
+}
+
+// Every rule in the account came from a conformance pack. It must go all the
+// way through the converter and produce requirements, not stop at the fetcher
+// or at the converter's required-field check.
 func TestAWSConfigFetcher_PackOnlyAccount_ConvertsEndToEnd(t *testing.T) {
 	invokedAt := ts("2021-04-09T14:39:21Z")
 	recordedAt := ts("2021-04-09T14:39:51Z")
