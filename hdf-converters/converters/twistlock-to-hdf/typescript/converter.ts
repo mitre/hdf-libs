@@ -5,6 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
+import { stringifyDocument } from '../../../shared/typescript/exportmap.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -286,9 +287,8 @@ function formatMessage(vuln: TwistlockVuln): string {
  * are not lost. The projection is byte-identical to the Go projection: field
  * order and the conditional-omission rules (empty string / 0 / empty array
  * dropped, matching Go's `omitempty`) mirror the TwistlockVuln struct, and
- * JSON.stringify(obj, null, 2) matches Go's json.Encoder with HTML escaping
- * disabled and a two-space indent. Do not reorder without updating
- * go/converter.go.
+ * stringifyDocument matches Go's exportmap.EncodeDocument. Do not reorder
+ * without updating go/converter.go.
  */
 function renderVulnRecord(vuln: TwistlockVuln): string {
   const o: Record<string, unknown> = {};
@@ -311,7 +311,7 @@ function renderVulnRecord(vuln: TwistlockVuln): string {
   if (vuln.discoveredDate) o.discoveredDate = vuln.discoveredDate;
   if (vuln.fixDate) o.fixDate = vuln.fixDate;
   if (vuln.layerTime) o.layerTime = vuln.layerTime;
-  return JSON.stringify(o, null, 2);
+  return stringifyDocument(o);
 }
 
 /**

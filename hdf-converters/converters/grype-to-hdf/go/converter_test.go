@@ -997,7 +997,7 @@ func TestConvertGrype_RollsUpOneRequirementPerCVE(t *testing.T) {
 // The relocation is what makes roll-up non-lossy. Before it, §6's `code`
 // first-wins discarded 42 of anchore_grype's 89 distinct match records; the
 // record now rides on the RESULT, so every one survives the merge. Each is the
-// bytes Grype emitted, locatable in the input by its pointer.
+// match Grype emitted, locatable in the input by its pointer.
 func TestConvertGrype_CarriesEveryMatchRecordThroughRollUp(t *testing.T) {
 	input := loadFixture(t, "input/anchore_grype.json")
 	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
@@ -1038,7 +1038,7 @@ func TestConvertGrype_CarriesEveryMatchRecordThroughRollUp(t *testing.T) {
 			len(records), len(source.Matches))
 	}
 
-	// Each record must be the bytes Grype emitted, parseable back to the match
+	// Each record must be the match Grype emitted, parseable back to the match
 	// at the pointer it names.
 	for _, b := range hdfResults.Baselines {
 		for _, r := range b.Requirements {
@@ -1113,5 +1113,47 @@ func TestConvertGrype_RollUpKeepsIgnoredMatchesDistinct(t *testing.T) {
 		if *rec.Pointer != tc.want {
 			t.Errorf("%s: pointer = %q, want %q", tc.req.ID, *rec.Pointer, tc.want)
 		}
+	}
+}
+
+// The TypeScript twin reads the same case table, so both languages are held to one
+// rendering of each record: neither side may keep or drop escapes and number tokens
+// on its own.
+func TestRawSourceRecord_SharedCases(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "raw-source-record-cases.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var table struct {
+		Cases []struct {
+			Why     string `json:"why"`
+			Input   string `json:"input"`
+			Pointer string `json:"pointer"`
+			Content string `json:"content"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(raw, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no cases")
+	}
+	for _, tc := range table.Cases {
+		t.Run(tc.Why, func(t *testing.T) {
+			res, err := ConvertGrypeToHDF([]byte(tc.Input), testConverterVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rec := res.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+			if rec == nil || rec.Pointer == nil {
+				t.Fatal("no rawSourceRecord")
+			}
+			if *rec.Pointer != tc.Pointer {
+				t.Errorf("pointer = %q, want %q", *rec.Pointer, tc.Pointer)
+			}
+			if rec.Content != tc.Content {
+				t.Errorf("content mismatch\n got: %q\nwant: %q", rec.Content, tc.Content)
+			}
+		})
 	}
 }

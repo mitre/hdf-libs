@@ -9,6 +9,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -87,10 +88,9 @@ type GrypeMatch struct {
 	Artifact               GrypeArtifact               `json:"artifact"`
 
 	// raw is the match exactly as Grype emitted it. Grype carries no literal
-	// source snippet, so the result's rawSourceRecord is the whole match
-	// re-indented in place — preserving source key order, every field the typed struct does
-	// not model, and the source number literals, so the output is byte-identical
-	// to the TypeScript twin's JSON.stringify(match, null, 2).
+	// source snippet, so the result's rawSourceRecord is the whole match, with
+	// every field the typed struct does not model and the source number tokens
+	// (see renderMatchRecord).
 	raw json.RawMessage
 }
 
@@ -344,19 +344,25 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// renderMatchRecord renders the raw match as indented JSON. json.Indent
-// re-formats the original bytes in place, preserving source key order so the
-// output is byte-identical to the TypeScript twin's JSON.stringify(match, null,
-// 2) — the twins share goldens, so the record cannot be the raw bytes.
+// renderMatchRecord renders the untyped match through exportmap's document
+// encoder, which the TypeScript twin's stringifyDocument matches byte for byte:
+// keys sorted, U+2028/U+2029 escaped, < > & raw. UseNumber keeps every number
+// token as Grype wrote it. Source key order and escapes are not preserved.
 func renderMatchRecord(match GrypeMatch) string {
 	if len(match.raw) == 0 {
 		return "{}"
 	}
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, match.raw, "", "  "); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(match.raw))
+	dec.UseNumber()
+	var untyped interface{}
+	if err := dec.Decode(&untyped); err != nil {
 		return "{}"
 	}
-	return buf.String()
+	encoded, err := exportmap.EncodeDocument(untyped)
+	if err != nil {
+		return "{}"
+	}
+	return string(bytes.TrimRight(encoded, "\n"))
 }
 
 // buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss

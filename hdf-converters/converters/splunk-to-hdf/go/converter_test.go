@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -57,6 +59,27 @@ func TestConvertSplunkToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "disa_stig-el7", baseline.Name)
 	require.Len(t, baseline.Requirements, 1, "Minimal fixture has 1 control")
 	require.Len(t, baseline.Requirements[0].Results, 1, "Minimal control has 1 result")
+}
+
+// Canonical HDF time is trimmed UTC at millisecond precision, whatever the host zone.
+// Local is pinned off UTC so the assertion cannot pass vacuously under TZ=UTC.
+func TestConvertSplunkToHDF_TimestampIsCanonicalUTC(t *testing.T) {
+	saved := time.Local
+	time.Local = time.FixedZone("TEST-06", -6*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	result, err := ConvertSplunkToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Regexp(t, regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$`), doc.Timestamp,
+		"the document timestamp must be trimmed UTC with at most millisecond precision")
 }
 
 // ---- Error tests ----

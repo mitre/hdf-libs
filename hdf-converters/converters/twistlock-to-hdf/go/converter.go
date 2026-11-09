@@ -9,6 +9,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -331,21 +332,16 @@ func formatMessage(vuln TwistlockVuln) string {
 
 // renderVulnRecord re-serializes the parsed vulnerability into indented JSON
 // for the result's rawSourceRecord, so fields with no structured HDF home (link, riskFactors, publishedDate,
-// fixDate, layerTime) are not lost. It is byte-identical to the TS projection:
-// json.Encoder with HTML escaping disabled and a two-space indent matches
-// JSON.stringify(obj, null, 2). The encoder appends a trailing newline that
-// JSON.stringify does not, so it is trimmed. Field order and omission follow
-// the TwistlockVuln declaration + omitempty tags — do not reorder without
-// updating the TS projection.
+// fixDate, layerTime) are not lost. exportmap.EncodeDocument is matched byte for
+// byte by the TS twin's stringifyDocument; its trailing newline is trimmed. Field
+// order and omission follow the TwistlockVuln declaration + omitempty tags — do
+// not reorder without updating the TS projection.
 func renderVulnRecord(vuln TwistlockVuln) string {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(vuln); err != nil {
+	encoded, err := exportmap.EncodeDocument(vuln)
+	if err != nil {
 		return ""
 	}
-	return strings.TrimRight(buf.String(), "\n")
+	return string(bytes.TrimRight(encoded, "\n"))
 }
 
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.

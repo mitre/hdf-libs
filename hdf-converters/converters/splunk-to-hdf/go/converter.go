@@ -249,7 +249,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	var allBaselines []hdf.EvaluatedBaseline
 	var allTargets []hdf.Component
 	var lastHeader *SplunkHeader
-	timestamp := time.Now()
+	timestamp := hdfutil.NormalizeTimestamp(time.Now())
 
 	for _, guid := range guids {
 		g := groups[guid]

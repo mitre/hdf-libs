@@ -418,3 +418,12 @@ describe('impact-0 control with no results at all', () => {
     expect(new Date(req!.results[0]!.startTime).toISOString()).toBe('0001-01-01T00:00:00.000Z');
   });
 });
+
+// Mirrors the Go twin's TestConvertSplunkToHDF_TimestampIsCanonicalUTC.
+describe('document timestamp', () => {
+  it('is trimmed UTC with at most millisecond precision', async () => {
+    const input = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'splunk-minimal.json'), 'utf-8');
+    const out = JSON.parse(await convertSplunkToHdf(input)) as { timestamp: string };
+    expect(out.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/);
+  });
+});

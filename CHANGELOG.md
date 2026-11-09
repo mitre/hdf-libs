@@ -100,6 +100,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`grype-to-hdf` and `twistlock-to-hdf` write byte-identical `rawSourceRecord` content from Go and TypeScript.** Each twin rendered the record with its own JSON encoding, so U+2028/U+2029 escaping and, for grype, number spelling differed between languages despite comments claiming parity. Both now render through the shared document encoders `sarif-to-hdf` already uses: U+2028/U+2029 are always escaped, `<`, `>` and `&` stay literal, grype keeps every number exactly as Grype wrote it, and grype's record keys are now sorted rather than kept in source order, the canonical form ADR-0017 permits. The grype goldens changed in key order only.
+
+- **`splunk-to-hdf` (Go) stamps the document timestamp in canonical UTC.** It used the host's local zone at full precision, so the output depended on where it ran and differed from TypeScript.
+
 - **`sarif-to-hdf` drops a `properties.hdf` bag value that does not fit its HDF field in both languages.** The TypeScript converter copied bag values into the output unchecked, so a mistyped value (a number where a string belongs, a timestamp that does not parse) produced schema-invalid HDF where Go dropped it. TypeScript now applies Go's rule, and a `null` bag value is ignored in both: in Go it used to clear a restored title and `verificationMethod` and set a result's `startTime` to year 1. One shared table of mistyped values holds both languages to the rule.
 
 - **`hdf-to-sarif` writes per-result fingerprints SARIF accepts.** Per-result `fingerprints` and `partialFingerprints` now keep only string values, as SARIF requires, and a map left empty is omitted in both languages; TypeScript wrote `"fingerprints": {}` where Go left the key out.

@@ -876,3 +876,31 @@ func TestConvertTwistlock_CarriesEveryVulnRecordThroughRollUp(t *testing.T) {
 	assert.Equal(t, want, len(pointers), "distinct source pointers")
 	assert.Equal(t, 5, biggest, "sample-1's largest roll-up group is five packages under one CVE")
 }
+
+// The TypeScript twin reads the same case table, so both languages are held to one
+// rendering of each record.
+func TestRawSourceRecord_SharedCases(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "raw-source-record-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []struct {
+			Why     string `json:"why"`
+			Input   string `json:"input"`
+			Pointer string `json:"pointer"`
+			Content string `json:"content"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+	for _, tc := range table.Cases {
+		t.Run(tc.Why, func(t *testing.T) {
+			res, err := ConvertTwistlockToHDF([]byte(tc.Input), testVersion)
+			require.NoError(t, err)
+			rec := res.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+			require.NotNil(t, rec)
+			require.NotNil(t, rec.Pointer)
+			assert.Equal(t, tc.Pointer, *rec.Pointer)
+			assert.Equal(t, tc.Content, rec.Content)
+		})
+	}
+}
