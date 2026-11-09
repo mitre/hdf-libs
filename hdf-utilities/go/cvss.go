@@ -1,11 +1,12 @@
 package hdfutil
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/mitre/hdf-libs/hdf-utilities/go/v3/cvss40data"
 )
 
 // CVSS vector parsing and validation utilities.
@@ -362,11 +363,8 @@ func roundUp31(x float64) float64 {
 //
 // A faithful port of the FIRST reference calculator (FIRSTdotorg/cvss-v4-calculator:
 // cvss_score.js), driven by the MacroVector lookup + max tables extracted verbatim
-// into cvss40-data.json. The TypeScript peer (src/cvss/index.ts) is kept
-// byte-identical via the shared data file and the shared parity fixture.
-
-//go:embed cvss40-data.json
-var cvss40DataRaw []byte
+// into cvss40data/cvss40-data.json. The TypeScript peer (src/cvss/index.ts)
+// imports that same file, so there is one copy and the two cannot drift apart.
 
 type cvss40Tables struct {
 	Lookup      map[string]float64 `json:"lookup"`
@@ -390,7 +388,7 @@ var cvss40 = mustLoadCvss40()
 
 func mustLoadCvss40() cvss40Tables {
 	var t cvss40Tables
-	if err := json.Unmarshal(cvss40DataRaw, &t); err != nil {
+	if err := json.Unmarshal(cvss40data.Raw, &t); err != nil {
 		panic(fmt.Sprintf("cvss: cannot parse embedded cvss40-data.json: %v", err))
 	}
 	return t

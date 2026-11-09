@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // Regenerates the NIST 800-53 Rev 4 <-> Rev 5 control crosswalk
 // (nist-revision-crosswalk.json) from NIST's own comparison workbooks. Run it,
-// review the printed summary plus `git diff`, commit. Output is written
-// byte-identically to both the Go and TS copies, deterministically sorted.
+// review the printed summary plus `git diff`, commit. Output is the one copy both
+// languages read, deterministically sorted.
 //
 //   node scripts/generate-nist-crosswalk.mjs [--check]
 //
-//     (no flag)  rewrite both crosswalk files and print a summary
-//     --check    report drift only; exit 1 if regenerating would change EITHER copy
+//     (no flag)  rewrite the crosswalk file and print a summary
+//     --check    report drift only; exit 1 if regenerating would change the committed
+//                table. NOT a commit gate: it fetches NIST's workbooks live.
 //
 // Sources (both NIST-published, machine-readable, from the SP 800-53 Rev 5 final page):
 //   1. sp800-53r4-to-r5-comparison-workbook.xlsx, sheet "Rev4 Rev5 Compared" — one row
@@ -34,10 +35,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..');
-const OUT_FILES = [
-  join(REPO, 'hdf-mappings', 'go', 'nist', 'nist-revision-crosswalk.json'),
-  join(REPO, 'hdf-mappings', 'src', 'data', 'nist-revision-crosswalk.json'),
-];
+const OUT_FILES = [join(REPO, 'hdf-mappings', 'go', 'datasets', 'mappings', 'nist-revision-crosswalk.json')];
 
 const SOURCES = {
   comparison:

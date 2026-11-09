@@ -7,7 +7,7 @@
 
 import type { CweNistMapping, CweNistMappings } from './types.js';
 import { getCurrentNistRevision } from '../nist/index.js';
-import rawMappings from '../data/cwe-nist-mappings.json';
+import rawMappings from '../../go/datasets/mappings/cwe-nist-mappings.json';
 
 const mappings = rawMappings as CweNistMappings;
 

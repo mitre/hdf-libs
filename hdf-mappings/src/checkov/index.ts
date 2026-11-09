@@ -1,13 +1,13 @@
 /**
  * Query functions for Checkov check ID to CCI/NIST mappings.
  *
- * The dataset is the JSON file the Go loader embeds (go/checkov/), imported
+ * The dataset is the JSON file the Go loader embeds (go/datasets/mappings/), imported
  * directly so both languages read one file; the bundler inlines it into dist.
  */
 
 import type { CheckovCciNistMapping, CheckovMappingDataset, CheckovMappingProvenance } from './types.js';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
-import rawDataset from '../../go/checkov/checkov-cci-nist-mappings.json';
+import rawDataset from '../../go/datasets/mappings/checkov-cci-nist-mappings.json';
 
 const dataset = rawDataset as CheckovMappingDataset;
 
