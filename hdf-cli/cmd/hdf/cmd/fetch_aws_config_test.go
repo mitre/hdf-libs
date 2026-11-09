@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
 	awsconfig "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
+	awsconfigfetch "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/awsconfig/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -165,4 +167,85 @@ func TestFetchAWSConfigCmd_ExecuteWithContext(t *testing.T) {
 	// We expect an error (no real AWS) but not a panic.
 	err := cmd.RunE(cmd, []string{})
 	assert.Error(t, err)
+}
+
+// stubAWSConfigFetcher stands in for the live fetcher so the command's handling
+// of a result can run end to end without an AWS account.
+type stubAWSConfigFetcher struct {
+	res awsconfigfetch.FetchResult
+	err error
+}
+
+func (s stubAWSConfigFetcher) FetchWithReport(context.Context) (awsconfigfetch.FetchResult, error) {
+	return s.res, s.err
+}
+
+func withStubAWSConfigFetcher(t *testing.T, stub stubAWSConfigFetcher) {
+	t.Helper()
+	orig := newAWSConfigFetcher
+	newAWSConfigFetcher = func(context.Context, awsconfigfetch.AWSConfigParams) (awsConfigFetcher, error) {
+		return stub, nil
+	}
+	t.Cleanup(func() { newAWSConfigFetcher = orig })
+}
+
+const oneRuleExport = `{"ConfigRules":[{
+	"ConfigRuleId": "config-rule-test",
+	"ConfigRuleName": "access-keys-rotated",
+	"ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-test",
+	"Source": {"Owner": "AWS", "SourceIdentifier": "ACCESS_KEYS_ROTATED"},
+	"EvaluationResults": [{"ComplianceType": "COMPLIANT", "ConfigRuleInvokedTime": "2021-04-09T14:39:21Z", "ResultRecordedTime": "2021-04-09T14:39:51Z"}]
+}]}`
+
+// A fetch that dropped rules is a partial result. The exit-code vocabulary
+// reserves 3 for a bulk run over files and has no code for a run that completed
+// with warnings, so the command prints the grouped warning and exits 0; a nil
+// error is what main turns into 0.
+func TestFetchAWSConfigCmd_PartialResultWarnsAndExitsZero(t *testing.T) {
+	withStubAWSConfigFetcher(t, stubAWSConfigFetcher{res: awsconfigfetch.FetchResult{
+		Data: []byte(oneRuleExport),
+		Dropped: []awsconfigfetch.UnreadableRule{
+			{Name: "rule-b", Detail: "NoSuchConfigRuleException: gone"},
+			{Name: "rule-c", Detail: "NoSuchConfigRuleException: gone"},
+		},
+	}})
+	stdout, stderr, err := executeCommand("fetch", "aws-config", "--region", "us-east-1", "--format", "raw")
+	require.NoError(t, err)
+	assert.Equal(t, "WARNING: aws-config: 2 rule(s) could not be read and were dropped: "+
+		"rule-b, rule-c (NoSuchConfigRuleException: gone)\n", stderr)
+	assert.JSONEq(t, oneRuleExport, stdout)
+}
+
+// With HDF output the warning precedes the refusal that points back at it, and
+// the run is an ordinary failure.
+func TestFetchAWSConfigCmd_AllDroppedHDFOutputFails(t *testing.T) {
+	withStubAWSConfigFetcher(t, stubAWSConfigFetcher{res: awsconfigfetch.FetchResult{
+		Data:    []byte(`{"ConfigRules":[]}`),
+		Dropped: []awsconfigfetch.UnreadableRule{{Name: "rule-b", Detail: "NoSuchConfigRuleException: gone"}},
+	}})
+	_, stderr, err := executeCommand("fetch", "aws-config", "--region", "us-east-1")
+	require.Error(t, err)
+	code, _ := ExitStatus(err)
+	assert.Equal(t, 1, code)
+	assert.Contains(t, err.Error(), "no Config rules to convert in us-east-1")
+	assert.Contains(t, stderr, "WARNING: aws-config: 1 rule(s) could not be read and were dropped: rule-b (NoSuchConfigRuleException: gone)")
+}
+
+// A clean fetch prints no warning at all.
+func TestFetchAWSConfigCmd_CleanFetchPrintsNoWarning(t *testing.T) {
+	withStubAWSConfigFetcher(t, stubAWSConfigFetcher{res: awsconfigfetch.FetchResult{Data: []byte(oneRuleExport)}})
+	stdout, stderr, err := executeCommand("fetch", "aws-config", "--region", "us-east-1", "--format", "raw")
+	require.NoError(t, err)
+	assert.Empty(t, stderr)
+	assert.JSONEq(t, oneRuleExport, stdout)
+}
+
+// A fetch error is reported as the command's failure, not swallowed.
+func TestFetchAWSConfigCmd_FetchErrorIsFailure(t *testing.T) {
+	withStubAWSConfigFetcher(t, stubAWSConfigFetcher{err: errors.New("api error ThrottlingException: slow down")})
+	_, _, err := executeCommand("fetch", "aws-config", "--region", "us-east-1")
+	require.Error(t, err)
+	code, _ := ExitStatus(err)
+	assert.Equal(t, 1, code)
+	assert.Contains(t, err.Error(), "failed to fetch AWS Config data: api error ThrottlingException: slow down")
 }

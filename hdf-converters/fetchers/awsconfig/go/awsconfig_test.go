@@ -1,19 +1,24 @@
 package awsconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 
 	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/configservice"
 	"github.com/aws/aws-sdk-go-v2/service/configservice/types"
 )
@@ -1037,7 +1042,7 @@ func TestAWSConfigFetcher_ReadabilityFollowsEvaluationVisibility(t *testing.T) {
 	rules, skipped, err := NewAWSConfigFetcherWithClient(mock).fetchAllConfigRules(context.Background())
 	require.NoError(t, err)
 	require.Len(t, skipped, 1, "only the INTERNAL rule is unreadable")
-	assert.Equal(t, unreadableRule{name: "securityhub-rule", detail: "securityhub.amazonaws.com"}, skipped[0],
+	assert.Equal(t, UnreadableRule{Name: "securityhub-rule", Detail: "securityhub.amazonaws.com"}, skipped[0],
 		"the warning names the rule and the service that provisioned it")
 	names := make([]string, 0, len(rules))
 	for _, r := range rules {
@@ -1205,4 +1210,179 @@ func TestAWSConfigFetcher_PackOnlyAccount_ConvertsEndToEnd(t *testing.T) {
 	require.Len(t, hdfResult.Baselines, 1)
 	require.Len(t, hdfResult.Baselines[0].Requirements, 1)
 	assert.Equal(t, "config-rule-cp1", hdfResult.Baselines[0].Requirements[0].ID)
+}
+
+// ---- grouped warning tests ----
+
+// captureStderr runs fn with os.Stderr redirected and returns what it wrote.
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	old := os.Stderr
+	os.Stderr = w
+	done := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		_, _ = buf.ReadFrom(r)
+		done <- buf.String()
+	}()
+	fn()
+	os.Stderr = old
+	require.NoError(t, w.Close())
+	return <-done
+}
+
+// rulesNamed is one page of readable rules with the given names.
+func rulesNamed(names ...string) []types.ConfigRule {
+	rules := make([]types.ConfigRule, len(names))
+	for i, name := range names {
+		rules[i] = testRule
+		rules[i].ConfigRuleId = aws.String("cr-" + name)
+		rules[i].ConfigRuleName = aws.String(name)
+	}
+	return rules
+}
+
+// liveReadError shapes an API exception the way the SDK delivers one over HTTP:
+// inside the operation error and a response error whose request ID differs on
+// every call, so two reads refused for the same reason never share an Error().
+func liveReadError(requestID string, apiErr error) error {
+	return &smithy.OperationError{
+		ServiceID:     "Config Service",
+		OperationName: "GetComplianceDetailsByConfigRule",
+		Err: &awshttp.ResponseError{
+			ResponseError: &smithyhttp.ResponseError{
+				Response: &smithyhttp.Response{Response: &http.Response{StatusCode: 400}},
+				Err:      apiErr,
+			},
+			RequestID: requestID,
+		},
+	}
+}
+
+func gone() error { return &types.NoSuchConfigRuleException{Message: aws.String("gone")} }
+
+// Three rules lost to the same cause: the warning names the cause once and each
+// rule once, even though the three errors differ in their request IDs.
+func TestAWSConfigFetcher_Fetch_RepeatedCauseIsNamedOnce(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: rulesNamed("rule-a", "rule-b", "rule-c")}},
+		complianceErrs: map[string]error{
+			"rule-a": liveReadError("req-1", gone()),
+			"rule-b": liveReadError("req-2", gone()),
+			"rule-c": liveReadError("req-3", gone()),
+		},
+	}
+	var data []byte
+	var err error
+	stderr := captureStderr(t, func() { data, err = NewAWSConfigFetcherWithClient(mock).Fetch(context.Background()) })
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"ConfigRules":[]}`, string(data))
+	assert.Equal(t, "WARNING: aws-config: 3 rule(s) could not be read and were dropped: "+
+		"rule-a, rule-b, rule-c (NoSuchConfigRuleException: gone)\n", stderr)
+}
+
+// Different causes are grouped by cause in the order each was first seen. The
+// refusal comes after rule-a has read, which is what makes it per-rule.
+func TestAWSConfigFetcher_Fetch_DifferentCausesAreGrouped(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: rulesNamed("rule-a", "rule-b", "rule-c", "rule-d")}},
+		complianceErrs: map[string]error{
+			"rule-b": liveReadError("req-1", gone()),
+			"rule-c": liveReadError("req-2", &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized"}),
+			"rule-d": liveReadError("req-3", gone()),
+		},
+	}
+	var data []byte
+	var err error
+	stderr := captureStderr(t, func() { data, err = NewAWSConfigFetcherWithClient(mock).Fetch(context.Background()) })
+	require.NoError(t, err)
+	require.Len(t, mustUnmarshal(t, data).ConfigRules, 1)
+	assert.Equal(t, "WARNING: aws-config: 3 rule(s) could not be read and were dropped: "+
+		"rule-b, rule-d (NoSuchConfigRuleException: gone); rule-c (AccessDeniedException: not authorized)\n", stderr)
+}
+
+// A partial fetch is visible to the caller, not only on stderr: the result names
+// each dropped rule with its cause and leaves reporting to the caller that asked.
+func TestAWSConfigFetcher_FetchWithReport_ExposesDroppedRules(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErrs:     map[string]error{"other-rule": liveReadError("req-1", gone())},
+	}
+	var res FetchResult
+	var err error
+	stderr := captureStderr(t, func() { res, err = NewAWSConfigFetcherWithClient(mock).FetchWithReport(context.Background()) })
+	require.NoError(t, err)
+	assert.Empty(t, stderr, "the caller that asked for the report owns the warning")
+	assert.Equal(t, []UnreadableRule{{Name: "other-rule", Detail: "NoSuchConfigRuleException: gone"}}, res.Dropped)
+	file := mustUnmarshal(t, res.Data)
+	require.Len(t, file.ConfigRules, 1)
+	assert.Equal(t, "some-rule", file.ConfigRules[0].ConfigRuleName)
+	assert.Equal(t, "WARNING: aws-config: 1 rule(s) could not be read and were dropped: other-rule (NoSuchConfigRuleException: gone)",
+		DroppedWarning(res.Dropped))
+}
+
+// A clean fetch reports nothing dropped and has no warning to print.
+func TestAWSConfigFetcher_FetchWithReport_CleanFetchDropsNothing(t *testing.T) {
+	mock := &mockConfigClient{describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}}}
+	res, err := NewAWSConfigFetcherWithClient(mock).FetchWithReport(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, res.Dropped)
+	assert.Empty(t, DroppedWarning(res.Dropped))
+	require.Len(t, mustUnmarshal(t, res.Data).ConfigRules, 2)
+}
+
+// Rules sharing a detail are listed once under it, groups keep first-seen order,
+// and a rule with no detail is named bare.
+func TestDescribeUnreadable_GroupsByDetail(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in   []UnreadableRule
+		want string
+	}{
+		"none":        {nil, ""},
+		"one":         {[]UnreadableRule{{Name: "a", Detail: "x"}}, "a (x)"},
+		"same detail": {[]UnreadableRule{{Name: "a", Detail: "x"}, {Name: "b", Detail: "x"}}, "a, b (x)"},
+		"mixed":       {[]UnreadableRule{{Name: "a", Detail: "x"}, {Name: "b", Detail: "y"}, {Name: "c", Detail: "x"}}, "a, c (x); b (y)"},
+		"no detail":   {[]UnreadableRule{{Name: "a"}, {Name: "b"}}, "a, b"},
+	} {
+		t.Run(name, func(t *testing.T) { assert.Equal(t, tc.want, describeUnreadable(tc.in)) })
+	}
+}
+
+// The remediation warning renders through the same grouping, so two rules whose
+// remediation lookup was refused for one reason name that reason once.
+func TestAWSConfigFetcher_Remediations_RefusalsGroupByCause(t *testing.T) {
+	refused := liveReadError("req-1", &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized"})
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: rulesNamed("rule-a", "rule-b")}},
+		remediationErr:     refused,
+	}
+	stderr := captureStderr(t, func() {
+		_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+		require.NoError(t, err)
+	})
+	assert.Equal(t, "WARNING: aws-config: skipping remediation for 2 rule(s): "+
+		"rule-a, rule-b (AccessDeniedException: not authorized)\n", stderr)
+}
+
+// The warning for rules the API marks unreadable is the user's only record that
+// they were left out, so its wording is pinned rather than left to inspection.
+func TestAWSConfigFetcher_Fetch_SkipWarningNamesTheRules(t *testing.T) {
+	internal := testRule
+	internal.ConfigRuleId = aws.String("cr-sh")
+	internal.ConfigRuleName = aws.String("securityhub-rule")
+	internal.CreatedBy = aws.String("securityhub.amazonaws.com")
+	internal.RuleEvaluationVisibility = types.RuleEvaluationVisibilityInternal
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{testRule, internal}},
+		},
+	}
+	stderr := captureStderr(t, func() {
+		_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+		require.NoError(t, err)
+	})
+	assert.Equal(t, "WARNING: aws-config: skipped 1 rule(s) whose evaluations the Config API will not "+
+		"return (RuleEvaluationVisibility INTERNAL): securityhub-rule (securityhub.amazonaws.com)\n", stderr)
 }
