@@ -209,6 +209,42 @@
       "externalId": false,
       "why": "both quote characters delimit literals in a DTD, not just the double quote",
       "malformed": false
+    },
+    {
+      "name": "byte-order mark before an entity declaration",
+      "xml": "\ufeff<?xml version=\"1.0\"?><!DOCTYPE n [<!ENTITY e \"boom\">]><n>&e;</n>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "GATE BYPASS: a UTF-8 BOM is not character data. A scanner that stops at it reports nothing and the gate accepts the entity",
+      "malformed": false
+    },
+    {
+      "name": "byte-order mark before an external identifier",
+      "xml": "\ufeff<!DOCTYPE n SYSTEM \"http://example.invalid/n.dtd\"><n/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": true,
+      "why": "the same bypass for the XXE vector, with no XML declaration between the BOM and the DOCTYPE",
+      "malformed": false
+    },
+    {
+      "name": "byte-order mark before a benign document",
+      "xml": "\ufeff<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<note><to>a</to></note>",
+      "doctype": false,
+      "entity": false,
+      "externalId": false,
+      "why": "tools on Windows routinely write a BOM; it must not make a clean document look malformed",
+      "malformed": false
+    },
+    {
+      "name": "two byte-order marks before an entity declaration",
+      "xml": "\ufeff\ufeff<!DOCTYPE n [<!ENTITY e \"boom\">]><n>&e;</n>",
+      "doctype": false,
+      "entity": false,
+      "externalId": false,
+      "why": "only one leading BOM is an encoding signature; a second is character data, so the prologue is malformed and the gate must refuse it on that ground",
+      "malformed": true
     }
   ]
 }

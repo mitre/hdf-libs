@@ -6,6 +6,7 @@
 package shared
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -885,17 +886,16 @@ func ValidateXMLInput(input []byte, maxSize int) error {
 // quote- and comment-aware tokenising, and a substring version of this check was
 // defeated by a `]>` inside an attribute default.
 //
-// A DOCTYPE whose declarations cannot be fully parsed is refused rather than accepted: the
-// scanner then has a lower bound on what it found, not an answer, so treating "no
-// findings" as "safe" would be the wrong way round. An input that is not XML at all is a
-// different matter and is left to the parser, which reports it better.
+// A prologue that cannot be parsed is refused when a DOCTYPE token appears anywhere in
+// the input, whether or not the scanner reached it: the scanner then has a lower bound on
+// what it found, not an answer, so treating "no findings" as "safe" would be the wrong
+// way round. Leading bytes the scanner does not expect (a second BOM, stray text) would
+// otherwise hide the whole DTD from it. An unparseable input that names no DOCTYPE is
+// left to the parser, which reports it better.
 func validateXMLPrologue(input []byte) error {
 	decls := hdfutil.InspectXMLPrologue(input)
 	switch {
-	// Only when a DOCTYPE was actually seen. Malformed on its own just means the input is
-	// not XML — the parser reports that far better than this gate could, and a size check
-	// on a non-XML buffer is a legitimate call.
-	case decls.Malformed && decls.HasDoctype:
+	case decls.Malformed && (decls.HasDoctype || containsDoctypeToken(input)):
 		return fmt.Errorf("XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked")
 	case decls.HasEntityDecl:
 		return fmt.Errorf("XML input contains entity declarations which are not supported (potential entity expansion attack)")
@@ -903,6 +903,22 @@ func validateXMLPrologue(input []byte) error {
 		return fmt.Errorf("XML input references an external DTD or entity which is not supported (potential external entity attack)")
 	}
 	return nil
+}
+
+// containsDoctypeToken reports whether "<!DOCTYPE", in any case, occurs anywhere.
+func containsDoctypeToken(input []byte) bool {
+	const token = "<!DOCTYPE"
+	for i := 0; ; {
+		at := bytes.IndexByte(input[i:], '<')
+		if at == -1 {
+			return false
+		}
+		i += at
+		if len(input)-i >= len(token) && bytes.EqualFold(input[i:i+len(token)], []byte(token)) {
+			return true
+		}
+		i++
+	}
 }
 
 // UnratedSeverityTag / UnratedSeverityValue are the shared marker converters

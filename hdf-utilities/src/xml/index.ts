@@ -366,7 +366,8 @@ function scanXmlPrologue(input: string): PrologueScan {
     malformed: false,
     foundRoot,
   });
-  let i = 0;
+  // One leading BOM is an encoding signature (XML 1.0 §4.3.3), not character data.
+  let i = input.startsWith('\uFEFF') ? 1 : 0;
   for (;;) {
     while (i < input.length && isSpace(input[i] as string)) i++;
     if (i >= input.length) return out(false);

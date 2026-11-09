@@ -124,7 +124,11 @@ func scanInternalSubset(s []byte) (end int, hasEntity, hasExternalID, ok bool) {
 // scanXMLPrologue walks the prologue — everything before the root element — and reports
 // what it declares, plus whether a root element was reached at all.
 func scanXMLPrologue(input []byte) (decls XMLPrologueDeclarations, foundRoot bool) {
+	// One leading UTF-8 BOM is an encoding signature (XML 1.0 §4.3.3), not character data.
 	i := 0
+	if bytes.HasPrefix(input, []byte("\xEF\xBB\xBF")) {
+		i = 3
+	}
 	for {
 		for i < len(input) && (input[i] == ' ' || input[i] == '\t' || input[i] == '\n' || input[i] == '\r') {
 			i++
@@ -192,11 +196,12 @@ func scanXMLPrologue(input []byte) (decls XMLPrologueDeclarations, foundRoot boo
 // ContainsXMLDoctype reports whether the input declares a DOCTYPE before its root
 // element.
 //
-// This is the one fact here that is SOUND rather than best-effort: it is set the moment
-// the <!DOCTYPE token is seen, so no amount of quoting or commenting inside the
-// declaration can hide it. The entity and external-id facts require reading the
-// declaration's contents, which is inherently harder to get right — see
-// scanInternalSubset. A boundary that wants a guarantee should gate on this.
+// It is set the moment the scanner reaches the <!DOCTYPE token, so no quoting or
+// commenting inside the declaration can hide it. It is sound only for a prologue the
+// scanner can parse: bytes it does not expect before the DOCTYPE (a second BOM, stray
+// text) stop the scan first, so a boundary that wants a guarantee must also treat a
+// Malformed InspectXMLPrologue result as suspect; shared.ValidateXMLInput refuses one
+// whose input contains a <!DOCTYPE token anywhere.
 func ContainsXMLDoctype(input []byte) bool {
 	return InspectXMLPrologue(input).HasDoctype
 }

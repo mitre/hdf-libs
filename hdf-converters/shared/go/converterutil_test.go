@@ -125,6 +125,7 @@ func TestValidateXMLInput_WithEntities(t *testing.T) {
 // entities. OWASP's own summary is to do this "rather than attempting to validate DTD
 // contents", which is why an inert subset is accepted rather than proven inert.
 func TestValidateXMLInput_DTDPolicy(t *testing.T) {
+	const bom = "\xEF\xBB\xBF"
 	cases := []struct {
 		name    string
 		xml     string
@@ -151,6 +152,12 @@ func TestValidateXMLInput_DTDPolicy(t *testing.T) {
 			"could not be fully parsed",
 		},
 		{"a non-XML buffer is left to the parser, not refused here", "not xml at all", ""},
+		{"UTF-8 BOM before an entity declaration", bom + `<?xml version="1.0"?><!DOCTYPE l [<!ENTITY e "v">]><l>&e;</l>`, "entity declarations"},
+		{"UTF-8 BOM before an external DTD reference", bom + `<!DOCTYPE l SYSTEM "http://evil.invalid/e.dtd"><l/>`, "external"},
+		{"UTF-8 BOM before a benign document", bom + `<?xml version="1.0" encoding="UTF-8"?><l/>`, ""},
+		{"a second BOM hides the DOCTYPE from the scanner", bom + bom + `<!DOCTYPE l [<!ENTITY e "v">]><l/>`, "could not be fully parsed"},
+		{"leading junk hides the DOCTYPE from the scanner", `junk<!doctype l [<!ENTITY e "v">]><l/>`, "could not be fully parsed"},
+		{"an unparseable prologue that names no DOCTYPE is left to the parser", `junk<l/>`, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
