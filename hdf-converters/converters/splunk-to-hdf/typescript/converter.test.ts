@@ -348,9 +348,16 @@ describe('Splunk to HDF Converter', () => {
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
     });
 
-    it('should handle control with no results', async () => {
+    // This asserted toHaveLength(0), pinning a schema-invalid document as the
+    // contract: results is required with minItems:1, so the converter rejected
+    // its own output. The Go peer asserted nothing here, so nothing caught it.
+    it('should synthesize a result for a control with no results', async () => {
       const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noResults: true }))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+      const results = hdf.baselines[0]!.requirements[0]!.results;
+      expect(results).toHaveLength(1);
+      expect(results[0]!.status).toBe('notReviewed');
+      expect(results[0]!.codeDesc).toContain('recorded no results');
+      expectValidResults(hdf);
     });
 
     it('should fall back to a default description when the control has none', async () => {
@@ -380,15 +387,44 @@ describe('Splunk to HDF Converter', () => {
 });
 
 describe('splunk parity on absent/degenerate stored fields', () => {
-  it('defaults a control with no impact field to 0.0 like the Go zero value', async () => {
+  // A control with no impact field is UNKNOWN severity, not zero severity. This
+  // replaces an assertion of 0.0 "like the Go zero value" — Go's non-pointer
+  // field made absent and explicit-0 the same value, so both twins pinned an
+  // artifact. Twin of the Go TestAbsentImpact_IsUnknownSeverity.
+  it('treats a control with no impact field as unknown severity', async () => {
     const events = JSON.parse(loadFixture('splunk-minimal.json')) as Record<string, unknown>[];
     for (const e of events) {
       if ((e.meta as Record<string, unknown> | undefined)?.subtype === 'control') delete e.impact;
     }
-    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    const out = await convertSplunkToHdf(JSON.stringify(events));
+    const hdf = JSON.parse(out) as HDFResults;
     expect(hdf.baselines[0].requirements.length).toBeGreaterThan(0);
     for (const req of hdf.baselines[0].requirements) {
-      expect(req.impact).toBe(0);
+      expect(req.impact).toBeCloseTo(0.5, 5);
+      // Nothing declared these inapplicable, so none is synthesized.
+      expect(req.results.map((r) => r.status)).not.toContain('notApplicable');
+    }
+    // The schema-required field must still be present and valid.
+    expectValidResults(hdf);
+  });
+
+  // The assertion above cannot fail on the translation guard: splunk-minimal's
+  // only control has a passing result, so nothing-was-established is false
+  // whatever the guard reads. Force the branch with a skipped-only control, so
+  // reverting the guard to `(control.impact ?? 0) === 0` — which would translate
+  // an ABSENT impact — fails here.
+  it('does not translate a skipped-only control whose impact is absent', async () => {
+    const events = JSON.parse(loadFixture('splunk-minimal.json')) as Record<string, unknown>[];
+    for (const e of events) {
+      if ((e.meta as Record<string, unknown> | undefined)?.subtype === 'control') {
+        delete e.impact;
+        e.results = [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}];
+      }
+    }
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    for (const req of hdf.baselines[0].requirements) {
+      expect(req.impact).toBeCloseTo(0.5, 5);
+      expect(req.results.map((r) => r.status)).not.toContain('notApplicable');
     }
   });
 });

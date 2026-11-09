@@ -9,6 +9,7 @@ import (
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -404,9 +405,13 @@ func TestMapStatus_CaseInsensitive(t *testing.T) {
 	assert.Equal(t, hdf.NotReviewed, mapStatus("wibble"))
 }
 
-func TestAbsentImpact_DefaultsToZero(t *testing.T) {
-	// A stored control with no impact field yields 0.0 (float zero value);
-	// the TS peer must emit the same rather than dropping the required field.
+// A stored control with no impact field is UNKNOWN severity, not zero severity,
+// so it resolves to the unknown-severity default. This replaces a test that
+// pinned 0.0 as "the float zero value" — Go's non-pointer field made absent and
+// explicit-0 the same value, so that test recorded an artifact rather than a
+// decision. Its one real insight is kept: the TS peer must agree, and it used to
+// drop the schema-required field entirely.
+func TestAbsentImpact_IsUnknownSeverity(t *testing.T) {
 	var events []map[string]interface{}
 	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
 	for _, e := range events {
@@ -418,9 +423,24 @@ func TestAbsentImpact_DefaultsToZero(t *testing.T) {
 	require.NoError(t, err)
 	result, err := ConvertSplunkToHDF(raw, testConverterVersion)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Baselines[0].Requirements)
 	for _, req := range result.Baselines[0].Requirements {
-		assert.Equal(t, 0.0, req.Impact)
+		assert.InDelta(t, 0.5, req.Impact, 0.0001,
+			"absent impact means we do not know the severity, not that there is none")
+		statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+		for _, r := range req.Results {
+			statuses = append(statuses, r.Status)
+		}
+		assert.NotContains(t, statuses, hdf.NotApplicable,
+			"nothing declared this control inapplicable, so no notApplicable is synthesized")
 	}
+
+	// The schema-required field must still be present and valid.
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	v := validators.Validate(out, validators.TypeResults)
+	assert.Truef(t, v.Valid, "absent-impact output must validate: %s", v.Error())
 }
 
 // TestConvertSplunk_ImpactZeroSkipsTranslate is the divergence this fixes: the
@@ -578,4 +598,112 @@ func TestConvertSplunk_AgreesWithLegacyhdfOnTheSameControl(t *testing.T) {
 	assert.Equal(t, b.Status, a.Status, "status must match the file importer")
 	assert.Equal(t, b.CodeDesc, a.CodeDesc, "codeDesc must match byte for byte")
 	assert.Equal(t, b.StartTime, a.StartTime, "the startTime convention must match")
+}
+
+// A control event with no tags must still carry a tags object — tags is in
+// Evaluated_Requirement.required, so null is invalid. The file importer had the
+// same defect; these are the same InSpec controls, so both readers are fixed.
+func TestConvertSplunk_TaglessControlIsSchemaValid(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			delete(e, "tags")
+		}
+	}
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, out.Baselines[0].Requirements)
+	for _, req := range out.Baselines[0].Requirements {
+		require.NotNil(t, req.Tags, "tags is schema-required, so it cannot be nil")
+		assert.Empty(t, req.Tags)
+	}
+
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(serialized), `"tags":null`)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "tagless output must validate: %s", v.Error())
+}
+
+// TestConvertSplunk_AgreesWithLegacyhdfOnAbsence is the contract that matters
+// here: the two readers of an InSpec control payload must treat an ABSENT field
+// identically. They diverged before — Go read absent impact as 0 while TS
+// dropped the field entirely — and nothing in the suite would have caught it,
+// because no fixture omits the field.
+func TestConvertSplunk_AgreesWithLegacyhdfOnAbsence(t *testing.T) {
+	const id = "V-1"
+	splunkDoc := `[{"meta":{"subtype":"header","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json"},"profiles":[],"platform":{"name":"centos","release":"7"},"statistics":{},"version":"4.16.0"},
+{"meta":{"subtype":"profile","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json","profile_sha256":"abc"},"name":"p","sha256":"abc","controls":[]},
+{"meta":{"subtype":"control","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json","profile_sha256":"abc"},"id":"` + id + `","title":"t",` +
+		`"results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]`
+
+	legacyDoc := `{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[{"id":"` + id + `","title":"t",
+"results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]}]}`
+
+	fromSplunk, err := ConvertSplunkToHDF([]byte(splunkDoc), testConverterVersion)
+	require.NoError(t, err)
+	v1, err := legacyhdf.ParseLegacyHDF([]byte(legacyDoc))
+	require.NoError(t, err)
+	fromFile := legacyhdf.ConvertLegacyHDF(v1, testConverterVersion)
+
+	pick := func(out *hdf.HDFResults) hdf.EvaluatedRequirement {
+		t.Helper()
+		for _, b := range out.Baselines {
+			for _, r := range b.Requirements {
+				if r.ID == id {
+					return r
+				}
+			}
+		}
+		t.Fatalf("requirement %s missing", id)
+		return hdf.EvaluatedRequirement{}
+	}
+
+	a, b := pick(fromSplunk), pick(fromFile)
+	assert.InDelta(t, b.Impact, a.Impact, 0.0001, "an absent impact must resolve the same in both readers")
+	assert.NotNil(t, a.Tags, "neither reader may emit a nil tags map")
+	assert.NotNil(t, b.Tags)
+
+	statuses := func(r hdf.EvaluatedRequirement) []hdf.ResultStatus {
+		out := make([]hdf.ResultStatus, 0, len(r.Results))
+		for _, x := range r.Results {
+			out = append(out, x.Status)
+		}
+		return out
+	}
+	assert.Equal(t, statuses(b), statuses(a), "and neither may synthesize a result the other does not")
+}
+
+// The splunk twin: its resultless control produced results: [], which fails
+// minItems:1 rather than the type check, but is the same source-absence defect
+// and needs the same synthesized result.
+func TestConvertSplunk_ResultlessControlIsSchemaValid(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			delete(e, "results")
+		}
+	}
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, out.Baselines[0].Requirements)
+	for _, req := range out.Baselines[0].Requirements {
+		require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
+		assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+		assert.NotEmpty(t, req.Results[0].CodeDesc)
+	}
+
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
 }

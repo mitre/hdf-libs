@@ -3895,8 +3895,11 @@ describe('Splunk deeper branch coverage', () => {
     const input = JSON.stringify([header, profile, control]);
     const hdf = parseHdf(await convertSplunkToHdf(input));
     expect(hdf.baselines[0]!.requirements).toHaveLength(1);
-    // null results should produce empty results array
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // results is required with minItems:1, so a null/absent results array gets
+    // one synthesized notReviewed result. This asserted toHaveLength(0) and so
+    // pinned a document the converter itself rejects.
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 
   it('should handle control with missing profile_sha256 — L207', async () => {

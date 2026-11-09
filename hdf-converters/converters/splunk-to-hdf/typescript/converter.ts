@@ -1,5 +1,5 @@
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -66,12 +66,19 @@ interface SplunkProfile extends SplunkEvent {
   controls: unknown[];
 }
 
+// What an ABSENT impact resolves to: the unknown-severity default rather than
+// zero, which would claim the control carries no risk.
+// Parity: unknownSeverityImpact in go/converter.go.
+const UNKNOWN_SEVERITY_IMPACT = 0.5;
+
 interface SplunkControl extends SplunkEvent {
   id: string;
   title: string;
   desc: string;
   descriptions: Record<string, string>;
-  impact: number;
+  // Optional because an absent impact and an explicit 0 are different claims.
+  // Parity: *float64 in go/converter.go.
+  impact?: number;
   code: string;
   tags: Record<string, unknown>;
   results: SplunkResult[];
@@ -272,9 +279,11 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
             control.id,
             control.title,
             descriptions,
-            // Absent stored impact matches the Go zero value (0.0) rather than
-            // dropping the schema-required field.
-            control.impact ?? 0,
+            // An absent stored impact is unknown severity, not zero severity —
+            // the same rule the file importer applies, since these are the same
+            // InSpec controls. Dropping the field is not an option either: it is
+            // schema-required.
+            control.impact ?? UNKNOWN_SEVERITY_IMPACT,
             results,
             options,
           ) as EvaluatedRequirement;
@@ -296,12 +305,20 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
           // the same score-0-and-skip convention applies and must produce the
           // same document the file importer does.
           if (
-            (control.impact ?? 0) === 0 &&
+            control.impact === 0 &&
             inSpecEstablishedNothing(req.results.map((r) => r.status))
           ) {
             req.results.push(
               synthesizedNotApplicableResult(req.results, goZeroDate()),
             );
+          }
+
+          // results is schema-required with minItems:1, so a control event that
+          // recorded none would otherwise leave []. After the translation above,
+          // so the two never both fire: an impact-0 resultless control states
+          // its scope claim and nothing else, matching the file importer.
+          if (req.results.length === 0) {
+            req.results = [synthesizedNoResultsResult(goZeroDate())];
           }
 
           return req;

@@ -2019,3 +2019,100 @@ describe('convertLegacyHdf upgrade edge cases', () => {
     expect(req.refs ?? []).toHaveLength(0);
   });
 });
+
+// AUTHORED inputs, not captured: no published InSpec exec JSON omits `impact` or
+// `tags`, so neither shape can be sourced; see fixtures/provenance.txt. Twins of
+// the Go TestConvertLegacyHDF_* tests for the same three cases.
+describe('absence in the source is not a value', () => {
+  const base = (control: Record<string, unknown>): LegacyHDFResults =>
+    ({
+      platform: {name: 'centos', release: '7'},
+      version: '4.16.0',
+      statistics: {},
+      profiles: [{name: 'p', sha256: 'abc', controls: [control]}],
+    }) as unknown as LegacyHDFResults;
+
+  // tags is in Evaluated_Requirement.required, so omitting it is as invalid as
+  // emitting null. This side used to omit it.
+  it('gives a tagless control an empty tags object', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'tagless', impact: 0.5,
+      results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]! as unknown as Record<string, unknown>;
+    expect(Object.hasOwn(req, 'tags')).toBe(true);
+    expect(req.tags).toEqual({});
+    expectValidResults(out);
+  });
+
+  // results is required with minItems:1, so a source that recorded none cannot
+  // pass through: this side emitted results: null and the converter rejected its
+  // own output. The fill runs after overlay flattening, which decides which
+  // layer's results win by checking which side is non-empty.
+  it('synthesizes a result for a control with no results', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no results key', impact: 0.5, tags: {},
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe('notReviewed');
+    expect(req.results[0]!.codeDesc).toContain('recorded no results');
+    expect(JSON.stringify(out)).not.toContain('"results":null');
+    expectValidResults(out);
+  });
+
+  // This converter's results carry startTime as a STRING. The fill loop is cast
+  // through the v3 schema type, where it is a Date, so a Date compiles here and
+  // stringifies with fractional seconds -- diverging from Go for any consumer
+  // that JSON.stringifies the returned object rather than using serializeHdf.
+  it('synthesizes a startTime string matching its siblings, not a Date', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no results key', impact: 0.7, tags: {},
+    })) as unknown as HDFV2Results;
+
+    const st = out.baselines[0]!.requirements[0]!.results[0]!.startTime;
+    expect(typeof st).toBe('string');
+    expect(JSON.stringify(st)).toBe('"0001-01-01T00:00:00Z"');
+  });
+
+  // An absent impact is unknown severity, not zero, and must not take the
+  // score-0 translation — nothing declared the control inapplicable.
+  it('treats an absent impact as unknown severity and does not translate', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no impact key', tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(0.5, 5);
+    expect((req.results ?? []).map((r) => r.status)).not.toContain('notApplicable');
+    expectValidResults(out);
+  });
+
+  // The score-0 translation reads the SOURCE field, not the resolved impact, so
+  // it can never fire for an absent one. Those two formulations agree today only
+  // because the unknown default is non-zero; pin that, so setting it to 0 fails
+  // here loudly instead of silently re-coupling absence to the translation.
+  it('keeps the unknown default distinct from an explicit 0', () => {
+    const absent = convertLegacyHdf(base({
+      id: 'V-1', tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+    expect(absent.baselines[0]!.requirements[0]!.impact).not.toBe(0);
+  });
+
+  // The counterpart: an explicit 0 is the author's declaration and still
+  // translates. This is what the absent case must stay distinct from.
+  it('still translates an explicit impact of 0', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'declared inapplicable', impact: 0, tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBe(0);
+    expect((req.results ?? []).map((r) => r.status)).toContain('notApplicable');
+  });
+});

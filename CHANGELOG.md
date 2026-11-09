@@ -14,6 +14,22 @@ All notable changes to this project will be documented in this file.
 
   The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
 
+### Fixed
+
+- **An InSpec control with no `impact`, no `tags` or no `results` no longer produces an invalid document, and an absent `impact` is now unknown severity rather than zero.**
+
+  Both importers of an InSpec control payload — `legacyhdf-to-hdf` for exec JSON and `splunk-to-hdf` for the same controls read out of Splunk — treated source *absence* as a value. `impact` was declared as a non-pointer `float64`, so an absent field and an explicit `"impact": 0` arrived as the same number and the score-0 translation fired on both; the TypeScript peers meanwhile dropped `impact` entirely, and `tags` reached output as `null` in Go and was omitted in TypeScript. `results` was guarded by the same nil check and reached output as `null`. All three are schema-required, so `hdf convert --from legacyhdf` rejected its own output.
+
+  An absent `impact` now resolves to the unknown-severity default of `0.5` — "we do not know whether this is good or bad" — and does **not** take the score-0 translation, because nothing declared the control inapplicable. An explicit `0` is unchanged: it is the profile author's declaration and still becomes an explicit `notApplicable` result. The two are now distinguishable, which required making the source field a pointer in Go, as `conveyor-to-hdf` already does for its score.
+
+  A control with no `results` is now filled with one synthesized `notReviewed` result stating that the source recorded none — `results` carries `minItems: 1`, so an empty array is as invalid as `null`, and nothing was established: not a pass, and not the scope claim an explicit `impact` of `0` makes. `splunk-to-hdf` had the same gap in the other shape, emitting `[]`. The fill runs *after* overlay flattening, because the flatten decides which layer's results win by checking which side is non-empty — filling a control beforehand makes every layer look non-empty and the real results are discarded.
+
+  Worth stating plainly, because it is worse than the dropped fields: an absent `impact` read as `0` also took the score-0 translation, so the old output *fabricated* an affirmative `notApplicable` result asserting the profile author had declared the control inapplicable — a compliance-relevant claim, excluded from the compliance denominator, invented from a field the source never carried.
+
+  **Source-breaking for library consumers.** `legacyhdf.LegacyControl.Impact` changes from `float64` to `*float64` in Go, and `LegacyControl.impact` from `number` to `number | undefined` in TypeScript. Code that reads the field without a nil/undefined check no longer compiles. The same applies to `splunk-to-hdf`'s control struct, which is not exported.
+
+  No committed fixture carries either shape, so no golden moved and no existing document changes. The parity harness masks neither field, so the divergence would have failed a snapshot — the branch was simply never executed.
+
 ### Changed
 
 - **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**

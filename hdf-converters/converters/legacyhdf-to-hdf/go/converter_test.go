@@ -11,6 +11,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -170,7 +171,7 @@ func v1WithResultTimes(version string, startTimes ...string) *LegacyHDFResults {
 		Platform: LegacyPlatform{Name: "test-system"},
 		Profiles: []LegacyProfile{{
 			Name:     "p",
-			Controls: []LegacyControl{{ID: "c-1", Impact: 0.5, Results: results}},
+			Controls: []LegacyControl{{ID: "c-1", Impact: hdfutil.Ptr(0.5), Results: results}},
 		}},
 		Statistics: LegacyStatistics{},
 	}
@@ -216,7 +217,7 @@ func TestConvertV1ToV2_NoTimestampWhenSourceHasNoTimes(t *testing.T) {
 	v1 := &LegacyHDFResults{
 		Version:    "5.22.3",
 		Platform:   LegacyPlatform{Name: "test-system"},
-		Profiles:   []LegacyProfile{{Name: "p", Controls: []LegacyControl{{ID: "c-1", Impact: 0}}}},
+		Profiles:   []LegacyProfile{{Name: "p", Controls: []LegacyControl{{ID: "c-1", Impact: hdfutil.Ptr(0.0)}}}},
 		Statistics: LegacyStatistics{},
 	}
 
@@ -233,8 +234,8 @@ func TestConvertV1ToV2_IgnoresTimelessResults(t *testing.T) {
 		Profiles: []LegacyProfile{{
 			Name: "p",
 			Controls: []LegacyControl{
-				{ID: "c-1", Impact: 0.5, Results: []LegacyResult{{Status: "passed"}}},
-				{ID: "c-2", Impact: 0.5, Results: []LegacyResult{{Status: "passed", StartTime: &timed}}},
+				{ID: "c-1", Impact: hdfutil.Ptr(0.5), Results: []LegacyResult{{Status: "passed"}}},
+				{ID: "c-2", Impact: hdfutil.Ptr(0.5), Results: []LegacyResult{{Status: "passed", StartTime: &timed}}},
 			},
 		}},
 		Statistics: LegacyStatistics{},
@@ -659,7 +660,7 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 			{ID: "group-1", Title: &groupTitle, Controls: []string{"ctrl-1"}},
 		},
 		Controls: []LegacyControl{
-			{ID: "ctrl-1", Impact: 0.5},
+			{ID: "ctrl-1", Impact: hdfutil.Ptr(0.5)},
 		},
 		SHA256:        &sha256,
 		Depends:       []LegacyDependency{{Name: &maintainer}},
@@ -770,7 +771,7 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 			Name: "simple-profile",
 			Controls: []LegacyControl{{
 				ID:      "V-1",
-				Impact:  0.5,
+				Impact:  hdfutil.Ptr(0.5),
 				Results: []LegacyResult{{Status: "passed"}},
 			}},
 		}},
@@ -793,8 +794,8 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 			Profiles: []LegacyProfile{{
 				Name: "test",
 				Controls: []LegacyControl{
-					{ID: "V-1", Impact: 0, Results: []LegacyResult{{Status: "skipped"}}},
-					{ID: "V-2", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}}},
+					{ID: "V-1", Impact: hdfutil.Ptr(0.0), Results: []LegacyResult{{Status: "skipped"}}},
+					{ID: "V-2", Impact: hdfutil.Ptr(0.7), Results: []LegacyResult{{Status: "passed"}}},
 				},
 			}},
 		}
@@ -819,7 +820,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 			Profiles: []LegacyProfile{{
 				Name: "test",
 				Controls: []LegacyControl{
-					{ID: "V-1", Impact: 0, Status: &passed, Results: []LegacyResult{{Status: "passed"}}},
+					{ID: "V-1", Impact: hdfutil.Ptr(0.0), Status: &passed, Results: []LegacyResult{{Status: "passed"}}},
 				},
 			}},
 		}
@@ -857,7 +858,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 			Platform: LegacyPlatform{Name: "test"},
 			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.7), Results: []LegacyResult{{Status: "passed"}}}},
 			}},
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -871,7 +872,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 			Platform: LegacyPlatform{Name: "test"},
 			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "passed"}, {Status: "failed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.7), Results: []LegacyResult{{Status: "passed"}, {Status: "failed"}}}},
 			}},
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -885,7 +886,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 			Platform: LegacyPlatform{Name: "test"},
 			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []LegacyControl{{ID: "V-1", Impact: 0.7, Results: []LegacyResult{{Status: "skipped"}, {Status: "passed"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.7), Results: []LegacyResult{{Status: "skipped"}, {Status: "passed"}}}},
 			}},
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -899,7 +900,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 			Platform: LegacyPlatform{Name: "test"},
 			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []LegacyControl{{ID: "V-1", Impact: 0.5, Results: []LegacyResult{{Status: "skipped"}}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5), Results: []LegacyResult{{Status: "skipped"}}}},
 			}},
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -913,7 +914,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 			Platform: LegacyPlatform{Name: "test"},
 			Profiles: []LegacyProfile{{
 				Name:     "test",
-				Controls: []LegacyControl{{ID: "V-1", Impact: 0.5, Results: []LegacyResult{}}},
+				Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5), Results: []LegacyResult{}}},
 			}},
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -967,7 +968,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				Name: "test",
 				Controls: []LegacyControl{{
 					ID:      "V-1",
-					Impact:  0,
+					Impact:  hdfutil.Ptr(0.0),
 					Tags:    map[string]interface{}{"severity": "medium", "nist": []string{"AC-1"}},
 					Results: []LegacyResult{{Status: "skipped"}},
 				}},
@@ -989,7 +990,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				Name: "test",
 				Controls: []LegacyControl{{
 					ID:      "V-1",
-					Impact:  0.7,
+					Impact:  hdfutil.Ptr(0.7),
 					Tags:    map[string]interface{}{"severity": "high"},
 					Results: []LegacyResult{{Status: "passed"}},
 				}},
@@ -1008,7 +1009,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				Name: "test",
 				Controls: []LegacyControl{{
 					ID:      "V-1",
-					Impact:  0.7,
+					Impact:  hdfutil.Ptr(0.7),
 					Results: []LegacyResult{{Status: "passed"}},
 				}},
 			}},
@@ -1034,7 +1035,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				Platform: LegacyPlatform{Name: "test"},
 				Profiles: []LegacyProfile{{
 					Name:     "test",
-					Controls: []LegacyControl{{ID: "V-1", Impact: tc.impact, Results: []LegacyResult{}}},
+					Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(tc.impact), Results: []LegacyResult{}}},
 				}},
 			}
 			v2 := ConvertLegacyHDF(v1, "1.0.0")
@@ -1051,7 +1052,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 				Name: "test",
 				Controls: []LegacyControl{{
 					ID:      "V-1",
-					Impact:  0.7,
+					Impact:  hdfutil.Ptr(0.7),
 					Tags:    map[string]interface{}{"severity": "bogus"},
 					Results: []LegacyResult{{Status: "passed"}},
 				}},
@@ -1136,7 +1137,7 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 
 func TestConvertControl_RefsMapped(t *testing.T) {
 	t.Run("string-valued ref maps to Reference.Ref.String", func(t *testing.T) {
-		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5), Refs: []interface{}{
 			map[string]interface{}{"ref": "DPMS Target Red Hat Enterprise Linux 9"},
 		}}
 		v2 := convertControl(v1)
@@ -1147,7 +1148,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("bare string element maps to Reference.Ref.String", func(t *testing.T) {
-		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{"NIST SP 800-53"}}
+		v1 := LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5), Refs: []interface{}{"NIST SP 800-53"}}
 		v2 := convertControl(v1)
 		require.Len(t, v2.Refs, 1)
 		require.NotNil(t, v2.Refs[0].Ref.String)
@@ -1155,7 +1156,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("url and uri are preserved", func(t *testing.T) {
-		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5), Refs: []interface{}{
 			map[string]interface{}{"ref": "doc", "url": "https://example.com", "uri": "urn:x"},
 		}}
 		v2 := convertControl(v1)
@@ -1167,7 +1168,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("array-of-objects ref maps to Reference.Ref.AnythingMapArray", func(t *testing.T) {
-		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5), Refs: []interface{}{
 			map[string]interface{}{"ref": []interface{}{
 				map[string]interface{}{"url": "https://example.com/doc"},
 			}},
@@ -1180,7 +1181,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("empty ref array carries no content and is dropped", func(t *testing.T) {
-		v1 := LegacyControl{ID: "V-1", Impact: 0.5, Refs: []interface{}{
+		v1 := LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5), Refs: []interface{}{
 			map[string]interface{}{"ref": []interface{}{}},
 		}}
 		v2 := convertControl(v1)
@@ -1188,7 +1189,7 @@ func TestConvertControl_RefsMapped(t *testing.T) {
 	})
 
 	t.Run("absent refs yield nil", func(t *testing.T) {
-		v2 := convertControl(LegacyControl{ID: "V-1", Impact: 0.5})
+		v2 := convertControl(LegacyControl{ID: "V-1", Impact: hdfutil.Ptr(0.5)})
 		assert.Nil(t, v2.Refs)
 	})
 }
@@ -1350,7 +1351,7 @@ func v1Control(impact float64, status string, resultStatuses ...string) *LegacyH
 	for i, rs := range resultStatuses {
 		results[i] = LegacyResult{Status: rs, StartTime: &st}
 	}
-	ctrl := LegacyControl{ID: "c-1", Impact: impact, Results: results}
+	ctrl := LegacyControl{ID: "c-1", Impact: hdfutil.Ptr(impact), Results: results}
 	if status != "" {
 		ctrl.Status = &status
 	}
@@ -1507,7 +1508,7 @@ func TestUpPinSynthesizesDefaultDescription(t *testing.T) {
 			Name: "p",
 			Controls: []LegacyControl{{
 				ID:     "C-1",
-				Impact: 0.5,
+				Impact: hdfutil.Ptr(0.5),
 				Desc:   &desc, // desc present, but no descriptions[] (SAF shape)
 				Tags:   map[string]interface{}{},
 				Results: []LegacyResult{{
@@ -1597,4 +1598,129 @@ func TestMixedResourceIDConvertsAllResults(t *testing.T) {
 	require.NotNil(t, objReq.Results[0].ResourceID)
 	assert.Equal(t, canonicalObjectResourceID, *objReq.Results[0].ResourceID,
 		"object resource_id normalized to canonical JSON string")
+}
+
+// --- Source absence must not become a wrong value, nor an invalid document ---
+//
+// These inputs are AUTHORED, not captured: no published InSpec exec JSON omits
+// `impact` or `tags`, so the shapes cannot be sourced. Recorded in
+// fixtures/provenance.txt per the owner's ruling.
+
+// A tagless control must still carry a tags object. tags is in
+// Evaluated_Requirement.required, so both null and an absent key are invalid —
+// the converter used to pass the nil map straight through and emit tags: null,
+// so `hdf convert --from legacyhdf` rejected its own output.
+func TestConvertLegacyHDF_TaglessControlIsSchemaValid(t *testing.T) {
+	doc := []byte(`{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[
+  {"id":"V-1","title":"tagless","impact":0.5,
+   "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	req := out.Baselines[0].Requirements[0]
+	require.NotNil(t, req.Tags, "tags is schema-required, so it cannot be nil")
+	assert.Empty(t, req.Tags, "an absent source tags map becomes an empty object, not a guess")
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), `"tags":null`, "a nil map must not reach output")
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "tagless output must validate: %s", v.Error())
+}
+
+// An ABSENT impact is unknown severity, not zero. It resolves to the repo's
+// unknown-severity default and must NOT take the InSpec score-0 translation —
+// the author never declared the control inapplicable, the field simply was not
+// there. Compare TestConvertLegacyHDF_ExplicitImpactZeroStillTranslates.
+func TestConvertLegacyHDF_AbsentImpactIsUnknownNotZero(t *testing.T) {
+	doc := []byte(`{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[
+  {"id":"V-1","title":"no impact key","tags":{},
+   "results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	req := out.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.5, req.Impact, 0.0001,
+		"an absent impact is unknown severity, which is 0.5, not 0")
+
+	statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+	for _, r := range req.Results {
+		statuses = append(statuses, r.Status)
+	}
+	assert.NotContains(t, statuses, hdf.NotApplicable,
+		"nothing declared this control inapplicable, so no notApplicable is synthesized")
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "absent-impact output must validate: %s", v.Error())
+}
+
+// The counterpart: an EXPLICIT impact of 0 is the profile author's declaration
+// and keeps translating, exactly as before. This is what distinguishes the two
+// cases, and it is why the source field has to be a pointer.
+func TestConvertLegacyHDF_ExplicitImpactZeroStillTranslates(t *testing.T) {
+	doc := []byte(`{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[
+  {"id":"V-1","title":"declared inapplicable","impact":0,"tags":{},
+   "results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	req := out.Baselines[0].Requirements[0]
+	assert.Zero(t, req.Impact, "an explicit 0 is carried as the source wrote it")
+
+	statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+	for _, r := range req.Results {
+		statuses = append(statuses, r.Status)
+	}
+	assert.Contains(t, statuses, hdf.NotApplicable,
+		"the author's score-0 declaration still becomes an explicit notApplicable result")
+}
+
+// The score-0 translation reads the SOURCE pointer, not the resolved impact, so
+// it can never fire for an absent field. Those two formulations happen to agree
+// today only because the unknown default is non-zero — a mutation to
+// `impact == 0` survives the suite for exactly that reason. Pin the invariant
+// the equivalence rests on, so setting the default to 0 fails here loudly
+// instead of silently re-coupling absence to the translation.
+func TestUnknownSeverityImpactIsNotZero(t *testing.T) {
+	assert.NotZero(t, unknownSeverityImpact,
+		"an unknown severity must not collide with the author's explicit 0, "+
+			"which is what triggers the notApplicable translation")
+}
+
+// A control with no results at all must still produce a valid document.
+// results is schema-required AND carries minItems:1, so neither null nor []
+// is acceptable — the only honest filling is a result saying nothing was
+// established. This was the third required field with the same source-absence
+// defect, after tags and impact.
+func TestConvertLegacyHDF_ResultlessControlIsSchemaValid(t *testing.T) {
+	doc := []byte(`{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[
+  {"id":"V-1","title":"no results key","impact":0.5,"tags":{}}]}]}`)
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	req := out.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"nothing was established, which is notReviewed — not a pass and not a scope claim")
+	assert.NotEmpty(t, req.Results[0].CodeDesc, "the synthesized result must say why it exists")
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), `"results":null`)
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
 }

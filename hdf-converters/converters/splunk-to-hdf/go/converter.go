@@ -71,12 +71,16 @@ type SplunkGroup struct {
 
 // SplunkControl represents a control event.
 type SplunkControl struct {
-	Meta           SplunkMeta             `json:"meta"`
-	ID             string                 `json:"id"`
-	Title          string                 `json:"title"`
-	Desc           string                 `json:"desc"`
-	Descriptions   map[string]string      `json:"descriptions"`
-	Impact         float64                `json:"impact"`
+	Meta         SplunkMeta        `json:"meta"`
+	ID           string            `json:"id"`
+	Title        string            `json:"title"`
+	Desc         string            `json:"desc"`
+	Descriptions map[string]string `json:"descriptions"`
+	// Impact is a POINTER for the same reason legacyhdf-to-hdf's is: an absent
+	// impact and an explicit 0 are different claims, and a non-pointer
+	// float64 collapses both to 0 at unmarshal. These are the same InSpec
+	// controls read from a store, so the two readers must agree.
+	Impact         *float64               `json:"impact"`
 	Code           string                 `json:"code"`
 	Tags           map[string]interface{} `json:"tags"`
 	Results        []SplunkResult         `json:"results"`
@@ -361,6 +365,11 @@ func convertProfileToBaseline(
 	return baseline
 }
 
+// unknownSeverityImpact mirrors legacyhdf-to-hdf's: an absent impact resolves to
+// the unknown-severity default rather than to zero, which would claim the
+// control carries no risk.
+const unknownSeverityImpact = 0.5
+
 // convertControlToRequirement converts a single SplunkControl into an HDF
 // EvaluatedRequirement.
 func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
@@ -405,12 +414,26 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 		}
 	}
 
+	// An absent impact is unknown severity, not zero severity — the same rule
+	// the file importer applies, since these are the same InSpec controls.
+	impact := unknownSeverityImpact
+	if ctrl.Impact != nil {
+		impact = *ctrl.Impact
+	}
+
+	tags := ctrl.Tags
+	if tags == nil {
+		tags = map[string]interface{}{}
+	}
+
 	req := hdf.EvaluatedRequirement{
-		ID:                 ctrl.ID,
-		Title:              ptrIfNotEmpty(ctrl.Title),
-		Impact:             ctrl.Impact,
-		Code:               ptrIfNotEmpty(ctrl.Code),
-		Tags:               ctrl.Tags,
+		ID:     ctrl.ID,
+		Title:  ptrIfNotEmpty(ctrl.Title),
+		Impact: impact,
+		Code:   ptrIfNotEmpty(ctrl.Code),
+		// tags is schema-required, so a nil source map becomes an empty object
+		// rather than reaching output as null. Same defect the file importer had.
+		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nistTagsFromJSONMap(ctrl.Tags)),
 		Descriptions:       descriptions,
 		Results:            results,
@@ -421,8 +444,16 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 	// These are InSpec controls read from a store rather than a file, so the
 	// same score-0-and-skip convention applies and must produce the same
 	// document the file importer does.
-	if ctrl.Impact == 0 && shared.InSpecEstablishedNothing(req.Results) {
+	if ctrl.Impact != nil && *ctrl.Impact == 0 && shared.InSpecEstablishedNothing(req.Results) {
 		req.Results = append(req.Results, shared.SynthesizedNotApplicableResult(req.Results))
+	}
+
+	// results is schema-required with minItems:1, so a control event that
+	// recorded none would otherwise leave []. This runs AFTER the translation
+	// above so the two never both fire: an impact-0 resultless control states
+	// its scope claim and nothing else, matching the file importer.
+	if len(req.Results) == 0 {
+		req.Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{})}
 	}
 
 	return req
