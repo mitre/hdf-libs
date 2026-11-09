@@ -54,7 +54,7 @@ serializer.
 
 **Example:**
 - `isValidJSON('{"foo": "bar"}')` → `true` (hdf-utilities - syntax check)
-- `validateHdfResults({baselines: []})` → validates against HDF schema (hdf-validators)
+- `validateResults({baselines: []})` → validates against HDF schema (hdf-validators)
 
 ## Installation
 
@@ -154,9 +154,7 @@ const xmlOutput = buildXml(data);
 
 // Parse XML with automatic array detection
 const nessusXml = '<Report><ReportHost>...</ReportHost><ReportHost>...</ReportHost></Report>';
-const report = parseXmlWithArrays(nessusXml, {
-  arrayPaths: ['Report.ReportHost'] // Force these to always be arrays
-});
+const report = parseXmlWithArrays(nessusXml, ['ReportHost']); // tag names always parsed as arrays
 
 // Check if string is well-formed XML
 if (isValidXml(userInput)) {
@@ -328,15 +326,16 @@ Build XML string from JavaScript object.
 - **Returns:** XML string with header
 - **Throws:** Error if conversion fails
 
-#### `parseXmlWithArrays(xml: string, options: { arrayPaths: string[] }): object`
+#### `parseXmlWithArrays(xml: string, arrayTags: string[], options?: object): Record<string, unknown>`
 
-Parse XML with specified paths forced as arrays.
+Parse XML with the named tags always parsed as arrays.
 
 - **Parameters:**
   - `xml` - XML string to parse
-  - `options.arrayPaths` - Dot-notation paths to treat as arrays (e.g., `'Report.ReportHost'`)
+  - `arrayTags` - Bare tag names to treat as arrays wherever they occur (e.g., `'ReportHost'`, not a path)
+  - `options` - fast-xml-parser parser options, plus `maxSize`, the maximum input length (optional)
 - **Returns:** Parsed object with consistent arrays
-- **Throws:** Error if XML is malformed
+- **Throws:** Error if XML is malformed or longer than `maxSize`
 
 #### `isValidXml(xml: string): boolean`
 

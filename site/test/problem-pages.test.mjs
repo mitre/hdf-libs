@@ -5,6 +5,7 @@ import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { generateProblemPages, PROBLEM_TABLE } from '../generate-problem-pages.mjs';
+import { PROBLEM_BASE } from '../../hdf-openapi/dist/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -41,6 +42,22 @@ test('each page states its status and links the RFC', () => {
     const page = fs.readFileSync(path.join(PAGES_DIR, type, 'index.md'), 'utf-8');
     assert.match(page, new RegExp(`HTTP status ${entry.status}`), `${type} omits its status`);
     assert.match(page, /rfc9457/, `${type} does not cite RFC 9457`);
+  }
+});
+
+// The example body is what a client copies, so it must be the shape the API sends: the
+// table's prose title (RFC 9457 §3.1.2), not the machine code, under the exported base.
+test('each page shows the problem body the API sends', () => {
+  for (const [type, entry] of Object.entries(table)) {
+    const page = fs.readFileSync(path.join(PAGES_DIR, type, 'index.md'), 'utf-8');
+    const block = page.match(/```json\n([\s\S]*?)\n```/);
+    assert.ok(block, `${type} has no example body`);
+    assert.deepEqual(
+      JSON.parse(block[1]),
+      { type: `${PROBLEM_BASE}/${type}`, title: entry.title, status: entry.status },
+      `${type} shows a body the API would not send`,
+    );
+    assert.ok(page.includes(`problem type \`${PROBLEM_BASE}/${type}\``), `${type} states another URI`);
   }
 });
 

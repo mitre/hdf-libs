@@ -47,20 +47,9 @@ import components from '@mitre/hdf-openapi/hdf-components.oas.json' with { type:
 const results = components.components.schemas.HdfResults;
 ```
 
-The generated document is the consumer surface. The transform that produces it is
-also exported, but note that `EMBED_DIR` points at this repository's tracked schema
-embed, which is **not** part of the published tarball (`files: ["dist"]`) — so the
-call below works inside this repository and not from an installed copy:
-
-```ts
-// In-repo only: regenerating from the tracked embed.
-import { buildComponentsDocument, loadBundles, EMBED_DIR } from '@mitre/hdf-openapi';
-
-const doc = buildComponentsDocument(loadBundles(EMBED_DIR));
-```
-
-An installed consumer reads the generated artifact, or passes its own bundles to
-`buildComponentsDocument`.
+The generated document is the consumer surface. The transform that produces it
+(`buildComponentsDocument`) runs at build time only and is not exported, because it
+reads the HDF schema bundles, which this package does not ship.
 
 ### The eight roots
 

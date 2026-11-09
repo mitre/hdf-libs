@@ -117,7 +117,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 | [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
 | [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
-| [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
+| [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint:go`) |
 | [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
 | [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | latest | Go vulnerability scanner (required for `pnpm check`) |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | latest | Secret detection (required for `pnpm check`) |

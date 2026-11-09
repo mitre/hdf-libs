@@ -204,27 +204,27 @@ EXAMPLES
   hdf list results.json --json
 ```
 
-Example output:
+Example output, from the shared fixture `hdf-fixtures/results/inspec-multilayered.json` (the detail listing is cut to its first rows):
 
 ```console
-$ hdf list results.json
+$ hdf list hdf-fixtures/results/inspec-multilayered.json
 Baselines:    5
 Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          271
-  ○ not_applicable  233
-  ? not_reviewed    965
+  ✗ failed          273
+  ? not_reviewed    1196
 
-$ hdf list results.json --detail requirements -s failed
-Requirements: 271
+$ hdf list hdf-fixtures/results/inspec-multilayered.json --detail requirements -s failed
+Requirements: 273
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
-V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
 ```
 
 ### query
@@ -311,20 +311,22 @@ EXAMPLES
 
 Example output:
 
+Run on `hdf-fixtures/results/inspec-multilayered.json`, the same document as the `list` example:
+
 ```console
-$ hdf query results.json --status failed --limit 5
+$ hdf query inspec-multilayered.json --status failed --limit 5
 Found 5 matching requirement(s):
 
-ID        Status  Severity  Title
---------  ------  --------  -------------------------------------------------------
-V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
-V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
-V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
+ID         Status  Severity  Title
+---------  ------  --------  -------------------------------------------------------
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
 
-$ hdf query results.json --status failed --count
-271
+$ hdf query inspec-multilayered.json --status failed --count
+273
 ```
 
 ### diff
@@ -343,8 +345,8 @@ FLAGS
       --name-only          List only changed requirement IDs
       --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
-  -q, --quiet              Suppress output, return exit code only (implies --exit-code)
-      --exit-code          POSIX diff exit codes: 0=identical, 1=differences
+  -q, --quiet              Suppress output, return exit code only
+      --exit-code          Accepted for compatibility; changes nothing (0/1 is always on)
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
       --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
@@ -371,6 +373,24 @@ REQ-001  Test Requirement               passed      failed      regressed
 REQ-002  Audit logging must be enabled  -           passed      new
 
 Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
+**Exit codes.** `hdf diff` exits 0 when the documents are identical and 1 when they differ, as GNU diff does, whatever flags are passed; `--exit-code` is accepted and changes nothing. A script running under `set -e` that only wants the report must therefore allow for 1. A diff that cannot run at all (a missing file, a document it cannot parse) also exits 1, so in this mode 1 does not tell a failure from a difference. `--detailed-exitcode` replaces the 0/1 verdict and keeps 1 for failure alone:
+
+| Code | `--detailed-exitcode` meaning |
+|------|---------|
+| `0` | Identical |
+| `1` | The diff could not read its inputs (a missing file, a document it cannot parse) |
+| `10` | Fixes only |
+| `11` | Regressions only |
+| `12` | Both fixes and regressions |
+| `13` | Baseline changed: only new or absent requirements |
+| `14` | Metadata drift only: no status changed |
+
+```bash
+# Produce a report whatever changed, but fail the job if the diff itself fails.
+hdf diff old-scan.json new-scan.json --detailed-exitcode > report.txt; rc=$?
+[ "$rc" -eq 0 ] || [ "$rc" -ge 10 ]
 ```
 
 ### events
@@ -728,18 +748,18 @@ Because a package is an attestation, `update` never silently rewrites one: name 
 
 Discovery excludes the package and output file, and skips hidden entries and hidden subtrees such as `.git/` with a count on stderr (a dotfile named literally by `--file` is selected); a discovered symlink or other non-regular entry is skipped with a notice naming it, while one named by `--file` is refused, and `--no-follow-symlinks` refuses a symlinked file on every selector including `--uri`. Same-format discovery overlaps are deduplicated; literal duplicates, conflicting formats, and already-recorded references are refused. Selected local files are independently hashed with SHA-512, so `--checksum` is unavailable with local selectors. A selection/read/validation failure writes nothing; an empty selection exits 4. See [bulk native report examples](../site/docs/guides/evidence-package-workflow.md#add-native-reports-in-bulk) for mixed formats and recursion.
 
-Example output:
+Example output, from the CLI test package `hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/evidence.json`. Without `--verify` nothing is hashed, so each row says only whether the package records a checksum:
 
 ```console
-$ hdf evidence info q1-2026.hdf-evidence-package.json
+$ hdf evidence info cmd/hdf/cmd/testdata/evidence-verify/evidence.json
 Evidence Package: Portal Prod Q1 Evidence
 System: system.json
 
 Contents (4):
-  hdf-system       system.json  ✓ checksum
-  hdf-plan         plan.json  ✓ checksum
-  hdf-results      rhel9-results.json  ✓ checksum
-  hdf-results      postgres-results.json  ✓ checksum
+  hdf-system       system.json  checksum recorded
+  hdf-plan         plan.json  checksum recorded
+  hdf-results      rhel9-results.json  checksum recorded
+  hdf-results      postgres-results.json  checksum recorded
 ```
 
 ### label
@@ -1213,7 +1233,7 @@ One vocabulary for every command, so a pipeline can test the code rather than pa
 | `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
 | `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
 
-`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff` is the one command whose successful run can exit non-zero: it exits 1 when the documents differ, as GNU diff does, with or without `--exit-code`, and `--detailed-exitcode` replaces that verdict with codes 10 to 14. Both are documented under [diff](#diff); a diff that cannot read its inputs exits 1, as above, and a usage error such as an unknown flag exits 2 like any other command.
 
 One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
 
@@ -1339,7 +1359,8 @@ From the monorepo root:
 ```bash
 pnpm build           # build everything (schema types + hdf binary)
 pnpm test            # run all tests (Go + TypeScript)
-pnpm lint            # run golangci-lint
+pnpm lint            # ESLint (TypeScript)
+pnpm lint:go         # golangci-lint (hdf-cli, hdf-converters, hdf-utilities)
 ```
 
 From within `hdf-cli/` directly:

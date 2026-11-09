@@ -102,6 +102,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`@mitre/hdf-fixtures` ships its `amendments/` directory.** The npm `files` list left it out, so `amendments.uc01Fixed.read()` and `amendments.multiCve.read()` failed with ENOENT in an installed package. A test now fails when the TypeScript index or the Go embeds reference a directory the tarball leaves out.
+
+- **The problem-type pages on the site show each type's human-readable `title`**, as RFC 9457 §3.1.2 asks, instead of the upper-cased machine code, and build their type URIs from the base hdf-openapi publishes, which `build:components` now writes beside `problems.json` so the release-time site deploy needs nothing more than it already builds.
+
+- **`hdf diff --help` and the CLI README no longer present `--exit-code` as the switch for the 0/1 codes.** `hdf diff` has always exited 1 when the documents differ, as GNU diff does; the flag is accepted and changes nothing.
+
+- **README examples that could not run now do**: the hdf-schema validation example, `computeExitCode` in hdf-diff, the hdf-openapi transform imports, `parseXmlWithArrays` and `validateResults` in hdf-utilities, the hdf-validators converter example, the hdf-fixtures Go import path and the awsconfig lookup in hdf-mappings. The `hdf list`, `hdf query` and `hdf evidence info` sample output was regenerated from the current binary.
+
 - **Go and TypeScript agree on an evidence reference whose escapes are not UTF-8.** `hdfengine.DecodeReference` accepted an escape that decodes to bytes that are not UTF-8, such as the Latin-1 `caf%E9.json`, while TypeScript's `decodeReference` reported it malformed. Go now reports it as not a valid uri-reference too, so `hdf evidence info --verify` lists such an entry as not reachable; the UTF-8 spelling `caf%C3%A9.json` still resolves.
 
 - **The warnings for undeclared `extensions` siblings in a legacy SAF-supplement document come out in a fixed order.** Go reported them in random map order, which changed from run to run and differed from TypeScript; both languages now report them in code-point order of the key.

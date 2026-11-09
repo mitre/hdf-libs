@@ -75,18 +75,22 @@ import { severityToImpact, impactToSeverity, computeEffectiveStatus } from '@mit
 
 ### Validating Documents (TypeScript/JavaScript)
 
+Use `@mitre/hdf-validators`, which registers every schema for you:
+
 ```typescript
-import Ajv from 'ajv';
-import { hdfResultsSchema } from '@mitre/hdf-schema';
+import { validateResults } from '@mitre/hdf-validators';
 
-const ajv = new Ajv({ strict: false });
-const validate = ajv.compile(hdfResultsSchema);
-
-const isValid = validate(myDocument);
-if (!isValid) {
-  console.error(validate.errors);
+const result = validateResults(myDocument);
+if (!result.valid) {
+  console.error(result.getErrorMessage());
 }
 ```
+
+The schema objects this package exports (`hdfResultsSchema` and the rest) are in source form,
+with their `$ref`s to the primitive schemas left in place. A bare `new Ajv().compile(hdfResultsSchema)`
+therefore throws. To drive Ajv yourself, turn off meta-schema validation (or use Ajv's 2020-12
+build) and `addSchema` every other exported schema before compiling, as `createValidator()` in
+`hdf-validators/typescript/index.ts` does.
 
 ### Using Generated Types (TypeScript)
 
