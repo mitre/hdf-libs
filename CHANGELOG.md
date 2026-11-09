@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Semgrep reference mapping covers both published rule-author keys.** Go and
+  TypeScript now collect `source_rule_url` alongside the existing `source-rule-url`
+  into requirement `refs`, retaining distinct URLs and deduplicating identical
+  values. Both are valid upstream metadata; no source keys are renamed. Go now
+  matches Semgrep JSON keys case-sensitively, as TypeScript does, preventing
+  differently capitalized keys from creating or overwriting mapped metadata,
+  including through its containing objects.
+
 - **CLI producer metadata now follows the declared schema.** `hdf plan create` and `hdf system create` store creation time at `extensions.passthrough.createdAt` instead of the undeclared root `createdAt`. Baseline conversion output passes through without results-only effective-checksum stamping. Consumers reading the former root timestamp must use the new path.
 
 - **Archive filesystem requirement.** Without `--overwrite`, `hdf evidence bundle` and `hdf convert --bundle` require hard-link support to publish complete archives atomically without replacing a concurrently created destination. Unsupported filesystems fail safely; write the archive on a supported filesystem before copying it elsewhere.

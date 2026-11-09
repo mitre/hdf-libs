@@ -67,6 +67,24 @@ Security-tool importers produce [schema-validated HDF](https://mitre.github.io/h
 | Veracode | `convertVeracodeToHdf` | XML |
 | XCCDF Results | `convertXccdfResultsToHdf` | XML |
 
+### Semgrep rule references
+
+Native Semgrep conversion reads rule-author metadata `source-rule-url` and
+`source_rule_url` independently as external references. Both contribute to HDF
+requirement `refs`, alongside the existing reference fields; distinct URLs are
+retained and identical URLs appear once. Neither key overrides the other, and
+unrecognized spellings are not inferred. Empty, redacted or non-string values
+follow the converter's existing per-field filtering. Semgrep JSON field names, including metadata and its containing objects, are
+case-sensitive in both languages: differently capitalized keys are ignored and
+cannot overwrite canonical values. Other Go decoding behavior, including
+last-value handling of duplicate exact keys, is retained.
+
+These keys are used by published rules to link to other rule implementations or
+documentation; neither is a spelling error. `refs` carries the links, not their
+original metadata keys. Retain the original scanner artifact when that provenance
+is needed. Source-preserving SIEM export bundles preserve their HDF input; they
+cannot reconstruct scanner metadata omitted during import.
+
 ### HDF to Other Formats
 
 | Target Format | Function |
