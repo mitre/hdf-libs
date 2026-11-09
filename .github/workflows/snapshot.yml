@@ -202,7 +202,7 @@ jobs:
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
         with:
-          app-id: ${{ secrets.SNAPSHOT_APP_ID }}
+          client-id: ${{ vars.SNAPSHOT_APP_CLIENT_ID }}
           private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
@@ -359,3 +359,41 @@ jobs:
               echo 'next was not advanced for any package.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Go has no dist-tag, so the branch next plays that role for Go consumers: it moves to the
+  # prepared commit only after publish has advanced npm next, and the module tags on that
+  # commit make `go get <module>@next` resolve to the snapshot version.
+  advance-go-next:
+    needs: [prepare, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: snapshot-tags
+    # The push uses an App token minted below, so the job's own token stays read-only.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.SNAPSHOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+      - name: Advance the Go next branch and read it back
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE: ${{ needs.prepare.outputs.source }}
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$APP_TOKEN" | openssl base64 -A)
+          export GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          bash scripts/advance-snapshot-go-next.sh "$VERSION" "$SOURCE" "$PREPARED"
+          printf '\nGo branch next: %s (v%s)\n' "$PREPARED" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
