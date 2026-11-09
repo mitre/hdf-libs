@@ -1,5 +1,5 @@
 name: 'Setup hdf-libs'
-description: 'Setup Node/pnpm, install dependencies, optionally setup Go. Repo must be checked out first.'
+description: 'Setup Node/pnpm with mise, install dependencies, optionally setup Go. Repo must be checked out first.'
 # note -- setup will always need the TS installation; even the Go test
 # suites are orchestrated by pnpm.
 inputs:
@@ -7,22 +7,30 @@ inputs:
     description: 'Setup Go toolchain'
     required: false
     default: 'false'
-  node-version:
-    description: 'Node version'
-    required: false
-    default: '24'
 
 runs:
   using: composite
   steps:
-    # pnpm before node so setup-node's cache: pnpm can resolve the store
-    # path itself (per-OS — a hardcoded path silently missed Windows).
-    - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-
-    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+    # Node and pnpm come from mise.toml and mise.lock (pnpm's version from
+    # packageManager), the releases the pre-commit hook uses, installed
+    # --locked against the lock's checksums. Only these two are installed here;
+    # a configured tool that is not installed gets no PATH entry.
+    - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       with:
-        node-version: ${{ inputs.node-version }}
-        cache: 'pnpm'
+        version: 2026.11.5
+        install_args: node pnpm
+
+    # The store path is read from pnpm rather than hardcoded: it differs per
+    # OS, and a hardcoded path silently missed Windows.
+    - name: Locate the pnpm store
+      id: pnpm-store
+      shell: bash
+      run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
 
     - name: Install dependencies
       shell: bash

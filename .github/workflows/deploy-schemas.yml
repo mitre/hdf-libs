@@ -18,12 +18,8 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# NODE_VERSION tracks the Active LTS — 24 (Krypton) as of 2026-10 — and matches
-# every published package's `engines.node` and the pin in ci.yml, pre-release.yml
-# and release.yml. See ci.yml's note: the policy is Active LTS, not this number.
-env:
-  NODE_VERSION: '24'
-
+# Node.js comes from mise.toml through the shared setup action; see the note in
+# ci.yml: the policy is Active LTS, not a number.
 jobs:
   deploy:
     name: Build and deploy schema site
@@ -38,8 +34,6 @@ jobs:
           persist-credentials: false
 
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas

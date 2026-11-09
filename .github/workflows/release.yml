@@ -301,8 +301,6 @@ jobs:
           persist-credentials: false
 
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas
