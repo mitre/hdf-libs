@@ -1386,3 +1386,98 @@ func TestAWSConfigFetcher_Fetch_SkipWarningNamesTheRules(t *testing.T) {
 	assert.Equal(t, "WARNING: aws-config: skipped 1 rule(s) whose evaluations the Config API will not "+
 		"return (RuleEvaluationVisibility INTERNAL): securityhub-rule (securityhub.amazonaws.com)\n", stderr)
 }
+
+// A request the service rejects as malformed is about the one rule the request
+// names, so it costs that rule — but only once some rule has read, because a
+// rejection before any success is more likely a request this fetcher built
+// wrongly for every rule than a thousand individually bad rule names.
+func TestAWSConfigFetcher_Fetch_RejectedRequestCostsThatRule(t *testing.T) {
+	for name, rejection := range map[string]error{
+		"validation":    &types.ValidationException{Message: aws.String("not valid")},
+		"invalid param": &types.InvalidParameterValueException{Message: aws.String("bad parameter")},
+		"generic 4xx":   &smithy.GenericAPIError{Code: "ValidationException", Message: "not valid"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &mockConfigClient{
+				describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+				complianceErrs:     map[string]error{"other-rule": liveReadError("req-1", rejection)},
+			}
+			var out []byte
+			var err error
+			stderr := captureStderr(t, func() {
+				out, err = NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+			})
+			require.NoError(t, err, "one rejected rule must not abort the fetch")
+			file := mustUnmarshal(t, out)
+			require.Len(t, file.ConfigRules, 1)
+			assert.Equal(t, "some-rule", file.ConfigRules[0].ConfigRuleName)
+			assert.Contains(t, stderr, "other-rule", "the warning names the rule that was dropped")
+		})
+	}
+}
+
+// Rejected before any rule has read: the request shape is suspect, so the fetch
+// fails naming that rather than reporting every rule as unreadable.
+func TestAWSConfigFetcher_Fetch_RejectionBeforeAnyReadIsFatal(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+		complianceErrs: map[string]error{
+			"some-rule":  liveReadError("req-1", &types.ValidationException{Message: aws.String("not valid")}),
+			"other-rule": liveReadError("req-2", &types.ValidationException{Message: aws.String("not valid")}),
+		},
+	}
+	_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "some-rule")
+	assert.Contains(t, err.Error(), "no rule has read yet")
+}
+
+// A server-side failure says nothing about the rule and always aborts.
+func TestAWSConfigFetcher_Fetch_ServerErrorsStayFatal(t *testing.T) {
+	for name, fatal := range map[string]error{
+		"internal":    &smithy.GenericAPIError{Code: "InternalServerException", Message: "boom"},
+		"unavailable": &smithy.GenericAPIError{Code: "ServiceUnavailable", Message: "later"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &mockConfigClient{
+				describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+				complianceErrs:     map[string]error{"other-rule": liveReadError("req-1", fatal)},
+			}
+			_, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "other-rule")
+		})
+	}
+}
+
+// A rule the response leaves without a visibility value is attempted, and what
+// its read returns decides its fate like any other rule's.
+func TestAWSConfigFetcher_Fetch_UnsetVisibilityIsAttempted(t *testing.T) {
+	serviceRule := testRule
+	serviceRule.ConfigRuleId = aws.String("cr-svc")
+	serviceRule.ConfigRuleName = aws.String("service-rule")
+	serviceRule.CreatedBy = aws.String("securityhub.amazonaws.com")
+	serviceRule.RuleEvaluationVisibility = ""
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{testRule, serviceRule}},
+		},
+	}
+	out, err := NewAWSConfigFetcherWithClient(mock).Fetch(context.Background())
+	require.NoError(t, err)
+	require.Len(t, mustUnmarshal(t, out).ConfigRules, 2, "an unset visibility is read, not skipped")
+	assert.Positive(t, mock.complianceCalls["service-rule"], "its evaluations were asked for")
+}
+
+// A deadline already past aborts rather than reporting every rule as unreadable:
+// the context says nothing about any rule.
+func TestAWSConfigFetcher_Fetch_PassedDeadlineIsFatal(t *testing.T) {
+	mock := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{{ConfigRules: twoRules()}},
+	}
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+	_, err := NewAWSConfigFetcherWithClient(mock).Fetch(ctx)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}

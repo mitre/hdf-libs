@@ -231,10 +231,13 @@ func (f *AWSConfigFetcher) readEvaluations(ctx context.Context, rules []awsconfi
 		if err != nil {
 			switch {
 			case ruleGone(err):
-			case ruleRefused(err) && len(kept) > 0:
+			case (ruleRefused(err) || ruleRejected(err)) && len(kept) > 0:
 			case ruleRefused(err):
 				return nil, nil, fmt.Errorf("fetching results for rule %s: %w (no rule has read yet, so this principal "+
 					"likely lacks config:GetComplianceDetailsByConfigRule)", rules[i].ConfigRuleName, err)
+			case ruleRejected(err):
+				return nil, nil, fmt.Errorf("fetching results for rule %s: %w (no rule has read yet, so the request "+
+					"is likely wrong for every rule rather than for this one)", rules[i].ConfigRuleName, err)
 			default:
 				return nil, nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
 			}
@@ -290,6 +293,20 @@ func ruleRefused(err error) bool {
 	}
 	var api smithy.APIError
 	return errors.As(err, &api) && api.ErrorCode() == "AccessDeniedException"
+}
+
+// ruleRejected reports a read the service would not accept. What it objected to
+// is this one rule's: a read names the rule and, after the first page, that
+// rule's own token. The caller decides from what has read so far whether that means
+// one bad rule or a request built wrongly for all of them. Throttling and server
+// failures are not here: they say nothing about the request. Matching on the
+// code covers both shapes, since the SDK's own exceptions for these report it.
+func ruleRejected(err error) bool {
+	var api smithy.APIError
+	if !errors.As(err, &api) {
+		return false
+	}
+	return api.ErrorCode() == "ValidationException" || api.ErrorCode() == "InvalidParameterValueException"
 }
 
 // evaluationsReadable is the API's own answer to whether GetComplianceDetails
