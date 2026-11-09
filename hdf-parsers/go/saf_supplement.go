@@ -30,9 +30,10 @@ func validComponentType(s string) bool {
 
 // NormalizeSAFSupplement rewrites the legacy SAF-supplement top-level keys into
 // v3-native carriers so a SAF-produced document becomes valid v3 before schema
-// validation: `target` → a components[] entry (type validated; id → name and,
-// for cloudAccount, accountId; boundary → labels.boundary; merged into a
-// matching existing component rather than duplicated); `passthrough` →
+// validation: `target` → a components[] entry (type validated; id, or failing
+// that name, → name; id alone → accountId for cloudAccount; labels and boundary
+// → labels, boundary winning; merged into a matching or platform-derived
+// component rather than duplicated); `passthrough` →
 // extensions.passthrough. It returns the (possibly rewritten) document plus a
 // deprecation warning per rewritten key.
 //
@@ -87,55 +88,110 @@ func rewriteTarget(doc map[string]any) bool {
 	if !validComponentType(typ) {
 		return false
 	}
+	// SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
+	// Only an `id` is a provider identifier; a display name never becomes one.
 	id, _ := tgt["id"].(string)
-	boundary, _ := tgt["boundary"].(string)
+	name := id
+	if name == "" {
+		name, _ = tgt["name"].(string)
+	}
+	labels := stringLabels(tgt["labels"])
+	// The first-class boundary field is the SAF carrier, so it wins over a
+	// `labels.boundary` entry (the deferred first-class-field decision — ADR-0015).
+	if boundary, _ := tgt["boundary"].(string); boundary != "" {
+		labels["boundary"] = boundary
+	}
 
 	comps, _ := doc["components"].([]any)
 
-	// Merge into an existing component with the same name+type rather than
-	// duplicating; otherwise append a new one.
-	merged := false
-	for i := range comps {
-		c, ok := comps[i].(map[string]any)
-		if !ok {
-			continue
-		}
-		if name, _ := c["name"].(string); name == id {
-			if ct, _ := c["type"].(string); ct == typ {
-				applyBoundaryLabel(c, boundary)
-				merged = true
-				break
-			}
+	c := findComponent(comps, name, typ)
+	if c == nil {
+		if c = platformComponent(comps, typ); c != nil && name != "" {
+			c["name"] = name
 		}
 	}
-	if !merged {
-		c := map[string]any{"type": typ, "name": id}
-		if typ == string(hdf.CloudAccount) {
+	if c == nil {
+		c = map[string]any{"type": typ, "name": name}
+		if typ == string(hdf.CloudAccount) && id != "" {
 			c["accountId"] = id
 		}
-		applyBoundaryLabel(c, boundary)
 		comps = append(comps, c)
 	}
+	applyLabels(c, labels)
 	doc["components"] = comps
 	delete(doc, "target")
 	return true
 }
 
-// applyBoundaryLabel records the legacy target.boundary as a component label
-// (the deferred first-class-field decision — ADR-0015). No-op for an empty
-// boundary.
-func applyBoundaryLabel(c map[string]any, boundary string) {
-	if boundary == "" {
+// findComponent returns the existing component with this name and type, or nil.
+func findComponent(comps []any, name, typ string) map[string]any {
+	for i := range comps {
+		c, ok := comps[i].(map[string]any)
+		if !ok {
+			continue
+		}
+		if n, _ := c["name"].(string); n != name {
+			continue
+		}
+		if ct, _ := c["type"].(string); ct == typ {
+			return c
+		}
+	}
+	return nil
+}
+
+// platformComponent returns the lone component the v2 upgrade derives from an
+// InSpec `platform` (no componentId, OS name standing in as the name), which
+// describes the same assessed thing as the target. Any other shape is a distinct
+// component and is never renamed.
+func platformComponent(comps []any, typ string) map[string]any {
+	if len(comps) != 1 {
+		return nil
+	}
+	c, ok := comps[0].(map[string]any)
+	if !ok {
+		return nil
+	}
+	if _, hasID := c["componentId"]; hasID {
+		return nil
+	}
+	ct, _ := c["type"].(string)
+	name, _ := c["name"].(string)
+	osName, _ := c["osName"].(string)
+	if ct != typ || name == "" || name != osName {
+		return nil
+	}
+	return c
+}
+
+// stringLabels keeps the string-valued entries of a legacy target.labels;
+// component labels admit only strings.
+func stringLabels(v any) map[string]string {
+	raw, _ := v.(map[string]any)
+	out := map[string]string{}
+	for k, val := range raw {
+		if s, ok := val.(string); ok {
+			out[k] = s
+		}
+	}
+	return out
+}
+
+// applyLabels adds target labels to a component without overriding its own.
+func applyLabels(c map[string]any, labels map[string]string) {
+	if len(labels) == 0 {
 		return
 	}
-	labels, ok := c["labels"].(map[string]any)
+	existing, ok := c["labels"].(map[string]any)
 	if !ok {
-		labels = map[string]any{}
+		existing = map[string]any{}
 	}
-	if _, exists := labels["boundary"]; !exists {
-		labels["boundary"] = boundary
+	for k, v := range labels {
+		if _, exists := existing[k]; !exists {
+			existing[k] = v
+		}
 	}
-	c["labels"] = labels
+	c["labels"] = existing
 }
 
 // rewritePassthrough moves the legacy top-level `passthrough` under

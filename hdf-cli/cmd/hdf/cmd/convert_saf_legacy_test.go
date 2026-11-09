@@ -107,3 +107,79 @@ func TestConvertCommand_AbsorbsSAFSupplement_NonHDFTarget(t *testing.T) {
 		t.Error("SAF target's cloudAccount did not survive into the oscal-sar output")
 	}
 }
+
+// The classic Heimdall/InSpec target shape ({type, name, labels}, no id) on a
+// real exec-json scan whose platform describes the same host. The fixture's
+// platform is {name: redhat, release: 9.7}.
+func writeLegacyTargetFixture(t *testing.T) string {
+	t.Helper()
+	var doc map[string]interface{}
+	if err := json.Unmarshal(fixtures.Inspec.Ubi9Scan, &doc); err != nil {
+		t.Fatalf("fixture: %v", err)
+	}
+	doc["target"] = map[string]interface{}{"type": "host", "name": "my-host-01", "labels": map[string]interface{}{"environment": "prod"}}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "legacy-target.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// platform and target describe one assessed host, so the output carries exactly
+// one component: the target's name and labels with the platform's OS facts.
+func TestConvertCommand_LegacyTargetMergesWithPlatform(t *testing.T) {
+	for name, args := range map[string][]string{
+		"auto-detected": {"--to", "hdf@3"},
+		"--from hdf":    {"--from", "hdf", "--to", "hdf@3"},
+		"--from inspec": {"--from", "inspec", "--to", "hdf"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stdout, stderr, err := executeCommand(append([]string{"convert", writeLegacyTargetFixture(t)}, args...)...)
+			if err != nil {
+				t.Fatalf("convert failed: %v (stderr: %s)", err, stderr)
+			}
+			var out struct {
+				Components []map[string]interface{} `json:"components"`
+			}
+			if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+				t.Fatalf("output not JSON: %v", err)
+			}
+			if len(out.Components) != 1 {
+				t.Fatalf("want 1 component, got %d: %v", len(out.Components), out.Components)
+			}
+			c := out.Components[0]
+			labels, _ := c["labels"].(map[string]interface{})
+			if c["type"] != "host" || c["name"] != "my-host-01" || c["osName"] != "redhat" ||
+				c["osVersion"] != "9.7" || labels["environment"] != "prod" {
+				t.Errorf("platform and target not merged into one named host: %v", c)
+			}
+			if !strings.Contains(stderr, "normalized into components[]") {
+				t.Errorf("expected the target deprecation warning on stderr; stderr=%s", stderr)
+			}
+		})
+	}
+}
+
+// The legacy upgrade must not depend on a SAF supplement being present: a plain
+// exec-json scan routed with --from inspec to a non-hdf export has no `target`
+// for the absorb step to rewrite, so the upgrade gate alone has to carry it.
+func TestConvertCommand_FromInspecToExport_WithoutSupplement(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "plain.json")
+	if err := os.WriteFile(path, fixtures.Inspec.Ubi9Scan, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, err := executeCommand("convert", path, "--from", "inspec", "--to", "oscal-sar")
+	if err != nil {
+		t.Fatalf("convert --from inspec --to oscal-sar failed on a plain scan: %v (stderr: %s)", err, stderr)
+	}
+	if !strings.Contains(stdout, "assessment-results") {
+		t.Errorf("expected an OSCAL assessment-results document; stdout=%.200s", stdout)
+	}
+	if strings.Contains(stderr, "normalized into") {
+		t.Errorf("no SAF deprecation warning should fire without a supplement; stderr=%s", stderr)
+	}
+}

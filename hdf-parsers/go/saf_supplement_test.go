@@ -237,3 +237,142 @@ func TestNormalizeSAFSupplement_SharedFixtureParity(t *testing.T) {
 	assert.Equal(t, want, got, "normalized output must match the shared v3-out fixture")
 	assert.True(t, validators.ValidateResults(out).Valid, "shared fixture normalizes to schema-valid v3")
 }
+
+// platformDerived is the component the v2→v3 upgrade derives from an InSpec
+// `platform` object: the OS name doubles as the component name.
+func platformDerived() map[string]any {
+	return map[string]any{"name": "redhat", "osName": "redhat", "osVersion": "9.8", "type": "host"}
+}
+
+func normalizedComponents(t *testing.T, extra map[string]any) []any {
+	t.Helper()
+	out, _ := NormalizeSAFSupplement(validV3WithExtra(t, extra))
+	require.True(t, validators.ValidateResults(out).Valid, "normalized doc must be schema-valid v3")
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(out, &doc))
+	comps, ok := doc["components"].([]any)
+	require.True(t, ok, "components[] must be present")
+	return comps
+}
+
+func TestNormalizeSAFSupplement_LegacyTargetNameIsTheIdentity(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{}},
+	})
+	require.Len(t, comps, 1)
+	assert.Equal(t, "my-host-01", comps[0].(map[string]any)["name"])
+}
+
+func TestNormalizeSAFSupplement_TargetIDWinsOverName(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"id": "prod-account", "name": "Production", "type": "cloudAccount"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "prod-account", c["name"])
+	assert.Equal(t, "prod-account", c["accountId"])
+}
+
+// accountId is the provider's account identifier, so only target.id may fill it;
+// a classic target's display name becomes the component name and nothing else.
+func TestNormalizeSAFSupplement_DisplayNameIsNotAnAccountID(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"name": "Production", "type": "cloudAccount"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "Production", c["name"])
+	_, hasAccountID := c["accountId"]
+	assert.False(t, hasAccountID, "a display name must not be stamped into accountId")
+}
+
+// The first-class target.boundary is the SAF carrier; a labels.boundary entry on
+// the same target does not displace it.
+func TestNormalizeSAFSupplement_BoundaryFieldWinsOverBoundaryLabel(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{
+			"type": "host", "name": "my-host-01", "boundary": "sparc",
+			"labels": map[string]any{"boundary": "legacy-zone", "environment": "prod"},
+		},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"boundary": "sparc", "environment": "prod"}, labels)
+}
+
+// Component labels are string-valued, so a non-string target label is skipped
+// rather than producing a document the schema rejects.
+func TestNormalizeSAFSupplement_CarriesTargetLabels(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{
+			"type": "host", "name": "my-host-01", "boundary": "sparc",
+			"labels": map[string]any{"environment": "prod", "rack": 7},
+		},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"environment": "prod", "boundary": "sparc"}, labels)
+}
+
+func TestNormalizeSAFSupplement_ExistingComponentLabelsWin(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{map[string]any{"name": "my-host-01", "type": "host", "labels": map[string]any{"environment": "stage"}}},
+		"target":     map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{"environment": "prod", "team": "ops"}},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"environment": "stage", "team": "ops"}, labels)
+}
+
+// The platform-derived component and the SAF target describe the same assessed
+// host, so they fold into one component carrying the target's name and the
+// platform's OS facts.
+func TestNormalizeSAFSupplement_MergesTargetIntoPlatformComponent(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{platformDerived()},
+		"target":     map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{"environment": "prod"}},
+	})
+	require.Len(t, comps, 1, "platform and target describe one host")
+	assert.Equal(t, map[string]any{
+		"name": "my-host-01", "type": "host", "osName": "redhat", "osVersion": "9.8",
+		"labels": map[string]any{"environment": "prod"},
+	}, comps[0])
+}
+
+func TestNormalizeSAFSupplement_NamelessTargetKeepsPlatformName(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{platformDerived()},
+		"target":     map[string]any{"type": "host", "boundary": "sparc"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "redhat", c["name"])
+	assert.Equal(t, "sparc", c["labels"].(map[string]any)["boundary"])
+}
+
+// A component that carries its own identity is a distinct thing, never renamed.
+func TestNormalizeSAFSupplement_DoesNotMergeIntoADistinctComponent(t *testing.T) {
+	withID := platformDerived()
+	withID["componentId"] = "6f1c1c3e-8f43-4d2a-9a57-0d5a3c2b7e11"
+	named := platformDerived()
+	named["name"] = "web-01"
+	cases := map[string][]any{
+		"has componentId":      {withID},
+		"name is not the OS":   {named},
+		"different type":       {map[string]any{"name": "redhat", "osName": "redhat", "type": "containerImage"}},
+		"more than one exists": {platformDerived(), map[string]any{"name": "db-01", "type": "database"}},
+	}
+	for name, existing := range cases {
+		t.Run(name, func(t *testing.T) {
+			comps := normalizedComponents(t, map[string]any{
+				"components": existing,
+				"target":     map[string]any{"type": "host", "name": "my-host-01"},
+			})
+			require.Len(t, comps, len(existing)+1)
+			assert.Equal(t, "my-host-01", comps[len(comps)-1].(map[string]any)["name"])
+			for i := range existing {
+				assert.Equal(t, existing[i], comps[i], "existing component left untouched")
+			}
+		})
+	}
+}

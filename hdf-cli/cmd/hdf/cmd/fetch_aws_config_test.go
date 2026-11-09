@@ -108,6 +108,30 @@ func TestFetchAWSConfigCmd_DataPipeline(t *testing.T) {
 	assert.True(t, strings.Contains(req["title"].(string), "access-keys-rotated"))
 }
 
+// An empty export from the fetcher is a legitimate raw result but can never be
+// valid HDF, so HDF output refuses it with a message about the Region rather than
+// a schema error about a field the user never wrote.
+func TestConvertFetchedAWSConfig_RefusesEmptyExport(t *testing.T) {
+	_, err := convertFetchedAWSConfig([]byte(`{"ConfigRules":[]}`), "us-east-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no Config rules to convert in us-east-1")
+	assert.Contains(t, err.Error(), "--format raw")
+}
+
+func TestConvertFetchedAWSConfig_ConvertsOneRule(t *testing.T) {
+	raw := []byte(`{"ConfigRules":[{
+		"ConfigRuleId": "config-rule-test",
+		"ConfigRuleName": "access-keys-rotated",
+		"ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-test",
+		"Source": {"Owner": "AWS", "SourceIdentifier": "ACCESS_KEYS_ROTATED"},
+		"EvaluationResults": [{"ComplianceType": "COMPLIANT", "ConfigRuleInvokedTime": "2021-04-09T14:39:21Z", "ResultRecordedTime": "2021-04-09T14:39:51Z"}]
+	}]}`)
+	output, err := convertFetchedAWSConfig(raw, "us-east-1")
+	require.NoError(t, err)
+	require.NoError(t, validateHDFDocument(output), "the converted document validates as HDF results")
+	assert.Contains(t, string(output), `"id": "config-rule-test"`)
+}
+
 // TestFetchAWSConfigCmd_InvalidFormat verifies --format validation.
 func TestFetchAWSConfigCmd_InvalidFormat(t *testing.T) {
 	cmd := newFetchAWSConfigCmd()
