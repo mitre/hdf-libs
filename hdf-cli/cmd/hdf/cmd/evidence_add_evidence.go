@@ -421,7 +421,11 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 				return fmt.Errorf("cannot add the package or output itself as evidence: %q", uri)
 			}
 		}
-		normalized := filepath.ToSlash(packageRelativeIfInside(pkgDir, uri))
+		inPackage, refErr := packageRelativeIfInside(pkgDir, uri)
+		if refErr != nil {
+			return fmt.Errorf("--uri %w", refErr)
+		}
+		normalized := filepath.ToSlash(inPackage)
 		// Asked in the same terms the map is keyed in. packageRelativeIfInside returns a
 		// uri-reference, so the lookup decodes it back to the artifact it names.
 		lookup := normalized

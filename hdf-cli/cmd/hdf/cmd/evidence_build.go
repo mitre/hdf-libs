@@ -274,7 +274,17 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 	// schema declares a uri-reference. Returning the raw path wrote a reference the
 	// schema calls malformed as soon as a filename contained a space or a percent — and
 	// it is also what made such a file look inexpressible when it is merely unescaped.
-	return evidenceref.Encode(filepath.ToSlash(rel)), nil
+	return encodeRef(docPath, filepath.ToSlash(rel))
+}
+
+// encodeRef is evidenceref.Encode, naming the file when its path cannot be recorded.
+// Quoted, so the bytes that are not UTF-8 show as escapes rather than mojibake.
+func encodeRef(path, rel string) (string, error) {
+	ref, err := evidenceref.Encode(rel)
+	if err != nil {
+		return "", fmt.Errorf("%q cannot be recorded as a reference: %w", path, err)
+	}
+	return ref, nil
 }
 
 // documentRef is the one definition of what a content reference is. With a
@@ -283,7 +293,7 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 // survive a subdirectory.
 func documentRef(baseDir, path string) (string, error) {
 	if baseDir == "" {
-		return evidenceref.Encode(filepath.Base(path)), nil
+		return encodeRef(path, filepath.Base(path))
 	}
 	return packageRelativeRef(baseDir, path)
 }

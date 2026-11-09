@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 
@@ -24,6 +25,10 @@ type skippedKind struct {
 	mode os.FileMode
 }
 
+// unrecordableNameKind is why discovery skips an entry evidenceref.Recordable refuses.
+const unrecordableNameKind = "its name is not valid UTF-8, so no reference can record it; " +
+	"rename it to include it"
+
 // scanResult is what a directory scan found, already routed. Paths are absolute.
 type scanResult struct {
 	systems     []string // >1 is an error; the caller names them all
@@ -36,7 +41,7 @@ type scanResult struct {
 	unsupported []string      // detected HDF, but no Content_Type exists for it
 	foreign     []string      // not an HDF document at all
 	unreadable  []unreadEntry // present but could not be read — reported, never dropped silently
-	irregular   []skippedKind // skipped by type; reported, because "nothing is dropped in silence"
+	irregular   []skippedKind // skipped by type or unrecordable name; reported, never silent
 }
 
 // unreadEntry is a path the scan could not read, with the remedy when there is one.
@@ -57,6 +62,13 @@ func (out *scanResult) skipUnreadable(path string, _ error) error {
 func (out *scanResult) skipOversize(path string, size int64) error {
 	out.unreadable = append(out.unreadable, unreadEntry{path: path,
 		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, getMaxFileSize()/(1024*1024))})
+	return nil
+}
+
+// skipUnrecordable records an entry whose name no reference can carry, alongside the
+// entries skipped by type, and continues the walk; the reason is unrecordableNameKind.
+func (out *scanResult) skipUnrecordable(path string, mode os.FileMode, _ error) error {
+	out.irregular = append(out.irregular, skippedKind{path: path, kind: unrecordableNameKind, mode: mode})
 	return nil
 }
 
@@ -183,6 +195,11 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 			return out.skipUnreadable(filepath.Join(realBase, rel), walkErr)
 		}
 		if d.IsDir() {
+			// Nothing beneath a directory so named can be recorded either.
+			if nameErr := evidenceref.Recordable(rel); nameErr != nil {
+				_ = out.skipUnrecordable(filepath.Join(realBase, rel), d.Type(), nameErr)
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if !d.Type().IsRegular() {
@@ -208,6 +225,9 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 		}
 		if skip.has(info) {
 			return nil
+		}
+		if nameErr := evidenceref.Recordable(rel); nameErr != nil {
+			return out.skipUnrecordable(abs, d.Type(), nameErr)
 		}
 		data, withinLimit, readErr := readScannedFile(root.FS(), rel, info.Size())
 		if readErr != nil {

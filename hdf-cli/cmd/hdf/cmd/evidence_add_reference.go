@@ -492,7 +492,11 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 		// contents[].uri, so an unescaped name here is the same contract violation —
 		// and this was the one write path that still wrote the raw value while build,
 		// set, add-evidence and update all encoded.
-		ref["href"] = evidenceref.Encode(filepath.ToSlash(opts.href))
+		href, hrefErr := evidenceref.Encode(filepath.ToSlash(opts.href))
+		if hrefErr != nil {
+			return fmt.Errorf("--href %q cannot be recorded as a reference: %w", opts.href, hrefErr)
+		}
+		ref["href"] = href
 	}
 
 	// checksum describes ONE artifact, so the precedence is stated here rather than left
