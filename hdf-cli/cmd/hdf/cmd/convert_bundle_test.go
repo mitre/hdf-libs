@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/require"
@@ -31,6 +32,23 @@ func TestConvertBundleFlagPreservesLiteralInput(t *testing.T) {
 	entries := zipEntries(t, "export.zip")
 	require.Equal(t, source, entries["source.json"])
 	require.Contains(t, entries, "evidence-package.json")
+}
+
+func TestConvertBundleRejectsLegacySourceWithoutUpgrade(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "legacy.json")
+	require.NoError(t, os.WriteFile(input, fixtures.Inspec.Ubi9Scan, 0o600))
+	for _, target := range []string{"ecs", "splunk", "ocsf"} {
+		t.Run(target, func(t *testing.T) {
+			output := filepath.Join(t.TempDir(), "bundle.zip")
+			stdout, _, err := executeCommand("convert", input, "--to", target, "--bundle", "-o", output)
+			require.ErrorContains(t, err, "build "+target+" bundle")
+			require.Empty(t, stdout)
+			require.NoFileExists(t, output)
+			retained, err := os.ReadFile(input)
+			require.NoError(t, err)
+			require.Equal(t, fixtures.Inspec.Ubi9Scan, retained)
+		})
+	}
 }
 
 func TestConvertBundleRetainsEvidencePackage(t *testing.T) {

@@ -17,9 +17,12 @@ Schema-confirmed adaptation, not a new scanner capture.
 Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-diff/test/fixtures/scan-after.json
 Source SHA-256: 9192baa460988262ca7c13796be9aac8d26574b3a26f2d7f6237d6256f573cb6
 Renamed root targets to components and baseline checksum/value to integrity/checksum.
-All objects, string values, result statuses and timestamps retained. Original capture
-provenance beyond this committed source has not been established.
-Validation 2026-11-07: built hdf validate --json exit 0, valid=true.
+Upstream status-semantics update cb58f0c0 changed the chronyd result from passed
+to notApplicable and its codeDesc from "chronyd service should be running" to
+"chronyd service is not applicable to this target". All other objects, string
+values, result statuses and timestamps were retained. Original capture provenance
+beyond this committed source has not been established.
+Validation 2026-11-09: built hdf validate --json exit 0, valid=true.
 
 ## scan-with-override.json
 Schema-confirmed adaptation, not a new scanner capture.

@@ -29,54 +29,6 @@ All notable changes to this project will be documented in this file.
 
 - **Go consumers now require Go 1.27.3 or newer.** The workspace, published modules, generated schema module, and release/fuzz builds use this floor. It enables the standard strict JSON decoder needed for source-preserving SIEM bundles without an experimental build flag or a custom Unicode parser. Existing converter APIs and output defaults are unchanged.
 
-### Added
-
-- `hdf convert --bundle` delivers ECS, Splunk or OCSF events, the exact original
-  HDF source and SIEM manifest inside a deterministic standard evidence-package
-  ZIP. `hdf evidence resolve` verifies the package's selected artifacts and
-  finding/source agreement before returning original bytes. Reuses existing HDF
-  inventory/checksum/archive machinery; missing, altered or unsafe references
-  fail. Ordinary conversion retains filenames such as `bundle`.
-
-- Development-only SIEM environment harness with Testcontainers-managed Elasticsearch and Splunk services, digest-pinned images, generated credentials, explicit Splunk consent, bounded readiness and scoped cleanup. Current CLI and packed TypeScript artifacts can be checked locally; product ingestion/readback and the approved GitHub Actions smoke/HDF reporting stages remain in progress.
-
-- CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
-- **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
-
-- CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
-- **`junit-to-hdf` records the owning `<testsuite>` on every requirement.** Each requirement now carries `tags.test_suite`, the suite's `name` attribute verbatim (the suite that directly owns the testcase, so nested suites attribute correctly); a suite with no name records nothing. A Checkov-emitted suite — named `<framework> scan` with testcases carrying Checkov's `[SEVERITY][CHECK_ID]` prefix — additionally carries `tags.check_type: ["<framework>"]`, the same key and value `checkov-to-hdf` emits, so a multi-framework `checkov -o junitxml` run is distinguishable per framework in HDF and comparable with the JSON path. A generic suite (a test class) gets no `check_type`; nothing is inferred from a name alone. **Output change:** every existing JUnit conversion with named suites gains `tags.test_suite`; requirement ids, statuses and counts are unchanged.
-- **Comment length is now gated.** `pnpm lint:comments` fails when a declaration's doc comment (or a file header) exceeds 10 lines, any other comment run exceeds 5, or a comment line exceeds 90 characters.
-
-  The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
-
-### Fixed
-
-- **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
-
-  Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
-
-  A ZAP alert carrying a `solution` but no `desc` was invalid for a third reason: `descriptions` also carries `contains: {label: "default"}`, so a non-empty array is not sufficient. The default entry is now prepended whenever no entry carries that label, per the schema's stated convention that the default description comes first, and the real `solution` text survives alongside it.
-
-  Each resultless requirement now carries one synthesized `notReviewed` result naming why the source recorded none. The reasoning differs per format and the claim says so: an FVDL `<Description>` is rule-catalog metadata and the finding is `<Vulnerability>`, so an orphan description establishes nothing at that rule — and `passed` would claim an assessment Fortify never reports; a ZAP alert *is* the finding and `instances[]` are only where it was seen, so an instanceless alert establishes nothing locatable. Neither requirement is dropped, because both carry real CWE, NIST and prose, so no requirement count changes. The descriptionless ZAP alert gets the same empty-data `default` description `splunk-to-hdf` already uses, rather than a second invented shape.
-
-  No committed fixture reaches any of these paths — 0 of 5 Fortify descriptions are orphans and 0 of 30 ZAP alerts lack instances or carry a solution without a desc — which is why nothing caught them. Two standing guards now cover the class: one validates every committed golden against the full results schema, and one fails if a converter test pins an emitted `results` or `descriptions` array as empty, across the six assertion idioms this repo uses — pinning the invalid shape as the contract is how every instance survived, and the narrower first version of that guard missed the GitLab one. Neither guard makes an *unexercised* path validate: only 18 of 66 converters schema-validate their output at all, which is tracked separately.
-
-- **An InSpec control with no `impact`, no `tags` or no `results` no longer produces an invalid document, and an absent `impact` is now unknown severity rather than zero.**
-
-  Both importers of an InSpec control payload — `legacyhdf-to-hdf` for exec JSON and `splunk-to-hdf` for the same controls read out of Splunk — treated source *absence* as a value. `impact` was declared as a non-pointer `float64`, so an absent field and an explicit `"impact": 0` arrived as the same number and the score-0 translation fired on both; the TypeScript peers meanwhile dropped `impact` entirely, and `tags` reached output as `null` in Go and was omitted in TypeScript. `results` was guarded by the same nil check and reached output as `null`. All three are schema-required, so `hdf convert --from legacyhdf` rejected its own output.
-
-  An absent `impact` now resolves to the unknown-severity default of `0.5` — "we do not know whether this is good or bad" — and does **not** take the score-0 translation, because nothing declared the control inapplicable. An explicit `0` is unchanged: it is the profile author's declaration and still becomes an explicit `notApplicable` result. The two are now distinguishable, which required making the source field a pointer in Go, as `conveyor-to-hdf` already does for its score.
-
-  A control with no `results` is now filled with one synthesized `notReviewed` result stating that the source recorded none — `results` carries `minItems: 1`, so an empty array is as invalid as `null`, and nothing was established: not a pass, and not the scope claim an explicit `impact` of `0` makes. `splunk-to-hdf` had the same gap in the other shape, emitting `[]`. The fill runs *after* overlay flattening, because the flatten decides which layer's results win by checking which side is non-empty — filling a control beforehand makes every layer look non-empty and the real results are discarded.
-
-  Worth stating plainly, because it is worse than the dropped fields: an absent `impact` read as `0` also took the score-0 translation, so the old output *fabricated* an affirmative `notApplicable` result asserting the profile author had declared the control inapplicable — a compliance-relevant claim, excluded from the compliance denominator, invented from a field the source never carried.
-
-  **Source-breaking for library consumers.** `legacyhdf.LegacyControl.Impact` changes from `float64` to `*float64` in Go, and `LegacyControl.impact` from `number` to `number | undefined` in TypeScript. Code that reads the field without a nil/undefined check no longer compiles. The same applies to `splunk-to-hdf`'s control struct, which is not exported.
-
-  No committed fixture carries either shape, so no golden moved and no existing document changes. The parity harness masks neither field, so the divergence would have failed a snapshot — the branch was simply never executed.
-
-### Changed
-
 - **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**
 
   A suppressed finding keeps its failing result — the verdict is evidence — and the acceptance now travels as a `waiver` override whose status is `passed`, so `effectiveStatus` resolves non-failing through the one sanctioned channel. Previously the suppression was recorded only by forcing `impact: 0`, which the removed ladder rung read as `notApplicable`; with that rung gone such a finding reported `failed`.
@@ -159,7 +111,51 @@ All notable changes to this project will be documented in this file.
 
   One knock-on worth naming: `hdf diff` reports an impact-only change through `changeReasons`, `fieldChanges` and `drift`, but a matched pair's `state` tracks the effective status alone, so re-scoring a passing requirement to 0.0 now reads `unchanged` where it previously read `updated`. Teaching the diff engine to key on any changed field is tracked separately.
 
+### Added
+
+- `hdf convert --bundle` delivers ECS, Splunk or OCSF events, the exact original
+  HDF source and SIEM manifest inside a deterministic standard evidence-package
+  ZIP. `hdf evidence resolve` verifies the package's selected artifacts and
+  finding/source agreement before returning original bytes. Reuses existing HDF
+  inventory/checksum/archive machinery; missing, altered or unsafe references
+  fail. Ordinary conversion retains filenames such as `bundle`.
+
+- Development-only SIEM environment harness with Testcontainers-managed Elasticsearch and Splunk services, digest-pinned images, generated credentials, explicit Splunk consent, bounded readiness and scoped cleanup. Current CLI and packed TypeScript artifacts can be checked locally; product ingestion/readback and the approved GitHub Actions smoke/HDF reporting stages remain in progress.
+
+- CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
+- **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
+
+- **`junit-to-hdf` records the owning `<testsuite>` on every requirement.** Each requirement now carries `tags.test_suite`, the suite's `name` attribute verbatim (the suite that directly owns the testcase, so nested suites attribute correctly); a suite with no name records nothing. A Checkov-emitted suite — named `<framework> scan` with testcases carrying Checkov's `[SEVERITY][CHECK_ID]` prefix — additionally carries `tags.check_type: ["<framework>"]`, the same key and value `checkov-to-hdf` emits, so a multi-framework `checkov -o junitxml` run is distinguishable per framework in HDF and comparable with the JSON path. A generic suite (a test class) gets no `check_type`; nothing is inferred from a name alone. **Output change:** every existing JUnit conversion with named suites gains `tags.test_suite`; requirement ids, statuses and counts are unchanged.
+- **Comment length is now gated.** `pnpm lint:comments` fails when a declaration's doc comment (or a file header) exceeds 10 lines, any other comment run exceeds 5, or a comment line exceeds 90 characters.
+
+  The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
+
 ### Fixed
+
+- **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
+
+  Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
+
+  A ZAP alert carrying a `solution` but no `desc` was invalid for a third reason: `descriptions` also carries `contains: {label: "default"}`, so a non-empty array is not sufficient. The default entry is now prepended whenever no entry carries that label, per the schema's stated convention that the default description comes first, and the real `solution` text survives alongside it.
+
+  Each resultless requirement now carries one synthesized `notReviewed` result naming why the source recorded none. The reasoning differs per format and the claim says so: an FVDL `<Description>` is rule-catalog metadata and the finding is `<Vulnerability>`, so an orphan description establishes nothing at that rule — and `passed` would claim an assessment Fortify never reports; a ZAP alert *is* the finding and `instances[]` are only where it was seen, so an instanceless alert establishes nothing locatable. Neither requirement is dropped, because both carry real CWE, NIST and prose, so no requirement count changes. The descriptionless ZAP alert gets the same empty-data `default` description `splunk-to-hdf` already uses, rather than a second invented shape.
+
+  No committed fixture reaches any of these paths — 0 of 5 Fortify descriptions are orphans and 0 of 30 ZAP alerts lack instances or carry a solution without a desc — which is why nothing caught them. Two standing guards now cover the class: one validates every committed golden against the full results schema, and one fails if a converter test pins an emitted `results` or `descriptions` array as empty, across the six assertion idioms this repo uses — pinning the invalid shape as the contract is how every instance survived, and the narrower first version of that guard missed the GitLab one. Neither guard makes an *unexercised* path validate: only 18 of 66 converters schema-validate their output at all, which is tracked separately.
+
+- **An InSpec control with no `impact`, no `tags` or no `results` no longer produces an invalid document, and an absent `impact` is now unknown severity rather than zero.**
+
+  Both importers of an InSpec control payload — `legacyhdf-to-hdf` for exec JSON and `splunk-to-hdf` for the same controls read out of Splunk — treated source *absence* as a value. `impact` was declared as a non-pointer `float64`, so an absent field and an explicit `"impact": 0` arrived as the same number and the score-0 translation fired on both; the TypeScript peers meanwhile dropped `impact` entirely, and `tags` reached output as `null` in Go and was omitted in TypeScript. `results` was guarded by the same nil check and reached output as `null`. All three are schema-required, so `hdf convert --from legacyhdf` rejected its own output.
+
+  An absent `impact` now resolves to the unknown-severity default of `0.5` — "we do not know whether this is good or bad" — and does **not** take the score-0 translation, because nothing declared the control inapplicable. An explicit `0` is unchanged: it is the profile author's declaration and still becomes an explicit `notApplicable` result. The two are now distinguishable, which required making the source field a pointer in Go, as `conveyor-to-hdf` already does for its score.
+
+  A control with no `results` is now filled with one synthesized `notReviewed` result stating that the source recorded none — `results` carries `minItems: 1`, so an empty array is as invalid as `null`, and nothing was established: not a pass, and not the scope claim an explicit `impact` of `0` makes. `splunk-to-hdf` had the same gap in the other shape, emitting `[]`. The fill runs *after* overlay flattening, because the flatten decides which layer's results win by checking which side is non-empty — filling a control beforehand makes every layer look non-empty and the real results are discarded.
+
+  Worth stating plainly, because it is worse than the dropped fields: an absent `impact` read as `0` also took the score-0 translation, so the old output *fabricated* an affirmative `notApplicable` result asserting the profile author had declared the control inapplicable — a compliance-relevant claim, excluded from the compliance denominator, invented from a field the source never carried.
+
+  **Source-breaking for library consumers.** `legacyhdf.LegacyControl.Impact` changes from `float64` to `*float64` in Go, and `LegacyControl.impact` from `number` to `number | undefined` in TypeScript. Code that reads the field without a nil/undefined check no longer compiles. The same applies to `splunk-to-hdf`'s control struct, which is not exported.
+
+  No committed fixture carries either shape, so no golden moved and no existing document changes. The parity harness masks neither field, so the divergence would have failed a snapshot — the branch was simply never executed.
+- The local verification gate restores workflow lint alongside the mapping-data check, so malformed GitHub workflows fail before commit.
 
 - **A legacy exec-json document's `platform` and `target` now convert to one component, not two.** `hdf convert` of an InSpec/Heimdall v2 document carrying both a `platform` and a classic `{ type, name, labels }` top-level `target` produced a `platform`-derived component plus a second, nameless one.
 
