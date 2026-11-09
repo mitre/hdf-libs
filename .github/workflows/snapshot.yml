@@ -247,11 +247,14 @@ jobs:
   publish:
     needs: [prepare, build, tag]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     environment: npm-snapshots
     permissions:
       contents: read
       id-token: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      SOURCE: ${{ needs.prepare.outputs.source }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -262,36 +265,92 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           artifact-ids: ${{ needs.build.outputs.artifact }}
           path: snapshot-artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact }}
+          path: snapshot-metadata
       - uses: $/.github/actions/setup-npm
       - name: Validate snapshot archives
+        id: validate
         env:
-          VERSION: ${{ needs.prepare.outputs.version }}
           BUILT_ATTEMPT: ${{ needs.prepare.outputs.attempt }}
         run: |
-          test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
-          [[ "$VERSION" == *"-next.$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT" ]]
+          # A re-run of this job alone keeps the building attempt's version and archives, so
+          # the version must name this run and that attempt, and main must not have moved past
+          # the source: an older run re-run late would otherwise move next back to older code.
+          [[ "$VERSION" == *"-next.$GITHUB_RUN_ID.$BUILT_ATTEMPT" ]]
+          test "$BUILT_ATTEMPT" -le "$GITHUB_RUN_ATTEMPT"
+          test "$SOURCE" = "$GITHUB_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || {
+            echo 'main has moved past this commit; its snapshot is superseded, not republished' >&2
+            exit 1
+          }
           bash scripts/check-snapshot-archives.sh snapshot-artifacts "$VERSION" > "$RUNNER_TEMP/packages.txt"
           test -s "$RUNNER_TEMP/packages.txt"
-      - name: Publish packages and advance next
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
-          BUILT_ATTEMPT: ${{ needs.prepare.outputs.attempt }}
-          SOURCE: ${{ needs.prepare.outputs.source }}
+          test -s snapshot-metadata/gomods.txt
+      - name: Publish packages
+        id: publish
+        run: bash scripts/publish-snapshot-packages.sh "$VERSION" "$RUNNER_TEMP/packages.txt" snapshot-artifacts
+      - name: Wait for the registry and the proxy to serve the version
+        id: wait
         run: |
-          test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT"
-          # npm provenance names github.sha; the published tree must descend from exactly that commit.
-          # The ./ keeps npm from reading a bare dir/file.tgz spec as a GitHub owner/repo shorthand.
-          test "$SOURCE" = "$GITHUB_SHA"
-          registry=(--registry=https://registry.npmjs.org --@mitre:registry=https://registry.npmjs.org)
-          while read -r pkg; do
-            # ./ keeps npm from reading dir/file.tgz as a GitHub owner/repo shorthand.
-            npm publish "./snapshot-artifacts/mitre-$pkg-$VERSION.tgz" \
-              --access public --provenance --ignore-scripts --tag snapshot-staging "${registry[@]}"
-          done < "$RUNNER_TEMP/packages.txt"
-          while read -r pkg; do
-            npm dist-tag add "@mitre/$pkg@$VERSION" next "${registry[@]}"
-          done < "$RUNNER_TEMP/packages.txt"
+          bash scripts/wait-for-snapshot-publication.sh "$VERSION" "$RUNNER_TEMP/packages.txt" \
+            snapshot-metadata/gomods.txt 600 30
+      - name: Install check, npm
+        id: npm-check
+        run: bash scripts/check-npm-consumers.sh --registry-version "$VERSION"
+      - name: Install check, Go
+        id: go-check
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          GOPRIVATE: ''
+          GONOPROXY: ''
+          GONOSUMDB: ''
+        run: bash scripts/check-go-consumers.sh "$VERSION" snapshot-metadata/gomods.txt
+      - name: Advance next and read it back
+        id: promote
+        run: |
+          rc=0
+          bash scripts/promote-snapshot-next.sh "$VERSION" "$RUNNER_TEMP/packages.txt" 300 15 \
+            | tee "$RUNNER_TEMP/promotion.log" || rc=$?
+          grep -v '^poll:' "$RUNNER_TEMP/promotion.log" > "$RUNNER_TEMP/next.tsv" || :
+          exit "$rc"
+      - name: Summary
+        if: always()
+        env:
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+          OUTCOMES: |
+            validate ${{ steps.validate.outcome }}
+            publish ${{ steps.publish.outcome }}
+            wait ${{ steps.wait.outcome }}
+            npm-check ${{ steps.npm-check.outcome }}
+            go-check ${{ steps.go-check.outcome }}
+            promote ${{ steps.promote.outcome }}
+        run: |
+          {
+            echo "## Snapshot $VERSION"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| source | $SOURCE |"
+            echo "| prepared | $PREPARED |"
+            echo "| version | $VERSION |"
+            awk 'NF == 2 { printf "| %s | %s |\n", $1, $2 }' <<< "$OUTCOMES"
+            echo
+            if [ -s "$RUNNER_TEMP/next.tsv" ]; then
+              echo '| package | next | |'
+              echo '| --- | --- | --- |'
+              awk -F '\t' '{ printf "| %s | %s | %s |\n", $1, $2, $3 }' "$RUNNER_TEMP/next.tsv"
+            else
+              echo 'next was not advanced for any package.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
