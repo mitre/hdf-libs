@@ -100,6 +100,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`hdf fetch aws-config` names every rule whose remediation lookup the deadline cut short.** When the read-phase deadline expired during remediation lookup, the rules not yet looked up silently lost their `fix` description; they are now named, with the context error, in the single remediation warning.
+
 - **`grype-to-hdf` and `twistlock-to-hdf` write byte-identical `rawSourceRecord` content from Go and TypeScript.** Each twin rendered the record with its own JSON encoding, so U+2028/U+2029 escaping and, for grype, number spelling differed between languages despite comments claiming parity. Both now render through the shared document encoders `sarif-to-hdf` already uses: U+2028/U+2029 are always escaped, `<`, `>` and `&` stay literal, grype keeps every number exactly as Grype wrote it, and grype's record keys are now sorted rather than kept in source order, the canonical form ADR-0017 permits. The grype goldens changed in key order only.
 
 - **`splunk-to-hdf` (Go) stamps the document timestamp in canonical UTC.** It used the host's local zone at full precision, so the output depended on where it ran and differed from TypeScript.

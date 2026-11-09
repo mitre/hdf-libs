@@ -339,7 +339,7 @@ const maxRemediationBatch = 25
 // no fix description), with one warning naming them. A batch is all-or-nothing,
 // so one name the API refuses (a service-linked rule, say) would take the other
 // 24 with it; a failed batch is retried one name at a time so every customer
-// rule keeps its fix.
+// rule keeps its fix. Rules not looked up before ctx ends are in that warning too.
 func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []string) map[string]*awsconfigconv.RemediationConfiguration {
 	out := make(map[string]*awsconfigconv.RemediationConfiguration)
 	var skipped []unreadableRule
@@ -357,7 +357,16 @@ func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []st
 			}
 		}
 	}
-	for start := 0; start < len(ruleNames) && ctx.Err() == nil; start += maxRemediationBatch {
+	notLookedUp := func(names []string) {
+		for _, name := range names {
+			skipped = append(skipped, unreadableRule{name: name, detail: ctx.Err().Error()})
+		}
+	}
+	for start := 0; start < len(ruleNames); start += maxRemediationBatch {
+		if ctx.Err() != nil {
+			notLookedUp(ruleNames[start:])
+			break
+		}
 		batch := ruleNames[start:min(start+maxRemediationBatch, len(ruleNames))]
 		rcs, err := f.describeRemediations(ctx, batch)
 		if err == nil {
@@ -368,8 +377,9 @@ func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []st
 			skipped = append(skipped, unreadableRule{name: batch[0], detail: err.Error()})
 			continue
 		}
-		for _, name := range batch {
+		for i, name := range batch {
 			if ctx.Err() != nil {
+				notLookedUp(batch[i:])
 				break
 			}
 			rcs, err := f.describeRemediations(ctx, []string{name})
