@@ -50,6 +50,8 @@ grype sbom:hdf_3.5.1_linux_amd64.tar.gz.spdx.json
 
 ## What each check does and does not prove
 
+Before any of these artifacts exist, the release workflow asks GitHub whether the release tag is signature-verified (the tag object's `verification.verified`) and publishes nothing — no npm package, Go module tag, or GitHub release — unless it is, so every formal release tag is signature-verified by GitHub.
+
 - `sha256sum -c` alone proves integrity but not origin: an attacker who can replace an asset can replace `checksums.txt` too. Pair it with one of the other two layers.
 - `cosign verify-blob` proves the checksum file came from this repository's release workflow. It does not prove which commit was built — the attestation carries that.
 - `gh attestation verify` proves workflow, repository, and source commit for the specific asset, and is the only check that needs no other file from the release.

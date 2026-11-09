@@ -1,0 +1,8 @@
+# Skip budget for the ubuntu leg; shared rules are in tests.yaml, rationale in README.md.
+# 14 is go-hdf-cli-ubuntu-latest on run 41700987742 (case-folding and Unicode-normalization
+# skips). Re-measure on a green run, never on the run being gated.
+rules:
+    - name: skipped stays within the ubuntu budget
+      where:
+          status: notReviewed
+      max: 14

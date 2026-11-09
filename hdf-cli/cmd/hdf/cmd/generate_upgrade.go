@@ -892,7 +892,7 @@ func copyDir(src, dst string) error {
 			return err
 		}
 		// Skip top-level dotfiles (.git, etc) to avoid copying VCS metadata.
-		if rel != "." && strings.HasPrefix(rel, ".") && !strings.ContainsRune(rel, filepath.Separator) {
+		if hiddenName(rel) && !strings.ContainsRune(rel, filepath.Separator) {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
