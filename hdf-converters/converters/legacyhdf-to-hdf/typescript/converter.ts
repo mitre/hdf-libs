@@ -19,7 +19,7 @@ import {
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -46,7 +46,10 @@ export interface LegacyControl {
   title?: string;
   desc?: string;
   descriptions?: Array<{label: string; data: string}>;
-  impact: number;
+  // Optional because an absent impact and an explicit 0 are different
+  // claims: 0 is the author declaring the control inapplicable, undefined
+  // is a source that never carried the field. Parity: *float64 in go/types.go.
+  impact?: number;
   refs?: unknown[];
   tags?: Record<string, unknown>;
   code?: string;
@@ -344,6 +347,11 @@ function synthesizedErrorResult(results: V2Result[]): V2Result {
   };
 }
 
+// What an ABSENT impact resolves to: the unknown-severity default, which says
+// "we do not know whether this is good or bad" rather than "this carries no
+// risk". Parity: unknownSeverityImpact in go/converter.go.
+const UNKNOWN_SEVERITY_IMPACT = 0.5;
+
 /**
  * Encodes the scope declaration InSpec states as an impact of 0 rather than as a
  * result (matching the Go converter).
@@ -477,9 +485,14 @@ function convertRefs(refs: unknown[]): Record<string, unknown>[] | undefined {
  * Transforms field names and structure.
  */
 function convertControl(v1Control: LegacyControl): V2Requirement {
+  // An absent impact is unknown severity, not zero severity. Resolve once so
+  // every use below agrees, and keep the source's own undefined-ness for the
+  // score-0 translation, which only an explicit 0 may trigger.
+  const impact = v1Control.impact ?? UNKNOWN_SEVERITY_IMPACT;
+
   const v2Req: V2Requirement = {
     id: v1Control.id,
-    impact: v1Control.impact,
+    impact,
   };
 
   // Copy simple fields. `waiver_data` is intentionally dropped (expressed via
@@ -494,7 +507,9 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
     descriptions.unshift({label: 'default', data: v1Control.desc ?? ''});
   }
   v2Req.descriptions = descriptions;
-  if (v1Control.tags !== undefined) v2Req.tags = v1Control.tags;
+  // tags is schema-required, so an absent source map becomes an empty object
+  // rather than being omitted — omission is as invalid as null.
+  v2Req.tags = v1Control.tags ?? {};
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
     const refs = convertRefs(v1Control.refs);
@@ -541,12 +556,12 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
 
   // Always compute effectiveStatus from the emitted results via the canonical
   // ladder (write-path guarantee).
-  v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
+  v2Req.effectiveStatus = computeEffectiveStatus(impact, v2Req.results ?? []);
 
   // Populate severity: prefer tags.severity (preserves original STIG severity),
   // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
   // the original severity — tags.severity preserves it.
-  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(v1Control.impact);
+  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(impact);
 
   // Derive controlType from v1 tags.nist if present.
   const rawNist = v1Control.tags?.nist;
@@ -1182,7 +1197,26 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
   // Flatten overlays: merge overlay/wrapper baselines so every requirement
   // has results and consumers don't see duplicated controls (741→247 fix).
   const flat = flattenOverlays(v2 as unknown as HDFResults);
-  return flat.results as unknown as HDFV2Results;
+
+  // results is schema-required with minItems:1, so anything the flatten could
+  // not resolve would otherwise leave null or []. This must run AFTER
+  // flattening: the flatten decides which layer's results win by checking which
+  // side is non-empty, so filling beforehand makes every layer look non-empty
+  // and the real results get discarded.
+  // Typed as the legacy shape this function returns, not the v3 schema type the
+  // flatten is cast through: startTime is a string here, so the synthesized
+  // result must carry GO_ZERO_TIME like every sibling. Passing a Date compiles
+  // against the schema type but stringifies with fractional seconds.
+  const flatV2 = flat.results as unknown as HDFV2Results;
+  for (const baseline of flatV2.baselines ?? []) {
+    for (const req of baseline.requirements ?? []) {
+      if ((req.results ?? []).length === 0) {
+        req.results = [synthesizedNoResultsResult(GO_ZERO_TIME, 'the source carried no results for this control, so nothing was established about it')];
+      }
+    }
+  }
+
+  return flatV2;
 }
 
 /**

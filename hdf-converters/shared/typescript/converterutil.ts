@@ -768,6 +768,26 @@ export function inSpecEstablishedNothing(statuses: readonly string[]): boolean {
 }
 
 /**
+ * Fills a requirement whose source recorded no results at all. `results` is
+ * schema-required with minItems:1, so neither null nor an empty array is a valid
+ * document — and the honest filling is notReviewed, because nothing was
+ * established: not a pass, and not the scope claim an explicit impact of 0 makes.
+ * The caller supplies `reason`, because why a source carried no result differs
+ * per format and the claim must say so.
+ * Parity: SynthesizedNoResultsResult in shared/go/converterutil.go.
+ */
+export function synthesizedNoResultsResult<V extends string | Date>(
+  startTime: V,
+  reason: string,
+): { status: ResultStatus; codeDesc: string; startTime: V } {
+  return {
+    status: ResultStatus.NotReviewed,
+    codeDesc: `Synthesized because ${reason}`,
+    startTime,
+  };
+}
+
+/**
  * The notApplicable result an InSpec reader appends for a control scored 0 that
  * reports no verdict. Generic over the startTime representation — a legacy wire
  * result carries a string, a schema result a Date — so both readers produce the

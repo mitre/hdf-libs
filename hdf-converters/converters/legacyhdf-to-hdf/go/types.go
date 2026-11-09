@@ -76,7 +76,13 @@ type LegacyControl struct {
 	Title        *string             `json:"title,omitempty"`
 	Desc         *string             `json:"desc,omitempty"`
 	Descriptions []LegacyDescription `json:"descriptions,omitempty"`
-	Impact       float64             `json:"impact"`
+	// Impact is a POINTER because an absent impact and an explicit 0 are
+	// different claims: 0 is the profile author declaring the control
+	// inapplicable, nil is a source that never carried the field. A
+	// non-pointer float64 collapses both to 0 at unmarshal and the
+	// distinction is unrecoverable. Same reason conveyor-to-hdf makes its
+	// Score a pointer.
+	Impact *float64 `json:"impact"`
 	// refs/tags are required by the InSpec exec-json schema Heimdall loads (empty is
 	// valid, but the key must be present), so no omitempty.
 	Refs           []interface{}          `json:"refs"`

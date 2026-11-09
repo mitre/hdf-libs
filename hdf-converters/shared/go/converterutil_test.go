@@ -933,3 +933,13 @@ func TestPackageInstanceID(t *testing.T) {
 	assert.Equal(t, "lodash", PackageInstanceID("", "lodash", ""))
 	assert.Equal(t, "", PackageInstanceID("", "", "4.17.21"), "a version without a name identifies nothing")
 }
+
+func TestSynthesizedNoResultsResult(t *testing.T) {
+	when := time.Date(2026, 3, 4, 5, 6, 7, 0, time.UTC)
+	r := SynthesizedNoResultsResult(when, "the source said nothing")
+
+	assert.Equal(t, hdf.NotReviewed, r.Status)
+	assert.Equal(t, "Synthesized because the source said nothing", r.CodeDesc,
+		"the prefix and the caller's reason are both part of the claim")
+	assert.Equal(t, when, r.StartTime, "the caller's time must survive, not be replaced by a zero value")
+}

@@ -475,7 +475,10 @@ describe('GitLab to HDF converter', () => {
       const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       const req = hdf.baselines[0].requirements[0];
       expect(req.title).toBe('Named Vuln');
-      expect(req.descriptions.length).toBe(0);
+      // descriptions is required with minItems:1 and contains:{label:"default"},
+      // so this asserted a document the converter rejects itself.
+      expect(req.descriptions).toHaveLength(1);
+      expect(req.descriptions[0].label).toBe('default');
     });
 
     it('should handle no scan field at all', async () => {

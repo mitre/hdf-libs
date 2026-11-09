@@ -455,6 +455,20 @@ func InSpecEstablishedNothing(results []hdf.RequirementResult) bool {
 	return hdfutil.WorstStatus(statuses) == string(hdf.NotReviewed)
 }
 
+// SynthesizedNoResultsResult fills a requirement whose source recorded no
+// results at all. results is schema-required with minItems:1, so neither null
+// nor an empty array is a valid document — and the honest filling is
+// notReviewed, because nothing was established: not a pass, and not the scope
+// claim an explicit impact of 0 makes. The caller supplies reason, because why
+// a source carried no result differs per format and the claim must say so.
+func SynthesizedNoResultsResult(startTime time.Time, reason string) hdf.RequirementResult {
+	return hdf.RequirementResult{
+		Status:    hdf.NotReviewed,
+		CodeDesc:  "Synthesized because " + reason,
+		StartTime: startTime,
+	}
+}
+
 // SynthesizedNotApplicableResult encodes the scope declaration InSpec states as
 // an impact of 0 rather than as a result. Every reader of an InSpec control
 // payload needs this, not just the file importer: the same run read from a

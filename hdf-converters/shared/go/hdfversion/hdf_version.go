@@ -314,9 +314,10 @@ func convertDependencyToV2(d hdf.Dependency) legacyhdf.LegacyDependency {
 // and returning warnings for amendments with no v2 equivalent.
 func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.LegacyControl, []string) {
 	c := legacyhdf.LegacyControl{
-		ID:     r.ID,
-		Title:  r.Title,
-		Impact: r.Impact,
+		ID:    r.ID,
+		Title: r.Title,
+		// v3 requires impact, so the downgrade always has a real value to write.
+		Impact: &r.Impact,
 		Code:   r.Code,
 	}
 
@@ -340,7 +341,11 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.Legacy
 
 	// riskAdjustment (and any impact override) re-scores the displayed impact.
 	if r.EffectiveImpact != nil {
-		c.Impact = *r.EffectiveImpact
+		// Copy so the legacy control owns its impact, matching the &r.Impact
+		// branch above; sharing the parsed document's pointer is unobservable
+		// today only because that document is function-local.
+		imp := *r.EffectiveImpact
+		c.Impact = &imp
 	}
 
 	// Extract default description as desc
