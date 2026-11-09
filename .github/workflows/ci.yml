@@ -307,6 +307,9 @@ jobs:
           for d in go/lang/security javascript/lang/security typescript/lang/security typescript/react/security; do
             [ -d ".semgrep-rules/$d" ] || { echo "::error::ruleset dir missing: $d"; exit 1; }
           done
+          # Preserve the rule ID while narrowing only the safe Windows size expression.
+          test -f .semgrep-rules/go/lang/security/audit/unsafe.yaml
+          cp .github/semgrep/unsafe.yaml .semgrep-rules/go/lang/security/audit/unsafe.yaml
       # Exit codes with --error: 0 clean, 1 findings (the gate judges those),
       # 2 target error, 7 bad config. Only 0 and 1 are tolerated here.
       #
@@ -320,6 +323,8 @@ jobs:
           # is honest. The pinned file also fixes every transitive dependency, so
           # nothing in the scanner's tree can move underneath a run.
           pip install --quiet --require-hashes -r .github/requirements/semgrep.txt
+          semgrep --test --metrics off \
+            --config .semgrep-rules/go/lang/security/audit/unsafe.yaml .github/semgrep/test/unsafe.go
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \
@@ -487,17 +492,19 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
-      - name: Windows CLI lint and security (SARIF; findings gate via HDF)
-        working-directory: hdf-cli
+      - name: Windows lint and security (SARIF; findings gate via HDF)
         env:
           GOOS: windows
           GOARCH: amd64
           CGO_ENABLED: '0'
         run: |
-          rc=0
-          golangci-lint run --output.text.path stdout \
-            --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-hdf-cli-windows.sarif" ./... || rc=$?
-          [ "$rc" -le 1 ] || exit "$rc"
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-windows.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
+          done
       # In SARIF mode govulncheck exits 0 even with findings — by design, so
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own

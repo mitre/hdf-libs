@@ -48,7 +48,7 @@ func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
 		require.NotNil(t, ace)
 		require.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
 		assert.Zero(t, ace.Header.AceFlags&windows.INHERIT_ONLY_ACE)
-		assert.Equal(t, uint32(windows.STANDARD_RIGHTS_REQUIRED|windows.SYNCHRONIZE|0x1ff), ace.Mask)
+		assert.Equal(t, windows.ACCESS_MASK(windows.STANDARD_RIGHTS_REQUIRED|windows.SYNCHRONIZE|0x1ff), ace.Mask)
 		grantee := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
 		assert.True(t, grantee.Equals(user.User.Sid), "the sole access grant must belong to the effective user")
 	}

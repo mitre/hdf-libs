@@ -430,6 +430,35 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
 
 ---
 
+## Security scanner rule regression tests
+
+CI tests the local Go unsafe-operation audit rule before scanning the repository.
+The rule exempts only `unsafe.Sizeof(windows.SecurityAttributes{})`: Go evaluates
+that fixed-size empty struct literal as a compile-time constant, including ABI
+padding. Other unsafe calls still produce findings, including `unsafe.Add`,
+pointer conversions and slice/string operations. An HDF override would apply to
+the entire rule, so this correction uses no amendment or threshold change.
+
+The locally authored rule is `.github/semgrep/unsafe.yaml`. CI places it at the
+existing fetched rule path to retain the HDF requirement ID; the rest of the
+pinned upstream ruleset stays intact. This does not depend on gosec G103: the
+current golangci-lint `common-false-positives` preset filters that audit rule.
+
+With the repository's hash-pinned Semgrep environment installed, run from the
+repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+The annotated Go cases test both permitted and reported expressions using
+[Semgrep's native rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+Keep those boundaries passing when changing the rule or scanner version. CI also
+scans every Go workspace module for Windows through the existing SARIF/HDF gate;
+Linux scans and threshold policies remain in place.
+
+---
+
 ## Coverage Standards
 
 - **95% minimum** for statements, branches, functions, and lines in all packages
