@@ -811,3 +811,34 @@ describe('fortify unrated severity marker', () => {
     expect((reqs[0]!.tags as Record<string, unknown>).severity_rating).toBe('unrated');
   });
 });
+
+// Go twin: TestConvertFortifyToHDF_DescriptionWithNoMatchingVulnIsSchemaValid.
+// An FVDL <Description> is rule metadata; the finding is <Vulnerability>. One
+// matching nothing had zero results, and results is schema-required with
+// minItems:1, so the converter emitted a document it rejects itself.
+describe('fortify-to-hdf orphan description', () => {
+  it('synthesizes a notReviewed result for a description with no matching vulnerability', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C1</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I1</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="NOMATCH">
+  <Abstract>Rule metadata with no finding</Abstract>
+  <Explanation>Explanation text</Explanation>
+</Description>
+</FVDL>`;
+    const hdf = JSON.parse(await convertFortifyToHdf(xml)) as HDFResults;
+
+    const orphan = hdf.baselines[0]!.requirements.find((r) => r.id === 'NOMATCH');
+    expect(orphan, 'the description must still become a requirement').toBeDefined();
+    expect(orphan!.results).toHaveLength(1);
+    expect(orphan!.results[0]!.status).toBe('notReviewed');
+    expect(orphan!.results[0]!.codeDesc).toContain('matched no vulnerability');
+    expectValidResults(hdf);
+  });
+});
+

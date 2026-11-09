@@ -767,3 +767,39 @@ describe('zap result instance identity', () => {
     ]);
   });
 });
+
+// Go twin: TestConvertZapToHDF_AlertWithNoInstancesIsSchemaValid. An alert is
+// the finding; instances[] are only where it was seen. results AND descriptions
+// are both schema-required with minItems:1, and this alert reached output with
+// both empty.
+describe('zap-to-hdf instanceless alert', () => {
+  it('synthesizes a notReviewed result and a default description', async () => {
+    const input = '{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n","riskcode":"2"}]}]}';
+    const hdf = JSON.parse(await convertZapToHdf(input)) as HDFResults;
+
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe('notReviewed');
+    expect(req.results[0]!.codeDesc).toContain('no instances');
+    expect(req.descriptions).toHaveLength(1);
+    expect(req.descriptions[0]!.label).toBe('default');
+    expectValidResults(hdf);
+  });
+});
+
+// Go twin: TestConvertZapToHDF_AlertWithSolutionButNoDescIsSchemaValid.
+// descriptions also carries contains:{label:"default"}, so non-empty is not
+// enough — an alert with a solution but no desc produced [{label:'solution'}].
+describe('zap-to-hdf descriptions without a default label', () => {
+  it('prepends the default entry while keeping the real solution text', async () => {
+    const input = '{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n","riskcode":"2","solution":"Fix it","instances":[{"uri":"/x"}]}]}]}';
+    const hdf = JSON.parse(await convertZapToHdf(input)) as HDFResults;
+
+    const labels = hdf.baselines[0]!.requirements[0]!.descriptions.map((d) => d.label);
+    expect(labels).toContain('default');
+    expect(labels).toContain('solution');
+    expect(labels[0]).toBe('default');
+    expectValidResults(hdf);
+  });
+});
+

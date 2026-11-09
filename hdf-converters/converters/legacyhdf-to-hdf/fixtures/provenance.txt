@@ -36,3 +36,32 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 InSpec generates its exec-json schema at run time (`inspec schema exec-json`, from `lib/inspec/schema/exec_json.rb`) and publishes no static schema file (2026-09-20).
+
+## Recorded coverage gap: a control with no `impact`, no `tags`, or no `results`
+
+No fixture here carries any of the three shapes, and none was manufactured to
+fill the hole. Checked 2026-11-09 across **2,728 InSpec source controls in 10
+real files** — every `profiles[].controls[]` entry in the 7 InSpec-shaped inputs
+(this importer's 3, plus the 4 in `hdf-fixtures/inspec`) and the 12
+`meta.subtype == "control"` events across the 3 Splunk inputs.
+`baselines[].requirements[]` in `hdf-fixtures/results` (1,752 more) are
+deliberately excluded: they are converter OUTPUT and cannot omit a
+schema-required field, so they say nothing about what a source carries. Of the
+2,728: **zero** omit `impact`, **zero** omit `tags`, and **zero** omit `results`
+or carry it as null — though **1,027 carry `results: []`**, which the same fill
+covers, since `minItems: 1` makes an empty array as invalid as a missing one.
+That last figure is the one an earlier version of this record missed, by
+checking only for absence and null. All 1,396 impact-0 controls carry an explicit
+`"impact": 0`, which is InSpec writing the profile author's `impact 0.0`
+declaration deliberately — a different claim from an absent field.
+
+Both shapes are therefore exercised by **authored inline documents in the test
+files**, not by anything under `input/`. They are not captured tool output and
+must not be cited as such. The owner ruled this acceptable where a shape cannot
+be sourced; the behaviour itself is pinned in both languages, and a
+cross-language test asserts the two readers of an InSpec control payload treat
+absence identically.
+
+This is also why the defects were invisible: the golden parity harness does not
+mask `impact` or `tags`, so a Go/TS divergence on either WOULD fail the snapshot
+— the branch simply never executed, because no fixture reaches it.

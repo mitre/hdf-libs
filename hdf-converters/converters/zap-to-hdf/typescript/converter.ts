@@ -21,7 +21,7 @@ import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {detectConverter} from '../../../shared/typescript/fingerprint.js';
 import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, synthesizedNoResultsResult, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -299,6 +299,21 @@ function buildSiteRequirements(site: ZapSite, startTime: Date): EvaluatedRequire
     const otherInfo = alert.otherinfo ? stripHTML(alert.otherinfo) : '';
     if (otherInfo) {
       descriptions.push({label: 'check', data: otherInfo});
+    }
+
+    // An alert is the finding and instances[] are only where it was seen, so one
+    // with none establishes nothing locatable. descriptions additionally carries
+    // contains:{label:"default"}, so a non-empty array is not enough — an alert
+    // with only a solution still needs the default entry, prepended per the
+    // schema's convention.
+    if (results.length === 0) {
+      results.push(synthesizedNoResultsResult(
+        startTime,
+        'the alert was raised with no instances, so nothing locatable was established',
+      ));
+    }
+    if (!descriptions.some((d) => d.label === 'default')) {
+      descriptions.unshift({label: 'default', data: ''});
     }
 
     const impact = riskCodeToImpact(alert.riskcode ?? '');

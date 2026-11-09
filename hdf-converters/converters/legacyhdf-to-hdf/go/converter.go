@@ -209,12 +209,32 @@ func convertRefs(refs []interface{}) []hdf.Reference {
 	return out
 }
 
+// unknownSeverityImpact is what an ABSENT impact resolves to: the repo's
+// unknown-severity default, which says "we do not know whether this is good or
+// bad" rather than "this carries no risk". An explicit 0 is a different claim
+// and is carried as written. Matches the 0.5 fallback most converters pass to
+// hdfutil.SeverityToImpact, and kics-to-hdf's local defaultImpact.
+const unknownSeverityImpact = 0.5
+
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
+	// An absent impact is unknown severity, not zero severity. Resolve it once
+	// here so every use below agrees, and keep the source's own nil-ness for the
+	// score-0 translation, which only an explicit 0 may trigger.
+	impact := unknownSeverityImpact
+	if v1.Impact != nil {
+		impact = *v1.Impact
+	}
+
 	v2 := hdf.EvaluatedRequirement{
 		ID:     v1.ID,
-		Impact: v1.Impact,
-		Tags:   v1.Tags,
+		Impact: impact,
+		// tags is schema-required, so a nil source map becomes an empty object
+		// rather than reaching output as null.
+		Tags: v1.Tags,
+	}
+	if v2.Tags == nil {
+		v2.Tags = map[string]interface{}{}
 	}
 
 	if v1.Title != nil {
@@ -310,13 +330,13 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// canonical ladder does not read impact — so the claim only survives if it
 	// is in results[]. Anything the results did establish, an execution error
 	// included, outranks notApplicable in worst-wins and is left alone.
-	if v1.Impact == 0 && shared.InSpecEstablishedNothing(v2.Results) {
+	if v1.Impact != nil && *v1.Impact == 0 && shared.InSpecEstablishedNothing(v2.Results) {
 		v2.Results = append(v2.Results, shared.SynthesizedNotApplicableResult(v2.Results))
 	}
 
 	// Always compute effectiveStatus from the emitted results via the
 	// canonical ladder (write-path guarantee).
-	es := computeEffectiveStatus(v1.Impact, v2.Results)
+	es := computeEffectiveStatus(impact, v2.Results)
 	v2.EffectiveStatus = &es
 
 	// Populate severity: prefer tags.severity (preserves original STIG severity),
@@ -328,7 +348,7 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		}
 	}
 	if v2.Severity == nil {
-		sev := impactToSeverity(v1.Impact)
+		sev := impactToSeverity(impact)
 		v2.Severity = &sev
 	}
 
@@ -680,5 +700,19 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).
 	flat := hdfparsers.FlattenOverlays(*v2)
+
+	// Fills what the flatten could not resolve, since results is schema-required
+	// with minItems:1. Must run after flattening: the flatten picks a layer's
+	// results by which side is non-empty, so filling earlier makes every layer
+	// look non-empty and the real results lose.
+	for bi := range flat.Results.Baselines {
+		reqs := flat.Results.Baselines[bi].Requirements
+		for ri := range reqs {
+			if len(reqs[ri].Results) == 0 {
+				reqs[ri].Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{}, "the source carried no results for this control, so nothing was established about it")}
+			}
+		}
+	}
+
 	return &flat.Results
 }

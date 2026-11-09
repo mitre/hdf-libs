@@ -226,6 +226,16 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	// Build results — one per vulnerability instance
 	results := buildResults(vulns, snippetMap, fvdl)
 
+	// A <Description> is rule metadata; the finding is <Vulnerability>. One
+	// matching nothing still carries real CWE, NIST and prose worth keeping, but
+	// results is schema-required with minItems:1, so it cannot stay empty.
+	if len(results) == 0 {
+		results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(
+			parseCreatedTS(fvdl.CreatedTS),
+			"this rule description matched no vulnerability in the scan, so nothing was established at it",
+		)}
+	}
+
 	req := hdf.EvaluatedRequirement{
 		ID:                 desc.ClassID,
 		Title:              &titleStr,

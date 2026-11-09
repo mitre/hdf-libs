@@ -3,7 +3,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity, packageInstanceId, earliestResultStartTime, GO_ZERO_TIME } from './converterutil.js';
+import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity, packageInstanceId, earliestResultStartTime, GO_ZERO_TIME,
+  synthesizedNoResultsResult,
+} from './converterutil.js';
 import { DEFAULT_MAX_INPUT_SIZE as UTIL_DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 
 describe('inputChecksum', () => {
@@ -636,3 +638,13 @@ describe('earliestResultStartTime', () => {
     expect(earliestResultStartTime([{ startTime: '' }, {}])).toBeUndefined();
   });
 });
+
+describe('synthesizedNoResultsResult', () => {
+  it('carries the prefix, the caller reason and the caller startTime', () => {
+    const r = synthesizedNoResultsResult('2026-03-04T05:06:07Z', 'the source said nothing');
+    expect(r.status).toBe('notReviewed');
+    expect(r.codeDesc).toBe('Synthesized because the source said nothing');
+    expect(r.startTime).toBe('2026-03-04T05:06:07Z');
+  });
+});
+
