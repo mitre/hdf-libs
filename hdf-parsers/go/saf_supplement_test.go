@@ -224,18 +224,29 @@ func TestParseResults_AcceptsSAFSupplementedDoc(t *testing.T) {
 // differs across languages so this compares parsed structure, not bytes).
 func TestNormalizeSAFSupplement_SharedFixtureParity(t *testing.T) {
 	dir := filepath.Join("..", "testdata", "saf-supplement")
-	in, err := os.ReadFile(filepath.Join(dir, "legacy-in.json"))
-	require.NoError(t, err)
-	expected, err := os.ReadFile(filepath.Join(dir, "v3-out.json"))
-	require.NoError(t, err)
+	for _, pair := range []struct {
+		in, out string
+		valid   bool // false when the pair pins output the normalizer leaves schema-invalid
+	}{
+		{"legacy-in.json", "v3-out.json", true},
+		{"prototype-keys-in.json", "prototype-keys-out.json", true},
+		{"empty-identity-in.json", "empty-identity-out.json", false},
+	} {
+		t.Run(pair.in, func(t *testing.T) {
+			in, err := os.ReadFile(filepath.Join(dir, pair.in))
+			require.NoError(t, err)
+			expected, err := os.ReadFile(filepath.Join(dir, pair.out))
+			require.NoError(t, err)
 
-	out, _ := NormalizeSAFSupplement(in)
+			out, _ := NormalizeSAFSupplement(in)
 
-	var got, want any
-	require.NoError(t, json.Unmarshal(out, &got))
-	require.NoError(t, json.Unmarshal(expected, &want))
-	assert.Equal(t, want, got, "normalized output must match the shared v3-out fixture")
-	assert.True(t, validators.ValidateResults(out).Valid, "shared fixture normalizes to schema-valid v3")
+			var got, want any
+			require.NoError(t, json.Unmarshal(out, &got))
+			require.NoError(t, json.Unmarshal(expected, &want))
+			assert.Equal(t, want, got, "normalized output must match the shared fixture")
+			assert.Equal(t, pair.valid, validators.ValidateResults(out).Valid, "schema validity of the normalized fixture")
+		})
+	}
 }
 
 // platformDerived is the component the v2→v3 upgrade derives from an InSpec
@@ -373,6 +384,35 @@ func TestNormalizeSAFSupplement_DoesNotMergeIntoADistinctComponent(t *testing.T)
 			for i := range existing {
 				assert.Equal(t, existing[i], comps[i], "existing component left untouched")
 			}
+		})
+	}
+}
+
+// A target with neither id nor name has no identity to match on, so it must not
+// be joined to a component that merely lacks a name of its own, whether that
+// name is absent or the literal empty string.
+func TestNormalizeSAFSupplement_EmptyTargetIdentityNeverMatches(t *testing.T) {
+	for name, comp := range map[string]map[string]any{
+		"missing name": {"type": "host", "componentId": "6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f", "osName": "redhat"},
+		"empty name":   {"type": "host", "name": "", "componentId": "6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			in := validV3WithExtra(t, map[string]any{
+				"components": []any{comp},
+				"target":     map[string]any{"type": "host", "boundary": "dmz"},
+			})
+			out, warnings := NormalizeSAFSupplement(in)
+			var doc map[string]any
+			require.NoError(t, json.Unmarshal(out, &doc))
+			comps, _ := doc["components"].([]any)
+			require.Len(t, comps, 1, "nothing is appended for a target with no identity")
+			c, _ := comps[0].(map[string]any)
+			_, hasLabels := c["labels"]
+			assert.False(t, hasLabels, "the componentId-bearing component must not receive the target's boundary")
+			_, hasTarget := doc["target"]
+			assert.True(t, hasTarget, "the target is left in place with a warning, as an unmapped type is")
+			require.NotEmpty(t, warnings)
+			assert.Contains(t, warnings[0], "no id or name", "the warning names the reason")
 		})
 	}
 }
