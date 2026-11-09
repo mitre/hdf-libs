@@ -196,10 +196,6 @@
           "type": "string",
           "description": "The name of the parent baseline if this is a dependency of another."
         },
-        "description": {
-          "type": "string",
-          "description": "The description - should be more detailed than the summary."
-        },
         "integrity": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
           "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
@@ -210,7 +206,7 @@
         },
         "resultsChecksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-          "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
+          "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Amendment integrity is checked against the document-level preAmendmentChecksum at the root, not this per-baseline value: hdf amend apply writes it as the hash of the raw document bytes immediately before the most recent amendment application, one step back only."
         },
         "statusMessage": {
           "type": "string",
@@ -582,7 +578,6 @@
           "statusOverrides": [
             {
               "type": "operationalRequirement",
-              "status": "failed",
               "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
               "appliedBy": {
                 "type": "email",

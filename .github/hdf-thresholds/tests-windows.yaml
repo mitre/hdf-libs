@@ -1,0 +1,8 @@
+# Skip budget for the windows leg; shared rules are in tests.yaml, rationale in README.md.
+# 29 is go-hdf-cli-windows-latest on run 41700987742 (symlink and POSIX-mode-bit skips).
+# Re-measure on a green run, never on the run being gated.
+rules:
+    - name: skipped stays within the windows budget
+      where:
+          status: notReviewed
+      max: 29

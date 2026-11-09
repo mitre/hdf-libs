@@ -97,3 +97,26 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 XCCDF 1.2 has an XSD and it is vendored at `hdf-to-xccdf/schemas/xccdf_1.2.xsd` (with the CPE and `xml.xsd` schemas it imports; see that directory's `provenance.json`); libxml2 compiles it in the hdf-to-xccdf tests. It is not copied here. The ARF 1.1 XSD for `arf-minimal.xml` (NIST, `asset-reporting-format_1.1.0.xsd`) is vendored here and recorded in `provenance.json`; it imports the asset-identification and reporting-core schemas by relative path, which are not vendored, so it is hash-checked but not compiled.
+
+### `rule-result-dispositions.xml`
+
+**Authored, schema-confirmed — not captured tool output.** Written 2026-11-05 to
+cover the rule-result dispositions no real input here carries. The ten captured
+inputs (including two real SCC and two real OpenSCAP runs) carry only `pass`,
+`fail` and `error`, and their severities are only high, medium, low and unknown,
+so `notselected`, `notapplicable`, `notchecked`, `informational` and
+`severity="info"` had no coverage at all — which is why a status-mapping change
+to those five was invisible.
+
+Confirmed against the NIST XCCDF 1.2 schema already vendored in this repository
+at `hdf-converters/converters/hdf-to-xccdf/schemas/xccdf_1.2.xsd` (source URL and
+SHA-256 in that directory's `provenance.json`). The validation is not a one-off
+recorded in prose: `go/schema_validation_test.go` runs it on every test run via
+`shared/go/xsdvalidate`, so the document cannot drift out of conformance
+unnoticed.
+
+Being schema-confirmed proves one thing only — that the shape is one XCCDF 1.2
+admits. It is not evidence that any scanner emits this particular combination of
+rule-results in one TestResult. A real capture carrying `notselected` is
+reachable (`oscap --reference`, `--skip-rule`, or a tailoring file all produce
+it, per oscap(8)) and should replace this document if one is obtained.

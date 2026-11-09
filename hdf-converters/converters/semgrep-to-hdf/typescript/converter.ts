@@ -456,19 +456,20 @@ function buildErrorsRequirement(errors: SemgrepError[], startTime: Date): Evalua
   return requirement;
 }
 
-/**
- * Records the scan's denominator. Semgrep reports violations only, so a
- * converted profile is failures-only by construction and its compliance ratio
- * is not a pass rate; this record carries the scanned count and the caveat.
- * Impact 0 makes the effective-status layer derive notApplicable — the only
- * status the compliance rollup excludes — and the raw status matches so
- * raw-status consumers (and CKL export, where Passed would render NotAFinding)
- * agree with the effective view. Mirrors kics-scan-coverage.
- */
+/** How many paths the scan actually looked at. */
 function scannedCount(report: SemgrepReport): number {
   return Array.isArray(report.paths?.scanned) ? report.paths.scanned.length : 0;
 }
 
+/**
+ * Records the scan's denominator. Semgrep reports violations only, so a
+ * converted profile is failures-only by construction and its compliance ratio
+ * is not a pass rate; this record carries the scanned count and the caveat.
+ * It states notApplicable as its RESULT — the one status the compliance rollup
+ * excludes — so the record is left out of the ratio by its own disposition
+ * rather than by its impact. Passed would render CKL NotAFinding, a compliance
+ * claim for a scan that asserted nothing. Mirrors kics-scan-coverage.
+ */
 function buildCoverageRequirement(
   report: SemgrepReport,
   ruleCount: number,

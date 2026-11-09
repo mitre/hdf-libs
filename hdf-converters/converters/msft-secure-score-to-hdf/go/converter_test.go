@@ -1,6 +1,7 @@
 package msftsecurescore
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -574,4 +575,79 @@ func TestConvertMsftSecureScore_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q: Secure Score controls are evaluated automatically by Microsoft Graph", req.ID)
 	}
+}
+
+// ---- Unscored controls (a profile with no maxScore) ----
+
+// An absent maxScore decodes to 0, so comparing cs.Score to it used to make any
+// unscored control pass on 0 == 0 — an affirmative compliance claim for a
+// control Graph never scored. Nothing assessed it, so it is notReviewed. These
+// test the pure derivation functions directly because no published Graph
+// response here carries an unscored control; recorded in fixtures/provenance.txt.
+func TestGetStatus_UnscoredProfileIsNotReviewed(t *testing.T) {
+	// The absent case must come through json.Unmarshal, not a struct literal: a
+	// literal with MaxScore omitted is byte-identical to one with MaxScore: 0, so
+	// only decoding a document without the key tests that an absent JSON number
+	// becomes 0 — the step the whole guard rests on.
+	var absent SecureScoreControlProfile
+	require.NoError(t, json.Unmarshal([]byte(`{"id":"C1","title":"Unscored"}`), &absent))
+	require.Zero(t, absent.MaxScore, "an absent maxScore must decode to 0")
+
+	for _, tc := range []struct {
+		name    string
+		profile SecureScoreControlProfile
+		score   ControlScore
+	}{
+		{"maxScore absent from the document", absent, ControlScore{ControlName: "C1"}},
+		{"maxScore explicitly zero", SecureScoreControlProfile{ID: "C1", MaxScore: 0}, ControlScore{ControlName: "C1", Score: 0}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			profiles := []SecureScoreControlProfile{tc.profile}
+			assert.Equal(t, hdf.NotReviewed, getStatus(profiles, tc.score),
+				"an unscored control was never assessed, so it cannot report passed")
+			assert.InDelta(t, 0.5, getImpact(profiles, tc.score), 0.0001,
+				"with no maxScore there is no basis for a severity either")
+		})
+	}
+}
+
+// TestConvertMsftSecureScore_UnscoredProfileEndToEnd drives a whole document
+// whose profile omits maxScore, so the decode, the status guard and the impact
+// fallback are exercised together rather than one function at a time. The input
+// is constructed here because no published Graph response in this repo carries
+// an unscored control; see fixtures/provenance.txt.
+func TestConvertMsftSecureScore_UnscoredProfileEndToEnd(t *testing.T) {
+	doc := `{"secureScore":{"value":[{"id":"ss-1","azureTenantId":"t1",` +
+		`"createdDateTime":"2026-01-01T00:00:00Z","controlScores":[` +
+		`{"controlName":"C1","controlCategory":"Identity","description":"d"}]}]},` +
+		`"profiles":{"value":[{"id":"C1","controlCategory":"Identity","title":"Unscored"}]}}`
+
+	out, err := ConvertMsftSecureScoreToHDF([]byte(doc), testVersion)
+	require.NoError(t, err)
+	require.Len(t, out.Baselines, 1)
+	require.Len(t, out.Baselines[0].Requirements, 1)
+
+	req := out.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"nothing scored this control, so it cannot export as an affirmative pass")
+	assert.InDelta(t, 0.5, req.Impact, 0.0001,
+		"no maxScore means no basis for a severity either")
+}
+
+// Graph affirmatively reporting 100% is a real assessment and still outranks the
+// unscored check, so the ordering inside getStatus is deliberate.
+func TestGetStatus_FullPercentageStillPasses(t *testing.T) {
+	profiles := []SecureScoreControlProfile{{ID: "C1"}}
+	cs := ControlScore{ControlName: "C1", ScoreInPercentage: 100}
+	assert.Equal(t, hdf.Passed, getStatus(profiles, cs))
+}
+
+// A scored profile is unaffected: the comparison still decides, and impact still
+// derives from maxScore.
+func TestGetStatus_ScoredProfileUnchanged(t *testing.T) {
+	profiles := []SecureScoreControlProfile{{ID: "C1", MaxScore: 10}}
+	assert.Equal(t, hdf.Passed, getStatus(profiles, ControlScore{ControlName: "C1", Score: 10}))
+	assert.Equal(t, hdf.Failed, getStatus(profiles, ControlScore{ControlName: "C1", Score: 4}))
+	assert.InDelta(t, 1.0, getImpact(profiles, ControlScore{ControlName: "C1", Score: 10}), 0.0001)
 }

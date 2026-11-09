@@ -73,3 +73,23 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 ASFF has no JSON Schema. AWS publishes the Security Hub service model (Smithy, shape `AwsSecurityFinding`, in aws/aws-sdk-go-v2 `codegen/sdk-codegen/aws-models/securityhub.json`) and documents `SchemaVersion` 2018-10-08 as a constant. The `hdf-to-asff` exporter vendors a required-members extract of that model under `hdf-to-asff/schemas/` (2026-09-20).
+
+## Recorded coverage gap: Workflow.Status SUPPRESSED
+
+No fixture here carries a suppressed finding, and none was manufactured to fill
+the hole. Checked 2026-11-02: heimdall2 `libs/hdf-converters/sample_jsons` and
+saf `test/sample_data` carry 36 ASFF `Workflow.Status` values between them, all
+`NEW` or `RESOLVED`; no published ASFF sample with `SUPPRESSED` was found. AWS
+publishes the ASFF as a syntax outline rather than a JSON Schema, so the
+schema-confirmed fallback does not exist for this format either.
+
+The suppression mapping is therefore exercised by an **authored inline document**
+in the two test files (`suppressedFinding` in `go/converter_test.go` and
+`typescript/converter.test.ts`), not by a file in `input/`. It sets one of the
+four documented `Workflow.Status` values on an otherwise ordinary Security Hub
+finding; it is not captured tool output and must not be cited as such. Because it
+is not a fixture, no golden covers the shape, so Go/TS parity for it rests on the
+two suites asserting the same literals rather than on a shared golden.
+
+A real capture (`aws securityhub get-findings` after suppressing a finding in the
+console) remains preferable and should replace the inline document if one lands.

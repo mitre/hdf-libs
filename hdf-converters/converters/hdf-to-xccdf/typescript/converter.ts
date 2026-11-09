@@ -474,11 +474,10 @@ function buildTestResultObj(
     const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + requirementIdText(req.id) + '_rule');
     const stigId = tagString(req.tags, 'stig_id');
 
-    // When the canonical ladder's answer differs from the raw roll-up,
-    // something governs the requirement (an override, an error escape, or the
-    // impact-0 rule) — the emitted results uniformly reflect that governed
-    // posture. Otherwise each result's own raw status carries through. The
-    // stored effectiveStatus field is never read.
+    // When the canonical ladder's answer differs from the raw roll-up, a
+    // governing override is adjudicating the requirement — the emitted results
+    // uniformly reflect that posture. Otherwise each result's own raw status
+    // carries through. The stored effectiveStatus field is never read.
     const statusInput = requirementStatusInput(req);
     const resolved = computeEffectiveStatus(statusInput);
     const effective =

@@ -1,7 +1,7 @@
 import { formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
 import { computeSummary } from './summary.js';
 import { computeEffectiveStatus } from './status.js';
-import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS } from './diff.js';
+import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS, recordRequirementBaseline } from './diff.js';
 import { dedupEvents, groupEventChains, verifyEventChain } from './event-stream-common.js';
 import type { ApplyWarning } from './apply-events.js';
 import type { RequirementDiff, ChangeReason, RequirementState } from './types.js';
@@ -51,6 +51,19 @@ export async function foldChangeEventsIntoComparison(
   let asOfFromEvents = '';
   let systemRef = '';
 
+  // Share batch attribution, including ambiguous ids; keys absent from the seed
+  // fall back to its first baseline. Parity: Go fold_events.
+  let firstBaselineName = '';
+  const baselineByReq = new Map<string, string>();
+  for (const [i, baseline] of ((doc['baselines'] as Doc[] | undefined) ?? []).entries()) {
+    const name = (baseline['name'] as string | undefined) ?? '';
+    if (i === 0) firstBaselineName = name;
+    for (const req of (baseline['requirements'] as Doc[] | undefined) ?? []) {
+      const id = req['id'];
+      if (typeof id === 'string') recordRequirementBaseline(baselineByReq, id, name);
+    }
+  }
+
   for (const id of keys) {
     const chain = byKey.get(id) ?? [];
     const winner = chain[chain.length - 1];
@@ -93,6 +106,7 @@ export async function foldChangeEventsIntoComparison(
       diffs.push({
         id,
         title: seedReq['title'] as string | undefined,
+        baseline: baselineByReq.get(id),
         state: 'absent',
         oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
         changeReasons: [],
@@ -122,6 +136,7 @@ export async function foldChangeEventsIntoComparison(
       diffs.push({
         id,
         title: after['title'] as string | undefined,
+        baseline: firstBaselineName || undefined,
         state: 'new',
         newEffectiveStatus: newStatus,
         changeReasons: [],
@@ -136,6 +151,7 @@ export async function foldChangeEventsIntoComparison(
     diffs.push({
       id,
       title: (after['title'] as string | undefined) ?? (seedReq['title'] as string | undefined),
+      baseline: baselineByReq.get(id),
       state: winner['state'] as RequirementState,
       oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
       newEffectiveStatus: newStatus,

@@ -30,3 +30,17 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 The fixture is a Microsoft Graph `security/secureScores` response; the Graph OpenAPI description (microsoftgraph/msgraph-metadata, `openapi/v1.0/openapi.yaml`, tens of MB) covers it and is not vendored (2026-09-20).
+
+## Recorded coverage gap: an unscored control (no maxScore)
+
+No fixture here carries a control whose matched profile has no `maxScore`.
+Checked 2026-11-02: the two inputs carry maxScore 1-8, 10 and 274, never absent
+and never 0, and no published Microsoft Graph `secureScoreControlProfiles`
+response with a deprecated or review-only control was available.
+
+The unscored path is therefore covered by direct unit tests of the two pure
+derivation functions — `getStatus` and `getImpact`, in both languages — with
+profiles constructed in the test files rather than by a document under `input/`.
+Those constructed values are function arguments, not captured tool output, and
+must not be cited as such. A real capture would be preferable and should replace
+them if one lands.

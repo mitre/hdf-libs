@@ -251,6 +251,10 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	for _, r := range ruleMap {
 		rules = append(rules, r)
 	}
+	// A nil slice marshals to null, which the converter rejects as a missing issues field.
+	if allIssues == nil {
+		allIssues = []sonarqubeconv.Issue{}
+	}
 
 	result := sonarqubeconv.IssuesResponse{
 		Total:         len(allIssues),
@@ -501,6 +505,9 @@ func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, pag
 	var issuesResp sonarqubeconv.IssuesResponse
 	if err := json.Unmarshal(body, &issuesResp); err != nil {
 		return nil, fmt.Errorf("parsing API response: %w", err)
+	}
+	if issuesResp.Issues == nil {
+		return nil, fmt.Errorf("parsing API response: missing or null issues field")
 	}
 
 	return &issuesResp, nil

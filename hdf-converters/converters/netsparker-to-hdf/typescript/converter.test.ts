@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { convertNetsparkerToHdf, buildNetsparkerCvss, decodeXmlEntities } from './converter.js';
+import { convertNetsparkerToHdf, buildNetsparkerCvss, decodeXmlEntities, getImpact } from './converter.js';
+import { impactToSeverity } from '@mitre/hdf-utilities';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -269,7 +270,7 @@ describe('Netsparker to HDF converter', () => {
 </netsparker-enterprise>`;
     const hdf = parseResult(await convertNetsparkerToHdf(input));
     expect(findRequirement(hdf, 'vuln-critical')?.impact).toBe(0.9);
-    expect(findRequirement(hdf, 'vuln-bp')?.impact).toBe(0.0);
+    expect(findRequirement(hdf, 'vuln-bp')?.impact).toBe(0.3);
   });
 
   // ---- Classification tags (capec / wasc / iso27001 / pci32) ----
@@ -624,7 +625,24 @@ describe('Netsparker to HDF converter', () => {
   </vulnerabilities>
 </netsparker-enterprise>`;
     const hdf = parseResult(await convertNetsparkerToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    // Advisory but actionable: the low band, matching semgrep-to-hdf's INFO.
+    // 0.0 is the informational band and relied on the removed ladder rung.
+    expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.3);
+  });
+
+  // The TS twin of TestGetImpact_BestPracticeIsALowBand. No fixture carries a
+  // Best Practice finding, so the band is pinned on the pure function directly;
+  // see fixtures/provenance.txt.
+  it('maps best_practice to the low band and leaves the standard bands alone', () => {
+    expect(getImpact('best_practice')).toBeCloseTo(0.3, 5);
+    expect(getImpact('best_practice')).toBeGreaterThan(0.0);
+    expect(getImpact('high')).toBeCloseTo(0.7, 5);
+    expect(getImpact('medium')).toBeCloseTo(0.5, 5);
+    expect(getImpact('low')).toBeCloseTo(0.3, 5);
+    // netsparker emits no severity field, so consumers derive the label. Pin the
+    // band's label too: the ruling is "the low band", not just "the number 0.3".
+    expect(impactToSeverity(getImpact('best_practice'))).toBe('low');
+    expect(impactToSeverity(0.0)).toBe('informational');
   });
 
   it('should handle vulnerability with no initiated time', async () => {

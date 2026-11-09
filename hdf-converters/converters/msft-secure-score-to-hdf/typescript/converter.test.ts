@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertMsftSecureScoreToHdf } from './converter.js';
+import { convertMsftSecureScoreToHdf, getImpact, getStatus } from './converter.js';
+import type { SecureScoreControlProfile, ControlScore } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import {
   assertRequirementCount,
@@ -10,6 +11,7 @@ import {
 } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
+import { ResultStatus } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -378,5 +380,60 @@ describe('msft-secure-score to HDF converter', async () => {
       expect(req.descriptions?.find(d => d.label === 'fix')?.data).toBe('Fix A\nFix B');
       expect(req.descriptions?.find(d => d.label === 'rationale')?.data).toBe('Impact A\nImpact B');
     });
+  });
+});
+
+// Unscored controls (a profile with no maxScore). These exercise the two pure
+// derivation functions directly rather than through a fixture: no published
+// Graph response in this repo carries an unscored control, and the shape is a
+// domain case of these functions, not a document. Recorded in provenance.
+describe('unscored controls', () => {
+  const unscored: Array<[string, SecureScoreControlProfile, ControlScore]> = [
+    ['maxScore absent', {id: 'C1'} as SecureScoreControlProfile, {controlName: 'C1'} as ControlScore],
+    ['maxScore explicitly zero', {id: 'C1', maxScore: 0} as SecureScoreControlProfile, {controlName: 'C1', score: 0} as ControlScore],
+  ];
+
+  // An absent maxScore becomes 0, so comparing score to it used to pass every
+  // unscored control on 0 === 0 — a compliance claim Graph never made.
+  it.each(unscored)('reports notReviewed and impact 0.5 (%s)', (_name, profile, cs) => {
+    expect(getStatus([profile], cs)).toBe(ResultStatus.NotReviewed);
+    expect(getImpact([profile], cs)).toBeCloseTo(0.5, 5);
+  });
+
+  // Drives a whole document whose profile omits maxScore, so the parse, the
+  // status guard and the impact fallback are exercised together. Twin of the Go
+  // TestConvertMsftSecureScore_UnscoredProfileEndToEnd.
+  it('converts a document whose profile omits maxScore', async () => {
+    const doc = JSON.stringify({
+      secureScore: {
+        value: [{
+          id: 'ss-1',
+          azureTenantId: 't1',
+          createdDateTime: '2026-01-01T00:00:00Z',
+          controlScores: [{controlName: 'C1', controlCategory: 'Identity', description: 'd'}],
+        }],
+      },
+      profiles: {value: [{id: 'C1', controlCategory: 'Identity', title: 'Unscored'}]},
+    });
+
+    const hdf = JSON.parse(await convertMsftSecureScoreToHdf(doc)) as HDFResults;
+    const req = hdf.baselines[0].requirements[0];
+    expect(req.results[0].status).toBe(ResultStatus.NotReviewed);
+    expect(req.impact).toBeCloseTo(0.5, 5);
+  });
+
+  // Graph affirmatively reporting 100% is a real assessment and still outranks
+  // the unscored check, so the ordering inside getStatus is deliberate.
+  it('still passes a control Graph reports at 100%', () => {
+    const profile = {id: 'C1'} as SecureScoreControlProfile;
+    const cs = {controlName: 'C1', scoreInPercentage: 100} as ControlScore;
+    expect(getStatus([profile], cs)).toBe(ResultStatus.Passed);
+  });
+
+  it('leaves a scored profile unchanged', () => {
+    const profile = {id: 'C1', maxScore: 10} as SecureScoreControlProfile;
+    expect(getStatus([profile], {controlName: 'C1', score: 10} as ControlScore)).toBe(ResultStatus.Passed);
+    expect(getStatus([profile], {controlName: 'C1', score: 4} as ControlScore)).toBe(ResultStatus.Failed);
+    expect(getImpact([profile], {controlName: 'C1', score: 10} as ControlScore)).toBeCloseTo(1.0, 5);
   });
 });

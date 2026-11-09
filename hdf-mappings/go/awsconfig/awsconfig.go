@@ -2,11 +2,11 @@
 package awsconfig
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
@@ -22,9 +22,6 @@ type Mapping struct {
 	Source string `json:"Source"`
 }
 
-//go:embed awsconfig-mappings.json
-var mappingsData []byte
-
 var (
 	// keyed by revision → name/identifier → mapping
 	byRuleName   map[int]map[string]*Mapping
@@ -32,24 +29,30 @@ var (
 	loadOnce     sync.Once
 )
 
+// parseMappings keeps the JSON shape testable without a mutable package var:
+// the dataset is read inside the loader so the linker can drop it from a
+// consumer that never looks an AWS Config rule up.
+func parseMappings(data []byte) (names, identifiers map[int]map[string]*Mapping) {
+	names = make(map[int]map[string]*Mapping)
+	identifiers = make(map[int]map[string]*Mapping)
+	var list []Mapping
+	if err := json.Unmarshal(data, &list); err != nil {
+		return names, identifiers
+	}
+	for i := range list {
+		m := &list[i]
+		if names[m.Rev] == nil {
+			names[m.Rev] = make(map[string]*Mapping)
+			identifiers[m.Rev] = make(map[string]*Mapping)
+		}
+		names[m.Rev][m.AwsConfigRuleName] = m
+		identifiers[m.Rev][m.AwsConfigRuleSourceIdentifier] = m
+	}
+	return names, identifiers
+}
+
 func load() {
-	loadOnce.Do(func() {
-		byRuleName = make(map[int]map[string]*Mapping)
-		byIdentifier = make(map[int]map[string]*Mapping)
-		var list []Mapping
-		if err := json.Unmarshal(mappingsData, &list); err != nil {
-			return
-		}
-		for i := range list {
-			m := &list[i]
-			if byRuleName[m.Rev] == nil {
-				byRuleName[m.Rev] = make(map[string]*Mapping)
-				byIdentifier[m.Rev] = make(map[string]*Mapping)
-			}
-			byRuleName[m.Rev][m.AwsConfigRuleName] = m
-			byIdentifier[m.Rev][m.AwsConfigRuleSourceIdentifier] = m
-		}
-	})
+	loadOnce.Do(func() { byRuleName, byIdentifier = parseMappings(datasets.AWSConfigMappings) })
 }
 
 // GetByRuleName returns the mapping for the given kebab-case rule name at the

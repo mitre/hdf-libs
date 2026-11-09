@@ -525,7 +525,7 @@ describe('xccdf-results-to-hdf converter', async () => {
       );
     });
 
-    it('should map notselected to NotReviewed via synthetic input', async () => {
+    it('should map notselected to NotApplicable via synthetic input', async () => {
       const xml = `<?xml version="1.0"?>
         <Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="test">
           <status>incomplete</status>
@@ -537,11 +537,11 @@ describe('xccdf-results-to-hdf converter', async () => {
         </Benchmark>`;
       const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
-        ResultStatus.NotReviewed
+        ResultStatus.NotApplicable
       );
     });
 
-    it('should map informational to NotReviewed via synthetic input', async () => {
+    it('should map informational to NotApplicable via synthetic input', async () => {
       const xml = `<?xml version="1.0"?>
         <Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="test">
           <status>incomplete</status>
@@ -553,7 +553,7 @@ describe('xccdf-results-to-hdf converter', async () => {
         </Benchmark>`;
       const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
-        ResultStatus.NotReviewed
+        ResultStatus.NotApplicable
       );
     });
 
@@ -763,12 +763,28 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
   });
 
-  // --- impact zeroing for skipped statuses ---
+  describe('impact is severity, not disposition', () => {
+    // Twin of the Go TestRuleResultDispositions, against the same fixture.
+    it.each([
+      ['xccdf_org.mitre.hdf_rule_pass', ResultStatus.Passed, 0.5],
+      ['xccdf_org.mitre.hdf_rule_fail', ResultStatus.Failed, 0.7],
+      ['xccdf_org.mitre.hdf_rule_notselected', ResultStatus.NotApplicable, 0.7],
+      ['xccdf_org.mitre.hdf_rule_notapplicable', ResultStatus.NotApplicable, 0.5],
+      ['xccdf_org.mitre.hdf_rule_notchecked', ResultStatus.NotReviewed, 0.3],
+      ['xccdf_org.mitre.hdf_rule_informational', ResultStatus.NotApplicable, 0.0],
+      ['xccdf_org.mitre.hdf_rule_info_severity_fail', ResultStatus.Failed, 0.0],
+    ] as Array<[string, ResultStatus, number]>)(
+      'maps %s to %s with impact %d',
+      async (ruleId, wantStatus, wantImpact) => {
+        const hdf = JSON.parse(await convertXccdfResultsToHdf(loadFixture('rule-result-dispositions.xml'))) as HDFResults;
+        const req = hdf.baselines[0]!.requirements.find((r) => r.id === ruleId)!;
+        expect(req).toBeDefined();
+        expect(req.results[0]!.status).toBe(wantStatus);
+        expect(req.impact).toBeCloseTo(wantImpact, 5);
+      },
+    );
 
-  describe('impact zeroing', () => {
-    // heimdall2 zeros impact for not-applicable/not-selected/informational
-    // rule-results regardless of severity; status still records the disposition.
-    it('zeros impact for notapplicable/notselected/informational, keeping real failures weighted', async () => {
+    it('keeps the rule severity as impact whatever the disposition', async () => {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_impact">
   <version>1.0</version>
@@ -787,10 +803,16 @@ describe('xccdf-results-to-hdf converter', async () => {
       const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
       const byTitle = (t: string) => reqs.find((r) => r.title === t)!;
-      expect(byTitle('NA').impact).toBe(0);
-      expect(byTitle('NS').impact).toBe(0);
-      expect(byTitle('INFO').impact).toBe(0);
+      // Each is a high-severity rule; the disposition rides in the status, so
+      // zeroing impact would restate it in a field nothing reads for status.
+      expect(byTitle('NA').impact).toBe(0.7);
+      expect(byTitle('NS').impact).toBe(0.7);
+      expect(byTitle('INFO').impact).toBe(0.7);
       expect(byTitle('FAIL').impact).toBe(0.7);
+      expect(byTitle('NA').results[0].status).toBe(ResultStatus.NotApplicable);
+      expect(byTitle('NS').results[0].status).toBe(ResultStatus.NotApplicable);
+      expect(byTitle('INFO').results[0].status).toBe(ResultStatus.NotApplicable);
+      expect(byTitle('FAIL').results[0].status).toBe(ResultStatus.Failed);
     });
   });
 

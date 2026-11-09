@@ -233,11 +233,14 @@ describe('ionchannel to HDF converter', async () => {
       expect(lodash?.code).toContain('"version": "4.17.21"');
     });
 
-    it('should have notReviewed results for all dependencies', async () => {
+    // Every requirement this converter emits is an inventory record, not an
+    // assessment, so each states notApplicable rather than leaving the
+    // disposition to a severity score.
+    it('should have notApplicable results for all dependencies', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results).toHaveLength(1);
-        expect(req.results[0]!.status).toBe('notReviewed');
+        expect(req.results[0]!.status).toBe('notApplicable');
       }
     });
 
@@ -300,7 +303,7 @@ describe('ionchannel to HDF converter', async () => {
       expect(req.descriptions?.[0]?.data).toBe('Community scan completed');
       expect(req.tags?.name).toBe('community');
       expect(req.tags?.type).toBe('community');
-      expect(req.results[0]!.status).toBe('notReviewed');
+      expect(req.results[0]!.status).toBe('notApplicable');
       // Serializable scan data is preserved in the code field.
       expect(req.code).toContain('"committers": 5');
       expect(req.code).toContain('"stars": 42');

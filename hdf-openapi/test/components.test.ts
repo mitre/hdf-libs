@@ -111,9 +111,9 @@ describe('roots', () => {
 
 describe('definitions are hoisted and self-contained', () => {
   it('hoists every named definition and adds nothing else', () => {
-    // 118 named definitions across the bundles + 8 roots. Measured against the
+    // 121 named definitions across the bundles + 8 roots. Measured against the
     // tracked embed; a change here is a schema-set change and must be reviewed.
-    expect(Object.keys(schemas)).toHaveLength(118 + 8);
+    expect(Object.keys(schemas)).toHaveLength(121 + 8);
   });
 
   it('emits component keys OpenAPI accepts', () => {
@@ -334,13 +334,15 @@ describe('2020-12 features pass through untouched', () => {
   //
   // dependentRequired is 0 because ADR-0017 re-expressed Integrity's
   // algorithm/checksum pairing as two if/then members of an allOf. Equivalent
-  // constraint, which is why `if` rose by the same change.
+  // constraint, which is why `if` rose by the same change. Ifs 14 to 16 are the
+  // type-conditional override rules: operationalRequirement mirrored onto
+  // Status_Override, and riskAdjustment forbidding status on both override shapes.
   it('matches the tracked keyword baseline', () => {
     expect({
       unevaluatedProperties: countKeyword('unevaluatedProperties'),
       if: countKeyword('if'),
       dependentRequired: countKeyword('dependentRequired'),
-    }).toEqual({ unevaluatedProperties: 77, if: 13, dependentRequired: 0 });
+    }).toEqual({ unevaluatedProperties: 77, if: 16, dependentRequired: 0 });
   });
 
   it('keeps the three Bom boolean-false subschemas', () => {

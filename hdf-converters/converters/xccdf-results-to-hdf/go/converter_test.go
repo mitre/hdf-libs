@@ -624,11 +624,12 @@ func TestBuildCheckCode(t *testing.T) {
 	assert.Contains(t, full, `"checkContent": "logic"`)
 }
 
-// heimdall2 zeros impact for rule-results that were not applicable, not
-// selected, or purely informational — no risk weight applies even to a
-// high-severity rule. Status still records the disposition. No shipped fixture
-// carries these statuses, so pin the behavior against inline XML.
-func TestConvertXccdfResultsToHDF_ImpactZeroedForSkippedStatuses(t *testing.T) {
+// Impact is the severity the benchmark assigned, whatever the rule-result's
+// disposition: a deselected or informational high-severity rule is still a
+// high-severity rule that was not evaluated, and zeroing it would restate the
+// disposition in a field nothing reads for status. The disposition travels in
+// the result status instead.
+func TestConvertXccdfResultsToHDF_ImpactIsSeverityNotDisposition(t *testing.T) {
 	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_test_benchmark_impact">
   <version>1.0</version>
@@ -657,10 +658,16 @@ func TestConvertXccdfResultsToHDF_ImpactZeroedForSkippedStatuses(t *testing.T) {
 		t.Fatalf("requirement %q not found", title)
 		return hdf.EvaluatedRequirement{}
 	}
-	assert.Equal(t, 0.0, byTitle("NA").Impact, "notapplicable must zero impact")
-	assert.Equal(t, 0.0, byTitle("NS").Impact, "notselected must zero impact")
-	assert.Equal(t, 0.0, byTitle("INFO").Impact, "informational must zero impact")
+	assert.Equal(t, 0.7, byTitle("NA").Impact, "notapplicable keeps the rule's high severity")
+	assert.Equal(t, 0.7, byTitle("NS").Impact, "notselected keeps the rule's high severity")
+	assert.Equal(t, 0.7, byTitle("INFO").Impact, "informational keeps the rule's high severity")
 	assert.Equal(t, 0.7, byTitle("FAIL").Impact, "a real failed high-severity rule keeps its impact")
+
+	// The dispositions are carried here instead.
+	assert.Equal(t, hdf.NotApplicable, byTitle("NA").Results[0].Status)
+	assert.Equal(t, hdf.NotApplicable, byTitle("NS").Results[0].Status)
+	assert.Equal(t, hdf.NotApplicable, byTitle("INFO").Results[0].Status)
+	assert.Equal(t, hdf.Failed, byTitle("FAIL").Results[0].Status)
 }
 
 // The <reference> element on a STIG rule (Dublin Core publisher/identifier/type)
@@ -890,8 +897,8 @@ func TestMapResultStatus(t *testing.T) {
 		{"unknown", hdf.Error},
 		{"notapplicable", hdf.NotApplicable},
 		{"notchecked", hdf.NotReviewed},
-		{"notselected", hdf.NotReviewed},
-		{"informational", hdf.NotReviewed},
+		{"notselected", hdf.NotApplicable},
+		{"informational", hdf.NotApplicable},
 		{"fixed", hdf.Passed},
 		{"PASS", hdf.Passed},
 		{"Fail", hdf.Failed},
@@ -1686,4 +1693,72 @@ func TestConvertXccdfBenchmark_UnknownSeverityOmitted(t *testing.T) {
 	assert.Equal(t, 3, bySeverity["medium"])
 	assert.Equal(t, 2, bySeverity["<omitted>"], `severity="unknown" must not be emitted`)
 	assert.Zero(t, bySeverity["unknown"], "raw XCCDF severity must never reach HDF")
+}
+
+// TestRuleResultDispositions pins every rule-result the status map distinguishes.
+// The two dispositions that leave the compliance denominator are the point: a
+// deselected rule was never meant to be assessed, and an informational one
+// produces no verdict to score, while notchecked IS outstanding work and stays
+// in. Impact is the rule's real severity throughout — the disposition travels in
+// the status, never by zeroing a severity.
+func TestRuleResultDispositions(t *testing.T) {
+	input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "rule-result-dispositions.xml"))
+	require.NoError(t, err)
+	out, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	byID := map[string]*hdf.EvaluatedRequirement{}
+	for i := range out.Baselines[0].Requirements {
+		r := &out.Baselines[0].Requirements[i]
+		byID[r.ID] = r
+	}
+
+	for _, tc := range []struct {
+		rule       string
+		wantStatus hdf.ResultStatus
+		wantImpact float64
+	}{
+		{"xccdf_org.mitre.hdf_rule_pass", hdf.Passed, 0.5},
+		{"xccdf_org.mitre.hdf_rule_fail", hdf.Failed, 0.7},
+		// Out of scope for this profile, so excluded from the ratio — and still a
+		// high-severity rule, which is why impact is 0.7 and not zeroed.
+		{"xccdf_org.mitre.hdf_rule_notselected", hdf.NotApplicable, 0.7},
+		{"xccdf_org.mitre.hdf_rule_notapplicable", hdf.NotApplicable, 0.5},
+		// No automated check means someone must still check it: outstanding work.
+		{"xccdf_org.mitre.hdf_rule_notchecked", hdf.NotReviewed, 0.3},
+		{"xccdf_org.mitre.hdf_rule_informational", hdf.NotApplicable, 0.0},
+		// An info-severity rule that failed still failed; severity is not status.
+		{"xccdf_org.mitre.hdf_rule_info_severity_fail", hdf.Failed, 0.0},
+	} {
+		t.Run(tc.rule, func(t *testing.T) {
+			req := byID[tc.rule]
+			require.NotNil(t, req, "requirement %s missing from the output", tc.rule)
+			require.Len(t, req.Results, 1)
+			assert.Equal(t, tc.wantStatus, req.Results[0].Status)
+			assert.InDelta(t, tc.wantImpact, req.Impact, 0.0001,
+				"impact is the rule's severity; the disposition belongs to the status")
+		})
+	}
+}
+
+// TestRuleResultDispositions_ComplianceDenominator states the consequence the
+// ruling turns on: the deselected and informational rules must sit outside the
+// ratio, so a benchmark's unselected tail cannot drag the published number down.
+func TestRuleResultDispositions_ComplianceDenominator(t *testing.T) {
+	input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "rule-result-dispositions.xml"))
+	require.NoError(t, err)
+	out, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	counts := map[hdf.ResultStatus]int{}
+	for _, req := range out.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			counts[res.Status]++
+		}
+	}
+	assert.Equal(t, 1, counts[hdf.Passed])
+	assert.Equal(t, 2, counts[hdf.Failed])
+	assert.Equal(t, 1, counts[hdf.NotReviewed], "only notchecked remains outstanding work")
+	assert.Equal(t, 3, counts[hdf.NotApplicable],
+		"notselected, notapplicable and informational all leave the denominator")
 }

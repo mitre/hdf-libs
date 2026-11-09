@@ -940,43 +940,98 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
   });
 
-  describe('impact=0 → effectiveStatus notApplicable', () => {
-    it('should set effectiveStatus to notApplicable when impact is 0 and no explicit status', () => {
-      const v1: LegacyHDFResults = {
-        version: '1.0.0',
-        platform: { name: 'test' },
-        profiles: [{
-          name: 'test',
-          controls: [
-            { id: 'V-1', impact: 0, results: [{ status: 'skipped' }] },
-            { id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] },
-          ],
-        }],
-        statistics: {},
-      };
-      const v2 = convertLegacyHdf(v1);
-      const reqs = v2.baselines[0].requirements!;
-      expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
-      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
+  // InSpec scores a control it considers inapplicable 0 and reports no pass or
+  // fail for it. That is a verdict, not missing data, and the canonical ladder
+  // no longer reads impact — so this importer states it as an explicit
+  // notApplicable result, where the claim survives.
+  // Parity: TestConvertV1ToV2_TranslatesInSpecImpactZeroToNotApplicableResult.
+  describe('impact=0 → a synthesized notApplicable result', () => {
+    const oneControl = (control: Record<string, unknown>): LegacyHDFResults => ({
+      version: '1.0.0',
+      platform: { name: 'test' },
+      profiles: [{ name: 'test', controls: [control as never] }],
+      statistics: {},
     });
 
-    it('control-level status does not bypass the impact-0 rule', () => {
-      // Write-path guarantee: the emitted effectiveStatus equals the ladder's
-      // answer — a non-errored impact-0 control is notApplicable regardless of
-      // the v1 control-level claim.
-      const v1: LegacyHDFResults = {
-        version: '1.0.0',
-        platform: { name: 'test' },
-        profiles: [{
-          name: 'test',
-          controls: [
-            { id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] },
-          ],
-        }],
-        statistics: {},
-      };
-      const v2 = convertLegacyHdf(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notApplicable');
+    it('appends an explicit notApplicable result to a skipped impact-0 control', () => {
+      const v1 = oneControl({
+        id: 'V-1',
+        impact: 0,
+        results: [{ status: 'skipped', start_time: '2026-01-01T00:00:00Z' }],
+      });
+      const req = convertLegacyHdf(v1).baselines[0].requirements![0];
+
+      expect(req.results).toHaveLength(2);
+      expect(req.results![1].status).toBe('notApplicable');
+      expect(req.results![1].codeDesc).toBeTruthy();
+      expect(req.results![1].startTime).toBe(req.results![0].startTime);
+      expect(req.effectiveStatus).toBe('notApplicable');
+      expect(req.impact).toBe(0);
+    });
+
+    it('appends one to an impact-0 control with no results at all', () => {
+      const req = convertLegacyHdf(oneControl({ id: 'V-1', impact: 0 })).baselines[0]
+        .requirements![0];
+
+      expect(req.results).toHaveLength(1);
+      expect(req.results![0].status).toBe('notApplicable');
+      expect(req.effectiveStatus).toBe('notApplicable');
+    });
+
+    it('does not translate above impact 0', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0.7, results: [{ status: 'skipped' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.results).toHaveLength(1);
+      expect(req.effectiveStatus).toBe('notReviewed');
+    });
+
+    it('does not translate when the results establish something', () => {
+      // failed, passed and error all outrank notApplicable in worst-wins, so
+      // appending would be inert; not appending keeps results[] honest about
+      // what the tool actually reported.
+      for (const [result, want] of [
+        ['failed', 'failed'],
+        ['passed', 'passed'],
+        ['error', 'error'],
+        ['not_applicable', 'notApplicable'],
+      ]) {
+        const req = convertLegacyHdf(
+          oneControl({ id: 'V-1', impact: 0, results: [{ status: result }] })
+        ).baselines[0].requirements![0];
+
+        expect(req.results, `result ${result}`).toHaveLength(1);
+        expect(req.effectiveStatus, `result ${result}`).toBe(want);
+      }
+    });
+
+    it('leaves a scored control alone', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('passed');
+    });
+
+    it('a passing result at impact 0 reports passed, not notApplicable', () => {
+      // A passing result outranks the synthesized notApplicable in worst-wins,
+      // so the scope translation cannot bury evidence that the check ran. No
+      // InSpec source in hdf-fixtures/inspec/ carries this shape — every
+      // impact-0 control there reports no pass or fail at all.
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('passed');
+    });
+
+    it('the error synthesis still wins at impact 0', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0, status: 'error', results: [{ status: 'skipped' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('error');
     });
 
     it('recomputes effectiveStatus from results when the control-level status is stale', () => {

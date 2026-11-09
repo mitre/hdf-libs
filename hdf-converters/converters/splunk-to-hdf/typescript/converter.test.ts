@@ -392,3 +392,29 @@ describe('splunk parity on absent/degenerate stored fields', () => {
     }
   });
 });
+
+// Twin of the Go TestConvertSplunk_ImpactZeroNoResultsTranslates. The predicate
+// is true for an EMPTY result set, so the synthesized result must not assume a
+// result already exists — this crashed with a TypeError before the result
+// builder was hoisted into shared and the fallback stopped being re-derived here.
+describe('impact-0 control with no results at all', () => {
+  it('synthesizes a complete notApplicable result instead of throwing', async () => {
+    const raw = readFileSync(
+      join(__dirname, '..', 'fixtures', 'input', 'splunk-impact-zero-skips.json'),
+      'utf-8',
+    );
+    const events = JSON.parse(raw) as Array<Record<string, unknown>>;
+    for (const e of events) {
+      if (e.id === 'V-72317') e.results = [];
+    }
+
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'V-72317');
+    expect(req).toBeDefined();
+    expect(req!.results).toHaveLength(1);
+    expect(req!.results[0]!.status).toBe('notApplicable');
+    expect(req!.results[0]!.codeDesc).toBeTruthy();
+    // The Go twin emits Go's zero time here; the two must not drift.
+    expect(new Date(req!.results[0]!.startTime).toISOString()).toBe('0001-01-01T00:00:00.000Z');
+  });
+});

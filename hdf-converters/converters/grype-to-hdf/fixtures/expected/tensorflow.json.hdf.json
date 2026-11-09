@@ -814,7 +814,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2012-4542",
@@ -898,7 +898,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2013-7445",
@@ -961,7 +961,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2015-8553",
@@ -1030,7 +1030,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2017-0537",
@@ -1102,7 +1102,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2017-13165",
@@ -1165,7 +1165,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2017-13693",
@@ -1235,7 +1235,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2022-38096",
@@ -1301,7 +1301,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2023-20569",
@@ -1395,7 +1395,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2023-52488",
@@ -1477,7 +1477,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2023-52880",
@@ -1562,7 +1562,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2024-23307",
@@ -1626,7 +1626,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2024-24857",
@@ -1696,7 +1696,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2024-26642",
@@ -1786,7 +1786,7 @@
               "resource": "package",
               "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "Grype-Ignored-Match/CVE-2024-26800",

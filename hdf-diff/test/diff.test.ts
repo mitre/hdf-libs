@@ -168,6 +168,26 @@ describe('diffHdf', () => {
       expect(req!.matchStrategy).toBe('exactId');
       expect(req!.matchConfidence).toBe(1.0);
     });
+
+    // --group-by baseline reads this and the schema declares it (parity: Go resolveBaseline).
+    it('should carry the owning baseline on every requirement diff', () => {
+      expect(diff.requirementDiffs.length).toBeGreaterThan(0);
+      for (const rd of diff.requirementDiffs) {
+        expect(rd.baseline, rd.id).toBe('rhel9-stig-baseline');
+      }
+    });
+
+    it('should report (multiple) when the id sits in more than one baseline', () => {
+      const doc = JSON.parse(readFileSync(resolve(__dirname, 'fixtures', 'scan-before.json'), 'utf-8')) as {
+        baselines: { name: string }[];
+      };
+      doc.baselines.push({ ...doc.baselines[0]!, name: 'overlay-baseline' });
+      const twice = diffHdf(doc, doc);
+      expect(twice.requirementDiffs.length).toBeGreaterThan(0);
+      for (const rd of twice.requirementDiffs) {
+        expect(rd.baseline, rd.id).toBe('(multiple)');
+      }
+    });
   });
 
   // ── 3. Summary counts ──────────────────────────────────────────────

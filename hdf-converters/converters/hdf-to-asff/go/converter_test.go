@@ -124,7 +124,56 @@ func TestConvert_Suppressed(t *testing.T) {
 	require.NoError(t, err)
 	f := findings(t, out)[0]
 	assert.Equal(t, map[string]interface{}{"Status": "SUPPRESSED"}, f["Workflow"])
-	assert.Equal(t, "PASSED", f["Compliance"].(map[string]interface{})["Status"])
+	// Security Hub treats the two axes as orthogonal: Compliance.Status is the
+	// check result, Workflow.Status the triage state, and suppressing a finding
+	// there never rewrites its verdict. So a suppressed finding exports the RAW
+	// status — PASSED here would rewrite a failed check on the strength of a
+	// triage decision, and lose the verdict asff-to-hdf needs to read back.
+	assert.Equal(t, "FAILED", f["Compliance"].(map[string]interface{})["Status"])
+}
+
+// TestConvert_SuppressedRoundTripsTheVerdict is the end-to-end contract: the raw
+// verdict and the suppression both survive a re-import, which the rolled-up
+// export could not express.
+func TestConvert_SuppressedRoundTripsTheVerdict(t *testing.T) {
+	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"C-1","title":"t","impact":0.7,"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}],"statusOverrides":[{"type":"waiver","status":"passed","reason":"scoped","appliedBy":{"type":"simple","identifier":"jdoe"},"appliedAt":"2026-01-02T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToASFF(doc, converterVersion)
+	require.NoError(t, err)
+
+	f := findings(t, out)[0]
+	assert.Equal(t, "FAILED", f["Compliance"].(map[string]interface{})["Status"])
+	assert.Equal(t, map[string]interface{}{"Status": "SUPPRESSED"}, f["Workflow"])
+}
+
+// TestConvert_UnsuppressedExportsTheRollup guards the narrowness of the change:
+// only suppression reports the raw status, everything else still reports the
+// roll-up. The document must therefore be one where raw and roll-up DIFFER — an
+// escalating override, passed raw driven failing — because a requirement whose
+// two statuses agree cannot tell the two sources apart and would pass even if the
+// exporter reported raw for every finding.
+func TestConvert_UnsuppressedExportsTheRollup(t *testing.T) {
+	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"C-1","title":"t","impact":0.7,"results":[{"status":"passed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}],"statusOverrides":[{"type":"riskAdjustment","status":"failed","reason":"escalated on review","appliedBy":{"type":"simple","identifier":"jdoe"},"appliedAt":"2026-01-02T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToASFF(doc, converterVersion)
+	require.NoError(t, err)
+
+	f := findings(t, out)[0]
+	// raw passed, roll-up failed, and not suppression (nothing was waived).
+	assert.Nil(t, f["Workflow"], "an escalation is not an acceptance decision")
+	assert.Equal(t, "FAILED", f["Compliance"].(map[string]interface{})["Status"],
+		"a non-suppressed requirement reports the roll-up, not the raw verdict")
+}
+
+// TestConvert_ScopeClaimIsNotSuppression keeps the case the narrowness guard used
+// to cover: a notApplicable result with no override is a scope claim, so it earns
+// no Workflow block.
+func TestConvert_ScopeClaimIsNotSuppression(t *testing.T) {
+	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"C-1","title":"t","impact":0.7,"results":[{"status":"notApplicable","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToASFF(doc, converterVersion)
+	require.NoError(t, err)
+
+	f := findings(t, out)[0]
+	assert.Nil(t, f["Workflow"], "a scope claim is not an acceptance decision")
+	assert.Equal(t, "NOT_AVAILABLE", f["Compliance"].(map[string]interface{})["Status"])
 }
 
 func TestConvert_AccountIdField(t *testing.T) {

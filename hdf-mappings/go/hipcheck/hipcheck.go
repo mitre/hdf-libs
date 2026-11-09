@@ -3,22 +3,18 @@
 //
 // The mapping is a hand-curated, RMF-reviewed table: Hipcheck publishes no
 // analysis-to-controls crosswalk, so no authoritative source exists to derive
-// it from. Each entry carries a Rationale. The data file is byte-identical to
-// its TypeScript peer at hdf-mappings/src/data/hipcheck-nist-mappings.json.
+// it from. Each entry carries a Rationale.
 package hipcheck
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed hipcheck-nist-mappings.json
-var mappingsData []byte
 
 // Mapping is one row of the Hipcheck analysis → NIST control table.
 type Mapping struct {
@@ -37,7 +33,7 @@ func load() map[string]*Mapping {
 	loadOnce.Do(func() {
 		byAnalysis = make(map[string]*Mapping)
 		var list []Mapping
-		if err := json.Unmarshal(mappingsData, &list); err != nil {
+		if err := json.Unmarshal(datasets.HipcheckNIST, &list); err != nil {
 			return
 		}
 		for i := range list {

@@ -687,10 +687,10 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 	} else {
 		impact = hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
 	}
-	// Impact 0 is floored so an unrecognized level does not read as "not
-	// applicable", which is what the effective-status ladder makes of it. An
-	// explicit "none" is exempt: §3.27.10 means severity genuinely does not apply
-	// there, so 0 is the honest value rather than an absent mapping.
+	// An unrecognized level is floored off 0 so it does not claim the
+	// informational band the shared severity map reserves for a level that said
+	// so. An explicit "none" is exempt: §3.27.10 means severity genuinely does
+	// not apply there, so 0 is the honest value rather than an absent mapping.
 	if impact == 0 && ruleLevel != LevelNone {
 		impact = 0.1
 	}
@@ -999,8 +999,8 @@ func isFailing(r SarifResult) bool { return r.Kind == "" || r.Kind == "fail" }
 // non-failing result, where it is the spec-mandated value and carries no information
 // beyond "severity does not apply". A "none" on a failing result contradicts the
 // spec's own definition, so it is ignored rather than honoured — honouring it would
-// put a reported FAILURE at impact 0, which the effective-status ladder reads as
-// notApplicable, dropping a real finding out of the compliance denominator.
+// put a reported FAILURE in the informational band, understating a real finding's
+// severity everywhere a consumer reads it.
 //
 // A group's level is its WORST failing member, not its first. SARIF scopes severity
 // to the result; HDF scopes it to the requirement, and a result says only that a

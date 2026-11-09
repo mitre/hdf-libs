@@ -493,9 +493,9 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   const cvssImpact = securitySeverityImpact(rule);
   const severitySource = cvssImpact === undefined ? levelSource : SEVERITY_SOURCE_SECURITY_SEVERITY;
   const rawImpact = cvssImpact ?? severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0);
-  // Impact 0 is floored so an unrecognized level does not read as "not applicable",
-  // which is what the effective-status ladder makes of it. An explicit "none" is
-  // exempt: §3.27.10 means severity genuinely does not apply there.
+  // An unrecognized level is floored off 0 so it does not claim the informational
+  // band the shared severity map reserves for a level that said so. An explicit
+  // "none" is exempt: §3.27.10 means severity genuinely does not apply there.
   const impact = rawImpact === 0 && ruleLevel !== LEVEL_NONE ? 0.1 : rawImpact;
 
   // Source location from first result's first location
@@ -731,8 +731,8 @@ const rankOf = (level: string): number => LEVEL_RANK[level] ?? 0;
 // §3.27.10 defines "none" as "the concept of severity does not apply to this result
 // because the kind property has a value other than fail". So a "none" on a failing
 // result contradicts the spec's own definition and is ignored rather than honoured —
-// honouring it would put a reported FAILURE at impact 0, which the effective-status
-// ladder reads as notApplicable, dropping a real finding out of the denominator.
+// honouring it would put a reported FAILURE in the informational band, understating
+// a real finding's severity everywhere a consumer reads it.
 //
 // A group's level is its WORST failing member, not its first. SARIF scopes severity
 // to the result; HDF scopes it to the requirement, and a result says only that a

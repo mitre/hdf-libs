@@ -127,11 +127,15 @@ interface NetsparkerHttpResponse {
 // Mirrors the Go twin: "best_practice" is the only Netsparker-specific alias;
 // standard levels + "information" come from the shared standard map.
 
+// "Best Practice" is advisory but actionable, which is semgrep-to-hdf's INFO
+// case, so it takes the same 0.3 low band. It was 0.0 — the informational band —
+// which described no weight and relied on the removed impact-0 ladder rung to
+// read as notApplicable; a severity cannot carry a disposition.
 const NETSPARKER_ALIASES: Record<string, number> = {
-  best_practice: 0.0,
+  best_practice: 0.3,
 };
 
-function getImpact(severity: string): number {
+export function getImpact(severity: string): number {
   return severityToImpactWithAliases(severity, NETSPARKER_ALIASES, 0.5);
 }
 

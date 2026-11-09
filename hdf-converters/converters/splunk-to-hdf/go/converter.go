@@ -418,6 +418,13 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
+	// These are InSpec controls read from a store rather than a file, so the
+	// same score-0-and-skip convention applies and must produce the same
+	// document the file importer does.
+	if ctrl.Impact == 0 && shared.InSpecEstablishedNothing(req.Results) {
+		req.Results = append(req.Results, shared.SynthesizedNotApplicableResult(req.Results))
+	}
+
 	return req
 }
 

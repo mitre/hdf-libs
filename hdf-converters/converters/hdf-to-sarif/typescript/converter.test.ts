@@ -277,7 +277,7 @@ describe('convertHdfToSarif', () => {
       doc(
         requirement({
           impact: 0.7,
-          statusOverrides: [{ ...waiver('failed', FAR_FUTURE), type: 'riskAdjustment' }],
+          statusOverrides: [{ ...waiver('failed', FAR_FUTURE), type: 'riskAdjustment', status: undefined, impact: { value: 0.4 } }],
         }),
       ),
     );

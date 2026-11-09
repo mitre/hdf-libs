@@ -132,10 +132,14 @@ v1 `"skipped"` maps to v2 `"notReviewed"`. The complete v2 `Result_Status` enum 
 - `passed` -- requirement met
 - `failed` -- requirement not met
 - `error` -- test execution error
-- `notApplicable` -- requirement does not apply (impact = 0)
+- `notApplicable` -- requirement does not apply to this target
 - `notReviewed` -- requirement was not assessed
 
-v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: governing (non-expired) override, else `error` roll-up, else impact-0 `notApplicable`, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). An errored check reports `error` even at impact 0 — a crashed check never established applicability. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: a governing (non-expired) override, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). Impact is not consulted — an impact of 0 is a severity band, not a statement that the requirement does not apply. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+
+InSpec says "this control does not apply" by scoring the control 0 and then reporting no pass or fail for it. Because the ladder does not read impact, this importer records that verdict where every consumer can see it: a control scored 0 whose results establish nothing gains an explicit `notApplicable` result, alongside the skip the runner recorded. The control's `impact` is left at 0 — that is a fact about the source — and `tags.severity` still carries the original STIG severity where a profile zeroed it.
+
+A document converted before this behaviour landed carries impact 0 with a `notReviewed` roll-up and no translated result, so recomputing its status now reports `notReviewed` where the stored `effectiveStatus` says `notApplicable`. Re-converting from the original source settles both.
 
 ### Severity
 
@@ -268,8 +272,18 @@ In v1 groups, `controls` is an array of control ID strings. In v2, the group fie
 
 ### Overlay flattening
 
-v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter automatically flattens these overlays so each requirement appears exactly once in the output. If you are writing your own converter, you may need to handle this deduplication.
+v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter flattens these overlays into one requirement per id with a result per layer that evaluated it, so no layer's verdict is dropped. If you are writing your own converter, roll layers up the same way rather than keeping one entry and discarding the rest; a repeated id is legal HDF (see the specification's Requirement identity convention), so a consumer must cope with it either way.
 
 ### Timestamps
 
 v1 uses formats like `"2017-09-22 14:12:15 -0400"` which are not valid ISO 8601. v2 requires ISO 8601 / RFC 3339 format (`"2017-09-22T18:12:15.000Z"`). The converter normalizes timestamps automatically. If you are producing v2 output directly, use ISO 8601.
+
+### Risk adjustments in older amendments and OSCAL exports
+
+Starting with hdf-libs v3.8.0, a `riskAdjustment` changes impact only and cannot carry `status`. This applies to standalone amendments and overrides already embedded in results.
+
+It also affects reimporting older OSCAL POA&M exports. If a risk carries the HDF vocabulary properties `override-type=riskAdjustment` and `override-status`, the importer preserves both values, and the CLI rejects the resulting HDF amendments during output validation. A document exported before this tightening can therefore fail on reimport even though its OSCAL structure is valid.
+
+Review the original decision before migrating it. If it changes compliance status, re-author the source amendment as the appropriate `waiver` or `falsePositive`, with the intended status. If it only changes impact, intentionally remove the status and retain the impact adjustment. Validate the revised amendment and export a new OSCAL POA&M; retain the original artifact for its audit history. Do not silently discard the status during import or bypass output validation to accept the old combination.
+
+For override semantics, see [Amendments](./amendments-workflow.md).

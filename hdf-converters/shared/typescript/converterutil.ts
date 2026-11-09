@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isGoZeroTime, worstStatus, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -749,11 +749,91 @@ export function buildNotAnalyzedRequirement(
   };
 }
 
+/**
+ * The codeDesc every reader of an InSpec control payload must use when it states
+ * the scope declaration InSpec encodes as an impact of 0. Shared because the two
+ * readers must produce byte-identical documents for the same run.
+ */
+export const SYNTHESIZED_NOT_APPLICABLE_CODE_DESC =
+  'Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it';
+
+/**
+ * Whether a requirement's results leave it with no verdict at all — empty, or
+ * only skipped/notReviewed entries. True for an empty array by construction, so
+ * a caller must not assume a result exists after it returns.
+ * Parity: InSpecEstablishedNothing in shared/go/converterutil.go.
+ */
+export function inSpecEstablishedNothing(statuses: readonly string[]): boolean {
+  return worstStatus(statuses) === 'notReviewed';
+}
+
+/**
+ * The notApplicable result an InSpec reader appends for a control scored 0 that
+ * reports no verdict. Generic over the startTime representation — a legacy wire
+ * result carries a string, a schema result a Date — so both readers produce the
+ * same claim without either one re-deriving the fallback. `zero` is the value
+ * used when no result carries a usable time, which includes the empty-results
+ * case that inSpecEstablishedNothing admits.
+ * Parity: SynthesizedNotApplicableResult in shared/go/converterutil.go.
+ */
+export function synthesizedNotApplicableResult<V extends string | Date>(
+  results: ReadonlyArray<{ startTime?: V }>,
+  zero: V,
+): { status: ResultStatus; codeDesc: string; startTime: V } {
+  return {
+    status: ResultStatus.NotApplicable,
+    codeDesc: SYNTHESIZED_NOT_APPLICABLE_CODE_DESC,
+    startTime: earliestResultStartTime(results) ?? zero,
+  };
+}
+
+export const GO_ZERO_TIME = '0001-01-01T00:00:00Z';
+
+/**
+ * Go's zero time as a Date, for a caller whose results carry Dates rather than
+ * strings. A function rather than a constant because Date is mutable and a
+ * shared instance would let one caller's mutation reach another's output.
+ */
+export function goZeroDate(): Date {
+  return parseTimestamp(GO_ZERO_TIME)!;
+}
+
+/**
+ * The earliest result's startTime, returned as the ORIGINAL value so a caller
+ * never reformats a source value. Results reach this either as a schema `Date`
+ * or as a legacy wire `string`, so the value type travels through unchanged.
+ * Go's zero time means "no time recorded" — and parses to a real year-1 instant
+ * in both representations — so it is skipped rather than reported as the
+ * earliest assessment, matching EarliestResultTime's IsZero() check in
+ * shared/go/converterutil.go.
+ */
+export function earliestResultStartTime<V extends string | Date>(
+  results: ReadonlyArray<{ startTime?: V }> | undefined,
+): V | undefined {
+  let bestRaw: V | undefined;
+  let bestAt: Date | undefined;
+
+  for (const result of results ?? []) {
+    const raw = result?.startTime;
+    if (raw === undefined || raw === '') continue;
+
+    const parsed = raw instanceof Date ? raw : parseTimestamp(String(raw));
+    if (!parsed || Number.isNaN(parsed.getTime()) || isGoZeroTime(parsed)) continue;
+
+    if (bestAt === undefined || parsed < bestAt) {
+      bestAt = parsed;
+      bestRaw = raw;
+    }
+  }
+
+  return bestRaw;
+}
+
 // Synthesized error placeholder for a scan whose own run reported that it failed.
 // Distinct from both siblings: the tool neither ran clean nor declined to analyze,
-// so neither passed nor notReviewed is honest. error is also the one status the
-// canonical ladder ranks above every other rung, including impact 0, so the failure
-// stays visible in a roll-up.
+// so neither passed nor notReviewed is honest. error also outranks every other
+// status in the canonical worst-wins order, so the failure stays visible in a
+// roll-up.
 export function buildRunFailedRequirement(
   id: string,
   codeDesc: string,

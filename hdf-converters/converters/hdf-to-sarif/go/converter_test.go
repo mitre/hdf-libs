@@ -8,6 +8,7 @@ import (
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -341,18 +342,21 @@ func TestConvertHDFToSARIF_SuppressionFromAGoverningOverride(t *testing.T) {
 // A riskAdjustment that leaves the requirement failing is still actionable; a
 // suppression would tell a dashboard to hide it.
 func TestConvertHDFToSARIF_NonSuppressingOverrideIsNotFaked(t *testing.T) {
-	failed := hdf.Failed
 	doc := withOverride(
 		testhdf.Results(testhdf.Req("V-1", testhdf.Status(hdf.Failed), testhdf.Impact(0.7))),
 		hdf.StatusOverride{
 			Type:      hdf.RiskAdjustment,
-			Status:    &failed,
+			Impact:    &hdf.ImpactOverride{Value: 0.4},
 			Reason:    "compensating control in place",
 			AppliedAt: longPast,
 			ExpiresAt: farFuture,
 			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "isso@example.gov"},
 		},
 	)
+	body, err := json.Marshal(doc)
+	require.NoError(t, err)
+	validation := validators.ValidateResults(body)
+	require.True(t, validation.Valid, "%v", validation.Errors)
 	res := result0(t, convertDoc(t, doc))
 	assert.NotContains(t, res, "suppressions")
 	assert.Equal(t, kindFail, res["kind"])

@@ -59,9 +59,16 @@ var externalReferenceIdentityFlags = map[string]string{
 // $defs["…/primitives/common/vX.Y.Z"].$defs.External_Reference — a path that moves every
 // minor release. Resolving the ref the schema itself declares survives that.
 func externalReferenceDefinition() (json.RawMessage, error) {
+	target, _, err := resolveExternalReference()
+	return target, err
+}
+
+// resolveExternalReference also returns the $defs the definition sits in, so a local
+// ref inside it ("#/$defs/X") can be followed the same way.
+func resolveExternalReference() (json.RawMessage, map[string]json.RawMessage, error) {
 	raw, err := validators.SchemaBytes(validators.TypeEvidencePackage)
 	if err != nil {
-		return nil, fmt.Errorf("load evidence-package schema: %w", err)
+		return nil, nil, fmt.Errorf("load evidence-package schema: %w", err)
 	}
 	var schema struct {
 		Properties struct {
@@ -74,12 +81,12 @@ func externalReferenceDefinition() (json.RawMessage, error) {
 		Defs map[string]json.RawMessage `json:"$defs"`
 	}
 	if err := json.Unmarshal(raw, &schema); err != nil {
-		return nil, fmt.Errorf("parse evidence-package schema: %w", err)
+		return nil, nil, fmt.Errorf("parse evidence-package schema: %w", err)
 	}
 	ref := schema.Properties.ExternalReferences.Items.Ref
 	base, name, found := strings.Cut(ref, "#/$defs/")
 	if !found {
-		return nil, fmt.Errorf("evidence-package schema: externalReferences items $ref %q is not a $defs reference", ref)
+		return nil, nil, fmt.Errorf("evidence-package schema: externalReferences items $ref %q is not a $defs reference", ref)
 	}
 
 	// An in-document ref ("#/$defs/X") has an empty base and resolves against this
@@ -88,21 +95,21 @@ func externalReferenceDefinition() (json.RawMessage, error) {
 	if base != "" {
 		nested, ok := schema.Defs[base]
 		if !ok {
-			return nil, fmt.Errorf("evidence-package schema: no bundled primitive %q to resolve %q", base, ref)
+			return nil, nil, fmt.Errorf("evidence-package schema: no bundled primitive %q to resolve %q", base, ref)
 		}
 		var doc struct {
 			Defs map[string]json.RawMessage `json:"$defs"`
 		}
 		if err := json.Unmarshal(nested, &doc); err != nil {
-			return nil, fmt.Errorf("parse bundled primitive %q: %w", base, err)
+			return nil, nil, fmt.Errorf("parse bundled primitive %q: %w", base, err)
 		}
 		defs = doc.Defs
 	}
 	target, ok := defs[name]
 	if !ok {
-		return nil, fmt.Errorf("evidence-package schema: %q resolves to no definition named %q", ref, name)
+		return nil, nil, fmt.Errorf("evidence-package schema: %q resolves to no definition named %q", ref, name)
 	}
-	return target, nil
+	return target, defs, nil
 }
 
 // externalReferenceIdentityFields derives the at-least-one rule from the schema:
@@ -138,7 +145,7 @@ func externalReferenceIdentityFields() ([]string, error) {
 // enum, so an override is checked at the boundary against what the schema will accept
 // rather than against a list copied into this file.
 func externalReferenceEncodings() ([]string, error) {
-	target, err := externalReferenceDefinition()
+	target, defs, err := resolveExternalReference()
 	if err != nil {
 		return nil, err
 	}
@@ -146,16 +153,32 @@ func externalReferenceEncodings() ([]string, error) {
 		Properties struct {
 			Encoding struct {
 				Enum []string `json:"enum"`
+				Ref  string   `json:"$ref"`
 			} `json:"encoding"`
 		} `json:"properties"`
 	}
 	if err := json.Unmarshal(target, &def); err != nil {
 		return nil, fmt.Errorf("parse External_Reference: %w", err)
 	}
-	if len(def.Properties.Encoding.Enum) == 0 {
+	enum := def.Properties.Encoding.Enum
+	// The enum lives on a shared definition beside External_Reference; follow the local ref.
+	if name, local := strings.CutPrefix(def.Properties.Encoding.Ref, "#/$defs/"); local {
+		shared, ok := defs[name]
+		if !ok {
+			return nil, fmt.Errorf("evidence-package schema: External_Reference.encoding $ref resolves to no definition named %q", name)
+		}
+		var named struct {
+			Enum []string `json:"enum"`
+		}
+		if err := json.Unmarshal(shared, &named); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", name, err)
+		}
+		enum = named.Enum
+	}
+	if len(enum) == 0 {
 		return nil, fmt.Errorf("evidence-package schema: External_Reference.encoding declares no enum")
 	}
-	return def.Properties.Encoding.Enum, nil
+	return enum, nil
 }
 
 func newEvidenceAddReferenceCmd() *cobra.Command {

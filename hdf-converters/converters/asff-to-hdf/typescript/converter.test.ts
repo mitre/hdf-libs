@@ -12,6 +12,7 @@ import {
 } from './converter.js';
 import type { HDFResults, EvaluatedBaseline } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
+import { statusOf } from '../../../shared/typescript/exportmap.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -172,10 +173,122 @@ describe('asff mapping helpers', () => {
     expect(trivyLocation({ StartLine: '12' })).toBe('');
   });
 
-  it('forces suppressed findings to zero impact', () => {
+  // Suppression no longer touches impact: it travels as a statusOverride, so a
+  // suppressed CRITICAL finding keeps the severity it actually has.
+  it('keeps a suppressed finding real impact', () => {
     expect(
       findingImpact({ Severity: { Label: 'CRITICAL' }, Workflow: { Status: 'SUPPRESSED' } })
-    ).toBeCloseTo(0.0, 5);
+    ).toBeCloseTo(0.9, 5);
+  });
+});
+
+// AUTHORED input, not captured output: no published ASFF sample carries
+// Workflow.Status SUPPRESSED and AWS publishes no schema to confirm one against,
+// so this sets one of the four documented values on an ordinary finding.
+// UpdatedAt is far-future on purpose — it becomes the override's appliedAt, and a
+// realistic date would make the override lapse on a known day.
+const suppressedFinding = JSON.stringify({
+  Findings: [
+    {
+      Id: 'arn:aws:securityhub:us-east-1:111111111111:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/suppressed-1',
+      ProductArn: 'arn:aws:securityhub:us-east-1::product/aws/securityhub',
+      GeneratorId: 'arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.1',
+      AwsAccountId: '111111111111',
+      Title: '1.1 Avoid the use of the root account',
+      Description: 'The root account has unrestricted access to all resources.',
+      CreatedAt: '2026-03-01T00:00:00.000Z',
+      UpdatedAt: '2099-12-31T00:00:00.000Z',
+      LastObservedAt: '2026-03-03T00:00:00.000Z',
+      Severity: { Label: 'HIGH' },
+      Compliance: { Status: 'FAILED' },
+      Workflow: { Status: 'SUPPRESSED' },
+      Resources: [{ Type: 'AwsAccount', Id: 'AWS::::Account:111111111111' }],
+    },
+  ],
+});
+
+describe('asff suppression carries an override, not impact 0', () => {
+  it('keeps the failing verdict and records the acceptance', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf(suppressedFinding)) as HDFResults;
+    const req = hdf.baselines[0].requirements[0];
+
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0].status).toBe(ResultStatus.Failed);
+    expect(req.impact).toBeCloseTo(0.7, 5);
+
+    expect(req.statusOverrides).toHaveLength(1);
+    const ov = req.statusOverrides![0];
+    expect(ov.type).toBe('waiver');
+    expect(ov.status).toBe('passed');
+    // Not covered by any golden, so parity rests on this assertion.
+    expect(ov.reason).toBe(
+      'Suppressed in AWS Security Hub (Workflow.Status: SUPPRESSED). Security Hub records the suppression but not its justification.',
+    );
+    expect(ov.appliedBy.identifier).toBe('aws security hub suppression');
+    expect(ov.appliedBy.type).toBe('other');
+    // appliedAt is the finding's own UpdatedAt, the tightest proxy ASFF offers.
+    expect(new Date(ov.appliedAt).toISOString()).toBe('2099-12-31T00:00:00.000Z');
+    expect(new Date(ov.expiresAt).toISOString()).toBe('2100-12-31T00:00:00.000Z');
+  });
+
+  // A suppression over a finding that never failed adjudicates nothing adverse,
+  // so an override would move the requirement into the compliance numerator.
+  // UNKNOWN_FUTURE_VALUE is the row the other three cannot see: it maps to error,
+  // which is indeterminate rather than failing, so there is no verdict to accept.
+  it.each(['PASSED', 'WARNING', 'NOT_AVAILABLE', 'UNKNOWN_FUTURE_VALUE'])(
+    'emits no override when a suppressed finding is %s rather than failing',
+    async (complianceStatus) => {
+      const doc = suppressedFinding.replace('"Status":"FAILED"', `"Status":"${complianceStatus}"`);
+      expect(doc).not.toBe(suppressedFinding);
+
+      const hdf = JSON.parse(await convertAsffToHdf(doc)) as HDFResults;
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.results[0].status).not.toBe(ResultStatus.Failed);
+      expect(req.statusOverrides ?? []).toHaveLength(0);
+    },
+  );
+
+  // The appliedAt fallback: with no parseable UpdatedAt the override still needs
+  // a real timestamp, since a zero one would read as "never applied".
+  it('falls back to the result time when UpdatedAt is absent', async () => {
+    const doc = JSON.parse(suppressedFinding) as { Findings: Record<string, unknown>[] };
+    delete doc.Findings[0].UpdatedAt;
+
+    const hdf = JSON.parse(await convertAsffToHdf(JSON.stringify(doc))) as HDFResults;
+    const req = hdf.baselines[0].requirements[0];
+    expect(req.statusOverrides).toHaveLength(1);
+    const ov = req.statusOverrides![0];
+    expect(new Date(ov.appliedAt).toISOString()).toBe(new Date(req.results[0].startTime).toISOString());
+  });
+
+  // The export-side contract, the TS twin of the Go exportmap assertion.
+  it('reads back as suppressed through the shared export mapping', async () => {
+    const hdf = JSON.parse(await convertAsffToHdf(suppressedFinding)) as HDFResults;
+    const req = hdf.baselines[0].requirements[0] as unknown as Record<string, unknown>;
+
+    const st = statusOf(req);
+    expect(st.suppressed).toBe(true);
+    expect(st.raw).toBe('failed');
+    expect(st.rollup).toBe('passed');
+  });
+
+  // ASFF folds findings sharing a control id into one requirement, and an
+  // override is requirement-level: one live failure beside a suppressed one must
+  // keep the requirement failing.
+  it('emits no override when an unsuppressed failure shares the control id', async () => {
+    const doc = JSON.parse(suppressedFinding) as { Findings: Record<string, unknown>[] };
+    doc.Findings.push({
+      ...doc.Findings[0],
+      Id: 'arn:aws:securityhub:us-east-1:111111111111:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/live-1',
+      UpdatedAt: '2099-12-31T00:00:00.000Z',
+      Workflow: { Status: 'NEW' },
+    });
+
+    const hdf = JSON.parse(await convertAsffToHdf(JSON.stringify(doc))) as HDFResults;
+    const req = hdf.baselines[0].requirements[0];
+
+    expect(req.results).toHaveLength(2);
+    expect(req.statusOverrides ?? []).toHaveLength(0);
   });
 });
 

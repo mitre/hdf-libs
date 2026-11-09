@@ -402,10 +402,12 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // Determine status. Severity never changes it (unknown-severity
   // convention): a detected vulnerability is failed regardless of rating
-  // confidence; only the ignore-rules triage axis differs.
+  // confidence; only the ignore-rules triage axis differs. An ignore rule
+  // suppresses evaluation rather than adjudicating a verdict, so there is no
+  // verdict to override — the claim belongs in results[] as notApplicable.
   let status: ResultStatus;
   if (isIgnored) {
-    status = ResultStatus.NotReviewed; // Ignored by configured rules
+    status = ResultStatus.NotApplicable;
   } else {
     status = ResultStatus.Failed;
   }

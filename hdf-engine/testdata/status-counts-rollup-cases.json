@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared Go/TypeScript case table for the two StatusCounts roll-up helpers: AddCounts/addCounts (a bucket-wise sum of count sets) and SeverityTotals/severityTotals (the severity-only projection of one count set, whose `total` is the grand total across every status). Read by go/rollup_counts_test.go and test/status-counts-rollup.test.ts, so the two implementations cannot drift. Count sets are written in the TypeScript field spelling (noImpact); the Go test maps the table onto its own json tags. Omitted numbers are zero, so a case shows only the buckets it exercises. `inputs` is the argument list, `want` the summed count set, `wantSeverityTotals` the severity projection of `want`.",
+  "$comment": "Shared Go/TypeScript case table for the two StatusCounts roll-up helpers: AddCounts/addCounts (a bucket-wise sum of count sets) and SeverityTotals/severityTotals (the severity-only projection of one count set, whose `total` is the grand total across every status). Read by go/rollup_counts_test.go and test/status-counts-rollup.test.ts, so the two implementations cannot drift. Count sets are written in the TypeScript field spelling (notApplicable); the Go test maps the table onto its own json tags. Omitted numbers are zero, so a case shows only the buckets it exercises. `inputs` is the argument list, `want` the summed count set, `wantSeverityTotals` the severity projection of `want`.",
   "cases": [
     {
       "name": "no inputs sum to an empty count set",
@@ -61,14 +61,14 @@
         { "failed": { "critical": 1, "total": 1 } },
         { "skipped": { "critical": 1, "total": 1 } },
         { "error": { "critical": 1, "total": 1 } },
-        { "noImpact": { "critical": 1, "total": 1 } }
+        { "notApplicable": { "critical": 1, "total": 1 } }
       ],
       "want": {
         "passed": { "critical": 1, "total": 1 },
         "failed": { "critical": 1, "total": 1 },
         "skipped": { "critical": 1, "total": 1 },
         "error": { "critical": 1, "total": 1 },
-        "noImpact": { "critical": 1, "total": 1 }
+        "notApplicable": { "critical": 1, "total": 1 }
       },
       "wantSeverityTotals": { "critical": 5, "total": 5 }
     },
@@ -80,7 +80,7 @@
           "failed": { "critical": 6, "total": 6 },
           "skipped": { "high": 7, "total": 7 },
           "error": { "low": 8, "total": 8 },
-          "noImpact": { "informational": 9, "total": 9 }
+          "notApplicable": { "informational": 9, "total": 9 }
         }
       ],
       "want": {
@@ -88,7 +88,7 @@
         "failed": { "critical": 6, "total": 6 },
         "skipped": { "high": 7, "total": 7 },
         "error": { "low": 8, "total": 8 },
-        "noImpact": { "informational": 9, "total": 9 }
+        "notApplicable": { "informational": 9, "total": 9 }
       },
       "wantSeverityTotals": { "critical": 7, "high": 9, "medium": 3, "low": 12, "informational": 14, "total": 45 }
     },

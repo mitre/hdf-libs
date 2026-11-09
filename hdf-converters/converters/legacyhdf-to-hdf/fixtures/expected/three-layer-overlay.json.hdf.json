@@ -1632,12 +1632,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007091,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -1692,12 +1689,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n        Applicable.",
-              "resource": "Object",
-              "runTime": 0.000005985,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -1821,12 +1815,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
-              "resource": "Object",
-              "runTime": 0.000006798,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -1880,12 +1871,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
-              "resource": "Object",
-              "runTime": 0.000004607,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -2000,12 +1988,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
-              "resource": "Object",
-              "runTime": 0.000008448,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -2055,12 +2040,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007923,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -2959,12 +2941,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
-              "message": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
-              "resource": "Object",
-              "runTime": 0.000010459,
-              "startTime": "2022-03-06T22:05:48Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -3843,12 +3822,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GDM installed",
-              "message": "The system does not have GDM installed, this requirement is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000012677,
-              "startTime": "2022-03-06T22:05:49Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -3898,12 +3874,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GDM installed",
-              "message": "The system does not have GDM installed, this requirement is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007698,
-              "startTime": "2022-03-06T22:05:49Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -4063,12 +4036,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "System running version of RHEL that is equal to or newer than 7.2",
-              "message": "The System is running version 7.9.2009 of RHEL, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000008234,
-              "startTime": "2022-03-06T22:05:49Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -4118,12 +4088,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "System running BIOS",
-              "message": "The System is running BIOS, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007806,
-              "startTime": "2022-03-06T22:05:49Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -13954,12 +13921,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "LDAP not enabled",
-              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000010836,
-              "startTime": "2022-03-06T22:06:06Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -14009,12 +13973,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "LDAP not enabled",
-              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000034353,
-              "startTime": "2022-03-06T22:06:06Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -14064,12 +14025,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "LDAP not enabled",
-              "message": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.00000823,
-              "startTime": "2022-03-06T22:06:06Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -14389,12 +14347,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The release is 7.9.2009",
-              "message": "The release is newer than 7.4; this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.00001005,
-              "startTime": "2022-03-06T22:06:07Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -14677,12 +14632,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The release is 7.9.2009",
-              "message": "The release is newer than 7.4; this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000009681,
-              "startTime": "2022-03-06T22:06:07Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -16274,12 +16226,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The TFTP package is not installed",
-              "message": "If a TFTP server is not installed, this is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000012685,
-              "startTime": "2022-03-06T22:06:09Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -16491,12 +16440,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The `snmpd.conf` does not exist",
-              "message": "The snmpd.conf file does not exist, this control is Not Applicable",
-              "resource": "Object",
-              "runTime": 0.000007803,
-              "startTime": "2022-03-06T22:06:09Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -16600,12 +16546,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have libreswan installed or the ipsec.service isn't running",
-              "message": "The system does not have libreswan installed or the ipsec.service isn't running, this requirement is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000011027,
-              "startTime": "2022-03-06T22:06:09Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -16878,12 +16821,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The SSSD Package is not installed on the system",
-              "message": "This control is Not Appliciable without the SSSD Package installed.",
-              "resource": "Object",
-              "runTime": 0.000009471,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -17006,12 +16946,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007159,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -17061,12 +16998,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000007752,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -17678,28 +17612,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000013842,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
-            },
-            {
-              "codeDesc": "The pcsc-lite package is not installed",
-              "message": "The pcsc-lite package is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000010141,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
-            },
-            {
-              "codeDesc": "The esc package is not installed",
-              "message": "The esc package is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000009305,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -17926,12 +17841,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000092067,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -17981,12 +17893,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The GNOME desktop is not installed",
-              "message": "The GNOME desktop is not installed, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000009117,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -18318,12 +18227,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "System running BIOS",
-              "message": "The System is running BIOS, this control is Not Applicable.",
-              "resource": "Object",
-              "runTime": 0.000010374,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",
@@ -18941,12 +18847,9 @@
           "effectiveStatus": "notApplicable",
           "results": [
             {
-              "codeDesc": "The system does not have GNOME installed",
-              "message": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
-              "resource": "Object",
-              "runTime": 0.00001088,
-              "startTime": "2022-03-06T22:06:10Z",
-              "status": "notReviewed"
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "informational",

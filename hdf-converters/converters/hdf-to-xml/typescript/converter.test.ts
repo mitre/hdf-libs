@@ -69,7 +69,7 @@ describe('hdf-to-xml Converter', () => {
       expect(out).toContain('<expiresAt>2099-12-31T00:00:00Z</expiresAt>');
       expect(out).toContain('<justification>inline_mitigations_already_exist</justification>');
       expect(out).toContain('<disposition>riskAdjustment</disposition>');
-      expect(out).toContain('<effectiveStatus>passed</effectiveStatus>');
+      expect(out).toContain('<effectiveStatus>failed</effectiveStatus>');
       expect(out).toContain('<effectiveImpact>0.3</effectiveImpact>');
       expect(out).toContain('<severity>high</severity>');
 
