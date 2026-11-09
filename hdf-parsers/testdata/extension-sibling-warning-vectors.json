@@ -1,0 +1,36 @@
+{
+  "$comment": "Vectors pinning the ORDER of the warnings NormalizeSAFSupplement emits for undeclared `extensions` siblings. Shared by Go and TypeScript so the two cannot drift. Each case writes its siblings in an insertion order that differs from the sorted one: Go reads them into a map and so cannot see source order, which is why the rule is code-point order of the key in both languages. Each case's `extensions` is spliced into a minimal valid results document beside a legacy top-level `passthrough`, which is what triggers the relocation.",
+  "vectors": [
+    {
+      "why": "three siblings, one clashing with a key already in passthrough, are reported in key order",
+      "extensions": { "zeta": 1, "mid": 2, "alpha": 3 },
+      "passthrough": { "mid": "kept" },
+      "warnings": [
+        "extensions.alpha was moved into extensions.passthrough.alpha; `extensions` accepts only its defined members",
+        "extensions.mid was dropped: `extensions` is closed and extensions.passthrough.mid already holds a value",
+        "extensions.zeta was moved into extensions.passthrough.zeta; `extensions` accepts only its defined members"
+      ]
+    },
+    {
+      "why": "a non-object passthrough leaves every sibling in place, and reports them in key order",
+      "extensions": { "passthrough": "not-an-object", "zeta": 1, "mid": 2, "alpha": 3 },
+      "passthrough": { "ignored": true },
+      "warnings": [
+        "extensions.alpha could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate",
+        "extensions.mid could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate",
+        "extensions.zeta could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate"
+      ]
+    },
+    {
+      "why": "key order is by code point, not UTF-16 unit: U+E000 sorts before U+10000 although its UTF-16 unit is higher, and a prefix sorts first",
+      "extensions": { "𐀀": 1, "": 2, "ab": 3, "a": 4 },
+      "passthrough": {},
+      "warnings": [
+        "extensions.a was moved into extensions.passthrough.a; `extensions` accepts only its defined members",
+        "extensions.ab was moved into extensions.passthrough.ab; `extensions` accepts only its defined members",
+        "extensions. was moved into extensions.passthrough.; `extensions` accepts only its defined members",
+        "extensions.𐀀 was moved into extensions.passthrough.𐀀; `extensions` accepts only its defined members"
+      ]
+    }
+  ]
+}

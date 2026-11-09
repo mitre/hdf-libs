@@ -157,12 +157,27 @@ function rewritePassthrough(doc: Record<string, unknown>): string[] {
   return relocateExtensionSiblings(ext);
 }
 
+/** Orders strings by code point, which is Go's byte order over UTF-8; the default
+ * sort compares UTF-16 units and puts U+10000 before U+E000. */
+function byCodePoint(a: string, b: string): number {
+  const ai = [...a];
+  const bi = [...b];
+  for (let i = 0; i < Math.min(ai.length, bi.length); i++) {
+    const d = (ai[i]?.codePointAt(0) ?? 0) - (bi[i]?.codePointAt(0) ?? 0);
+    if (d !== 0) return d;
+  }
+  return ai.length - bi.length;
+}
+
 /** Move undefined `extensions` keys into extensions.passthrough. Without this, a
  * legacy document carrying something like extensions.audit normalizes into a
- * document the closed `extensions` rejects. */
+ * document the closed `extensions` rejects. Keys are visited in code-point order,
+ * not insertion order, because Go decodes into a map and cannot see source order. */
 function relocateExtensionSiblings(ext: Record<string, unknown>): string[] {
   const warnings: string[] = [];
-  const siblings = Object.keys(ext).filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k));
+  const siblings = Object.keys(ext)
+    .filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k))
+    .sort(byCodePoint);
   if (siblings.length === 0) return warnings;
 
   if ('passthrough' in ext && !isObject(ext.passthrough)) {

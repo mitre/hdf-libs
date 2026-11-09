@@ -347,8 +347,8 @@ export async function checksumHex(algorithm: string | undefined, data: Uint8Arra
  */
 export function decodeReference(uri: string): string {
   if (uri === '') return '';
-  // decodeURIComponent throws URIError on a malformed escape, which is the reporting
-  // this contract wants; Go's url.PathUnescape returns an error for the same inputs.
+  // decodeURIComponent throws URIError on a malformed escape or one that is not UTF-8,
+  // which is the reporting this contract wants; Go's DecodeReference refuses both too.
   try {
     return decodeURIComponent(uri);
   } catch {

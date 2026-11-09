@@ -154,6 +154,36 @@ func TestNormalizeSAFSupplement_ReportsASiblingItCannotRelocate(t *testing.T) {
 	}, "the drop is reported: %v", warnings)
 }
 
+// The SHARED table, read rather than restated, so Go and TypeScript emit the same
+// warnings in the same order. Repeated because Go randomizes map order per range.
+func TestNormalizeSAFSupplement_ExtensionSiblingWarningsMatchTheSharedVectors(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "extension-sibling-warning-vectors.json"))
+	require.NoError(t, err, "the shared table is the contract")
+	var table struct {
+		Vectors []struct {
+			Why         string          `json:"why"`
+			Extensions  json.RawMessage `json:"extensions"`
+			Passthrough json.RawMessage `json:"passthrough"`
+			Warnings    []string        `json:"warnings"`
+		} `json:"vectors"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Vectors, "a pass must not mean an empty table")
+
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			want := append([]string{safProvenanceDeprecation}, v.Warnings...)
+			for range 20 {
+				in := validV3WithExtra(t, map[string]any{
+					"extensions": v.Extensions, "passthrough": v.Passthrough,
+				})
+				_, warnings := NormalizeSAFSupplement(in)
+				require.Equal(t, want, warnings)
+			}
+		})
+	}
+}
+
 // TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical: a doc with no legacy keys
 // passes through byte-identical (idempotent, narrow) and yields no warnings.
 func TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical(t *testing.T) {

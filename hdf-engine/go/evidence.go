@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"unicode/utf8"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -379,6 +380,10 @@ func DecodeReference(uri string) (string, error) {
 	decoded, err := url.PathUnescape(uri)
 	if err != nil {
 		return "", fmt.Errorf("reference %q is not a valid uri-reference: %w", uri, err)
+	}
+	// PathUnescape admits escapes that decode to non-UTF-8 bytes; TypeScript refuses them.
+	if !utf8.ValidString(decoded) {
+		return "", fmt.Errorf("reference %q is not a valid uri-reference: its escapes do not decode to UTF-8", uri)
 	}
 	return decoded, nil
 }

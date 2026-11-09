@@ -3,6 +3,7 @@ package hdfparsers
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -221,26 +222,31 @@ var extensionsDefinedMembers = map[string]bool{
 // relocateExtensionSiblings moves undefined `extensions` keys into
 // extensions.passthrough, returning a warning per key it could not move.
 // Without this, a legacy document carrying something like extensions.audit
-// normalizes into a document the closed `extensions` rejects.
+// normalizes into a document the closed `extensions` rejects. Keys are visited in
+// sorted order: a decoded map has no source order, and TypeScript sorts the same way.
 func relocateExtensionSiblings(ext map[string]any) []string {
+	var siblings []string
+	for k := range ext {
+		if !extensionsDefinedMembers[k] {
+			siblings = append(siblings, k)
+		}
+	}
+	sort.Strings(siblings)
+
 	var warnings []string
 	pt, isObject := ext["passthrough"].(map[string]any)
 	if _, present := ext["passthrough"]; present && !isObject {
 		// passthrough is present but not an object, so nothing can be merged
 		// into it. Leave the document alone and let the schema reject it rather
 		// than reshape data we cannot place.
-		for k := range ext {
-			if !extensionsDefinedMembers[k] {
-				warnings = append(warnings, fmt.Sprintf(
-					"extensions.%s could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate", k))
-			}
+		for _, k := range siblings {
+			warnings = append(warnings, fmt.Sprintf(
+				"extensions.%s could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate", k))
 		}
 		return warnings
 	}
-	for k, v := range ext {
-		if extensionsDefinedMembers[k] {
-			continue
-		}
+	for _, k := range siblings {
+		v := ext[k]
 		if pt == nil {
 			pt = map[string]any{}
 		}

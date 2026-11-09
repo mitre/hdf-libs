@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`checksumHex` is exported from `@mitre/hdf-engine`.** The README already listed it as public alongside Go's `ChecksumHex`, but it was reachable only as a module-internal export.
+
 - **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
 
 - CI assembles a portable HDF evidence package from normalized scan/test results, the dependency SBOM, and native reports, with SHA-512 checksums and verification after extraction. Formal releases attach the package from passing main CI for the exact release commit.
@@ -99,6 +101,10 @@ All notable changes to this project will be documented in this file.
   One knock-on worth naming: `hdf diff` reports an impact-only change through `changeReasons`, `fieldChanges` and `drift`, but a matched pair's `state` tracks the effective status alone, so re-scoring a passing requirement to 0.0 now reads `unchanged` where it previously read `updated`. Teaching the diff engine to key on any changed field is tracked separately.
 
 ### Fixed
+
+- **Go and TypeScript agree on an evidence reference whose escapes are not UTF-8.** `hdfengine.DecodeReference` accepted an escape that decodes to bytes that are not UTF-8, such as the Latin-1 `caf%E9.json`, while TypeScript's `decodeReference` reported it malformed. Go now reports it as not a valid uri-reference too, so `hdf evidence info --verify` lists such an entry as not reachable; the UTF-8 spelling `caf%C3%A9.json` still resolves.
+
+- **The warnings for undeclared `extensions` siblings in a legacy SAF-supplement document come out in a fixed order.** Go reported them in random map order, which changed from run to run and differed from TypeScript; both languages now report them in code-point order of the key.
 
 - **`hdf fetch aws-config` names every rule whose remediation lookup the deadline cut short.** When the read-phase deadline expired during remediation lookup, the rules not yet looked up silently lost their `fix` description; they are now named, with the context error, in the single remediation warning.
 
