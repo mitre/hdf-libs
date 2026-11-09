@@ -224,18 +224,25 @@ func TestParseResults_AcceptsSAFSupplementedDoc(t *testing.T) {
 // differs across languages so this compares parsed structure, not bytes).
 func TestNormalizeSAFSupplement_SharedFixtureParity(t *testing.T) {
 	dir := filepath.Join("..", "testdata", "saf-supplement")
-	in, err := os.ReadFile(filepath.Join(dir, "legacy-in.json"))
-	require.NoError(t, err)
-	expected, err := os.ReadFile(filepath.Join(dir, "v3-out.json"))
-	require.NoError(t, err)
+	for _, pair := range [][2]string{
+		{"legacy-in.json", "v3-out.json"},
+		{"prototype-keys-in.json", "prototype-keys-out.json"},
+	} {
+		t.Run(pair[0], func(t *testing.T) {
+			in, err := os.ReadFile(filepath.Join(dir, pair[0]))
+			require.NoError(t, err)
+			expected, err := os.ReadFile(filepath.Join(dir, pair[1]))
+			require.NoError(t, err)
 
-	out, _ := NormalizeSAFSupplement(in)
+			out, _ := NormalizeSAFSupplement(in)
 
-	var got, want any
-	require.NoError(t, json.Unmarshal(out, &got))
-	require.NoError(t, json.Unmarshal(expected, &want))
-	assert.Equal(t, want, got, "normalized output must match the shared v3-out fixture")
-	assert.True(t, validators.ValidateResults(out).Valid, "shared fixture normalizes to schema-valid v3")
+			var got, want any
+			require.NoError(t, json.Unmarshal(out, &got))
+			require.NoError(t, json.Unmarshal(expected, &want))
+			assert.Equal(t, want, got, "normalized output must match the shared fixture")
+			assert.True(t, validators.ValidateResults(out).Valid, "shared fixture normalizes to schema-valid v3")
+		})
+	}
 }
 
 // platformDerived is the component the v2→v3 upgrade derives from an InSpec

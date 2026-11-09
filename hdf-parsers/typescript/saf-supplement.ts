@@ -121,12 +121,24 @@ function platformComponent(comps: unknown[], typ: string): Record<string, unknow
   return c;
 }
 
+/** Own-property test: `in` walks the prototype chain, so a key named like an
+ * Object.prototype member would read as present on an empty object. */
+function hasOwn(o: Record<string, unknown>, k: string): boolean {
+  return Object.prototype.hasOwnProperty.call(o, k);
+}
+
+/** Define an own data property, so a key named `__proto__` lands as data and
+ * never reassigns the object's prototype. */
+function setOwn(o: Record<string, unknown>, k: string, v: unknown): void {
+  Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true });
+}
+
 /** The string entries of a legacy target.labels; component labels admit only strings. */
 function stringLabels(v: unknown): Record<string, string> {
   const out: Record<string, string> = {};
   if (!isObject(v)) return out;
   for (const [k, val] of Object.entries(v)) {
-    if (typeof val === 'string') out[k] = val;
+    if (typeof val === 'string') setOwn(out, k, val);
   }
   return out;
 }
@@ -136,7 +148,7 @@ function applyLabels(c: Record<string, unknown>, labels: Record<string, string>)
   if (Object.keys(labels).length === 0) return;
   const existing = isObject(c.labels) ? c.labels : {};
   for (const [k, v] of Object.entries(labels)) {
-    if (!(k in existing)) existing[k] = v;
+    if (!hasOwn(existing, k)) setOwn(existing, k, v);
   }
   c.labels = existing;
 }
@@ -178,12 +190,12 @@ function relocateExtensionSiblings(ext: Record<string, unknown>): string[] {
 
   const pt = isObject(ext.passthrough) ? ext.passthrough : {};
   for (const k of siblings) {
-    if (k in pt) {
+    if (hasOwn(pt, k)) {
       warnings.push(
         `extensions.${k} was dropped: \`extensions\` is closed and extensions.passthrough.${k} already holds a value`,
       );
     } else {
-      pt[k] = ext[k];
+      setOwn(pt, k, ext[k]);
       warnings.push(
         `extensions.${k} was moved into extensions.passthrough.${k}; \`extensions\` accepts only its defined members`,
       );
