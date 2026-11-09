@@ -418,6 +418,46 @@ func TestChecksumHex_ComputesBlake3(t *testing.T) {
 	}
 }
 
+// The streaming hasher is the definition ChecksumHex uses, so a digest written in chunks
+// must equal the one-shot digest for every algorithm, and BLAKE3 its reference vectors.
+func TestNewChecksumHash_MatchesChecksumHexForEveryAlgorithm(t *testing.T) {
+	for _, c := range loadBlake3Vectors(t).Cases {
+		data := blake3VectorInput(c.InputLen)
+		for _, algorithm := range []string{"", "sha256", "sha384", "sha512", "blake3"} {
+			h, err := NewChecksumHash(algorithm)
+			if err != nil {
+				t.Fatalf("NewChecksumHash(%q): %v", algorithm, err)
+			}
+			for chunk := data; len(chunk) > 0; {
+				n := min(len(chunk), 1000)
+				_, _ = h.Write(chunk[:n])
+				chunk = chunk[n:]
+			}
+			want, err := ChecksumHex(algorithm, data)
+			if err != nil {
+				t.Fatalf("ChecksumHex(%q): %v", algorithm, err)
+			}
+			if got := hex.EncodeToString(h.Sum(nil)); got != want {
+				t.Errorf("%q over %d bytes streamed %s, ChecksumHex gave %s", algorithm, c.InputLen, got, want)
+			}
+			if algorithm == "blake3" && want != c.Hash[:64] {
+				t.Errorf("blake3 over %d bytes = %s, vector says %s", c.InputLen, want, c.Hash[:64])
+			}
+		}
+	}
+}
+
+func TestNewChecksumHash_RefusesAnOffSchemaAlgorithmLikeChecksumHex(t *testing.T) {
+	_, err := NewChecksumHash("md5")
+	if err == nil {
+		t.Fatal("NewChecksumHash(md5) returned no error; an off-schema algorithm must be refused")
+	}
+	const want = `unsupported checksum algorithm "md5": this build computes sha256, sha384, sha512 and blake3`
+	if err.Error() != want {
+		t.Errorf("message = %q, want %q", err.Error(), want)
+	}
+}
+
 // An off-schema algorithm still has to be refused: no schema-valid document can carry one,
 // but the status exists for documents this tooling did not write. The WHOLE message is
 // pinned, list included, because the TypeScript peer asserts the identical string — that

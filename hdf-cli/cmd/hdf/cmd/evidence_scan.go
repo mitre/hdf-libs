@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -34,16 +35,48 @@ type scanResult struct {
 	boms        []string
 	unsupported []string      // detected HDF, but no Content_Type exists for it
 	foreign     []string      // not an HDF document at all
-	unreadable  []string      // present but could not be read — reported, never dropped silently
+	unreadable  []unreadEntry // present but could not be read — reported, never dropped silently
 	irregular   []skippedKind // skipped by type; reported, because "nothing is dropped in silence"
+}
+
+// unreadEntry is a path the scan could not read, with the remedy when there is one.
+type unreadEntry struct {
+	path string
+	hint string
 }
 
 // skipUnreadable records an entry the scan could not read and continues the walk.
 // A per-entry failure must not abort the scan, but it must not vanish either — the
 // error is consumed here deliberately, and the path is reported at the end.
 func (out *scanResult) skipUnreadable(path string, _ error) error {
-	out.unreadable = append(out.unreadable, path)
+	out.unreadable = append(out.unreadable, unreadEntry{path: path})
 	return nil
+}
+
+// skipOversize records a file over --max-size, which the scan never opens.
+func (out *scanResult) skipOversize(path string, size int64) error {
+	out.unreadable = append(out.unreadable, unreadEntry{path: path,
+		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, getMaxFileSize()/(1024*1024))})
+	return nil
+}
+
+// readScannedFile reads one file of the tree, capped at --max-size so a file that grew
+// after its size was checked is still not loaded whole.
+func readScannedFile(fsys fs.FS, rel string, size int64) ([]byte, bool, error) {
+	limit := getMaxFileSize()
+	if size > limit {
+		return nil, false, nil
+	}
+	f, err := fsys.Open(rel)
+	if err != nil {
+		return nil, true, err
+	}
+	defer func() { _ = f.Close() }()
+	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	if err != nil {
+		return nil, true, err
+	}
+	return data, int64(len(data)) <= limit, nil
 }
 
 // looksLikeBOM reports whether a document carries a BOM's own discriminator.
@@ -176,9 +209,12 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 		if skip.has(info) {
 			return nil
 		}
-		data, readErr := fs.ReadFile(root.FS(), rel)
+		data, withinLimit, readErr := readScannedFile(root.FS(), rel, info.Size())
 		if readErr != nil {
 			return out.skipUnreadable(abs, readErr)
+		}
+		if !withinLimit {
+			return out.skipOversize(abs, max(info.Size(), int64(len(data))))
 		}
 		if looksLikeBOM(data) {
 			out.boms = append(out.boms, abs)
@@ -197,10 +233,10 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 
 	// Stable order, so a package built twice from one directory is identical.
 	for _, s := range [][]string{out.systems, out.results, out.baselines, out.plans,
-		out.amendments, out.comparisons, out.boms, out.unsupported, out.foreign,
-		out.unreadable} {
+		out.amendments, out.comparisons, out.boms, out.unsupported, out.foreign} {
 		sort.Strings(s)
 	}
+	sort.Slice(out.unreadable, func(i, j int) bool { return out.unreadable[i].path < out.unreadable[j].path })
 	sort.Slice(out.irregular, func(i, j int) bool { return out.irregular[i].path < out.irregular[j].path })
 	return out, nil
 }
@@ -257,7 +293,11 @@ func reportScan(out *scanResult, baseDir, pkgPath string) {
 			show(path), suffix)
 	}
 	for _, u := range out.unreadable {
-		fmt.Fprintf(os.Stderr, "Skipped %s: present but could not be read.\n", show(u))
+		hint := ""
+		if u.hint != "" {
+			hint = " " + u.hint + "."
+		}
+		fmt.Fprintf(os.Stderr, "Skipped %s: present but could not be read.%s\n", show(u.path), hint)
 	}
 	for _, l := range out.irregular {
 		advice := ""

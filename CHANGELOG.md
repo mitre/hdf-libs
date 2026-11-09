@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`hdf evidence build --require-readable`.** With `--from-dir`, the build fails (exit 1, nothing written) when the scan skipped any file it could not read, whether over `--max-size` or refused by permissions, and names each file with its remedy. Without it such files are still skipped and reported at exit 0. It follows `--require-reachable` and `--require-checksums`: strict by request, never by default.
+
+- **`hdfengine.NewChecksumHash` (Go).** A streaming hasher for any algorithm `Hash_Algorithm` admits. `ChecksumHex` is built on it, and the CLI's own copy of the supported-algorithm list is gone, so there is one definition of what the codebase can hash.
+
 - **`checksumHex` is exported from `@mitre/hdf-engine`.** The README already listed it as public alongside Go's `ChecksumHex`, but it was reachable only as a module-internal export.
 
 - **SCHEMA — a standalone `hdf-baseline` document can carry a root `description`.** `Evaluated_Baseline` has accepted one since v3, but the baseline root declared only its own fields under `unevaluatedProperties: false`, so the same prose was rejected before assessment and accepted after it. `description` now lives on the shared `Baseline_Metadata`, which both roots already compose, and `Evaluated_Baseline` drops its duplicate declaration. Results documents validate exactly as before; baseline documents gain one optional string.
@@ -101,6 +105,10 @@ All notable changes to this project will be documented in this file.
   One knock-on worth naming: `hdf diff` reports an impact-only change through `changeReasons`, `fieldChanges` and `drift`, but a matched pair's `state` tracks the effective status alone, so re-scoring a passing requirement to 0.0 now reads `unchanged` where it previously read `updated`. Teaching the diff engine to key on any changed field is tracked separately.
 
 ### Fixed
+
+- **`hdf evidence export` writes each document to its own file, and a run that loses one no longer reports success.** Every results document was written to one `oscal-sar.json` and every amendments document to one `oscal-poam.json`, so a package carrying two results documents kept only the last while counting both as exported, and exited 0. Each output is now named for its source (`rhel9-results.json` becomes `rhel9-results.oscal-sar.json`; amendments become `<name>.oscal-poam.json`), and two documents that would share a name, compared without case, are refused before anything is written. A run where none of the listed results or amendments could be exported exits 1 instead of claiming the package had none, and a run where only some could exits 3, the CLI's code for a partial run, with an `X of N` summary. **Behavior change** for scripts that read the old fixed file names or treated exit 0 as "everything exported".
+
+- **`hdf evidence build --from-dir` honors `--max-size`.** The scan read every file in the tree fully into memory before any size check. A file over the limit is now never opened: it is reported as `Skipped <file>: present but could not be read`, with the size and a `--max-size` hint, and the build continues, as it already does for any file it cannot read. `--require-readable` makes the build fail instead, naming every file it skipped.
 
 - **`@mitre/hdf-fixtures` ships its `amendments/` directory.** The npm `files` list left it out, so `amendments.uc01Fixed.read()` and `amendments.multiCve.read()` failed with ENOENT in an installed package. A test now fails when the TypeScript index or the Go embeds reference a directory the tarball leaves out.
 

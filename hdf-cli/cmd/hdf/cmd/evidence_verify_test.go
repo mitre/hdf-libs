@@ -139,7 +139,7 @@ func TestEvidenceExport_RejectsOversizeReferencedFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(pkg), 0o600))
 
 	_, stderr, err := executeCommand("evidence", "export", path, "-o", filepath.Join(dir, "out"), "--max-size", "1")
-	require.NoError(t, err)
+	require.Error(t, err, "the package's only convertible document was refused")
 	assert.Contains(t, stderr, "could not read")
 	assert.Contains(t, stderr, "too large")
 }
