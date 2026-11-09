@@ -2017,8 +2017,8 @@ describe('severity resolution (§3.27.9, §3.27.10, §3.50.3)', () => {
 
   // §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
   // "none" on a failing result contradicts the definition and must not be honoured.
-  // Honouring it would put a reported failure at impact 0, which the effective-status
-  // ladder reads as notApplicable — dropping a real finding out of the denominator.
+  // Honouring it would put a reported failure in the informational band,
+  // understating a real finding's severity everywhere a consumer reads it.
   it('does not honour a none carried by a failing result', async () => {
     const r = await req('{"id":"R1","defaultConfiguration":{"level":"error"}}', '"level":"none","kind":"fail"');
     expect(r.impact).toBe(0.7);

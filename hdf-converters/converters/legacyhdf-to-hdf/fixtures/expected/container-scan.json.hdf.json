@@ -3853,6 +3853,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -3918,6 +3923,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -3973,6 +3983,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -4026,6 +4041,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4081,6 +4101,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -4136,6 +4161,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -4191,6 +4221,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4246,6 +4281,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4301,6 +4341,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:45Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:45Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4356,6 +4401,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -4411,6 +4461,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4466,6 +4521,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4521,6 +4581,11 @@
               "runTime": 0.000036,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4582,6 +4647,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4642,6 +4712,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4701,6 +4776,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -4756,6 +4836,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -4829,6 +4914,11 @@
               "runTime": 0.000008,
               "startTime": "2025-12-03T04:45:46Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:46Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4884,6 +4974,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4939,6 +5034,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -4996,6 +5096,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5053,6 +5158,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5114,6 +5224,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5175,6 +5290,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5229,6 +5349,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5282,6 +5407,11 @@
               "runTime": 0.000028,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5335,6 +5465,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5388,6 +5523,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:47Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:47Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5441,6 +5581,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5494,6 +5639,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5549,6 +5699,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5604,6 +5759,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5665,6 +5825,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5719,6 +5884,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5773,6 +5943,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5827,6 +6002,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5881,6 +6061,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5934,6 +6119,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:48Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:48Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -5987,6 +6177,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:49Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:49Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7150,6 +7345,11 @@
               "runTime": 0.000028,
               "startTime": "2025-12-03T04:45:51Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:51Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7322,6 +7522,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:52Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:52Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7484,6 +7689,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:52Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:52Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7537,6 +7747,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:52Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:52Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -7590,6 +7805,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:52Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:52Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -7643,6 +7863,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:52Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:52Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -7698,6 +7923,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7751,6 +7981,11 @@
               "runTime": 0.000007,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7807,6 +8042,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7862,6 +8102,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7917,6 +8162,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -7970,6 +8220,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8023,6 +8278,11 @@
               "runTime": 0.000008,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8076,6 +8336,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8129,6 +8394,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8182,6 +8452,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:45:53Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:53Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8235,6 +8510,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8288,6 +8568,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8343,6 +8628,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8398,6 +8688,11 @@
               "runTime": 0.000039,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8453,6 +8748,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8506,6 +8806,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8559,6 +8864,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8612,6 +8922,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8665,6 +8980,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:45:54Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:54Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8718,6 +9038,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8771,6 +9096,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8826,6 +9156,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8879,6 +9214,11 @@
               "runTime": 0.000042,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8932,6 +9272,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -8985,6 +9330,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9038,6 +9388,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9091,6 +9446,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9144,6 +9504,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9197,6 +9562,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:55Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:55Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9250,6 +9620,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9303,6 +9678,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -9364,6 +9744,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -9417,6 +9802,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9523,6 +9913,11 @@
               "runTime": 0.000024,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9690,6 +10085,11 @@
               "runTime": 0.000064,
               "startTime": "2025-12-03T04:45:56Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:56Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9743,6 +10143,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:45:57Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:57Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9853,6 +10258,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:45:57Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:57Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -9906,6 +10316,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:45:57Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:45:57Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -11530,6 +11945,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:00Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -11583,6 +12003,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:00Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:00Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -11960,6 +12385,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:01Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:01Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12019,6 +12449,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:01Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:01Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12402,6 +12837,11 @@
               "runTime": 0.000024,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12520,6 +12960,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12579,6 +13024,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12635,6 +13085,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12695,6 +13150,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12749,6 +13209,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:46:02Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:02Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12802,6 +13267,11 @@
               "runTime": 0.000007,
               "startTime": "2025-12-03T04:46:03Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:03Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -12855,6 +13325,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:46:03Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:03Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13033,6 +13508,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:03Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:03Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13099,6 +13579,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:03Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:03Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -13154,6 +13639,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:03Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:03Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -13390,6 +13880,11 @@
               "runTime": 0.000028,
               "startTime": "2025-12-03T04:46:04Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:04Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13667,6 +14162,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:04Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:04Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13731,6 +14231,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:04Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:04Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13784,6 +14289,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13837,6 +14347,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13892,6 +14407,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -13947,6 +14467,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14000,6 +14525,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14053,6 +14583,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14106,6 +14641,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14161,6 +14701,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14214,6 +14759,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14269,6 +14819,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:05Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:05Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14464,6 +15019,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14517,6 +15077,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14570,6 +15135,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14623,6 +15193,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14681,6 +15256,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14734,6 +15314,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14787,6 +15372,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:06Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:06Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14840,6 +15430,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14905,6 +15500,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -14969,6 +15569,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15024,6 +15629,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15090,6 +15700,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15146,6 +15761,11 @@
               "runTime": 0.000025,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15214,6 +15834,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -15277,6 +15902,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15334,6 +15964,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:07Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:07Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -15390,6 +16025,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15450,6 +16090,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15506,6 +16151,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15566,6 +16216,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15626,6 +16281,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15736,6 +16396,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15799,6 +16464,11 @@
               "runTime": 0.000008,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15860,6 +16530,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15926,6 +16601,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:08Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:08Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -15982,6 +16662,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16102,6 +16787,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16156,6 +16846,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16210,6 +16905,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16322,6 +17022,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16378,6 +17083,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16434,6 +17144,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16488,6 +17203,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:46:09Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:09Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16542,6 +17262,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16596,6 +17321,11 @@
               "runTime": 0.000027,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16652,6 +17382,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16706,6 +17441,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16771,6 +17511,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16838,6 +17583,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16901,6 +17651,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -16964,6 +17719,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17019,6 +17779,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17082,6 +17847,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:10Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:10Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -17135,6 +17905,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17195,6 +17970,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17257,6 +18037,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17317,6 +18102,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17380,6 +18170,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17439,6 +18234,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17499,6 +18299,11 @@
               "runTime": 0.000011,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17557,6 +18362,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17615,6 +18425,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:11Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:11Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17670,6 +18485,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17725,6 +18545,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17780,6 +18605,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17835,6 +18665,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17890,6 +18725,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17945,6 +18785,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -17998,6 +18843,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18061,6 +18911,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18116,6 +18971,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18171,6 +19031,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:12Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:12Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -18228,6 +19093,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:13Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:13Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18281,6 +19151,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:13Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:13Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18565,6 +19440,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:46:13Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:13Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -18988,6 +19868,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:46:14Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:14Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -19041,6 +19926,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:14Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:14Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -19094,6 +19984,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:46:14Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:14Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -19215,6 +20110,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:46:14Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:14Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -19740,6 +20640,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:15Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:15Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -20258,6 +21163,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:16Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:16Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -20313,6 +21223,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:16Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:16Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20366,6 +21281,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20423,6 +21343,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20534,6 +21459,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20589,6 +21519,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20645,6 +21580,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20700,6 +21640,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20761,6 +21706,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20877,6 +21827,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:17Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:17Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20937,6 +21892,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:18Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:18Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -20997,6 +21957,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:18Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:18Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -21855,6 +22820,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:19Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:19Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22582,6 +23552,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:20Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:20Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22700,6 +23675,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:20Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:20Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22779,6 +23759,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22845,6 +23830,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22906,6 +23896,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -22963,6 +23958,11 @@
               "runTime": 0.000045,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23020,6 +24020,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23083,6 +24088,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23137,6 +24147,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:21Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:21Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23308,6 +24323,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23362,6 +24382,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23415,6 +24440,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23472,6 +24502,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23536,6 +24571,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23591,6 +24631,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23649,6 +24694,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -23702,6 +24752,11 @@
               "runTime": 0.000213,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -23755,6 +24810,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23812,6 +24872,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:22Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:22Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23867,6 +24932,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23920,6 +24990,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -23976,6 +25051,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24030,6 +25110,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24087,6 +25172,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24200,6 +25290,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24260,6 +25355,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24313,6 +25413,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24437,6 +25542,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:23Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:23Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24560,6 +25670,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24613,6 +25728,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24666,6 +25786,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24721,6 +25846,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24774,6 +25904,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24827,6 +25962,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24882,6 +26022,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24937,6 +26082,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -24992,6 +26142,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25047,6 +26202,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:24Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:24Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25104,6 +26264,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25159,6 +26324,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25214,6 +26384,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25278,6 +26453,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25342,6 +26522,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25406,6 +26591,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25461,6 +26651,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25516,6 +26711,11 @@
               "runTime": 0.000007,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25571,6 +26771,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:25Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:25Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25624,6 +26829,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25679,6 +26889,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "low",
@@ -25734,6 +26949,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25787,6 +27007,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25842,6 +27067,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25901,6 +27131,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -25973,6 +27208,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26046,6 +27286,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26121,6 +27366,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26189,6 +27439,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:26Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:26Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26259,6 +27514,11 @@
               "runTime": 0.000009,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26328,6 +27588,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26400,6 +27665,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26471,6 +27741,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26542,6 +27817,11 @@
               "runTime": 0.000017,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26613,6 +27893,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26685,6 +27970,11 @@
               "runTime": 0.000012,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26757,6 +28047,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26828,6 +28123,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26899,6 +28199,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:27Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:27Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -26969,6 +28274,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27038,6 +28348,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27107,6 +28422,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27176,6 +28496,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27247,6 +28572,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27316,6 +28646,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27385,6 +28720,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27454,6 +28794,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27523,6 +28868,11 @@
               "runTime": 0.000062,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27592,6 +28942,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:28Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:28Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27661,6 +29016,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27730,6 +29090,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27802,6 +29167,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27872,6 +29242,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -27943,6 +29318,11 @@
               "runTime": 0.000023,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28012,6 +29392,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28082,6 +29467,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28151,6 +29541,11 @@
               "runTime": 0.00001,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28221,6 +29616,11 @@
               "runTime": 0.000008,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28290,6 +29690,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:29Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:29Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28345,6 +29750,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28400,6 +29810,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28455,6 +29870,11 @@
               "runTime": 0.000018,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28510,6 +29930,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28577,6 +30002,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28645,6 +30075,11 @@
               "runTime": 0.000103,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28733,6 +30168,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28821,6 +30261,11 @@
               "runTime": 0.000013,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28909,6 +30354,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:30Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:30Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -28996,6 +30446,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29083,6 +30538,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29178,6 +30638,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29265,6 +30730,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29327,6 +30797,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29398,6 +30873,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29460,6 +30940,11 @@
               "runTime": 0.000021,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29521,6 +31006,11 @@
               "runTime": 0.000016,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29586,6 +31076,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29647,6 +31142,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:31Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:31Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -29770,6 +31270,11 @@
               "runTime": 0.000025,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29882,6 +31387,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -29945,6 +31455,11 @@
               "runTime": 0.000019,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "high",
@@ -30063,6 +31578,11 @@
               "runTime": 0.000022,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -30126,6 +31646,11 @@
               "runTime": 0.000061,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -30187,6 +31712,11 @@
               "runTime": 0.00002,
               "startTime": "2025-12-03T04:46:32Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:32Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -30371,6 +31901,11 @@
               "runTime": 0.000014,
               "startTime": "2025-12-03T04:46:33Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:33Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -30425,6 +31960,11 @@
               "runTime": 0.000015,
               "startTime": "2025-12-03T04:46:33Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:33Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",
@@ -30625,6 +32165,11 @@
               "runTime": 0.000024,
               "startTime": "2025-12-03T04:46:33Z",
               "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2025-12-03T04:46:33Z",
+              "status": "notApplicable"
             }
           ],
           "severity": "medium",

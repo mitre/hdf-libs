@@ -132,10 +132,14 @@ v1 `"skipped"` maps to v2 `"notReviewed"`. The complete v2 `Result_Status` enum 
 - `passed` -- requirement met
 - `failed` -- requirement not met
 - `error` -- test execution error
-- `notApplicable` -- requirement does not apply (impact = 0)
+- `notApplicable` -- requirement does not apply to this target
 - `notReviewed` -- requirement was not assessed
 
-v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: governing (non-expired) override, else `error` roll-up, else impact-0 `notApplicable`, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). An errored check reports `error` even at impact 0 — a crashed check never established applicability. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: a governing (non-expired) override, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). Impact is not consulted — an impact of 0 is a severity band, not a statement that the requirement does not apply. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+
+InSpec says "this control does not apply" by scoring the control 0 and then reporting no pass or fail for it. Because the ladder does not read impact, this importer records that verdict where every consumer can see it: a control scored 0 whose results establish nothing gains an explicit `notApplicable` result, alongside the skip the runner recorded. The control's `impact` is left at 0 — that is a fact about the source — and `tags.severity` still carries the original STIG severity where a profile zeroed it.
+
+A document converted before this behaviour landed carries impact 0 with a `notReviewed` roll-up and no translated result, so recomputing its status now reports `notReviewed` where the stored `effectiveStatus` says `notApplicable`. Re-converting from the original source settles both.
 
 ### Severity
 

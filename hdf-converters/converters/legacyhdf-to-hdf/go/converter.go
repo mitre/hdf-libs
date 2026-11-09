@@ -12,10 +12,10 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// computeEffectiveStatus derives effectiveStatus from impact and v2 results,
-// via the canonical worst-wins ordering in hdf-utilities (impact=0 →
-// notApplicable unless the roll-up is error; error > failed > passed >
-// notApplicable > notReviewed).
+// computeEffectiveStatus derives effectiveStatus from the v2 results via the
+// canonical worst-wins ordering in hdf-utilities (error > failed > passed >
+// notApplicable > notReviewed). Impact is passed for the shared input shape but
+// no longer influences the status.
 func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
 	statuses := make([]string, len(results))
 	for i, r := range results {
@@ -38,23 +38,12 @@ func hasErroredResult(results []hdf.RequirementResult) bool {
 }
 
 // synthesizedErrorResult encodes a control-level execution error the source
-// tool reported but did not record as a result, reusing the earliest recorded
-// result time (results carry no time when the source had none).
+// tool reported but did not record as a result.
 func synthesizedErrorResult(results []hdf.RequirementResult) hdf.RequirementResult {
-	var earliest time.Time
-	for i := range results {
-		st := results[i].StartTime
-		if st.IsZero() {
-			continue
-		}
-		if earliest.IsZero() || st.Before(earliest) {
-			earliest = st
-		}
-	}
 	return hdf.RequirementResult{
 		Status:    hdf.Error,
 		CodeDesc:  "Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result",
-		StartTime: earliest,
+		StartTime: shared.EarliestResultTime(results),
 	}
 }
 
@@ -314,6 +303,15 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// result rather than smuggling it through the stored field.
 	if controlLevelError && !hasErroredResult(v2.Results) {
 		v2.Results = append(v2.Results, synthesizedErrorResult(v2.Results))
+	}
+
+	// InSpec says "this control does not apply to the target" by scoring it 0
+	// and reporting no pass or fail. That is a verdict, not absent data, and the
+	// canonical ladder does not read impact — so the claim only survives if it
+	// is in results[]. Anything the results did establish, an execution error
+	// included, outranks notApplicable in worst-wins and is left alone.
+	if v1.Impact == 0 && shared.InSpecEstablishedNothing(v2.Results) {
+		v2.Results = append(v2.Results, shared.SynthesizedNotApplicableResult(v2.Results))
 	}
 
 	// Always compute effectiveStatus from the emitted results via the

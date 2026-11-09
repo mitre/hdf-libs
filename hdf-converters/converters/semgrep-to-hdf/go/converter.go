@@ -436,10 +436,11 @@ func buildErrorsRequirement(errors []ScanError, startTime time.Time) hdf.Evaluat
 // buildCoverageRequirement records the scan's denominator. Semgrep reports
 // violations only, so a converted profile is failures-only by construction and
 // its compliance ratio is not a pass rate; this record carries the scanned
-// count and the caveat. Impact 0 makes ComputeEffectiveStatus derive
-// notApplicable — the only status the compliance rollup excludes — and the raw
-// status matches so raw-status consumers (and CKL export, where Passed would
-// render NotAFinding) agree with the effective view. Mirrors kics-scan-coverage.
+// count and the caveat. It states notApplicable as its RESULT — the one status
+// the compliance rollup excludes — so the record is left out of the ratio by
+// its own disposition rather than by its impact. Passed would render CKL
+// NotAFinding, a compliance claim for a scan that asserted nothing.
+// Mirrors kics-scan-coverage.
 func buildCoverageRequirement(report Report, ruleCount int, startTime time.Time) hdf.EvaluatedRequirement {
 	summary := fmt.Sprintf(
 		"Semgrep scanned %d file(s); %d rule(s) produced findings and %d scan error(s) were reported. "+

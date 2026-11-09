@@ -380,7 +380,7 @@
           ],
           "additionalProperties": false
         },
-        "no_impact": {
+        "not_applicable": {
           "type": "object",
           "properties": {
             "critical": {
@@ -413,7 +413,7 @@
         "failed",
         "skipped",
         "error",
-        "no_impact"
+        "not_applicable"
       ],
       "additionalProperties": false
     },
@@ -1099,6 +1099,225 @@
           "additionalProperties": false
         },
         "error": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "critical": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "high": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "medium": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "low": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "informational": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "none": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "total": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "min": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "max": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "controls": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "not_applicable": {
           "type": [
             "null",
             "object"

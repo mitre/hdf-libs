@@ -100,10 +100,11 @@ export function convertHdfToCsv(input: string): string {
 
 /**
  * A schema-required number as a number. Go decodes an absent one to the zero
- * value and cannot tell it apart from a real zero — impact 0 legitimately means
- * Not Applicable — so distinguishing them would need a schema validation pass
- * the converters deliberately do not do. Rendering 0 here matches what Go emits,
- * where reading .toFixed off an absent value threw a raw TypeError instead.
+ * value and cannot tell it apart from a real zero — 0 is a legitimate impact,
+ * the informational band — so distinguishing them would need a schema
+ * validation pass the converters deliberately do not do. Rendering 0 here
+ * matches what Go emits, where reading .toFixed off an absent value threw a raw
+ * TypeError instead.
  */
 function numeric(value: number | undefined | null): number {
   return typeof value === 'number' ? value : 0;

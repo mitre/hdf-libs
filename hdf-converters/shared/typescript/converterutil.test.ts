@@ -3,7 +3,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity, packageInstanceId } from './converterutil.js';
+import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity, packageInstanceId, earliestResultStartTime, GO_ZERO_TIME } from './converterutil.js';
 import { DEFAULT_MAX_INPUT_SIZE as UTIL_DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 
 describe('inputChecksum', () => {
@@ -590,5 +590,49 @@ describe('packageInstanceId', () => {
     expect(packageInstanceId('', 'lodash', '4.17.21')).toBe('lodash@4.17.21');
     expect(packageInstanceId('', 'lodash', '')).toBe('lodash');
     expect(packageInstanceId('', '', '4.17.21')).toBe('');
+  });
+});
+
+describe('earliestResultStartTime', () => {
+  it("treats Go's zero time as absent, not as a year-1 assessment", () => {
+    expect(earliestResultStartTime([{ startTime: GO_ZERO_TIME }])).toBeUndefined();
+    expect(
+      earliestResultStartTime([{ startTime: GO_ZERO_TIME }, { startTime: '2026-03-04T05:06:07Z' }]),
+    ).toBe('2026-03-04T05:06:07Z');
+  });
+
+  it('returns the original string, never a reformatted one', () => {
+    expect(earliestResultStartTime([{ startTime: '2026-03-04T05:06:07Z' }])).toBe('2026-03-04T05:06:07Z');
+  });
+
+  it('compares by instant, not by string order', () => {
+    // 09:00+02:00 is 07:00Z, so it precedes 08:00Z while sorting after it as text.
+    expect(
+      earliestResultStartTime([{ startTime: '2026-03-04T08:00:00Z' }, { startTime: '2026-03-04T09:00:00+02:00' }]),
+    ).toBe('2026-03-04T09:00:00+02:00');
+  });
+
+  it('carries Date-valued results through unchanged, sentinel included', () => {
+    // hdf-to-oscal-sar's path: the schema type declares startTime as a Date.
+    const early = new Date('2026-03-04T05:06:07Z');
+    const late = new Date('2026-05-06T07:08:09Z');
+    expect(earliestResultStartTime([{ startTime: late }, { startTime: early }])).toBe(early);
+    expect(earliestResultStartTime([{ startTime: new Date(GO_ZERO_TIME) }])).toBeUndefined();
+  });
+
+  it('orders Dates below one second apart', () => {
+    // A Date must be compared as itself: String(date) has no ms field, so a
+    // round trip through text would collapse these two onto the same instant
+    // and make the winner depend on argument order.
+    const earlier = new Date('2026-03-04T05:06:07.100Z');
+    const later = new Date('2026-03-04T05:06:07.900Z');
+    expect(earliestResultStartTime([{ startTime: later }, { startTime: earlier }])).toBe(earlier);
+    expect(earliestResultStartTime([{ startTime: earlier }, { startTime: later }])).toBe(earlier);
+  });
+
+  it('yields undefined when nothing carries a usable time', () => {
+    expect(earliestResultStartTime(undefined)).toBeUndefined();
+    expect(earliestResultStartTime([])).toBeUndefined();
+    expect(earliestResultStartTime([{ startTime: '' }, {}])).toBeUndefined();
   });
 });

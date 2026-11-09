@@ -219,8 +219,10 @@ func TestConvert_Minimal_Results(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, req := range result.Baselines[0].Requirements {
-		require.Len(t, req.Results, 1, "each dep should have exactly one notReviewed result")
-		assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+		require.Len(t, req.Results, 1, "each dep should have exactly one notApplicable result")
+		// An inventory record asserts nothing about compliance, so it states
+		// notApplicable rather than leaving the disposition to a severity score.
+		assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
 	}
 }
 
@@ -308,7 +310,9 @@ func TestConvert_EdgeCases_CommunityBaselineEmitted(t *testing.T) {
 	assert.Equal(t, "community", req.Tags["name"])
 	assert.Equal(t, "community", req.Tags["type"])
 	require.Len(t, req.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+	// An inventory record asserts nothing about compliance, so it states
+	// notApplicable rather than leaving the disposition to a severity score.
+	assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
 
 	// The serializable scan data lands in the requirement's code field.
 	require.NotNil(t, req.Code)

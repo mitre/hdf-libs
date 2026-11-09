@@ -86,9 +86,12 @@ describe('exportmap status roll-up', () => {
     });
     expect(ra.overridden).toBe(true);
     expect(ra.suppressed).toBe(false);
-    // structural impact-0 notApplicable is NOT acceptance-suppression
+    // A notApplicable RESULT is a scope claim, not an acceptance decision, so it
+    // is not suppression either — and an impact of 0 alone changes nothing.
+    expect(statusOf({ ...mkResults('notApplicable'), impact: 0 }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('notApplicable'), impact: 0 }).rollup).toBe('notApplicable');
     expect(statusOf({ ...mkResults('failed'), impact: 0 }).suppressed).toBe(false);
-    expect(statusOf({ ...mkResults('failed'), impact: 0 }).rollup).toBe('notApplicable');
+    expect(statusOf({ ...mkResults('failed'), impact: 0 }).rollup).toBe('failed');
     // passing / errored findings are never suppressed
     expect(statusOf({ ...mkResults('passed'), statusOverrides: governing('passed') }).suppressed).toBe(false);
     expect(statusOf({ ...mkResults('error'), statusOverrides: governing('passed') }).suppressed).toBe(false);

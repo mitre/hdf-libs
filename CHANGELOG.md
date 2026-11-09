@@ -14,6 +14,90 @@ All notable changes to this project will be documented in this file.
 
   The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
 
+### Changed
+
+- **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**
+
+  A suppressed finding keeps its failing result — the verdict is evidence — and the acceptance now travels as a `waiver` override whose status is `passed`, so `effectiveStatus` resolves non-failing through the one sanctioned channel. Previously the suppression was recorded only by forcing `impact: 0`, which the removed ladder rung read as `notApplicable`; with that rung gone such a finding reported `failed`.
+
+  `impact` is now the finding's real severity. `appliedAt` is the finding's `UpdatedAt`, `expiresAt` is one calendar year later (Security Hub suppressions do not expire, so the horizon makes them resurface for review), and `appliedBy` records the tool rather than a person ASFF does not name. Because ASFF folds findings sharing a control id into one requirement and an override governs the whole requirement, no override is emitted when an unsuppressed failure shares that id.
+
+  Re-export restores `Workflow.Status: SUPPRESSED` on the round trip, which the previous shape lost.
+
+- **`splunk-to-hdf` applies InSpec's score-0-and-skip translation, so one scan reports the same statuses whichever way it is read.**
+
+  `legacyhdf-to-hdf` translates a control InSpec scored 0 that reports no verdict into an explicit `notApplicable` result. `splunk-to-hdf` reads the same InSpec control payload out of Splunk and did not, so the same run yielded `notApplicable` through one path and `notReviewed` through the other — and `notReviewed` is in the compliance denominator while `notApplicable` is not. A pipeline diffing a Splunk-sourced baseline against a file-sourced scan saw drift that came from the reader, not the system under assessment.
+
+  The translation now lives in `hdf-converters/shared` and both readers call it, so a third reader cannot diverge the same way.
+
+- **`ionchannel-to-hdf` states `notApplicable` on its inventory records instead of `notReviewed`.**
+
+  Every requirement this converter emits is an inventory record — a dependency it found, or a scan-summary line — not an assessment. All of them previously reported `notReviewed` and so entered the compliance denominator, which for an SBOM means the entire document did. They now state their own disposition, matching the coverage records `kics-to-hdf` and `semgrep-to-hdf` already emit. Merging an Ion Channel inventory with real assessment results no longer drags the merged percentage down with rows that assert nothing about compliance.
+
+  A `not_applicable.total` (or SAF-spelled `no_impact.total`) bound written against Ion Channel output reads correctly again; one written against the intervening behaviour will need updating.
+
+- **`netsparker-to-hdf` scores a "Best Practice" finding `0.3` instead of `0.0`.**
+
+  Invicti reports a large advisory bucket, and `0.0` is the *informational* band — it described no weight and relied on the removed impact-0 ladder rung to read as `notApplicable`. `0.3` is the low band and matches `semgrep-to-hdf`'s `INFO`, which reasons it the same way. Whether an advisory finding should carry a `failed` status at all is a separate question and unchanged here.
+
+- **`xccdf-results-to-hdf` maps `notselected` and `informational` rule-results to `notApplicable`, so a benchmark's unselected tail stays out of the compliance ratio.**
+
+  Both previously mapped to `notReviewed`, which sits in the compliance denominator. A SCAP benchmark commonly carries thousands of rules while a profile selects a few hundred, and `oscap` returns `notselected` for every rule a `--reference`, `--skip-rule` or tailoring selection excludes. On a real OpenSCAP RHEL 7 scan (43 passed, 137 failed, 23.89%), an unselected tail of 1,820 rules would have reported **2.15%** for the same posture.
+
+  `notselected` was never meant to be assessed and `informational` produces no verdict to score, so neither belongs in the ratio. `notchecked` is unchanged and stays `notReviewed` — a rule with no automated check is genuinely outstanding work.
+
+  **Impact is no longer zeroed** for these dispositions. A deselected high-severity rule is still a high-severity rule that was not evaluated, so impact stays the severity the benchmark assigned and the disposition travels in the result status alone. An `info` severity still maps to `0.0`, and an info-severity rule that failed still reports `failed`.
+
+  That moves these rules twice, not once, in a threshold file: a deselected high-severity rule previously counted under `skipped.informational` (`notReviewed` at impact 0) and now counts under `not_applicable.high`. A SCAP threshold pinning the old bucket or severity band needs updating on both axes.
+
+  This is the ingest path for DISA/SCAP content, so a stored compliance figure computed from a scan with a deselected tail will move. None of the committed fixtures carried any of these rule-results, which is why the change was not visible earlier; a schema-confirmed input now covers all five cases.
+
+- **`msft-secure-score-to-hdf` reports `notReviewed` for an unscored control instead of `passed`.**
+
+  `getStatus` compared a control's score to its profile's `maxScore`. The Graph schema types `maxScore` optional and an absent JSON number decodes to zero, so a profile without one made its control pass on `0 == 0` — an affirmative compliance claim for something that was never scored. It exported as CKL `NotAFinding`, ASFF `PASSED` and XCCDF `pass`; it now exports as `Not_Reviewed`, `WARNING` and `notchecked`.
+
+  Its impact is `0.5` rather than `0` for the same reason: with no `maxScore` there is no basis for a severity, and `0` asserted that the control carries none. That matches the existing fallback for a control with no matching profile at all.
+
+  No other converter was affected. An audit of all 28 importers that can emit `passed` — 22 that derive it in converter code, plus six that inherit it from the shared checklist and VEX mappings — found every other one either maps a source verdict, reads a format where absence *is* the pass signal (JUnit), uses the override channel, or already guards the unassessed case. The convention this establishes is now in `site/docs/architecture/status-determination.md`.
+
+- **`hdf-to-asff` reports the raw verdict in `Compliance.Status` for a suppressed finding, not the roll-up.**
+
+  Security Hub keeps the two axes orthogonal: `Compliance.Status` is the check result, `Workflow.Status` the triage state, and suppressing a finding there never rewrites its verdict. The exporter previously reported the rolled-up status for every finding, so a failed check that had been suppressed came out `PASSED` — rewriting the verdict on the strength of a triage decision, and lossy because the verdict `asff-to-hdf` reads back was gone. (Suppressing a finding that genuinely passed is ordinary and still reports `PASSED`.)
+
+  Only suppression is affected; everything else still reports the roll-up, including an escalating override. `ASFF -> HDF -> ASFF` now preserves `Compliance.Status`, `Workflow.Status` and `Severity`; the override's own timestamps still drift across a round trip, because the exporter derives `UpdatedAt` from the result time rather than from `appliedAt`.
+
+- **`grype-to-hdf` states `notApplicable` for a match an ignore rule suppressed, instead of `notReviewed`.**
+
+  A `.grype.yaml` ignore rule suppresses evaluation itself, so no verdict exists: `notReviewed` claimed the scan still owed an answer it was told not to give. The claim now travels in `results[]` where every consumer reads it, rather than relying on the impact-0 ladder rung this release removes.
+
+  `impact` is untouched — it was always the match's real severity here, never a status flag. Exported status for those findings moves from CKL `Not_Reviewed` to `Not_Applicable`, and they leave the compliance denominator. No ratio moves in practice: grype reports violations only, so a grype document has no `passed` results and its compliance was already 0%.
+
+- **The threshold and compliance bucket for `notApplicable` is now spelled `not_applicable`. `no_impact` keeps working on input, permanently.**
+
+  `no_impact` names a severity score, but the bucket counts the `notApplicable` **status** and always has — the name is InSpec heritage from the convention that an impact of 0 meant not-applicable, which this release removes from the status ladder. The bucket's contents are unchanged; only the key is new.
+
+  Both spellings are accepted wherever a threshold section is named, in files and in `-I` inline specs, and a violation names whichever one your file uses. `no_impact` is **not** deprecated: SAF CLI writes it, SAF threshold files are a supported input, and that will not change. A spec setting both spellings is refused rather than resolved, since they name one bucket and honouring one would drop a bound you wrote.
+
+  **Source-breaking for library consumers.** The count-set field is renamed with the key: `hdfengine.StatusCounts.NoImpact` → `.NotApplicable` in Go, `StatusCounts.noImpact` → `.notApplicable` in TypeScript. Code reading the old field no longer compiles. `ThresholdConfig` keeps both — `NotApplicable` is what this tool writes, `NoImpact` is the SAF spelling it still reads.
+
+  **What this breaks.** Three surfaces this tool *writes* now say `not_applicable`: the templates `hdf generate threshold` produces, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP response envelopes, and `engine.statusCounts` in the MCP contract. A `jq` pipeline or dashboard keyed on `no_impact` in any of those reads zero and must be updated. `hdf validate threshold` is not in that list — its violation text echoes whichever spelling your spec file used. The HTML report is unaffected — it renders the human label `Not Applicable`, never the key.
+
+  Interoperability now runs one way. SAF's threshold files still work here, including files written entirely in the `no_impact` spelling. A file written by `hdf generate threshold`, however, is **silently degraded** by `saf validate threshold` rather than rejected: SAF checks a fixed list of bound paths and has no unknown-key check, so its `compliance`, `passed`, `failed`, `skipped` and `error` bounds are honoured while every `not_applicable` bound is dropped without a diagnostic, and the command exits 0 over policy nobody applied. If you hand generated files to SAF, rewrite the `not_applicable` section as `no_impact` first.
+
+- **An impact of 0 no longer means "not applicable". The canonical effective-status ladder ignores impact entirely, and the InSpec convention is translated at import.**
+
+  The ladder is now two rungs — a governing override, else the worst-wins roll-up of the results. The `impact === 0 → notApplicable` rung is gone, along with the `error` rung it needed (`error` already outranks every other status in the worst-wins order, so that rung was doing nothing once impact stopped being consulted). A status now says only what the assessment established; impact says only how much risk the requirement carries.
+
+  "Impact 0 means not applicable" was one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band, so the rung applied InSpec's reading to every format that had never agreed to it — a clean scan, a never-run scan and a genuinely inapplicable control all reported `notApplicable`. Every reader of an InSpec control payload — `legacyhdf-to-hdf` for exec JSON and legacy HDF, and `splunk-to-hdf` for the same controls read back out of Splunk — now emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else, so the verdict travels in `results[]` where every consumer can see it. It does **not** rewrite `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where a profile zeroed it. Because `notApplicable` ranks below `passed` and `failed`, the translation can never bury evidence that a check actually ran.
+
+  **What this means for documents you already have.** A document converted by an older binary carries impact 0 with a `notReviewed` roll-up and no translated result. Recomputed under the new ladder it reports `notReviewed`, while the stored `effectiveStatus` on the same requirement still says `notApplicable`. Both are behaving correctly — the document was written under the older semantics. **Re-conversion from the original source is the only remedy offered;** there is no migration tool, and nothing we ship rewrites an existing document.
+
+  Scope it honestly: this affects documents whose source set impact 0 to signal not-applicable, which in practice means InSpec-family output. A document from any of the converters that derive impact through the shared severity map is not drifting — for those, impact 0 meant informational severity, and the change is a fix. Clean scans in particular now report `passed` rather than `notApplicable`.
+
+  Effective checksums hash the resolved status, so a requirement-change-event chain anchored before this change reports `chainGap` on the affected keys afterwards — a **checksum epoch**, in the sense `site/docs/architecture/status-determination.md` already defines, remedied by re-deriving the chain from a fresh rescan. In practice almost nothing is anchored on an affected status.
+
+  One knock-on worth naming: `hdf diff` reports an impact-only change through `changeReasons`, `fieldChanges` and `drift`, but a matched pair's `state` tracks the effective status alone, so re-scoring a passing requirement to 0.0 now reads `unchanged` where it previously read `updated`. Teaching the diff engine to key on any changed field is tracked separately.
+
 ### Fixed
 
 - **Generated Go and TypeScript types omit trailing whitespace.** Regenerating schema types produces patches that pass whitespace checks without changing their declarations.

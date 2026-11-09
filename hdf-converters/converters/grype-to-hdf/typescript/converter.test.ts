@@ -119,7 +119,9 @@ describe('Grype Converter', async () => {
     });
 
     it('should handle ignored matches correctly', async () => {
-      // Use inline fixture since the real amazon.json scan has no ignored matches
+      // amazon.json has no ignored matches; tensorflow.json does, and the real
+      // data is asserted below. This inline case isolates one ignored match
+      // with no competing unignored one.
       const ignoredReport = JSON.stringify({
         descriptor: {name: 'grype', version: '0.79.3'},
         source: {target: {userInput: 'test-image'}},
@@ -143,8 +145,27 @@ describe('Grype Converter', async () => {
       const ignored = requirements.find(r => r.id === 'Grype-Ignored-Match/CVE-2024-0001');
 
       expect(ignored).toBeDefined();
-      expect(ignored?.results[0].status).toBe('notReviewed');
+      // An ignore rule suppresses evaluation itself, so no verdict exists to
+      // adjudicate: the honest status is notApplicable stated as a result, not
+      // notReviewed (which claims the scan still owes us an answer).
+      expect(ignored?.results[0].status).toBe('notApplicable');
       expect(ignored?.results[0].message).toContain('ignored by configured rules');
+      // Impact stays the finding's real severity — never a status flag here.
+      expect(ignored?.impact).toBe(0.3);
+    });
+
+    it('states notApplicable for every ignored match in a real scan', async () => {
+      // tensorflow.json is real trimmed grype output carrying 14 ignoredMatches.
+      const output = await convertGrypeToHdf(loadFixture('tensorflow.json'));
+      const hdf = parseJSON<HDFResults>(output);
+
+      const ignored = hdf.baselines[0].requirements.filter(r => r.id.startsWith('Grype-Ignored-Match/'));
+      expect(ignored).toHaveLength(14);
+      for (const req of ignored) {
+        for (const res of req.results) {
+          expect(res.status).toBe('notApplicable');
+        }
+      }
     });
 
     it('should include NIST and CCI tags', async () => {

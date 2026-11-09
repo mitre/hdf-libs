@@ -403,7 +403,7 @@ describe('hdf-to-html converter', () => {
         testhdf.req('A', { impact: 0.5, status: 'passed' }),
         testhdf.req('B', { impact: 0.5, status: 'passed' }),
         testhdf.req('C', { impact: 0.5, status: 'failed' }),
-        testhdf.req('D', { impact: 0, status: 'passed' }),
+        testhdf.req('D', { impact: 0, status: 'notApplicable' }),
       ),
       testhdf.baseline(
         'two',
@@ -415,6 +415,20 @@ describe('hdf-to-html converter', () => {
     expect(out).toContain(summaryRow('one', '2', '1', '0', '1', '0', '4', '66.67%'));
     expect(out).toContain(summaryRow('two', '0', '0', '1', '0', '1', '2', '0.00%'));
     expect(out).toContain(summaryRow('All baselines', '2', '1', '1', '1', '1', '6', '40.00%'));
+  });
+
+  // Parity: TestConvertHDFToHTML_ImpactZeroPassedCountsAsPassed in go/.
+  // A requirement at impact 0 whose result passed is counted as PASSED and
+  // enters the compliance numerator: impact is a severity band, not a scope
+  // claim. The same requirement leaves this repo as CKL NotAFinding, so the
+  // guard is what keeps that consequence visible.
+  it('counts an impact-0 passed requirement as passed, not not-applicable', () => {
+    const doc = testhdf.doc(
+      testhdf.baseline('one', testhdf.req('Z', { impact: 0, status: 'passed' })),
+    );
+    const out = render(doc, 'executive');
+    expect(out).toContain(summaryRow('one', '1', '0', '0', '0', '0', '1', '100.00%'));
+    expect(out).not.toContain(summaryRow('one', '0', '0', '0', '1', '0', '1', '0.00%'));
   });
 
   // The report prints the compliance hdf-engine computes, so a report and
@@ -467,7 +481,7 @@ describe('hdf-to-html converter', () => {
         testhdf.req('P1', { impact: 0.7, status: 'passed' }),
         testhdf.req('P2', { impact: 0.5, status: 'passed' }),
         failing as never,
-        testhdf.req('N', { impact: 0, status: 'passed' }),
+        testhdf.req('N', { impact: 0, status: 'notApplicable' }),
       ),
       'executive',
     );
@@ -860,7 +874,7 @@ describe('hdf-to-html helpers', () => {
         failed: bucket(failed),
         skipped: bucket(notReviewed),
         error: bucket(errored),
-        noImpact: bucket(notApplicable),
+        notApplicable: bucket(notApplicable),
       });
     expect(c(0)).toBe('0.00%');
     expect(c(0, 0, 0, 0, 4)).toBe('0.00%');

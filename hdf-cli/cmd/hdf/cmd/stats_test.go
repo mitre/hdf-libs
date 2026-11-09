@@ -37,10 +37,20 @@ func TestDetermineControlStatus(t *testing.T) {
 			expected: "not_reviewed",
 		},
 		{
-			name: "not_applicable with zero impact and no results",
+			// Impact is a severity band, not a scope claim: nothing here was
+			// established, so nothing is reported as decided.
+			name: "zero impact and no results is not_reviewed",
 			control: hdf.EvaluatedRequirement{
 				Impact:  0,
 				Results: []hdf.RequirementResult{},
+			},
+			expected: "not_reviewed",
+		},
+		{
+			name: "an explicit notApplicable result is not_applicable",
+			control: hdf.EvaluatedRequirement{
+				Impact:  0,
+				Results: []hdf.RequirementResult{{Status: hdf.NotApplicable}},
 			},
 			expected: "not_applicable",
 		},

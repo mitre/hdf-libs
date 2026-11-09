@@ -495,9 +495,17 @@ var resultStatusMapping = map[string]hdf.ResultStatus{
 	"error":         hdf.Error,
 	"unknown":       hdf.Error,
 	"notapplicable": hdf.NotApplicable,
-	"notchecked":    hdf.NotReviewed,
-	"notselected":   hdf.NotReviewed,
-	"informational": hdf.NotReviewed,
+	// No automated check is outstanding work, so it stays in the denominator.
+	"notchecked": hdf.NotReviewed,
+	// XCCDF 1.2 on @selected: an unselected Rule "does not contribute to
+	// scoring". A benchmark's unselected tail runs to thousands of rules against
+	// a few hundred selected, so scoring it would drag the published figure
+	// toward zero for a posture that has not changed.
+	"notselected": hdf.NotApplicable,
+	// XCCDF 1.2: informational "is not a compliance category". HDF has no such
+	// status, so this is the nearest one that keeps a non-verdict out of the
+	// ratio, not a faithful model of the concept.
+	"informational": hdf.NotApplicable,
 	"fixed":         hdf.Passed,
 }
 
@@ -1386,16 +1394,13 @@ func determineTitle(rr *RuleResult, rule *Rule) string {
 	return rr.IDRef
 }
 
-// determineImpact maps the severity to a numeric impact. A rule-result that was
-// not applicable, not selected, or purely informational carries no risk weight,
-// so its impact is zeroed regardless of severity (matching heimdall2); status
-// still records the disposition. Otherwise the rule-result severity is preferred,
-// then the Rule severity.
+// determineImpact maps the severity to a numeric impact. The rule-result
+// severity is preferred, then the Rule severity. The disposition of a rule that
+// was not applicable, not selected or purely informational is carried by its
+// result STATUS; impact stays the severity the benchmark assigned, because a
+// deselected high-severity rule is still a high-severity rule that simply was
+// not evaluated.
 func determineImpact(rr *RuleResult, rule *Rule) float64 {
-	switch strings.ToLower(strings.TrimSpace(rr.Result)) {
-	case "notselected", "notapplicable", "informational":
-		return 0
-	}
 	severity := strings.ToLower(rr.Severity)
 	if severity == "" && rule != nil {
 		severity = strings.ToLower(rule.Severity)

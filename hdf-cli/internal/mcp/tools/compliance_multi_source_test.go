@@ -20,7 +20,8 @@ func pathSources(paths ...string) []handle.Source {
 // Compliance over a set is the compliance of the combined view: ZAP webgoat (28
 // requirements, all failed) + grype tensorflow (26: 12 failed and 14
 // notReviewed, of which 2 failed and 2 notReviewed sit at impact 0 and resolve
-// to notApplicable) → 54 requirements, failed 38, skipped 12, no_impact 4, 0%
+// to their own roll-up) → 54 requirements, failed 40, skipped 14,
+// not_applicable 0, 0%
 // compliant. The same figures hdf_aggregate reports for the same pair (its test
 // computed them from the fixture JSON).
 func TestCompliance_MultiSource_CountsOverTheSet(t *testing.T) {
@@ -30,8 +31,8 @@ func TestCompliance_MultiSource_CountsOverTheSet(t *testing.T) {
 		t.Fatalf("compliance over the set errored: %s", payloadText(t, res))
 	}
 	c := out.Counts
-	if c["failed"]["total"] != 38 || c["skipped"]["total"] != 12 || c["no_impact"]["total"] != 4 {
-		t.Errorf("counts = failed %d / skipped %d / no_impact %d, want 38 / 12 / 4", c["failed"]["total"], c["skipped"]["total"], c["no_impact"]["total"])
+	if c["failed"]["total"] != 40 || c["skipped"]["total"] != 14 || c["not_applicable"]["total"] != 0 {
+		t.Errorf("counts = failed %d / skipped %d / not_applicable %d, want 40 / 14 / 0", c["failed"]["total"], c["skipped"]["total"], c["not_applicable"]["total"])
 	}
 	if out.Compliance != 0 {
 		t.Errorf("compliance = %v, want 0", out.Compliance)
@@ -73,8 +74,8 @@ func TestCompliance_MultiSource_GroupByBaselineIsOneGroupPerInputBaseline(t *tes
 			t.Errorf("baselineIndex %d missing from groups %+v", i, out.Groups)
 		}
 	}
-	if failed != 38 {
-		t.Errorf("groups' failed totals sum to %d, want 38", failed)
+	if failed != 40 {
+		t.Errorf("groups' failed totals sum to %d, want 40", failed)
 	}
 	if tools["owasp zap"] != 4 || tools["grype"] != 1 {
 		t.Errorf("groups per tool = %v, want owasp zap 4, grype 1", tools)
@@ -83,7 +84,7 @@ func TestCompliance_MultiSource_GroupByBaselineIsOneGroupPerInputBaseline(t *tes
 
 // A threshold applies over the set exactly as over one document (owner decision
 // 2026-09-17: a threshold intended for combined data is legitimate). failed.total
-// max 12 passes grype alone (12 failed) and fails the ZAP+grype set (38).
+// max 12 passes grype alone and fails the ZAP+grype set (40).
 func TestCompliance_MultiSource_ThresholdAppliesOverTheView(t *testing.T) {
 	_, zap, grype := threeScannerSources(t)
 	spec := &thresholdInput{Inline: map[string]any{"failed": map[string]any{"total": map[string]any{"max": 12}}}}
@@ -96,10 +97,10 @@ func TestCompliance_MultiSource_ThresholdAppliesOverTheView(t *testing.T) {
 		t.Fatalf("a threshold over a set must be evaluated, not refused: %s", payloadText(t, res))
 	}
 	if set.ThresholdVerdict == nil || set.ThresholdVerdict.Pass || len(set.ThresholdVerdict.Failures) == 0 {
-		t.Errorf("failed.total.max 12 must fail the set (38 failed) with failures, got %+v", set.ThresholdVerdict)
+		t.Errorf("failed.total.max 12 must fail the set (40 failed) with failures, got %+v", set.ThresholdVerdict)
 	}
-	if !strings.Contains(strings.Join(set.ThresholdVerdict.Failures, " "), "38") {
-		t.Errorf("the failure must name the set's failed count 38, got %v", set.ThresholdVerdict.Failures)
+	if !strings.Contains(strings.Join(set.ThresholdVerdict.Failures, " "), "40") {
+		t.Errorf("the failure must name the set's failed count 40, got %v", set.ThresholdVerdict.Failures)
 	}
 }
 
@@ -107,8 +108,8 @@ func TestCompliance_MultiSource_ThresholdAppliesOverTheView(t *testing.T) {
 // engine Merge stamps on every baseline (ADR-0016 §3) — never by parsing the
 // baseline name. Expected from the fixtures, by EFFECTIVE status: gosec 4
 // requirements, 3 failed and 1 passed (G304 carries a status override to
-// passed); ZAP 28 all failed; grype 26 = 10 failed + 12 skipped + 4 no_impact.
-// The groups partition the set: failed sums to 41, rows to 58.
+// passed); ZAP 28 all failed; grype 26 = 12 failed + 14 skipped.
+// The groups partition the set: failed sums to 43, rows to 58.
 func TestCompliance_MultiSource_GroupByTool(t *testing.T) {
 	gosec, zap, grype := threeScannerSources(t)
 	res, out := callCompliance(t, complianceInput{Sources: pathSources(gosec, zap, grype), GroupBy: "tool"})
@@ -118,7 +119,7 @@ func TestCompliance_MultiSource_GroupByTool(t *testing.T) {
 	want := map[string]map[string]int{
 		"gosec":     {"failed": 3, "passed": 1, "rows": 4},
 		"owasp zap": {"failed": 28, "rows": 28},
-		"grype":     {"failed": 10, "skipped": 12, "no_impact": 4, "rows": 26},
+		"grype":     {"failed": 12, "skipped": 14, "not_applicable": 0, "rows": 26},
 	}
 	if len(out.Groups) != 3 {
 		t.Fatalf("groups = %+v, want exactly gosec / owasp zap / grype", out.Groups)
@@ -146,8 +147,8 @@ func TestCompliance_MultiSource_GroupByTool(t *testing.T) {
 		failed += g.Counts["failed"]["total"]
 		rows += got
 	}
-	if failed != 41 || rows != 58 {
-		t.Errorf("groups sum to failed %d / rows %d, want 41 / 58 (a partition of the set)", failed, rows)
+	if failed != 43 || rows != 58 {
+		t.Errorf("groups sum to failed %d / rows %d, want 43 / 58 (a partition of the set)", failed, rows)
 	}
 	if out.GroupBy != "tool" {
 		t.Errorf("groupBy echoed as %q", out.GroupBy)
@@ -165,8 +166,8 @@ func TestCompliance_SingleSource_GroupByToolIsUnlabeled(t *testing.T) {
 	if res.IsError {
 		t.Fatalf("groupBy tool on one document errored: %s", payloadText(t, res))
 	}
-	if len(out.Groups) != 1 || out.Groups[0].Group != "unlabeled" || out.Groups[0].Counts["failed"]["total"] != 10 {
-		t.Errorf("groups = %+v, want one group unlabeled with 10 failed (not a group named after the tensorflow/ prefix)", out.Groups)
+	if len(out.Groups) != 1 || out.Groups[0].Group != "unlabeled" || out.Groups[0].Counts["failed"]["total"] != 12 {
+		t.Errorf("groups = %+v, want one group unlabeled with 12 failed (not a group named after the tensorflow/ prefix)", out.Groups)
 	}
 }
 

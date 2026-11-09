@@ -10,7 +10,7 @@ A threshold is the third option: a committed, reviewable policy file, applied to
 
 A threshold sets bounds on counts. Counts of what, sliced two ways:
 
-- **by status** — `passed`, `failed`, `skipped`, `error`, `no_impact`
+- **by status** — `passed`, `failed`, `skipped`, `error`, `not_applicable` (`no_impact` is an accepted alias; see "Running a SAF CLI threshold file")
 - **by severity within that status** — `critical`, `high`, `medium`, `low`, `informational`, and `total` for all severities at once
 
 Each bound takes a `min`, a `max`, or both. There is also a top-level `compliance` bound on the overall percentage.
@@ -364,7 +364,10 @@ An empty `where` is **not** refused — it matches every requirement in the docu
 ```console
 $ hdf query grype.json --search CVE-2018-12698
 Found 1 matching requirement(s):
-Grype/CVE-2018-20657  not_applicable  INFO  Grype found a vulnerability to CVE-2018-20657 in ten...
+
+ID                    Status  Severity  Title
+--------------------  ------  --------  -------------------------------------------------------
+Grype/CVE-2018-20657  failed  INFO      Grype found a vulnerability to CVE-2018-20657 in ten...
 ```
 
 That is one false positive and **zero** true positives — `CVE-2018-12698` is not a requirement in this document at all; the string sits in another finding's prose. A gate written that way fires on an unrelated vulnerability.
@@ -739,7 +742,12 @@ Worth knowing before you adopt it: the two rules are not interchangeable. `poams
 
 ## Running a SAF CLI threshold file
 
-A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured:
+A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured.
+
+This tool spells SAF's `no_impact` section `not_applicable`, because the bucket counts the `notApplicable` **status** and has nothing to do with an impact score. Both spellings are accepted on input and `no_impact` always will be — it is SAF's wire key, not a deprecation — and a violation names whichever one your file uses. A spec setting both is refused rather than resolved, since they name one bucket. What this tool **writes** uses `not_applicable`: the templates `hdf generate threshold` produces, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP envelopes, and `engine.statusCounts` in the MCP contract. The violation text is not in that list — as above, it echoes your file's own spelling.
+
+So the interoperability runs one way. A SAF threshold file works here unchanged. A file written by `hdf generate threshold` is **silently degraded** by `saf validate threshold` rather than rejected — SAF checks a fixed list of bound paths and has no unknown-key check, so its `compliance`, `passed`, `failed`, `skipped` and `error` bounds are honoured while every `not_applicable` bound is dropped with no diagnostic and the command exits 0. Rewrite the section as `no_impact` before handing a generated file to SAF.
+
 
 ```yaml
 failed:
@@ -756,7 +764,7 @@ A bare number is an exact bound, not a minimum. That is SAF's own rule — thoug
 The five severity categories are `critical`, `high`, `medium`, `low` and `informational`. `none` is an accepted alias that resolves onto `informational`, so a bound written with it is honoured — but there is no `none` bucket in the output, and a run using the key says so:
 
 ```console
-warning: 'none' is not a severity category; no_impact.none is read as no_impact.informational
+warning: 'none' is not a severity category; not_applicable.none is read as not_applicable.informational
 ```
 
 That is about the spec, not the document, so it does not depend on what the file being checked contains. A bulk run marks the per-file line — `<file>: ok (1 non-category severity key)` — since it prints one short line per file.

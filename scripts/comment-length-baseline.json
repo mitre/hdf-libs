@@ -362,7 +362,6 @@
   "hdf-diff/src/renderers/json.ts": 1,
   "hdf-diff/src/renderers/markdown.ts": 1,
   "hdf-diff/src/renderers/terminal.ts": 1,
-  "hdf-diff/src/status.ts": 1,
   "hdf-diff/src/types.ts": 9,
   "hdf-diff/test/drift.test.ts": 2,
   "hdf-diff/test/effective-checksum.test.ts": 1,

@@ -33,9 +33,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-expressjs/express",
@@ -83,9 +83,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-jshttp/accepts",
@@ -133,9 +133,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-lodash/lodash",

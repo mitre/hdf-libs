@@ -234,9 +234,9 @@ import { computeEffectiveStatus as canonicalComputeEffectiveStatus } from '@mitr
 
 /**
  * Compute the effective status of a requirement — delegates to the canonical
- * ladder in @mitre/hdf-utilities (see status-determination.md): governing
- * non-expired override → error roll-up → impact-0 notApplicable → worst-wins
- * roll-up. The stored effectiveStatus field is never read (output cache).
+ * ladder in @mitre/hdf-utilities (see status-determination.md): a governing
+ * non-expired override, else the worst-wins roll-up. Impact is not consulted.
+ * The stored effectiveStatus field is never read (output cache).
  *
  * @param {import('../dist/ts/hdf-results.js').EvaluatedRequirement} requirement
  * @returns {import('../dist/ts/hdf-results.js').ResultStatus}

@@ -1089,13 +1089,13 @@ describe('XCCDF branch coverage', () => {
   it('should handle rule-result with "notselected" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'notselected' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "informational" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'informational' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "fixed" status', async () => {
@@ -1759,12 +1759,16 @@ describe('MSFT Secure Score branch coverage', () => {
           remediation: 'Complete the configuration',
           remediationImpact: 'Medium',
           service: 'Azure AD',
+          // getStatus reads maxScore off the PROFILE, not the control score, so
+          // without this the profile was unscored and the test reached 'failed'
+          // via 3 !== 0 rather than via the partial implementation it names.
+          maxScore: 10.0,
         }],
       },
     });
     const hdf = parseHdf(await convertMsftSecureScoreToHdf(input));
     expect(hdf.baselines[0]!.requirements).toHaveLength(1);
-    // Partial implementation should result in "failed"
+    // Partial implementation should result in "failed": score 3 of maxScore 10.
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('failed');
   });
 

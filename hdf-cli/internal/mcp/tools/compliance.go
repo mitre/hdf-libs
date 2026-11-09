@@ -52,7 +52,7 @@ type complianceOutput struct {
 	// This reflects to object→object→integer (value-typed) — richer than a bare
 	// additionalProperties:true, yet far cheaper than the fully named-key
 	// StatusCounts schema, which measured ~2x the per-tool token ceiling (lj0g.3).
-	// The status keys are SAF vocabulary (skipped/no_impact); see the tool
+	// The status keys are threshold-file keys (skipped/not_applicable); see the tool
 	// description for the schema-vocabulary mapping.
 	Counts           map[string]map[string]int `json:"counts"`
 	AgentOverrides   agentOverrideSummary      `json:"agentOverrides"`
@@ -91,10 +91,10 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name: "hdf_compliance",
 		Description: "Compute aggregate percent compliance and status/severity rollups (by effective status: " +
-			"impact-0 is Not Applicable and excluded from the denominator, overrides honored) for an HDF results " +
+			"notApplicable is excluded from the denominator, overrides honored) for an HDF results " +
 			"document, with an optional grouped breakdown and threshold verdict. counts is aggregate — for " +
-			"per-requirement status use hdf_query. counts uses SAF threshold-file keys: skipped = notReviewed, " +
-			"no_impact = notApplicable. The agentOverrides block is the detective surface: agent-attributed " +
+			"per-requirement status use hdf_query. counts uses threshold-file keys: skipped = notReviewed, " +
+			"not_applicable = notApplicable. The agentOverrides block is the detective surface: agent-attributed " +
 			"override count and the compliance delta they account for.",
 		Annotations: appmcp.ReadOnly(),
 		InputSchema: mustEnumSchema[complianceInput](map[string]closedVocabulary{

@@ -580,7 +580,9 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 | 0.7 | high |
 | 0.5 | medium |
 | 0.3 | low |
-| 0.0 | informational / notApplicable |
+| 0.0 | informational |
+
+Impact is a severity band and nothing else. It does not make a requirement Not Applicable: that is a `Result_Status`, stated in `results[]` or by a governing `statusOverride`. See [status determination](../architecture/status-determination.md).
 
 ### OverrideType
 `waiver` | `attestation` | `poam` | `inherited` | `falsePositive` | `riskAdjustment` | `operationalRequirement`

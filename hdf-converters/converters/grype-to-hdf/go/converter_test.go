@@ -239,8 +239,9 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 }
 
 func TestIgnoredMatches(t *testing.T) {
-	// Use inline fixture with ignoredMatches since the real amazon.json
-	// scan has no ignored matches. Structure mirrors real Grype output.
+	// amazon.json has no ignored matches; tensorflow.json does, and the real
+	// data is asserted in TestIgnoredMatchesInRealScan below. This inline case
+	// isolates one ignored match with no competing unignored one.
 	ignoredReport := `{
 		"descriptor": {"name": "grype", "version": "0.79.3"},
 		"source": {"target": {"userInput": "test-image"}},
@@ -265,12 +266,45 @@ func TestIgnoredMatches(t *testing.T) {
 	requirements := hdfResults.Baselines[0].Requirements
 	ignored := shared.MustFindRequirement(t, requirements, "Grype-Ignored-Match/CVE-2024-0001")
 
-	if ignored.Results[0].Status != hdf.NotReviewed {
-		t.Errorf("Expected status 'notReviewed', got '%s'", ignored.Results[0].Status)
+	// An ignore rule suppresses evaluation itself, so no verdict exists to
+	// adjudicate: the honest status is notApplicable stated as a result, not
+	// notReviewed (which claims the scan still owes us an answer).
+	if ignored.Results[0].Status != hdf.NotApplicable {
+		t.Errorf("Expected status 'notApplicable', got '%s'", ignored.Results[0].Status)
 	}
 
 	if ignored.Results[0].Message == nil || !strings.Contains(*ignored.Results[0].Message, "ignored by configured rules") {
 		t.Errorf("Expected message to contain 'ignored by configured rules'")
+	}
+
+	// Impact stays the finding's real severity — it was never a status flag here.
+	if ignored.Impact != getImpact("Low") {
+		t.Errorf("Expected impact to carry the real Low severity, got %v", ignored.Impact)
+	}
+}
+
+// TestIgnoredMatchesInRealScan asserts the same rule against real grype output
+// rather than an inline document: tensorflow.json carries 14 ignoredMatches.
+func TestIgnoredMatchesInRealScan(t *testing.T) {
+	hdfResults, err := ConvertGrypeToHDF(loadFixture(t, "input/tensorflow.json"), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	seen := 0
+	for _, req := range hdfResults.Baselines[0].Requirements {
+		if !strings.HasPrefix(req.ID, "Grype-Ignored-Match/") {
+			continue
+		}
+		seen++
+		for _, res := range req.Results {
+			if res.Status != hdf.NotApplicable {
+				t.Errorf("%s: expected notApplicable, got %s", req.ID, res.Status)
+			}
+		}
+	}
+	if seen != 14 {
+		t.Errorf("expected 14 ignored requirements from the real scan, got %d", seen)
 	}
 }
 
@@ -1062,8 +1096,8 @@ func TestConvertGrype_RollUpKeepsIgnoredMatchesDistinct(t *testing.T) {
 	if active.Results[0].Status != hdf.Failed {
 		t.Errorf("active status = %q, want failed", active.Results[0].Status)
 	}
-	if ignored.Results[0].Status != hdf.NotReviewed {
-		t.Errorf("ignored status = %q, want notReviewed", ignored.Results[0].Status)
+	if ignored.Results[0].Status != hdf.NotApplicable {
+		t.Errorf("ignored status = %q, want notApplicable", ignored.Results[0].Status)
 	}
 	// Each keeps its own record, pointing into the array it came from.
 	for _, tc := range []struct {

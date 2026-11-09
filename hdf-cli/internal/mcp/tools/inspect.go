@@ -147,7 +147,7 @@ func resultsStructure(r *hdf.HDFResults) map[string]any {
 			"requirementCount": len(b.Requirements),
 			"statusBreakdown": map[string]int{
 				"passed": counts.Passed.Total, "failed": counts.Failed.Total,
-				"notApplicable": counts.NoImpact.Total, "notReviewed": counts.Skipped.Total, "error": counts.Error.Total,
+				"notApplicable": counts.NotApplicable.Total, "notReviewed": counts.Skipped.Total, "error": counts.Error.Total,
 			},
 		}
 		// Labels are the per-baseline provenance carrier (ADR-0016 §3: a merged

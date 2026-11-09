@@ -19,7 +19,7 @@ import {
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -319,10 +319,10 @@ function normalizeStatus(status: string): string {
 }
 
 /**
- * Compute effectiveStatus from impact and v2 results via the canonical
- * worst-wins ordering in @mitre/hdf-utilities (impact=0 → notApplicable
- * unless the roll-up is error; error > failed > passed > notApplicable >
- * notReviewed).
+ * Compute effectiveStatus from the v2 results via the canonical worst-wins
+ * ordering in @mitre/hdf-utilities (error > failed > passed > notApplicable >
+ * notReviewed). Impact is passed for the shared input shape but no longer
+ * influences the status.
  */
 function computeEffectiveStatus(impact: number, results: V2Result[]): string {
   return canonicalEffectiveStatus({
@@ -333,22 +333,31 @@ function computeEffectiveStatus(impact: number, results: V2Result[]): string {
 
 /**
  * Encodes a control-level execution error the source tool reported but did not
- * record as a result, reusing the earliest recorded result time (matching the
- * Go converter).
+ * record as a result (matching the Go converter).
  */
 function synthesizedErrorResult(results: V2Result[]): V2Result {
-  const times = results
-    .map((r) => r.startTime)
-    .filter((t): t is string => typeof t === 'string' && t !== '' && t !== '0001-01-01T00:00:00Z')
-    .sort();
-  // startTime is schema-required; the Go converter's zero time serializes as
-  // 0001-01-01T00:00:00Z, so mirror that when no result carries a time.
   return {
     status: 'error',
     codeDesc:
       'Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result',
-    startTime: times[0] ?? '0001-01-01T00:00:00Z',
+    startTime: (earliestResultStartTime(results) ?? GO_ZERO_TIME),
   };
+}
+
+/**
+ * Encodes the scope declaration InSpec states as an impact of 0 rather than as a
+ * result (matching the Go converter).
+ */
+function synthesizedNotApplicableResult(results: V2Result[]): V2Result {
+  return sharedSynthesizedNotApplicableResult(results, GO_ZERO_TIME);
+}
+
+/**
+ * Whether the results leave the requirement with no verdict at all — empty, or
+ * only skipped/notReviewed entries.
+ */
+function establishedNothing(results: V2Result[]): boolean {
+  return inSpecEstablishedNothing(results.map((r) => r.status));
 }
 
 /**
@@ -516,6 +525,18 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // rather than smuggling it through the stored field.
   if (controlLevelError && !(v2Req.results ?? []).some((r) => r.status === 'error')) {
     v2Req.results = [...(v2Req.results ?? []), synthesizedErrorResult(v2Req.results ?? [])];
+  }
+
+  // InSpec says "this control does not apply to the target" by scoring it 0 and
+  // reporting no pass or fail. That is a verdict, not absent data, and the
+  // canonical ladder does not read impact — so the claim only survives if it is
+  // in results[]. Anything the results did establish, an execution error
+  // included, outranks notApplicable in worst-wins and is left alone.
+  if (v1Control.impact === 0 && establishedNothing(v2Req.results ?? [])) {
+    v2Req.results = [
+      ...(v2Req.results ?? []),
+      synthesizedNotApplicableResult(v2Req.results ?? []),
+    ];
   }
 
   // Always compute effectiveStatus from the emitted results via the canonical
@@ -776,13 +797,14 @@ function denormalizeStatus(status: string): string {
 
 /**
  * Effective (post-amendment) status as a legacy status string, computed by the
- * canonical ladder (governing override, error roll-up, impact-0, worst-wins —
- * see status-determination.md).
+ * canonical ladder (governing override, then worst-wins — see
+ * status-determination.md).
  */
 function effectiveOrRollupV1(req: V2Requirement): string {
   return denormalizeStatus(
     canonicalEffectiveStatus({
-      impact: req.impact ?? Number.NaN,
+      // The ladder ignores impact; it is carried only by the shared input shape.
+      impact: req.impact ?? 0,
       resultStatuses: (req.results ?? []).map((r) => r.status),
       overrides: (req.statusOverrides ?? []).map((o) => ({
         status: o.status,

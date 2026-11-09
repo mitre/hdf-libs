@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -420,4 +421,161 @@ func TestAbsentImpact_DefaultsToZero(t *testing.T) {
 	for _, req := range result.Baselines[0].Requirements {
 		assert.Equal(t, 0.0, req.Impact)
 	}
+}
+
+// TestConvertSplunk_ImpactZeroSkipsTranslate is the divergence this fixes: the
+// same InSpec run read from Splunk must produce the same statuses as the same run
+// read from a file. legacyhdf-to-hdf translates InSpec's score-0-and-skip
+// convention into an explicit notApplicable result; this reader of the same
+// control payload did not, so one scan reported notApplicable through one path
+// and notReviewed through the other — and notReviewed is in the compliance
+// denominator while notApplicable is not.
+func TestConvertSplunk_ImpactZeroSkipsTranslate(t *testing.T) {
+	path := filepath.Join(shared.GetConvertersDir(), "splunk-to-hdf", "fixtures", "input", "splunk-impact-zero-skips.json")
+	input, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	byID := map[string]*hdf.EvaluatedRequirement{}
+	for i := range out.Baselines[0].Requirements {
+		r := &out.Baselines[0].Requirements[i]
+		byID[r.ID] = r
+	}
+
+	// The three impact-0 skip-only controls from the real export.
+	for _, id := range []string{"V-72317", "V-72313", "V-72305"} {
+		t.Run(id, func(t *testing.T) {
+			req := byID[id]
+			require.NotNil(t, req, "requirement %s missing", id)
+			assert.Zero(t, req.Impact, "precondition: the source scored this 0")
+
+			statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+			for _, r := range req.Results {
+				statuses = append(statuses, r.Status)
+			}
+			assert.Contains(t, statuses, hdf.NotApplicable,
+				"the scope declaration must be stated as a result, as the file importer does")
+		})
+	}
+
+	// The controls that did establish a verdict are untouched.
+	require.NotNil(t, byID["V-77825"])
+	assert.Equal(t, hdf.Passed, byID["V-77825"].Results[0].Status)
+	require.NotNil(t, byID["V-78997"])
+	assert.Equal(t, hdf.Failed, byID["V-78997"].Results[0].Status)
+}
+
+// loadImpactZeroFixture returns the real trimmed Splunk export carrying the
+// impact-0 skip-only shape.
+func loadImpactZeroFixture(t *testing.T) []byte {
+	t.Helper()
+	path := filepath.Join(shared.GetConvertersDir(), "splunk-to-hdf", "fixtures", "input", "splunk-impact-zero-skips.json")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return data
+}
+
+// TestConvertSplunk_ImpactZeroNoResultsTranslates covers the case the predicate
+// admits but a caller can forget: InSpecEstablishedNothing is true for an EMPTY
+// result set, so the synthesized result must not assume a result already exists.
+// legacyhdf-to-hdf has the same test; splunk did not, and the TS twin crashed
+// here before the shared builder was hoisted. Derived from the real fixture by
+// emptying one control's results, so only that one field differs from real data.
+func TestConvertSplunk_ImpactZeroNoResultsTranslates(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadImpactZeroFixture(t), &events))
+	for _, e := range events {
+		if e["id"] == "V-72317" {
+			e["results"] = []interface{}{}
+		}
+	}
+	doc, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(doc, testConverterVersion)
+	require.NoError(t, err)
+
+	var req *hdf.EvaluatedRequirement
+	for i := range out.Baselines[0].Requirements {
+		if out.Baselines[0].Requirements[i].ID == "V-72317" {
+			req = &out.Baselines[0].Requirements[i]
+		}
+	}
+	require.NotNil(t, req, "V-72317 must still be emitted")
+	require.Len(t, req.Results, 1, "the synthesized result is the only one")
+	assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
+	assert.NotEmpty(t, req.Results[0].CodeDesc, "the synthesized result must be fully populated")
+	// With no result to take a time from, the fallback is Go's zero time, which
+	// is what the TS twin asserts too — the two must not drift.
+	assert.True(t, req.Results[0].StartTime.IsZero(),
+		"an empty result set leaves no time to inherit, so the zero time is the convention")
+}
+
+// TestConvertSplunk_AgreesWithLegacyhdfOnTheSameControl is the contract this card
+// exists for: one InSpec run must produce one document whichever reader sees it.
+// The legacy document is built from the SAME control payload the Splunk export
+// carries, so a future divergence in either reader fails here rather than
+// surfacing as drift in a consumer's diff.
+func TestConvertSplunk_AgreesWithLegacyhdfOnTheSameControl(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadImpactZeroFixture(t), &events))
+
+	var control map[string]interface{}
+	for _, e := range events {
+		if e["id"] == "V-72317" {
+			control = e
+		}
+	}
+	require.NotNil(t, control, "fixture must carry V-72317")
+
+	// The same control, expressed as InSpec exec JSON rather than a Splunk event.
+	v1Control := map[string]interface{}{
+		"id":      control["id"],
+		"title":   control["title"],
+		"impact":  control["impact"],
+		"results": control["results"],
+	}
+	legacyDoc, err := json.Marshal(map[string]interface{}{
+		"platform":   map[string]interface{}{"name": "centos", "release": "7"},
+		"version":    "4.16.0",
+		"statistics": map[string]interface{}{},
+		"profiles": []interface{}{map[string]interface{}{
+			"name":     "p",
+			"sha256":   "abc",
+			"controls": []interface{}{v1Control},
+		}},
+	})
+	require.NoError(t, err)
+
+	fromSplunk, err := ConvertSplunkToHDF(loadImpactZeroFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	v1, err := legacyhdf.ParseLegacyHDF(legacyDoc)
+	require.NoError(t, err)
+	fromFile := legacyhdf.ConvertLegacyHDF(v1, testConverterVersion)
+
+	synthesized := func(out *hdf.HDFResults, id string) hdf.RequirementResult {
+		t.Helper()
+		for _, b := range out.Baselines {
+			for _, r := range b.Requirements {
+				if r.ID != id {
+					continue
+				}
+				for _, res := range r.Results {
+					if res.Status == hdf.NotApplicable {
+						return res
+					}
+				}
+			}
+		}
+		t.Fatalf("no synthesized notApplicable result for %s", id)
+		return hdf.RequirementResult{}
+	}
+
+	a := synthesized(fromSplunk, "V-72317")
+	b := synthesized(fromFile, "V-72317")
+	assert.Equal(t, b.Status, a.Status, "status must match the file importer")
+	assert.Equal(t, b.CodeDesc, a.CodeDesc, "codeDesc must match byte for byte")
+	assert.Equal(t, b.StartTime, a.StartTime, "the startTime convention must match")
 }

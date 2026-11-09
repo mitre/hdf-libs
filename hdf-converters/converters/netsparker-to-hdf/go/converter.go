@@ -116,12 +116,15 @@ type NetsparkerHTTPResponse struct {
 }
 
 // --- Severity to impact mapping ---
-// Matches heimdall2 netsparker-mapper.ts IMPACT_MAPPING.
 // "best_practice" is Netsparker-specific; standard levels + "information" are
 // handled by the shared standard map.
 
+// "Best Practice" is advisory but actionable, which is semgrep-to-hdf's INFO
+// case, so it takes the same 0.3 low band. It was 0.0 — the informational band —
+// which described no weight and relied on the removed impact-0 ladder rung to
+// read as notApplicable; a severity cannot carry a disposition.
 var netsparkerAliases = map[string]float64{
-	"best_practice": 0.0,
+	"best_practice": 0.3,
 }
 
 func getImpact(severity string) float64 {
