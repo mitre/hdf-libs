@@ -192,7 +192,6 @@ describe('convertHdfToOscalPoam', () => {
       overrides: [{
         type: 'riskAdjustment',
         requirementId: 'AC-1',
-        status: 'failed',
         reason: 'residual risk accepted',
         impact: { value: 0.3 },
         appliedBy: { type: 'simple', identifier: 'admin' },
@@ -205,7 +204,8 @@ describe('convertHdfToOscalPoam', () => {
     const riskProp = (n: string): string | undefined =>
       risk.props.find((p: { name: string; value: string }) => p.name === n)?.value;
     expect(riskProp('override-type')).toBe('riskAdjustment');
-    expect(riskProp('override-status')).toBe('failed');
+    // A riskAdjustment carries no status, so no override-status prop is emitted.
+    expect(riskProp('override-status')).toBeUndefined();
     expect(riskProp('impact-override')).toBe('0.3');
     const rem = risk.remediations[0];
     expect(rem.description).toBe('apply patch');
@@ -426,7 +426,7 @@ describe('hdf-to-oscal-poam export fields', () => {
     const amendments = {
       name: 'cvss-test',
       overrides: [{
-        type: 'riskAdjustment', requirementId: 'CVE-2021-44228', reason: 'adjusted', status: 'failed',
+        type: 'riskAdjustment', requirementId: 'CVE-2021-44228', reason: 'adjusted', impact: { value: 0.98 },
         appliedBy: { type: 'simple', identifier: 'analyst' },
         appliedAt: '2022-03-03T11:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
         cvss: {

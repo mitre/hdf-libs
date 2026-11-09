@@ -2,29 +2,33 @@
 package nikto
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed nikto-nist-mappings.json
-var mappingsData []byte
 
 var (
 	niktoData     map[string]string // Nikto test ID → NIST control
 	niktoDataOnce sync.Once
 )
 
+// parseData keeps the JSON shape testable without a mutable package var: the
+// dataset is read inside the loader so the linker can drop it from a consumer
+// that never looks a Nikto ID up.
+func parseData(data []byte) map[string]string {
+	var parsed map[string]string
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return make(map[string]string)
+	}
+	return parsed
+}
+
 func loadData() map[string]string {
-	niktoDataOnce.Do(func() {
-		if err := json.Unmarshal(mappingsData, &niktoData); err != nil {
-			niktoData = make(map[string]string)
-		}
-	})
+	niktoDataOnce.Do(func() { niktoData = parseData(datasets.NiktoNIST) })
 	return niktoData
 }
 

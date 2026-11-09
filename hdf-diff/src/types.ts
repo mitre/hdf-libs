@@ -120,6 +120,8 @@ export interface RequirementDiff {
 
   /** The requirement title (from whichever evaluation has it) */
   title?: string;
+  /** Name of the owning baseline; '(multiple)' when the id appears in more than one */
+  baseline?: string;
   /** Effective status in the old evaluation (undefined if new) */
   oldEffectiveStatus?: string;
   /** Effective status in the new evaluation (undefined if absent) */

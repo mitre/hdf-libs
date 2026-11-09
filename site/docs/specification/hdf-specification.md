@@ -43,6 +43,10 @@ The promise is possible because HDF is JSON. XML (XML 1.0 §2.11) and YAML (YAML
 
 **Where normalization is legitimate.** Only at an export boundary whose own type forbids what HDF allows, and only for that target. `dev-docs/adr-0014-oscal-namespace-and-prose-carriage.md` §1.7.1 collapses line terminators and trims edge whitespace for OSCAL `StringDatatype` sinks, carrying the exact HDF value in the accompanying `remarks`; that rule is scoped to those sinks and is not generalized. An OSCAL `markup-multiline` home must pass `\n` through untouched, because a blank line is the paragraph delimiter there. A target that folds line endings by specification (XCCDF, or any other XML sink) returns LF-normalized prose — the target format's documented loss, stated per exporter, not an HDF rule.
 
+### Requirement identity
+
+A requirement id names **the requirement**, not one finding of it: `SV-238196` is "is this control satisfied?", `CVE-2024-3094` is "is this vulnerability present?". Several entries in one baseline may carry the same id, and that is legal and ordinary: one scanner reporting one CVE against several packages emits one entry per package, and an overlay profile restates the requirements it inherits. An id is therefore not an instance key. Readers index requirements as id to list, never id to one; an amendment addressing an id applies to every entry carrying it; and a comparison counts an id once however many entries carry it. Converters in this repository roll the instances of one id in one baseline into a single requirement with one result per instance, but a consumer must still expect documents from other producers, and older ones from this one, to repeat an id.
+
 ### Evidence data encoding
 
 `Evidence` carries supporting material on a requirement or override; its `data` field is required and must be non-empty (`minLength: 1`). The `encoding` field names how to read `data` — `utf-8` for the raw text of a `code`/`log` entry, the URL string for a `url` entry, or `base64` for a `screenshot`/`file`. When `encoding` is exactly `base64` (lowercase), `data` must be **bare base64** matching OSCAL's `Base64Datatype` (`^[0-9A-Za-z+/]+={0,2}$`): no `data:` URI prefix, no surrounding URL, and no line breaks. A file or screenshot is therefore the raw base64 of its bytes; a link to an external artifact is a `url` entry, not a `base64` body. *(data non-emptiness and the bare-base64 rule tightened in v3.7.0)*
@@ -242,7 +246,7 @@ Security requirements without results (before assessment).
 
 **Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.8.0`
 
-Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`description`, `statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
+Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -255,6 +259,7 @@ Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_R
 | remediation | Remediation | no | Reference to automated fix resources |
 | generator | Generator | no | Tool that produced this file |
 | title | string | no | Human-readable title |
+| description | string | no | Prose description, more detailed than summary |
 | version | string | no | Baseline version |
 | maintainer | string | no | Maintainer name/contact |
 | summary | string | no | e.g. STIG header |
@@ -413,12 +418,12 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | type | OverrideType | **yes** | Override category |
-| requirementId | string | **yes** | ID of requirement being overridden |
+| requirementId | string | **yes** | Requirement id; the override applies to every entry carrying it (see Conventions, Requirement identity) |
 | reason | string | **yes** | Free-text auditor-readable rationale for the override |
 | appliedBy | Identity | **yes** | Identity of who applied this amendment |
 | appliedAt | date-time | **yes** | When this amendment was applied |
 | expiresAt | date-time | **yes** | When this amendment expires. No permanent amendments |
-| status | ResultStatus | conditional | New effective status. At least one of `status` or `impact` must be set, **except** when `type: operationalRequirement` (which forbids both) |
+| status | ResultStatus | conditional | New effective status. At least one of `status` or `impact` must be set, **except** when `type: operationalRequirement` (which forbids both) or `type: riskAdjustment` (which forbids `status`: it re-rates impact only) |
 | impact | Impact_Override | conditional | Override to the requirement's impact score (`{value: 0.0–1.0}`). At least one of `status` or `impact` must be set; forbidden when `type: operationalRequirement` |
 | baselineRef | string | no | Name of the baseline containing the requirement; needed when the system has multiple baselines with overlapping IDs |
 | componentRef | UUID | no | componentId this amendment is scoped to; omit for system-wide |

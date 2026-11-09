@@ -69,6 +69,17 @@ describe('parameter.schema.json — Input primitive', () => {
       expect(validate(input)).toBe(true);
     });
 
+    // allowedValues enumerates candidates for `value`, which admits any JSON
+    // value, so the element schema is `true` on purpose rather than absent.
+    it('declares allowedValues items explicitly, admitting any JSON value', () => {
+      const constraints = (parameterSchema as unknown as {
+        $defs: Record<string, { properties: Record<string, { items?: unknown }> }>;
+      }).$defs['Input_Constraints']!;
+      expect(constraints.properties['allowedValues']!.items).toBe(true);
+      const allowedValues = ['TLSv1.2', 1024, true, null, ['a', 'b'], { key: 'val' }];
+      expect(validate({ name: 'anything', constraints: { allowedValues } })).toBe(true);
+    });
+
     it('should validate a Hash Input', () => {
       const input = {
         name: 'firewall_rules',

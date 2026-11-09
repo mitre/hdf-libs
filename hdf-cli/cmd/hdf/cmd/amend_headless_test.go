@@ -410,6 +410,19 @@ func TestBuildDraftFromResults_RiskAdjustmentStub(t *testing.T) {
 	assert.NotContains(t, stub, "cvss", "non-CVE riskAdjustment must not scaffold cvss")
 }
 
+// An operationalRequirement adjudicates nothing, so its stub must not scaffold
+// the status placeholder the other types get: the schema forbids the key, and
+// a blank one would have to be deleted rather than filled in.
+func TestBuildDraftFromResults_OperationalRequirementStub(t *testing.T) {
+	doc := draftResultsDoc()
+	draft, err := buildDraftFromResults(doc, "operationalRequirement", "", "", "", fixedNow())
+	require.NoError(t, err)
+	stub := draft["overrides"].([]map[string]interface{})[0]
+	assert.NotContains(t, stub, "status")
+	assert.NotContains(t, stub, "impact")
+	assert.Contains(t, stub, "reason")
+}
+
 func TestBuildDraftFromResults_RiskAdjustmentStub_CveEcosystem(t *testing.T) {
 	doc := map[string]interface{}{
 		"baselines": []interface{}{
@@ -848,7 +861,8 @@ func TestAmendCreate_OutputVerifiesCleanly(t *testing.T) {
 		{"type": "attestation", "requirementId": "SV-2", "status": "passed", "reason": "manually verified", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31",
 			"evidence": []interface{}{map[string]interface{}{"type": "url", "data": "https://example.com/proof"}}},
 		{"type": "falsePositive", "requirementId": "SV-3", "status": "notApplicable", "reason": "scanner misfire", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31"},
-		{"type": "riskAdjustment", "requirementId": "SV-4", "status": "failed", "reason": "compensating control", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31",
+		// riskAdjustment re-rates impact and may not carry a status.
+		{"type": "riskAdjustment", "requirementId": "SV-4", "reason": "compensating control", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31",
 			"impact": map[string]interface{}{"value": 0.3}},
 		// operationalRequirement carries neither status nor impact — the schema
 		// forbids both on that type.

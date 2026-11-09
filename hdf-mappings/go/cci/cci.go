@@ -1,12 +1,12 @@
 package cci
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
@@ -21,9 +21,6 @@ type CCIItem struct {
 // CCIMappings represents the complete CCI to NIST mapping database
 type CCIMappings map[string]CCIItem
 
-//go:embed cci-mappings.json
-var cciMappingsData []byte
-
 var (
 	cciData     CCIMappings
 	cciDataOnce sync.Once
@@ -32,7 +29,7 @@ var (
 // loadCCIData lazily loads and parses the CCI mappings data
 func loadCCIData() CCIMappings {
 	cciDataOnce.Do(func() {
-		if err := json.Unmarshal(cciMappingsData, &cciData); err != nil {
+		if err := json.Unmarshal(datasets.CCIMappings, &cciData); err != nil {
 			// This should never happen with embedded data, but handle gracefully
 			cciData = make(CCIMappings)
 		}
@@ -103,9 +100,6 @@ func GetAllCCIIDs() []string {
 // NistCCIMappings is the curated NIST control → CCI mapping table.
 type NistCCIMappings map[string][]string
 
-//go:embed nist-cci-mappings.json
-var nistCCIMappingsData []byte
-
 var (
 	nistCCIData     NistCCIMappings
 	nistCCIDataOnce sync.Once
@@ -113,7 +107,7 @@ var (
 
 func loadNistCCIData() NistCCIMappings {
 	nistCCIDataOnce.Do(func() {
-		if err := json.Unmarshal(nistCCIMappingsData, &nistCCIData); err != nil {
+		if err := json.Unmarshal(datasets.NISTCCIMappings, &nistCCIData); err != nil {
 			nistCCIData = make(NistCCIMappings)
 		}
 	})

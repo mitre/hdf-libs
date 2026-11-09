@@ -10,16 +10,13 @@
 package hadolint
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed hadolint-nist-mappings.json
-var datasetData []byte
 
 // Mapping is the NIST control list for one hadolint rule.
 type Mapping struct {
@@ -54,7 +51,7 @@ var (
 
 func load() *dataset {
 	loadOnce.Do(func() {
-		if err := json.Unmarshal(datasetData, &loaded); err != nil {
+		if err := json.Unmarshal(datasets.HadolintNIST, &loaded); err != nil {
 			return
 		}
 		ruleIDs = make([]string, 0, len(loaded.Mappings))

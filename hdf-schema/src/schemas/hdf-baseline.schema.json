@@ -63,6 +63,7 @@
     {
       "name": "ubuntu-2204-stig-baseline",
       "title": "Canonical Ubuntu 22.04 LTS STIG Baseline",
+      "description": "Requirements from the DISA STIG for Canonical Ubuntu 22.04 LTS, tailored for hosts in the CUI enclave; checks that need a graphical session are marked not applicable.",
       "version": "1.2.0",
       "maintainer": "DISA STIG Team",
       "license": "Apache-2.0",

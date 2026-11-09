@@ -2,7 +2,6 @@ package scoutsuite
 
 import (
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
@@ -69,20 +68,8 @@ func TestExists_False(t *testing.T) {
 	}
 }
 
-func TestLoadData_InvalidJSON(t *testing.T) {
-	origData := mappingsData
-	origMap := scoutsuiteData
-	defer func() {
-		mappingsData = origData
-		scoutsuiteData = origMap
-		scoutsuiteDataOnce = sync.Once{} //nolint:govet // resetting Once for test
-	}()
-
-	mappingsData = []byte("not valid json")
-	scoutsuiteData = nil
-	scoutsuiteDataOnce = sync.Once{} //nolint:govet // resetting Once for test
-
-	result := loadData()
+func TestParseData_InvalidJSON(t *testing.T) {
+	result := parseData([]byte("not valid json"))
 	if result == nil {
 		t.Error("expected non-nil empty map on JSON error, got nil")
 	}

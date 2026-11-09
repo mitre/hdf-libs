@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { validateAmendments } from '@mitre/hdf-validators';
 import { setDefaultMaxInputSize } from '@mitre/hdf-utilities';
 import {
   IdentityType,
@@ -591,19 +592,21 @@ describe('convertHdfToCyclonedxVex — externalReferences to advisories', () => 
 describe('convertHdfToCyclonedxVex — impact override to rating', () => {
   it('maps a bare riskAdjustment impact override to an other-method rating', async () => {
     const a: HDFAmendments = {
+      name: 'Impact',
       overrides: [
         {
           type: OverrideType.RiskAdjustment,
           requirementId: 'CVE-2026-4242',
-          status: ResultStatus.Failed,
           appliedAt: new Date('2026-01-01T00:00:00Z'),
           expiresAt: new Date('2099-12-31T00:00:00Z'),
           appliedBy: { type: IdentityType.Simple, identifier: 'team' },
           reason: 'downgraded impact',
           impact: { value: 0.5 },
-        } as never,
+        },
       ],
-    } as never;
+    };
+    const validation = validateAmendments(JSON.parse(JSON.stringify(a)));
+    expect(validation.valid, JSON.stringify(validation.errors)).toBe(true);
     const bom = JSON.parse(await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION));
     expect(bom.vulnerabilities[0].ratings).toEqual([
       { score: 5, severity: 'medium', method: 'other' },
@@ -616,7 +619,6 @@ describe('convertHdfToCyclonedxVex — impact override to rating', () => {
         {
           type: 'riskAdjustment',
           requirementId: 'CVE-2026-4243',
-          status: 'failed',
           appliedAt: '2026-01-01T00:00:00Z',
           expiresAt: '2099-12-31T00:00:00Z',
           appliedBy: { type: 'simple', identifier: 'team' },

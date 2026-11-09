@@ -2,9 +2,9 @@ import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 
 // Pinned HDF v2 (Heimdall/InSpec exec-json) schema — sourced from heimdall2
-// inspecjs (see ../go/legacy/PROVENANCE.md). Byte-identical to the Go-embedded
-// copy at ../go/legacy/exec-json.schema.json, pinned by a parity test.
-import legacyV2Schema from './legacy-exec-json.schema.json';
+// inspecjs (see ../go/legacy/PROVENANCE.md). One copy, which Go embeds from its
+// own package directory because go:embed cannot reach outside it.
+import legacyV2Schema from '../go/legacy/exec-json.schema.json';
 
 // Named JS-object schema imports — the schemas are inlined into
 // @mitre/hdf-schema's dist/index.js at build time, so downstream consumers

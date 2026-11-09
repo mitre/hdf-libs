@@ -75,7 +75,7 @@
       "reason": "Rule: regex with overlapping quantifiers. hdf-mappings/scripts/generate-awsconfig-mappings.mjs:178 is a build-time script over AWS's own conformance-pack text, and its repeated group is a parenthesized [^)]* that cannot cross the closing parenthesis, so there is one way to match and nothing to backtrack over. hdf-converters/converters/twistlock-to-hdf/typescript/converter.ts:206 (FIX_VERSION_REGEX, used at :216) does overlap: the trailing character class accepts everything the repeated dot-digits group can, but that same fact means the match succeeds as soon as digits-dot-digits is found and never backtracks into the group; the worst case is a quadratic scan of a status string holding a long digit run with no dot. The input is a Twistlock report the operator chose to convert, already size-capped by validateInputSize. Accepted as low risk, not a false positive. Revisit if the fix-version parsing is rewritten or the input path changes.",
       "requirementId": "semgrep-rules.javascript.lang.security.audit.detect-redos",
       "status": "notApplicable",
-      "type": "riskAdjustment"
+      "type": "waiver"
     }
   ]
 }

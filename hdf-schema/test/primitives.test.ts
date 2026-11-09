@@ -4429,3 +4429,19 @@ describe('Primitive Schema Validation', () => {
     });
   });
 });
+
+// The strong-hash set is closed on purpose; the why lives on the definition itself.
+describe('Hash_Algorithm (common.schema.json)', () => {
+  const def = (commonSchema as unknown as {
+    $defs: Record<string, { enum?: string[]; description: string }>;
+  }).$defs['Hash_Algorithm']!;
+
+  it('names exactly the four strong algorithms the tooling verifies', () => {
+    expect(def.enum).toEqual(['sha256', 'sha384', 'sha512', 'blake3']);
+  });
+
+  it('records on the definition that md5 and sha1 are excluded on purpose', () => {
+    expect(def.description).toMatch(/md5 and sha1 are excluded deliberately/);
+    expect(def.description).not.toMatch(/admitted/i);
+  });
+});

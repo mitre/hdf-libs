@@ -131,6 +131,26 @@ func TestAmendApplyCommand(t *testing.T) {
 	})
 }
 
+// A riskAdjustment re-rates impact and may not carry a status; the schema
+// enforces it, so verify refuses the combination and accepts the impact-only form.
+func TestAmendVerifyRejectsRiskAdjustmentCarryingStatus(t *testing.T) {
+	write := func(t *testing.T, override string) string {
+		t.Helper()
+		path := filepath.Join(t.TempDir(), "amendments.json")
+		doc := `{"name":"risk","overrides":[{"type":"riskAdjustment","requirementId":"V-1",` +
+			`"reason":"not reachable here","appliedBy":{"type":"simple","identifier":"t"},` +
+			`"appliedAt":"2026-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` + override + `}]}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+		return path
+	}
+
+	_, _, err := executeCommand("amend", "verify", write(t, `"status":"notApplicable","impact":{"value":0.2}`))
+	require.Error(t, err, "a riskAdjustment carrying status must not verify")
+
+	_, _, err = executeCommand("amend", "verify", write(t, `"impact":{"value":0.2}`))
+	require.NoError(t, err, "the impact-only form is the valid one")
+}
+
 func TestAmendListCommand(t *testing.T) {
 	t.Run("list shows overrides", func(t *testing.T) {
 		_, amendmentsPath := createAmendTestFixtures(t)

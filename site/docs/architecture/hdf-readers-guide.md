@@ -329,7 +329,7 @@ hdf amend apply --results portal-scan.json --amendments portal-waivers.json -o m
 
 The merged results have:
 
-- `SV-257777`'s `effectiveStatus` changed from `failed` to `passed` (waiver applied).
+- Every entry carrying `SV-257777` has its `effectiveStatus` changed from `failed` to `passed` (waiver applied).
 - `statusOverrides[]` populated with the waiver entry.
 - Amendment chain intact: `previousChecksum` links back to the original results.
 
@@ -561,6 +561,8 @@ no SBOMs works fine. An evidence package with partial coverage is informational,
 not invalid. The schema never rejects a document for missing enrichment.
 
 **Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy HDF v2 (InSpec-ExecJSON-shaped), which tolerated empty arrays.
+
+**Index requirements as id to list, never id to one.** Several entries in one baseline may carry the same id, and a reader that resolves an id to a single arbitrary entry silently drops the others, which on an overlay chain can carry a different status. The specification states why under Conventions, "Requirement identity".
 
 ---
 

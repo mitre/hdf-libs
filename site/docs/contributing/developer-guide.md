@@ -103,8 +103,9 @@ or a small local count that parses the raw source generically.
 
 **Emission unit, confirmed per converter.** Each anchor asserts `emitted ==
 count(source emission unit)`, confirmed against a real fixture. Where the
-converter groups, dedups, or filters (one requirement per *distinct* rule, per
-*actionable* VEX status, per the busiest ZAP site, per CSV finding row), the
+converter rolls up or filters (one requirement per *distinct* rule, with one result
+per instance rather than instances dropped as duplicates; per *actionable* VEX
+status; per the busiest ZAP site; per CSV finding row), the
 anchor counts that same distinct/filtered unit — not the raw array length — so it
 matches exactly. If no clean source-derived count matches the golden, do not write
 a meaningless anchor: a passing-but-vacuous anchor is worse than none. Every

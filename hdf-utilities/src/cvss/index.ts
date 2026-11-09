@@ -11,7 +11,7 @@
  *  - CVSS 4.0:  https://www.first.org/cvss/v4.0/specification-document
  */
 
-import cvss40Data from './cvss40-data.json';
+import cvss40Data from '../../go/cvss40data/cvss40-data.json';
 
 export interface ParsedCvssVector {
   /** "2.0" | "3.0" | "3.1" | "4.0" | "unknown" */
@@ -386,8 +386,8 @@ export function computeCvssScore(vector: string): CvssScore {
 //
 // A faithful port of the FIRST reference calculator (FIRSTdotorg/cvss-v4-calculator:
 // cvss_score.js), driven by the MacroVector lookup + max tables extracted verbatim
-// into cvss40-data.json. The Go peer (go/cvss.go) reads the byte-identical data
-// file and shares the parity fixture, so the two languages score identically.
+// into go/cvss40data/, a data-only package, because an embed pattern cannot reach
+// outside the package directory that declares it; both languages read the one copy.
 
 interface Cvss40Tables {
   lookup: Record<string, number>;
@@ -685,8 +685,8 @@ function cvss40StripExploitMaturity(vector: string): string {
  * Compute the CVSS 4.0 score for a vector string, split into a Base score
  * (`baseScore`, with Exploit Maturity stripped to its worst-case default E:A) and
  * a Threat score (`temporalScore`, with the E value present in the vector). For a
- * base-only vector the two are equal. The peer of the Go `ComputeCvss40Score`,
- * kept byte-identical via the shared data file and parity fixture.
+ * base-only vector the two are equal. The peer of the Go `ComputeCvss40Score`;
+ * both read the one data file in go/, pinned by testdata/cvss40-vectors.json.
  *
  * @throws if the version is not 4.0, a required base metric is missing, or any
  *   metric value is out of the 4.0 enum.

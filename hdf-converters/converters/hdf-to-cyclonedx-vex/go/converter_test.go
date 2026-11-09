@@ -11,6 +11,7 @@ import (
 
 	cyclonedxvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-vex-to-hdf/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -427,11 +428,10 @@ func TestConvertHDFToCycloneDXVEX_ImpactOverrideToRating(t *testing.T) {
 	t.Parallel()
 	now := mustTime(t, "2026-01-01T00:00:00Z")
 	exp := mustTime(t, "2099-12-31T00:00:00Z")
-	failed := hdf.Failed
 	amendments := hdf.HDFAmendments{
 		Name: "Impact",
 		Overrides: []hdf.StandaloneOverride{{
-			Type: hdf.RiskAdjustment, RequirementID: "CVE-2026-4242", Status: &failed,
+			Type: hdf.RiskAdjustment, RequirementID: "CVE-2026-4242",
 			AppliedAt: now, ExpiresAt: exp,
 			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "team"},
 			Reason:    "downgraded impact",
@@ -439,6 +439,8 @@ func TestConvertHDFToCycloneDXVEX_ImpactOverrideToRating(t *testing.T) {
 		}},
 	}
 	body, _ := json.Marshal(amendments)
+	validation := validators.ValidateAmendments(body)
+	require.True(t, validation.Valid, "%v", validation.Errors)
 	out, err := ConvertHDFToCycloneDXVEX(body, testVersion)
 	require.NoError(t, err)
 	bom := parseBOM(t, out)

@@ -751,6 +751,17 @@ func classifyBaselineChangeReasons(oldReq, newReq hdf.EvaluatedRequirement) []Ch
 // in more than one baseline, to avoid implying a single correct baseline.
 const baselineMultiple = "(multiple)"
 
+// recordRequirementBaseline shares the batch/fold baseline ambiguity rule.
+func recordRequirementBaseline(m map[string]string, id, name string) {
+	if existing, exists := m[id]; exists {
+		if existing != name && existing != baselineMultiple {
+			m[id] = baselineMultiple
+		}
+	} else {
+		m[id] = name
+	}
+}
+
 // requirementBaselineMap returns a map from requirement ID to the name of the
 // baseline that contains it. If the same ID appears in multiple baselines,
 // the value is set to "(multiple)" to avoid implying a single correct baseline.
@@ -758,13 +769,7 @@ func requirementBaselineMap(doc hdf.HDFResults) map[string]string {
 	m := make(map[string]string)
 	for _, baseline := range doc.Baselines {
 		for _, req := range baseline.Requirements {
-			if existing, exists := m[req.ID]; exists {
-				if existing != baseline.Name && existing != baselineMultiple {
-					m[req.ID] = baselineMultiple
-				}
-			} else {
-				m[req.ID] = baseline.Name
-			}
+			recordRequirementBaseline(m, req.ID, baseline.Name)
 		}
 	}
 	return m

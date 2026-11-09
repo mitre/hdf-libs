@@ -13,5 +13,5 @@ export default defineConfig({
   // loader reads the tracked schema embed, so node builtins are real runtime
   // imports and must stay external rather than be resolved into the bundle.
   platform: 'neutral',
-  external: [/^node:/],
+  deps: { neverBundle: [/^node:/] },
 });
