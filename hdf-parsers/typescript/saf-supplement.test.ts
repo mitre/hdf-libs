@@ -224,6 +224,21 @@ describe('normalizeSafSupplement', () => {
     expect(Object.hasOwn(out.extensions.passthrough, '__proto__')).toBe(true);
   });
 
+  it.each([
+    ['missing name', { type: 'host', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f', osName: 'redhat' }],
+    ['empty name', { type: 'host', name: '', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f' }],
+  ])('never joins a target with no identity to a component with a %s', (_label, comp) => {
+    const { output, warnings } = normalizeSafSupplement(validV3WithExtra({
+      components: [comp],
+      target: { type: 'host', boundary: 'dmz' },
+    }));
+    const doc = JSON.parse(output) as { components: Array<Record<string, unknown>>; target?: unknown };
+    expect(doc.components).toHaveLength(1);
+    expect(doc.components[0].labels).toBeUndefined();
+    expect('target' in doc).toBe(true);
+    expect(warnings[0]).toContain('no id or name');
+  });
+
   it('parseResults accepts a SAF-supplemented doc and surfaces the warning', () => {
     const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
     const r = parseResults(input);
@@ -238,6 +253,7 @@ describe('normalizeSafSupplement', () => {
   it.each([
     ['legacy-in.json', 'v3-out.json'],
     ['prototype-keys-in.json', 'prototype-keys-out.json'],
+    ['empty-identity-in.json', 'empty-identity-out.json'],
   ])('matches the shared %s / %s fixture pair (Go parity)', (inName, outName) => {
     const input = readFileSync(join(fixturesDir, inName), 'utf-8');
     const expected = JSON.parse(readFileSync(join(fixturesDir, outName), 'utf-8'));

@@ -55,11 +55,10 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 	var warnings []string
 
 	if hasTarget {
-		if rewritten := rewriteTarget(doc); rewritten {
+		if reason := rewriteTarget(doc); reason == "" {
 			warnings = append(warnings, safTargetDeprecation)
 		} else {
-			warnings = append(warnings, fmt.Sprintf(
-				"%s (target.type is not a recognized component type; left for schema validation)", safTargetDeprecation))
+			warnings = append(warnings, fmt.Sprintf("%s (%s; left for schema validation)", safTargetDeprecation, reason))
 		}
 	}
 
@@ -77,16 +76,18 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 }
 
 // rewriteTarget lifts a legacy top-level `target` object into components[].
-// Returns false (leaving `target` in place) when the target is not an object or
-// its type is not a valid component type.
-func rewriteTarget(doc map[string]any) bool {
+// Returns a non-empty reason, leaving `target` in place, when the target cannot
+// be placed: it is not an object, its type is not a component type, or it has
+// no identity and no platform-derived component to take it.
+func rewriteTarget(doc map[string]any) string {
+	const unmappedType = "target.type is not a recognized component type"
 	tgt, ok := doc["target"].(map[string]any)
 	if !ok {
-		return false
+		return unmappedType
 	}
 	typ, _ := tgt["type"].(string)
 	if !validComponentType(typ) {
-		return false
+		return unmappedType
 	}
 	// SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
 	// Only an `id` is a provider identifier; a display name never becomes one.
@@ -110,6 +111,9 @@ func rewriteTarget(doc map[string]any) bool {
 			c["name"] = name
 		}
 	}
+	if c == nil && name == "" {
+		return "target carries no id or name and matches no component"
+	}
 	if c == nil {
 		c = map[string]any{"type": typ, "name": name}
 		if typ == string(hdf.CloudAccount) && id != "" {
@@ -120,11 +124,16 @@ func rewriteTarget(doc map[string]any) bool {
 	applyLabels(c, labels)
 	doc["components"] = comps
 	delete(doc, "target")
-	return true
+	return ""
 }
 
 // findComponent returns the existing component with this name and type, or nil.
+// An empty name is no identity and matches nothing, so a component that lacks a
+// name is never joined to a target that lacks one too.
 func findComponent(comps []any, name, typ string) map[string]any {
+	if name == "" {
+		return nil
+	}
 	for i := range comps {
 		c, ok := comps[i].(map[string]any)
 		if !ok {

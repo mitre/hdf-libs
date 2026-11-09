@@ -54,12 +54,11 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
   const warnings: string[] = [];
 
   if ('target' in doc) {
-    if (rewriteTarget(doc)) {
+    const reason = rewriteTarget(doc);
+    if (reason === null) {
       warnings.push(SAF_TARGET_DEPRECATION);
     } else {
-      warnings.push(
-        `${SAF_TARGET_DEPRECATION} (target.type is not a recognized component type; left for schema validation)`,
-      );
+      warnings.push(`${SAF_TARGET_DEPRECATION} (${reason}; left for schema validation)`);
     }
   }
 
@@ -71,13 +70,17 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
   return { output: JSON.stringify(doc), warnings };
 }
 
-/** Lift a legacy top-level `target` object into components[]; returns false
- * (leaving `target` in place) when it is not an object or its type is invalid. */
-function rewriteTarget(doc: Record<string, unknown>): boolean {
+const UNMAPPED_TYPE = 'target.type is not a recognized component type';
+
+/** Lift a legacy top-level `target` object into components[]. Returns a reason,
+ * leaving `target` in place, when it cannot be placed: not an object, a type
+ * that is not a component type, or no identity and no platform-derived
+ * component to take it. */
+function rewriteTarget(doc: Record<string, unknown>): string | null {
   const tgt = doc.target;
-  if (!isObject(tgt)) return false;
+  if (!isObject(tgt)) return UNMAPPED_TYPE;
   const typ = typeof tgt.type === 'string' ? tgt.type : '';
-  if (!VALID_COMPONENT_TYPES.has(typ)) return false;
+  if (!VALID_COMPONENT_TYPES.has(typ)) return UNMAPPED_TYPE;
   // SAF writes `id`; the classic Heimdall/InSpec target carries `name` instead.
   // Only an `id` is a provider identifier; a display name never becomes one.
   const id = typeof tgt.id === 'string' ? tgt.id : '';
@@ -94,6 +97,7 @@ function rewriteTarget(doc: Record<string, unknown>): boolean {
     c = platformComponent(comps, typ);
     if (c && name !== '') c.name = name;
   }
+  if (!c && name === '') return 'target carries no id or name and matches no component';
   if (!c) {
     c = { type: typ, name };
     if (typ === 'cloudAccount' && id !== '') c.accountId = id;
@@ -102,10 +106,13 @@ function rewriteTarget(doc: Record<string, unknown>): boolean {
   applyLabels(c, labels);
   doc.components = comps;
   delete doc.target;
-  return true;
+  return null;
 }
 
+/** An empty name is no identity and matches nothing, so a component that lacks
+ * a name is never joined to a target that lacks one too. */
 function findComponent(comps: unknown[], name: string, typ: string): Record<string, unknown> | undefined {
+  if (name === '') return undefined;
   return comps.find((c): c is Record<string, unknown> => isObject(c) && c.name === name && c.type === typ);
 }
 
