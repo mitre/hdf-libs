@@ -210,6 +210,10 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 
+- **BREAKING (consumers importing the old names): the deprecated version-baked legacy HDF aliases are removed.** They were kept for one release after the rename to the `Legacy*` names. Import the current names instead.
+  - TypeScript (`@mitre/hdf-converters`): `convertV1ToV2` → `convertLegacyHdf`, `isHDFV1` → `isLegacyHdf`, `HDFV1Results` → `LegacyHDFResults`.
+  - Go (`hdf-converters/v3/converters/legacyhdf-to-hdf/go`): `ConvertV1ToV2` → `ConvertLegacyHDF`, `IsHDFV1` → `IsLegacyHDF`, `IsHDFV1FromMap` → `IsLegacyHDFFromMap`, `HDFV1Results` → `LegacyHDFResults`, and the input types `V1Result`, `V1SourceLocation`, `V1Description`, `V1Control`, `V1Group`, `V1Dependency`, `V1Profile`, `V1Platform` and `V1Statistics` → `LegacyResult`, `LegacySourceLocation`, `LegacyDescription`, `LegacyControl`, `LegacyGroup`, `LegacyDependency`, `LegacyProfile`, `LegacyPlatform` and `LegacyStatistics`.
+
 - **BREAKING: `hdf evidence verify` is removed. Use `hdf evidence info --verify`.** The two commands read one document and described it, and five separate fixes in this release were places where they described it differently — what a reference means (`hdf-libs-52n0c.8`), a count bundle reported that verify would not name (`.16`), one package resolving against two bases (`.32`), verify ignoring an array bundle refused over (`.36`), and info ticking a checksum nothing verified (`.37`). Each fix was correct and none removed the cause, which was two independent renderers of the same facts.
 
   `info` without the flag is unchanged in cost: it reads ONE document and opens nothing it references. What it shows is therefore what the package **records** — an entry recording a checksum, recording an empty one, or recording none — and it hashes nothing, so it no longer prints a tick that claimed verification never performed. Its completeness block is now attributed to the package rather than printed as this command's finding, because the schema calls that block "Not authoritative — tools should compute these from the referenced documents".

@@ -92,8 +92,8 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 
 | Conversion | Function |
 |---|---|
-| Legacy HDF (InSpec exec-json format) to current HDF | `convertV1ToV2` |
-| Detect legacy HDF format | `isHDFV1` |
+| Legacy HDF (InSpec exec-json format) to current HDF | `convertLegacyHdf` |
+| Detect legacy HDF format | `isLegacyHdf` |
 
 ### Enrichment
 
@@ -147,11 +147,11 @@ const result = detectConverter(rawInput);
 ### Upgrade legacy HDF
 
 ```typescript
-import { convertV1ToV2, isHDFV1 } from '@mitre/hdf-converters';
+import { convertLegacyHdf, isLegacyHdf } from '@mitre/hdf-converters';
 
 const data = JSON.parse(fileContent);
-if (isHDFV1(data)) {
-  const currentHdf = convertV1ToV2(data);
+if (isLegacyHdf(data)) {
+  const currentHdf = convertLegacyHdf(data);
 }
 ```
 

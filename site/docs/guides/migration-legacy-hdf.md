@@ -190,14 +190,15 @@ cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ### Programmatic (Go)
 
 ```go
-import (
-    "encoding/json"
-    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
-)
+import legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 
-var v1 legacyhdf.HDFV1Results
-json.Unmarshal(input, &v1)
-v2 := legacyhdf.ConvertV1ToV2(&v1)
+// ParseLegacyHDF applies the size guard and format check, then decodes the input.
+v1, err := legacyhdf.ParseLegacyHDF(input)
+if err != nil {
+    return err
+}
+// The second argument is the generator version recorded in the output ("" uses the default).
+current := legacyhdf.ConvertLegacyHDF(v1, "")
 ```
 
 The Go converter performs a comprehensive transformation:

@@ -970,7 +970,7 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: LegacyProfile; war
   return {profile: p, warnings};
 }
 
-/** Project modern statistics down to the v1 shape (duration only), matching Go V1Statistics. */
+/** Project modern statistics down to the v1 shape (duration only), matching Go LegacyStatistics. */
 function projectV1Statistics(stats: unknown): {duration?: number} {
   const duration = (stats as {duration?: unknown} | undefined)?.duration;
   return typeof duration === 'number' ? {duration} : {};
@@ -1014,7 +1014,7 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     version: downgradeV1Version(v2Data),
     platform,
     profiles,
-    // Mirror the Go V1Statistics: only the duration field survives to v1.
+    // Mirror the Go LegacyStatistics: only the duration field survives to v1.
     statistics: projectV1Statistics(v2Data.statistics),
   };
 

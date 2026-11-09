@@ -287,7 +287,7 @@ func TestConverterCoverage_LegacyHDF_ValidJSONNotV1(t *testing.T) {
 		t.Skip("legacyhdf converter not registered")
 	}
 
-	// Valid JSON with unexpected structure — hits IsHDFV1 check.
+	// Valid JSON with unexpected structure — hits IsLegacyHDF check.
 	input := []byte(`{"version": "2.0", "baselines": []}`)
 	out, err := conv.Convert(input)
 	assert.Error(t, err)
@@ -302,10 +302,10 @@ func TestConverterCoverage_LegacyHDF_MalformedV1(t *testing.T) {
 	}
 
 	// JSON that looks like v1 (has "profiles" key) but can't fully parse.
-	// This exercises the json.Unmarshal error path after IsHDFV1 passes.
+	// This exercises the json.Unmarshal error path after IsLegacyHDF passes.
 	input := []byte(`{"profiles": "not-an-array", "platform": {"name": "test"}, "version": "1.0", "statistics": {}}`)
 	out, err := conv.Convert(input)
-	// May fail at IsHDFV1 or at Unmarshal — either path is coverage.
+	// May fail at IsLegacyHDF or at Unmarshal — either path is coverage.
 	if err != nil {
 		assert.Nil(t, out)
 	}
