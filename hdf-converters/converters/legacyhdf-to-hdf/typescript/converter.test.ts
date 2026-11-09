@@ -2058,7 +2058,7 @@ describe('absence in the source is not a value', () => {
     const req = out.baselines[0]!.requirements[0]!;
     expect(req.results).toHaveLength(1);
     expect(req.results[0]!.status).toBe('notReviewed');
-    expect(req.results[0]!.codeDesc).toContain('recorded no results');
+    expect(req.results[0]!.codeDesc).toContain('no results for this control');
     expect(JSON.stringify(out)).not.toContain('"results":null');
     expectValidResults(out);
   });

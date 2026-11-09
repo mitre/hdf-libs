@@ -356,7 +356,7 @@ describe('Splunk to HDF Converter', () => {
       const results = hdf.baselines[0]!.requirements[0]!.results;
       expect(results).toHaveLength(1);
       expect(results[0]!.status).toBe('notReviewed');
-      expect(results[0]!.codeDesc).toContain('recorded no results');
+      expect(results[0]!.codeDesc).toContain('no results for this control');
       expectValidResults(hdf);
     });
 

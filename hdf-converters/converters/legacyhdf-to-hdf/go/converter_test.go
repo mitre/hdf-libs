@@ -1716,7 +1716,8 @@ func TestConvertLegacyHDF_ResultlessControlIsSchemaValid(t *testing.T) {
 	require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
 	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
 		"nothing was established, which is notReviewed — not a pass and not a scope claim")
-	assert.NotEmpty(t, req.Results[0].CodeDesc, "the synthesized result must say why it exists")
+	assert.Contains(t, req.Results[0].CodeDesc, "no results for this control",
+		"must match the TS peer's assertion, so a wording change cannot pass one side only")
 
 	raw, err := json.Marshal(out)
 	require.NoError(t, err)

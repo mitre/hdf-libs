@@ -709,7 +709,7 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 		reqs := flat.Results.Baselines[bi].Requirements
 		for ri := range reqs {
 			if len(reqs[ri].Results) == 0 {
-				reqs[ri].Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{})}
+				reqs[ri].Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{}, "the source carried no results for this control, so nothing was established about it")}
 			}
 		}
 	}

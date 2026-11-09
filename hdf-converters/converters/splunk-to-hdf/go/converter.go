@@ -453,7 +453,7 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 	// above so the two never both fire: an impact-0 resultless control states
 	// its scope claim and nothing else, matching the file importer.
 	if len(req.Results) == 0 {
-		req.Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{})}
+		req.Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{}, "the source carried no results for this control, so nothing was established about it")}
 	}
 
 	return req

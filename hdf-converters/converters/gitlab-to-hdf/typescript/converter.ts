@@ -347,6 +347,13 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
     const impact = gitlabSeverityToImpact(vuln.severity ?? 'Unknown');
 
+    // descriptions is required with minItems:1 and contains:{label:"default"}.
+    // The data stays empty rather than borrowing vuln.name, which would assert
+    // the title is the description the source never carried.
+    if (!descriptions.some((d) => d.label === 'default')) {
+      descriptions.unshift({label: 'default', data: ''});
+    }
+
     // GitLab carries no literal source snippet, so code holds the whole
     // vulnerability serialized as indented JSON (byte-identical to the Go twin's
     // json.Indent output — same source key order, same dropped fields preserved).

@@ -699,7 +699,8 @@ func TestConvertSplunk_ResultlessControlIsSchemaValid(t *testing.T) {
 	for _, req := range out.Baselines[0].Requirements {
 		require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
 		assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
-		assert.NotEmpty(t, req.Results[0].CodeDesc)
+		assert.Contains(t, req.Results[0].CodeDesc, "no results for this control",
+			"must match the TS peer's assertion, so a wording change cannot pass one side only")
 	}
 
 	serialized, err := json.Marshal(out)

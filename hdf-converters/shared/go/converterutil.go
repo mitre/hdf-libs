@@ -459,11 +459,12 @@ func InSpecEstablishedNothing(results []hdf.RequirementResult) bool {
 // results at all. results is schema-required with minItems:1, so neither null
 // nor an empty array is a valid document — and the honest filling is
 // notReviewed, because nothing was established: not a pass, and not the scope
-// claim an explicit impact of 0 makes.
-func SynthesizedNoResultsResult(startTime time.Time) hdf.RequirementResult {
+// claim an explicit impact of 0 makes. The caller supplies reason, because why
+// a source carried no result differs per format and the claim must say so.
+func SynthesizedNoResultsResult(startTime time.Time, reason string) hdf.RequirementResult {
 	return hdf.RequirementResult{
 		Status:    hdf.NotReviewed,
-		CodeDesc:  "Synthesized because the source recorded no results for this control: nothing was established about it",
+		CodeDesc:  "Synthesized because " + reason,
 		StartTime: startTime,
 	}
 }

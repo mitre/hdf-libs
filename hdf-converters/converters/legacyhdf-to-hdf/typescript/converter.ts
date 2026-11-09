@@ -1211,7 +1211,7 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
   for (const baseline of flatV2.baselines ?? []) {
     for (const req of baseline.requirements ?? []) {
       if ((req.results ?? []).length === 0) {
-        req.results = [synthesizedNoResultsResult(GO_ZERO_TIME)];
+        req.results = [synthesizedNoResultsResult(GO_ZERO_TIME, 'the source carried no results for this control, so nothing was established about it')];
       }
     }
   }

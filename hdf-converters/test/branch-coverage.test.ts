@@ -2949,8 +2949,11 @@ describe('Fortify additional branch coverage', () => {
   it('should handle desc classID mismatch (no vulns for desc) — L323 empty vulns', async () => {
     const xml = makeFortifyXml({ vulnClassID: 'OTHER', descClassID: 'NOMATCH' });
     const hdf = parseHdf(await convertFortifyToHdf(xml));
-    // Description with no matching vulns produces 0 results
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // results is required with minItems:1, so the orphan description gets one
+    // synthesized notReviewed result. This asserted toHaveLength(0), pinning a
+    // document the converter itself rejects.
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 
   it('should handle no CreatedTS — L317-318 defaults', async () => {
@@ -4345,7 +4348,9 @@ describe('ZAP second-pass branch coverage', () => {
       }],
     });
     const hdf = parseHdf(await convertZapToHdf(input));
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // Same reason as the fortify case above: this asserted toHaveLength(0).
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 });
 

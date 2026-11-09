@@ -318,7 +318,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
           // so the two never both fire: an impact-0 resultless control states
           // its scope claim and nothing else, matching the file importer.
           if (req.results.length === 0) {
-            req.results = [synthesizedNoResultsResult(goZeroDate())];
+            req.results = [synthesizedNoResultsResult(goZeroDate(), 'the source carried no results for this control, so nothing was established about it')];
           }
 
           return req;
