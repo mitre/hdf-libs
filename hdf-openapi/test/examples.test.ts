@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
-import { validateExample } from '../src/validate-example.js';
+import { createExampleValidator, validateExample } from '../src/validate-example.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const DIST = join(HERE, '..', 'dist');
@@ -194,14 +194,12 @@ describe('every example in the published document validates against its own sche
 
   it.each(DOCUMENTS.map(([name]) => name))('%s: every example validates', (name) => {
     const doc = DOCUMENTS.find(([n]) => n === name)![1];
+    const check = createExampleValidator(doc.components.schemas);
     const failures: string[] = [];
     for (const site of sites(doc)) {
-      // A site's own `examples` array is what validateExample reads, so a single
+      // A site's own `examples` array is what the validator reads, so a single
       // `example` is handed over as a one-member array rather than special-cased.
-      const faults = validateExample(
-        { ...site.schema, examples: site.examples },
-        doc.components.schemas,
-      );
+      const faults = check({ ...site.schema, examples: site.examples });
       for (const fault of faults) {
         failures.push(`${site.where}[${fault.index}]: ${fault.errors}`);
       }
@@ -249,6 +247,36 @@ describe('validateExample reports faults', () => {
   });
 });
 
+// A validator built once for a set of references checks many schemas. That makes a
+// whole-document check affordable: one per schema re-registers every component.
+describe('createExampleValidator', () => {
+  const references = { Inner: { type: 'object', properties: { k: { type: 'number' } } } };
+
+  it('checks several schemas against one set of references, each on its own', () => {
+    const check = createExampleValidator(references);
+    const viaRef = { $ref: '#/components/schemas/Inner', examples: [{ k: 1 }, { k: 'x' }] };
+    const plain = { type: 'string', examples: ['ok', 7] };
+    expect(check(viaRef).map((f) => f.index)).toEqual([1]);
+    expect(check(plain).map((f) => f.index)).toEqual([1]);
+    expect(check({ type: 'object' })).toEqual([]);
+  });
+
+  it('gives the same answer for a schema checked again after it changed', () => {
+    const check = createExampleValidator(references);
+    const schema: Record<string, unknown> = { type: 'integer', examples: [1, 'two'] };
+    expect(check(schema).map((f) => f.index)).toEqual([1]);
+    schema.type = 'string';
+    expect(check(schema).map((f) => f.index)).toEqual([0]);
+  });
+
+  it('agrees with validateExample on the same inputs', () => {
+    const schema = { $ref: '#/components/schemas/Inner', examples: [{ k: 'x' }, { k: 2 }] };
+    expect(createExampleValidator(references)(schema)).toEqual(
+      validateExample(schema, references),
+    );
+  });
+});
+
 // Card i6889.2's own first failing test: the package emits the components document and no
 // API document. The DOCUMENTS list above records the expectation in prose; this asserts it
 // against what the build actually wrote.
@@ -280,6 +308,7 @@ describe('the built artifacts', () => {
     const barrel: Record<string, unknown> = await import(join(DIST, 'index.js'));
     const names = Object.keys(barrel);
     expect(names).toContain('validateExample');
+    expect(names).toContain('createExampleValidator');
     expect(names).toContain('problemTypes');
     for (const buildTime of ['EMBED_DIR', 'loadBundles', 'buildComponentsDocument']) {
       expect(names, `${buildTime} cannot run outside this repository`).not.toContain(buildTime);
