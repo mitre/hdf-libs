@@ -192,28 +192,18 @@ describe('every example in the published document validates against its own sche
     expect(where).toContain('components/schemas/HdfResults/properties/preAmendmentChecksum');
   });
 
-  it.each(DOCUMENTS.map(([name]) => name))('%s: every example validates', (name) => {
-    const doc = DOCUMENTS.find(([n]) => n === name)![1];
-    const failures: string[] = [];
-    for (const site of sites(doc)) {
-      // A site's own `examples` array is what validateExample reads, so a single
-      // `example` is handed over as a one-member array rather than special-cased.
-      const faults = validateExample(
-        { ...site.schema, examples: site.examples },
-        doc.components.schemas,
-      );
-      for (const fault of faults) {
-        failures.push(`${site.where}[${fault.index}]: ${fault.errors}`);
-      }
-    }
-    expect(failures).toEqual([]);
+  it.each(DOCUMENTS.flatMap(([name, doc]) =>
+    sites(doc).map((site) => [`${name}: ${site.where}`, doc, site] as const),
+  ))('%s examples validate', (_name, doc, site) => {
+    const faults = validateExample(
+      { ...site.schema, examples: site.examples },
+      doc.components.schemas,
+    );
+    expect(faults.map((fault) => `${site.where}[${fault.index}]: ${fault.errors}`)).toEqual([]);
   });
 });
 
-// The helper is exported as published API and ADR-0008 §2 makes a CHECKED example the
-// condition of the conventions privilege, so its ability to report a fault has to be pinned
-// directly: every other use of it here feeds it examples that pass, which cannot tell a
-// working validator from one that always returns no faults.
+// Valid examples cannot distinguish a working validator from one that returns no faults.
 describe('validateExample reports faults', () => {
   it('reports an example that violates its own schema', () => {
     const faults = validateExample({
@@ -249,9 +239,7 @@ describe('validateExample reports faults', () => {
   });
 });
 
-// Card i6889.2's own first failing test: the package emits the components document and no
-// API document. The DOCUMENTS list above records the expectation in prose; this asserts it
-// against what the build actually wrote.
+// The published package contains components, not a standalone API document.
 describe('the built artifacts', () => {
   const built = readdirSync(DIST);
 
