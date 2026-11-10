@@ -141,6 +141,55 @@ grep -qF 'no snapshot tag' "$work/current-untagged/stderr" || ok=1
 report "current next untagged: exit 1, next unchanged, stderr says why" "$ok" \
   "exit $(rc_of current-untagged), next $(origin_next)"
 
+# Case 5c: next on a commit of the same source that carries two snapshot tags is
+# ambiguous, so it is left alone rather than ordered by either version.
+PAM=$(commit_on "$A" "prepared a, tagged twice")
+PAN=$(commit_on "$A" "prepared a, newest")
+git_q tag -a -m snapshot "snapshots/v3.8.0-next.106.1" "$PAM"
+git_q tag -a -m snapshot "snapshots/v3.8.0-next.107.1" "$PAM"
+git_q tag -a -m snapshot "snapshots/v3.8.0-next.108.1" "$PAN"
+git_q push origin "refs/tags/*:refs/tags/*"
+set_next "$PAM"
+run current-twice "3.8.0-next.108.1" "$A" "$PAN"
+ok=0; [ "$(rc_of current-twice)" -eq 1 ] && [ "$(origin_next)" = "$PAM" ] || ok=1
+grep -qF 'single snapshot version' "$work/current-twice/stderr" || ok=1
+[ ! -s "$work/current-twice/stdout" ] || ok=1
+report "current next tagged twice: exit 1, next unchanged, nothing on stdout" "$ok" \
+  "exit $(rc_of current-twice), next $(origin_next)"
+
+# Case 5d: same-source ordering, each pair run both ways. The older version must be
+# refused and the newer one accepted, whatever a string comparison would say: run IDs
+# of different lengths, run IDs past 32 bits, the release before the run ID, and the
+# attempt after it.
+prepared_of() {
+  local commit
+  commit=$(commit_on "$A" "prepared a at $1")
+  git_q tag -a -m snapshot "snapshots/v$1" "$commit"
+  git_q push origin "refs/tags/snapshots/v$1"
+  printf '%s' "$commit"
+}
+order_case() {
+  local label="$1" older="$2" newer="$3" p_old p_new
+  p_old=$(prepared_of "$older")
+  p_new=$(prepared_of "$newer")
+  set_next "$p_new"
+  run "back-$label" "$older" "$A" "$p_old"
+  ok=0; [ "$(rc_of "back-$label")" -eq 1 ] && [ "$(origin_next)" = "$p_new" ] || ok=1
+  report "same source, $label: $older after $newer is refused" "$ok" \
+    "exit $(rc_of "back-$label"), next $(origin_next)"
+  set_next "$p_old"
+  run "fwd-$label" "$newer" "$A" "$p_new"
+  ok=0; [ "$(rc_of "fwd-$label")" -eq 0 ] && [ "$(origin_next)" = "$p_new" ] || ok=1
+  report "same source, $label: $newer after $older moves next" "$ok" \
+    "exit $(rc_of "fwd-$label"), next $(origin_next)"
+}
+order_case "run 9 then 10" 3.8.0-next.9.1 3.8.0-next.10.1
+order_case "run IDs past 32 bits" 3.8.0-next.4294967296.1 3.8.0-next.42721483174.1
+order_case "release before run ID" 3.8.0-next.900.1 3.8.1-next.5.1
+order_case "minor before patch" 3.8.9-next.900.1 3.9.0-next.5.1
+order_case "attempt after run ID" 3.8.0-next.200.1 3.8.0-next.200.2
+order_case "run ID before attempt" 3.8.0-next.200.9 3.8.0-next.201.1
+
 # Case 6: the version has no snapshot tag.
 set_next "$PA"
 run untagged "$V5" "$B" "$PBU"
