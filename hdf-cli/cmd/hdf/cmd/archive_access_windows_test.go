@@ -27,6 +27,25 @@ func sharedArchiveDirectory(t *testing.T, dir string) *windows.SID {
 	return user.User.Sid
 }
 
+// Compare native SIDs instead of SDDL text, which may use aliases such as LA.
+func assertArchiveAccessGrant(t *testing.T, acl *windows.ACL, sid *windows.SID, mask windows.ACCESS_MASK, flags uint8) {
+	t.Helper()
+	matches := 0
+	for i := uint32(0); i < uint32(acl.AceCount); i++ {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		require.NoError(t, windows.GetAce(acl, i, &ace))
+		require.NotNil(t, ace)
+		require.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
+		grantee := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
+		if grantee.Equals(sid) {
+			matches++
+			assert.Equal(t, mask, ace.Mask)
+			assert.Equal(t, flags, ace.Header.AceFlags)
+		}
+	}
+	require.Equal(t, 1, matches, "expected exactly one grant to %s", sid.String())
+}
+
 func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
 	dir, pkgPath := bundleTree(t)
 	userSID := sharedArchiveDirectory(t, dir)
@@ -37,7 +56,12 @@ func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
 	controlSD, err := windows.GetSecurityInfo(windows.Handle(control.Fd()), windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
 	require.NoError(t, err)
 	require.NotNil(t, controlSD)
-	require.Contains(t, controlSD.String(), ";;;BU)")
+	controlACL, _, err := controlSD.DACL()
+	require.NoError(t, err)
+	require.NotNil(t, controlACL)
+	users, err := windows.CreateWellKnownSid(windows.WinBuiltinUsersSid)
+	require.NoError(t, err)
+	assertArchiveAccessGrant(t, controlACL, users, windows.FILE_GENERIC_READ, windows.INHERITED_ACE)
 	require.NoError(t, control.Close())
 	require.NoError(t, os.Remove(control.Name()))
 
@@ -50,14 +74,8 @@ func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
 		require.NoError(t, aclErr)
 		require.NotNil(t, acl)
 		require.Equal(t, uint16(1), acl.AceCount, "only the creating identity may receive an access grant")
-		var ace *windows.ACCESS_ALLOWED_ACE
-		require.NoError(t, windows.GetAce(acl, 0, &ace))
-		require.NotNil(t, ace)
-		require.Equal(t, uint8(windows.ACCESS_ALLOWED_ACE_TYPE), ace.Header.AceType)
-		assert.Zero(t, ace.Header.AceFlags&windows.INHERIT_ONLY_ACE)
-		assert.Equal(t, windows.ACCESS_MASK(windows.STANDARD_RIGHTS_REQUIRED|windows.SYNCHRONIZE|0x1ff), ace.Mask)
-		grantee := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
-		assert.True(t, grantee.Equals(userSID), "the sole access grant must belong to the effective user")
+		assertArchiveAccessGrant(t, acl, userSID,
+			windows.ACCESS_MASK(windows.STANDARD_RIGHTS_REQUIRED|windows.SYNCHRONIZE|0x1ff), 0)
 	}
 	output := filepath.Join(dir, "private.zip")
 	writerCalled := false
@@ -88,17 +106,24 @@ func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
 func TestArchiveAccessWindowsInheritedBeforeWrite(t *testing.T) {
 	dir, pkg := bundleTree(t)
 	sid := sharedArchiveDirectory(t, dir)
+	users, err := windows.CreateWellKnownSid(windows.WinBuiltinUsersSid)
+	require.NoError(t, err)
 	output := filepath.Join(dir, "shared.zip")
 	assertInherited := func(sd *windows.SECURITY_DESCRIPTOR) {
 		t.Helper()
 		control, _, err := sd.Control()
 		require.NoError(t, err)
 		require.Zero(t, control&windows.SE_DACL_PROTECTED)
-		require.Contains(t, sd.String(), ";;;BU)")
-		require.Contains(t, sd.String(), ";;;"+sid.String()+")")
+		acl, _, err := sd.DACL()
+		require.NoError(t, err)
+		require.NotNil(t, acl)
+		require.Equal(t, uint16(2), acl.AceCount)
+		assertArchiveAccessGrant(t, acl, sid,
+			windows.ACCESS_MASK(windows.STANDARD_RIGHTS_REQUIRED|windows.SYNCHRONIZE|0x1ff), windows.INHERITED_ACE)
+		assertArchiveAccessGrant(t, acl, users, windows.FILE_GENERIC_READ, windows.INHERITED_ACE)
 	}
 	called := false
-	err := runEvidenceBundle(pkg, output, false, archiveInherit, func(file *os.File) archiveWriter {
+	err = runEvidenceBundle(pkg, output, false, archiveInherit, func(file *os.File) archiveWriter {
 		called = true
 		info, err := file.Stat()
 		require.NoError(t, err)
@@ -152,8 +177,9 @@ func TestArchiveAccessWindowsCreationErrors(t *testing.T) {
 	file, err = openPrivateArchive(filepath.Join(dir, "missing", "archive.zip"))
 	require.Nil(t, file)
 	require.ErrorIs(t, err, os.ErrNotExist)
-	file, err = openPrivateArchive(filepath.Join(dir, "nul") + "\x00suffix")
+	invalidPath := filepath.Join(dir, "invalid.zip")
+	file, err = openPrivateArchive(invalidPath + "\x00suffix")
 	require.Nil(t, file)
 	require.Error(t, err)
-	require.NoFileExists(t, filepath.Join(dir, "nul"))
+	require.NoFileExists(t, invalidPath)
 }

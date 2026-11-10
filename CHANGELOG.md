@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Windows archive tests compare native ACL grants.** Permission checks accept equivalent SID aliases while verifying grant identities, rights and inheritance flags. Invalid-path tests use ordinary filenames so reserved device names cannot produce false failures.
+
 - **Workflow lint uses the same pinned tools locally and in CI.** Actionlint and ShellCheck are included in the mise toolchain, so the existing pre-commit check no longer depends on separately installed copies.
 
 - **Local CLI SAST uses the existing CI security configuration.** `security:sast` now runs gosec through golangci-lint, removing the separate standalone scanner requirement. Local scanning adopts the existing `legacy` and `common-false-positives` filters for permission, unsafe-call and variable-subprocess warnings; it repeats the gosec subset of lint rather than adding independent coverage. Archive permission behavior remains covered by behavioral tests.
