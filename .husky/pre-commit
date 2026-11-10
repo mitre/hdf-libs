@@ -1,4 +1,6 @@
-export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
+# Where the mise installer (~/.local/bin) and Homebrew put mise, for git clients
+# that run hooks without the login shell's PATH.
+export PATH="$PATH:$HOME/.local/bin:/opt/homebrew/bin"
 
 # Git worktrees keep their real .git storage under the parent checkout's
 # .git/worktrees/. `go build` (buildvcs=auto) queries that on every build to
@@ -9,4 +11,9 @@ export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
 # disable it for the hook. Harmless in a normal checkout and in CI.
 export GOFLAGS="${GOFLAGS:+$GOFLAGS }-buildvcs=false"
 
-pnpm check
+# mise supplies the pinned toolchain used by CI.
+command -v mise >/dev/null 2>&1 || {
+  echo "pre-commit: mise is not installed. See CONTRIBUTING.md, Getting started." >&2
+  exit 1
+}
+mise exec -- pnpm check

@@ -190,6 +190,55 @@ describe('normalizeSafSupplement', () => {
   // camfd wiring: parseResults runs the normalizer before ajv validation, so a
   // SAF-supplemented doc (which ajv would otherwise reject on unevaluatedProperties)
   // parses, with target as a component and the deprecation warning surfaced.
+  // Label keys are unconstrained strings, so a key that happens to name an
+  // Object.prototype member must survive exactly as Go keeps it.
+  it('keeps labels whose keys are Object.prototype member names', () => {
+    const out = JSON.parse(normalizeSafSupplement(validV3WithExtra({
+      target: { id: 'acct', type: 'cloudAccount', labels: { constructor: 'c', toString: 't', team: 'x' } },
+    })).output) as { components: Array<{ labels: Record<string, string> }> };
+    expect(out.components[0].labels).toEqual({ constructor: 'c', toString: 't', team: 'x' });
+  });
+
+  it('relocates an extensions sibling named like a prototype member instead of dropping it', () => {
+    const r = normalizeSafSupplement(validV3WithExtra({
+      passthrough: { audit: 1 },
+      extensions: { constructor: { a: 1 } },
+    }));
+    const out = JSON.parse(r.output) as { extensions: { passthrough: Record<string, unknown> } };
+    expect(out.extensions.passthrough).toEqual({ audit: 1, constructor: { a: 1 } });
+    expect(r.warnings.join(' ')).not.toContain('was dropped');
+  });
+
+  it('never lets a __proto__ key reassign a prototype', () => {
+    // Built from JSON text: an object literal's __proto__ key sets the prototype
+    // instead of creating a key, so it would never reach the normalizer.
+    const r = normalizeSafSupplement(validV3WithExtra(JSON.parse(
+      '{"target":{"id":"acct","type":"cloudAccount","labels":{"__proto__":"p"}},' +
+      '"passthrough":{},"extensions":{"__proto__":{"polluted":true}}}',
+    ) as Record<string, unknown>));
+    const out = JSON.parse(r.output) as { components: Array<{ labels: Record<string, string> }>; extensions: { passthrough: Record<string, unknown> } };
+    expect(Object.getPrototypeOf(out.components[0].labels)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(out.extensions.passthrough)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Object.hasOwn(out.components[0].labels, '__proto__')).toBe(true);
+    expect(Object.hasOwn(out.extensions.passthrough, '__proto__')).toBe(true);
+  });
+
+  it.each([
+    ['missing name', { type: 'host', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f', osName: 'redhat' }],
+    ['empty name', { type: 'host', name: '', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f' }],
+  ])('never joins a target with no identity to a component with a %s', (_label, comp) => {
+    const { output, warnings } = normalizeSafSupplement(validV3WithExtra({
+      components: [comp],
+      target: { type: 'host', boundary: 'dmz' },
+    }));
+    const doc = JSON.parse(output) as { components: Array<Record<string, unknown>>; target?: unknown };
+    expect(doc.components).toHaveLength(1);
+    expect(doc.components[0].labels).toBeUndefined();
+    expect('target' in doc).toBe(true);
+    expect(warnings[0]).toContain('no id or name');
+  });
+
   it('parseResults accepts a SAF-supplemented doc and surfaces the warning', () => {
     const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
     const r = parseResults(input);
@@ -201,9 +250,13 @@ describe('normalizeSafSupplement', () => {
 
   // Cross-language parity: TS normalizes the shared legacy-in fixture to the same
   // v3 document the Go suite asserts (deep-equal; key order differs across langs).
-  it('matches the shared legacy-in / v3-out fixture pair (Go parity)', () => {
-    const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
-    const expected = JSON.parse(readFileSync(join(fixturesDir, 'v3-out.json'), 'utf-8'));
+  it.each([
+    ['legacy-in.json', 'v3-out.json'],
+    ['prototype-keys-in.json', 'prototype-keys-out.json'],
+    ['empty-identity-in.json', 'empty-identity-out.json'],
+  ])('matches the shared %s / %s fixture pair (Go parity)', (inName, outName) => {
+    const input = readFileSync(join(fixturesDir, inName), 'utf-8');
+    const expected = JSON.parse(readFileSync(join(fixturesDir, outName), 'utf-8'));
     const { output } = normalizeSafSupplement(input);
     expect(JSON.parse(output)).toEqual(expected);
   });

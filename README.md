@@ -110,76 +110,33 @@ This monorepo uses pnpm workspaces. Build order matters because some packages de
 
 ### Prerequisites
 
-The following tools must be installed before running `pnpm lint` or `pnpm test`:
+Install [mise](https://mise.jdx.dev/) 2026.10.9 or newer. It installs the pinned toolchain from `mise.toml` and `mise.lock`, the same releases CI and the pre-commit hook use:
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
-| [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
-| [Go](https://go.dev/) | ≥1.27.3 | Go packages and CLI tool |
-| [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
-| [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
-| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | latest | Go vulnerability scanner (required for `pnpm check`) |
-| [gitleaks](https://github.com/gitleaks/gitleaks) | latest | Secret detection (required for `pnpm check`) |
+| Tool | Pinned in |
+|------|-----------|
+| Node.js | `mise.toml` (the Active LTS line); exact release in `mise.lock` |
+| pnpm | `packageManager` in `package.json` |
+| Go | the `go` line of `go.work` |
+| golangci-lint, gosec, govulncheck | `mise.toml` |
+| actionlint, shellcheck | `mise.toml` |
 
-**macOS (Homebrew):**
+Each download is checked against the checksum recorded in `mise.lock`. [gitleaks](https://github.com/gitleaks/gitleaks), used by `pnpm --filter hdf-cli security`, is installed separately.
 
-```bash
-brew install node go gitleaks
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
-```
-
-**Ubuntu / WSL:**
+**macOS and Linux:**
 
 ```bash
-# Node.js 24.x
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-# Go 1.27.3 — minimum supported version
-wget https://go.dev/dl/go1.27.3.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.3.linux-amd64.tar.gz
-echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
-
-# golangci-lint, gosec, govulncheck
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
-
-# gitleaks
-brew install gitleaks  # or download from GitHub releases
+curl -fsSL https://mise.run | sh   # or: brew install mise
+mise trust && mise install
 ```
 
-**Windows (native):**
+**Windows (PowerShell):**
 
 ```powershell
-# Node.js and Go — use winget or download installers from nodejs.org / go.dev
-winget install OpenJS.NodeJS.LTS
-winget install GoLang.Go
-
-# pnpm
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-# Go tools (restart your terminal after installing Go)
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
-
-# gitleaks
-winget install Gitleaks.Gitleaks
+irm https://mise.run/powershell | iex   # or: winget install jdx.mise
+mise trust; mise install
 ```
 
-Ensure `%USERPROFILE%\go\bin` is on your PATH (the Go installer usually adds this, but `go install` binaries land here).
-
-After installing golangci-lint, ensure `$HOME/go/bin` is on your PATH. Add the following to your shell profile (`.zshrc`, `.bashrc`, etc.):
-
-```bash
-export PATH="$PATH:$HOME/go/bin"
-```
+Corepack is not needed: mise installs pnpm itself, and Node.js no longer ships Corepack from version 25. The pre-commit hook runs `mise exec -- pnpm check`, so it uses the pinned tools whether or not mise is activated in your shell; activate mise (`mise activate`, see its [shell setup](https://mise.jdx.dev/installing-mise.html)) to get the same versions in your own commands. The [developer guide](site/docs/contributing/developer-guide.md#toolchain) explains how the pins are verified and moved.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the PR process, coverage requirements, and how to add a converter.
 

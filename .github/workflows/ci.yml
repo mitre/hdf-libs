@@ -20,21 +20,22 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# NODE_VERSION tracks the Active LTS and matches every published package's
-# `engines.node`. THE POLICY IS "Active LTS", not a version: at the time of this
-# pin (2026-10) that is 24 (Krypton), with 22 having moved to Maintenance — still
+# Node.js is pinned in mise.toml (`node`, the exact release in mise.lock) and
+# installed by the shared setup action; release.yml's publish job still sets it
+# up through setup-node with its own NODE_VERSION. It tracks the Active LTS and
+# matches every published package's `engines.node`. THE POLICY IS "Active LTS",
+# not a version: at the time of this pin (2026-10) that is 24 (Krypton), with
+# 22 having moved to Maintenance — still
 # patched, but no longer moving forward. Node 24 itself enters Maintenance on
 # 2026-10-20 and 26 becomes Active LTS on 2026-10-28, so expect this to move
 # again; check the schedule rather than trusting this line.
-# ADR-0008 §5 owns the floor (ADR-0011 revision 8 handed it there) and names the
-# tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
-# minor the previous floor did not guarantee.
+# Redocly and @hey-api/openapi-ts both require a 22.x minor the previous
+# Node.js floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
-# go-version-file) — no separate pin to drift.
+# go-version-file) — no separate pin to drift. golangci-lint, govulncheck and
+# gosec are pinned in mise.toml, with checksums in mise.lock, so the pre-commit
+# hook and check-go run the same releases.
 env:
-  NODE_VERSION: '24'
-  GOLANGCI_LINT_VERSION: 'v2.14.0'
-  GOVULNCHECK_VERSION: 'v1.9.0'
   GOTESTSUM_VERSION: 'v1.13.0'
   # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi's matrix
   # records what it does with the generated OpenAPI components, including that it
@@ -54,10 +55,6 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # The pre-commit hook's lint:workflows stage runs whatever brew installed;
-  # keep this on the same release so local and CI report the same findings.
-  ACTIONLINT_VERSION: '1.7.12'
-  ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
   # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
   HDF_CLI_SOURCE_SHA: '5f248c0bfd81d812ad16d4ea53f26c8965895eff'
 
@@ -146,18 +143,16 @@ jobs:
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
           "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
-      # actionlint is a hard gate, unlike zizmor: a malformed workflow is a
-      # defect, not a finding to adjudicate. Fetched and verified the same way.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: actionlint shellcheck
+      # Malformed workflows are hard failures; tools share the hook's checksum locks.
       # shellcheck must be present or actionlint silently drops its shell rules.
       - name: actionlint (hard failure)
         run: |
           command -v shellcheck
-          tmp=$(mktemp -d)
-          curl -fsSL -o "$tmp/actionlint.tar.gz" \
-            "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "$ACTIONLINT_SHA256  $tmp/actionlint.tar.gz" | sha256sum -c -
-          tar xzf "$tmp/actionlint.tar.gz" -C "$tmp" actionlint
-          "$tmp/actionlint"
+          actionlint
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
@@ -173,9 +168,7 @@ jobs:
   # off lockfiles, so this job needs neither `pnpm install` nor a build — just a
   # checkout and the scanner.
   #
-  # go install over a release binary for the same reason as golangci-lint and
-  # govulncheck: the module download is verified against the Go checksum
-  # database.
+  # go install verifies module downloads against the Go checksum database.
   scan-deps:
     name: Scan dependencies (OSV)
     runs-on: ubuntu-latest
@@ -186,7 +179,6 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       # Exit codes: 0 clean, 1 findings (the gate judges those), 127 a scanner
       # or network error, 128 no package sources found. Tolerating only 0 and 1
@@ -365,8 +357,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
       # A publishable package importing a module it does not declare only
@@ -428,7 +418,6 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       # go install, pinned by version and verified through GOSUMDB, for the same reason
       # the scanners above use it rather than a release binary.
@@ -453,10 +442,17 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       - name: Build TypeScript (Go modules need hdf-schema/dist/go/)
         run: pnpm build:ts
+      # The Go scanners at the versions and checksums in mise.lock (--locked), the
+      # releases the pre-commit hook runs: golangci-lint as the release binary
+      # with its attestation check, govulncheck through go install with the Go
+      # that go.work names. The shared setup above already installed Node/pnpm.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: go golangci-lint go:golang.org/x/vuln/cmd/govulncheck
       # Both scanners below loop per-module because neither works across a
       # workspace: golangci-lint refuses a multi-module invocation, and
       # govulncheck has no workspace mode (golang/go#66863). go.work is the
@@ -478,12 +474,9 @@ jobs:
       #
       # Exit 1 is golangci-lint's documented findings exit, and findings are
       # the gate's call — so 1 is tolerated here and anything else is a tool
-      # failure. go install over the faster binary-install script is
-      # deliberate: module downloads are verified against the Go checksum
-      # database.
+      # failure.
       - name: golangci-lint (SARIF; findings gate via HDF)
         run: |
-          go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
           mkdir -p scan-artifacts
           for dir in $GO_MODULES; do
             name=$(echo "${dir#./}" | tr '/' '-')
@@ -538,7 +531,6 @@ jobs:
         run: pnpm run lint:go-mod-tidy
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
-          go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"
           for dir in $GO_MODULES; do
             name=$(echo "${dir#./}" | tr '/' '-')
             (cd "$dir" && govulncheck -format sarif ./... \
@@ -697,7 +689,6 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       - name: Build TypeScript
         run: pnpm build:ts
@@ -744,8 +735,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
@@ -794,7 +783,6 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -1117,8 +1105,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
@@ -1185,8 +1171,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts

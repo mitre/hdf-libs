@@ -4,6 +4,8 @@ Project context for Claude Code and human developers working in this repository.
 
 ## Quick Start
 
+Tool versions (Node.js, pnpm, Go, golangci-lint, gosec, govulncheck) come from mise: `mise trust && mise install` once per clone, then run commands with mise activated or through `mise exec --`. See `site/docs/contributing/developer-guide.md`, Toolchain.
+
 ```bash
 pnpm install          # Install all dependencies
 pnpm build            # Build TS + Go
@@ -135,11 +137,11 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 ## Pre-commit Hook
 
-`.husky/pre-commit` runs `pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
+`.husky/pre-commit` runs `mise exec -- pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit, with every tool at the version in `mise.toml` and `mise.lock` — the releases CI runs. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
 
-One of those lint scripts, `lint:workflows`, runs actionlint (with shellcheck) over `.github/workflows`; install it with `brew install actionlint`. A missing binary fails the stage rather than skipping it, and CI runs the same release, pinned by sha256 in `ci.yml`'s env block, so local and CI agree.
+`pnpm lint:workflows` runs actionlint (with shellcheck) over `.github/workflows` as part of the hook. Both tools are pinned in `mise.toml` with checksums in `mise.lock`; CI installs those same tools. Run `mise exec -- pnpm lint:workflows` for a focused workflow check.
 
-**It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader: it lints and runs govulncheck across all 13 modules, runs every Go test, and reaches all 13 with gosec — there is no standalone gosec step, but golangci-lint inherits the root `.golangci.yml` in any module that does not override it (only `hdf-cli` does), and `scripts/check-gosec-coverage.sh` fails the build if a module ever resolves a config without gosec. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `golangci-lint run` in the module you touched.
+**It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader: it lints and runs govulncheck across all 13 modules, runs every Go test, and reaches all 13 with gosec — there is no standalone gosec step, but golangci-lint inherits the root `.golangci.yml` in any module that does not override it (only `hdf-cli` does), and `scripts/check-gosec-coverage.sh` fails the build if a module ever resolves a config without gosec. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `mise exec -- golangci-lint run` in the module you touched.
 
 ## Security Requirements
 
@@ -212,7 +214,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 - **Never push.** User handles all pushes.
 - **No authorship attribution.** Do not add "written by Claude Code", "Co-Authored-By: Claude", or similar to commits, comments, or documentation.
 - **Brief commit messages.** Conventional-commit subject line, a blank line, then a short body (a few sentences) covering *what* changed and *why*. Don't list affected files — that's `git diff`'s job. Don't restate the subject in the body. Default to brevity; only substantial features warrant longer bodies.
-- **Run lint before proposing a commit.** At minimum run `golangci-lint run` (for Go changes) and/or `pnpm lint` (for TS changes) and fix all issues before asking the user to approve. The pre-commit hook will catch failures anyway, but catching them early avoids wasted time.
+- **Run lint before proposing a commit.** At minimum run `mise exec -- golangci-lint run` (for Go changes) and/or `pnpm lint` (for TS changes) and fix all issues before asking the user to approve. The pre-commit hook will catch failures anyway, but catching them early avoids wasted time.
 
 ## Development Practices
 

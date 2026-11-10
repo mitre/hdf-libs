@@ -1,0 +1,21 @@
+# Tool versions for local development and CI. Go comes from go.work, the same
+# file CI's setup-go reads, and pnpm from packageManager in package.json, so
+# each has one pin. mise.lock records the exact versions and checksums.
+# Setup: install mise (https://mise.jdx.dev), then `mise trust && mise install`.
+
+# Reading Go's version from the go line of go.work needs this release.
+min_version = "2026.10.9"
+
+[settings]
+idiomatic_version_file_enable_tools = ["go", "pnpm"]
+lockfile = true
+
+[tools]
+# The Node.js Active LTS line; mise.lock pins the exact
+# release, moved with `mise lock --bump node`.
+node = "24"
+golangci-lint = "2.14.0"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
+"aqua:securego/gosec" = "2.30.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
