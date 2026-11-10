@@ -118,9 +118,13 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
     expect(workflow).toMatch(/^ +run: pnpm --filter @mitre\/hdf-openapi run matrix$/m);
     // ...with the generator that mise.toml pins, installed through mise, so CI and a
     // local `mise install` run the same release and no second pin can drift...
-    const pinned = new RegExp(`^"${tool.replace(/[.]/g, '\\.')}" = "([\\d.]+)"$`, 'm').exec(miseToml)?.[1];
+    const pinLine = miseToml.split('\n').find((line) => line.startsWith(`"${tool}" = "`));
+    const pinned = /= "(\d+\.\d+\.\d+)"$/.exec(pinLine ?? '')?.[1];
     expect(pinned, 'mise.toml must pin the generator version').toBeDefined();
-    expect(workflow).toMatch(new RegExp(`install_args: .*\\b${tool.replace(/[.]/g, '\\.')}\\b`));
+    const installs = workflow
+      .split('\n')
+      .some((line) => line.trim().startsWith('install_args:') && line.trim().split(/\s+/).includes(tool));
+    expect(installs, 'CI must install the generator through mise-action').toBe(true);
     expect(workflow).not.toContain('cmd/oapi-codegen@');
     // ...at the version these verdicts were measured against. A pin bump without a
     // re-measurement would gate the new tool against the old record.
