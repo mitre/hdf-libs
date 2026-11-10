@@ -100,8 +100,11 @@ jobs:
           persist-credentials: false
 
       # Node and pnpm at mise.lock's versions and checksums, as in every other
-      # job. No cache in a publish workflow: a poisoned cache seeded from a PR
-      # job could tamper with what gets published. No .npmrc is written: pnpm
+      # job. No cache in a publish workflow: a tag run cannot restore a pull
+      # request's cache, but it can restore main's, and a cache written by a
+      # main run that executed compromised code could carry it into what gets
+      # published (https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching).
+      # No .npmrc is written: pnpm
       # publishes to its default registry, https://registry.npmjs.org/, and
       # authenticates through OIDC (id-token: write) with a token it keeps in
       # memory.
@@ -246,8 +249,9 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.work
-          # No module caching in a publish workflow: a poisoned cache seeded
-          # from a PR job could tamper with the released binaries.
+          # No module caching in a publish workflow: a cache restored from main,
+          # written by a run that executed compromised code, could tamper with
+          # the released binaries (see the publish-npm comment above).
           cache: false
 
       # syft + cosign back the goreleaser sboms:/signs: sections.
