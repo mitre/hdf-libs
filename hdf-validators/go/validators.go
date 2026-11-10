@@ -279,6 +279,16 @@ func modernValidationErrors(failure *jsonschema.ValidationError, document any) [
 		item.Keyword = path[0]
 	}
 	switch k := failure.ErrorKind.(type) {
+	case *kind.AdditionalProperties:
+		if strings.HasSuffix(failure.SchemaURL, "/$defs/Extensions") {
+			for _, property := range k.Properties {
+				extra := item
+				extra.Field += "." + property
+				extra.Description = "is not allowed. Move producer-specific data under extensions.passthrough, namespaced by tool name."
+				result = append(result, extra)
+			}
+			return result
+		}
 	case *kind.Required:
 		for _, property := range k.Missing {
 			missing := item

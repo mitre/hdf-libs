@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **`extensions` is closed at document roots and on evaluated baselines.** Only `passthrough` and `rawSourceArtifacts` are allowed. Before this diagnostic update, a producer using `extensions.system_context` sees `extensions: additional properties 'system_context' not allowed` from the Go CLI. Move that data to `extensions.passthrough.<tool-name>.system_context`, replacing `<tool-name>` with the producing tool's name to avoid collisions. The same migration applies under `baselines[].extensions`. This enforces the existing [ADR-0017 §1 contract](dev-docs/adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md#1-extensions-is-a-closed-defined-object-extensionspassthrough-is-the-catch-all-inside-it); it does not reopen the schema.
+
+- **Undeclared extension members now have matching Go and TypeScript diagnostics.** Each offending key receives its own dotted path and the message `is not allowed. Move producer-specific data under extensions.passthrough, namespaced by tool name.` For example, the field is `extensions.system_context` or `baselines.0.extensions.system_context`. Go previously reported the containing object with all undeclared keys in one description; consumers relying on that path, text or error count must update. The `additionalProperties` keyword and invalid verdict are unchanged; unrelated diagnostics are unchanged.
+
+### Upgrade notes
+
+- **Building `hdf-cli` or `hdf-converters` from source requires Go 1.27.3 or newer.** Production code uses the standard library's `encoding/json/v2` and `encoding/json/jsontext`: Semgrep decoding matches keys case-sensitively, and evidence resolution and SIEM bundle decoding explicitly handle duplicate names while preserving source JSON. These are runtime dependencies, not test-only tooling. The workspace, published modules, generated schema module and release/fuzz builds use this minimum; no experimental build flag is required.
+- **Node 22 consumers must upgrade their runtime or container image before moving to 3.8.0.** The published packages already require Node >=24, as recorded under [3.7.2](#372---2026-10-06).
+
 ### Changed
+
+- **XML parsing uses the upstream fix for CVE-2026-126066.** Upgrade `fast-xml-parser` to 5.12.0 to address quadratic scanning of malformed stop-node content. Fortify uses stop nodes to preserve embedded descriptions; XML parsing and converter compatibility are verified with the existing suites.
 
 - **Validator diagnostics preserve constraint context and disclose MCP truncation.** Go retains native `oneOf`/`anyOf`/`contains` summaries alongside their causes, matching TypeScript. Missing default descriptions now identify the array's `contains` requirement. MCP validation reports when its existing error-count cap omits diagnostics; validation verdicts and limits are unchanged, and the token budget includes its truncation notice. Validator examples now read input files instead of demonstrating obsolete fields.
 
@@ -49,8 +62,6 @@ All notable changes to this project will be documented in this file.
   canonicalization retains own `__proto__` members and sorts numeric-looking keys
   consistently with Go. The latter corrects JSON key ordering without changing
   member values or native projection semantics.
-
-- **Go consumers now require Go 1.27.3 or newer.** The workspace, published modules, generated schema module, and release/fuzz builds use this floor. It enables the standard strict JSON decoder needed for source-preserving SIEM bundles without an experimental build flag or a custom Unicode parser. Existing converter APIs and output defaults are unchanged.
 
 - **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**
 

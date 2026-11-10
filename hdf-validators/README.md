@@ -296,6 +296,18 @@ Failed `oneOf`, `anyOf`, and `contains` checks retain the constraint summary and
 
 The CLI reports fields and source line numbers. MCP validation keeps its bounded error list and adds a `notice` when count or token limits omit diagnostics; fix the reported errors and validate again. The library APIs retain all diagnostics.
 
+### Producer-specific extension data
+
+At document roots and on evaluated baselines, `extensions` allows only `passthrough` and `rawSourceArtifacts`. Put producer-specific metadata under a tool namespace inside `passthrough`; for example, move `extensions.system_context` to `extensions.passthrough.myScanner.system_context`. Apply the same change under `baselines[].extensions`. Original source artifacts belong in `rawSourceArtifacts`, not in the metadata bag. See [ADR-0017 §1](../dev-docs/adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md#1-extensions-is-a-closed-defined-object-extensionspassthrough-is-the-catch-all-inside-it).
+
+Both languages report an undeclared member as:
+
+```text
+extensions.system_context: is not allowed. Move producer-specific data under extensions.passthrough, namespaced by tool name.
+```
+
+For a baseline, the path is `baselines.0.extensions.system_context`. Each offending key has its own error, retaining the `additionalProperties` keyword and invalid verdict. Go previously reported these keys together at the containing object's path; callers relying on that path or error count must account for the more precise diagnostics. Other validation errors keep their existing format. CLI and MCP validation carry the same diagnostic with source line numbers.
+
 ## Common Validation Errors
 
 ### Missing Required Fields

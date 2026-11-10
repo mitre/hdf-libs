@@ -229,6 +229,10 @@ function formatErrors(errors: ErrorObject[] | null | undefined): ValidationError
       } else if ('additionalProperty' in err.params) {
         field = field ? `${field}.${err.params.additionalProperty}` : err.params.additionalProperty;
         message = 'is not allowed';
+        if (err.keyword === 'additionalProperties'
+          && /^\/(?:baselines\/\d+\/)?extensions$/.test(err.instancePath)) {
+          message += '. Move producer-specific data under extensions.passthrough, namespaced by tool name.';
+        }
       } else if ('unevaluatedProperty' in err.params) {
         field = field ? `${field}.${err.params.unevaluatedProperty}` : err.params.unevaluatedProperty;
         message = 'is not allowed';
