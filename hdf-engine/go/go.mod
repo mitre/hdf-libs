@@ -4,12 +4,12 @@ go 1.26.10
 
 require (
 	github.com/dlclark/regexp2 v1.12.0
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-next.42873372864.1
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.8.0-next.42873372864.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-next.42873372864.1
+	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.8.0-next.42873372864.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.8.0-next.42873372864.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0-next.42873372864.1
 	github.com/stretchr/testify v1.12.1
 	gopkg.in/yaml.v3 v3.0.1
 	lukechampine.com/blake3 v1.4.1
