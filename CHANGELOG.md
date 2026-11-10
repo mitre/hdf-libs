@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Validator diagnostics preserve union context and disclose MCP truncation.** Go retains native `oneOf`/`anyOf` summaries alongside branch errors, matching TypeScript. MCP validation reports when its existing error-count cap omits diagnostics; validation verdicts and limits are unchanged, and the token budget includes its truncation notice. Validator examples now read input files instead of demonstrating obsolete fields.
+
 - **SIEM handoff documentation distinguishes target status and preservation contracts.** ECS uses effective-primary status; Splunk and OCSF Compliance Findings retain raw-primary verdicts. The runbook documents repeatable real-service verification, retained-artifact recovery and hosted evidence, without treating legacy field projections as complete original assessments.
 
 - **Splunk finding queries retain single-valued native fields.** The HDF add-on reads mirrored scalars directly from the original event JSON, avoiding duplicate indexed/extracted values and preserving multiline title text. Ordinary grouped status/severity queries no longer count a finding twice. Exporter bytes, indexed fields and preserved source records remain unchanged; indexed-only queries are unaffected.

@@ -34,29 +34,14 @@ npm install @mitre/hdf-validators
 
 ### TypeScript
 
+These examples read your assessment from `results.json` and baseline from `baseline.json`.
+
 ```typescript
+import { readFileSync } from 'node:fs';
 import { validateResults, validateBaseline } from '@mitre/hdf-validators';
 
 // Validate HDF Results
-const hdfResults = {
-  baselines: [{
-    name: 'My Baseline',
-    checksum: { algorithm: 'sha256', value: 'abc123' },
-    requirements: [{
-      id: 'REQ-001',
-      descriptions: [{ label: 'default', data: 'Test requirement' }],
-      impact: 0.7,
-      tags: { nist: ['AC-1'] },
-      results: [{
-        status: 'passed',
-        codeDesc: 'Control check',
-        startTime: '2025-01-01T00:00:00Z'
-      }]
-    }]
-  }],
-  targets: [],
-  statistics: {}
-};
+const hdfResults = JSON.parse(readFileSync('results.json', 'utf8'));
 
 const result = validateResults(hdfResults);
 
@@ -75,19 +60,7 @@ if (result.valid) {
 
 ```typescript
 // Validate HDF Baseline
-const hdfBaseline = {
-  name: 'Security Baseline',
-  title: 'Example Security Baseline',
-  version: '1.0.0',
-  checksum: { algorithm: 'sha256', value: 'def456' },
-  requirements: [{
-    id: 'REQ-001',
-    title: 'Access Control',
-    descriptions: [{ label: 'default', data: 'Requirement description' }],
-    impact: 0.7,
-    tags: { nist: ['AC-1', 'AC-2'] }
-  }]
-};
+const hdfBaseline = JSON.parse(readFileSync('baseline.json', 'utf8'));
 
 const baselineResult = validateBaseline(hdfBaseline);
 
@@ -102,7 +75,7 @@ import { validate } from '@mitre/hdf-validators';
 
 const autoResult = validate(someHdfDocument);
 // Determines the document type — Results, Baseline, System, Plan, Amendments,
-// Comparison or Evidence Package — and validates against that schema
+// Comparison, Evidence Package or Requirement Change Event — and validates against that schema
 ```
 
 ### Go
@@ -111,7 +84,6 @@ const autoResult = validate(someHdfDocument);
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -248,6 +220,8 @@ interface ValidationError {
   field: string;      // JSON path to the field with error
   message: string;    // Description of the validation error
   value?: unknown;    // The invalid value (optional)
+  keyword?: string;   // JSON Schema violation, e.g. type or oneOf
+  format?: string;    // Expected format when keyword is format
 }
 ```
 
@@ -308,9 +282,19 @@ func (r ValidationResult) Error() string  // Formatted error message
 type ValidationError struct {
     Field       string `json:"field"`        // JSON path to invalid field
     Description string `json:"description"`  // Error description
-    Value       any    `json:"value"`        // Invalid value (optional)
+    Value       any    `json:"value,omitempty"`   // Invalid value (optional)
+    Keyword     string `json:"keyword,omitempty"` // e.g. invalid_type or oneOf
+    Format      string `json:"format,omitempty"`  // Expected format
 }
 ```
+
+## Dialect and diagnostics
+
+Modern documents use JSON Schema 2020-12 in both languages. Undeclared properties in closed objects are rejected; schema-declared open scopes such as `extensions.passthrough` remain available. Legacy-v2 validation uses its separate schema and engine.
+
+Failed `oneOf` and `anyOf` checks retain the union summary and each branch's diagnostics. Callers should use fields and keywords rather than rely on an exact error count or a best-branch heuristic. Go uses `invalid_type` for type failures; TypeScript uses `type`. Format errors include the expected format and offending value.
+
+The CLI reports fields and source line numbers. MCP validation keeps its bounded error list and adds a `notice` when count or token limits omit diagnostics; fix the reported errors and validate again. The library APIs retain all diagnostics.
 
 ## Common Validation Errors
 
@@ -357,8 +341,8 @@ Validate that your converter produces valid HDF:
 import { convertNessusToHdf } from '@mitre/hdf-converters';
 import { validateResults } from '@mitre/hdf-validators';
 
-const hdf = convertNessusToHdf(nessusXml);
-const result = validateResults(JSON.parse(hdf));
+const hdf = await convertNessusToHdf(nessusXml);
+const result = validateResults(hdf);
 
 if (!result.valid) {
   throw new Error(`Invalid HDF output: ${result.getErrorMessage()}`);
@@ -422,7 +406,7 @@ pnpm lint
 
 ## Test Coverage
 
-Both TypeScript and Go implementations maintain **>95% test coverage** with comprehensive validation tests covering:
+The project requires **>90% test coverage**, measured by the package coverage commands. Validation tests cover:
 - Valid HDF Results and Baseline documents
 - Invalid documents (missing fields, wrong types, invalid values)
 - Error message formatting

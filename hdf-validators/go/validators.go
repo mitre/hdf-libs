@@ -258,7 +258,12 @@ func modernValidationErrors(failure *jsonschema.ValidationError, document any) [
 		for _, cause := range failure.Causes {
 			result = append(result, modernValidationErrors(cause, document)...)
 		}
-		return result
+		switch failure.ErrorKind.(type) {
+		case *kind.AnyOf, *kind.OneOf:
+			// Keep the union context alongside its alternatives, as Ajv does.
+		default:
+			return result
+		}
 	}
 	field := strings.Join(failure.InstanceLocation, ".")
 	if field == "" {

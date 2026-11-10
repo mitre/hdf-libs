@@ -1164,6 +1164,37 @@
       "path": [],
       "properties": {},
       "valid": true
+    },
+    {
+      "name": "results: explains failed oneOf alongside branch errors",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "components",
+        0
+      ],
+      "properties": {
+        "componentId": "not-a-uuid"
+      },
+      "valid": false,
+      "keyword": "oneOf",
+      "field": "components.0"
+    },
+    {
+      "name": "results: explains failed anyOf alongside branch errors",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "components",
+        0
+      ],
+      "properties": {
+        "type": "host",
+        "ipAddress": "not-an-ip-address"
+      },
+      "valid": false,
+      "keyword": "anyOf",
+      "field": "components.0.ipAddress"
     }
   ]
 }

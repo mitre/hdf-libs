@@ -260,6 +260,93 @@ func TestHdfValidate_TokenBounded(t *testing.T) {
 	if out.Notice == "" {
 		t.Fatal("truncation must state its remedy")
 	}
+	if len(mustJSON(&out)) > 4*ValidateResponseTokenCap {
+		t.Fatal("the token budget must include the truncation notice")
+	}
+}
+
+func TestHdfValidate_EvidenceErrorLimitNotice(t *testing.T) {
+	for _, mode := range []string{"checksums", "completeness"} {
+		for _, count := range []int{10, 11} {
+			t.Run(fmt.Sprintf("%s/%d", mode, count), func(t *testing.T) {
+				base := evidencePkg("", contentEntry("hdf-results", "results.json", ""))
+				_, valid := callValidate(t, validateInput{Content: string(base), Mode: "schema"})
+				if !valid.Valid {
+					t.Fatalf("the unmodified package must be valid: %+v", valid)
+				}
+				var doc map[string]any
+				if err := json.Unmarshal(base, &doc); err != nil {
+					t.Fatal(err)
+				}
+				for i := range count {
+					doc[fmt.Sprintf("undeclared%d", i)] = true
+				}
+				data, err := json.Marshal(doc)
+				if err != nil {
+					t.Fatal(err)
+				}
+				res, out := callValidate(t, validateInput{Content: string(data), Mode: mode})
+				wantCount := 10
+				if mode == "completeness" {
+					wantCount++ // The missing planRef is an additional completeness error.
+				}
+				if res.IsError || out.Valid || len(out.Errors) != wantCount {
+					t.Fatalf("unexpected validation result: %+v / %+v", res, out)
+				}
+				if count > 10 {
+					if !strings.Contains(out.Notice, "truncated") || !strings.Contains(out.Notice, "re-run") {
+						t.Fatalf("omitted schema errors need a notice and remedy: %+v", out)
+					}
+				} else if out.Notice != "" {
+					t.Fatalf("exactly ten errors must not claim truncation: %q", out.Notice)
+				}
+			})
+		}
+	}
+}
+
+func TestHdfValidate_SchemaErrorLimitNotice(t *testing.T) {
+	for _, docType := range []string{"", "hdf-results"} {
+		for _, tc := range []struct {
+			name      string
+			invalidID bool
+			wantValid bool
+			wantCount int
+		}{
+			{"valid", false, true, 0},
+			{"single error", false, false, 1},
+			{"union errors", true, false, 10},
+		} {
+			t.Run(docType+"/"+tc.name, func(t *testing.T) {
+				var doc map[string]any
+				if err := json.Unmarshal(fixtures.Results.Minimal, &doc); err != nil {
+					t.Fatal(err)
+				}
+				if tc.invalidID {
+					doc["components"] = []any{map[string]any{
+						"type": "host", "name": "probe", "componentId": "not-a-uuid",
+					}}
+				} else if !tc.wantValid {
+					doc["timestamp"] = "not-a-timestamp"
+				}
+				data, err := json.Marshal(doc)
+				if err != nil {
+					t.Fatal(err)
+				}
+				res, out := callValidate(t, validateInput{Content: string(data), DocType: docType, Mode: "schema"})
+				if res.IsError || out.Valid != tc.wantValid || len(out.Errors) != tc.wantCount {
+					t.Fatalf("unexpected validation result: %+v / %+v", res, out)
+				}
+				if tc.invalidID {
+					if !strings.Contains(out.Notice, "truncated") || !strings.Contains(out.Notice, "re-run") {
+						t.Fatalf("omitted errors need a truncation notice and remedy: %+v", out)
+					}
+				} else if out.Notice != "" {
+					t.Fatalf("complete error list must not claim truncation: %q", out.Notice)
+				}
+			})
+		}
+	}
 }
 
 func TestHdfValidate_SchemaMode_ExplicitDocType_Invalid(t *testing.T) {
