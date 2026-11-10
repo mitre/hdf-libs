@@ -292,7 +292,7 @@ type ValidationError struct {
 
 Modern documents use JSON Schema 2020-12 in both languages. Undeclared properties in closed objects are rejected; schema-declared open scopes such as `extensions.passthrough` remain available. Legacy-v2 validation uses its separate schema and engine.
 
-Failed `oneOf` and `anyOf` checks retain the union summary and each branch's diagnostics. Callers should use fields and keywords rather than rely on an exact error count or a best-branch heuristic. Go uses `invalid_type` for type failures; TypeScript uses `type`. Format errors include the expected format and offending value.
+Failed `oneOf`, `anyOf`, and `contains` checks retain the constraint summary and each cause's diagnostics. For example, descriptions without a `default` entry report `contains` at the descriptions array. Callers should use fields and keywords rather than rely on an exact error count or a best-branch heuristic. Go uses `invalid_type` for type failures; TypeScript uses `type`. Format errors include the expected format and offending value.
 
 The CLI reports fields and source line numbers. MCP validation keeps its bounded error list and adds a `notice` when count or token limits omit diagnostics; fix the reported errors and validate again. The library APIs retain all diagnostics.
 

@@ -259,8 +259,8 @@ func modernValidationErrors(failure *jsonschema.ValidationError, document any) [
 			result = append(result, modernValidationErrors(cause, document)...)
 		}
 		switch failure.ErrorKind.(type) {
-		case *kind.AnyOf, *kind.OneOf:
-			// Keep the union context alongside its alternatives, as Ajv does.
+		case *kind.AnyOf, *kind.OneOf, *kind.Contains:
+			// Keep the constraint context alongside its causes, as Ajv does.
 		default:
 			return result
 		}

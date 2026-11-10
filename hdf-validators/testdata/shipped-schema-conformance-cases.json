@@ -1195,6 +1195,94 @@
       "valid": false,
       "keyword": "anyOf",
       "field": "components.0.ipAddress"
+    },
+    {
+      "name": "results: explains missing default description with contains",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "baselines",
+        0,
+        "requirements",
+        0
+      ],
+      "properties": {
+        "descriptions": [
+          {
+            "label": "check",
+            "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+          }
+        ]
+      },
+      "valid": false,
+      "keyword": "contains",
+      "field": "baselines.0.requirements.0.descriptions"
+    },
+    {
+      "name": "results: accepts check descriptions alongside default",
+      "type": "results",
+      "document": "results",
+      "path": [
+        "baselines",
+        0,
+        "requirements",
+        0
+      ],
+      "properties": {
+        "descriptions": [
+          {
+            "label": "check",
+            "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+          },
+          {
+            "label": "default",
+            "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "baseline: explains missing default description with contains",
+      "type": "baseline",
+      "document": "baseline",
+      "path": [
+        "requirements",
+        0
+      ],
+      "properties": {
+        "descriptions": [
+          {
+            "label": "check",
+            "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+          }
+        ]
+      },
+      "valid": false,
+      "keyword": "contains",
+      "field": "requirements.0.descriptions"
+    },
+    {
+      "name": "baseline: accepts check descriptions alongside default",
+      "type": "baseline",
+      "document": "baseline",
+      "path": [
+        "requirements",
+        0
+      ],
+      "properties": {
+        "descriptions": [
+          {
+            "label": "check",
+            "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+          },
+          {
+            "label": "default",
+            "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+          }
+        ]
+      },
+      "valid": true
     }
   ]
 }
