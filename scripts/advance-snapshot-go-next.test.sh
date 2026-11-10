@@ -6,7 +6,8 @@
 # of the same source, an advance to where next already is, refusal to move next back to an
 # older source or to an older snapshot of the same source, a current next with no snapshot
 # tag, a version with no tag, a tag on another commit, a wrong parent, a source off main, a
-# concurrent move of next before the push, a read-back that disagrees, and usage.
+# source behind main's tip with no next to order against, a concurrent move of next before
+# the push, a read-back that disagrees, and usage.
 
 set -uo pipefail
 
@@ -86,13 +87,24 @@ run() {
 }
 rc_of() { cat "$work/$1/rc"; }
 
-# Case 1: no next yet; the first snapshot creates it.
+# Case 1: no next yet; the first snapshot of main's tip creates it.
 set_next ""
-run first "$V1" "$A" "$PA"
-ok=0; [ "$(rc_of first)" -eq 0 ] && [ "$(origin_next)" = "$PA" ] || ok=1
+run first "$V3" "$B" "$PB"
+ok=0; [ "$(rc_of first)" -eq 0 ] && [ "$(origin_next)" = "$PB" ] || ok=1
 report "first advance: exit 0 and next is the prepared commit" "$ok" "exit $(rc_of first), next $(origin_next)"
-ok=0; grep -qxF $'next\t'"$PA"$'\t'"$V1" "$work/first/stdout" || ok=1
+ok=0; grep -qxF $'next\t'"$PB"$'\t'"$V3" "$work/first/stdout" || ok=1
 report "first advance: stdout names the commit and version" "$ok"
+
+# Case 1a: no next yet and a source behind main's tip. With no branch to order
+# against, the tip is the only thing that says this snapshot is the current one.
+set_next ""
+run first-stale "$V1" "$A" "$PA"
+ok=0; [ "$(rc_of first-stale)" -eq 1 ] && [ "$(origin_next)" = absent ] || ok=1
+report "first advance from a stale source: exit 1 and next stays absent" "$ok" \
+  "exit $(rc_of first-stale), next $(origin_next)"
+ok=0; grep -qF 'is not main' "$work/first-stale/stderr" &&
+  grep -qF "$A" "$work/first-stale/stderr" && grep -qF "$B" "$work/first-stale/stderr" || ok=1
+report "first advance from a stale source: stderr names the source and the tip" "$ok"
 
 # Case 2: a newer source moves next forward.
 set_next "$PA"
