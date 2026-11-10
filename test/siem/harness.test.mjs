@@ -3,13 +3,14 @@ import test from 'node:test';
 import { createServer } from 'node:http';
 import { createServer as createSecureServer } from 'node:https';
 import { once } from 'node:events';
-import { mkdtemp, readFile, stat, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, stat, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import { parseOptions, redact, requestRaw, requestWhenAvailable, createRun, qualifyRuntime, buildArtifacts, assertSplunkLicense } from './harness.mjs';
 import { execFile } from 'node:child_process';
 import { promisify, parseEnv } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { makeBundle, consumer, verifyReadback, rejectArtifacts } from './bundle-helpers.mjs';
 
 const qualifiedEnvironment = parseEnv(await readFile(new URL('./.env.example', import.meta.url), 'utf8'));
 
@@ -62,6 +63,17 @@ test('rejects HTTP failures without exposing response secrets', async (t) => {
   await assert.rejects(requestRaw(url), (error) => error.message === 'HTTP 401');
 });
 
+test('sends form-encoded search requests with the requested media type', async (t) => {
+  const body = new URLSearchParams({ search: 'search sourcetype=hdf:results | stats count' }).toString();
+  const url = await server(t, async (req, res) => {
+    const chunks = []; for await (const chunk of req) chunks.push(chunk);
+    res.end(JSON.stringify({ type: req.headers['content-type'], body: Buffer.concat(chunks).toString() }));
+  });
+  const response = await requestRaw(url, { method: 'POST', body,
+    contentType: 'application/x-www-form-urlencoded' });
+  assert.deepEqual(JSON.parse(response), { type: 'application/x-www-form-urlencoded', body });
+});
+
 test('bounds response size and request duration', async (t) => {
   const large = await server(t, (_req, res) => res.end('too large'));
   await assert.rejects(requestRaw(large, { maxBytes: 3 }), /response size/i);
@@ -79,6 +91,7 @@ test('sends HEC token and raw request body without reserializing numbers', async
   const body = '{"event":{"n":9007199254740993,"z":-0}}';
   const url = await server(t, async (req, res) => {
     assert.equal(req.method, 'POST');
+    assert.equal(req.headers['content-type'], 'application/json');
     assert.equal(req.headers.authorization, 'Splunk private-token');
     const chunks = []; for await (const chunk of req) chunks.push(chunk);
     assert.equal(Buffer.concat(chunks).toString(), body);
@@ -207,4 +220,27 @@ test('builds a runnable current CLI and imports the installed packed converter',
     'inspec-overlay', 'override', 'negative-zero', 'riskadjust', 'cve', 'boundary', 'duplicate-ids', 'empty',
   ]);
   assert.equal(result.cases.every((entry) => entry.validated && /^[a-f0-9]{64}$/.test(entry.sha256)), true);
+  for (const producer of ['cli', 'typescript']) {
+    const folder = join(directory, `splunk-${producer}`);
+    await mkdir(folder);
+    const bundle = await makeBundle(result, producer, path, folder, undefined, 'splunk');
+    const manifest = JSON.parse(await readFile(join(bundle.output, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.target, 'splunk');
+    assert.deepEqual(await readFile(join(bundle.output, 'source.json')), fixture);
+    const event = join(folder, 'retained.json');
+    const events = await readFile(join(bundle.output, 'events.ndjson'), 'utf8');
+    await writeFile(event, events.split('\n')[0]);
+    const recovered = await promisify(execFile)(result.cli, ['evidence', 'resolve',
+      join(bundle.output, 'evidence-package.json'), '--event', event], { encoding: 'buffer' });
+    assert.deepEqual(recovered.stdout, fixture);
+    const retained = join(folder, 'retained');
+    await mkdir(retained);
+    await writeFile(join(retained, '0.json'), events.split('\n')[0]);
+    const proof = JSON.parse((await consumer(result, verifyReadback,
+      [path, bundle.output, retained, 'override', 'splunk'])).stdout);
+    assert.equal(proof.events, 1);
+    assert.deepEqual(proof.rawStatuses, { failed: 1 });
+    assert.equal(proof.activeFindings, 0);
+    assert.equal((await rejectArtifacts(result, bundle.output, event)).length, 10);
+  }
 });

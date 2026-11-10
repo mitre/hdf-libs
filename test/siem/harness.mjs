@@ -43,6 +43,7 @@ export function redact(value, secrets) {
 
 export async function requestRaw(address, {
   username, password, token, ca, method = 'GET', body,
+  contentType = 'application/json',
   timeoutMs = 15_000, maxBytes = 128 * 1024 * 1024, signal,
 } = {}) {
   const url = new URL(address);
@@ -50,7 +51,7 @@ export async function requestRaw(address, {
   const headers = {};
   if (username) headers.authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
   if (token) headers.authorization = `Splunk ${token}`;
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  if (body !== undefined) headers['content-type'] = contentType;
   return new Promise((resolve, reject) => {
     const transport = url.protocol === 'https:' ? https : http;
     const request = transport.request(url, { method, headers, ca, signal }, (response) => {

@@ -111,3 +111,21 @@ CLI exports supply an evidence-package archive. TypeScript exports are packaged 
 Per-case report entries include source fingerprints, finding/query counts and the byte sizes of events, source, manifest, evidence package, their uncompressed total and the ZIP archive. Bulk requests are accumulated in approximately 5 MiB batches; a single larger event stays intact. The HTTP helper bounds responses at 128 MiB. These are harness limits, not production capacity claims. The large assessment checks every finding and can take several minutes per producer.
 
 Existing source fixtures are referenced through `test/siem/cases.json`, without copying or rewriting them. Their provenance distinguishes real output with schema adaptations from authored schema-confirmed cases. The matrix includes the large InSpec assessment, CVE, waiver, risk adjustment and negative zero. Runtime adaptations add duplicate IDs, an empty assessment, signature carriage, null/absent members, Unicode, large strings and a numeric token beyond JavaScript's safe integer range. The current CLI validates each generated document before conversion; `test/siem/provenance.txt` records those adaptations. They are not captured scanner output.
+
+### Splunk ingestion and retrieval
+
+After the same terms and optional emulation opt-ins, run:
+
+```sh
+node --env-file=test/siem/.env.example test/siem/run.mjs --target splunk
+```
+
+The suite installs the repository's existing `Splunk_TA_hdf` into the disposable container and restarts it through Testcontainers. It checks the effective `KV_MODE=json` and `TRUNCATE=0` settings, submits the original HEC envelopes with a test-index routing field, and polls search visibility. It uses the supported v2 search-result endpoints; the older event/result endpoints are disabled in current Splunk releases.
+
+Each retrieved `_raw` string is wrapped as an HEC `event` without parsing and reserializing its inner JSON. The same package/source/record checks used by Elasticsearch then verify every occurrence. Native status, suppression and severity queries, event types and tags are checked against source expectations. The harness also requires every present indexed scalar to remain single-valued and every returned value to match the exported payload exactly, including multiline titles. This verifies the add-on's tag eligibility; it does not install the separate CIM add-on or claim accelerated Vulnerabilities data-model verification.
+
+HEC already indexes the exporter's flat native `fields`. JSON extraction can add duplicate values from the payload and make grouped statistics count a finding twice; multiline titles can also appear as both whitespace-normalized and original strings. The add-on's native `EVAL-<field> = spath(_raw,"<field>")` calculated fields read each scalar from the original event JSON after extraction. The tests keep ordinary grouped queries, explicit multiplicity checks and exact-value comparisons; they do not compensate with query-level deduplication. Indexed-only queries such as `tstats` are unaffected by these search-time calculations.
+
+Requests use approximately 5 MiB batches while keeping each event intact, and raw retrieval uses pages of 100 events. Reports record observed HTTP content and JSON extraction limits, plus the HEC event-size setting when explicitly configured. An unset event-size setting is reported as such alongside the vendor's documented 5 MB default, not as a measured override. The boundary fixture exercises an event larger than 4 MiB. Disposable test indices use 100-year retention so the original fixture timestamps remain searchable as the tests age; teardown removes those indices with their containers. These settings qualify this test environment, not arbitrary production deployments.
+
+Vendor references: [HEC inputs and event limits](https://help.splunk.com/en/data-management/splunk-enterprise-admin-manual/10.6/configuration-file-reference/10.6.0-configuration-file-reference/inputs.conf), [search endpoints](https://help.splunk.com/en/splunk-enterprise/rest-api-reference/10.6/search-endpoints/search-endpoint-descriptions), and [index retention](https://help.splunk.com/en/splunk-enterprise/administer/admin-manual/10.6/configuration-file-reference/10.6.0-configuration-file-reference/indexes.conf).
