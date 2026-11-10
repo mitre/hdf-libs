@@ -21,8 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 # Node.js is pinned in mise.toml (`node`, the exact release in mise.lock) and
-# installed by the shared setup action; release.yml's publish job still sets it
-# up through setup-node with its own NODE_VERSION. It tracks the Active LTS and
+# installed through mise-action by the shared setup action and by the snapshot
+# and release publish jobs. It tracks the Active LTS and
 # matches every published package's `engines.node`. THE POLICY IS "Active LTS",
 # not a version: at the time of this pin (2026-10) that is 24 (Krypton), with
 # 22 having moved to Maintenance — still
