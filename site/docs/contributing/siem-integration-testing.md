@@ -74,6 +74,16 @@ To include full-mode orchestration coverage, add `HDF_SIEM_TEST_WIRING=yes` and 
 
 The include pattern is necessary: Node otherwise excludes source files under the `test/` directory and can display an empty coverage report. A unit run that skips the opt-in build/service tests is not full card acceptance evidence.
 
+## GitHub Actions service smoke
+
+The `SIEM service smoke` workflow runs separate Elasticsearch and Splunk jobs on native AMD64 Ubuntu runners. Pull requests qualify the workflow before merge; pushes to `main` and manual dispatch also run it. Manual dispatch becomes available after GitHub registers the workflow on the default branch.
+
+Each job records runner architecture, memory, free disk (including Docker storage) and Docker/Compose versions, then uses the same pinned images and Testcontainers runner as the local command. It checks startup, authentication, license readiness and cleanup in `--environment-only` mode. Memory and disk usage are recorded again after execution without deleting unrelated resources. Smoke mode installs Node and pnpm through the shared setup; it does not install Go or build the CLI. A passing smoke job does **not** prove event ingestion, preservation or full end-to-end correctness. Hosted qualification is pending; local readiness does not substitute for a successful Actions run.
+
+Splunk consent is off by default. After accepting the current General Terms, a repository maintainer can set the Actions repository variable `HDF_SIEM_ACCEPT_SPLUNK_TERMS` to `yes` for automatic runs. A manual run can instead opt in through the `accept_splunk_terms` boolean. This is an operator opt-in, not a security boundary against edits to a pull request workflow. Before merge, qualification requires the repository variable because manual dispatch is not yet registered. No emulation opt-in is needed on these native AMD64 runners. Missing consent fails the Splunk job before checkout or container startup and reports `NOT VERIFIED`; it never produces a successful smoke result.
+
+Only `test/siem/.runs/*/report.json` is uploaded, under per-target artifact names with seven-day retention. The glob deliberately excludes credentials, package files and raw container configuration. Startup and cleanup failures remain failures even when a sanitized report is uploaded. A failure before report creation remains visible in the job log; the upload step warns that no report exists.
+
 ## Reports and cleanup
 
 Private run directories live under the ignored `test/siem/.runs/` directory. Each contains a sanitized `report.json`; full runs also retain their local package artifacts. Runtime passwords are generated per run and written to a private environment file. The file is removed after successful cleanup and retained privately if cleanup fails so the project can be recovered. Do not share it or raw Docker configuration output.

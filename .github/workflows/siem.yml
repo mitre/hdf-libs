@@ -1,0 +1,76 @@
+name: SIEM service smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      accept_splunk_terms:
+        description: Accept the current Splunk General Terms for this run
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: siem-smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: SIEM service smoke (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [elasticsearch, splunk]
+    env:
+      SIEM_TARGET: ${{ matrix.target }}
+      HDF_SIEM_ACCEPT_SPLUNK_TERMS: ${{ (vars.HDF_SIEM_ACCEPT_SPLUNK_TERMS == 'yes' || (github.event_name == 'workflow_dispatch' && inputs.accept_splunk_terms)) && 'yes' || '' }}
+    steps:
+      - name: Record native runner capacity
+        shell: bash
+        run: |
+          uname -m
+          test "$(uname -m)" = x86_64
+          free -h
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          docker version
+          docker compose version
+          docker info --format '{{.OSType}} {{.Architecture}} {{.MemTotal}}'
+          df -h "$(docker info --format '{{.DockerRootDir}}')"
+      - name: Require explicit Splunk consent
+        if: matrix.target == 'splunk'
+        shell: bash
+        run: |
+          if [ "$HDF_SIEM_ACCEPT_SPLUNK_TERMS" != yes ]; then
+            echo '::error::Splunk NOT VERIFIED: accept the current terms through the repository variable or manual input.'
+            echo 'Splunk service smoke is NOT VERIFIED because runtime consent is missing.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - name: Verify service readiness and cleanup
+        run: node --env-file=test/siem/.env.example test/siem/run.mjs --environment-only --target "$SIEM_TARGET"
+      - name: Record remaining runner capacity
+        if: always()
+        shell: bash
+        run: |
+          free -h
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE" "$(docker info --format '{{.DockerRootDir}}')"
+          docker system df
+      - name: Upload sanitized service report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: siem-smoke-${{ matrix.target }}
+          path: test/siem/.runs/*/report.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7

@@ -213,7 +213,7 @@ The cost moves into artifact delivery and lifecycle management. Events alone do 
 
 ## Implementation plan
 
-The owner subsequently approved local and GitHub Actions verification in the same PR. [The SIEM integration plan](../SIEM-INTEGRATION-PLAN.md#github-actions-verification) specifies separate native AMD64 target jobs, explicit Splunk consent, shared Testcontainers lifecycle, and JUnit/HDF evidence gates. Environment readiness is distinct from product ingestion/readback acceptance; both need independent review and actual execution evidence. This extends verification delivery without changing the accepted export profile or existing defaults.
+The owner subsequently approved local and GitHub Actions verification in the same PR. [The SIEM integration plan](../SIEM-INTEGRATION-PLAN.md#github-actions-verification) specifies separate native AMD64 target jobs, explicit Splunk consent, shared Testcontainers lifecycle, and JUnit/HDF evidence gates. Environment readiness is distinct from product ingestion/readback acceptance; both need independent review and actual execution evidence. This extends verification delivery without changing the accepted export profile or existing defaults. The service-smoke workflow now implements the readiness/cleanup portion using the shared environment runner, with explicit Splunk consent and sanitized per-target reports. Native hosted qualification and the separate ingestion/readback evidence remain pending.
 
 ### Quality standards and shared abstractions
 
