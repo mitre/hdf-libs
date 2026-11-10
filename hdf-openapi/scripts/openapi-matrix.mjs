@@ -70,8 +70,8 @@ const OPENAPI_TS = () => toolEntry('openapi-typescript', 'openapi-typescript');
 
 /** oapi-codegen is a Go binary, so it is not in node_modules. */
 const OAPI = process.env.OAPI_CODEGEN ?? 'oapi-codegen';
-/** `mise install` puts the release mise.toml pins (the baseline's) on PATH. */
-const OAPI_INSTALL = 'mise install';
+/** Installs the release mise.toml pins (the baseline's) and runs the matrix with it. */
+const OAPI_INSTALL = 'mise install && mise exec -- pnpm run matrix';
 
 /** Redocly's severities, in the order a report lists them. */
 const SEVERITY = ['error', 'warn', 'info', 'hint'];

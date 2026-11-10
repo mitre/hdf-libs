@@ -33,10 +33,12 @@ concurrency:
 # tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
 # minor the previous floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
-# go-version-file) — no separate pin to drift. golangci-lint, govulncheck,
-# gosec, jactionlint, shellcheck and oapi-codegen are pinned in mise.toml, with
-# checksums in mise.lock, so local runs (the pre-commit hook,
-# `pnpm lint:workflows`, `pnpm run matrix`) and CI run the same releases.
+# go-version-file) — no separate pin to drift. golangci-lint, gosec,
+# jactionlint and shellcheck are pinned in mise.toml as release binaries with
+# SHA-256 checksums in mise.lock; govulncheck and oapi-codegen are pinned there
+# too and built with go install, which the Go checksum database verifies. Local
+# runs (the pre-commit hook, `pnpm lint:workflows`, `pnpm run matrix`) and CI
+# run the same releases.
 env:
   GOTESTSUM_VERSION: 'v1.13.0'
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves

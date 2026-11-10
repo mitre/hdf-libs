@@ -10,6 +10,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 import {
   BASELINE,
   NPM_GENERATORS,
@@ -31,6 +32,19 @@ import {
   unwaived,
   withoutKeyword,
 } from '../scripts/openapi-matrix.mjs';
+
+/** The parts of a GitHub Actions job and step that decide whether the matrix gates CI. */
+interface WorkflowStep {
+  uses?: string;
+  run?: string;
+  with?: Record<string, unknown>;
+  if?: unknown;
+  'continue-on-error'?: unknown;
+}
+interface WorkflowJob extends Omit<WorkflowStep, 'uses' | 'run' | 'with'> {
+  needs?: string | string[];
+  steps?: WorkflowStep[];
+}
 import { main as generateComponentsDocument } from '../src/generate-components.js';
 
 // The matrix measures a BUILD ARTIFACT — dist/hdf-components.oas.json — and the suite is
@@ -110,27 +124,47 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
 
   it('is run by CI, with the generator installed at the version the baseline records', () => {
     const root = join(import.meta.dirname, '..', '..');
-    const workflow = readFileSync(join(root, '.github', 'workflows', 'ci.yml'), 'utf8');
+    const ci = parseYaml(readFileSync(join(root, '.github', 'workflows', 'ci.yml'), 'utf8')) as {
+      jobs: Record<string, WorkflowJob>;
+    };
     const miseToml = readFileSync(join(root, 'mise.toml'), 'utf8');
     const tool = 'go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen';
-    // A job that runs the matrix: the step itself, since comments elsewhere in the
-    // file mention `pnpm run matrix` too...
-    expect(workflow).toMatch(/^ +run: pnpm --filter @mitre\/hdf-openapi run matrix$/m);
-    // ...with the generator that mise.toml pins, installed through mise, so CI and a
-    // local `mise install` run the same release and no second pin can drift...
-    const pinLine = miseToml.split('\n').find((line) => line.startsWith(`"${tool}" = "`));
+    // A job that runs the matrix...
+    const job = ci.jobs['check-openapi-matrix'];
+    expect(job, 'CI must have the check-openapi-matrix job').toBeDefined();
+    const steps = job.steps ?? [];
+    const matrixAt = steps.findIndex((step) => step.run === 'pnpm --filter @mitre/hdf-openapi run matrix');
+    expect(matrixAt, 'the job must run the matrix').toBeGreaterThan(-1);
+    // ...after mise-action installs the generator mise.toml pins, so CI and a
+    // local `mise install` run one release; no other step installs another...
+    const installAt = steps.findIndex(
+      (step) =>
+        step.uses?.startsWith('jdx/mise-action@') === true &&
+        String(step.with?.install_args ?? '').split(/\s+/).includes(tool),
+    );
+    expect(installAt, 'the job must install the generator through mise-action').toBeGreaterThan(-1);
+    expect(installAt).toBeLessThan(matrixAt);
+    const mentions = steps.filter((step) => JSON.stringify(step).includes('oapi-codegen'));
+    expect(mentions, 'no other step may install or fetch the generator').toEqual([steps[installAt]]);
+    // ...unconditionally: a failure up to the matrix step fails the job...
+    for (const unit of [job, ...steps.slice(0, matrixAt + 1)]) {
+      expect(unit.if, 'no condition may skip the job or a step it needs').toBeUndefined();
+      expect(unit['continue-on-error'], 'a failure must fail the job').toBeUndefined();
+    }
+    // CRLF too: a Windows checkout (core.autocrlf=true) rewrites these files.
+    const pinLine = miseToml.split(/\r?\n/).find((line) => line.startsWith(`"${tool}" = "`));
     const pinned = /= "(\d+\.\d+\.\d+)"$/.exec(pinLine ?? '')?.[1];
     expect(pinned, 'mise.toml must pin the generator version').toBeDefined();
-    const installs = workflow
-      .split('\n')
-      .some((line) => line.trim().startsWith('install_args:') && line.trim().split(/\s+/).includes(tool));
-    expect(installs, 'CI must install the generator through mise-action').toBe(true);
-    expect(workflow).not.toContain('cmd/oapi-codegen@');
     // ...at the version these verdicts were measured against. A pin bump without a
     // re-measurement would gate the new tool against the old record.
     expect(tracked.tools['oapi-codegen']).toBe(pinned);
-    // ...and a job nothing depends on cannot fail the build, so assert it is gated.
-    expect(workflow).toContain('check-openapi-matrix, scan-deps');
+    // ...and mise.lock holds that version, or `mise install --locked` fails.
+    const lockLines = readFileSync(join(root, 'mise.lock'), 'utf8').split(/\r?\n/);
+    const entry = lockLines.indexOf(`[[tools."${tool}"]]`);
+    expect(entry, 'mise.lock must lock the generator').toBeGreaterThan(-1);
+    expect(lockLines[entry + 1]).toBe(`version = "${pinned}"`);
+    // ...and the scan gate needs the job: one nothing needs cannot fail CI.
+    expect([ci.jobs['gate-hdf-scans']?.needs ?? []].flat()).toContain('check-openapi-matrix');
   });
 });
 
@@ -420,7 +454,7 @@ describe('the CLI', () => {
 describe('the measurement preconditions', () => {
   it('refuses a missing tool with the pinned install command, rather than skipping it', () => {
     expect(() => toolVersion('definitely-not-a-real-binary-xyz', ['--version'], 'oapi-codegen')).toThrow(
-      /Install the pinned build with:\n\s+mise install\n/,
+      /Install the pinned build with:\n\s+mise install && mise exec -- pnpm run matrix\n/,
     );
   });
 

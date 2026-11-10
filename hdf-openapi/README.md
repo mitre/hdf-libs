@@ -102,12 +102,12 @@ Every other definition is hoisted to `#/components/schemas/<Name>` under its own
 
 None of that is optional. `pnpm test` re-measures the lints and openapi-typescript and fails on any drift from the baseline, and CI's `check-openapi-matrix` job installs `oapi-codegen` at the version `mise.toml` pins and runs the full matrix, so the Go half is gated too. The test also asserts that CI wiring still exists — an ungated baseline is the real hazard, so losing the job fails the suite rather than quietly going unmeasured.
 
-`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. `mise.toml` at the repository root pins it at the version the baseline records, so `mise install` puts that release on PATH. To run the whole matrix locally:
+`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. `mise.toml` at the repository root pins it at the version the baseline records, and `mise install` installs that release. Run the matrix under `mise exec --` (or with mise activated in your shell) so that release, not another `oapi-codegen` on PATH, is the one measured. To run the whole matrix locally:
 
 ```bash
-mise install             # oapi-codegen at the pinned version, with the rest of the toolchain
-pnpm run matrix          # verify against the tracked baseline
-pnpm run matrix:update   # re-record after a deliberate tooling or schema change
+mise install                           # oapi-codegen at the pinned version, with the rest of the toolchain
+mise exec -- pnpm run matrix           # verify against the tracked baseline
+mise exec -- pnpm run matrix:update    # re-record after a deliberate tooling or schema change
 pnpm run lint:openapi    # Redocly alone
 ```
 
