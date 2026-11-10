@@ -18,8 +18,11 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# Node.js comes from mise.toml through the shared setup action; see the note in
-# ci.yml: the policy is Active LTS, not a number.
+# Node.js and pnpm come from mise.toml and mise.lock; see the note in ci.yml:
+# the policy is Active LTS, not a number. The site is a published artifact, so
+# this job installs with no cache restored, like release.yml's publish jobs,
+# instead of through the shared setup action, which restores the mise and pnpm
+# store caches.
 jobs:
   deploy:
     name: Build and deploy schema site
@@ -33,7 +36,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: $/.github/actions/setup
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node pnpm
+          cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas

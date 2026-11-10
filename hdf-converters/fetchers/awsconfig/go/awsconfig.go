@@ -136,6 +136,36 @@ func NewAWSConfigFetcherWithClient(client ConfigServiceClient) *AWSConfigFetcher
 // the caller's decision (HDF conversion needs at least one rule; a raw export
 // does not).
 func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
+	res, err := f.FetchWithReport(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if w := DroppedWarning(res.Dropped); w != "" {
+		fmt.Fprintln(os.Stderr, w)
+	}
+	return res.Data, nil
+}
+
+// FetchResult is an export with the report of what did not reach it, for a
+// caller that would rather render the warning itself than have it on stderr.
+type FetchResult struct {
+	Data    []byte
+	Dropped []UnreadableRule
+}
+
+// DroppedWarning is the warning line for rules that could not be read, or "" if
+// none were. Callers of FetchWithReport own printing it; Fetch prints it itself.
+func DroppedWarning(dropped []UnreadableRule) string {
+	if len(dropped) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("WARNING: aws-config: %d rule(s) could not be read and were dropped: %s",
+		len(dropped), describeUnreadable(dropped))
+}
+
+// FetchWithReport fetches and reports the rules it had to drop instead of
+// warning about them.
+func (f *AWSConfigFetcher) FetchWithReport(ctx context.Context) (FetchResult, error) {
 	// Apply default deadlines when the caller has not set one, so a hung or
 	// unreachable endpoint cannot block indefinitely. Listing and reading are
 	// bounded separately because the read budget depends on how many rules the
@@ -149,7 +179,7 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	}
 	rules, skipped, err := f.fetchAllConfigRules(listCtx)
 	if err != nil {
-		return nil, err
+		return FetchResult{}, err
 	}
 	if len(skipped) > 0 {
 		fmt.Fprintf(os.Stderr, "WARNING: aws-config: skipped %d rule(s) whose evaluations the Config API "+
@@ -162,8 +192,9 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		readCtx, cancel = context.WithTimeout(ctx, readPhaseTimeout(len(rules)))
 		defer cancel()
 	}
-	if rules, err = f.readEvaluations(readCtx, rules); err != nil {
-		return nil, err
+	rules, dropped, err := f.readEvaluations(readCtx, rules)
+	if err != nil {
+		return FetchResult{}, err
 	}
 	f.attachRemediations(readCtx, rules)
 
@@ -172,7 +203,11 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	if rules == nil {
 		rules = []awsconfigconv.ConfigRule{}
 	}
-	return json.Marshal(awsconfigconv.ConfigRulesFile{ConfigRules: rules})
+	data, err := json.Marshal(awsconfigconv.ConfigRulesFile{ConfigRules: rules})
+	if err != nil {
+		return FetchResult{}, err
+	}
+	return FetchResult{Data: data, Dropped: dropped}, nil
 }
 
 // readPhaseTimeout is the default deadline for reading ruleCount rules'
@@ -188,32 +223,31 @@ func readPhaseTimeout(ruleCount int) time.Duration {
 // config:GetComplianceDetailsByConfigRule altogether, and one clear error beats
 // a failed call per rule. Anything else — throttling, a dead network, a
 // cancelled context — says nothing about the rule and stays fatal.
-func (f *AWSConfigFetcher) readEvaluations(ctx context.Context, rules []awsconfigconv.ConfigRule) ([]awsconfigconv.ConfigRule, error) {
+func (f *AWSConfigFetcher) readEvaluations(ctx context.Context, rules []awsconfigconv.ConfigRule) ([]awsconfigconv.ConfigRule, []UnreadableRule, error) {
 	kept := rules[:0]
-	var failed []unreadableRule
+	var failed []UnreadableRule
 	for i := range rules {
 		results, err := f.fetchEvaluationResults(ctx, rules[i].ConfigRuleName)
 		if err != nil {
 			switch {
 			case ruleGone(err):
-			case ruleRefused(err) && len(kept) > 0:
+			case (ruleRefused(err) || ruleRejected(err)) && len(kept) > 0:
 			case ruleRefused(err):
-				return nil, fmt.Errorf("fetching results for rule %s: %w (no rule has read yet, so this principal "+
+				return nil, nil, fmt.Errorf("fetching results for rule %s: %w (no rule has read yet, so this principal "+
 					"likely lacks config:GetComplianceDetailsByConfigRule)", rules[i].ConfigRuleName, err)
+			case ruleRejected(err):
+				return nil, nil, fmt.Errorf("fetching results for rule %s: %w (no rule has read yet, so the request "+
+					"is likely wrong for every rule rather than for this one)", rules[i].ConfigRuleName, err)
 			default:
-				return nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
+				return nil, nil, fmt.Errorf("fetching results for rule %s: %w", rules[i].ConfigRuleName, err)
 			}
-			failed = append(failed, unreadableRule{name: rules[i].ConfigRuleName, detail: err.Error()})
+			failed = append(failed, UnreadableRule{Name: rules[i].ConfigRuleName, Detail: readFailureCause(err)})
 			continue
 		}
 		rules[i].EvaluationResults = results
 		kept = append(kept, rules[i])
 	}
-	if len(failed) > 0 {
-		fmt.Fprintf(os.Stderr, "WARNING: aws-config: %d rule(s) could not be read and were dropped: %s\n",
-			len(failed), describeUnreadable(failed))
-	}
-	return kept, nil
+	return kept, failed, nil
 }
 
 // attachRemediations merges each rule's remediation configuration when present.
@@ -235,12 +269,12 @@ func (f *AWSConfigFetcher) attachRemediations(ctx context.Context, rules []awsco
 	}
 }
 
-// unreadableRule is a rule whose evaluations could not be obtained, with the
+// UnreadableRule is a rule whose evaluations could not be obtained, with the
 // detail worth telling the user: the provisioning service for a rule the API
-// marks unreadable, or the error text for one that failed to read.
-type unreadableRule struct {
-	name   string
-	detail string
+// marks unreadable, or the cause for one that failed to read.
+type UnreadableRule struct {
+	Name   string
+	Detail string
 }
 
 // ruleGone reports a compliance-read error that says the rule no longer exists.
@@ -261,6 +295,20 @@ func ruleRefused(err error) bool {
 	return errors.As(err, &api) && api.ErrorCode() == "AccessDeniedException"
 }
 
+// ruleRejected reports a read the service would not accept. What it objected to
+// is this one rule's: a read names the rule and, after the first page, that
+// rule's own token. The caller decides from what has read so far whether that means
+// one bad rule or a request built wrongly for all of them. Throttling and server
+// failures are not here: they say nothing about the request. Matching on the
+// code covers both shapes, since the SDK's own exceptions for these report it.
+func ruleRejected(err error) bool {
+	var api smithy.APIError
+	if !errors.As(err, &api) {
+		return false
+	}
+	return api.ErrorCode() == "ValidationException" || api.ErrorCode() == "InvalidParameterValueException"
+}
+
 // evaluationsReadable is the API's own answer to whether GetComplianceDetails
 // can return results: RuleEvaluationVisibility INTERNAL means it cannot. An
 // unset value counts as readable so an older response never drops a rule; a
@@ -269,29 +317,54 @@ func evaluationsReadable(r types.ConfigRule) bool {
 	return r.RuleEvaluationVisibility != types.RuleEvaluationVisibilityInternal
 }
 
-// describeUnreadable renders rules as "name (detail)" for a warning or error,
-// omitting the parenthesis when there is no detail to give.
-func describeUnreadable(rules []unreadableRule) string {
-	parts := make([]string, len(rules))
-	for i, u := range rules {
-		parts[i] = u.name
-		if u.detail != "" {
-			parts[i] += " (" + u.detail + ")"
+// describeUnreadable renders rules grouped by the detail they share, in the
+// order each detail was first seen: "a, c (x); b (y)". Rules lost to one cause
+// name that cause once, however many of them there are; a rule with no detail
+// is named bare.
+func describeUnreadable(rules []UnreadableRule) string {
+	var details []string
+	byDetail := map[string][]string{}
+	for _, u := range rules {
+		if _, seen := byDetail[u.Detail]; !seen {
+			details = append(details, u.Detail)
 		}
+		byDetail[u.Detail] = append(byDetail[u.Detail], u.Name)
 	}
-	return strings.Join(parts, ", ")
+	groups := make([]string, 0, len(details))
+	for _, d := range details {
+		group := strings.Join(byDetail[d], ", ")
+		if d != "" {
+			group += " (" + d + ")"
+		}
+		groups = append(groups, group)
+	}
+	return strings.Join(groups, "; ")
+}
+
+// readFailureCause is the stable part of a failed read: the API error's code and
+// message, so rules refused for one reason group together even though the SDK
+// gives every response its own request id.
+func readFailureCause(err error) string {
+	var api smithy.APIError
+	if errors.As(err, &api) {
+		if msg := api.ErrorMessage(); msg != "" {
+			return api.ErrorCode() + ": " + msg
+		}
+		return api.ErrorCode()
+	}
+	return err.Error()
 }
 
 // fetchAllConfigRules pages through DescribeConfigRules, returning the rules
 // whose evaluations are readable and the ones skipped because they are not.
-func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, []unreadableRule, error) {
+func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, []UnreadableRule, error) {
 	limit := f.maxPages
 	if limit <= 0 {
 		limit = defaultMaxPages
 	}
 
 	var rules []awsconfigconv.ConfigRule
-	var skipped []unreadableRule
+	var skipped []UnreadableRule
 	var nextToken *string
 
 	for page := 0; ; page++ {
@@ -311,9 +384,9 @@ func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfig
 
 		for _, r := range out.ConfigRules {
 			if !evaluationsReadable(r) {
-				skipped = append(skipped, unreadableRule{
-					name:   aws.ToString(r.ConfigRuleName),
-					detail: aws.ToString(r.CreatedBy),
+				skipped = append(skipped, UnreadableRule{
+					Name:   aws.ToString(r.ConfigRuleName),
+					Detail: aws.ToString(r.CreatedBy),
 				})
 				continue
 			}
@@ -342,7 +415,7 @@ const maxRemediationBatch = 25
 // rule keeps its fix.
 func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []string) map[string]*awsconfigconv.RemediationConfiguration {
 	out := make(map[string]*awsconfigconv.RemediationConfiguration)
-	var skipped []unreadableRule
+	var skipped []UnreadableRule
 	record := func(rcs []types.RemediationConfiguration) {
 		for _, rc := range rcs {
 			name := aws.ToString(rc.ConfigRuleName)
@@ -365,7 +438,7 @@ func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []st
 			continue
 		}
 		if len(batch) == 1 {
-			skipped = append(skipped, unreadableRule{name: batch[0], detail: err.Error()})
+			skipped = append(skipped, UnreadableRule{Name: batch[0], Detail: readFailureCause(err)})
 			continue
 		}
 		for _, name := range batch {
@@ -374,7 +447,7 @@ func (f *AWSConfigFetcher) fetchRemediations(ctx context.Context, ruleNames []st
 			}
 			rcs, err := f.describeRemediations(ctx, []string{name})
 			if err != nil {
-				skipped = append(skipped, unreadableRule{name: name, detail: err.Error()})
+				skipped = append(skipped, UnreadableRule{Name: name, Detail: readFailureCause(err)})
 				continue
 			}
 			record(rcs)

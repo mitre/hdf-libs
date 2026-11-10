@@ -40,7 +40,7 @@
     "lint:gosec-coverage": "bash scripts/check-gosec-coverage.test.sh && bash scripts/check-gosec-coverage.sh",
     "test:release-smoke": "bash scripts/check-npm-consumers.test.sh",
     "lint:release-version": "bash scripts/check-release-version.test.sh",
-    "lint:snapshot-scripts": "bash scripts/list-npm-packages.test.sh && bash scripts/derive-snapshot-version.test.sh && bash scripts/prepare-snapshot.test.sh && bash scripts/check-snapshot-archives.test.sh && bash scripts/publish-snapshot-packages.test.sh && bash scripts/wait-for-snapshot-publication.test.sh && bash scripts/promote-snapshot-next.test.sh && bash scripts/check-go-consumers.test.sh",
+    "lint:snapshot-scripts": "bash scripts/list-npm-packages.test.sh && bash scripts/derive-snapshot-version.test.sh && bash scripts/prepare-snapshot.test.sh && bash scripts/check-snapshot-archives.test.sh && bash scripts/publish-snapshot-packages.test.sh && bash scripts/wait-for-snapshot-publication.test.sh && bash scripts/promote-snapshot-next.test.sh && bash scripts/advance-snapshot-go-next.test.sh && bash scripts/check-go-consumers.test.sh",
     "lint:go-module-versions": "bash scripts/set-go-module-versions.test.sh",
     "lint:go-mod-tidy": "bash scripts/check-go-mod-tidy.test.sh && bash scripts/check-go-mod-tidy.sh"
   },
