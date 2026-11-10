@@ -16,5 +16,38 @@
     "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/negzero.json",
     "provenance": "hdf-converters/converters/hdf-to-ecs/fixtures/provenance.txt",
     "kind": "schema-confirmed"
+  },
+  {
+    "name": "riskadjust",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/riskadjust.json",
+    "provenance": "hdf-converters/converters/hdf-to-ecs/fixtures/provenance.txt",
+    "kind": "schema-confirmed"
+  },
+  {
+    "name": "cve",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/cve.json",
+    "provenance": "hdf-converters/converters/hdf-to-ecs/fixtures/provenance.txt",
+    "kind": "schema-confirmed"
+  },
+  {
+    "name": "boundary",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/override.json",
+    "provenance": "test/siem/provenance.txt",
+    "kind": "schema-confirmed-runtime-adaptation",
+    "variant": "boundary"
+  },
+  {
+    "name": "duplicate-ids",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/override.json",
+    "provenance": "test/siem/provenance.txt",
+    "kind": "schema-confirmed-runtime-adaptation",
+    "variant": "duplicate-ids"
+  },
+  {
+    "name": "empty",
+    "path": "hdf-converters/converters/hdf-to-ecs/fixtures/input/override.json",
+    "provenance": "test/siem/provenance.txt",
+    "kind": "schema-confirmed-runtime-adaptation",
+    "variant": "empty"
   }
 ]

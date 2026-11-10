@@ -7,7 +7,7 @@ description: Start isolated Elasticsearch and Splunk test services with Testcont
 
 Use this development harness to qualify real SIEM services before testing HDF export preservation. Testcontainers Node manages a shared Docker Compose definition; each run uses a private directory and matching project name with a 128-bit lowercase random identifier, plus generated credentials. Published HDF packages do not depend on Testcontainers.
 
-The environment smoke test is implemented. Elasticsearch 9.5.6 and the pinned Splunk image (reporting version 10.6.1.1) passed authenticated readiness, license checks and cleanup together. The current CLI build and packed TypeScript consumer also passed. Target ingestion/readback suites remain separate work; environment readiness alone is not preservation verification.
+The environment smoke test is implemented. Elasticsearch 9.5.6 and the pinned Splunk image (reporting version 10.6.1.1) passed authenticated readiness, license checks and cleanup together. The Elasticsearch suite additionally exercises current CLI and packed TypeScript exports through ingestion and retrieval. Splunk preservation and hosted product verification remain separate work; environment readiness alone is not preservation verification.
 
 ## Prerequisites
 
@@ -92,6 +92,22 @@ Normal cleanup removes only resources labelled for that run's Compose project. I
 
 ## Ingestion and preservation
 
-Full mode uses the selected target suite's `verify` export with the built CLI, installed TypeScript consumer, service handles and raw-response helper. It fails before service startup when a requested target suite is not implemented. The Elasticsearch and Splunk target suites are separate implementation work; no live ingestion/readback PASS is claimed by this environment page.
+Full mode uses the selected target suite's `verify` export with the built CLI, installed TypeScript consumer, service handles and raw-response helper. It fails before service startup when a requested target suite is not implemented. Run the Elasticsearch suite from the repository root:
 
-Existing source fixtures are referenced through `test/siem/cases.json`, without copying or rewriting them. Their provenance distinguishes real output with schema adaptations from authored schema-confirmed cases. Artifact preparation validates inputs and records their SHA256 and byte length. Target tests must still prove exact preserved-record retrieval, artifact integrity, native queries, limits and explicit rejection of tampering.
+```sh
+node --env-file=test/siem/.env.example test/siem/run.mjs --target elasticsearch
+```
+
+The suite creates indices using `hdf-converters/shared/ecs-bundle-mapping.json`: ordinary stored `_source`, with `hdf.source` mapped as an object with `enabled: false`. Elasticsearch retains that preservation payload without dynamically indexing its members. Normal finding fields remain searchable. This mapping must be supplied when creating an index for these exports; the converter does not configure a server. Synthetic `_source` is outside the accepted preservation contract.
+
+The existing legacy `hdf.tags` copy remains dynamically indexed, including schema-open tag members. Conflicting types there can still reject an event; disabling indexing for `hdf.source` does not change legacy exporter defaults.
+
+Impact and effective impact use explicit `double` mappings; CVSS base score uses the [ECS 9.4.0-defined `float` type](https://github.com/elastic/ecs/blob/v9.4.0/schemas/vulnerability.yml). Letting Elasticsearch infer these types from an initial integer value can silently truncate later fractional values and produce incorrect numeric query results, even when `_source` remains intact.
+
+Each CLI and installed TypeScript case is ingested as raw NDJSON. The suite checks every bulk item, retrieves every occurrence through the raw `_source` endpoint, and uses the existing resolver to compare the full requirement and baseline while recovering byte-exact source data. Source expectations drive count, outcome, raw status, impact and CVE severity queries. Occurrence IDs used for test ingestion keep duplicate requirement IDs distinct.
+
+CLI exports supply an evidence-package archive. TypeScript exports are packaged with the existing `hdf evidence build`, `add-evidence` and `bundle` commands. Readback checks all three selected artifact checksums through the installed engine and exercises package-first CLI recovery. Missing or altered source/events/manifest files, ambiguous references and changed carried records must fail. Embedded signatures are preserved; these tests do not authenticate their signers.
+
+Per-case report entries include source fingerprints, finding/query counts and the byte sizes of events, source, manifest, evidence package, their uncompressed total and the ZIP archive. Bulk requests are accumulated in approximately 5 MiB batches; a single larger event stays intact. The HTTP helper bounds responses at 128 MiB. These are harness limits, not production capacity claims. The large assessment checks every finding and can take several minutes per producer.
+
+Existing source fixtures are referenced through `test/siem/cases.json`, without copying or rewriting them. Their provenance distinguishes real output with schema adaptations from authored schema-confirmed cases. The matrix includes the large InSpec assessment, CVE, waiver, risk adjustment and negative zero. Runtime adaptations add duplicate IDs, an empty assessment, signature carriage, null/absent members, Unicode, large strings and a numeric token beyond JavaScript's safe integer range. The current CLI validates each generated document before conversion; `test/siem/provenance.txt` records those adaptations. They are not captured scanner output.

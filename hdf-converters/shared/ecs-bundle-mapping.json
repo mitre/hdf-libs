@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "index.mapping.source.mode": "stored"
+  },
+  "mappings": {
+    "properties": {
+      "vulnerability": {
+        "properties": {
+          "score": {
+            "properties": {
+              "base": {
+                "type": "float"
+              }
+            }
+          }
+        }
+      },
+      "hdf": {
+        "properties": {
+          "impact": {
+            "type": "double"
+          },
+          "effective_impact": {
+            "type": "double"
+          },
+          "source": {
+            "type": "object",
+            "enabled": false
+          }
+        }
+      }
+    }
+  }
+}

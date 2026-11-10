@@ -22,3 +22,18 @@ https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-referen
 The field and OK state were also observed from the pinned Splunk10.6.1 image
 (runtime reports10.6.1.1) during authenticated local qualification. No license
 keys, signatures, host identifiers or private API responses are committed.
+
+Elasticsearch matrix additions (2026-11-10):
+- riskadjust and cve reference the existing ECS converter examples and their
+  provenance; neither file is copied or modified.
+- boundary, duplicate-ids and empty are schema-confirmed runtime adaptations
+  of the override example, NOT captured scanner output. Each generated document
+  is validated with the current CLI before conversion; failure aborts the run.
+- boundary copies the Integrity signature example from
+  hdf-schema/src/schemas/primitives/extensions.schema.json, $defs.Integrity.examples[1],
+  to document and baseline integrity. Signatures are carriage examples only.
+  Schema-open requirement tags and document/baseline extensions.passthrough
+  carry null, absent members, Unicode, large plain/escaped strings, a large
+  numeric token and negative zero. No original prose is edited.
+- duplicate-ids duplicates a whole requirement occurrence without changing its
+  ID; empty removes whole baselines. Neither is claimed as original tool output.

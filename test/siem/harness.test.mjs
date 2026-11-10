@@ -203,6 +203,8 @@ test('builds a runnable current CLI and imports the installed packed converter',
   const manifest = JSON.parse(bundle.manifest);
   assert.equal(manifest.profileVersion, '1.0');
   assert.equal(result.tarballs.length, 7);
-  assert.deepEqual(result.cases.map((entry) => entry.name), ['inspec-overlay', 'override', 'negative-zero']);
+  assert.deepEqual(result.cases.map((entry) => entry.name), [
+    'inspec-overlay', 'override', 'negative-zero', 'riskadjust', 'cve', 'boundary', 'duplicate-ids', 'empty',
+  ]);
   assert.equal(result.cases.every((entry) => entry.validated && /^[a-f0-9]{64}$/.test(entry.sha256)), true);
 });
