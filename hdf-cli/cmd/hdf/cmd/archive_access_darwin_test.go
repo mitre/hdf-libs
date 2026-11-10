@@ -99,7 +99,11 @@ func TestArchiveAccessDarwinRejectsUnverifiableFilesystem(t *testing.T) {
 			if file != nil {
 				t.Cleanup(func() { require.NoError(t, file.Close()) })
 			}
-			assert.Error(t, err)
+			if name == "query-error" {
+				assert.ErrorIs(t, err, unix.EIO)
+			} else {
+				assert.ErrorContains(t, err, "cannot establish private archive access on this filesystem")
+			}
 			assert.Nil(t, file)
 			_, statErr := os.Stat(path)
 			assert.ErrorIs(t, statErr, os.ErrNotExist, "an unverifiable staged file must be removed")

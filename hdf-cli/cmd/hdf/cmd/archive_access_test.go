@@ -73,8 +73,14 @@ func TestArchiveAccessInvalidPolicyBeforeInput(t *testing.T) {
 }
 
 func TestArchiveAccessRequiresBundle(t *testing.T) {
-	_, _, err := executeCommand("convert", "missing.json", "--output-access", "private")
+	dir := t.TempDir()
+	output := filepath.Join(dir, "export.zip")
+	stdout, _, err := executeCommand("convert", "missing.json", "--output-access", "private", "-o", output)
 	require.ErrorContains(t, err, "--output-access requires --bundle")
+	require.Empty(t, stdout)
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Empty(t, files, "invalid flags must not create output or staged files")
 }
 
 func TestArchiveAccessCollisionHandling(t *testing.T) {

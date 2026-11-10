@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 - **Workflow lint uses the same pinned tools locally and in CI.** Actionlint and ShellCheck are included in the mise toolchain, so the existing pre-commit check no longer depends on separately installed copies.
 
-- **Local CLI SAST uses the existing CI security configuration.** `security:sast` now runs gosec through golangci-lint, removing the separate standalone scanner requirement. Local scanning adopts the existing `legacy` and `common-false-positives` filters for permission, unsafe-call and variable-subprocess warnings; it repeats the gosec subset of lint rather than adding independent coverage. Archive permission behavior remains covered by behavioral tests.
+- **Local CLI SAST uses the existing CI security configuration.** `security:sast` now runs gosec through golangci-lint, removing the separate standalone scanner requirement. Local scanning adopts the existing `legacy` and `common-false-positives` filters for G103/G204/G301/G302/G307 (G104/G304 were already excluded); it repeats the gosec subset of lint rather than adding independent coverage. Archive permission behavior remains covered by behavioral tests.
 
 - **Private archives and explicit unattended sharing.** Both CLI archive commands accept `--output-access private|inherit`, defaulting to verified creator-only access before writing. macOS prevents inherited ACL grants; Linux rejects filesystems whose permission guarantees cannot be established. Explicit `inherit` uses destination ACLs and POSIX umask without prompts. Overwrite applies the selected new-file policy; archive bytes remain unchanged.
 

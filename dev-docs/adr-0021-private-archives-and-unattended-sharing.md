@@ -68,6 +68,16 @@ Dependency check on 2026-11-08: the existing `golang/sys` v0.49.0 LICENSE is BSD
 
 Candidate health checked on 2026-11-08: `purego` latest stable release v0.11.3 was published 2026-11-03; latest default-branch commit and most recent merged PR among the ten recently updated closed PRs were 2026-11-07 (PR 563); repository is not archived. The v0.12 alpha is not proposed. `go-acl` has no GitHub release and its last observed default-branch commit was 2026-03-26; the Cgo/build mismatch independently excludes it. These observations support the recommendation; they are not proof of correctness of the proposed bindings.
 
+Dependency health refreshed through the GitHub API on 2026-11-10 for the scanner references and rejected ACL candidate:
+
+| Project | Latest release | Latest merged PR observed | Default-branch commit | Archived | Disposition |
+|---|---|---|---|---|---|
+| [Semgrep](https://github.com/semgrep/semgrep) | v1.185.0, 2026-11-10 | 2026-11-03 | 2026-11-03 | No | Retain the existing pinned 1.182.1 scanner; no upgrade in this change. |
+| [semgrep-rules](https://github.com/semgrep/semgrep-rules) | No GitHub releases | 2026-10-21 | 2026-10-21 | No | Retain the existing pinned rule source and narrow local exception. |
+| [go-acl](https://github.com/naegelejd/go-acl) | No GitHub releases | 2026-03-26 | 2026-03-26 | No | STALE; remains rejected for the Cgo/build mismatch. No dependency is adopted. |
+
+Merged-PR dates use the most recent merge among the 100 most recently updated closed PRs for each Semgrep repository and all five closed PRs for go-acl. These are repository-health observations, not permission to update pins or a substitute for behavioral verification.
+
 ## Alternatives Considered
 
 ### Always inherit destination permissions
