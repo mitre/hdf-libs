@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.85.4
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
+	github.com/ebitengine/purego v0.11.3
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-libs/hdf-converters/v3 v3.7.2

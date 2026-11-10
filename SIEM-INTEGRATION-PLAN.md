@@ -192,3 +192,14 @@ flowchart LR
   EPIC --> FINAL["fdw4v.4: final integration"]
   CLI --> FINAL
 ```
+
+## Archive access verification
+
+[ADR-0021](dev-docs/adr-0021-private-archives-and-unattended-sharing.md) governs
+private creation and explicit `--output-access inherit` on both archive commands.
+The archive-access card must verify the staged file before writes, published
+permissions, deliberate overwrite policy, unsupported-filesystem cleanup and
+closed-stdin fixture export/recovery. Preserve separate native Windows and
+macOS ARM64/Intel coverage evidence; an OS cross-build is not native execution.
+Authenticated CI artifact transfer is the cross-job contract; ZIP content does
+not carry the outer file's ACL. Existing SIEM service verification remains required.

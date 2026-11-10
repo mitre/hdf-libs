@@ -13,6 +13,10 @@ import (
 )
 
 func runConvertBundle(cmd *cobra.Command, args []string, target, output string, overwrite bool) error {
+	access, err := archiveAccessFlag(cmd)
+	if err != nil {
+		return err
+	}
 	if len(args) != 1 || args[0] == "" || args[0] == "-" {
 		return fmt.Errorf("--bundle requires exactly one local source file")
 	}
@@ -22,7 +26,7 @@ func runConvertBundle(cmd *cobra.Command, args []string, target, output string, 
 			return
 		}
 		switch flag.Name {
-		case "bundle", "to", "output", "overwrite":
+		case "bundle", "to", "output", "overwrite", "output-access":
 		default:
 			if incompatible == "" {
 				incompatible = flag.Name
@@ -61,7 +65,7 @@ func runConvertBundle(cmd *cobra.Command, args []string, target, output string, 
 		{path: "evidence-package.json", data: inventory},
 		{path: "manifest.json", data: bundle.Manifest},
 		{path: "source.json", data: bundle.Source},
-	}, newArchiveWriter, overwrite)
+	}, newArchiveWriter, overwrite, access)
 }
 
 func projectSIEMBundle(source []byte, target string) (*exportmap.ExportBundle, error) {

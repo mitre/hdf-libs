@@ -44,6 +44,9 @@ func NewConvertCmd() *cobra.Command {
 				overwrite, _ := cmd.Flags().GetBool("overwrite")
 				return runConvertBundle(cmd, args, toFormat, outputPath, overwrite)
 			}
+			if cmd.Flags().Changed("output-access") {
+				return fmt.Errorf("--output-access requires --bundle")
+			}
 			if cmd.Flags().Changed("overwrite") {
 				return fmt.Errorf("--overwrite requires --bundle")
 			}
@@ -54,6 +57,7 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Source format (auto-detected if omitted)")
 	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().String("output-access", string(archivePrivate), "Archive access: private (creator only) or inherit (destination permissions); requires --bundle")
 	cmd.Flags().Bool("bundle", false, "Deliver one ECS, Splunk or OCSF export with its source in an evidence-package ZIP")
 	cmd.Flags().Bool("overwrite", false, "Replace an existing bundle archive; requires --bundle and never overwrites the source")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")

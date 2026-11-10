@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Local CLI SAST uses the existing CI security configuration.** `security:sast` now runs gosec through golangci-lint, removing the separate standalone scanner requirement. Local scanning adopts the existing `legacy` and `common-false-positives` filters for permission, unsafe-call and variable-subprocess warnings; it repeats the gosec subset of lint rather than adding independent coverage. Archive permission behavior remains covered by behavioral tests.
+
+- **Private archives and explicit unattended sharing.** Both CLI archive commands accept `--output-access private|inherit`, defaulting to verified creator-only access before writing. macOS prevents inherited ACL grants; Linux rejects filesystems whose permission guarantees cannot be established. Explicit `inherit` uses destination ACLs and POSIX umask without prompts. Overwrite applies the selected new-file policy; archive bytes remain unchanged.
+
 - **Semgrep reference mapping covers both published rule-author keys.** Go and
   TypeScript now collect `source_rule_url` alongside the existing `source-rule-url`
   into requirement `refs`, retaining distinct URLs and deduplicating identical

@@ -141,7 +141,7 @@ func TestConvertBundlePreservesConcurrentOutput(t *testing.T) {
 	err := writeArchiveAtomically(output, []bundleEntry{{path: "source.json", data: []byte("input")}}, func(file *os.File) archiveWriter {
 		require.NoError(t, os.WriteFile(output, sentinel, 0o600))
 		return newArchiveWriter(file)
-	}, false)
+	}, false, archivePrivate)
 	require.Error(t, err, "must refuse an output created during archive construction")
 	actual, readErr := os.ReadFile(output)
 	require.NoError(t, readErr)

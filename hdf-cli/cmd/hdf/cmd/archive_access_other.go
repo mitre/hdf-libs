@@ -1,9 +1,12 @@
-//go:build !windows
+//go:build !windows && !darwin && !linux
 
 package cmd
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
 func openPrivateArchive(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+	return nil, fmt.Errorf("cannot establish private archive access on this platform; use --output-access inherit only with a trusted destination")
 }

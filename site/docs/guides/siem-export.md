@@ -127,3 +127,20 @@ genuinely reports failures alone, and say so where the projection is defined.
 ## See also
 
 - [HDF Status Determination](../architecture/status-determination.md) — the two-axis verdict/acceptance model and its standards grounding.
+
+## Export an archive for unattended handoff
+
+Use `hdf convert results.json --to ecs --bundle -o export.zip` to deliver the finding events alongside the original HDF source, its manifest and a standard evidence-package inventory. `splunk` and `ocsf` are also supported targets.
+
+Both this command and `hdf evidence bundle` default to `--output-access private`. Protection is established before archive bytes are written. Linux checks actual owner/mode permissions on ext2/3/4, XFS, Btrfs or tmpfs; macOS requires local APFS/HFS with ownership enabled and prevents inherited ACL grants; Windows requires persistent ACL support and a protected creator-only DACL. Unsupported storage, including OverlayFS, fails without falling back to broader access.
+
+For agents running as different accounts, provision a shared directory and select inherited access explicitly:
+
+```bash
+hdf convert results.json --to ecs --bundle --output-access inherit -o shared/export.zip
+hdf evidence bundle evidence-package.json --output-access inherit -o shared/evidence.zip
+```
+
+`inherit` uses the directory's native ACL policy and POSIX umask/default ACLs. It can expose evidence broadly, or still produce an owner-only file under a restrictive umask. The operator controls that directory policy. No prompt or environment variable is needed; same-account agents can use the private default.
+
+`--overwrite` replaces an existing archive with the selected new-file access policy. A failure leaves the previous destination intact. The ordinary-user privacy guarantee excludes administrator privileges and requires a trusted destination directory. Neither mode encrypts data or transfers filesystem ACLs with ZIP contents. Across CI jobs, use the platform's authenticated artifact upload/download mechanism and establish access at the receiving destination.

@@ -131,13 +131,18 @@ Examples:
   hdf evidence bundle boe.json -o boe.zip
   hdf evidence bundle boe.json -o /tmp/portal-q3-evidence.zip`,
 		Args: evidencePackageArg,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			access, err := archiveAccessFlag(cmd)
+			if err != nil {
+				return err
+			}
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")
 			}
-			return runEvidenceBundle(args[0], outputPath, overwrite, newArchiveWriter)
+			return runEvidenceBundle(args[0], outputPath, overwrite, access, newArchiveWriter)
 		},
 	}
+	cmd.Flags().String("output-access", string(archivePrivate), "Archive access: private (creator only) or inherit (destination permissions)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Archive to write (required)")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false,
 		"Replace an existing archive at -o (without this, an existing path is refused)")
@@ -401,7 +406,7 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
-func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter func(*os.File) archiveWriter) (err error) {
+func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess, makeWriter func(*os.File) archiveWriter) (err error) {
 	pkgData, err := readInputFile(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -637,7 +642,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// Sorted order plus a fixed timestamp make the archive reproducible.
 	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
 
-	if err := writeArchiveAtomically(outputPath, entries, makeWriter, overwrite); err != nil {
+	if err := writeArchiveAtomically(outputPath, entries, makeWriter, overwrite, access); err != nil {
 		return err
 	}
 
@@ -790,9 +795,9 @@ func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 // into place, so a failure part-way cannot leave a partial archive that looks
 // complete. It takes the writer constructor so the seam is exercised by the command,
 // not merely implemented beside it.
-func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter, overwrite bool) error {
+func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter, overwrite bool, access archiveAccess) error {
 	dir := filepath.Dir(outputPath)
-	tmp, err := createArchiveTemp(dir)
+	tmp, err := createArchiveTemp(dir, access)
 	if err != nil {
 		return fmt.Errorf("failed to create the archive: %w", err)
 	}
@@ -817,9 +822,6 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close the archive: %w", err)
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		return fmt.Errorf("failed to set archive permissions: %w", err)
 	}
 	if overwrite {
 		err = os.Rename(tmpName, outputPath)

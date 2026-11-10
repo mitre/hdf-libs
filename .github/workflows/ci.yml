@@ -806,8 +806,18 @@ jobs:
         shell: bash
         env:
           OS_TAG: ${{ matrix.os }}
-          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
+          GO_COVERAGE: '1'
         run: .github/scripts/test-go-junit.sh
+      - name: Check Linux archive field representations
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: hdf-cli
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+        run: |
+          GOARCH=386 go vet ./cmd/hdf/cmd
+          GOARCH=arm go vet ./cmd/hdf/cmd
+          GOARCH=s390x go vet ./cmd/hdf/cmd
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
@@ -825,6 +835,51 @@ jobs:
           path: '**/coverage.out'
           retention-days: 30
 
+      - name: Upload Windows coverage reports
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-windows
+          path: '**/coverage.out'
+          if-no-files-found: error
+          retention-days: 30
+
+  test-archive-macos:
+    name: Test archive access (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-artifacts
+      - name: Verify native archive access and recovery
+        working-directory: hdf-cli
+        run: |
+          go test ./cmd/hdf/cmd -run 'TestArchiveAccess|TestConvertBundle|TestEvidenceBundle' -count=1 -coverprofile=archive-coverage.out
+          go vet ./cmd/hdf/cmd
+      - name: Upload native coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-${{ matrix.os }}
+          path: hdf-cli/archive-coverage.out
+          if-no-files-found: error
+          retention-days: 30
+
   # ── Gate: test results, judged as HDF ────────────────────────────────────
   # The other half of the pair (see gate-hdf-scans): the same convert-then-
   # threshold shape, applied to what the suites report by RUNNING the code.
@@ -839,7 +894,7 @@ jobs:
     name: Gate test results on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [gate-cli, test-ts, test-go]
+    needs: [gate-cli, test-ts, test-go, test-archive-macos]
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -864,6 +919,11 @@ jobs:
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
+      - name: Native macOS archive verification must pass
+        if: needs.test-archive-macos.result != 'success'
+        run: |
+          echo "::error::Native macOS archive verification did not succeed on both architectures"
+          exit 1
       - name: Every test leg must have reported
         run: |
           # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and

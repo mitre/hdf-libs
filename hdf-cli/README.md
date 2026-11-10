@@ -522,12 +522,10 @@ Bundle mode requires one local source file and a file output. Directories,
 multiple inputs, stdin and transformation flags such as `--from`, `--force`,
 `--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
 archive but never the input or its filesystem aliases; it requires `--bundle`.
-Writes are atomic. On POSIX systems the archive has mode 0600. On Windows,
-both bundle commands create a protected DACL granting access only to the
-effective user, then verify filesystem ACL support and the actual DACL before
-writing archive contents. If that protection cannot be established, creation
-fails; use an ACL-capable volume such as NTFS. Administrator privileges are
-outside this protection, and the output directory must still be trusted.
+Writes are atomic. Both archive commands accept `--output-access private|inherit`. The default, `private`, restricts access to the creating user before writing: Linux verifies owner-only mode on supported filesystems; macOS also prevents inherited ACL grants; Windows uses a protected creator-only DACL. Unverifiable protection fails without producing an archive. Supported private destinations are Linux ext2/3/4, XFS, Btrfs and tmpfs; local macOS APFS/HFS with ownership enforcement; and Windows volumes with persistent ACLs, such as NTFS. OverlayFS and unverified network/filesystem implementations are rejected.
+
+Use `--output-access inherit` deliberately for a provisioned shared directory. It uses native directory ACL inheritance and, on POSIX, mode `0666` filtered by umask and default ACLs. It neither guarantees another account can read nor limits broadly provisioned access. Both modes run without prompts or an environment override. `--overwrite` applies the selected new-file policy, not the old archive's permissions. Administrators are outside the privacy boundary, and the destination directory must be trusted. Archive permissions do not travel with ZIP contents; use authenticated artifact transfer between jobs.
+
 Default no-overwrite publication requires filesystem hard-link support; if
 unavailable, the command fails without replacing the destination. Ordinary conversion remains
 unchanged, including input files named `bundle`.
