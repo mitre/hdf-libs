@@ -100,12 +100,12 @@ Every other definition is hoisted to `#/components/schemas/<Name>` under its own
 - **Whether each generator can consume the document at all.** `openapi-typescript` can. **`oapi-codegen` 2.8.0 cannot:** its parser (kin-openapi) rejects a boolean subschema, which HDF uses to express the three-tier BOM rule (`properties: { model: false }` on a non-`ai-model` BOM). The refusal and its trigger are recorded rather than worked around, because the construct is a real constraint and dropping it would weaken the schema to suit one tool.
 - **Per keyword, whether a generator's output depends on it** — measured differentially: generate from a probe schema carrying the keyword, generate again with that one keyword deleted, compare the bytes. Both generators honour the structural keywords (`$ref`, `properties`, `required`, `items`, `type`, `enum`, `allOf`/`anyOf`/`oneOf`, `format`) and **both discard every validation constraint**: `minimum`, `maximum`, `minLength`, `minItems`, `pattern`, `contains`, `not`, `dependentRequired`, `if`/`then`/`else` and `unevaluatedProperties`. Generated types are shape-only. Anything that must actually enforce the schema has to run a validator — which is why ADR-0008 §7 derives Zod from this document rather than trusting generated types.
 
-None of that is optional. `pnpm test` re-measures the lints and openapi-typescript and fails on any drift from the baseline, and CI's `check-openapi-matrix` job installs the pinned `oapi-codegen` and runs the full matrix, so the Go half is gated too. The test also asserts that CI wiring still exists — an ungated baseline is the real hazard, so losing the job fails the suite rather than quietly going unmeasured.
+None of that is optional. `pnpm test` re-measures the lints and openapi-typescript and fails on any drift from the baseline, and CI's `check-openapi-matrix` job installs `oapi-codegen` at the version `mise.toml` pins and runs the full matrix, so the Go half is gated too. The test also asserts that CI wiring still exists — an ungated baseline is the real hazard, so losing the job fails the suite rather than quietly going unmeasured.
 
-`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. To run the whole matrix locally:
+`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. `mise.toml` at the repository root pins it at the version the baseline records, so `mise install` puts that release on PATH. To run the whole matrix locally:
 
 ```bash
-go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+mise install             # oapi-codegen at the pinned version, with the rest of the toolchain
 pnpm run matrix          # verify against the tracked baseline
 pnpm run matrix:update   # re-record after a deliberate tooling or schema change
 pnpm run lint:openapi    # Redocly alone

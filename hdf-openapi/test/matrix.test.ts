@@ -109,14 +109,20 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
   }, TIMEOUT);
 
   it('is run by CI, with the generator installed at the version the baseline records', () => {
-    const workflow = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'ci.yml'), 'utf8');
-    // A job that runs the matrix...
-    expect(workflow).toContain('run matrix');
-    // ...with the Go toolchain and the pinned generator...
-    expect(workflow).toContain('cmd/oapi-codegen@$OAPI_CODEGEN_VERSION');
-    const pinned = /OAPI_CODEGEN_VERSION: 'v([\d.]+)'/.exec(workflow)?.[1];
-    expect(pinned, 'CI must pin the generator version').toBeDefined();
-    // ...at the version these verdicts were measured against. A CI bump without a
+    const root = join(import.meta.dirname, '..', '..');
+    const workflow = readFileSync(join(root, '.github', 'workflows', 'ci.yml'), 'utf8');
+    const miseToml = readFileSync(join(root, 'mise.toml'), 'utf8');
+    const tool = 'go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen';
+    // A job that runs the matrix: the step itself, since comments elsewhere in the
+    // file mention `pnpm run matrix` too...
+    expect(workflow).toMatch(/^ +run: pnpm --filter @mitre\/hdf-openapi run matrix$/m);
+    // ...with the generator that mise.toml pins, installed through mise, so CI and a
+    // local `mise install` run the same release and no second pin can drift...
+    const pinned = new RegExp(`^"${tool.replace(/[.]/g, '\\.')}" = "([\\d.]+)"$`, 'm').exec(miseToml)?.[1];
+    expect(pinned, 'mise.toml must pin the generator version').toBeDefined();
+    expect(workflow).toMatch(new RegExp(`install_args: .*\\b${tool.replace(/[.]/g, '\\.')}\\b`));
+    expect(workflow).not.toContain('cmd/oapi-codegen@');
+    // ...at the version these verdicts were measured against. A pin bump without a
     // re-measurement would gate the new tool against the old record.
     expect(tracked.tools['oapi-codegen']).toBe(pinned);
     // ...and a job nothing depends on cannot fail the build, so assert it is gated.
@@ -410,7 +416,7 @@ describe('the CLI', () => {
 describe('the measurement preconditions', () => {
   it('refuses a missing tool with the pinned install command, rather than skipping it', () => {
     expect(() => toolVersion('definitely-not-a-real-binary-xyz', ['--version'], 'oapi-codegen')).toThrow(
-      /go install github\.com\/oapi-codegen/,
+      /Install the pinned build with:\n\s+mise install\n/,
     );
   });
 

@@ -33,16 +33,12 @@ concurrency:
 # tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
 # minor the previous floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
-# go-version-file) — no separate pin to drift. golangci-lint, govulncheck and
-# gosec are pinned in mise.toml, with checksums in mise.lock, so the pre-commit
-# hook and check-go run the same releases.
+# go-version-file) — no separate pin to drift. golangci-lint, govulncheck,
+# gosec, jactionlint, shellcheck and oapi-codegen are pinned in mise.toml, with
+# checksums in mise.lock, so local runs (the pre-commit hook,
+# `pnpm lint:workflows`, `pnpm run matrix`) and CI run the same releases.
 env:
   GOTESTSUM_VERSION: 'v1.13.0'
-  # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi's matrix
-  # records what it does with the generated OpenAPI components, including that it
-  # cannot currently load them. Bumping this is how that record updates, so re-run
-  # `pnpm run matrix:update` in hdf-openapi and review the diff in the same PR.
-  OAPI_CODEGEN_VERSION: 'v2.8.0'
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
   OSV_SCANNER_VERSION: 'v2.5.1'
@@ -56,10 +52,6 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # `pnpm lint:workflows` (not part of the pre-commit hook) runs whatever
-  # actionlint is on PATH; keep this on the same release so local and CI agree.
-  ACTIONLINT_VERSION: '1.7.12'
-  ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
   # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
   HDF_CLI_SOURCE_SHA: '5f248c0bfd81d812ad16d4ea53f26c8965895eff'
 
@@ -148,18 +140,20 @@ jobs:
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
           "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
-      # actionlint is a hard gate, unlike zizmor: a malformed workflow is a
-      # defect, not a finding to adjudicate. Fetched and verified the same way.
-      # shellcheck must be present or actionlint silently drops its shell rules.
-      - name: actionlint (hard failure)
+      # jactionlint is a hard gate, unlike zizmor: a malformed workflow is a
+      # defect, not a finding to adjudicate. It and shellcheck come from
+      # mise.toml at mise.lock's versions and checksums, the releases
+      # `pnpm lint:workflows` runs; .github/jactionlint.yaml selects the profile.
+      # shellcheck must be present or jactionlint only notes that it skipped
+      # the shell rules.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: aqua:jdx/jactionlint shellcheck
+      - name: jactionlint (hard failure)
         run: |
           command -v shellcheck
-          tmp=$(mktemp -d)
-          curl -fsSL -o "$tmp/actionlint.tar.gz" \
-            "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "$ACTIONLINT_SHA256  $tmp/actionlint.tar.gz" | sha256sum -c -
-          tar xzf "$tmp/actionlint.tar.gz" -C "$tmp" actionlint
-          "$tmp/actionlint"
+          jactionlint
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
@@ -421,13 +415,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
+      # oapi-codegen at the version mise.toml pins (go install through mise,
+      # verified through GOSUMDB), the release `pnpm run matrix` uses locally and
+      # the one the baseline records. The shared setup above installed Node/pnpm.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          go: 'true'
-      # go install, pinned by version and verified through GOSUMDB, for the same reason
-      # the scanners above use it rather than a release binary.
-      - name: Install oapi-codegen
-        run: |
-          go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$OAPI_CODEGEN_VERSION"
+          version: 2026.11.5
+          install_args: go go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
       - name: Generate the components document
         run: pnpm --filter @mitre/hdf-openapi run build:components
       # Fails on any drift in what the tooling does: lint findings, waiver absorption,
