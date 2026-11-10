@@ -1283,6 +1283,122 @@
         ]
       },
       "valid": true
+    },
+    {
+      "name": "system: accepts declared composed integrity",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "system: rejects undeclared composed integrity property",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "undeclaredClosedScopeProbe": true
+        }
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "integrity.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "plan: accepts declared composed integrity",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "plan: rejects undeclared composed integrity property",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "undeclaredClosedScopeProbe": true
+        }
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "integrity.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "comparison: accepts declared composed integrity",
+      "type": "comparison",
+      "document": "comparison",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "comparison: rejects undeclared composed integrity property",
+      "type": "comparison",
+      "document": "comparison",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "undeclaredClosedScopeProbe": true
+        }
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "integrity.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "evidence-package: accepts declared composed integrity",
+      "type": "evidence-package",
+      "document": "evidence-package",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "evidence-package: rejects undeclared composed integrity property",
+      "type": "evidence-package",
+      "document": "evidence-package",
+      "path": [],
+      "properties": {
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "undeclaredClosedScopeProbe": true
+        }
+      },
+      "valid": false,
+      "keyword": "unevaluatedProperties",
+      "field": "integrity.undeclaredClosedScopeProbe"
     }
   ]
 }

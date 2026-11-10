@@ -79,7 +79,22 @@ Four of five shared results documents pass both current TypeScript and Ajv2020 u
 
 ### Timing limits
 
+#### Preliminary probes (2026-11-07)
+
 Five warm TypeScript validation iterations of the largest document, after public timestamp normalization and outside parsing, averaged approximately 0.96 ms for the current engine and 1.10 ms for Ajv2020 in this local probe. These are different validity outcomes because of `targets`; they are not a successful-valid-document performance comparison and do not establish a production budget. Go timings with parsing included for each engine, excluding schema compilation and timestamp normalization: current 31.78 ms (valid), Tekuri 35.24 ms (invalid), Google 39.43 ms (invalid). These also have different verdicts and establish no valid-document regression bound. No performance threshold has been accepted from this preliminary probe. Before rollout, measure the largest valid shared fixture and a corrected large real document with comparable verdicts, compilation accounted for separately.
+
+#### Comparable-verdict measurement (2026-11-10)
+
+The later Go comparison uses identical, corrected and timestamp-normalized bytes derived from `hdf-fixtures/results/inspec-multilayered.json`: 7,101,796 bytes, SHA-256 `8eb7286407ec5c85f0d5b20c1ebf1b2ea6c0bc10a780455a29091f368365bd55`. Both engines accept that document. The modern measurement is pinned to commit `0aa5a63eb55d8f8a71214052a1d6ed8af64ca365`; subsequent diagnostic-summary changes affect invalid results, not this valid-document path.
+
+| Measurement | Original gojsonschema validator | Modern Tekuri validator | Ratio |
+|---|---:|---:|---:|
+| First validation after schema-cache reset | 37.192 ms | 47.542 ms | 1.278× |
+| Mean of ten subsequent validations | 31.6423 ms | 40.5553 ms | 1.282× |
+
+Both measurements include JSON parsing. The first validation also includes schema compilation; the subsequent validations reuse compiled schemas. File reading and timestamp normalization occur outside the timed sections. This is a local comparative measurement, not a production latency guarantee or a concurrent-load benchmark. It supersedes the preliminary, unequal-verdict Go comparison for assessing this rollout.
+
+The owner accepted this measured rollout tradeoff on 2026-11-10: approximately 9 ms additional warm validation time (31.6423 ms to 40.5553 ms, about 28%) for correct JSON Schema 2020-12 enforcement. This acceptance applies to the comparison above, not a general latency guarantee or permission for future regressions. The Go implementation card's ten-times-baseline escalation threshold is not an agreed performance budget.
 
 ## Alternatives Considered
 
