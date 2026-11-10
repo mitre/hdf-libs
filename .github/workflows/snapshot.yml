@@ -385,6 +385,7 @@ jobs:
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
       - name: Advance the Go next branch and read it back
+        id: advance
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.prepare.outputs.version }}
@@ -396,4 +397,18 @@ jobs:
             GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
             GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
           bash scripts/advance-snapshot-go-next.sh "$VERSION" "$SOURCE" "$PREPARED"
-          printf '\nGo branch next: %s (v%s)\n' "$PREPARED" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
+      # Written on a refusal too: npm next is already advanced by then, so a run whose
+      # summary said nothing here would read as a clean snapshot.
+      - name: Summary
+        if: always()
+        env:
+          OUTCOME: ${{ steps.advance.outcome }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+        run: |
+          if [ "$OUTCOME" = success ]; then
+            printf '\nGo branch next: %s (v%s)\n' "$PREPARED" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '\nGo branch next: not advanced (%s). npm next is at v%s; the Go branch has not moved.\n' \
+              "${OUTCOME:-did not run}" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          fi

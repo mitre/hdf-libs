@@ -3,9 +3,10 @@
 # Moves the branch next to one snapshot's prepared commit. That commit carries the module
 # tags, so `go get <module>@next` resolves to the snapshot version: Go's counterpart of the
 # npm dist-tag next. Refuses a prepared commit that is not the version's snapshot tag or not
-# a child of the source, a source not on main, and any move that would take next back to an
-# older source or to an older snapshot of the same source. Pushes with a lease, reads next
-# back, and prints next <commit> <version>.
+# a child of the source, a source not on main, a source behind main's tip when next does
+# not yet exist, and any move that would take next back to an older source or to an older
+# snapshot of the same source. Pushes with a lease, reads next back, and prints
+# next <commit> <version>.
 #
 # Usage: advance-snapshot-go-next.sh <version> <source-sha> <prepared-sha>
 
@@ -62,8 +63,8 @@ readonly VERSION="$1" SOURCE="$2" PREPARED="$3"
 readonly TAG="snapshots/v$VERSION"
 git fetch --quiet --no-tags origin "+refs/heads/main:refs/remotes/origin/main" ||
   refuse "could not fetch main from origin"
-git fetch --quiet --no-tags origin "+refs/tags/$TAG:refs/tags/$TAG" 2>/dev/null ||
-  refuse "$TAG does not exist on origin"
+git fetch --quiet --no-tags origin "+refs/tags/$TAG:refs/tags/$TAG" ||
+  refuse "$TAG could not be fetched from origin"
 
 tagged=$(git rev-parse --verify --quiet "refs/tags/$TAG^{commit}") ||
   refuse "$TAG does not name a commit"
@@ -98,6 +99,14 @@ if [ -n "$current" ]; then
     version_newer "$VERSION" "$current_version" ||
       refuse "next is at $current, tagged snapshots/v$current_version from the same source $SOURCE, which $VERSION does not follow; refusing to move next back"
   fi
+else
+  # With no branch to order against, the tip is the only thing that says this snapshot is
+  # the current one, so a source main has moved past cannot create next. Only this case
+  # needs it: once next exists, the checks above order the move.
+  tip=$(git rev-parse --verify refs/remotes/origin/main) ||
+    refuse "could not read main from origin"
+  [ "$SOURCE" = "$tip" ] ||
+    refuse "next does not exist and the source $SOURCE is not main's tip $tip; refusing to create next from a snapshot main has moved past"
 fi
 
 git push --quiet --force-with-lease="refs/heads/next:$current" origin "$PREPARED:refs/heads/next" ||
