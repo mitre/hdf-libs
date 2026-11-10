@@ -314,6 +314,37 @@ func TestConvertBundleInvalidRequestsPreserveOutput(t *testing.T) {
 	}
 }
 
+func TestConvertOverwriteRequiresBundle(t *testing.T) {
+	input := bundleSourceFixture(t)
+	for _, flag := range []string{"--overwrite", "--overwrite=false"} {
+		t.Run(flag, func(t *testing.T) {
+			dir := t.TempDir()
+			stdout, _, err := executeCommand("convert", input, "--to", "csv", "-o", filepath.Join(dir, "export.csv"), flag)
+			require.ErrorContains(t, err, "--overwrite requires --bundle")
+			require.Empty(t, stdout)
+			files, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			require.Empty(t, files, "invalid flags must not create output or staged files")
+		})
+	}
+}
+
+func TestConvertBundleRejectsStdin(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "existing.zip")
+	previous := []byte("previous complete archive")
+	require.NoError(t, os.WriteFile(output, previous, 0o600))
+	stdout, _, err := executeCommand("convert", "-", "--to", "ecs", "--bundle", "-o", output, "--overwrite")
+	require.ErrorContains(t, err, "--bundle requires exactly one local source file")
+	require.Empty(t, stdout)
+	actual, err := os.ReadFile(output)
+	require.NoError(t, err)
+	require.Equal(t, previous, actual)
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Len(t, files, 1, "invalid input must not create staged files")
+}
+
 func TestConvertBundleRejectsIncompatibleFlags(t *testing.T) {
 	input := bundleSourceFixture(t)
 	for _, flags := range [][]string{{"--force"}, {"--labels", "test=true"}, {"--from", "hdf"}, {"--nist-rev", "4"}} {
