@@ -167,12 +167,16 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
     const gate = ci.jobs['gate-hdf-scans'];
     expect([gate?.needs ?? []].flat()).toContain('check-openapi-matrix');
     // The gate must run after a failed matrix and fail on it: `always()`, then a
-    // step that exits non-zero for any failed, cancelled or skipped upstream job.
+    // step that exits non-zero when ANY upstream failed, was cancelled or skipped.
+    // The condition is compared whole: `&&` in place of `||` would let one failure
+    // through, and naming the three results does not catch that.
     expect(gate.if).toBe('always()');
-    const results = ['failure', 'cancelled', 'skipped'];
+    const anyUnsuccessful = ['failure', 'cancelled', 'skipped']
+      .map((result) => `contains(needs.*.result, '${result}')`)
+      .join(' || ');
     const rejects = (gate.steps ?? []).filter(
       (step) =>
-        results.every((r) => String(step.if ?? '').includes(`contains(needs.*.result, '${r}')`)) &&
+        String(step.if ?? '').replace(/\s+/g, ' ').trim() === anyUnsuccessful &&
         /^\s*exit 1\s*$/m.test(step.run ?? '') &&
         step['continue-on-error'] === undefined,
     );
