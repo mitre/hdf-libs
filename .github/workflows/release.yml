@@ -12,10 +12,6 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NODE_VERSION: '24'
-  GO_VERSION: '1.26.10'
-
 jobs:
   # The release_tags ruleset requires a signature on every v* tag, but every
   # tag pusher is on its bypass team, and `gh release create --verify-tag`
@@ -82,7 +78,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.work
           cache: false
       - name: Every intra-repo require names the tag
         env:
@@ -103,15 +99,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      # Node and pnpm at mise.lock's versions and checksums, as in every other
+      # job. No cache in a publish workflow: a tag run cannot restore a pull
+      # request's cache, but it can restore main's, and a cache written by a
+      # main run that executed compromised code could carry it into what gets
+      # published (https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching).
+      # No .npmrc is written: pnpm
+      # publishes to its default registry, https://registry.npmjs.org/, and
+      # authenticates through OIDC (id-token: write) with a token it keeps in
+      # memory.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: 'https://registry.npmjs.org'
-          # No dependency caching in a publish workflow: a poisoned cache
-          # seeded from a PR job could tamper with what gets published.
-          package-manager-cache: false
-
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+          version: 2026.11.5
+          install_args: node pnpm
+          cache: false
       - uses: $/.github/actions/setup-npm
 
       - name: Install dependencies
@@ -127,13 +128,16 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
+        # An explicit bash adds pipefail, so a failing find in content_digest
+        # fails the step instead of digesting an incomplete file list.
+        shell: bash
         # Auth is OIDC Trusted Publishing for every package below; there is
         # no npm token in this workflow, so a package without a trusted
         # publisher for this repo fails to publish rather than falling back.
         # pnpm publishes natively (no npm CLI delegation) with OIDC support
         # from pnpm 11.0.7, so the exact version matters: it comes from the
-        # root package.json `packageManager` field, which pnpm/action-setup
-        # resolves above.
+        # root package.json `packageManager` field, which mise reads and
+        # mise.lock pins above.
         #
         # npm allows up to 10 trusted publishers per package, so
         # @mitre/hdf-converters carries this repo's publisher ALONGSIDE
@@ -244,9 +248,10 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
-          # No module caching in a publish workflow: a poisoned cache seeded
-          # from a PR job could tamper with the released binaries.
+          go-version-file: go.work
+          # No module caching in a publish workflow: a cache restored from main,
+          # written by a run that executed compromised code, could tamper with
+          # the released binaries (see the publish-npm comment above).
           cache: false
 
       # syft + cosign back the goreleaser sboms:/signs: sections.
@@ -300,7 +305,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: $/.github/actions/setup
+      # The schemas built here are release assets, so this job installs like
+      # publish-npm: Node and pnpm at mise.lock's versions, with no cache
+      # restored, instead of the shared setup action, which restores the mise
+      # and pnpm store caches.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node pnpm
+          cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas
@@ -355,6 +371,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [publish-npm, build-cli, build-schemas, release-evidence, verify-tag-signature]
     permissions:
       contents: write  # create GitHub Release + push Go module tags
