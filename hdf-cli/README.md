@@ -863,6 +863,8 @@ Credentials are resolved via the standard AWS credential chain: environment vari
 
 **A Region with nothing readable is an empty export.** `--format raw` writes `{"ConfigRules":[]}`. HDF output refuses it with `no Config rules to convert in <region>`, because a results document needs at least one requirement; the warnings name every rule that was skipped or could not be read. A permission refusal before any rule has read fails the fetch at once, naming `config:GetComplianceDetailsByConfigRule`.
 
+**A rule the API refuses costs that rule.** A rule that vanished between listing and reading, or that this principal may not read, is dropped and named in one warning on stderr, grouped by cause so a reason shared by many rules is given once; a run that still read something exits `0` and writes it, because the exit-code vocabulary has no code for a run that completed with warnings; a run left with nothing readable is the empty export above. A refusal before any rule has read is a principal without `config:GetComplianceDetailsByConfigRule` and fails the run instead, naming that permission. A read the service rejects as invalid is treated the same way: that rule is dropped once another has read, and the run fails if nothing has, because a rejected request is usually rejected for every rule. Throttling and network errors always fail the run.
+
 **Deadline.** With no deadline on the command's context, listing is bounded to five minutes and reading grows with the number of rules listed (three seconds per rule on top of the listing budget), since each rule's evaluations are read in turn.
 
 ```
