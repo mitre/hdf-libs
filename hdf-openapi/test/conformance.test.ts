@@ -16,12 +16,7 @@ const bundles = loadBundles(EMBED_DIR);
 const doc = buildComponentsDocument(bundles);
 const schemas = doc.components.schemas;
 
-/**
- * A 2020-12 engine, deliberately. The repo's own validators are draft-07 and ignore
- * `unevaluatedProperties`, so "validates with hdf-validators" is weaker than "conforms
- * to the schema text" — the gap ADR-0009 §5 records. Using them here would pass
- * documents the schema rejects.
- */
+// Check extracted-schema semantics independently of the shipped validator adapters.
 function engine(): Ajv2020 {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
@@ -257,22 +252,8 @@ describe('negatives: the five mutation classes', () => {
   });
 });
 
-/**
- * Corpus documents that do NOT conform to the schema text under a 2020-12 engine, with
- * the property that trips it. They are listed rather than skipped so the list is a
- * tracked claim: if one is fixed, the assertion below fails and the entry must be
- * removed, and if another document regresses it shows up as a new failure.
- *
- * Neither is a defect in this package. Both are invisible to the repository's own
- * draft-07 validators, which ignore `unevaluatedProperties` — the gap ADR-0009 §5
- * records. `targets` is the visible end of something ADR-0008's Context already notes:
- * the `target`/`platform` primitives are unreferenced in source and never bundled, so a
- * document using them has no schema to be evaluated against.
- */
-const CORPUS_NOT_CONFORMANT: Record<string, string> = {
-  inspecMultilayered: 'targets',
-  win2022Stig: 'checksum',
-};
+// Raw source timestamps are preserved; consumers normalize them before validation.
+const CORPUS_NONCANONICAL_TIMESTAMPS = new Set(['inspecMultilayered']);
 
 describe('real hdf-fixtures documents through the extracted roots', () => {
   const cases: [string, string, { read: () => string }][] = [
@@ -295,7 +276,7 @@ describe('real hdf-fixtures documents through the extracted roots', () => {
     expect(fromExtract === null).toBe(fromBundle === null);
   });
 
-  it.each(cases.filter(([, label]) => !(label in CORPUS_NOT_CONFORMANT)))(
+  it.each(cases.filter(([, label]) => !CORPUS_NONCANONICAL_TIMESTAMPS.has(label)))(
     '%s / %s — accepted',
     (name, _label, ref) => {
       const errors = verdict(extractStandaloneSchema(doc, name), JSON.parse(ref.read()));
@@ -303,18 +284,19 @@ describe('real hdf-fixtures documents through the extracted roots', () => {
     },
   );
 
-  it.each(cases.filter(([, label]) => label in CORPUS_NOT_CONFORMANT))(
-    '%s / %s — still non-conformant for the recorded reason',
+  it.each(cases.filter(([, label]) => CORPUS_NONCANONICAL_TIMESTAMPS.has(label)))(
+    '%s / %s — rejected only for raw noncanonical timestamps',
     (name, label, ref) => {
       const errors = verdict(extractStandaloneSchema(doc, name), JSON.parse(ref.read()));
       expect(
         errors,
-        `${label} now validates — remove it from CORPUS_NOT_CONFORMANT`,
+        `${label} now validates — remove it from CORPUS_NONCANONICAL_TIMESTAMPS`,
       ).not.toBeNull();
-      const unevaluated = errors
-        ?.filter((e) => e.keyword === 'unevaluatedProperties')
-        .map((e) => (e.params as { unevaluatedProperty?: string }).unevaluatedProperty);
-      expect(unevaluated).toContain(CORPUS_NOT_CONFORMANT[label]);
+      expect(errors?.length).toBeGreaterThan(0);
+      for (const error of errors ?? []) {
+        expect(error.keyword).toBe('format');
+        expect(error.params).toEqual({ format: 'date-time' });
+      }
     },
   );
 });

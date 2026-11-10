@@ -1,0 +1,201 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "cwe": [
+            "CWE-78"
+          ],
+          "descriptions": [
+            {
+              "data": "Found 'subprocess' function 'call' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: subprocess-shell-true.py, line 14",
+              "message": "Suggested fix -- replace the matched code with:\nFalse",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: subprocess-shell-true.py, line 17",
+              "message": "Suggested fix -- replace the matched code with:\nFalse",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: subprocess-shell-true.py, line 20",
+              "message": "Suggested fix -- replace the matched code with:\nFalse",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 14,
+            "ref": "subprocess-shell-true.py"
+          },
+          "id": "subprocess-shell-true",
+          "impact": 0.7,
+          "tags": {
+            "category": "security",
+            "cci": [
+              "CCI-001310"
+            ],
+            "checkId": "subprocess-shell-true",
+            "confidence": "MEDIUM",
+            "cwe": [
+              "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+            ],
+            "likelihood": "HIGH",
+            "nist": [
+              "SI-10"
+            ],
+            "owasp": [
+              "A01:2017 - Injection",
+              "A03:2021 - Injection",
+              "A05:2025 - Injection"
+            ],
+            "semgrepImpact": "LOW",
+            "severity": "ERROR",
+            "subcategory": [
+              "secure default"
+            ],
+            "technology": [
+              "python"
+            ]
+          },
+          "code": "{\n  \"check_id\": \"subprocess-shell-true\",\n  \"path\": \"subprocess-shell-true.py\",\n  \"start\": {\n    \"line\": 14,\n    \"col\": 59\n  },\n  \"end\": {\n    \"line\": 14,\n    \"col\": 63\n  },\n  \"extra\": {\n    \"message\": \"Found 'subprocess' function 'call' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.\",\n    \"severity\": \"ERROR\",\n    \"fix\": \"False\"\n  }\n}",
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess"
+            },
+            {
+              "url": "https://docs.python.org/3/library/subprocess.html"
+            },
+            {
+              "url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            }
+          ],
+          "title": "Subprocess Shell True",
+          "verificationMethod": "automated"
+        },
+        {
+          "cwe": [
+            "CWE-242"
+          ],
+          "descriptions": [
+            {
+              "data": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: unsafe.go, line 21",
+              "message": "",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: unsafe.go, line 21",
+              "message": "",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: unsafe.go, line 23",
+              "message": "",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 21,
+            "ref": "unsafe.go"
+          },
+          "id": "use-of-unsafe-block",
+          "impact": 0.5,
+          "tags": {
+            "category": "security",
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "checkId": "use-of-unsafe-block",
+            "confidence": "LOW",
+            "cwe": [
+              "CWE-242: Use of Inherently Dangerous Function"
+            ],
+            "likelihood": "LOW",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "semgrepImpact": "LOW",
+            "severity": "WARNING",
+            "subcategory": [
+              "audit"
+            ],
+            "technology": [
+              "go"
+            ]
+          },
+          "code": "{\n  \"check_id\": \"use-of-unsafe-block\",\n  \"path\": \"unsafe.go\",\n  \"start\": {\n    \"line\": 21,\n    \"col\": 27\n  },\n  \"end\": {\n    \"line\": 21,\n    \"col\": 52\n  },\n  \"extra\": {\n    \"message\": \"Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.\",\n    \"severity\": \"WARNING\"\n  }\n}",
+          "refs": [
+            {
+              "url": "https://cwe.mitre.org/data/definitions/242.html"
+            },
+            {
+              "url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            }
+          ],
+          "title": "Use Of Unsafe Block",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Semgrep scanned 2 file(s); 2 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Semgrep scanned 2 file(s); 2 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "startTime": "2026-11-09T21:36:27.984082Z",
+              "status": "notApplicable"
+            }
+          ],
+          "id": "semgrep-scan-coverage",
+          "impact": 0,
+          "tags": {
+            "filesScanned": 2,
+            "rulesWithFindings": 2,
+            "scanErrors": 0
+          },
+          "title": "Semgrep scan coverage"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "2127dd280b3619a0ffdfc2372c30e2c1e6c2cd06038021d2eff9637eb08b1f3c"
+      },
+      "name": "Semgrep Scan",
+      "title": "Semgrep static analysis scan"
+    }
+  ],
+  "generator": {
+    "name": "semgrep-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-11-09T21:36:27.984082Z",
+  "tool": {
+    "name": "Semgrep",
+    "version": "1.183.0"
+  }
+}

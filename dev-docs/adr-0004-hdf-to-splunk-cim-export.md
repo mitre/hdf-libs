@@ -23,12 +23,12 @@ The central tension: "full CIM mapping" (which the consumer wants, over plain HE
 
 ## Decision
 
-`hdf-to-splunk` emits **HEC-envelope NDJSON — one HEC event per `Evaluated_Requirement`** (parallel to `hdf-to-ecs`), in a **hybrid shape**: a flat, CIM-named scalar projection promoted to the top of the `event` payload (and mirrored into the HEC indexed `fields`), plus a complete lossless nested **`hdf.*` block**. It ships a **minimal companion TA (`Splunk_TA_hdf`)** that associates the `hdf:results` sourcetype with the Vulnerabilities CIM model and aliases the flat scalars to CIM field names.
+`hdf-to-splunk` emits **HEC-envelope NDJSON — one HEC event per `Evaluated_Requirement`** (parallel to `hdf-to-ecs`), in a **hybrid shape**: a flat, CIM-named scalar projection promoted to the top of the `event` payload (and mirrored into the HEC indexed `fields`), plus a complete lossless nested **`hdf.*` block**. It ships a **minimal companion TA (`Splunk_TA_hdf`)** that associates the `hdf:results` sourcetype with the Vulnerabilities CIM model and keeps the already CIM-named scalars single-valued at search time.
 
 1. **HEC-envelope NDJSON, one event per requirement.** Each output line is one HEC event object: `{ time, host, source, sourcetype, event, fields }`. `time` is epoch seconds converted from the requirement's `startTime` (RFC3339) via the repo's `parseTimestamp` helper (falling back to the document `timestamp`, then omitted so HEC stamps receive-time); `sourcetype` is the stable, namespaced `"hdf:results"` (the single contract the TA hangs off); `source` is `"hdf-exporter"`; `host` is the target component name/fqdn. Concatenated/NDJSON batch form (one object per line, LF-delimited, trailing newline).
 
 2. **Hybrid event shape — flat CIM projection + lossless `hdf.*` block.** The `event` payload carries:
-   - **Promoted flat CIM scalars** at top level: `signature` (requirement title, or rule id), `signature_id` (control id — SV-/CCI/rule id), `cvss` (single number = **max base score** across `cvss[]`; omitted/0 for pure-compliance), `severity` (mapped CIM enum), `dest` (target host), `dvc` (scanner host when known), `vendor_product` (tool name), `category` (CWE name / control family), `hdf_status` (the **raw** five-value verdict — CIM has no field for it), and `suppressed` (the boolean acceptance axis — see below).
+   - **Promoted flat CIM scalars** at top level: `signature` (requirement title, or rule id), `signature_id` (control id — SV-/CCI/rule id), `cvss` (single number = **max base score** across `cvss[]`; omitted/0 for pure-compliance), `severity` (mapped CIM enum), `dest` (target host), `vendor_product` (tool name), `category` (CWE name / control family), `hdf_status` (the **raw** five-value verdict — CIM has no field for it), and `suppressed` (the boolean acceptance axis — see below).
    - The **hot CIM scalars mirrored into the HEC `fields`** key (index-time) — including `hdf_status` and `suppressed` — so the CIM-critical values are indexed and immune to the ~5,000-char extraction cutoff.
    - A nested lossless **`hdf` block** (full requirement: `status`, `suppressed`, `effective_status`, `disposition`, `overridden`, `cvss[]`, `results[]`, `descriptions[]`, `status_overrides[]`, `poams[]`, `tags`, `nist`, `cci`, `refs[]`, `code`, `generator`, `tool`, `exporter_version`) for drill-down. We do **not** ask CIM to normalize the nested arrays — they are drill-down only.
 
@@ -38,7 +38,7 @@ The central tension: "full CIM mapping" (which the consumer wants, over plain HE
 
 4. **Ship a minimal companion TA (`Splunk_TA_hdf`).** In-repo, a small Splunk add-on: `props.conf` (sourcetype recognition, JSON `KV_MODE`), `eventtypes.conf` (`[hdf_finding] search = sourcetype=hdf:results (hdf_status=failed OR hdf_status=error OR cve=*) NOT suppressed=true`), and `tags.conf` (`[eventtype=hdf_finding] vulnerability=enabled report=enabled`). This is the piece that makes the output genuinely CIM-live; without it the JSON is CIM-shaped but populates no data model.
 
-   *Two refinements landed during implementation:* (a) the finding discriminator keys on **`cve=*`** rather than `cvss>0` — a `baseScore:0` CVE (e.g. `CVE-1999-0632`) is still a CVE finding and must tag into Vulnerabilities, which `cvss>0` would wrongly exclude; (b) **no `FIELDALIAS`/`EVAL` or `TIME_*` is needed** in `props.conf` because the exporter already emits CIM-native field names and the HEC envelope `time` supplies the timestamp — so the TA is pure sourcetype-config + tagging.
+   *Two refinements landed during implementation:* (a) the finding discriminator keys on **`cve=*`** rather than `cvss>0` — a `baseScore:0` CVE (e.g. `CVE-1999-0632`) is still a CVE finding and must tag into Vulnerabilities, which `cvss>0` would wrongly exclude; (b) **no `FIELDALIAS` or `TIME_*` is needed** in `props.conf` because the exporter already emits CIM-native field names and the HEC envelope `time` supplies the timestamp — so field renaming and timestamp parsing are unnecessary. Live integration later demonstrated that indexed HEC mirrors plus JSON extraction create duplicate scalar values. Multiline titles additionally produce distinct whitespace-normalized and original values, so deduplicating identical values is insufficient. The add-on uses native `EVAL-<field> = spath(_raw,"<field>")` calculated fields after extraction to read the original JSON scalar explicitly. This restores ordinary grouped counts and exact title text without changing exporter bytes, indexed mirrors or nested JSON extraction. It does not change indexed-only queries such as `tstats`.
 
 5. **Severity and CVSS mapping.** CIM `severity` from HDF `impact` (0.0–1.0): `≥0.9→critical`, `0.7–<0.9→high`, `0.4–<0.7→medium`, `0.1–<0.4→low`, else `informational` (also the value for notApplicable/informational). CIM `cvss` = the **maximum `baseScore`** across the requirement's `cvss[]`; the full `cvss[]` is preserved losslessly in the `hdf` block. When a source severity string is present it is normalized to the CIM enum rather than recomputed.
 
@@ -54,14 +54,13 @@ Status roll-up: raw = `worstOf(results[].status)` over the five-value enum; `hdf
 | `host` (envelope) | target `component` fqdn ?? name |
 | `source` (envelope) | `"hdf-exporter"` (constant) |
 | `sourcetype` (envelope) | `"hdf:results"` (constant) |
-| `fields` (envelope, indexed) | flat copy of `signature`, `signature_id`, `severity`, `cvss`, `dest`, `dvc`, `hdf_status`, `suppressed` |
+| `fields` (envelope, indexed) | flat copy of `signature`, `signature_id`, `dest`, `dest_ip`, `severity`, `cve`, `cvss`, `hdf_status`, `suppressed` |
 | `event.signature` | requirement `title` (fallback `id`) |
 | `event.signature_id` | requirement `id` (SV-/CCI/rule id) |
 | `event.cve` | CVE id from `cvss[].source` when CVE-shaped |
 | `event.cvss` | max `baseScore` across `cvss[]` (single number; omitted when none) |
 | `event.severity` | map(`impact`)/normalized source severity → CIM enum |
 | `event.dest` | target `component` name/ip |
-| `event.dvc` | scanner host, when known |
 | `event.vendor_product` | `tool.name` |
 | `event.category` | `cwe` name / control family |
 | `event.hdf_status` | **raw** five-value verdict |
@@ -179,11 +178,11 @@ Per our convention, this ADR is written **first and reviewed before any code** (
 - Create: `hdf-converters/converters/hdf-to-splunk/Splunk_TA_hdf/{default/props.conf,default/eventtypes.conf,default/tags.conf,metadata/default.meta,README}`.
 
 **Acceptance criteria:**
-- [ ] `eventtypes.conf` keys on `sourcetype=hdf:results` and **excludes `suppressed=true`** (`… NOT suppressed=true`); `tags.conf` applies `vulnerability`+`report` to the finding eventtype; `props.conf` aliases scalars to CIM names + sets time.
+- [ ] `eventtypes.conf` keys on `sourcetype=hdf:results` and **excludes `suppressed=true`** (`… NOT suppressed=true`); `tags.conf` applies `vulnerability`+`report` to the finding eventtype; `props.conf` retains native CIM names and HEC timestamps and reads each mirrored scalar from its original JSON value after extraction.
 - [ ] Documented verify step (`| tstats count from datamodel=Vulnerabilities …`) and install instructions.
-- [ ] `.conf` stanzas validated (btool/manual) and covered by a fixture-level assertion that the exporter's field names match the TA's aliases.
+- [ ] `.conf` stanzas validated against the running service; live queries verify scalar values, counts and finding tags against the exported fixtures.
 
-**Verification:** conf review + a test asserting exporter output field names ⊆ TA-aliased set.
+**Verification:** conf review + real HEC ingestion and native queries with the installed add-on.
 
 #### Phase 3: CLI + docs (blocked by Phase 1)
 **Files:**
@@ -198,7 +197,7 @@ Per our convention, this ADR is written **first and reviewed before any code** (
 
 ### Verification Strategy
 - **End-to-end:** build the CLI, convert real fixtures, confirm each line is a standalone HEC object (`jq -e .event`), spot-check promoted CIM scalars, indexed `fields`, epoch `time`, and a lossless `hdf` block including overrides.
-- **CIM conformance (offline):** assert field names/enum values against the pinned CIM Vulnerabilities reference in tests (no live Splunk needed); assert the exporter's emitted scalar names are exactly the set the TA aliases.
+- **CIM conformance (offline):** assert field names/enum values against the pinned CIM Vulnerabilities reference in tests (no live Splunk needed); verify emitted scalar names and values against the CIM projection contract; live tests verify the add-on calculations.
 - **TA smoke (documented, manual):** install `Splunk_TA_hdf`, HEC-post a fixture, confirm `tstats … datamodel=Vulnerabilities` returns the failed/CVE events and not the passed ones.
 - **Edge cases:** pure-compliance (no `cvss`), multi-CVSS (max selection), waiver (raw-failing → `suppressed=true`), riskAdjustment (raw-failing → `suppressed=false`), missing/unparseable timestamp (HEC `time` omitted), multi-component docs.
 

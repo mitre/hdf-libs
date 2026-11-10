@@ -112,3 +112,12 @@ Validated on 2026-11-03 with a freshly built CLI and its embedded schemas:
 TestSmoke_OperationalRequirementRecordsWithoutAdjudicating exercises this same
 verify/apply/query flow. It checks that the deviation governs disposition while
 the finding stays failed.
+## Schema adaptation 2026-11-07 — threshold-smoke-risk-adjustment.json
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/threshold-smoke-risk-adjustment.json
+Source SHA-256: fe0e9048bd125b1cd7c9f8f2e903ca5809f2cb31f7d85eeff10807e6e9d19a52
+Schema-confirmed adaptation of the authored fixture described above. Retained the
+unsupported impact.justification text in root extensions.passthrough.overrides,
+associated with its original requirementId. Impact.value and the parent reason
+are unchanged. Reversing that move reproduces the original decoded document
+exactly; no text or override was discarded. Built hdf validate --json:
+exit 0, valid=true on 2026-11-07.

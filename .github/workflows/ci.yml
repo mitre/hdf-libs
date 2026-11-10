@@ -29,9 +29,8 @@ concurrency:
 # patched, but no longer moving forward. Node 24 itself enters Maintenance on
 # 2026-10-20 and 26 becomes Active LTS on 2026-10-28, so expect this to move
 # again; check the schedule rather than trusting this line.
-# ADR-0008 §5 owns the floor (ADR-0011 revision 8 handed it there) and names the
-# tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
-# minor the previous floor did not guarantee.
+# Redocly and @hey-api/openapi-ts both require a 22.x minor the previous
+# Node.js floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
 # go-version-file) — no separate pin to drift. golangci-lint, govulncheck and
 # gosec are pinned in mise.toml, with checksums in mise.lock, so the pre-commit
@@ -56,12 +55,6 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # `pnpm lint:workflows` (not part of the pre-commit hook) runs whatever
-  # actionlint is on PATH; keep this on the same release so local and CI agree.
-  ACTIONLINT_VERSION: '1.7.12'
-  ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
-  # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
-  HDF_CLI_SOURCE_SHA: '5f248c0bfd81d812ad16d4ea53f26c8965895eff'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -148,18 +141,16 @@ jobs:
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
           "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ .github/actions/ \
             > scan-artifacts/zizmor.sarif
-      # actionlint is a hard gate, unlike zizmor: a malformed workflow is a
-      # defect, not a finding to adjudicate. Fetched and verified the same way.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: actionlint shellcheck
+      # Malformed workflows are hard failures; tools share the hook's checksum locks.
       # shellcheck must be present or actionlint silently drops its shell rules.
       - name: actionlint (hard failure)
         run: |
           command -v shellcheck
-          tmp=$(mktemp -d)
-          curl -fsSL -o "$tmp/actionlint.tar.gz" \
-            "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "$ACTIONLINT_SHA256  $tmp/actionlint.tar.gz" | sha256sum -c -
-          tar xzf "$tmp/actionlint.tar.gz" -C "$tmp" actionlint
-          "$tmp/actionlint"
+          actionlint
       # release.yml's version assertion cannot run here (no goreleaser dist),
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
@@ -175,9 +166,7 @@ jobs:
   # off lockfiles, so this job needs neither `pnpm install` nor a build — just a
   # checkout and the scanner.
   #
-  # go install over a release binary for the same reason as golangci-lint and
-  # govulncheck: the module download is verified against the Go checksum
-  # database.
+  # go install verifies module downloads against the Go checksum database.
   scan-deps:
     name: Scan dependencies (OSV)
     runs-on: ubuntu-latest
@@ -308,6 +297,9 @@ jobs:
           for d in go/lang/security javascript/lang/security typescript/lang/security typescript/react/security; do
             [ -d ".semgrep-rules/$d" ] || { echo "::error::ruleset dir missing: $d"; exit 1; }
           done
+          # Preserve the rule ID while narrowing only the safe Windows size expression.
+          test -f .semgrep-rules/go/lang/security/audit/unsafe.yaml
+          cp .github/semgrep/unsafe.yaml .semgrep-rules/go/lang/security/audit/unsafe.yaml
       # Exit codes with --error: 0 clean, 1 findings (the gate judges those),
       # 2 target error, 7 bad config. Only 0 and 1 are tolerated here.
       #
@@ -321,6 +313,8 @@ jobs:
           # is honest. The pinned file also fixes every transitive dependency, so
           # nothing in the scanner's tree can move underneath a run.
           pip install --quiet --require-hashes -r .github/requirements/semgrep.txt
+          semgrep --test --metrics off \
+            --config .semgrep-rules/go/lang/security/audit/unsafe.yaml .github/semgrep/test/unsafe.go
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \
@@ -489,6 +483,19 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
+      - name: Windows lint and security (SARIF; findings gate via HDF)
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        run: |
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-windows.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
+          done
       # In SARIF mode govulncheck exits 0 even with findings — by design, so
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own
@@ -536,36 +543,7 @@ jobs:
   # ── The CLI the gates run ────────────────────────────────────────────────
   # Build reviewed source in isolation so a PR cannot change the CLI judging it.
   gate-cli:
-    name: Build the gate CLI (pinned main commit)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: mitre/hdf-libs
-          ref: ${{ env.HDF_CLI_SOURCE_SHA }}
-          path: gate-source
-          persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: gate-source/go.work
-          cache: false
-      - name: Build the reviewed CLI
-        working-directory: gate-source/hdf-cli
-        run: |
-          test "$(git rev-parse HEAD)" = "$HDF_CLI_SOURCE_SHA"
-          go build -mod=readonly \
-            -ldflags "-X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit=$HDF_CLI_SOURCE_SHA" \
-            -o "$RUNNER_TEMP/hdf" ./cmd/hdf
-          "$RUNNER_TEMP/hdf" version
-          "$RUNNER_TEMP/hdf" evidence --help
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: gate-cli
-          path: ${{ runner.temp }}/hdf
-          retention-days: 7
+    uses: $/.github/workflows/gate-cli.yml
 
   # ── Gate: scan findings, judged as HDF ───────────────────────────────────
   # One of two HDF gates. This one judges what the tools report by READING the
@@ -785,8 +763,18 @@ jobs:
         shell: bash
         env:
           OS_TAG: ${{ matrix.os }}
-          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
+          GO_COVERAGE: '1'
         run: .github/scripts/test-go-junit.sh
+      - name: Check Linux archive field representations
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: hdf-cli
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+        run: |
+          GOARCH=386 go vet ./cmd/hdf/cmd
+          GOARCH=arm go vet ./cmd/hdf/cmd
+          GOARCH=s390x go vet ./cmd/hdf/cmd
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
@@ -804,6 +792,51 @@ jobs:
           path: '**/coverage.out'
           retention-days: 30
 
+      - name: Upload Windows coverage reports
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-windows
+          path: '**/coverage.out'
+          if-no-files-found: error
+          retention-days: 30
+
+  test-archive-macos:
+    name: Test archive access (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-artifacts
+      - name: Verify native archive access and recovery
+        working-directory: hdf-cli
+        run: |
+          go test ./cmd/hdf/cmd -run 'TestArchiveAccess|TestConvertBundle|TestEvidenceBundle' -count=1 -coverprofile=archive-coverage.out
+          go vet ./cmd/hdf/cmd
+      - name: Upload native coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-${{ matrix.os }}
+          path: hdf-cli/archive-coverage.out
+          if-no-files-found: error
+          retention-days: 30
+
   # ── Gate: test results, judged as HDF ────────────────────────────────────
   # The other half of the pair (see gate-hdf-scans): the same convert-then-
   # threshold shape, applied to what the suites report by RUNNING the code.
@@ -818,7 +851,7 @@ jobs:
     name: Gate test results on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [gate-cli, test-ts, test-go]
+    needs: [gate-cli, test-ts, test-go, test-archive-macos]
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -843,6 +876,11 @@ jobs:
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
+      - name: Native macOS archive verification must pass
+        if: needs.test-archive-macos.result != 'success'
+        run: |
+          echo "::error::Native macOS archive verification did not succeed on both architectures"
+          exit 1
       - name: Every test leg must have reported
         run: |
           # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and

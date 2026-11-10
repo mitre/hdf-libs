@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hdf:siem-export-bundle:1",
+  "title": "HDF source-preserving SIEM export bundle",
+  "description": "Profile 1.x metadata. Register the HDF common primitives (also embedded in the bundled hdf-results schema) when compiling this schema. Artifact-byte integrity, reference uniqueness and record equality require resolver verification.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Manifest"
+    },
+    {
+      "$ref": "#/$defs/SourceEnvelope"
+    }
+  ],
+  "$defs": {
+    "Profile": {
+      "type": "object",
+      "required": [
+        "profileVersion",
+        "outputProfile"
+      ],
+      "properties": {
+        "profileVersion": {
+          "type": "string",
+          "pattern": "^1\\.(0|[1-9]\\d*)$"
+        },
+        "outputProfile": {
+          "const": "legacy-additive/1"
+        }
+      }
+    },
+    "Artifact": {
+      "allOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
+        },
+        {
+          "type": "object",
+          "required": [
+            "sourceName",
+            "externalId",
+            "mediaType",
+            "checksum"
+          ],
+          "properties": {
+            "sourceName": {
+              "const": "hdf-results"
+            },
+            "externalId": {
+              "type": "string",
+              "pattern": "^sha512:[a-f0-9]{128}$"
+            },
+            "mediaType": {
+              "const": "application/json"
+            },
+            "checksum": {
+              "allOf": [
+                {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "algorithm": {
+                      "const": "sha512"
+                    },
+                    "value": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{128}$"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Manifest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Profile"
+        },
+        {
+          "type": "object",
+          "required": [
+            "target",
+            "events",
+            "artifacts"
+          ],
+          "properties": {
+            "target": {
+              "enum": [
+                "ecs",
+                "splunk",
+                "ocsf"
+              ]
+            },
+            "events": {
+              "const": "events.ndjson"
+            },
+            "artifacts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Artifact"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "href"
+                    ],
+                    "properties": {
+                      "href": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SourceEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Profile"
+        },
+        {
+          "type": "object",
+          "required": [
+            "artifact",
+            "pointer",
+            "requirement"
+          ],
+          "properties": {
+            "artifact": {
+              "$ref": "#/$defs/Artifact"
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^/baselines/(0|[1-9]\\d*)/requirements/(0|[1-9]\\d*)$"
+            },
+            "requirement": {
+              "type": "object"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

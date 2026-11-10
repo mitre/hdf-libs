@@ -7,6 +7,20 @@ import (
 	"testing"
 )
 
+func TestReadAtMostRejectsExcessBytes(t *testing.T) {
+	data, err := readAtMost(strings.NewReader("complete input"), 4)
+	if err == nil {
+		t.Fatalf("expected size failure, got truncated bytes %q", data)
+	}
+	if data != nil {
+		t.Fatalf("must not return truncated input on size failure: %q", data)
+	}
+	data, err = readAtMost(strings.NewReader("four"), 4)
+	if err != nil || string(data) != "four" {
+		t.Fatalf("exact boundary should preserve all bytes: %q, %v", data, err)
+	}
+}
+
 func TestReadFromFile_NotFound(t *testing.T) {
 	_, err := readFromFile("/nonexistent/path/to/file.json", false)
 	if err == nil {

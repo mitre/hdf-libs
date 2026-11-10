@@ -4,7 +4,7 @@ Convert security tool outputs to and from Heimdall Data Format (HDF). Part of th
 
 Every converter is implemented in both TypeScript and Go. The TypeScript library is published as an npm package; the Go implementations are used by the [`hdf` CLI](https://github.com/mitre/hdf-libs/tree/main/hdf-cli).
 
-All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/hdf-libs/schemas/).
+Security-tool importers produce [schema-validated HDF](https://mitre.github.io/hdf-libs/schemas/). Exporters produce their documented target formats.
 
 ## Supported Converters
 
@@ -66,6 +66,24 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Twistlock | `convertTwistlockToHdf` | JSON |
 | Veracode | `convertVeracodeToHdf` | XML |
 | XCCDF Results | `convertXccdfResultsToHdf` | XML |
+
+### Semgrep rule references
+
+Native Semgrep conversion reads rule-author metadata `source-rule-url` and
+`source_rule_url` independently as external references. Both contribute to HDF
+requirement `refs`, alongside the existing reference fields; distinct URLs are
+retained and identical URLs appear once. Neither key overrides the other, and
+unrecognized spellings are not inferred. Empty, redacted or non-string values
+follow the converter's existing per-field filtering. Semgrep JSON field names, including metadata and its containing objects, are
+case-sensitive in both languages: differently capitalized keys are ignored and
+cannot overwrite canonical values. Other Go decoding behavior, including
+last-value handling of duplicate exact keys, is retained.
+
+These keys are used by published rules to link to other rule implementations or
+documentation; neither is a spelling error. `refs` carries the links, not their
+original metadata keys. Retain the original scanner artifact when that provenance
+is needed. Source-preserving SIEM export bundles preserve their HDF input; they
+cannot reconstruct scanner metadata omitted during import.
 
 ### HDF to Other Formats
 
@@ -172,6 +190,83 @@ const combined = convertHdfDocumentsToHtml([
 
 Both return one self-contained HTML string. The same input always yields the same output, and the Go and TypeScript implementations yield identical bytes.
 
+### Preserve SIEM source data
+
+The explicit `convertHdfToEcsBundle`, `convertHdfToSplunkBundle` and
+`convertHdfToOcsfBundle` APIs take original UTF-8 bytes and asynchronously return
+`{ events: string, source: Uint8Array, manifest: string }`. Existing string-returning
+exporters keep their signatures and native status/severity mappings.
+
+```typescript
+import { readFileSync, writeFileSync } from 'node:fs';
+import { convertHdfToEcsBundle, resolveExportEvent } from '@mitre/hdf-converters';
+
+const bundle = await convertHdfToEcsBundle(readFileSync('results.json'));
+writeFileSync('events.ndjson', bundle.events);
+writeFileSync('source.json', bundle.source);
+writeFileSync('manifest.json', bundle.manifest);
+
+const firstEvent = bundle.events.split('\n')[0];
+if (firstEvent) {
+  const verified = await resolveExportEvent(firstEvent, bundle.manifest, [
+    { href: 'source.json', bytes: readFileSync('source.json') },
+  ]);
+  // JSON text preserves source number spelling; source remains the exact input bytes.
+  console.log(verified.requirement, verified.baseline);
+}
+```
+
+Each finding carries its complete requirement at `hdf.source` (ECS),
+`event.hdf.source` (Splunk HEC), or `unmapped.hdf_source` (OCSF). The source artifact
+retains document and baseline context once, including groups, integrity objects,
+signatures and embedded scanner artifacts. An empty assessment still returns its
+source and manifest. SHA512 identifies the exact bytes; an RFC 6901 occurrence
+pointer distinguishes repeated requirement IDs.
+
+`resolveExportEvent` verifies the manifest/profile, artifact identity and checksum,
+pointer and complete carried record against caller-supplied bytes. It returns
+`{ source, baseline, requirement }`; the latter two are JSON text with number tokens
+preserved. It performs no filesystem or network reads. `resolveExportSource` is the
+asynchronous lower-level equivalent for an already-extracted envelope **as JSON text**. Avoid
+parsing and re-stringifying events with ordinary JavaScript numbers before
+verification: that can round large integers or erase the distinction between
+`1.0` and `1`.
+Readback verifies the preserved requirement against the source artifact; it does
+not recompute or authenticate native SIEM fields such as status or severity.
+
+The manifest uses envelope version `1.0` and output profile `legacy-additive/1`.
+Readers accept compatible higher minor versions, reject unknown major/output
+profiles, and require event/manifest agreement. `exportBundleSchema` exports the
+metadata schema; register the HDF common primitives embedded in the bundled HDF
+results schema when compiling its external references. Schema validation does
+not replace byte-integrity and record-consistency verification.
+
+The new TypeScript APIs return promises because hashing reuses the existing Web
+Crypto helper, avoiding a Node-only dependency in the shared package. They snapshot
+caller-owned byte arrays before asynchronous work. Bundle inputs must be valid UTF-8 JSON with well-formed Unicode. The configured
+input-size limit applies before decoding (256 MiB by default). Duplicate JSON
+members retain the native last-member interpretation; the source artifact keeps
+every original byte. Record comparison ignores object key order, but preserves
+member presence, explicit null, array order, string values and numeric spelling.
+Unicode token inspection uses Microsoft's `jsonc-parser` scanner, including for
+large strings and overwritten members. Native JSON parsing still enforces strict
+JSON: comments and trailing commas are not accepted.
+
+Keep `source.json` and the manifest accessible for as long as the finding events
+are retained. NDJSON alone does not deliver the complete source. Signatures are
+carried, not cryptographically verified, and data is not automatically redacted.
+The initial additive profile retains existing duplicated fields; a compact
+profile/default migration remains a separate decision. For portable ZIP delivery
+and verified local recovery, use the CLI's explicit
+[`convert --bundle` and `evidence resolve` commands](../hdf-cli/README.md#convert-bundle). The CLI wraps the unchanged library artifacts in a standard HDF evidence package and verifies that package before recovering the original source.
+Real Elasticsearch and Splunk ingestion, native queries and source readback are
+verified with current CLI and packed TypeScript artifacts in the
+[SIEM integration harness](../site/docs/contributing/siem-integration-testing.md).
+Its hosted qualification and operational limits are documented separately from
+library/archive checks. ECS uses effective-primary status; Splunk and OCSF
+Compliance Findings use raw-primary verdicts. See the
+[target status and preservation guide](../site/docs/guides/siem-export.md).
+
 ## Go Usage
 
 Go converters live under `converters/<name>/go/` and follow the same function signature:
@@ -184,6 +279,26 @@ results, err := grype.ConvertGrypeToHDF(input, converterVersion)
 ```
 
 The first argument is the raw tool output (`[]byte`); the second is the converter version string, not the source filename.
+
+The SIEM bundle counterparts are `ConvertHDFToECSBundle`,
+`ConvertHDFToSplunkBundle` and `ConvertHDFToOCSFBundle` in their existing converter
+packages. They return `(*exportmap.ExportBundle, error)` with `Events`, `Source`
+and `Manifest` byte slices. Go 1.27.3 or newer is required.
+
+```go
+import (
+    ecs "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-ecs/go"
+    "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
+)
+
+bundle, err := ecs.ConvertHDFToECSBundle(input, converterVersion)
+if err != nil { return err }
+// eventLine is one complete NDJSON line from bundle.Events.
+verified, err := exportmap.ResolveExportEvent(eventLine, bundle.Manifest,
+    []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
+if err != nil { return err }
+// verified.Source is the original artifact; Baseline and Requirement are JSON bytes.
+```
 
 Exporters take an HDF document instead. The HTML report takes one results document, or several for a combined report:
 

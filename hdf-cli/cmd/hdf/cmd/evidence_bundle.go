@@ -131,13 +131,18 @@ Examples:
   hdf evidence bundle boe.json -o boe.zip
   hdf evidence bundle boe.json -o /tmp/portal-q3-evidence.zip`,
 		Args: evidencePackageArg,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			access, err := archiveAccessFlag(cmd)
+			if err != nil {
+				return err
+			}
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")
 			}
-			return runEvidenceBundle(args[0], outputPath, overwrite, newArchiveWriter)
+			return runEvidenceBundle(args[0], outputPath, overwrite, access, newArchiveWriter)
 		},
 	}
+	cmd.Flags().String("output-access", string(archivePrivate), "Archive access: private (creator only) or inherit (destination permissions)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Archive to write (required)")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false,
 		"Replace an existing archive at -o (without this, an existing path is refused)")
@@ -401,7 +406,7 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
-func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter func(*os.File) archiveWriter) (err error) {
+func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess, makeWriter func(*os.File) archiveWriter) (err error) {
 	pkgData, err := readInputFile(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -637,7 +642,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// Sorted order plus a fixed timestamp make the archive reproducible.
 	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
 
-	if err := writeArchiveAtomically(outputPath, entries, makeWriter); err != nil {
+	if err := writeArchiveAtomically(outputPath, entries, makeWriter, overwrite, access); err != nil {
 		return err
 	}
 
@@ -713,20 +718,22 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 // quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
 // the comment on the existence check.
 func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
+	return refuseArchiveOverInput(outputPath, pkgDir, pkgPath, "evidence package itself", refs, overwrite)
+}
+
+func refuseArchiveOverInput(outputPath, pkgDir, pkgPath, inputLabel string, refs []recordedRef, overwrite bool) error {
 	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
 		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
 	}
-	// Checked here rather than left to os.CreateTemp, which fails after every read and
-	// hash with an "open <dir>/.hdf-bundle-NNN" naming a temp path the operator never
-	// typed.
+	// Report the requested destination before reading and hashing its inputs.
 	if parent := filepath.Dir(outputPath); parent != "" {
 		if _, err := os.Stat(parent); err != nil {
 			return fmt.Errorf("-o %s: the directory %s does not exist", outputPath, parent)
 		}
 	}
 	if samePath(outputPath, pkgPath) {
-		return fmt.Errorf("refusing to write the archive over the evidence package itself (%s); "+
-			"name a different -o", pkgPath)
+		return fmt.Errorf("refusing to write the archive over the %s (%s); "+
+			"name a different -o", inputLabel, pkgPath)
 	}
 	for _, r := range refs {
 		if r.uri == "" || isRemoteURI(r.uri) {
@@ -784,20 +791,20 @@ func samePath(a, b string) bool {
 // replaces this one function and nothing else.
 func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 
-// writeArchiveAtomically writes to a temporary file beside the target and renames it
+// writeArchiveAtomically writes to a temporary file beside the target and publishes it
 // into place, so a failure part-way cannot leave a partial archive that looks
 // complete. It takes the writer constructor so the seam is exercised by the command,
 // not merely implemented beside it.
-func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter) error {
+func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter, overwrite bool, access archiveAccess) error {
 	dir := filepath.Dir(outputPath)
-	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
+	tmp, err := createArchiveTemp(dir, access)
 	if err != nil {
 		return fmt.Errorf("failed to create the archive: %w", err)
 	}
 	tmpName := tmp.Name()
 	defer func() {
 		_ = tmp.Close()
-		_ = os.Remove(tmpName) // no-op once renamed
+		_ = os.Remove(tmpName) // removes the temporary link, or no-op after rename
 	}()
 
 	w := makeWriter(tmp)
@@ -809,19 +816,20 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("failed to finalize the archive: %w", err)
 	}
-	// Before the rename, not after: a crash can otherwise make the rename durable while the
-	// bytes are not, leaving a present-but-truncated archive — the exact failure the
-	// write-then-rename exists to prevent.
+	// Flush before publication so a crash cannot leave a complete-looking truncated archive.
 	if err := tmp.Sync(); err != nil {
 		return fmt.Errorf("failed to flush the archive to disk: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close the archive: %w", err)
 	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		return fmt.Errorf("failed to set archive permissions: %w", err)
+	if overwrite {
+		err = os.Rename(tmpName, outputPath)
+	} else {
+		// Linking publishes complete bytes atomically and refuses a concurrent output.
+		err = os.Link(tmpName, outputPath)
 	}
-	if err := os.Rename(tmpName, outputPath); err != nil {
+	if err != nil {
 		return fmt.Errorf("failed to write %s: %w", outputPath, err)
 	}
 	return nil

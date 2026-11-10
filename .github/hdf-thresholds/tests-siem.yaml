@@ -1,0 +1,23 @@
+# Every required SIEM integration result must pass, without adjudication or skips.
+rules:
+  - name: at least one verified integration result
+    where:
+      id: 'test.* source-preserving integration'
+      status: passed
+    min: 1
+  - name: no failed integration results
+    where:
+      status: failed
+    max: 0
+  - name: no integration errors
+    where:
+      status: error
+    max: 0
+  - name: no skipped integration results
+    where:
+      status: notReviewed
+    max: 0
+  - name: no inapplicable integration results
+    where:
+      status: notApplicable
+    max: 0

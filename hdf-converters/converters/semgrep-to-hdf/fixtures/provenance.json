@@ -5,6 +5,12 @@
       "source": "https://raw.githubusercontent.com/semgrep/semgrep-interfaces/v1.174.0/semgrep_output_v1.jsonschema",
       "sha256": "6b045900d43c890f27234690aa18b52b1233cac188cda3aac9f0d68e31c7d008",
       "retrieved": "2026-09-20"
+    },
+    {
+      "file": "semgrep_output_v1-1.183.0.schema.json",
+      "source": "https://raw.githubusercontent.com/semgrep/semgrep-interfaces/v1.183.0/semgrep_output_v1.jsonschema",
+      "sha256": "2105d76a0c6985f7086cb3e88f4b1bdd8fb13dcdf4231a49f5ce38f4122e1033",
+      "retrieved": "2026-11-09"
     }
   ]
 }

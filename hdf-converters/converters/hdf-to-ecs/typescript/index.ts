@@ -1,1 +1,1 @@
-export { convertHdfToEcs } from './converter.js';
+export { convertHdfToEcs, convertHdfToEcsBundle } from './converter.js';

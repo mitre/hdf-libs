@@ -38,7 +38,7 @@ function documentFor(tc: ShippedFormatCase): Record<string, unknown> {
     baselines: [
       {
         name: 'Format Test Baseline',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: [
           {
             id: 'SV-1',

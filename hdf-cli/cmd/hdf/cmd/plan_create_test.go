@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,7 @@ func TestPlanCreate(t *testing.T) {
 
 	var plan map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &plan))
+	assertCreationTimestamp(t, plan)
 
 	assert.Contains(t, plan["name"], "portal-prod")
 	assert.Nil(t, plan["type"]) // type is optional, not assumed
@@ -82,6 +84,7 @@ func TestPlanCreate_Standalone(t *testing.T) {
 
 	var plan map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &plan))
+	assertCreationTimestamp(t, plan)
 	assert.Equal(t, "RHEL9 Assessment", plan["name"])
 	assert.Nil(t, plan["systemRef"]) // no system reference
 	// planId should be auto-generated
@@ -111,4 +114,17 @@ func TestPlanCreate_NoArgsNoFlags(t *testing.T) {
 	_, _, err := executeCommand("plan", "create")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "system file")
+}
+
+func assertCreationTimestamp(t *testing.T, plan map[string]interface{}) {
+	t.Helper()
+	extensions, ok := plan["extensions"].(map[string]interface{})
+	require.True(t, ok)
+	metadata, ok := extensions["passthrough"].(map[string]interface{})
+	require.True(t, ok)
+	createdAt, ok := metadata["createdAt"].(string)
+	require.True(t, ok)
+	parsed, err := time.Parse(time.RFC3339, createdAt)
+	require.NoError(t, err)
+	assert.WithinDuration(t, time.Now(), parsed, time.Minute)
 }

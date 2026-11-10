@@ -20,10 +20,10 @@ const richResults = `{
       "title": "Baseline Alpha",
       "version": "1.0",
       "status": "loaded",
-      "checksum": {"algorithm": "sha256", "value": "aaa"},
+      "integrity": {"algorithm": "sha256", "checksum": "aaa"},
       "depends": [],
       "groups": [],
-      "inspecVersion": "5.0.0",
+      "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
       "supports": [],
       "requirements": [
         {
@@ -62,10 +62,10 @@ const richResults = `{
     },
     {
       "name": "baseline-b",
-      "checksum": {"algorithm": "sha256", "value": "bbb"},
+      "integrity": {"algorithm": "sha256", "checksum": "bbb"},
       "depends": [],
       "groups": [],
-      "inspecVersion": "5.0.0",
+      "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
       "supports": [],
       "requirements": [
         {
@@ -160,7 +160,7 @@ func TestListComponentsDetail(t *testing.T) {
 
 func TestListComponentsEmpty(t *testing.T) {
 	// Create fixture with no targets
-	noTargets := `{"baselines": [{"name": "b", "checksum": {"algorithm": "sha256", "value": "x"}, "depends": [], "groups": [], "inspecVersion": "5", "supports": [], "requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}], "statistics": {"duration": 0}}`
+	noTargets := `{"baselines": [{"name": "b", "integrity": {"algorithm": "sha256", "checksum": "x"}, "depends": [], "groups": [], "extensions": {"passthrough": {"inspecVersion": "5"}}, "supports": [], "requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}], "statistics": {"duration": 0}}`
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "no-targets.json")
 	require.NoError(t, os.WriteFile(path, []byte(noTargets), 0o600))

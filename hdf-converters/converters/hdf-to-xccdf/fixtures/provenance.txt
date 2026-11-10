@@ -59,3 +59,14 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 The inputs are HDF documents; their schema is this repository's own (`hdf-schema`), and every input is validated by the converter tests through `hdf-validators`. The exporter's target-format schema, where one is vendored, lives under this converter's `schemas/` directory with its own `provenance.json`.
+
+## Schema adaptation 2026-11-07 — input/minimal.json
+
+Schema-confirmed adaptation, not a new scanner capture. Original provenance above
+remains applicable. Source before adaptation:
+https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-converters/converters/hdf-to-xccdf/fixtures/input/minimal.json
+Source SHA-256: 93aa2362580e7fd80abf40dfe1442254fe2848d1dfd412bfbe97f6e4251ed188
+Renamed root dataSource to tool; retained the original source name and format.
+All other decoded fields and every string value are unchanged.
+Validation: built hdf validate --json, JSON Schema 2020-12 results bundle,
+exit 0 and valid=true on 2026-11-07.

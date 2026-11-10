@@ -1,10 +1,12 @@
 module github.com/mitre/hdf-libs/hdf-validators/go/v3
 
-go 1.26.10
+go 1.27.3
 
 require (
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/stretchr/testify v1.12.1
 	github.com/xeipuuv/gojsonschema v1.2.0
+	golang.org/x/text v0.43.0
 )
 
 require (

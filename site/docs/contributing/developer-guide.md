@@ -16,6 +16,7 @@ The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the
 | golangci-lint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from golangci-lint's release workflow |
 | gosec | `mise.toml` | Official release binary; SHA-256 and the cosign signature on its checksum file |
 | govulncheck | `mise.toml` | `go install`, verified against the Go checksum database |
+| actionlint, shellcheck | `mise.toml` | Release binaries, checked against the platform checksums in `mise.lock` |
 
 Corepack is not used: mise installs pnpm itself, and Node.js stopped shipping Corepack in version 25. CI's shared setup action, the snapshot workflow and the publish job of `release.yml` install Node.js, and pnpm where a job needs it, through mise-action; the `check-go` job adds Go's scanners the same way. npm itself stays pinned by the `setup-npm` action (SHA-512 checked), because mise's npm installer does not cover Windows.
 
@@ -27,6 +28,8 @@ mise install   # install the pinned tools, verified against mise.lock
 ```
 
 The pre-commit hook runs `mise exec -- pnpm check`, so it uses these versions whether or not mise is activated in your shell. For a single command, prefix it the same way, for example `mise exec -- golangci-lint run` in a module directory.
+
+Workflow lint runs in the hook and CI with the same pinned Actionlint and ShellCheck binaries. Missing tools fail the check; install them with `mise install actionlint shellcheck`.
 
 Why golangci-lint is pinned to a release binary: its formatters are compiled in from the Go that builds it. A golangci-lint built with a newer Go reports formatting that CI's accepts, so a local build from source (`go install`, Homebrew) can fail the hook on code CI passes. golangci-lint's own [install guide](https://golangci-lint.run/docs/welcome/install/local/) recommends the release binary for the same reason.
 
@@ -457,6 +460,35 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
   workspace dependencies (fixes pnpm junction resolution on Windows)
 - Go tests that load fixtures from sibling packages should skip gracefully if
   fixture files are not found
+
+---
+
+## Security scanner rule regression tests
+
+CI tests the local Go unsafe-operation audit rule before scanning the repository.
+The rule exempts only `unsafe.Sizeof(windows.SecurityAttributes{})`: Go evaluates
+that fixed-size empty struct literal as a compile-time constant, including ABI
+padding. Other unsafe calls still produce findings, including `unsafe.Add`,
+pointer conversions and slice/string operations. An HDF override would apply to
+the entire rule, so this correction uses no amendment or threshold change.
+
+The locally authored rule is `.github/semgrep/unsafe.yaml`. CI places it at the
+existing fetched rule path to retain the HDF requirement ID; the rest of the
+pinned upstream ruleset stays intact. This does not depend on gosec G103: the
+current golangci-lint `common-false-positives` preset filters that audit rule.
+
+With the repository's hash-pinned Semgrep environment installed, run from the
+repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+The annotated Go cases test both permitted and reported expressions using
+[Semgrep's native rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+Keep those boundaries passing when changing the rule or scanner version. CI also
+scans every Go workspace module for Windows through the existing SARIF/HDF gate;
+Linux scans and threshold policies remain in place.
 
 ---
 

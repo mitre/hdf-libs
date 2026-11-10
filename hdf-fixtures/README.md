@@ -131,3 +131,16 @@ Each new fixture must:
 5. Be added to the group map in `fixtures_gate_test.go`, which validates each
    fixture against its schema. That map is hand-maintained: a fixture missing
    from it is never validated, and nothing reports the omission.
+
+## Historical schema adaptations (2026-11-07)
+
+These two documents are schema-confirmed adaptations of the committed corpus,
+not fresh scanner runs. Their original upstream capture is described above;
+the exact retrieved baseline for this adaptation is pinned below.
+
+- `results/inspec-multilayered.json`: [source before adaptation](https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-fixtures/results/inspec-multilayered.json), SHA-256 `6068338ce4fa3cb189f04536190cdb1f84a7b2f950baeca4057e4bfd5dc9aa5f`. Renamed root targets to components. Every target object, requirement, result, string and bare timestamp is unchanged. No identity was invented. Results components permit an omitted componentId. Bare timestamps remain intentionally preserved for parser normalization tests.
+- `baseline/win2022-stig.json`: [source before adaptation](https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-fixtures/baseline/win2022-stig.json), SHA-256 `5b9ae0304fd22618f47832803ccc935198508f0d42a3c3a3ac96581e7da43e13`. Renamed root checksum to integrity and its value member to checksum. All requirements, prose and metadata values are unchanged. The retained digest is historical source metadata, not a newly calculated digest of this adaptation.
+
+Validation on 2026-11-07: `GOTOOLCHAIN=go1.27.3 go test ./... -count=1`
+in `hdf-fixtures` passed, including the corpus schema gate. That gate normalizes
+bare timestamps in memory, as the parsers do, without rewriting fixture data.

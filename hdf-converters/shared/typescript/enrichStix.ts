@@ -189,7 +189,6 @@ function buildRiskAdjustment(
     expiresAt: toRfc3339(expiresAt),
     cvss: {
       version: '3.1',
-      id: cve,
       baseVector,
       baseScore: score.baseScore,
       threatVector: 'E:H',

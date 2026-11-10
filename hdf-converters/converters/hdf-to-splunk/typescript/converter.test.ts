@@ -1,9 +1,10 @@
+import { resolveExportSource } from '../../../shared/typescript/exportbundle.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
-import { convertHdfToSplunk } from './converter.js';
+import { convertHdfToSplunk, convertHdfToSplunkBundle } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
@@ -185,8 +186,7 @@ describe('hdf-to-splunk converter', () => {
     // baseline metadata beyond name
     expect(hdf.baseline_version).toBe('1.0.0');
     expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
-    expect(obj(hdf.baseline_checksum).algorithm).toBe('sha256');
-    expect(obj(hdf.baseline_checksum).value).toBe('abc123');
+    expect(hdf.baseline_checksum).toBeUndefined();
     expect((hdf.groups as unknown[]).length).toBe(1);
     expect(obj((hdf.groups as unknown[])[0]).id).toBe('controls/stig.rb');
 
@@ -217,4 +217,14 @@ describe('hdf-to-splunk converter', () => {
       expect(convertHdfToSplunk(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));
     }
   });
+});
+
+it('retains modern baseline integrity through the explicit bundle readback API', async () => {
+  const source = readFileSync(join(FIXTURES, 'input', 'override.json'));
+  const bundle = await convertHdfToSplunkBundle(source, VERSION);
+  const event = JSON.parse(bundle.events);
+  const resolved = await resolveExportSource(JSON.stringify(event.event.hdf.source), bundle.manifest, [{ href: 'source.json', bytes: bundle.source }]);
+  expect(Buffer.from(resolved.source)).toEqual(source);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual(JSON.parse(source.toString('utf8')).baselines[0].integrity);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
 });

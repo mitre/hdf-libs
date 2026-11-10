@@ -458,7 +458,7 @@ func TestEvidenceBundle_WriterSeamAcceptsAnotherImplementation(t *testing.T) {
 	// The command is driven THROUGH the seam. Constructing the fake and calling
 	// Add on it directly would only prove the interface compiles; it would pass
 	// with the command still making zip calls of its own.
-	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"), false,
+	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"), false, archivePrivate,
 		func(*os.File) archiveWriter { return fake }))
 
 	assert.Equal(t, []string{

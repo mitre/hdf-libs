@@ -24,7 +24,7 @@ function resultsWith(req: Record<string, unknown>): Record<string, unknown> {
     baselines: [
       {
         name: 'CVE-Ecosystem Test Baseline',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: [
           {
             id: 'CVE-2024-12345',
@@ -39,7 +39,7 @@ function resultsWith(req: Record<string, unknown>): Record<string, unknown> {
         ],
       },
     ],
-    targets: [],
+    components: [],
     statistics: {},
   };
 }
@@ -51,10 +51,7 @@ describe('HDF Results Validation', () => {
         baselines: [
           {
             name: 'Test Baseline',
-            checksum: {
-              algorithm: 'sha256',
-              value: 'abc123'
-            },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: [
               {
                 id: 'REQ-001',
@@ -72,7 +69,7 @@ describe('HDF Results Validation', () => {
             ]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -81,16 +78,16 @@ describe('HDF Results Validation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should validate results with targets and statistics', () => {
+    it('should validate results with components and statistics', () => {
       const validResults = {
         baselines: [
           {
             name: 'Test Baseline',
-            checksum: { algorithm: 'sha256', value: 'abc123' },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: [minReq]
           }
         ],
-        targets: [
+        components: [
           {
             name: 'web-server-01',
             type: 'host'
@@ -112,11 +109,11 @@ describe('HDF Results Validation', () => {
             name: 'Test Baseline',
             version: '1.0.0',
             title: 'Test Title',
-            checksum: { algorithm: 'sha256', value: 'abc123' },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: [minReq]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {},
         timestamp: '2025-01-01T00:00:00Z'
       };
@@ -129,7 +126,7 @@ describe('HDF Results Validation', () => {
   describe('Invalid documents', () => {
     it('should reject results missing baselines field', () => {
       const invalid = {
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -142,7 +139,7 @@ describe('HDF Results Validation', () => {
     it('should reject results with invalid baselines type', () => {
       const invalid = {
         baselines: 'not an array',
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -155,11 +152,11 @@ describe('HDF Results Validation', () => {
       const invalid = {
         baselines: [
           {
-            checksum: { algorithm: 'sha256', value: 'abc123' },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: []
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -168,7 +165,7 @@ describe('HDF Results Validation', () => {
       expect(result.errors.some(e => e.field.includes('name'))).toBe(true);
     });
 
-    it('should accept baseline missing checksum', () => {
+    it('should accept baseline missing integrity', () => {
       const valid = {
         baselines: [
           {
@@ -176,7 +173,7 @@ describe('HDF Results Validation', () => {
             requirements: [minReq]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -189,7 +186,7 @@ describe('HDF Results Validation', () => {
         baselines: [
           {
             name: 'Test',
-            checksum: { algorithm: 'sha256', value: 'abc123' },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: [
               {
                 id: 'REQ-001',
@@ -201,7 +198,7 @@ describe('HDF Results Validation', () => {
             ]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -215,7 +212,7 @@ describe('HDF Results Validation', () => {
         baselines: [
           {
             name: 'Test',
-            checksum: { algorithm: 'sha256', value: 'abc123' },
+            integrity: { algorithm: 'sha256', checksum: 'abc123' },
             requirements: [
               {
                 id: 'REQ-001',
@@ -233,7 +230,7 @@ describe('HDF Results Validation', () => {
             ]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       };
 
@@ -272,7 +269,7 @@ describe('HDF Results Validation', () => {
       const invalid = {
         baselines: [
           {
-            // Missing name and checksum
+            // Missing name and integrity
             requirements: 'not an array' // Also invalid type
           }
         ]
@@ -358,10 +355,7 @@ describe('HDF Baseline Validation', () => {
         name: 'Test Baseline',
         title: 'Test Baseline Title',
         version: '1.0.0',
-        checksum: {
-          algorithm: 'sha256',
-          value: 'abc123'
-        },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: [
           {
             id: 'REQ-001',
@@ -383,7 +377,7 @@ describe('HDF Baseline Validation', () => {
         name: 'Test Baseline',
         title: 'Test Title',
         version: '1.0.0',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: [
           {
             id: 'REQ-001',
@@ -405,7 +399,7 @@ describe('HDF Baseline Validation', () => {
       const invalid = {
         title: 'Test',
         version: '1.0.0',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: []
       };
 
@@ -414,7 +408,7 @@ describe('HDF Baseline Validation', () => {
       expect(result.errors.some(e => e.field.includes('name'))).toBe(true);
     });
 
-    it('should accept baseline missing checksum', () => {
+    it('should accept baseline missing integrity', () => {
       const valid = {
         name: 'Test',
         title: 'Test',
@@ -834,7 +828,7 @@ describe('CVE-ecosystem: affectedPackages[]', () => {
 describe('CVE-ecosystem: Status_Override.cvss', () => {
   it('accepts a riskAdjustment Status_Override with an attached cvss block', () => {
     const data = resultsWith({
-      overrides: [
+      statusOverrides: [
         {
           type: 'riskAdjustment',
           impact: { value: 0.5 },

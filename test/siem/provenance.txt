@@ -1,0 +1,39 @@
+# SIEM harness inputs
+
+cases.json references existing files without copying or rewriting their data.
+The source provenance remains at each descriptor's provenance path.
+
+inspec-overlay is real InSpec output with a documented schema adaptation, not
+an untouched original capture. hdf-fixtures/README.md records its origin,
+pre-adaptation source URL/SHA256, and the targets-to-components rename.
+override and negative-zero are schema-confirmed existing fixtures, not new
+scanner captures. Their owning converter provenance describes the adaptations.
+
+The artifact preparation helper validates every referenced document using the
+current built CLI and records its byte length and SHA256. An invalid input stops
+preparation. Numeric tokens are retained by reading bytes, never by serializing
+the parsed document. Further target-specific boundary variants belong to the
+target suites and must add their validation and provenance before use.
+
+Splunk license readiness unit cases use the documented server/info licenseState
+contract (OK or Expired), with explicitly invalid/missing states as rejection
+cases. These are authored protocol-state unit inputs, not scanner captures:
+https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/10.4/introspection-endpoints/introspection-endpoint-descriptions
+The field and OK state were also observed from the pinned Splunk10.6.1 image
+(runtime reports10.6.1.1) during authenticated local qualification. No license
+keys, signatures, host identifiers or private API responses are committed.
+
+Elasticsearch matrix additions (2026-11-10):
+- riskadjust and cve reference the existing ECS converter examples and their
+  provenance; neither file is copied or modified.
+- boundary, duplicate-ids and empty are schema-confirmed runtime adaptations
+  of the override example, NOT captured scanner output. Each generated document
+  is validated with the current CLI before conversion; failure aborts the run.
+- boundary copies the Integrity signature example from
+  hdf-schema/src/schemas/primitives/extensions.schema.json, $defs.Integrity.examples[1],
+  to document and baseline integrity. Signatures are carriage examples only.
+  Schema-open requirement tags and document/baseline extensions.passthrough
+  carry null, absent members, Unicode, large plain/escaped strings, a large
+  numeric token and negative zero. No original prose is edited.
+- duplicate-ids duplicates a whole requirement occurrence without changing its
+  ID; empty removes whole baselines. Neither is claimed as original tool output.

@@ -16,7 +16,7 @@
       "uri": "plan.json",
       "checksum": {
         "algorithm": "sha256",
-        "value": "17748ce73adc8db8e8c96d40f5b9ed9fbb6aab5b1fe56c669fbc99728644e07d"
+        "value": "36bc3d01a54837ca35ff03f0ae5253a74d77561645f822404e08cf5b1b8f3e7c"
       }
     },
     {
@@ -24,7 +24,7 @@
       "uri": "rhel9-results.json",
       "checksum": {
         "algorithm": "sha256",
-        "value": "6d8e309f4f15a5b67bb52ef2079ea532d2bb3f0fcb6f869cf829ec5e3631d737"
+        "value": "b9a75993064334091320a3168ce870f6e002ee17c6abb7e76d80a4d7286483e8"
       }
     },
     {
@@ -32,7 +32,7 @@
       "uri": "postgres-results.json",
       "checksum": {
         "algorithm": "sha256",
-        "value": "a7325dd1f666e1f9923d2638a801e720bdab543fba8cd2a3bbd3d8ba09a730af"
+        "value": "1d5bb3cca386e0255e9d5617ba31394fab906f6f16bcbca2114ee5479d332fa9"
       }
     }
   ]

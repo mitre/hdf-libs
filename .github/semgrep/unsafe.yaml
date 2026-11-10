@@ -1,0 +1,23 @@
+# Locally authored audit rule; replaces the fetched rule at its existing path.
+# Only the fixed-size, empty SecurityAttributes literal needs no memory audit.
+rules:
+  - id: use-of-unsafe-block
+    languages: [go]
+    severity: WARNING
+    message: Audit unsafe operations for invalid memory access and lifetime errors.
+    metadata:
+      category: security
+      subcategory: [audit]
+      technology: [go]
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      source_rule_url: https://github.com/securego/gosec/blob/master/rules/unsafe.go
+      cwe: ['CWE-242: Use of Inherently Dangerous Function']
+      references:
+        - https://cwe.mitre.org/data/definitions/242.html
+        - https://pkg.go.dev/unsafe#Sizeof
+        - https://pkg.go.dev/golang.org/x/sys/windows#SecurityAttributes
+    patterns:
+      - pattern: unsafe.$OP(...)
+      - pattern-not: unsafe.Sizeof(windows.SecurityAttributes{})

@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-converters/v3
 
-go 1.26.10
+go 1.27.3
 
 require (
 	github.com/adrg/xdg v0.5.3
@@ -42,7 +42,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.44.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 

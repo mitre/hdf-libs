@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -174,9 +175,7 @@ func TestConvert_AugmentedHDFFields(t *testing.T) {
 	// baseline metadata beyond name.
 	assert.Equal(t, "1.0.0", hdf["baseline_version"])
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	ck := hdf["baseline_checksum"].(map[string]interface{})
-	assert.Equal(t, "sha256", ck["algorithm"])
-	assert.Equal(t, "abc123", ck["value"])
+	assert.NotContains(t, hdf, "baseline_checksum")
 	groups := hdf["groups"].([]interface{})
 	require.Len(t, groups, 1)
 	assert.Equal(t, "controls/stig.rb", groups[0].(map[string]interface{})["id"])
@@ -296,4 +295,19 @@ func TestMaxCVSS(t *testing.T) {
 	assert.Equal(t, 9.8, v)
 	_, ok = maxCVSS(map[string]interface{}{})
 	assert.False(t, ok)
+}
+
+func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
+	input := fixture(t, "input", "override.json")
+	bundle, err := ConvertHDFToSplunkBundle(input, converterVersion)
+	require.NoError(t, err)
+	event := parseLines(t, bundle.Events)[0]
+	envelope, err := json.Marshal(sub(t, sub(t, event, "event"), "hdf")["source"])
+	require.NoError(t, err)
+	resolved, err := exportmap.ResolveExportSource(envelope, bundle.Manifest, []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
+	require.NoError(t, err)
+	require.Equal(t, input, resolved.Source)
+	var baseline map[string]interface{}
+	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
+	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
 }

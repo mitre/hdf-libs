@@ -180,6 +180,7 @@ func messageFor(result Result) string {
 func referencesFor(metadata Metadata) []string {
 	candidates := append([]string(nil), metadata.References...)
 	candidates = append(candidates, string(metadata.Source), string(metadata.Shortlink), string(metadata.SourceRuleURL))
+	candidates = append(candidates, string(metadata.SourceRuleURLUnderscore))
 	if url, ok := metadata.ASVS["control_url"].(string); ok {
 		candidates = append(candidates, url)
 	}
@@ -548,7 +549,7 @@ func parseReport(input []byte) (report *Report, isSarif bool, err error) {
 		return nil, false, fmt.Errorf("semgrep: input does not look like a Semgrep report")
 	}
 	var r Report
-	if err := json.Unmarshal(input, &r); err != nil {
+	if err := unmarshalSemgrepJSON(input, &r); err != nil {
 		return nil, false, fmt.Errorf("semgrep: failed to parse report: %w", err)
 	}
 	return &r, false, nil

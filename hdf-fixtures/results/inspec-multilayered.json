@@ -94412,7 +94412,7 @@
       "depends": []
     }
   ],
-  "targets": [
+  "components": [
     {
       "type": "host",
       "name": "rocky",

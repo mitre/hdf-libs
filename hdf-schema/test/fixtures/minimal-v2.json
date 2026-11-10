@@ -76,9 +76,10 @@
   "statistics": {
     "duration": 0.3
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
+      "componentId": "00000000-0000-0000-0000-000000000001",
       "name": "test-system"
     }
   ]

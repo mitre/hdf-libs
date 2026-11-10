@@ -118,6 +118,7 @@ Install [mise](https://mise.jdx.dev/) 2026.10.9 or newer. It installs the pinned
 | pnpm | `packageManager` in `package.json` |
 | Go | the `go` line of `go.work` |
 | golangci-lint, gosec, govulncheck | `mise.toml` |
+| actionlint, shellcheck | `mise.toml` |
 
 Each download is checked against the checksum recorded in `mise.lock`. [gitleaks](https://github.com/gitleaks/gitleaks), used by `pnpm --filter hdf-cli security`, is installed separately.
 
@@ -156,7 +157,7 @@ pnpm build
 # Build TypeScript packages only (no Go required)
 pnpm build:ts
 
-# Build Go CLI only (requires Go 1.26+)
+# Build Go CLI only (requires Go 1.27.3+)
 pnpm build:go
 ```
 

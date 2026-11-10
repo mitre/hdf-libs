@@ -1,9 +1,9 @@
 {
   "baselines": [
     {
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        "checksum": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       "name": "Vulnerability Scan",
       "requirements": [

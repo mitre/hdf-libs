@@ -223,12 +223,11 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 	return strings.Join([]string{comp, baselineName, controlID}, "|")
 }
 
-// --- lossless hdf.* block ---
+// --- legacy hdf.* projection ---
 
-// BuildHDFBlock builds the lossless hdf.* namespace shared by the export
-// converters: promoted snake_case scalars plus the full requirement sub-objects
-// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw);
-// suppressed is the acceptance axis (StatusOf().Suppressed).
+// BuildHDFBlock builds the legacy projection from selected requirement fields.
+// Complete source preservation belongs to the explicit bundle APIs.
+// status is the raw results roll-up; suppressed is the acceptance axis.
 func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden, suppressed bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
 	hdf := map[string]interface{}{
 		"status":           status,

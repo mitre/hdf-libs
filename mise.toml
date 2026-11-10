@@ -11,9 +11,11 @@ idiomatic_version_file_enable_tools = ["go", "pnpm"]
 lockfile = true
 
 [tools]
-# The Active LTS line (ADR-0008 owns the policy); mise.lock pins the exact
+# The Node.js Active LTS line; mise.lock pins the exact
 # release, moved with `mise lock --bump node`.
 node = "24"
-golangci-lint = "2.11.3"
-"go:golang.org/x/vuln/cmd/govulncheck" = "1.1.4"
+golangci-lint = "2.14.0"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
 "aqua:securego/gosec" = "2.30.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"

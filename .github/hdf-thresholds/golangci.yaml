@@ -1,4 +1,4 @@
-# Applies to: golangci-lint, one document per Go module from go.work — the policy is applied to each.
+# Applies to every golangci-lint document, including module and platform-specific scans.
 rules:
     - name: no requirement errored
       where:

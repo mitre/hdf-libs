@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,6 +40,13 @@ func TestStampConvertOutput_LegacyShapeUntouched(t *testing.T) {
 	out, err := stampConvertOutput([]byte(input))
 	require.NoError(t, err)
 	assert.JSONEq(t, input, string(out))
+}
+
+func TestStampConvertOutput_BaselineShapeUntouched(t *testing.T) {
+	input := fixtures.Baseline.Win2022Stig
+	out, err := stampConvertOutput(input)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(input), string(out), "baseline definitions must not acquire evaluated-result checksums")
 }
 
 func TestStampConvertOutput_InvalidJSON(t *testing.T) {
