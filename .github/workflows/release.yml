@@ -125,6 +125,9 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
+        # An explicit bash adds pipefail, so a failing find in content_digest
+        # fails the step instead of digesting an incomplete file list.
+        shell: bash
         # Auth is OIDC Trusted Publishing for every package below; there is
         # no npm token in this workflow, so a package without a trusted
         # publisher for this repo fails to publish rather than falling back.
@@ -298,7 +301,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: $/.github/actions/setup
+      # The schemas built here are release assets, so this job installs like
+      # publish-npm: Node and pnpm at mise.lock's versions, with no cache
+      # restored, instead of the shared setup action, which restores the mise
+      # and pnpm store caches.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node pnpm
+          cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas
@@ -353,6 +367,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [publish-npm, build-cli, build-schemas, release-evidence, verify-tag-signature]
     permissions:
       contents: write  # create GitHub Release + push Go module tags
