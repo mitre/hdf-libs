@@ -164,7 +164,19 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
     expect(entry, 'mise.lock must lock the generator').toBeGreaterThan(-1);
     expect(lockLines[entry + 1]).toBe(`version = "${pinned}"`);
     // ...and the scan gate needs the job: one nothing needs cannot fail CI.
-    expect([ci.jobs['gate-hdf-scans']?.needs ?? []].flat()).toContain('check-openapi-matrix');
+    const gate = ci.jobs['gate-hdf-scans'];
+    expect([gate?.needs ?? []].flat()).toContain('check-openapi-matrix');
+    // The gate must run after a failed matrix and fail on it: `always()`, then a
+    // step that exits non-zero for any failed, cancelled or skipped upstream job.
+    expect(gate.if).toBe('always()');
+    const results = ['failure', 'cancelled', 'skipped'];
+    const rejects = (gate.steps ?? []).filter(
+      (step) =>
+        results.every((r) => String(step.if ?? '').includes(`contains(needs.*.result, '${r}')`)) &&
+        /^\s*exit 1\s*$/m.test(step.run ?? '') &&
+        step['continue-on-error'] === undefined,
+    );
+    expect(rejects, 'the gate must reject a run with a failed upstream job').toHaveLength(1);
   });
 });
 
