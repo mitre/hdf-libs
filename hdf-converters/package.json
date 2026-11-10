@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-converters",
-  "version": "3.7.2",
+  "version": "3.8.0-next.42877157377.1",
   "description": "Converters for transforming security tool outputs and HDF formats",
   "publishConfig": {
     "access": "public"
@@ -50,11 +50,11 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-engine": "workspace:^",
-    "@mitre/hdf-mappings": "workspace:^",
-    "@mitre/hdf-parsers": "workspace:^",
-    "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^",
+    "@mitre/hdf-engine": "3.8.0-next.42877157377.1",
+    "@mitre/hdf-mappings": "3.8.0-next.42877157377.1",
+    "@mitre/hdf-parsers": "3.8.0-next.42877157377.1",
+    "@mitre/hdf-schema": "3.8.0-next.42877157377.1",
+    "@mitre/hdf-utilities": "3.8.0-next.42877157377.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1"
   },
