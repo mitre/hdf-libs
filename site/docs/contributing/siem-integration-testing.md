@@ -5,7 +5,7 @@ description: Start isolated Elasticsearch and Splunk test services with Testcont
 
 # Local SIEM integration testing
 
-Use this development harness to qualify real SIEM services before testing HDF export preservation. Testcontainers Node manages a shared Docker Compose definition; each run uses a private directory and matching project name with a 128-bit lowercase random identifier, plus generated credentials. Published HDF packages do not depend on Testcontainers.
+Use this development harness to verify HDF export preservation through real SIEM ingestion, native queries and raw retrieval. Testcontainers Node manages a shared Docker Compose definition; each run uses a private directory and matching project name with a 128-bit lowercase random identifier, plus generated credentials. Published HDF packages do not depend on Testcontainers.
 
 The environment smoke test is implemented. Elasticsearch 9.5.6 and the pinned Splunk image (reporting version 10.6.1.1) passed authenticated readiness, license checks and cleanup together. Both target suites exercise current CLI and packed TypeScript exports through ingestion, native queries and raw retrieval. Environment readiness alone is not preservation verification; hosted product acceptance additionally requires the integration evidence gate.
 
@@ -96,11 +96,37 @@ The trusted CLI build lives in the [reusable workflow](https://docs.github.com/e
 
 Only sanitized JSON reports, JUnit and normalized HDF are uploaded, with seven-day retention. Full run directories, credentials, packages and raw container configuration remain excluded. The aggregate check must pass on the actual hosted run before treating this integration as accepted; local runs and workflow lint are supporting evidence.
 
+Hosted qualification on 2026-11-10 passed [all six SIEM jobs](https://github.com/mitre/hdf-libs/actions/runs/42862597502) and [all 20 native CI jobs](https://github.com/mitre/hdf-libs/actions/runs/42862597056). Each target completed 16 CLI/packed-TypeScript cases and 3,224 events with cleanup PASS. Branch commit `377012ae148ef1a949a25939eb3a8c08620ccc95` and tested merge commit `ded8f80e56b8a067b2c2d193625b480a33839619` share tree `481a7b6a0cd73925d7ca5f8a639bc70e1212a816`. Both negative reporting probes were rejected by HDF policy on the hosted runner. Prerequisite-result checks enforce failed-job propagation; this qualification did not deliberately fail a hosted service job.
+
+## Repeat the complete workflow
+
+After installing dependencies and qualifying the runtime, run both targets twice. On an ARM64 runtime with the Splunk terms and emulation already accepted:
+
+```sh
+HDF_SIEM_ACCEPT_SPLUNK_TERMS=yes HDF_SIEM_ALLOW_AMD64_EMULATION=yes \
+  node --env-file=test/siem/.env.example test/siem/run.mjs --target all
+HDF_SIEM_ACCEPT_SPLUNK_TERMS=yes HDF_SIEM_ALLOW_AMD64_EMULATION=yes \
+  node --env-file=test/siem/.env.example test/siem/run.mjs --target all
+```
+
+Omit the emulation opt-in on native AMD64. Each invocation creates a new isolated project, builds the current CLI and packed TypeScript consumer, checks every case on both services, and verifies removal of its own containers, networks and volumes. Retain both sanitized reports, including their distinct project IDs and source fingerprints. A second successful startup alone is insufficient: both reports must say `mode: integration`, `status: PASS` and `cleanup: PASS`, with complete per-target results.
+
 ## Reports and cleanup
 
 Private run directories live under the ignored `test/siem/.runs/` directory. Each contains a sanitized `report.json`; full runs also retain their local package artifacts. The report records the checkout commit, a SHA-256 of tracked changes against that commit, and names of untracked build/harness inputs. Per-case hashes identify the actual input bytes. The runner checks source identity again after build, verification and cleanup; a source change during the run fails it. Local dirty runs remain useful diagnostics, but cannot satisfy the clean-checkout CI evidence gate. Runtime passwords are generated per run and written to a private environment file. The file is removed after successful cleanup and retained privately if cleanup fails so the project can be recovered. Do not share it or raw Docker configuration output.
 
-Normal cleanup removes only resources labelled for that run's Compose project. If a process terminates unexpectedly, verify resource-reaper cleanup. If cleanup fails, the report identifies the project. Use that exact project and its private `runtime.env` with the repository's Compose file for a project-scoped `docker compose down --volumes`; do not prune the Docker daemon or remove unrelated images or volumes.
+For a failed run, read the sanitized report first. Authentication or license failures require correcting that service prerequisite; timeouts and capacity failures require checking the recorded runtime resources. A preservation or native-query mismatch is a product failure to investigate, never a reason to disable assertions. Keep the source tree unchanged during a run, or the identity check will fail.
+
+Normal cleanup removes only resources labelled for that run's Compose project. If a process terminates unexpectedly, verify resource-reaper cleanup. If cleanup fails, the report identifies the project. From the repository root, replace the placeholder below with the exact `project` from that report, then use its retained private environment file:
+
+```bash
+SIEM_PROJECT='hdf-siem-<id-from-report>'
+docker compose --project-name "$SIEM_PROJECT" \
+  --env-file "test/siem/.runs/$SIEM_PROJECT/runtime.env" \
+  -f test/siem/compose.yaml --profile '*' down --volumes --timeout 30
+```
+
+The explicit project name limits removal to that run; enabling all profiles includes either target. Do not prune the Docker daemon or remove unrelated images or volumes. After successful recovery, remove that run's private `runtime.env`; retain its sanitized report.
 
 ## Ingestion and preservation
 

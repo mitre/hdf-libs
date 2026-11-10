@@ -259,8 +259,13 @@ The initial additive profile retains existing duplicated fields; a compact
 profile/default migration remains a separate decision. For portable ZIP delivery
 and verified local recovery, use the CLI's explicit
 [`convert --bundle` and `evidence resolve` commands](../hdf-cli/README.md#convert-bundle). The CLI wraps the unchanged library artifacts in a standard HDF evidence package and verifies that package before recovering the original source.
-Live Elasticsearch/Splunk ingestion qualification remains separate integration
-work and is not implied by these library APIs or local archive verification.
+Real Elasticsearch and Splunk ingestion, native queries and source readback are
+verified with current CLI and packed TypeScript artifacts in the
+[SIEM integration harness](../site/docs/contributing/siem-integration-testing.md).
+Its hosted qualification and operational limits are documented separately from
+library/archive checks. ECS uses effective-primary status; Splunk and OCSF
+Compliance Findings use raw-primary verdicts. See the
+[target status and preservation guide](../site/docs/guides/siem-export.md).
 
 ## Go Usage
 

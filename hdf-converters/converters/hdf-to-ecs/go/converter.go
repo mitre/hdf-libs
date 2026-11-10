@@ -7,7 +7,7 @@
 // trailing newline), ECS 9.4.0.
 //
 // Status is effective-primary: event.outcome carries the GOVERNING verdict
-// (effectiveStatus when present, else the raw results roll-up), while hdf.status
+// (derived from results and governing overrides), while hdf.status
 // preserves the RAW verdict and hdf.suppressed is the separate acceptance axis.
 // Override provenance (disposition, override type, reason, approver, dates) is
 // surfaced under labels.*. The canonical "still actionable" consumer query is

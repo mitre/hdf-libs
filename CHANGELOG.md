@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **SIEM handoff documentation distinguishes target status and preservation contracts.** ECS uses effective-primary status; Splunk and OCSF Compliance Findings retain raw-primary verdicts. The runbook documents repeatable real-service verification, retained-artifact recovery and hosted evidence, without treating legacy field projections as complete original assessments.
+
 - **Splunk finding queries retain single-valued native fields.** The HDF add-on reads mirrored scalars directly from the original event JSON, avoiding duplicate indexed/extracted values and preserving multiline title text. Ordinary grouped status/severity queries no longer count a finding twice. Exporter bytes, indexed fields and preserved source records remain unchanged; indexed-only queries are unaffected.
 
 - **Windows archive tests compare native ACL grants.** Permission checks accept equivalent SID aliases while verifying grant identities, rights and inheritance flags. Invalid-path tests use ordinary filenames so reserved device names cannot produce false failures.
@@ -37,7 +39,8 @@ All notable changes to this project will be documented in this file.
   Crypto hashing with independent byte snapshots. Unicode validation uses a
   maintained tokenizer to handle large strings without regex stack overflow,
   while retaining strict JSON syntax checks. This is the additive profile;
-  live SIEM ingestion verification remains separate integration work.
+  live Elasticsearch/Splunk ingestion and source recovery are verified by the
+  separate CLI/packed-TypeScript integration harness and hosted HDF evidence gate.
 
 - **Shared SIEM JSON serialization preserves source strings and object members.**
   Native raw-number emission avoids treating SOH-delimited text as a number;
