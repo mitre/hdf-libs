@@ -2,7 +2,23 @@ import { DockerComposeEnvironment, Wait } from 'testcontainers';
 import { access, readFile, writeFile, unlink } from 'node:fs/promises';
 import { resolve, join, dirname, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { parseOptions, createRun, qualifyRuntime, requestRaw, requestWhenAvailable, redact, command, repository, buildArtifacts, assertSplunkLicense } from './harness.mjs';
+
+export async function sourceIdentity(cwd = repository) {
+  const options = { cwd, timeout: 30_000, maxBuffer: 64 * 1024 * 1024, encoding: 'buffer' };
+  const commit = (await command('git', ['rev-parse', 'HEAD'], options)).stdout.toString().trim();
+  const diff = (await command('git', ['diff', '--binary', 'HEAD', '--'], options)).stdout;
+  const untracked = (await command('git', ['ls-files', '--others', '--exclude-standard', '-z', '--',
+    'hdf-*', 'test/siem', '.github', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml',
+    'go.work', 'go.work.sum', 'mise.toml', 'mise.lock'], options)).stdout.toString().split('\0').filter(Boolean);
+  return { commit, trackedDiffSha256: createHash('sha256').update(diff).digest('hex'), untracked };
+}
+
+export function verifySourceIdentity(before, after) {
+  if (!isDeepStrictEqual(before, after)) throw new Error('Source changed during build or verification');
+}
 
 export async function runWithEnvironment({ start, stop, work, signal }) {
   let failure;
@@ -59,6 +75,7 @@ export async function main(args = process.argv.slice(2), {
   const execOptions = { cwd: repository, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 };
   const report = { project: run.project, runtime: { os: info.OSType, architecture: info.Architecture, memory: info.MemTotal }, status: 'FAIL' };
   try {
+    report.source = await sourceIdentity();
     await command('docker', [...composeArgs, 'config', '--quiet'], execOptions);
     const config = JSON.parse((await command('docker', [...composeArgs, '--profile', '*', 'config', '--format', 'json'], execOptions)).stdout);
     report.images = Object.fromEntries(options.targets.map((target) => [target, config.services[target].image]));
@@ -113,6 +130,7 @@ export async function main(args = process.argv.slice(2), {
         return suite.verify({ artifacts, environment, credentials: run.credentials, requestRaw, signal });
       },
     });
+    verifySourceIdentity(report.source, await sourceIdentity());
     Object.assign(report, result, { status: 'PASS', cleanup: 'PASS' });
   } catch (error) {
     report.error = redact(error instanceof AggregateError ? error.errors.join('; ') : error, secrets);

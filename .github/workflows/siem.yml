@@ -20,6 +20,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate-cli:
+    uses: $/.github/workflows/gate-cli.yml
+
   smoke:
     name: SIEM service smoke (${{ matrix.target }})
     runs-on: ubuntu-24.04
@@ -73,4 +76,154 @@ jobs:
           path: test/siem/.runs/*/report.json
           include-hidden-files: true
           if-no-files-found: warn
+          retention-days: 7
+
+  integration:
+    name: SIEM end-to-end (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [elasticsearch, splunk]
+    env:
+      SIEM_TARGET: ${{ matrix.target }}
+      HDF_SIEM_REPORT_TARGET: ${{ matrix.target }}
+      HDF_SIEM_REPORT_DIR: test/siem/.runs
+      HDF_SIEM_REPORT_COMMIT: ${{ github.sha }}
+      HDF_SIEM_ACCEPT_SPLUNK_TERMS: ${{ (vars.HDF_SIEM_ACCEPT_SPLUNK_TERMS == 'yes' || (github.event_name == 'workflow_dispatch' && inputs.accept_splunk_terms)) && 'yes' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Record native runner capacity
+        run: |
+          test "$(uname -m)" = x86_64
+          free -h
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          docker version
+          docker compose version
+          docker info --format '{{.OSType}} {{.Architecture}} {{.MemTotal}}'
+          df -h "$(docker info --format '{{.DockerRootDir}}')"
+      - name: Require explicit Splunk consent
+        if: matrix.target == 'splunk'
+        run: |
+          if [ "$HDF_SIEM_ACCEPT_SPLUNK_TERMS" != yes ]; then
+            echo '::error::Splunk NOT VERIFIED: explicit terms consent is missing.'
+            exit 1
+          fi
+      - uses: $/.github/actions/setup
+        with:
+          go: 'true'
+      - name: Test report validation and orchestration
+        run: node --test test/siem/ci-report.test.mjs test/siem/run.test.mjs
+      - name: Verify current CLI and packed TypeScript against the service
+        run: node --env-file=test/siem/.env.example test/siem/run.mjs --target "$SIEM_TARGET"
+      - name: Emit native JUnit evidence
+        if: always()
+        run: |
+          mkdir -p test-results/siem
+          node --test --test-reporter=junit \
+            --test-reporter-destination="test-results/siem/$SIEM_TARGET.xml" test/siem/ci-report.mjs
+      - name: Record remaining runner capacity
+        if: always()
+        run: |
+          free -h
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE" "$(docker info --format '{{.DockerRootDir}}')"
+          docker system df
+      - name: Upload sanitized integration evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: siem-integration-${{ matrix.target }}
+          path: |
+            test/siem/.runs/*/report.json
+            test-results/siem/*.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  gate-siem:
+    name: Gate SIEM integration on HDF thresholds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    needs: [gate-cli, smoke, integration]
+    if: always()
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: siem-integration-*
+          path: test-results/siem-download
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node
+      - name: Put the trusted gate CLI on PATH
+        run: |
+          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
+          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
+      - name: Recheck both target reports and normalize JUnit
+        env:
+          HDF_SIEM_REPORT_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p hdf-tests/siem
+          for target in elasticsearch splunk; do
+            base="test-results/siem-download/siem-integration-$target"
+            test -s "$base/test-results/siem/$target.xml"
+            HDF_SIEM_REPORT_TARGET="$target" HDF_SIEM_REPORT_DIR="$base/test/siem/.runs" \
+              node --test test/siem/ci-report.mjs
+            hdf convert --from junit "$base/test-results/siem/$target.xml" -o "hdf-tests/siem/$target.hdf.json"
+            hdf validate threshold "hdf-tests/siem/$target.hdf.json" -T .github/hdf-thresholds/tests-siem.yaml
+          done
+      - name: Prove missing evidence fails through JUnit and HDF
+        env:
+          HDF_SIEM_REPORT_TARGET: elasticsearch
+          HDF_SIEM_REPORT_DIR: test-results/siem-missing-probe
+          HDF_SIEM_REPORT_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p "$HDF_SIEM_REPORT_DIR" test-results/siem-probe hdf-tests/siem-probe
+          if node --test --test-reporter=junit \
+            --test-reporter-destination=test-results/siem-probe/missing.xml test/siem/ci-report.mjs; then
+            echo '::error::Missing integration evidence was accepted'
+            exit 1
+          fi
+          hdf convert --from junit test-results/siem-probe/missing.xml -o hdf-tests/siem-probe/missing.hdf.json
+          if hdf validate threshold hdf-tests/siem-probe/missing.hdf.json -T .github/hdf-thresholds/tests-siem.yaml; then
+            echo '::error::Failed integration evidence passed HDF policy'
+            exit 1
+          fi
+          node --test --test-name-pattern='^no-selected-integration-tests$' --test-reporter=junit \
+            --test-reporter-destination=test-results/siem-probe/unselected.xml test/siem/ci-report.mjs
+          hdf convert --from junit test-results/siem-probe/unselected.xml -o hdf-tests/siem-probe/unselected.hdf.json
+          if hdf validate threshold hdf-tests/siem-probe/unselected.hdf.json -T .github/hdf-thresholds/tests-siem.yaml; then
+            echo '::error::A run with no selected integration test passed HDF policy'
+            exit 1
+          fi
+      - name: Every required job must succeed
+        if: always()
+        env:
+          CLI_RESULT: ${{ needs.gate-cli.result }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: |
+          test "$CLI_RESULT" = success
+          test "$SMOKE_RESULT" = success
+          test "$INTEGRATION_RESULT" = success
+      - name: Upload normalized integration evidence and negative probe
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hdf-normalized-siem
+          path: |
+            hdf-tests/siem/*.hdf.json
+            hdf-tests/siem-probe/*.hdf.json
+            test-results/siem-probe/*.xml
+          if-no-files-found: error
           retention-days: 7

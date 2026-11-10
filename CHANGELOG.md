@@ -131,6 +131,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Hosted SIEM acceptance checks the full export path.** Separate Elasticsearch and Splunk jobs exercise current CLI archives and installed TypeScript packages through ingestion, native queries, raw recovery and cleanup. Native JUnit reporting and a dedicated HDF policy reject missing, stale, incomplete or failed evidence with zero required skips; a controlled negative probe checks failure propagation. Both CI workflows share the existing trusted CLI build.
+
 - **SIEM service readiness has a dedicated CI workflow.** Separate native Linux jobs reuse the local Testcontainers harness and pinned Elasticsearch/Splunk images. Splunk requires explicit consent; reports contain sanitized readiness and cleanup evidence. [Hosted qualification](https://github.com/mitre/hdf-libs/actions/runs/42820622016) passed for both targets at `0a5fab45`; service readiness does not claim end-to-end preservation.
 
 - **`@mitre/hdf-openapi` exports `createExampleValidator(references)`, a checker that sets up its validator once and checks many schemas' examples against it.** `validateExample` built a new validator, loaded the format rules and registered every referenced component on each call, so checking a whole document repeated that setup once per schema: 61 schemas against 129 components took about 500 ms locally, of which validation itself was 15 ms. The document-wide example test now builds one checker; its test file went from 729 ms to 182 ms locally under coverage, and on a loaded CI runner with coverage the test had been running into its 5-second limit (4.7 s passing, 5.4 s and 6.0 s failing). `validateExample` is unchanged in behaviour and now builds on the new function.

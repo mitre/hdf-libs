@@ -3,7 +3,40 @@ import test from 'node:test';
 import { readdir, mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runWithEnvironment, runSuite, main } from './run.mjs';
+import { runWithEnvironment, runSuite, main, sourceIdentity, verifySourceIdentity } from './run.mjs';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+
+test('source identity must remain unchanged throughout build and verification', () => {
+  const before = { commit: 'a'.repeat(40), trackedDiffSha256: 'b'.repeat(64), untracked: [] };
+  assert.doesNotThrow(() => verifySourceIdentity(before, structuredClone(before)));
+  for (const after of [
+    { ...before, commit: 'c'.repeat(40) },
+    { ...before, trackedDiffSha256: 'd'.repeat(64) },
+    { ...before, untracked: ['go.work'] },
+  ]) assert.throws(() => verifySourceIdentity(before, after), /Source changed/);
+});
+
+test('source identity distinguishes the committed tree, tracked edits and untracked implementation', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'siem-source-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+  git('init', '--quiet');
+  await writeFile(join(directory, 'package.json'), '{}\n');
+  git('add', 'package.json');
+  git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '--quiet', '-m', 'Initialize test source');
+  const commit = git('rev-parse', 'HEAD');
+  const emptyHash = createHash('sha256').update('').digest('hex');
+  assert.deepEqual(await sourceIdentity(directory), { commit, trackedDiffSha256: emptyHash, untracked: [] });
+  await writeFile(join(directory, 'package.json'), '{"changed":true}\n');
+  await writeFile(join(directory, 'go.work'), 'go 1.26\n');
+  const edited = await sourceIdentity(directory);
+  assert.equal(edited.commit, commit);
+  assert.notEqual(edited.trackedDiffSha256, emptyHash);
+  assert.deepEqual(edited.untracked, ['go.work']);
+  git('add', 'package.json');
+  assert.deepEqual(await sourceIdentity(directory), edited, 'staged changes must remain visible');
+});
 
 test('reports startup failure and releases only owned resources', async () => {
   const calls = [];
