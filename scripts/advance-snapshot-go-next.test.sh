@@ -6,8 +6,9 @@
 # of the same source, an advance to where next already is, refusal to move next back to an
 # older source or to an older snapshot of the same source, a current next with no snapshot
 # tag, a version with no tag, a tag on another commit, a wrong parent, a source off main, a
-# source behind main's tip with no next to order against, a concurrent move of next before
-# the push, a read-back that disagrees, and usage.
+# source behind main's tip with no next to order against, a current next carrying two
+# snapshot tags, same-source ordering run both ways across release, run ID and attempt,
+# a concurrent move of next before the push, a read-back that disagrees, and usage.
 
 set -uo pipefail
 
@@ -201,6 +202,10 @@ order_case "release before run ID" 3.8.0-next.900.1 3.8.1-next.5.1
 order_case "minor before patch" 3.8.9-next.900.1 3.9.0-next.5.1
 order_case "attempt after run ID" 3.8.0-next.200.1 3.8.0-next.200.2
 order_case "run ID before attempt" 3.8.0-next.200.9 3.8.0-next.201.1
+# A run ID with a leading zero is octal to bash without the 10# prefix in version_newer,
+# and 0000310 reads as 200 that way, which orders the other side of 250. GitHub never
+# issues such a run ID; the comparator is general, so the prefix is pinned here.
+order_case "leading zero in the run ID" 3.8.0-next.250.1 3.8.0-next.0000310.1
 
 # Case 6: the version has no snapshot tag.
 set_next "$PA"
