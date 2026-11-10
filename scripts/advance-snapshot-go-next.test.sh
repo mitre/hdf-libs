@@ -3,8 +3,10 @@
 # Pins advance-snapshot-go-next.sh offline against a local bare repository standing in
 # for origin: two main commits, prepared children carrying snapshots/v tags, a commit off
 # main, and a next branch set per case. Covers the first advance, a forward move, a rerun
-# of the same source, an advance to where next already is, refusal to move next back, a
-# version with no tag, a tag on another commit, a wrong parent, a source off main, usage.
+# of the same source, an advance to where next already is, refusal to move next back to an
+# older source or to an older snapshot of the same source, a current next with no snapshot
+# tag, a version with no tag, a tag on another commit, a wrong parent, a source off main, a
+# concurrent move of next before the push, a read-back that disagrees, and usage.
 
 set -uo pipefail
 
@@ -16,7 +18,7 @@ unset ${!GIT_@}
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT="$script_dir/advance-snapshot-go-next.sh"
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0
@@ -52,6 +54,7 @@ B=$(git -C "$SEED" rev-parse HEAD)
 X=$(commit_on "$A" "off main")
 PA=$(commit_on "$A" "prepared a")
 PA2=$(commit_on "$A" "prepared a again")
+PAU=$(commit_on "$A" "prepared a, never tagged")
 PB=$(commit_on "$B" "prepared b")
 PBU=$(commit_on "$B" "prepared b, never tagged")
 PX=$(commit_on "$X" "prepared off main")
@@ -118,6 +121,26 @@ report "backwards: exit 1 and next unchanged" "$ok" "exit $(rc_of backwards), ne
 ok=0; grep -qF 'refusing to move next back' "$work/backwards/stderr" || ok=1
 report "backwards: stderr says why" "$ok"
 
+# Case 5a: an older snapshot of the same source never takes next back. Both prepared
+# commits are children of A, so ancestry alone cannot order them; the version does.
+set_next "$PA2"
+run samesource-back "$V1" "$A" "$PA"
+ok=0; [ "$(rc_of samesource-back)" -eq 1 ] && [ "$(origin_next)" = "$PA2" ] || ok=1
+report "older snapshot of the same source: exit 1 and next unchanged" "$ok" \
+  "exit $(rc_of samesource-back), next $(origin_next)"
+ok=0; grep -qF "snapshots/v$V2" "$work/samesource-back/stderr" &&
+  grep -qF 'refusing to move next back' "$work/samesource-back/stderr" || ok=1
+report "older snapshot of the same source: stderr names the current version" "$ok"
+
+# Case 5b: next on a commit of the same source that carries no snapshot tag cannot be
+# ordered against the new version, so it is left alone.
+set_next "$PAU"
+run current-untagged "$V2" "$A" "$PA2"
+ok=0; [ "$(rc_of current-untagged)" -eq 1 ] && [ "$(origin_next)" = "$PAU" ] || ok=1
+grep -qF 'no snapshot tag' "$work/current-untagged/stderr" || ok=1
+report "current next untagged: exit 1, next unchanged, stderr says why" "$ok" \
+  "exit $(rc_of current-untagged), next $(origin_next)"
+
 # Case 6: the version has no snapshot tag.
 set_next "$PA"
 run untagged "$V5" "$B" "$PBU"
@@ -146,6 +169,39 @@ ok=0; [ "$(rc_of offmain)" -eq 1 ] && [ "$(origin_next)" = absent ] || ok=1
 grep -qF 'not on main' "$work/offmain/stderr" || ok=1
 report "source off main: exit 1 and no next created" "$ok" "exit $(rc_of offmain), next $(origin_next)"
 
+# Case 9a: another writer moves next between the script's read and its push. A git
+# wrapper ahead on PATH stands in for that writer; the lease must reject the push and
+# keep the other writer's next.
+real_git="$(command -v git)"
+mkdir -p "$work/lease-bin"
+cat > "$work/lease-bin/git" <<EOF
+#!/usr/bin/env bash
+if [ "\${1:-}" = push ]; then
+  "$real_git" -C "$ORIGIN" update-ref refs/heads/next "$PA2"
+fi
+exec "$real_git" "\$@"
+EOF
+chmod +x "$work/lease-bin/git"
+set_next "$PA"
+PATH="$work/lease-bin:$PATH" run lease "$V3" "$B" "$PB"
+ok=0; [ "$(rc_of lease)" -eq 1 ] && [ "$(origin_next)" = "$PA2" ] || ok=1
+grep -qF "pushing next to $PB failed" "$work/lease/stderr" || ok=1
+report "concurrent move before the push: exit 1 and the other write stands" "$ok" \
+  "exit $(rc_of lease), next $(origin_next)"
+
+# Case 9b: the push is accepted but next reads back as another commit. A post-receive
+# hook on origin moves next after the push lands.
+set_next "$PA"
+printf '#!/bin/sh\ngit update-ref refs/heads/next %s\n' "$PA2" > "$ORIGIN/hooks/post-receive"
+chmod +x "$ORIGIN/hooks/post-receive"
+run readback "$V3" "$B" "$PB"
+rm -f "$ORIGIN/hooks/post-receive"
+ok=0; [ "$(rc_of readback)" -eq 1 ] || ok=1
+grep -qF "next reads back as $PA2, expected $PB" "$work/readback/stderr" || ok=1
+[ ! -s "$work/readback/stdout" ] || ok=1
+report "read-back disagrees: exit 1, stderr names both commits, nothing on stdout" "$ok" \
+  "exit $(rc_of readback)"
+
 # Case 10: usage errors exit 2 with nothing on stdout and change nothing.
 set_next "$PA"
 usage_case() {
@@ -162,7 +218,8 @@ usage_case() {
 usage_case "no arguments"
 usage_case "two arguments" "$V1" "$A"
 usage_case "version without the next suffix" 3.8.0 "$A" "$PA"
-usage_case "abbreviated commit" "$V1" "${A:0:12}" "$PA"
+usage_case "abbreviated source commit" "$V1" "${A:0:12}" "$PA"
+usage_case "abbreviated prepared commit" "$V1" "$A" "${PA:0:12}"
 
 echo
 echo "$pass passed, $fail failed"
