@@ -43,6 +43,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Go toolchain floor raised to 1.26.11.** The `go` directive in `go.work` and every module's `go.mod` that carried a patch-level version moved from 1.26.10 to 1.26.11, and `mise.lock` installs that release on every platform it covers, to pick up the stdlib fix for GO-2026-6859 (an HTTP/1 server crash from a `MaxBytesReader` header race in `net/http`). `govulncheck` reported it in the seven modules whose code reaches `net/http`, `hdf-cli` among them, which is the module the pre-commit gate scans, so it failed that gate and CI on any change; the other six report it only as a module they require without calling, the informational tier that does not fail. Nothing here serves HTTP/1, so what was exposed was the gate rather than the behaviour. Go consumers need 1.26.11 or newer.
+
 - **`asff-to-hdf` carries a Security Hub suppression as a `statusOverride` instead of zeroing impact.**
 
   A suppressed finding keeps its failing result — the verdict is evidence — and the acceptance now travels as a `waiver` override whose status is `passed`, so `effectiveStatus` resolves non-failing through the one sanctioned channel. Previously the suppression was recorded only by forcing `impact: 0`, which the removed ladder rung read as `notApplicable`; with that rung gone such a finding reported `failed`.
