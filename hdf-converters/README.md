@@ -283,7 +283,7 @@ The first argument is the raw tool output (`[]byte`); the second is the converte
 The SIEM bundle counterparts are `ConvertHDFToECSBundle`,
 `ConvertHDFToSplunkBundle` and `ConvertHDFToOCSFBundle` in their existing converter
 packages. They return `(*exportmap.ExportBundle, error)` with `Events`, `Source`
-and `Manifest` byte slices. Go 1.27.3 or newer is required.
+and `Manifest` byte slices. Go 1.27.4 or newer is required.
 
 ```go
 import (

@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Upgrade notes
 
-- **Building `hdf-cli` or `hdf-converters` from source requires Go 1.27.3 or newer.** Production code uses the standard library's `encoding/json/v2` and `encoding/json/jsontext`: Semgrep decoding matches keys case-sensitively, and evidence resolution and SIEM bundle decoding explicitly handle duplicate names while preserving source JSON. These are runtime dependencies, not test-only tooling. The workspace, published modules, generated schema module and release/fuzz builds use this minimum; no experimental build flag is required.
+- **Building `hdf-cli` or `hdf-converters` from source requires Go 1.27.4 or newer.** Production code uses the standard library's `encoding/json/v2` and `encoding/json/jsontext`: Semgrep decoding matches keys case-sensitively, and evidence resolution and SIEM bundle decoding explicitly handle duplicate names while preserving source JSON. These are runtime dependencies, not test-only tooling. The workspace, published modules, generated schema module and release/fuzz builds use this minimum; no experimental build flag is required. Go 1.27.4 also fixes [CVE-2026-97054](https://pkg.go.dev/vuln/GO-2026-6859), an HTTP/1 server header race in the standard library.
 - **Node 22 consumers must upgrade their runtime or container image before moving to 3.8.0.** The published packages already require Node >=24, as recorded under [3.7.2](#372---2026-10-06).
 
 ### Changed

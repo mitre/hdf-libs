@@ -157,7 +157,7 @@ pnpm build
 # Build TypeScript packages only (no Go required)
 pnpm build:ts
 
-# Build Go CLI only (requires Go 1.27.3+)
+# Build Go CLI only (requires Go 1.27.4+)
 pnpm build:go
 ```
 

@@ -71,7 +71,7 @@ Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm6
 
 ### Build from source
 
-**Requirements:** Go 1.27.3+, pnpm
+**Requirements:** Go 1.27.4+, pnpm
 
 ```bash
 # From the hdf-libs monorepo root

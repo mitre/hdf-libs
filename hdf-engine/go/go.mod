@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-engine/go/v3
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/dlclark/regexp2 v1.12.0
