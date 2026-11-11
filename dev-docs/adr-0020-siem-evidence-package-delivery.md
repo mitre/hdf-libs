@@ -1,26 +1,32 @@
-# ADR-0020: Deliver SIEM exports through HDF evidence packages
+# ADR-0020: Optional evidence-package delivery for SIEM exports
 
-- **Status:** Accepted for implementation following independent design review and the owner instruction to proceed on 2026-11-08. Production acceptance remains open.
+- **Status:** Accepted; archive access is governed by ADR-0021, which supersedes the original Windows inherited-permission default.
 - **Date:** 2026-11-08
 - **Decision owner:** Repository maintainer
-- **Supersedes:** [ADR-0019](adr-0019-siem-source-preservation.md) section 3's standalone delivery recommendation and its delivery implementation steps. Its preservation semantics, library APIs, profile evolution, compatibility and live-verification requirements remain in force.
+- **Supersedes:** [ADR-0019](adr-0019-siem-source-preservation.md) section 3's standalone CLI delivery recommendation. Its preservation semantics, library APIs, profile evolution, compatibility and live-verification requirements remain in force.
 - **Related:** [ADR-0017](adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md), [ADR-0007](adr-0007-hdf-mcp-server.md), [SIEM integration plan](../SIEM-INTEGRATION-PLAN.md).
+
+## Scope
+
+This is an opt-in snapshot-delivery adapter, invoked by `hdf convert --bundle`. It packages the library's events, source and manifest using a minimal existing HDF evidence-package inventory. It does not assemble a complete authorization package or invent system context, plans, timestamps or completeness claims. Library preservation and resolution remain usable without this CLI adapter or a ZIP.
+
+This decision does not require evidence packages in the streaming path. [ADR-0005](adr-0005-hdf-conmon-requirement-change-events.md) distinguishes change events and reconciled posture from full scans retained as evidence. Neither the change-event schema nor its pure kernel functions are changed here.
 
 ## Context
 
 The reviewed SIEM library returns events, exact source bytes and a manifest. Archiving only those three files would introduce a delivery inventory alongside the existing HDF evidence-package system. The repository already supports typed HDF contents, opaque external evidence, checksums and deterministic archives. It also already separates pure library operations from filesystem and CLI adapters. Reusing those contracts makes this export composable with broader evidence workflows without changing the source-preservation profile.
 
-The experimental CLI subcommand also shadows an existing input file named `bundle`. An explicit conversion option preserves the existing positional-input contract. The CLI forms below are the implementation target; this decision does not claim they are already available.
+The experimental CLI subcommand shadowed an existing input file named `bundle`. The implemented explicit conversion option preserves the existing positional-input contract.
 
-## Goal and ownership
+## Decision and ownership
 
-Deliver searchable SIEM findings with complete original HDF evidence, preserve future source properties without a passthrough allowlist, centralize generic inventory/verification/archive behavior, and retain existing exporter compatibility. Standard HDF evidence packages are the delivery inventory. The existing SIEM profile is the converter-specific relationship between a finding and its source occurrence. A future compact profile removes old repeated baseline data; this delivery change does not silently make that migration.
+Deliver searchable SIEM findings with complete original HDF evidence, preserve future source properties without a passthrough allowlist, centralize generic inventory/verification/archive behavior, and retain existing exporter compatibility. Standard HDF evidence packages are the optional CLI delivery inventory. The existing SIEM profile is the converter-specific relationship between a finding and its source occurrence. A future compact profile removes old repeated baseline data; this delivery change does not silently make that migration.
 
 Reuse the existing source schema and generated types. No new HDF document type, reserved external-evidence format, transport, storage service, or generic package-writing library. hdf-system remains system context, not an export container. ADR-0017 rawSourceArtifacts retains its pre-conversion scanner-source meaning; rawSourceRecord is not repurposed as a SIEM envelope.
 
 ## Library compatibility
 
-Keep reviewed Go/TS bundle entry points and their events/source/manifest outputs, and both full-event and source-envelope resolvers. Keep profileVersion 1.0 and outputProfile legacy-additive/1. Preserve unknown optional metadata and supported higher minor versions with agreement between manifest and event; reject unsupported major/output profiles. Library functions remain filesystem/network independent and TS browser compatible.
+Keep the Go/TS bundle entry points and their events/source/manifest outputs, and both full-event and source-envelope resolvers. Keep profileVersion 1.0 and outputProfile legacy-additive/1. Preserve unknown optional metadata and supported higher minor versions with agreement between manifest and event; reject unsupported major/output profiles. Library functions remain filesystem/network independent and TS browser compatible.
 
 The exact input byte artifact is authoritative, including signatures and embedded scanner artifacts. Complete requirement JSON values retain member presence, nulls, ordering of arrays, strings and number token spelling; existing duplicate-member policy remains last-member interpretation with original source bytes intact. Do not strip a BOM, repair Unicode, normalize the source, infer a source schema version, or add full HDF schema validation to previously permissive conversion. New bundle Unicode/JSON restrictions remain as accepted. Existing pure resolver runtime checks remain required; generated manifest/envelope schema validation tests in both languages remain required. Package validation never substitutes for profile or record verification. No new general runtime schema loader is needed for this composition.
 
@@ -49,7 +55,7 @@ Empty assessments retain source/manifest/package and a zero-byte events.ndjson w
 
 ## CLI contract
 
-Replace the unshipped `convert bundle` subcommand with an explicit option:
+Use an explicit conversion option:
 
     hdf convert input.json --to ecs --bundle -o export.zip
 
@@ -65,11 +71,13 @@ This first iteration resolves the recognized SIEM profile only. Unknown profile 
 
 ## Verification and safe readback
 
-1. Read and validate the evidence-package document against the existing schema. Select exactly one registered profile manifest as above. Treat package uris and manifest hrefs as URI references, decode percent escapes exactly once, reject unsafe forms, and establish their package-relative identities before duplicate checks. The profile still requires the literal events value events.ndjson. The manifest-directory-relative decoded href (or events constant) must resolve to the same package-relative identity as the decoded package entry uri before checking uniqueness. Reject escaping paths and ambiguous aliases; never re-decode the composed path.
+1. Read and validate the evidence-package document against the existing schema. Select exactly one registered profile manifest as above. The manifest selector, the package entries matched to the selected manifest, events and source, and manifest `href` values must be relative URI paths with no scheme, authority, query or fragment. Decode percent escapes exactly once; reject invalid encodings, NUL, backslashes, absolute/drive paths and traversal, and enforce containment after resolving symlinks. Establish package-relative identities before duplicate checks. The profile still requires the literal events value events.ndjson. The manifest-directory-relative decoded href (or events constant) must resolve to the same package-relative identity as the decoded package entry uri before checking uniqueness. Reject escaping paths and ambiguous aliases; never re-decode the composed path.
 2. Require a local contained manifest with an explicit SHA512 checksum; verify its bytes, then enforce its target/version/profile and required fields using current profile semantics.
 3. Resolve events.ndjson and every required source relative to the selected manifest directory. Require unique matching package entries: correct events format for target (format is the discriminator; mediaType is descriptive and is not used to select the profile), hdf-results source type, and source SHA512/identity agreement with the manifest. Reject missing, ambiguous, malformed, unsupported, escaping or mismatched required references. Do not accept a second alias as a second independent artifact.
 4. Require explicit SHA512 checksums on all three selected artifacts and verify them using the existing engine. No skipped/unsupported/error result is success. Use the same bounded byte snapshots for hashing and resolution; do not verify one read and resolve a later read. Preserve os.OpenRoot containment and global size/symlink policy for every opened file; do not weaken containment to reuse a convenience reader. No network retrieval. Empty events is allowed, empty package/manifest/source/event is not.
 5. Resolve the separately supplied retained event through the existing SIEM resolver. Require profile agreement, unique source identity, valid occurrence pointer and exact preserved-record value agreement. Return byte-exact original source on stdout only after success; diagnostics go to stderr; failure returns nonzero with no recovered source output.
+
+Changes to the path-containment or parser security model require explicit scope assessment and focused deep review before acceptance.
 
 This is verification of the selected SIEM export and its required files, not a claim that all unrelated contents/completeness in a larger evidence package were verified. Existing evidence info --verify remains the whole-package operation; its generic policy is unchanged. Checksums establish consistency relative to the supplied inventory, not authenticity of an unsigned package. The supplied recovered event is checked against the source occurrence; the whole vendor search response is not expected to hash like the archived NDJSON. Native severity/status and transport fields are not authenticated by the resolver; live semantic assertions test them independently.
 
@@ -90,19 +98,8 @@ Generic evidence tools can carry and verify the output without understanding the
 
 The extra inventory records checksums also used in the SIEM source relationship; the reader must enforce their agreement. Complete source retention remains an operational responsibility. The initial additive profile still includes inherited repeated fields, so this is not the compact-output migration. A larger package may contain unrelated evidence that selected-export recovery does not verify.
 
-## Implementation and quality gates
+## Implementation references
 
-1. Update the existing CLI delivery card and target-test cards to this contract without removing requirements or reopening completed library work absent a demonstrated defect. Keep final integration dependent on CLI delivery and the complete SIEM integration epic.
-2. Use `project-tdd crosscheck/standard` for behavior changes: intended failing test first, shared implementation, focused verification, final-tree required checks and independent cross-family AC review. Fix touched defects rather than hiding them in follow-up work. Setup failures are not behavioral RED; documentation and board changes require review, not invented tests.
-3. Implement shared CLI composition and contained, bounded reads, then the bundle flag and package-first resolver. Reuse existing checksum/schema/ZIP behavior. Preserve same-byte-snapshot verification and source recovery; fix existing input-policy and lint findings before closure.
-4. Verify all three targets, ordinary conversion including a literal `bundle` filename, archive determinism and relocation, nested/multiple export selection, conflicting references and aliases, each artifact's missing/tampered/checksum failures, unsafe URI/symlink/size cases, atomic failure, empty findings, numeric/Unicode/null/unknown-field preservation and stdout behavior. Require more than 90% changed-code coverage and existing suite compatibility.
-5. Complete real Elasticsearch/Splunk ingestion with the current built CLI and locally packed TS APIs, pinned OCSF schema validation, native semantic queries and complete retained-source readback. Splunk adapters must preserve the inner `_raw` JSON tokens. Startup checks are not ingestion acceptance. Do not weaken comparisons if a target truncates or normalizes required data.
-6. Complete the integration plan's separate native AMD64 CI jobs, explicit consent, smoke/full separation, bounded cleanup and JUnit/HDF evidence. Update the guide, runbook, READMEs, changelog and living PR summary as behavior is verified. Hosted execution, full required checks and independent acceptance remain mandatory.
-
-Standard review is the default for the implementation cards. A change to the path-containment or parser security model, rather than composition using the established model, requires explicit scope assessment and focused deep review before acceptance. This does not waive the ordinary crosscheck/standard AC gate.
-
-## Evidence and limits
-
-Existing CLI probes composed all three target exports into schema-valid packages, verified their checksums, archived and relocated them, and recovered exact source bytes. A separate minimal-package probe omitted optional timestamps and IDs, verified all three artifact digests and produced identical repeated ZIPs for every target. Empty findings retained their source and a valid empty events artifact. These probes demonstrate composition using existing machinery, not implementation of the new CLI or live target ingestion.
-
-Independent cross-family design review returned PASS after all nine original findings were resolved. The resulting contract explicitly states URI decoding and identity agreement, the format/media-type distinction and the existing 0600 output mode. Production code-review findings, required lint/test failures, upstream comparison-schema compatibility and real local/hosted verification remain acceptance work. No card closure or release is implied by this decision.
+- [CLI conversion adapter](../hdf-cli/cmd/hdf/cmd/convert_bundle.go) composes the three library artifacts and the minimal inventory.
+- [Package/profile helpers](../hdf-cli/cmd/hdf/cmd/evidence_siem.go) centralize format selection, URI handling and checksum checks.
+- [SIEM guide](../site/docs/guides/siem-export.md) documents consumer use; the [integration plan](../SIEM-INTEGRATION-PLAN.md) defines live ingestion and readback verification.

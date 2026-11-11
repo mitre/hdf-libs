@@ -10,6 +10,14 @@ hdf-libs exports an HDF Results document to three SIEM-native event formats, one
 
 All three share a mapping core and emit byte-identical output from the TypeScript and Go implementations.
 
+## Choose the output you need
+
+Ordinary conversion emits the target's finding events. The source-preserving library APIs additionally return the original assessment bytes and a manifest, in memory, so an application can retain and verify source evidence using its own storage and transport. The library result is named `ExportBundle`, but it is not a ZIP or an HDF evidence package.
+
+Use Go `ConvertHDFToECSBundle`, `ConvertHDFToSplunkBundle` or `ConvertHDFToOCSFBundle`, or TypeScript `convertHdfToEcsBundle`, `convertHdfToSplunkBundle` or `convertHdfToOcsfBundle`. The corresponding shared resolver is Go `ResolveExportEvent` or TypeScript `resolveExportEvent`.
+
+The optional CLI `--bundle` mode packages those artifacts with an evidence-package inventory for portable snapshot delivery. It does not create a complete authorization package. Neither schema validation nor requirement-change streaming requires this mode; a streaming system processes change events separately from retained scan evidence.
+
 ## Status semantics by target
 
 The exporters use HDF's [two-axis status model](../architecture/status-determination.md#overrides): the raw test verdict and the governing effective status are distinct. The shared status engine derives effective status from results and governing overrides; it does not trust the stored `effectiveStatus` cache.
