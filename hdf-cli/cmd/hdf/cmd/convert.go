@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const convertComponentIDFlag = "component-id"
+
 // NewConvertCmd creates the convert command.
 func NewConvertCmd() *cobra.Command {
 	var (
@@ -62,7 +64,7 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().Bool("overwrite", false, "Replace an existing bundle archive; requires --bundle and never overwrites the source")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets, --to hdf only (key=value pairs, e.g., --labels system=Portal,environment=production)")
-	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output, --to hdf only")
+	cmd.Flags().String(convertComponentIDFlag, "", "Set componentId (a UUID) on all components in the output, --to hdf only")
 	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 5)")
 	cmd.Flags().String("report-type", "", "Detail level for --to html: executive, manager or administrator (default administrator)")
 	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
@@ -79,7 +81,7 @@ func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, ou
 	if err := checkHDFOnlyFlags(cmd, toFormat); err != nil {
 		return err
 	}
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if err := checkComponentIDFlag(componentID); err != nil {
 		return err
 	}
@@ -121,7 +123,7 @@ func checkHDFOnlyFlags(cmd *cobra.Command, toFormat string) error {
 	if strings.EqualFold(format, "hdf") {
 		return nil
 	}
-	for _, name := range []string{"labels", "component-id"} {
+	for _, name := range []string{"labels", convertComponentIDFlag} {
 		if cmd.Flags().Changed(name) {
 			return fmt.Errorf("--%s applies to --to hdf only, not --to %s", name, format)
 		}
@@ -458,7 +460,7 @@ func applyConvertFlags(cmd *cobra.Command, output []byte) ([]byte, error) {
 		printDebug("Applied %d labels to output", len(labels))
 	}
 
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if componentID != "" {
 		stamped, err := hdfdoc.ApplyComponentID(output, componentID, false)
 		switch {

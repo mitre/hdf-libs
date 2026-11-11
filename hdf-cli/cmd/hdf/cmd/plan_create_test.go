@@ -50,7 +50,11 @@ func TestPlanCreate(t *testing.T) {
 
 	assessments, ok := plan["assessments"].([]interface{})
 	require.True(t, ok)
-	assert.Len(t, assessments, 3) // RHEL9-STIG, Container-STIG, PostgreSQL-STIG
+	assert.Equal(t, []interface{}{
+		map[string]interface{}{"baselineRef": "RHEL9-STIG", "targetSelector": map[string]interface{}{"labels.component": "WebTier"}},
+		map[string]interface{}{"baselineRef": "Container-STIG", "targetSelector": map[string]interface{}{"labels.component": "WebTier"}},
+		map[string]interface{}{"baselineRef": "PostgreSQL-STIG"},
+	}, assessments)
 }
 
 func TestPlanCreate_NoBaselineRefs(t *testing.T) {
@@ -64,6 +68,40 @@ func TestPlanCreate_NoBaselineRefs(t *testing.T) {
 	err := cmd.Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no assessments")
+}
+
+func TestPlanAssessmentsSkipMalformedEntries(t *testing.T) {
+	components := []interface{}{
+		nil,
+		"not a component",
+		map[string]interface{}{},
+		map[string]interface{}{"baselineRefs": "not a list"},
+		map[string]interface{}{"baselineRefs": []interface{}{}},
+		map[string]interface{}{
+			"baselineRefs":   []interface{}{"RHEL9-STIG", nil, 17, "Container-STIG"},
+			"targetSelector": map[string]interface{}{"labels.component": "WebTier"},
+		},
+		map[string]interface{}{
+			"baselineRefs":   []interface{}{"PostgreSQL-STIG"},
+			"targetSelector": map[string]interface{}{},
+		},
+		map[string]interface{}{
+			"baselineRefs":   []interface{}{"RHEL9-STIG"},
+			"targetSelector": "not a selector",
+		},
+	}
+	before, err := json.Marshal(components)
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{
+		{"baselineRef": "RHEL9-STIG", "targetSelector": map[string]interface{}{"labels.component": "WebTier"}},
+		{"baselineRef": "Container-STIG", "targetSelector": map[string]interface{}{"labels.component": "WebTier"}},
+		{"baselineRef": "PostgreSQL-STIG"},
+		{"baselineRef": "RHEL9-STIG"},
+	}, assessmentsFromComponents(components))
+	after, err := json.Marshal(components)
+	require.NoError(t, err)
+	assert.Equal(t, before, after, "building assessments must not modify the source system")
+	assert.Equal(t, []map[string]interface{}{}, assessmentsFromComponents(nil))
 }
 
 func TestPlanCreate_MissingFile(t *testing.T) {
