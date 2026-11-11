@@ -530,7 +530,7 @@ export async function convertSemgrepToHdf(
   // Format routing: semgrep also emits SARIF; delegate transparently.
   registerAllFingerprints();
   const detected = detectConverter(input);
-  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
+  if (detected?.fingerprint.id === 'sarif-to-hdf') {
     return convertSarifToHdf(input, converterVersion);
   }
 
