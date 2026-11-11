@@ -256,29 +256,37 @@ func exploitedCVEs(bundle *StixBundle) map[string]map[string]interface{} {
 		}
 	}
 	for _, o := range bundle.Objects {
-		switch t, _ := o["type"].(string); t {
-		case "sighting":
-			if ref, _ := o["sighting_of_ref"].(string); ref != "" {
-				mark(ref, o)
-			}
-		case "relationship":
-			rt, _ := o["relationship_type"].(string)
-			if rt == "targets" || rt == "exploits" {
-				if tgt, _ := o["target_ref"].(string); tgt != "" {
-					mark(tgt, o)
-				}
-			}
-		case "indicator", "report":
-			if refs, ok := o["object_refs"].([]interface{}); ok {
-				for _, r := range refs {
-					if id, _ := r.(string); id != "" {
-						mark(id, o)
-					}
-				}
-			}
+		for _, ref := range stixExploitationReferences(o) {
+			mark(ref, o)
 		}
 	}
 	return exploited
+}
+
+func stixExploitationReferences(o map[string]interface{}) []string {
+	switch t, _ := o["type"].(string); t {
+	case "sighting":
+		if ref, _ := o["sighting_of_ref"].(string); ref != "" {
+			return []string{ref}
+		}
+	case "relationship":
+		rt, _ := o["relationship_type"].(string)
+		if rt == "targets" || rt == "exploits" {
+			if ref, _ := o["target_ref"].(string); ref != "" {
+				return []string{ref}
+			}
+		}
+	case "indicator", "report":
+		refs, _ := o["object_refs"].([]interface{})
+		var ids []string
+		for _, ref := range refs {
+			if id, _ := ref.(string); id != "" {
+				ids = append(ids, id)
+			}
+		}
+		return ids
+	}
+	return nil
 }
 
 // findBaseVectorEntry returns the finding's cvss[] entry that carries a base
