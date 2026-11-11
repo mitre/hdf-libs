@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Type generation rejects invalid host identity descriptions.** Non-string `Host_Component` property descriptions now produce a property-specific error instead of being silently converted to text or omitted. Missing descriptions and valid string descriptions retain their existing behavior.
+
 - **XML parsing uses the upstream fix for CVE-2026-126066.** Upgrade `fast-xml-parser` to 5.12.0 to address quadratic scanning of malformed stop-node content. Fortify uses stop nodes to preserve embedded descriptions; XML parsing and converter compatibility are verified with the existing suites.
 
 - **Validator diagnostics preserve constraint context and disclose MCP truncation.** Go retains native `oneOf`/`anyOf`/`contains` summaries alongside their causes, matching TypeScript. Missing default descriptions now identify the array's `contains` requirement. MCP validation reports when its existing error-count cap omits diagnostics; validation verdicts and limits are unchanged, and the token budget includes its truncation notice. Validator examples now read input files instead of demonstrating obsolete fields.

@@ -318,6 +318,37 @@ describe('Component identity-field reconciler', () => {
       ]);
     });
 
+    it.each([
+      ['object', { text: 'short name' }],
+      ['number', 42],
+      ['null', null],
+      ['boolean', false],
+      ['array', ['short name']],
+    ])('rejects non-string %s descriptions with the property name', (_kind, description) => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string', description } } }],
+          },
+        },
+      };
+      expect(() => hostIdentityStringFields(schema))
+        .toThrow('Host_Component.hostname description must be a string');
+    });
+
+    it('uses an empty description when none is declared', () => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string' } } }],
+          },
+        },
+      };
+      expect(hostIdentityStringFields(schema)).toEqual([
+        { name: 'hostname', description: '' },
+      ]);
+    });
+
     it('returns [] when the schema has no Host_Component / properties branch', () => {
       expect(hostIdentityStringFields(undefined)).toEqual([]);
       expect(hostIdentityStringFields({ $defs: {} })).toEqual([]);
