@@ -116,8 +116,16 @@ func resolveSIEMPackage(packagePath string, data, event []byte, selector string)
 	if _, err = verifySIEMEntry(events, fetch); err != nil {
 		return nil, err
 	}
-	artifacts := make([]exportmap.BundleArtifact, 0, len(profile.Artifacts))
-	for _, artifact := range profile.Artifacts {
+	artifacts, err := loadSIEMSourceArtifacts(profile.Artifacts, entries, base, fetch)
+	if err != nil {
+		return nil, err
+	}
+	return exportmap.ResolveExportEvent(event, manifest, artifacts)
+}
+
+func loadSIEMSourceArtifacts(references []hdf.ExternalReference, entries []hdfengine.EvidenceContent, base string, fetch hdfengine.FetchFunc) ([]exportmap.BundleArtifact, error) {
+	artifacts := make([]exportmap.BundleArtifact, 0, len(references))
+	for _, artifact := range references {
 		if artifact.Href == nil {
 			return nil, fmt.Errorf("missing source artifact location")
 		}
@@ -138,5 +146,5 @@ func resolveSIEMPackage(packagePath string, data, event []byte, selector string)
 		}
 		artifacts = append(artifacts, exportmap.BundleArtifact{Href: *artifact.Href, Bytes: retained})
 	}
-	return exportmap.ResolveExportEvent(event, manifest, artifacts)
+	return artifacts, nil
 }

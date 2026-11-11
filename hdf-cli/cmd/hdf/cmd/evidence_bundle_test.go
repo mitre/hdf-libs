@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -2725,4 +2726,34 @@ func TestEvidenceBundle_RefusesOutputOverAnEscapedReference(t *testing.T) {
 	after, err := os.ReadFile(evidence)
 	require.NoError(t, err)
 	assert.Equal(t, src, after, "and the evidence file must be byte-identical afterwards")
+}
+
+func TestEvidenceBundleCollectionDefensiveReports(t *testing.T) {
+	t.Run("missing subject uses the recorded relative path", func(t *testing.T) {
+		c := bundleCollection{collected: map[string][]byte{"source.json": []byte("retained evidence")}}
+		require.NoError(t, c.collect(t.TempDir(), bundleTarget{uri: "source.json", label: "content reference", canRecordChecksum: true}))
+		require.Equal(t, []string{"source.json"}, c.noChecksum)
+	})
+	t.Run("invalid archive entry is rejected before a read", func(t *testing.T) {
+		c := bundleCollection{}
+		err := c.collect(t.TempDir(), bundleTarget{uri: "../outside.json", label: "content reference"})
+		require.EqualError(t, err, `content reference "../outside.json" cannot be bundled: it would write an archive entry outside the root`)
+		require.Empty(t, c.entries)
+	})
+	t.Run("unsupported checksum is reported as unverified", func(t *testing.T) {
+		c := bundleCollection{}
+		require.NoError(t, c.verifyChecksum(bundleTarget{algorithm: "unsupported", checksum: "claimed"}, []byte("retained evidence"), "source.json"))
+		output := captureStderr(t, func() { c.report(".", "evidence.zip", nil) })
+		require.Contains(t, output, `checksum could not be verified for source.json (unsupported checksum algorithm "unsupported"`)
+		require.Len(t, c.unverifiable, 1)
+	})
+	t.Run("undecodable reference is reported as not carried", func(t *testing.T) {
+		_, decodeErr := evidenceref.Decode("%")
+		require.Error(t, decodeErr)
+		c := bundleCollection{}
+		require.NoError(t, c.collectReference(t.TempDir(), recordedRef{uri: "%", field: "contents", kind: refDocument, decodeErr: decodeErr}))
+		require.Equal(t, []string{"% (not a valid uri-reference) — recorded in contents"}, c.notCarried)
+		require.Equal(t, 1, c.documentsDropped)
+		require.Empty(t, c.entries)
+	})
 }

@@ -254,6 +254,13 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 		fmt.Printf("System: %s\n", sanitizeOutput(sysRef))
 	}
 
+	outputEvidenceContents(doc)
+	outputEvidenceCompleteness(doc)
+
+	return nil
+}
+
+func outputEvidenceContents(doc map[string]interface{}) {
 	// Contents
 	if contents, ok := doc["contents"].([]interface{}); ok && len(contents) > 0 {
 		fmt.Printf("\nContents (%d):\n", len(contents))
@@ -285,7 +292,9 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 				recordedChecksumState(entry))
 		}
 	}
+}
 
+func outputEvidenceCompleteness(doc map[string]interface{}) {
 	// Completeness check
 	if cc, ok := doc["completenessCheck"].(map[string]interface{}); ok {
 		// Attributed to the document, not to this command. The schema calls this block
@@ -311,8 +320,6 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 			fmt.Printf("  Compliance: %.0f%%\n", v)
 		}
 	}
-
-	return nil
 }
 
 // boolYesNo returns "yes" or "no" for a boolean value.
