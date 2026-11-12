@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { command } from './harness.mjs';
-import { execution, consumer, sourceCase, makeBundle, verifyReadback, rejectArtifacts } from './bundle-helpers.mjs';
+import { execution, consumer, sourceCase, makeBundle, verifyReadback, verifyRecovery } from './bundle-helpers.mjs';
 
 function assertBulkCreated(bulk, expected) {
   assert.equal(bulk.errors, false, JSON.stringify(bulk.items));
@@ -77,15 +77,8 @@ export async function verify({ artifacts, environment, credentials, requestRaw, 
       }
       const fields = JSON.parse(await request(`/${index}/_field_caps?fields=hdf.source.*`));
       assert.deepEqual(Object.keys(fields.fields), [], 'preservation members must not become indexed fields');
-      let negatives = [];
-      if (lines.length) {
-        const event = join(retained, '0.json');
-        const recover = () => command(artifacts.cli, ['evidence', 'resolve', join(output, 'evidence-package.json'), '--event', event],
-          { ...execution, signal, encoding: 'buffer' });
-        assert.deepEqual((await recover()).stdout, source);
-        if (entry.name === 'override') negatives = await rejectArtifacts(artifacts, output, event, signal);
-        assert.deepEqual((await recover()).stdout, source);
-      }
+      const negatives = await verifyRecovery(artifacts, { output, retained, source, eventCount: lines.length,
+        name: entry.name, label: `Elasticsearch/${entry.name}/${producer}`, signal });
       results.push({ name: entry.name, producer, kind: entry.kind, sourceSha256: createHash('sha256').update(source).digest('hex'),
         ...proof, negatives, sizes });
       console.log(`Elasticsearch ${entry.name}/${producer}: ${proof.events} events verified`);

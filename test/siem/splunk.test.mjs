@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { command, repository, assertSplunkLicense } from './harness.mjs';
-import { execution, consumer, sourceCase, makeBundle, verifyReadback, rejectArtifacts } from './bundle-helpers.mjs';
+import { execution, consumer, sourceCase, makeBundle, verifyReadback, verifyRecovery } from './bundle-helpers.mjs';
 
 export async function verify({ artifacts, environment, credentials, requestRaw, signal }) {
   const container = environment.getContainer('splunk-1');
@@ -171,15 +171,8 @@ export async function verify({ artifacts, environment, credentials, requestRaw, 
         assert.equal(counts.length, 1);
         assert.equal(Number(counts[0].count), proof.activeFindings, selector);
       }
-      let negatives = [];
-      if (lines.length) {
-        const event = join(retained, '0.json');
-        const recover = () => command(artifacts.cli, ['evidence', 'resolve', join(output, 'evidence-package.json'), '--event', event],
-          { ...execution, signal, encoding: 'buffer' });
-        assert.deepEqual((await recover()).stdout, source);
-        if (entry.name === 'override') negatives = await rejectArtifacts(artifacts, output, event, signal);
-        assert.deepEqual((await recover()).stdout, source);
-      }
+      const negatives = await verifyRecovery(artifacts, { output, retained, source, eventCount: lines.length,
+        name: entry.name, label: `Splunk/${entry.name}/${producer}`, signal });
       results.push({ name: entry.name, producer, kind: entry.kind, sourceSha256: createHash('sha256').update(source).digest('hex'),
         ...proof, negatives, sizes, largestEventBytes });
       console.log(`Splunk ${entry.name}/${producer}: ${proof.events} events verified`);

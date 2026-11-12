@@ -171,10 +171,6 @@ export async function verifyReadback([input, output, retained, name, target = 'e
     // Native queries treat -0 as zero; preservation checks keep its source token.
     assert.ok(event.hdf.impact === req.impact);
     impacts[req.impact] = (impacts[req.impact] ?? 0) + 1;
-    if (Object.hasOwn(req, 'effectiveImpact')) {
-      assert.equal(event.hdf.effective_impact, req.effectiveImpact);
-      effectiveImpacts[req.effectiveImpact] = (effectiveImpacts[req.effectiveImpact] ?? 0) + 1;
-    }
     for (const [sourceKey, eventKey, counts] of [
       ['effectiveStatus', 'effective_status', effectiveStatuses],
       ['disposition', 'disposition', dispositions],
@@ -183,7 +179,7 @@ export async function verifyReadback([input, output, retained, name, target = 'e
       assert.equal(Object.hasOwn(event.hdf, eventKey), Object.hasOwn(req, sourceKey), `${eventKey} presence`);
       if (Object.hasOwn(req, sourceKey)) {
         assert.equal(event.hdf[eventKey], req[sourceKey], eventKey);
-        if (sourceKey !== 'effectiveImpact') counts[req[sourceKey]] = (counts[req[sourceKey]] ?? 0) + 1;
+        counts[req[sourceKey]] = (counts[req[sourceKey]] ?? 0) + 1;
       }
     }
     if (target === 'ecs') {
@@ -212,6 +208,20 @@ export async function verifyReadback([input, output, retained, name, target = 'e
   assert.equal(pointers.size, occurrences.length, 'duplicate IDs must retain distinct occurrences');
   console.log(JSON.stringify({ events: files.length, outcomes, rawStatuses, severities, impacts, effectiveImpacts, scores,
     effectiveStatuses, dispositions, suppression, ...(target === 'splunk' ? { activeFindings } : {}), checksums: checked.length }));
+}
+
+export async function verifyRecovery(artifacts, { output, retained, source, eventCount, name, label, signal }) {
+  if (eventCount === 0) return [];
+  const event = join(retained, '0.json');
+  const recover = () => command(artifacts.cli, ['evidence', 'resolve', join(output, 'evidence-package.json'), '--event', event],
+    { ...execution, signal, encoding: 'buffer' });
+  assert.deepEqual((await recover()).stdout, source, `${label}: initial source recovery`);
+  let negatives = [];
+  if (name === 'override') {
+    negatives = await rejectArtifacts(artifacts, output, event, signal);
+  }
+  assert.deepEqual((await recover()).stdout, source, `${label}: source recovery after restoration`);
+  return negatives;
 }
 
 export async function rejectArtifacts(artifacts, output, event, signal) {

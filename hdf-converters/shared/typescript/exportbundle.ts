@@ -5,6 +5,8 @@ import { sha512, validateInputSize } from '@mitre/hdf-utilities';
 import { createScanner } from 'jsonc-parser';
 import { type Obj, asArr, asMap, canonicalize, parseJSONPreservingNumbers, stringifyLine } from './exportmap.js';
 
+const bundleOutputProfile = 'legacy-additive/1';
+
 export interface ExportBundle {
   events: string;
   source: Uint8Array;
@@ -70,7 +72,7 @@ export async function resolveExportSource(envelope: string, manifest: string, ar
 function requireProfile(value: unknown): Obj {
   const object = asMap(value);
   if (!object || typeof object.profileVersion !== 'string' || !/^1\.(0|[1-9]\d*)$/.test(object.profileVersion)
-      || object.outputProfile !== 'legacy-additive/1') throw new Error('Unsupported source profile');
+      || object.outputProfile !== bundleOutputProfile) throw new Error('Unsupported source profile');
   return object;
 }
 
@@ -130,7 +132,7 @@ export async function buildExportBundle(input: Uint8Array, events: string, targe
     sourceName: 'hdf-results', externalId: `sha512:${digest}`, mediaType: 'application/json',
     checksum: { algorithm: HashAlgorithm.Sha512, value: digest },
   };
-  const profile = { profileVersion: '1.0', outputProfile: 'legacy-additive/1' };
+  const profile = { profileVersion: '1.0', outputProfile: bundleOutputProfile };
   const document = asMap(source);
   const baselines = asArr(document?.baselines);
   if (!baselines) throw new Error('Source must contain a baselines array');
@@ -140,12 +142,7 @@ export async function buildExportBundle(input: Uint8Array, events: string, targe
     const baseline = asMap(rawBaseline);
     for (const [ri, requirement] of (asArr(baseline?.requirements) ?? []).entries()) {
       if (!asMap(requirement)) continue;
-      const event = asMap(parseJSONPreservingNumbers(lines[output.length] ?? 'null'));
-      const { parent, key } = envelopeParent(event, target);
-      if (!event || !parent) throw new Error(`Missing ${target} finding projection`);
-      if (Object.hasOwn(parent, key)) throw new Error('Projection already contains a source envelope');
-      parent[key] = { ...profile, artifact, pointer: `/baselines/${bi}/requirements/${ri}`, requirement };
-      output.push(stringifyLine(canonicalize(event)));
+      output.push(attachBundleEnvelope(lines[output.length], target, { ...profile, artifact, pointer: `/baselines/${bi}/requirements/${ri}`, requirement }));
     }
   }
   if (output.length !== lines.length) throw new Error('Finding projection count does not match source requirements');
@@ -154,4 +151,13 @@ export async function buildExportBundle(input: Uint8Array, events: string, targe
     events: output.length ? output.join('\n') + '\n' : '', source: retained,
     manifest: stringifyLine(canonicalize(manifest)) + '\n',
   };
+}
+
+function attachBundleEnvelope(line: string | undefined, target: string, envelope: Obj): string {
+  const event = asMap(parseJSONPreservingNumbers(line ?? 'null'));
+  const { parent, key } = envelopeParent(event, target);
+  if (!event || !parent) throw new Error(`Missing ${target} finding projection`);
+  if (Object.hasOwn(parent, key)) throw new Error('Projection already contains a source envelope');
+  parent[key] = envelope;
+  return stringifyLine(canonicalize(event));
 }

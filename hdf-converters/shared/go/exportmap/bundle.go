@@ -14,6 +14,11 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
+const (
+	bundleInputFormat   = "siem-bundle"
+	bundleOutputProfile = "legacy-additive/1"
+)
+
 // ExportBundle carries finding events and their original source artifact.
 type ExportBundle struct {
 	Events   []byte
@@ -85,6 +90,43 @@ func ResolveExportSource(envelope, manifest []byte, artifacts []BundleArtifact) 
 	if err != nil {
 		return nil, err
 	}
+	input, err := selectBundleArtifact(inventory, digest, artifacts)
+	if err != nil {
+		return nil, err
+	}
+	if err := shared.ValidateJSONSize(input, bundleInputFormat, 0); err != nil {
+		return nil, err
+	}
+	if fmt.Sprintf("%x", sha512.Sum512(input)) != digest {
+		return nil, fmt.Errorf("artifact checksum mismatch")
+	}
+	source, err := decodeBundleJSON(input)
+	if err != nil {
+		return nil, err
+	}
+	baseline, requirement, err := resolveBundlePointer(source, GetStr(record, "pointer"))
+	if err != nil {
+		return nil, err
+	}
+	canonicalRecord, err := EncodeLine(requirement)
+	if err != nil {
+		return nil, err
+	}
+	carried, err := EncodeLine(record["requirement"])
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(canonicalRecord, carried) {
+		return nil, fmt.Errorf("source record mismatch")
+	}
+	canonicalBaseline, err := EncodeLine(baseline)
+	if err != nil {
+		return nil, err
+	}
+	return &ResolvedExportSource{Source: bytes.Clone(input), Baseline: canonicalBaseline, Requirement: canonicalRecord}, nil
+}
+
+func selectBundleArtifact(inventory map[string]interface{}, digest string, artifacts []BundleArtifact) ([]byte, error) {
 	references, _ := AsSlice(inventory["artifacts"])
 	matches := make([]map[string]interface{}, 0, 1)
 	for _, reference := range references {
@@ -113,53 +155,31 @@ func ResolveExportSource(envelope, manifest []byte, artifacts []BundleArtifact) 
 	if len(supplied) != 1 {
 		return nil, fmt.Errorf("missing or ambiguous supplied artifact")
 	}
-	input := supplied[0]
-	if err := shared.ValidateJSONSize(input, "siem-bundle", 0); err != nil {
-		return nil, err
-	}
-	if fmt.Sprintf("%x", sha512.Sum512(input)) != digest {
-		return nil, fmt.Errorf("artifact checksum mismatch")
-	}
-	source, err := decodeBundleJSON(input)
-	if err != nil {
-		return nil, err
-	}
-	pointer := bundlePointerPattern.FindStringSubmatch(GetStr(record, "pointer"))
+	return supplied[0], nil
+}
+
+func resolveBundlePointer(source interface{}, pointerText string) (map[string]interface{}, map[string]interface{}, error) {
+	pointer := bundlePointerPattern.FindStringSubmatch(pointerText)
 	if pointer == nil {
-		return nil, fmt.Errorf("invalid requirement pointer")
+		return nil, nil, fmt.Errorf("invalid requirement pointer")
 	}
 	bi, biErr := strconv.Atoi(pointer[1])
 	ri, riErr := strconv.Atoi(pointer[2])
 	document, _ := AsMap(source)
 	baselines, _ := AsSlice(document["baselines"])
 	if biErr != nil || riErr != nil || bi >= len(baselines) {
-		return nil, fmt.Errorf("requirement pointer does not resolve")
+		return nil, nil, fmt.Errorf("requirement pointer does not resolve")
 	}
 	baseline, _ := AsMap(baselines[bi])
 	requirements, _ := AsSlice(baseline["requirements"])
 	if ri >= len(requirements) {
-		return nil, fmt.Errorf("requirement pointer does not resolve")
+		return nil, nil, fmt.Errorf("requirement pointer does not resolve")
 	}
 	requirement, ok := AsMap(requirements[ri])
 	if !ok {
-		return nil, fmt.Errorf("requirement pointer does not resolve")
+		return nil, nil, fmt.Errorf("requirement pointer does not resolve")
 	}
-	canonicalRecord, err := EncodeLine(requirement)
-	if err != nil {
-		return nil, err
-	}
-	carried, err := EncodeLine(record["requirement"])
-	if err != nil {
-		return nil, err
-	}
-	if !bytes.Equal(canonicalRecord, carried) {
-		return nil, fmt.Errorf("source record mismatch")
-	}
-	canonicalBaseline, err := EncodeLine(baseline)
-	if err != nil {
-		return nil, err
-	}
-	return &ResolvedExportSource{Source: bytes.Clone(input), Baseline: canonicalBaseline, Requirement: canonicalRecord}, nil
+	return baseline, requirement, nil
 }
 
 var (
@@ -174,7 +194,7 @@ func bundleProfile(input []byte) (map[string]interface{}, error) {
 		return nil, err
 	}
 	object, _ := AsMap(value)
-	if !bundleVersionPattern.MatchString(GetStr(object, "profileVersion")) || GetStr(object, "outputProfile") != "legacy-additive/1" {
+	if !bundleVersionPattern.MatchString(GetStr(object, "profileVersion")) || GetStr(object, "outputProfile") != bundleOutputProfile {
 		return nil, fmt.Errorf("unsupported source profile")
 	}
 	return object, nil
@@ -192,7 +212,7 @@ func bundleArtifactDigest(value interface{}) (string, error) {
 }
 
 func decodeBundleJSON(input []byte) (interface{}, error) {
-	if err := shared.ValidateJSONSize(input, "siem-bundle", 0); err != nil {
+	if err := shared.ValidateJSONSize(input, bundleInputFormat, 0); err != nil {
 		return nil, err
 	}
 	if !jsontext.Value(input).IsValid(jsontext.AllowDuplicateNames(true)) {
@@ -209,7 +229,7 @@ func decodeBundleJSON(input []byte) (interface{}, error) {
 
 // ProjectExportBundle preserves the source alongside an existing target projection.
 func ProjectExportBundle(input []byte, target string, project func([]byte) ([]byte, error)) (*ExportBundle, error) {
-	if err := shared.ValidateJSONSize(input, "siem-bundle", 0); err != nil {
+	if err := shared.ValidateJSONSize(input, bundleInputFormat, 0); err != nil {
 		return nil, err
 	}
 	events, err := project(input)
@@ -221,7 +241,7 @@ func ProjectExportBundle(input []byte, target string, project func([]byte) ([]by
 
 // BuildExportBundle attaches source records to the supplied target projection.
 func BuildExportBundle(input, events []byte, target string) (*ExportBundle, error) {
-	if err := shared.ValidateJSONSize(input, "siem-bundle", 0); err != nil {
+	if err := shared.ValidateJSONSize(input, bundleInputFormat, 0); err != nil {
 		return nil, err
 	}
 	if target != "ecs" && target != "splunk" && target != "ocsf" {
@@ -252,23 +272,11 @@ func BuildExportBundle(input, events []byte, target string) (*ExportBundle, erro
 			if _, ok := AsMap(requirement); !ok {
 				continue
 			}
-			var event map[string]interface{}
-			if err := decoder.Decode(&event); err != nil {
-				return nil, fmt.Errorf("decode finding projection: %w", err)
-			}
-			parent, key := bundleEnvelopeParent(event, target)
-			if parent == nil {
-				return nil, fmt.Errorf("missing %s finding projection", target)
-			}
-			if _, exists := parent[key]; exists {
-				return nil, fmt.Errorf("projection already contains a source envelope")
-			}
-			parent[key] = map[string]interface{}{
-				"profileVersion": "1.0", "outputProfile": "legacy-additive/1", "artifact": artifact,
+			line, err := attachBundleEnvelope(decoder, target, map[string]interface{}{
+				"profileVersion": "1.0", "outputProfile": bundleOutputProfile, "artifact": artifact,
 				"pointer":     fmt.Sprintf("/baselines/%d/requirements/%d", bi, ri),
 				"requirement": requirement,
-			}
-			line, err := EncodeLine(event)
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -282,13 +290,29 @@ func BuildExportBundle(input, events []byte, target string) (*ExportBundle, erro
 	href := "source.json"
 	artifact.Href = &href
 	manifest, err := EncodeLine(map[string]interface{}{
-		"profileVersion": "1.0", "outputProfile": "legacy-additive/1", "target": target,
+		"profileVersion": "1.0", "outputProfile": bundleOutputProfile, "target": target,
 		"events": "events.ndjson", "artifacts": []hdf.ExternalReference{artifact},
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &ExportBundle{Events: output.Bytes(), Source: bytes.Clone(input), Manifest: manifest}, nil
+}
+
+func attachBundleEnvelope(decoder *json.Decoder, target string, envelope map[string]interface{}) ([]byte, error) {
+	var event map[string]interface{}
+	if err := decoder.Decode(&event); err != nil {
+		return nil, fmt.Errorf("decode finding projection: %w", err)
+	}
+	parent, key := bundleEnvelopeParent(event, target)
+	if parent == nil {
+		return nil, fmt.Errorf("missing %s finding projection", target)
+	}
+	if _, exists := parent[key]; exists {
+		return nil, fmt.Errorf("projection already contains a source envelope")
+	}
+	parent[key] = envelope
+	return EncodeLine(event)
 }
 
 func bundleEnvelopeParent(event map[string]interface{}, target string) (map[string]interface{}, string) {

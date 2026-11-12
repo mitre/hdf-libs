@@ -379,6 +379,18 @@ describe('statusOf: shared Go/TypeScript case table', () => {
 });
 
 describe('buildHDFBlock — requirement fields the bag used to drop', () => {
+  it('keeps the raw verdict distinct from the effective rollup', () => {
+    const fixture = JSON.parse(readFileSync(join(__dirname, '../../converters/hdf-to-ecs/fixtures/input/override.json'), 'utf8'));
+    const req = fixture.baselines[0].requirements[0];
+    const status = statusOf(req);
+    expect(status).toEqual({ raw: 'failed', rollup: 'passed', overridden: true, suppressed: true });
+    const hdf = buildHDFBlock(req, fixture.baselines[0], status, undefined, undefined, '0.1.0');
+    expect(hdf.status).toBe('failed');
+    expect(hdf.effective_status).toBe('passed');
+    expect(hdf.overridden).toBe(true);
+    expect(hdf.suppressed).toBe(true);
+  });
+
   // Schema-valid on Evaluated_Requirement but absent from the passthrough map, so
   // every exporter using this block dropped them. Asserted by value: a presence-only
   // check passes when the wrong value is carried.
@@ -391,7 +403,7 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
       verificationMethod: 'automated',
       applicability: 'required',
     };
-    const hdf = buildHDFBlock(req, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlock(req, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
 
     expect(hdf.evidence).toEqual([{ type: 'log', data: 'bG9n' }]);
     expect(hdf.effective_checksum).toEqual({ algorithm: 'sha256', value: 'abc' });
@@ -404,12 +416,12 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
   // composes, so it is a requirement field as well as a document-root one.
   it('carries requirement-level externalReferences', () => {
     const refs = [{ sourceName: 'NVD', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1', kind: 'advisory' }];
-    const hdf = buildHDFBlock({ id: 'V-4', externalReferences: refs }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlock({ id: 'V-4', externalReferences: refs }, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     expect(hdf.external_references).toEqual(refs);
   });
 
   it('adds no empty keys when the requirement omits them', () => {
-    const hdf = buildHDFBlock({ id: 'V-3' }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlock({ id: 'V-3' }, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     for (const k of ['evidence', 'effective_checksum', 'control_type', 'verification_method', 'applicability']) {
       expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
     }

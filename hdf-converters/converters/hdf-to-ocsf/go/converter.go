@@ -355,6 +355,35 @@ func buildCompliance(req, baseline map[string]interface{}, title, rawStatus stri
 	return compliance
 }
 
+func buildCVSSEntry(m map[string]interface{}) map[string]interface{} {
+	entry := map[string]interface{}{}
+	if bs, ok := m["baseScore"].(float64); ok {
+		entry["base_score"] = exportmap.FloatToken(bs) // OCSF cvss.base_score is float_t
+	}
+	exportmap.SetIf(entry, "version", exportmap.GetStr(m, "version"))
+	exportmap.SetIf(entry, "vector_string", exportmap.GetStr(m, "baseVector"))
+	exportmap.SetIf(entry, "severity", exportmap.GetStr(m, "baseSeverity"))
+	// Temporal/computed scoring: the environmental-adjusted score → cvss.
+	// overall_score (float_t); the remaining temporal components → cvss.metrics[].
+	if cs, ok := m["computedScore"].(float64); ok {
+		entry["overall_score"] = exportmap.FloatToken(cs)
+	}
+	var metrics []interface{}
+	if ts, ok := m["threatScore"].(float64); ok {
+		metrics = append(metrics, map[string]interface{}{"name": "Threat Score", "value": floatMetric(ts)})
+	}
+	if tv := exportmap.GetStr(m, "threatVector"); tv != "" {
+		metrics = append(metrics, map[string]interface{}{"name": "Threat Vector", "value": tv})
+	}
+	if cs := exportmap.GetStr(m, "computedSeverity"); cs != "" {
+		metrics = append(metrics, map[string]interface{}{"name": "Computed Severity", "value": cs})
+	}
+	if len(metrics) > 0 {
+		entry["metrics"] = metrics
+	}
+	return entry
+}
+
 func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []interface{} {
 	cve := map[string]interface{}{}
 	uid := exportmap.FirstCVE(cvssList)
@@ -369,32 +398,7 @@ func buildVulnerabilities(cvssList []interface{}, req map[string]interface{}) []
 		if !ok {
 			continue
 		}
-		entry := map[string]interface{}{}
-		if bs, ok := m["baseScore"].(float64); ok {
-			entry["base_score"] = exportmap.FloatToken(bs) // OCSF cvss.base_score is float_t
-		}
-		exportmap.SetIf(entry, "version", exportmap.GetStr(m, "version"))
-		exportmap.SetIf(entry, "vector_string", exportmap.GetStr(m, "baseVector"))
-		exportmap.SetIf(entry, "severity", exportmap.GetStr(m, "baseSeverity"))
-		// Temporal/computed scoring: the environmental-adjusted score → cvss.
-		// overall_score (float_t); the remaining temporal components → cvss.metrics[].
-		if cs, ok := m["computedScore"].(float64); ok {
-			entry["overall_score"] = exportmap.FloatToken(cs)
-		}
-		var metrics []interface{}
-		if ts, ok := m["threatScore"].(float64); ok {
-			metrics = append(metrics, map[string]interface{}{"name": "Threat Score", "value": floatMetric(ts)})
-		}
-		if tv := exportmap.GetStr(m, "threatVector"); tv != "" {
-			metrics = append(metrics, map[string]interface{}{"name": "Threat Vector", "value": tv})
-		}
-		if cs := exportmap.GetStr(m, "computedSeverity"); cs != "" {
-			metrics = append(metrics, map[string]interface{}{"name": "Computed Severity", "value": cs})
-		}
-		if len(metrics) > 0 {
-			entry["metrics"] = metrics
-		}
-		cvssArr = append(cvssArr, entry)
+		cvssArr = append(cvssArr, buildCVSSEntry(m))
 	}
 	if len(cvssArr) > 0 {
 		cve["cvss"] = cvssArr

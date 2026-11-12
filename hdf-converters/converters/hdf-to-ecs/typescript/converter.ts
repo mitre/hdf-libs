@@ -107,24 +107,30 @@ function buildEvent(
   const threat = buildThreat(req);
   if (threat) obj.threat = threat;
 
-  const sl = asMap(req.sourceLocation);
-  if (sl) {
-    const file: Obj = {};
-    setIf(file, 'name', getStr(sl, 'ref'));
-    if ('line' in sl) file.line = sl.line;
-    if (Object.keys(file).length > 0) obj.log = { origin: { file } };
-  }
+  const log = buildSourceLocation(req);
+  if (log) obj.log = log;
 
   const labels = buildLabels(req);
   if (labels) obj.labels = labels;
 
   // Keep the existing aliases; complete modern integrity lives in the bundle artifact.
-  const hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
+  const hdf = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
   if ('title' in baseline) hdf.baseline_title = baseline.title;
   if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
   obj.hdf = hdf;
 
   return obj;
+}
+
+function buildSourceLocation(req: Obj): Obj | undefined {
+  const sl = asMap(req.sourceLocation);
+  if (sl) {
+    const file: Obj = {};
+    setIf(file, 'name', getStr(sl, 'ref'));
+    if ('line' in sl) file.line = sl.line;
+    if (Object.keys(file).length > 0) return { origin: { file } };
+  }
+  return undefined;
 }
 
 /**

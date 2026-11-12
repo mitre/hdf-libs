@@ -396,3 +396,26 @@ func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
 	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
 	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
 }
+
+func TestSourceLocationOptionalMembers(t *testing.T) {
+	tests := []struct {
+		name     string
+		location map[string]interface{}
+		want     map[string]interface{}
+	}{
+		{name: "empty", location: map[string]interface{}{}, want: nil},
+		{name: "file only", location: map[string]interface{}{"ref": "controls/stig.rb"}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"name": "controls/stig.rb"}}}},
+		{name: "zero line", location: map[string]interface{}{"line": float64(0)}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"line": float64(0)}}}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := map[string]interface{}{"id": "X", "sourceLocation": tc.location}
+			event := buildEvent(req, map[string]interface{}{}, "", nil, nil, nil, "0.1.0")
+			if tc.want == nil {
+				require.NotContains(t, event, "log")
+			} else {
+				require.Equal(t, tc.want, event["log"])
+			}
+		})
+	}
+}

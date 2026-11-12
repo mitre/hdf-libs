@@ -10,7 +10,7 @@ import { parseOptions, redact, requestRaw, requestWhenAvailable, createRun, qual
 import { execFile } from 'node:child_process';
 import { promisify, parseEnv } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { makeBundle, consumer, verifyReadback, rejectArtifacts } from './bundle-helpers.mjs';
+import { makeBundle, consumer, sourceCase, verifyReadback, verifyRecovery } from './bundle-helpers.mjs';
 
 const qualifiedEnvironment = parseEnv(await readFile(new URL('./.env.example', import.meta.url), 'utf8'));
 
@@ -220,27 +220,59 @@ test('builds a runnable current CLI and imports the installed packed converter',
     'inspec-overlay', 'override', 'negative-zero', 'riskadjust', 'cve', 'boundary', 'duplicate-ids', 'empty',
   ]);
   assert.equal(result.cases.every((entry) => entry.validated && /^[a-f0-9]{64}$/.test(entry.sha256)), true);
-  for (const producer of ['cli', 'typescript']) {
-    const folder = join(directory, `splunk-${producer}`);
-    await mkdir(folder);
-    const bundle = await makeBundle(result, producer, path, folder, undefined, 'splunk');
-    const manifest = JSON.parse(await readFile(join(bundle.output, 'manifest.json'), 'utf8'));
-    assert.equal(manifest.target, 'splunk');
-    assert.deepEqual(await readFile(join(bundle.output, 'source.json')), fixture);
-    const event = join(folder, 'retained.json');
-    const events = await readFile(join(bundle.output, 'events.ndjson'), 'utf8');
-    await writeFile(event, events.split('\n')[0]);
-    const recovered = await promisify(execFile)(result.cli, ['evidence', 'resolve',
-      join(bundle.output, 'evidence-package.json'), '--event', event], { encoding: 'buffer' });
-    assert.deepEqual(recovered.stdout, fixture);
-    const retained = join(folder, 'retained');
-    await mkdir(retained);
-    await writeFile(join(retained, '0.json'), events.split('\n')[0]);
-    const proof = JSON.parse((await consumer(result, verifyReadback,
-      [path, bundle.output, retained, 'override', 'splunk'])).stdout);
-    assert.equal(proof.events, 1);
-    assert.deepEqual(proof.rawStatuses, { failed: 1 });
-    assert.equal(proof.activeFindings, 0);
-    assert.equal((await rejectArtifacts(result, bundle.output, event)).length, 10);
+  for (const name of ['override', 'riskadjust', 'negative-zero', 'empty']) {
+    const entry = result.cases.find((entry) => entry.name === name);
+    const source = await sourceCase(entry);
+    const input = join(directory, `${name}.json`);
+    await writeFile(input, source);
+    for (const producer of ['cli', 'typescript']) {
+      const folder = join(directory, `splunk-${name}-${producer}`);
+      await mkdir(folder);
+      const bundle = await makeBundle(result, producer, input, folder, undefined, 'splunk');
+      const manifest = JSON.parse(await readFile(join(bundle.output, 'manifest.json'), 'utf8'));
+      assert.equal(manifest.target, 'splunk');
+      assert.deepEqual(await readFile(join(bundle.output, 'source.json')), source);
+      const events = await readFile(join(bundle.output, 'events.ndjson'), 'utf8');
+      const lines = events === '' ? [] : events.trimEnd().split('\n');
+      const retained = join(folder, 'retained');
+      await mkdir(retained);
+      for (const [index, line] of lines.entries()) await writeFile(join(retained, `${index}.json`), line);
+      const proof = JSON.parse((await consumer(result, verifyReadback,
+        [input, bundle.output, retained, name, 'splunk'])).stdout);
+      assert.equal(proof.events, name === 'empty' ? 0 : 1);
+      assert.deepEqual(proof.effectiveImpacts, name === 'riskadjust' ? { '0.2': 1 } : {});
+      if (name === 'override') {
+        assert.deepEqual(proof.rawStatuses, { failed: 1 });
+        assert.equal(proof.activeFindings, 0);
+      }
+      const recovery = { output: bundle.output, retained, source, eventCount: lines.length,
+        name, label: `Splunk/${name}/${producer}` };
+      const names = ['source.json', 'events.ndjson', 'manifest.json', 'evidence-package.json'];
+      const before = await Promise.all(names.map((name) => readFile(join(bundle.output, name))));
+      const negatives = await verifyRecovery(result, recovery);
+      assert.deepEqual(negatives, name === 'override' ? [
+        'missing-source.json', 'altered-source.json', 'missing-events.ndjson', 'altered-events.ndjson',
+        'missing-manifest.json', 'altered-manifest.json', 'ambiguous-package-source',
+        'ambiguous-manifest', 'ambiguous-supplied-source', 'changed-record',
+      ] : []);
+      assert.deepEqual(await Promise.all(names.map((name) => readFile(join(bundle.output, name)))), before);
+      assert.deepEqual(await readFile(join(bundle.output, 'events.ndjson'), 'utf8'), events);
+      if (lines.length) {
+        assert.equal(await readFile(join(retained, '0.json'), 'utf8'), lines[0]);
+        await assert.rejects(verifyRecovery(result, { ...recovery, source: Buffer.from('wrong source') }),
+          (error) => error.code === 'ERR_ASSERTION' && error.message.startsWith(`${recovery.label}: initial source recovery`));
+        await assert.rejects(verifyRecovery(result, { ...recovery, signal: AbortSignal.abort() }),
+          { name: 'AbortError' });
+      }
+      if (name === 'override') {
+        await assert.rejects(verifyRecovery({ ...result, consumer: join(directory, 'missing-consumer') }, recovery),
+          { code: 'ENOENT' });
+        assert.deepEqual(await Promise.all(names.map((name) => readFile(join(bundle.output, name)))), before);
+      }
+    }
   }
+});
+
+test('empty recovery skips execution even when no CLI or files exist', async () => {
+  assert.deepEqual(await verifyRecovery({}, { eventCount: 0, name: 'override', label: 'empty/cli' }), []);
 });
