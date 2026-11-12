@@ -61,7 +61,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "d3-dsv": "^3.0.1",
-    "fast-xml-parser": "5.7.1"
+    "fast-xml-parser": "5.12.0"
   },
   "engines": {
     "node": ">=24.0.0"
