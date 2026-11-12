@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"archive/zip"
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -76,16 +78,20 @@ That is reported here and never repaired by rewriting the package:
 'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
     (externalEvidence) record such a reference relatively at authoring time.
 
-Bundle and 'hdf evidence info --verify' resolve references identically, and neither
-    refuses a package for the shape of one: a reference to something the package does
-    not contain — an absolute path elsewhere, a parent traversal, or a URI on another
-    system — is reported by both.
+A reference to something the package does not contain — an absolute path elsewhere,
+    a parent traversal, or a URI on another system — is reported by both bundle and
+    'hdf evidence info --verify'. Bundle additionally refuses carried entry names,
+    including the package filename, containing backslashes, colons or NUL. Names are
+    checked after native path normalization and are never silently rewritten to remove
+    unsafe characters.
 Verification additionally checks completeness, which bundle does not, so it can still
     fail a package bundle accepts — for instance when a planned baseline's only results
     document is one of those unreachable references.
 Both honour the checksum algorithm the package records.
-Nothing outside the package directory is read: such a reference is never resolved into a
-    path, and a symlink that leaves the package is refused at the read boundary.
+Nothing outside the held package directory is read: the package file and its references
+    use the same directory handle, and a symlink that leaves the package is refused at
+    the read boundary. Stdin supplies only the package document; its references use the
+    held working directory.
 
 What travels: the package, the documents named by systemRef and planRef, every document
     in contents[], and externalEvidence[] artifacts that live inside the package's
@@ -407,15 +413,29 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
 func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess, makeWriter func(*os.File) archiveWriter) (err error) {
-	pkgData, err := readInputFile(pkgPath)
+	pkgDir := filepath.Dir(pkgPath)
+	rootDir, err := resolvedAbs(pkgDir)
+	if err != nil {
+		return fmt.Errorf("failed to read evidence package: resolve package directory: %w", err)
+	}
+	root, err := os.OpenRoot(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to read evidence package: open package directory: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+	c := bundleCollection{root: root}
+	pkgRaw, err := c.readPackage(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
+	}
+	pkgData := bytes.TrimPrefix(pkgRaw, utf8BOM)
+	if len(pkgData) == 0 {
+		return fmt.Errorf("failed to read evidence package: no input provided")
 	}
 	if _, err := loadAndValidateHDFDoc(pkgData, "evidence-package"); err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
-	pkgDir := filepath.Dir(pkgPath)
 	_, contents, err := hdfengine.ParseEvidencePackage(pkgData)
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
@@ -451,12 +471,14 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 		}
 	}
 
-	// Verify all referenced bytes before opening the output.
-	c := bundleCollection{
-		entries:   []bundleEntry{{path: filepath.ToSlash(filepath.Base(pkgPath)), data: pkgData}},
-		collected: map[string][]byte{filepath.ToSlash(filepath.Base(pkgPath)): pkgData},
-		carried:   map[refKind]int{},
+	packageName := filepath.ToSlash(filepath.Base(pkgPath))
+	if !portableArtifactPath(packageName) {
+		return fmt.Errorf("package filename %q cannot name a portable archive entry", packageName)
 	}
+	// Verify all referenced bytes before opening the output.
+	c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
+	c.collected = map[string][]byte{packageName: pkgRaw}
+	c.carried = map[refKind]int{}
 	for _, r := range refs {
 		if err := c.collectReference(pkgDir, r); err != nil {
 			return err
@@ -478,6 +500,7 @@ type bundleTarget struct {
 }
 
 type bundleCollection struct {
+	root                                                *os.Root
 	entries                                             []bundleEntry
 	collected                                           map[string][]byte
 	emptyChecksum, noChecksum, unverifiable, notCarried []string
@@ -510,6 +533,9 @@ func (c *bundleCollection) collect(pkgDir string, t bundleTarget) error {
 	if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
 		return fmt.Errorf("%s %q cannot be bundled: it would write an archive entry outside the root", label, subject)
 	}
+	if !portableArtifactPath(ref) {
+		return fmt.Errorf("%s %q cannot name a portable archive entry", label, subject)
+	}
 	data, already := c.collected[ref]
 	if !already {
 		path, pathErr := evidenceref.Path(pkgDir, uri)
@@ -517,13 +543,44 @@ func (c *bundleCollection) collect(pkgDir string, t bundleTarget) error {
 			return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, pathErr)
 		}
 		var readErr error
-		if data, readErr = readFromFile(path, true); readErr != nil {
+		if data, readErr = c.readContained(path, true); readErr != nil {
 			return fmt.Errorf("%s %q is referenced but could not be read: %w", label, subject, readErr)
 		}
 		c.collected[ref] = data
 		c.entries = append(c.entries, bundleEntry{path: ref, data: data})
 	}
 	return c.verifyChecksum(t, data, subject)
+}
+
+func (c *bundleCollection) readPackage(path string) ([]byte, error) {
+	if path == "" || path == "-" {
+		return readFromStdin(false)
+	}
+	return c.readContained(path, false)
+}
+
+func (c *bundleCollection) readContained(path string, allowEmpty bool) ([]byte, error) {
+	if err := refuseSymlinkIfConfigured(path); err != nil {
+		return nil, err
+	}
+	resolved, err := resolvedAbs(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("file not found: %s", path)
+		}
+		return nil, err
+	}
+	// Canonical names preserve in-tree absolute symlinks; Root confines the actual open.
+	relative, err := filepath.Rel(c.root.Name(), resolved)
+	if err != nil || !filepath.IsLocal(relative) {
+		return nil, fmt.Errorf("path %q resolves outside base directory via symlink", path)
+	}
+	file, err := c.root.Open(relative)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open contained artifact %q: %w", path, err)
+	}
+	defer func() { _ = file.Close() }()
+	return readOpenedFile(file, path, allowEmpty)
 }
 
 func (c *bundleCollection) verifyChecksum(t bundleTarget, data []byte, subject string) error {

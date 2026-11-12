@@ -139,6 +139,8 @@ genuinely reports failures alone, and say so where the projection is defined.
 
 ## Export an archive for unattended handoff
 
+When repackaging retained evidence with `hdf evidence bundle`, the package file and referenced files are read through one held directory handle, even if symlinks or the package directory change during collection. Stdin packages retain references relative to the held working directory. The archived package inventory retains its exact input bytes, including a leading UTF-8 BOM; only the parsing view removes that marker. Safe in-tree symlinks remain supported. Carried entry names and the package filename must not contain backslashes, colons or NUL; encoded references are decoded once, so spaces and literal percent signs are preserved. Rejected names are not silently rewritten.
+
 Use `hdf convert results.json --to ecs --bundle -o export.zip` to deliver the finding events alongside the original HDF source, its manifest and a standard evidence-package inventory. `splunk` and `ocsf` are also supported targets.
 
 Both this command and `hdf evidence bundle` default to `--output-access private`. Protection is established before archive bytes are written. Linux checks actual owner/mode permissions on ext2/3/4, XFS, Btrfs or tmpfs; macOS requires local APFS/HFS with ownership enabled and prevents inherited ACL grants; Windows requires persistent ACL support and a protected creator-only DACL. Unsupported storage, including OverlayFS, fails without falling back to broader access.

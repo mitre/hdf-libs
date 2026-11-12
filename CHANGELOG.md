@@ -173,6 +173,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Evidence archives preserve the package inventory byte for byte.** `hdf evidence bundle` retains a leading UTF-8 BOM in the archived package document, whether read from a local file or stdin. Only the parsing view removes the BOM; the archive uses the original bounded byte snapshot. Empty and BOM-only inputs remain errors.
+- **Evidence archives reject unsafe member names.** `hdf evidence bundle` rejects backslashes, colons and NUL in carried relative entry names, including the package filename, instead of producing names that can escape the extraction directory on another platform. Percent-encoded references are decoded once; legitimate spaces and literal percent signs remain supported. A failed overwrite leaves the existing output unchanged.
+- **Evidence bundle reads remain inside the package during symlink changes.** The package file and its references are read through the same held Go `os.Root`, closing the check-then-open gap even when the package directory is swapped. Stdin remains supported, with references confined to the held working directory. Package-file symlinks to targets outside their directory are now refused. Safe in-tree symlinks, including absolute targets, retain their existing behavior. Checksums and file-type/size limits still apply to the bytes being archived; this does not add a guarantee against hardlinks, mount changes or a race-free global `--no-follow-symlinks` policy.
+
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
