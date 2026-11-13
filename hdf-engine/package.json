@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-engine",
-  "version": "3.7.2",
+  "version": "3.8.0-next.43464690672.1",
   "description": "Shared schema-typed read-side engines for HDF documents — detection, query/filtering, and compliance rollups",
   "publishConfig": {
     "access": "public"
@@ -35,9 +35,9 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-parsers": "workspace:^",
-    "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^",
+    "@mitre/hdf-parsers": "3.8.0-next.43464690672.1",
+    "@mitre/hdf-schema": "3.8.0-next.43464690672.1",
+    "@mitre/hdf-utilities": "3.8.0-next.43464690672.1",
     "@noble/hashes": "2.4.0"
   },
   "devDependencies": {
