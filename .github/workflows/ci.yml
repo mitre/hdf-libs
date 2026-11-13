@@ -375,6 +375,11 @@ jobs:
       # upstream.
       - name: The generated mapping table matches its generator
         run: pnpm run lint:mappings-offline
+      # The pre-commit hook runs this through `check`, which CI does not: the hook
+      # is skipped by --no-verify and absent for anyone who cloned without husky,
+      # and an ungated baseline is the risk this guard exists to catch.
+      - name: CI measures the OpenAPI matrix at the pinned generator version
+        run: pnpm run lint:matrix-wiring
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.

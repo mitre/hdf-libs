@@ -15,7 +15,7 @@
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint:published-deps && pnpm run lint:overrides && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run lint:comments && pnpm run lint:package-names && pnpm run lint:mappings-offline && pnpm run lint:go-consumers && pnpm run lint:gosec-coverage && pnpm run lint:release-version && pnpm run lint:snapshot-scripts && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint:published-deps && pnpm run lint:overrides && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run lint:comments && pnpm run lint:matrix-wiring && pnpm run lint:package-names && pnpm run lint:mappings-offline && pnpm run lint:go-consumers && pnpm run lint:gosec-coverage && pnpm run lint:release-version && pnpm run lint:snapshot-scripts && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
@@ -30,6 +30,7 @@
     "lint:overrides": "node --test scripts/test/check-override-freshness.test.mjs && node scripts/check-override-freshness.mjs",
     "lint:generated-html": "node scripts/check-generated-html.mjs",
     "lint:comments": "node --test scripts/test/check-comment-length.test.mjs && node scripts/check-comment-length.mjs",
+    "lint:matrix-wiring": "node --test scripts/test/check-openapi-matrix-wiring.test.mjs && node scripts/check-openapi-matrix-wiring.mjs",
     "lint:workflows": "for t in jactionlint shellcheck; do command -v \"$t\" >/dev/null 2>&1 || { echo \"lint:workflows: $t is not installed; run: mise install, then mise exec -- pnpm lint:workflows\" >&2; exit 1; }; done; jactionlint",
     "lint:package-names": "node scripts/check-package-names.mjs",
     "lint:mappings-offline": "pnpm --filter @mitre/hdf-mappings run mappings:hipcheck:check",
@@ -60,7 +61,8 @@
     "tsdown": "^0.23.4",
     "typescript": "^6.0.3",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.8.1"
   },
   "engines": {
     "node": ">=24.0.0",

@@ -10,7 +10,6 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parse as parseYaml } from 'yaml';
 import {
   BASELINE,
   NPM_GENERATORS,
@@ -33,18 +32,6 @@ import {
   withoutKeyword,
 } from '../scripts/openapi-matrix.mjs';
 
-/** The parts of a GitHub Actions job and step that decide whether the matrix gates CI. */
-interface WorkflowStep {
-  uses?: string;
-  run?: string;
-  with?: Record<string, unknown>;
-  if?: unknown;
-  'continue-on-error'?: unknown;
-}
-interface WorkflowJob extends Omit<WorkflowStep, 'uses' | 'run' | 'with'> {
-  needs?: string | string[];
-  steps?: WorkflowStep[];
-}
 import { main as generateComponentsDocument } from '../src/generate-components.js';
 
 // The matrix measures a BUILD ARTIFACT — dist/hdf-components.oas.json — and the suite is
@@ -113,7 +100,8 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
   // edit, but cannot notice that oapi-codegen's real behaviour changed. So the Go half is
   // measured for real where the binary is available, and where it is not, what gets
   // asserted is that CI measures it — because an ungated baseline is the actual risk, and
-  // a skip would hide exactly that.
+  // a skip would hide it. That assertion reads the workflow and the toolchain pins,
+  // so it is scripts/check-openapi-matrix-wiring.mjs rather than a test here.
   const goGenerator = oapiCodegenAvailable();
 
   it.runIf(goGenerator)('re-measures BOTH generators and matches the baseline exactly', () => {
@@ -121,67 +109,6 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
     // versions and the oapi-codegen refusal, which the npm-only comparison cannot reach.
     expect(serialise(measure())).toBe(readFileSync(BASELINE, 'utf8'));
   }, TIMEOUT);
-
-  it('is run by CI, with the generator installed at the version the baseline records', () => {
-    const root = join(import.meta.dirname, '..', '..');
-    const ci = parseYaml(readFileSync(join(root, '.github', 'workflows', 'ci.yml'), 'utf8')) as {
-      jobs: Record<string, WorkflowJob>;
-    };
-    const miseToml = readFileSync(join(root, 'mise.toml'), 'utf8');
-    const tool = 'go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen';
-    // A job that runs the matrix...
-    const job = ci.jobs['check-openapi-matrix'];
-    expect(job, 'CI must have the check-openapi-matrix job').toBeDefined();
-    const steps = job.steps ?? [];
-    const matrixAt = steps.findIndex((step) => step.run === 'pnpm --filter @mitre/hdf-openapi run matrix');
-    expect(matrixAt, 'the job must run the matrix').toBeGreaterThan(-1);
-    // ...after mise-action installs the generator mise.toml pins, so CI and a
-    // local `mise install` run one release; no other step installs another...
-    const installAt = steps.findIndex(
-      (step) =>
-        step.uses?.startsWith('jdx/mise-action@') === true &&
-        String(step.with?.install_args ?? '').split(/\s+/).includes(tool),
-    );
-    expect(installAt, 'the job must install the generator through mise-action').toBeGreaterThan(-1);
-    expect(installAt).toBeLessThan(matrixAt);
-    const mentions = steps.filter((step) => JSON.stringify(step).includes('oapi-codegen'));
-    expect(mentions, 'no other step may install or fetch the generator').toEqual([steps[installAt]]);
-    // ...unconditionally: a failure up to the matrix step fails the job...
-    for (const unit of [job, ...steps.slice(0, matrixAt + 1)]) {
-      expect(unit.if, 'no condition may skip the job or a step it needs').toBeUndefined();
-      expect(unit['continue-on-error'], 'a failure must fail the job').toBeUndefined();
-    }
-    // CRLF too: a Windows checkout (core.autocrlf=true) rewrites these files.
-    const pinLine = miseToml.split(/\r?\n/).find((line) => line.startsWith(`"${tool}" = "`));
-    const pinned = /= "(\d+\.\d+\.\d+)"$/.exec(pinLine ?? '')?.[1];
-    expect(pinned, 'mise.toml must pin the generator version').toBeDefined();
-    // ...at the version these verdicts were measured against. A pin bump without a
-    // re-measurement would gate the new tool against the old record.
-    expect(tracked.tools['oapi-codegen']).toBe(pinned);
-    // ...and mise.lock holds that version, or `mise install --locked` fails.
-    const lockLines = readFileSync(join(root, 'mise.lock'), 'utf8').split(/\r?\n/);
-    const entry = lockLines.indexOf(`[[tools."${tool}"]]`);
-    expect(entry, 'mise.lock must lock the generator').toBeGreaterThan(-1);
-    expect(lockLines[entry + 1]).toBe(`version = "${pinned}"`);
-    // ...and the scan gate needs the job: one nothing needs cannot fail CI.
-    const gate = ci.jobs['gate-hdf-scans'];
-    expect([gate?.needs ?? []].flat()).toContain('check-openapi-matrix');
-    // The gate must run after a failed matrix and fail on it: `always()`, then a
-    // step that exits non-zero when ANY upstream failed, was cancelled or skipped.
-    // The condition is compared whole: `&&` in place of `||` would let one failure
-    // through, and naming the three results does not catch that.
-    expect(gate.if).toBe('always()');
-    const anyUnsuccessful = ['failure', 'cancelled', 'skipped']
-      .map((result) => `contains(needs.*.result, '${result}')`)
-      .join(' || ');
-    const rejects = (gate.steps ?? []).filter(
-      (step) =>
-        String(step.if ?? '').replace(/\s+/g, ' ').trim() === anyUnsuccessful &&
-        /^\s*exit 1\s*$/m.test(step.run ?? '') &&
-        step['continue-on-error'] === undefined,
-    );
-    expect(rejects, 'the gate must reject a run with a failed upstream job').toHaveLength(1);
-  });
 });
 
 describe('the measurement helpers', () => {
