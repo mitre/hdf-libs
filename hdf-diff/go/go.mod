@@ -3,11 +3,11 @@ module github.com/mitre/hdf-libs/hdf-diff/go/v3
 go 1.26.11
 
 require (
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-next.43519923983.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-next.43519923983.1
+	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.8.0-next.43519923983.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.8.0-next.43519923983.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0-next.43519923983.1
 	github.com/protobom/protobom v0.7.0
 	github.com/stretchr/testify v1.12.1
 )
