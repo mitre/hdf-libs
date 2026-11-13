@@ -16,6 +16,9 @@ The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the
 | golangci-lint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from golangci-lint's release workflow |
 | gosec | `mise.toml` | Official release binary; SHA-256 and the cosign signature on its checksum file |
 | govulncheck | `mise.toml` | `go install`, verified against the Go checksum database |
+| jactionlint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from jactionlint's release workflow |
+| shellcheck | `mise.toml` | Official release binary; SHA-256 as `mise.lock` recorded it (shellcheck publishes no checksums or signatures) |
+| oapi-codegen | `mise.toml` | `go install`, verified against the Go checksum database |
 
 Corepack is not used: mise installs pnpm itself, and Node.js stopped shipping Corepack in version 25. CI's shared setup action, the snapshot workflow and the publish job of `release.yml` install Node.js, and pnpm where a job needs it, through mise-action; the `check-go` job adds Go's scanners the same way. npm itself stays pinned by the `setup-npm` action (SHA-512 checked), because mise's npm installer does not cover Windows.
 

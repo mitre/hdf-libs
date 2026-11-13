@@ -17,3 +17,16 @@ node = "24"
 golangci-lint = "2.11.3"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.1.4"
 "aqua:securego/gosec" = "2.30.0"
+# Workflow lint: `pnpm lint:workflows` and CI's scan-workflows job.
+# jactionlint reads .github/jactionlint.yaml and runs shellcheck on run:
+# scripts when it is on PATH. Named by its aqua backend, as gosec is, so the
+# lock records release checksums.
+"aqua:jdx/jactionlint" = "2.5.0"
+shellcheck = "0.11.0"
+# oapi-codegen is a measurement subject, not a build tool: hdf-openapi's
+# tooling matrix (`pnpm run matrix`) records what it does with the generated
+# OpenAPI components, including that it cannot currently load them. Its version
+# is the one hdf-openapi/test/baseline/keywords.json records: bumping it means
+# running `pnpm run matrix:update` in hdf-openapi and reviewing the diff in the
+# same PR.
+"go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "2.8.0"

@@ -4,7 +4,7 @@ Project context for Claude Code and human developers working in this repository.
 
 ## Quick Start
 
-Tool versions (Node.js, pnpm, Go, golangci-lint, gosec, govulncheck) come from mise: `mise trust && mise install` once per clone, then run commands with mise activated or through `mise exec --`. See `site/docs/contributing/developer-guide.md`, Toolchain.
+Tool versions (Node.js, pnpm, Go, golangci-lint, gosec, govulncheck, jactionlint, shellcheck, oapi-codegen) come from mise: `mise trust && mise install` once per clone, then run commands with mise activated or through `mise exec --`. See `site/docs/contributing/developer-guide.md`, Toolchain.
 
 ```bash
 pnpm install          # Install all dependencies
@@ -139,7 +139,7 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 `.husky/pre-commit` runs `mise exec -- pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit, with every tool at the version in `mise.toml` and `mise.lock` — the releases CI runs. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
 
-`pnpm lint:workflows` runs actionlint (with shellcheck) over `.github/workflows`. It is not part of the hook; run it when you change a workflow. It uses whatever actionlint is on PATH (`brew install actionlint`), and CI runs the release pinned by sha256 in `ci.yml`'s env block.
+`pnpm lint:workflows` runs jactionlint (with shellcheck) over the workflows, composite actions and `dependabot.yml`, at the profile `.github/jactionlint.yaml` selects. It is not part of the hook; run it when you change a workflow. Both tools come from `mise.toml` at `mise.lock`'s versions, the releases CI's `scan-workflows` job runs: run `mise exec -- pnpm lint:workflows` unless mise is activated in your shell, so a shellcheck elsewhere on PATH is not used instead.
 
 **It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader: it lints and runs govulncheck across all 13 modules, runs every Go test, and reaches all 13 with gosec — there is no standalone gosec step, but golangci-lint inherits the root `.golangci.yml` in any module that does not override it (only `hdf-cli` does), and `scripts/check-gosec-coverage.sh` fails the build if a module ever resolves a config without gosec. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `mise exec -- golangci-lint run` in the module you touched.
 

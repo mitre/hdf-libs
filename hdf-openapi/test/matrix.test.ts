@@ -31,6 +31,7 @@ import {
   unwaived,
   withoutKeyword,
 } from '../scripts/openapi-matrix.mjs';
+
 import { main as generateComponentsDocument } from '../src/generate-components.js';
 
 // The matrix measures a BUILD ARTIFACT — dist/hdf-components.oas.json — and the suite is
@@ -99,7 +100,8 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
   // edit, but cannot notice that oapi-codegen's real behaviour changed. So the Go half is
   // measured for real where the binary is available, and where it is not, what gets
   // asserted is that CI measures it — because an ungated baseline is the actual risk, and
-  // a skip would hide exactly that.
+  // a skip would hide it. That assertion reads the workflow and the toolchain pins,
+  // so it is scripts/check-openapi-matrix-wiring.mjs rather than a test here.
   const goGenerator = oapiCodegenAvailable();
 
   it.runIf(goGenerator)('re-measures BOTH generators and matches the baseline exactly', () => {
@@ -107,21 +109,6 @@ describe('the oapi-codegen half of the baseline is gated too', () => {
     // versions and the oapi-codegen refusal, which the npm-only comparison cannot reach.
     expect(serialise(measure())).toBe(readFileSync(BASELINE, 'utf8'));
   }, TIMEOUT);
-
-  it('is run by CI, with the generator installed at the version the baseline records', () => {
-    const workflow = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'ci.yml'), 'utf8');
-    // A job that runs the matrix...
-    expect(workflow).toContain('run matrix');
-    // ...with the Go toolchain and the pinned generator...
-    expect(workflow).toContain('cmd/oapi-codegen@$OAPI_CODEGEN_VERSION');
-    const pinned = /OAPI_CODEGEN_VERSION: 'v([\d.]+)'/.exec(workflow)?.[1];
-    expect(pinned, 'CI must pin the generator version').toBeDefined();
-    // ...at the version these verdicts were measured against. A CI bump without a
-    // re-measurement would gate the new tool against the old record.
-    expect(tracked.tools['oapi-codegen']).toBe(pinned);
-    // ...and a job nothing depends on cannot fail the build, so assert it is gated.
-    expect(workflow).toContain('check-openapi-matrix, scan-deps');
-  });
 });
 
 describe('the measurement helpers', () => {
@@ -410,7 +397,7 @@ describe('the CLI', () => {
 describe('the measurement preconditions', () => {
   it('refuses a missing tool with the pinned install command, rather than skipping it', () => {
     expect(() => toolVersion('definitely-not-a-real-binary-xyz', ['--version'], 'oapi-codegen')).toThrow(
-      /go install github\.com\/oapi-codegen/,
+      /Install the pinned build with:\n\s+mise install && mise exec -- pnpm run matrix\n/,
     );
   });
 
