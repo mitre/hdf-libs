@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { normalizeSafSupplement, parseResults } from './index.js';
+import type { SafNormalizeOptions } from './saf-supplement.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'testdata', 'saf-supplement');
@@ -99,8 +100,8 @@ describe('normalizeSafSupplement', () => {
 
   // The component the v2→v3 upgrade derives from an InSpec `platform` object.
   const platformDerived = () => ({ name: 'redhat', osName: 'redhat', osVersion: '9.8', type: 'host' });
-  const componentsOf = (extra: Record<string, unknown>) => {
-    const { output } = normalizeSafSupplement(validV3WithExtra(extra));
+  const componentsOf = (extra: Record<string, unknown>, options: SafNormalizeOptions = {}) => {
+    const { output } = normalizeSafSupplement(validV3WithExtra(extra), options);
     expect(parseResults(output).success).toBe(true);
     return JSON.parse(output).components as Array<Record<string, unknown>>;
   };
@@ -153,14 +154,17 @@ describe('normalizeSafSupplement', () => {
     const comps = componentsOf({
       components: [platformDerived()],
       target: { type: 'host', name: 'my-host-01', labels: { environment: 'prod' } },
-    });
+    }, { mergePlatformComponent: true });
     expect(comps).toEqual([{
       name: 'my-host-01', type: 'host', osName: 'redhat', osVersion: '9.8', labels: { environment: 'prod' },
     }]);
   });
 
   it('keeps the platform name when the target carries no identity', () => {
-    const comps = componentsOf({ components: [platformDerived()], target: { type: 'host', boundary: 'sparc' } });
+    const comps = componentsOf(
+      { components: [platformDerived()], target: { type: 'host', boundary: 'sparc' } },
+      { mergePlatformComponent: true },
+    );
     expect(comps).toHaveLength(1);
     expect(comps[0]).toMatchObject({ name: 'redhat', labels: { boundary: 'sparc' } });
   });
@@ -259,5 +263,34 @@ describe('normalizeSafSupplement', () => {
     const expected = JSON.parse(readFileSync(join(fixturesDir, outName), 'utf-8'));
     const { output } = normalizeSafSupplement(input);
     expect(JSON.parse(output)).toEqual(expected);
+  });
+
+  // The plain parse path cannot tell a platform-built component from a genuine
+  // v3 component named after its OS, so it never renames one.
+  it('parseResults never renames an OS-named component', () => {
+    const r = parseResults(validV3WithExtra({
+      components: [{ type: 'host', name: 'ubuntu', osName: 'ubuntu' }],
+      target: { type: 'host', name: 'web-01' },
+    }));
+    expect(r.success).toBe(true);
+    const comps = (r.data?.components ?? []) as Array<Record<string, unknown>>;
+    expect(comps).toHaveLength(2);
+    expect(comps[0]).toEqual({ type: 'host', name: 'ubuntu', osName: 'ubuntu' });
+    expect(comps[1].name).toBe('web-01');
+  });
+
+  it('appends a named target beside a platform-shaped component by default', () => {
+    const comps = componentsOf({ components: [platformDerived()], target: { type: 'host', name: 'my-host-01' } });
+    expect(comps).toEqual([platformDerived(), { type: 'host', name: 'my-host-01' }]);
+  });
+
+  it('leaves a nameless target in place beside a platform-shaped component by default', () => {
+    const { output, warnings } = normalizeSafSupplement(validV3WithExtra({
+      components: [platformDerived()], target: { type: 'host', boundary: 'sparc' },
+    }));
+    const doc = JSON.parse(output) as { components: unknown[]; target?: unknown };
+    expect(doc.components).toEqual([platformDerived()]);
+    expect('target' in doc).toBe(true);
+    expect(warnings[0]).toContain('no id or name');
   });
 });

@@ -287,6 +287,7 @@ func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byt
 	if !isLegacyCapableSource(fromFormat) || !hasSAFSupplement(data) {
 		return data, fromFormat, fromVersion, nil
 	}
+	var opts []hdfparsers.SAFSupplementOption
 	if legacyhdf.IsLegacyHDF(data) {
 		supp := captureSAFSupplement(data)
 		upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
@@ -298,9 +299,14 @@ func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byt
 		}
 		fromFormat = "hdf"
 		fromVersion = ""
+		// Only when the upgrade had no carried components to restore did it build
+		// the lone component from `platform`, which is the one a target may take.
+		if !carriesRestoredComponents(supp["passthrough"]) {
+			opts = append(opts, hdfparsers.MergePlatformComponent())
+		}
 	}
 	var safWarnings []string
-	data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
+	data, safWarnings = hdfparsers.NormalizeSAFSupplement(data, opts...)
 	for _, w := range safWarnings {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
 	}
@@ -516,6 +522,23 @@ func hasSAFSupplement(data []byte) bool {
 	_, hasTarget := doc["target"]
 	_, hasPassthrough := doc["passthrough"]
 	return hasTarget || hasPassthrough
+}
+
+// carriesRestoredComponents reports whether a legacy passthrough holds the
+// components[] carrier a downgrade writes, which the upgrade restores verbatim.
+func carriesRestoredComponents(passthrough json.RawMessage) bool {
+	if len(passthrough) == 0 {
+		return false
+	}
+	var bag map[string]json.RawMessage
+	if err := json.Unmarshal(passthrough, &bag); err != nil {
+		return false
+	}
+	var comps []json.RawMessage
+	if err := json.Unmarshal(bag[legacyhdf.HDFComponentsKey], &comps); err != nil {
+		return false
+	}
+	return len(comps) > 0
 }
 
 // captureSAFSupplement extracts the top-level target/passthrough keys so they can
