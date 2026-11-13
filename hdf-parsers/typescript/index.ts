@@ -10,7 +10,7 @@ export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
 import { normalizeSafSupplement } from './saf-supplement.js';
 export { normalizeSafSupplement } from './saf-supplement.js';
-export type { SafNormalizeResult } from './saf-supplement.js';
+export type { SafNormalizeResult, SafNormalizeOptions } from './saf-supplement.js';
 import {
   validateResults,
   validateBaseline,
