@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **The specification documents this release's schema additions.** `content` and `encoding` on External_Reference (with the rule that each requires the other, and the ExternalReferenceEncoding enumeration), `results[].rawSourceRecord` with a Raw_Source_Record section stating that a record is complete but not necessarily byte-exact, and `extensions.rawSourceArtifacts[]` with a Raw_Source_Artifact section stating its byte-exact carriage, why `document` is forbidden there, and how it relates to `passthrough` and to `rawSourceRecord`. A site test holds those tables to the schema in both directions.
+
+- **Documentation that disagreed with the code now matches it.** `hdf list --all` is described as what it does (switch `--detail requirements` to the flat ID/Status/Title table, nothing else), in the flag's help and the README; `hdf fetch --help` lists `gitlab-vulnerabilities`, and a test holds the hand-written source list to the registered subcommands; the hdf-engine README names `planRef` as the first return of `parseEvidencePackage` and passes text, not bytes, to the TypeScript `detect`; hdf-utilities documents `string | Uint8Array` input for its hash functions, the `sha384` algorithm, and all four XML exports; hdf-extension-graph no longer calls `@mitre/hdf-schema` a peer dependency; hdf-schema gives the testhdf Go module path with its `/v3` suffix.
+
 - **The site's problem-type and OpenAPI generators run when invoked directly from a checkout whose path contains a space, or on Windows.** Their direct-invocation guard compared a percent-encoded file URL to a native path, so `pnpm generate` exited 0 having written neither the problem-type pages that RFC 9457 `type` URIs dereference to nor the OpenAPI page. Both use the native-path comparison the other generators already use, pinned by tests that run each as a script from a path with a space.
 
 - **SonarQube reads Go coverage for every module in `go.work`.** The scanner was given coverage for 5 of the 13 modules CI uploads, so the rest showed as uncovered.

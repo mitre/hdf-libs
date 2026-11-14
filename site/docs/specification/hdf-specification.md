@@ -142,7 +142,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | preAmendmentChecksum | Checksum | no | Hash of this document as it stood immediately before the most recent amendment application, written by `hdf amend apply`. Covers the results file's raw bytes as read, not a canonical form. Records only the most recent step: re-applying replaces it rather than accumulating. Distinct from the override-level `previousChecksum`, which chains amendments to each other over a canonical form *(v3.6.0)* |
 | systemRef | URI-reference | no | Link to System document |
 | planRef | URI-reference | no | Link to Plan document |
-| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` (see Raw_Source_Artifact). Closed and typed from v3.8.0; previously an open tool-specific object *(v3.8.0)* |
 | id | UUID | no | Unique assessment run identifier |
 | remediation | Remediation | no | Reference to automated fix resources |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts (CTI/STIX, BOMs, advisories, runbooks) relevant to the assessment as a whole *(v3.5.0)* |
@@ -176,7 +176,7 @@ An evaluated baseline represents the results of a set of security tests that hav
 | parentBaseline | string | no | Parent baseline name (overlay/wrapper) |
 | labels | {string: string} | no | Key-value grouping metadata |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the baseline definition (CTI/STIX, advisories, source catalogs) *(v3.5.0)* |
-| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` (see Raw_Source_Artifact). Closed and typed from v3.8.0; previously an open tool-specific object *(v3.8.0)* |
 
 ### Evaluated_Requirement
 
@@ -226,6 +226,51 @@ A single test execution within a requirement. Each result records what was teste
 | resource | string | no | Resource type tested, e.g. "file", "service" |
 | resourceId | string | no | Resource identifier, e.g. "/etc/passwd" |
 | backtrace | string[] | no | Stack trace if exception occurred |
+| rawSourceRecord | Raw_Source_Record | no | The source tool's own record for this result, carrying every field the record had. Complete, not necessarily byte-exact (see Raw_Source_Record) *(v3.8.0)* |
+
+### Raw_Source_Record *(v3.8.0)*
+
+The source tool's own record for one result: the one entry in the converter's input that produced it. It is scoped to the result deliberately. For a vulnerability scanner the native record is one (vulnerability, package) pair, which is exactly one result, so a CVE reported against two packages yields two records that differ only in the package they matched; held on the requirement, those two would collide. It is distinct from `extensions.rawSourceArtifacts[]`, which carries whole input artifacts (`pointer` ties a record to its place in one), and from `code`, which is the code that ran to evaluate the requirement.
+
+The definition is closed: three required members and an optional `pointer`, and no other key. Producer data HDF does not model belongs in `extensions.passthrough`.
+
+**Complete, not necessarily byte-exact.** `content` carries every field and value the source record had. A producer should write the record's bytes unchanged where it can. One that cannot, notably a converter implemented in two languages whose JSON serializers disagree on key order, HTML escaping and number rendering and which must therefore canonicalize to stay byte-identical with its twin, may write a canonically serialized form instead. That form keeps every field and value but not the original key order, insignificant whitespace or duplicate keys. A consumer must therefore compare records by parsing them, not by comparing bytes, and must not expect a checksum of `content` to match a checksum of the input. Carriage that is byte-exact is `extensions.rawSourceArtifacts[]` (see Raw_Source_Artifact).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| content | string | **yes** | The source record, complete but not necessarily byte-exact (see above) |
+| encoding | ExternalReferenceEncoding | **yes** | How to read `content`: `utf-8` for text, `base64` for bytes that are not valid UTF-8 text |
+| mediaType | string | **yes** | IANA media type of this record, which for a fragment of a larger artifact may be narrower than the artifact's own, e.g. `application/json` for one match object out of a JSON report |
+| pointer | string | no | Where the record sits inside the artifact it came from: a JSON Pointer (RFC 6901) for JSON sources, an XPath for XML ones, e.g. `/matches/3`. Omitted when the source's shape gives a record no addressable location |
+
+### Raw_Source_Artifact *(v3.8.0)*
+
+One artifact exactly as a converter received it, before conversion, carried in `extensions.rawSourceArtifacts[]`. That member is an array because a conversion can consume more than one artifact (the OSCAL profile path takes a profile and a catalog); every other converter takes one input. It pairs with Raw_Source_Record, the per-result record, which points back into one of these artifacts.
+
+It is an External_Reference used for a single purpose, so the same primitive both points and embeds, with two differences the schema enforces: `document` is forbidden, and an entry that embeds must carry `mediaType` as well as `encoding`. An entry that only points at a location may omit `mediaType`, `content` and `encoding`.
+
+**Bytes, not a parsed copy.** `document` holds a parsed JSON object, so embedding through it would discard the original whitespace, key order, duplicate keys and trailing bytes, which leaves the artifact unreconstructable and its checksum unverifiable against what is stored. A JSON input therefore carries as a `content` string like every other input.
+
+Populating it is required of ingest converters by policy, enforced by the converter contract and test harness rather than by a schema `required`: a tool that emits HDF natively has no source artifact, and requiring the field would make valid native HDF invalid.
+
+**Relationship to `passthrough`.** `extensions` is closed to these two members. `passthrough` is the permissive catch-all for producer data HDF does not model, and HDF neither reads nor interprets it. It is not where the pre-converted source artifact goes: v2 put it there only because nothing else had room, and `rawSourceArtifacts` gives the bytes a checksum, a media type and a reference contract that an untyped object cannot.
+
+**Relationship to `rawSourceRecord`.** This carries whole input artifacts; a Raw_Source_Record carries the one record inside one of them that produced a single result, and its `pointer` ties the two together. This is the byte-exact carriage, where a `rawSourceRecord` is complete but not necessarily byte-exact. A consumer that wants the whole input reads the artifact; one that wants provenance for a single finding reads the record.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| sourceName | string | **yes** | The tool that produced the artifact |
+| externalId | string | no | Identifier of the artifact within `sourceName`, as on External_Reference |
+| href | string | no | Location of the artifact, only when the caller supplied one that means something to a reader, never a producer's local filesystem path |
+| description | string | no | Human-readable description, as on External_Reference |
+| rel | string | no | `raw-source` |
+| kind | string | no | Open category token, as on External_Reference |
+| mediaType | string | no | Media type of the bytes. Required whenever `content` is present. Derived from the converter's declared input family (json → `application/json`, xml → `application/xml`, text → `text/plain`) and overridden by converters that know their bytes more precisely (CSV, NDJSON, JavaScript-wrapped JSON) |
+| checksum | Checksum | no | Hash of the exact bytes the converter read |
+| addedBy | Identity | no | Who attached the reference, as on External_Reference |
+| addedAt | date-time | no | When the reference was attached, as on External_Reference |
+| content | string | no | The artifact's bytes exactly as the converter received them; a JSON input too, as a string |
+| encoding | ExternalReferenceEncoding | no | How to read `content`: `utf-8` for text, `base64` for anything that is not valid UTF-8 text. Required whenever `content` is present, and not allowed without it |
 
 ### Component
 
@@ -488,7 +533,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 | drift | DriftAnalysis | no | Drift analysis metadata |
 | annotations | Annotation[] | no | Human/tool annotations on diffs |
 | integrity | Integrity | no | Cryptographic integrity metadata |
-| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` (see Raw_Source_Artifact). Closed and typed from v3.8.0; previously an open tool-specific object *(v3.8.0)* |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the comparison (CTI/STIX, advisories) *(v3.5.0)* |
 
 ---
@@ -654,6 +699,11 @@ VEX-aligned controlled vocabulary. The first five values are common to OpenVEX, 
 ### BomType
 Reserved, CycloneDX-aligned set: `sbom` | `ai-model` | `dataset` | `hbom` | `cbom` | `saasbom` | `obom` | `mbom` | `kbom`, or an `x-` prefixed custom value. `sbom`, `ai-model`, and `dataset` have normalized extensions; the rest are carried by passthrough only.
 
+### ExternalReferenceEncoding *(v3.8.0)*
+How an embedded copy's bytes are read back, on External_Reference and Raw_Source_Record: utf-8 for text, base64 for anything that is not valid UTF-8 text.
+
+`utf-8` | `base64`
+
 ---
 
 ## Shared Primitives
@@ -756,21 +806,23 @@ One extensible `Bom` shape, discriminated by `bomType`, carries any manifest kin
 
 ### External_Reference *(v3.5.0)*
 
-A generalized, purpose-agnostic reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`), so the by-identity and by-location forms stay interconvertible. A reference is **inert context** — it overrides nothing and carries only lightweight optional attribution. An embedded `document` turns a bare reference into a lossless enrichment envelope (the shape `hdf enrich` writes). Wired onto the results root, `Status_Override`, and other document types.
+A generalized, purpose-agnostic reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`), so the by-identity and by-location forms stay interconvertible. A reference is **inert context** — it overrides nothing and carries only lightweight optional attribution. An entry carries `sourceName` and at least one of `externalId`, `href`, `description`, `content` or `document`. It may carry the artifact itself instead of pointing at it: `document` for a JSON object, `content` + `encoding` for anything else. Embedding satisfies the at-least-one rule on its own, so an artifact with no meaningful public location needs no synthetic `href` *(`content` and `document` satisfy the rule from v3.8.0)*. An embedded `document` turns a bare reference into a lossless enrichment envelope (the shape `hdf enrich` writes). Wired onto the results root, `Status_Override`, and other document types.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | sourceName | string | **yes** | The system that names/hosts the artifact (e.g. `cve`, `mitre-attack`, `stix`) |
 | externalId | string | no | Identifier within `sourceName` (e.g. `CVE-2021-44228`) |
-| href | string | no | URI locating the artifact |
+| href | string | no | URI-reference locating the artifact. Set only when the location is meaningful to a reader, never a producer's local filesystem path |
 | description | string | no | Human-readable description |
 | rel | string | no | Open relationship token (e.g. `investigate`, `reference`) |
 | kind | string | no | Open category token (e.g. `threat-intel`) |
-| mediaType | string | no | IANA media type of the referenced artifact |
-| checksum | Checksum | no | Integrity hash of the referenced artifact |
+| mediaType | string | no | IANA media type of the artifact, whether retrievable at `href` or embedded in `content` or `document` *(embedded copies from v3.8.0)* |
+| checksum | Checksum | no | Integrity hash of the artifact, whether retrievable at `href` or embedded in `content` or `document`; beside embedded bytes it is what makes the copy verifiable *(embedded copies from v3.8.0)* |
 | addedBy | Identity | no | Who attached the reference |
 | addedAt | date-time | no | When the reference was attached |
-| document | object | no | Lossless embedded copy of the referenced artifact (enrichment envelope) |
+| document | object | no | Lossless embedded copy of the referenced artifact as a JSON object (enrichment envelope). An artifact that is not a JSON object embeds through `content` instead |
+| content | string | no | Lossless embedded copy of the artifact's bytes, for what `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text. Carried verbatim. Requires `encoding` *(v3.8.0)* |
+| encoding | ExternalReferenceEncoding | no | How to read `content` back into the artifact's bytes: `utf-8` for text, `base64` for anything that is not valid UTF-8 text. Required whenever `content` is present, and not allowed without it *(v3.8.0)* |
 
 ---
 

@@ -193,7 +193,8 @@ FLAGS
                          error (not_applicable and not_reviewed also accepted). A value outside the
                          vocabulary is rejected, not matched against nothing. The listed forms are
                          rendered from the engine's vocabulary, so help and refusal cannot disagree.
-  -a, --all              Show all details (expand every section)
+  -a, --all              With --detail requirements, print a flat ID/Status/Title table instead of
+                         grouping by status. No effect on the summary or on any other section.
 
 EXAMPLES
   hdf list results.json                              # summary (counts + status breakdown)
