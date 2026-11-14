@@ -14,5 +14,5 @@ export {
   problemTypes,
 } from './problems.js';
 export type { ProblemDoc, ProblemOwner } from './problems.js';
-export { validateExample } from './validate-example.js';
+export { createExampleValidator, validateExample } from './validate-example.js';
 export type { ExampleFault } from './validate-example.js';

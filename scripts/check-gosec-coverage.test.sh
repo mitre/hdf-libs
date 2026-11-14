@@ -25,7 +25,7 @@ for tool in go golangci-lint; do
   fi
 done
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0

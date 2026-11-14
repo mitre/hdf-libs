@@ -66,7 +66,7 @@ Several arrays in the schema declare `minItems: 1`:
 
 **Rationale.** An HDF Results document records the outcome of an assessment. A baseline with zero requirements (or a requirement with zero results) is structurally meaningless — it implies the producer claims an assessment happened but recorded no work. The cardinality invariants force producers to commit to a non-empty record, and let consumers (Heimdall app, `hdf query`, dashboards, downstream OSCAL exporters) safely access `requirements[0].results[0]` and `requirements[0].descriptions[0]` without defensive null-checking. `baselines` itself carries no `minItems`: a results document may hold zero baselines, and a consumer indexing `baselines[0]` must check first. Empty arrays would also be semantically ambiguous: clean scan? filter excluded everything? truncated input? converter bug? An explicit record disambiguates. The constraint matches peer formats — OSCAL `AssessmentResult` and InSpec profiles have equivalent non-empty-collection guarantees.
 
-**Migration note.** Legacy HDF (the InSpec-ExecJSON-shaped output that the original Heimdall2 mappers produced) did **not** enforce these cardinality invariants. A clean Heimdall2 scan emitted `profiles[0].controls: []` and the consumer was expected to tolerate empty arrays. The v3 schema deliberately tightened the contract: producers MUST emit non-empty arrays, and clean scans MUST synthesize a `passed` placeholder per the convention below. Consumers reading v3 HDF can rely on first-element access being safe; producers translating from legacy HDF v2 (InSpec-shaped) data MUST add synthesis at the converter boundary.
+**Migration note.** Legacy HDF (the InSpec-ExecJSON-shaped output that the original Heimdall2 mappers produced) did **not** enforce these cardinality invariants. A clean Heimdall2 scan emitted `profiles[0].controls: []` and the consumer was expected to tolerate empty arrays. The v3 schema deliberately tightened the contract: producers MUST emit non-empty arrays, and MUST synthesize per the conventions below — a `passed` placeholder for a clean scan, a `notReviewed` result for a requirement the source carried without one. Consumers reading v3 HDF can rely on first-element access being safe; producers translating from legacy HDF v2 (InSpec-shaped) data MUST add synthesis at the converter boundary.
 
 ### Clean-scan convention: synthesize a `passed` placeholder
 
@@ -87,9 +87,35 @@ A direct consequence of the cardinality invariants: a scanner that runs cleanly 
 
 **Spec-backed semantics for `passed`.** This is not a "no information" placeholder — it is a positive assertion that the scan ran against in-scope inputs and detected nothing wrong. The framing aligns with: NIST SP 800-53A *Satisfied*, OSCAL `satisfied`, XCCDF `pass`, STIG *Not_a_Finding*, and SARIF v2.1.0 §3.14.23, the `results` property, which states that "if the tool did not detect any results, `results` **SHALL** be an empty array". That section is also where SARIF parts company with its own generic array rule: §3.7.2 defaults an absent array-valued property to an empty array "unless the property's description specifies otherwise", and §3.14.23 specifies otherwise — an absent `results` defaults to **null**, meaning the tool did not analyse, which is a different claim from finding nothing.
 
-**Distinguish from `notApplicable`.** Synthesize `notApplicable` (not `passed`) when the rule's applicability check itself didn't fire — e.g. a cloud-config rule with zero in-scope resources, where the rule never evaluated against anything. The two convey materially different audit positions: `passed` says "we checked and you're compliant"; `notApplicable` says "we didn't check this one." Producers SHOULD use whichever the source format's semantics support; consumers SHOULD treat them as distinct.
+**Distinguish from `notApplicable`.** Synthesize `notApplicable` (not `passed`) when the rule's applicability check itself didn't fire — e.g. a cloud-config rule with zero in-scope resources, where the rule never evaluated against anything. The two convey materially different audit positions: `passed` says "we checked and you're compliant"; `notApplicable` says "we didn't check this one." Producers SHOULD use whichever the source format's semantics support; consumers SHOULD treat them as distinct. A third position — the source carried the requirement but recorded no result for it — is neither of these; see the convention below.
 
 Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `buildNoFindingsRequirement` (TypeScript) in `hdf-converters/shared/`. Every in-tree converter that emits a `passed` placeholder for clean scans calls one of these.
+
+### Resultless-requirement convention: synthesize a `notReviewed` result
+
+Distinct from the clean-scan case above, which concerns a whole scan that found nothing. Here the scan ran and reported findings, but one requirement carries no result of its own. Converters MUST synthesize a result rather than emitting an empty array, and that result SHOULD be `notReviewed`.
+
+**Shape:**
+
+| Field | Value |
+|-------|-------|
+| `results[0].status` | `notReviewed` |
+| `results[0].codeDesc` | `Synthesized because <reason>.` — the reason names what the source did not carry, in that format's own vocabulary |
+| `results[0].startTime` | the same scan timestamp the requirement's real results would carry; the zero time when the source supplies none |
+
+**Why not `passed`.** `passed` is a positive assertion that the scan checked this requirement and found it compliant. A source that recorded no result made no such claim, and a converter cannot manufacture one: a report-only-failures tool omits what it did not flag, but it equally omits what it never ran, and the two are indistinguishable from the output alone. `notReviewed` says only what is true — the requirement is present and nothing was established about it. It also lands in the compliance denominator rather than the numerator (see `../architecture/status-determination.md`), so the gap lowers the score instead of silently inflating it.
+
+**Why not `notApplicable`.** That asserts the requirement was out of scope, which is a claim about applicability the source did not make either. An explicit scope declaration — an InSpec `impact 0.0`, a suppression, a waiver — is what justifies `notApplicable`; the absence of a result is not.
+
+In-tree cases, each reachable only from a source shape no published sample carries: a Fortify FVDL `<Description>` whose classID matches no `<Vulnerability>` (rule-catalog metadata with no finding behind it), an OWASP ZAP alert carrying no `instances[]` (an alert with nothing locating it), and an InSpec control with no `results` key. Reference helpers: `shared.SynthesizedNoResultsResult` (Go) and `synthesizedNoResultsResult` (TypeScript); both take the reason, because what the source failed to carry differs per format and the `codeDesc` must say which.
+
+**Ordering constraint for overlay sources.** Where a converter flattens an overlay or wrapper chain, synthesize **after** the flatten, not per source requirement. Flattening decides which layer's results win by taking whichever side is non-empty, so filling earlier makes every layer appear non-empty and the real results lose to a synthesized placeholder.
+
+### Default-description convention
+
+`descriptions` carries `contains: {label: "default"}` in addition to `minItems: 1`, so a non-empty array is not sufficient on its own — one entry MUST be labeled `default`. Where a source carries other labeled prose but no default (an OWASP ZAP alert with a `solution` and no `desc`; a GitLab vulnerability with remediation and no `description`), converters prepend `{label: "default", data: ""}`, placed first per the convention above.
+
+The data stays empty deliberately. Relabeling the source's own prose, or copying the requirement's title into it, would assert that the source described the requirement when it did not — and the title is already carried in `title`.
 
 ---
 

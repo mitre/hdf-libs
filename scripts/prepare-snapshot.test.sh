@@ -20,7 +20,7 @@ for tool in git jq go; do
   command -v "$tool" >/dev/null 2>&1 || { echo "error: $tool is not on PATH" >&2; exit 1; }
 done
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0

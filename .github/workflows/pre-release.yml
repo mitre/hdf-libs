@@ -29,9 +29,6 @@ concurrency:
   group: pre-release-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: '24'
-
 jobs:
   # Packs every publishable workspace package and installs the resulting
   # tarballs via `npm` (deliberately not pnpm) into a scratch project.
@@ -50,8 +47,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       # The consumer install below runs the same pinned npm client as publishing.
       - uses: $/.github/actions/setup-npm
       - name: Build TypeScript (pack reads dist/)

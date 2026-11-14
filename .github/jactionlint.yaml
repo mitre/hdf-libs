@@ -1,0 +1,8 @@
+# jactionlint (mise.toml pins it) lints the workflows, composite actions and
+# dependabot.yml: in CI's scan-workflows job and with `pnpm lint:workflows`.
+# The correctness profile holds the checks actionlint made, plus rules for
+# mistakes actionlint missed; the default profile's security and policy rules
+# are adopted separately. jactionlint accepts GitHub's `$/` self-repository
+# `uses:` form, so actionlint's ignore patterns for it are gone and `$/`
+# targets and their inputs are checked.
+profile: correctness

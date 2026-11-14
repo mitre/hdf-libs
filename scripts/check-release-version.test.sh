@@ -20,7 +20,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0

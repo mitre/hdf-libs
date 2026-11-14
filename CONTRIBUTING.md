@@ -12,7 +12,13 @@ Features beyond data format and conversion — such as application-level capabil
 
 1. Fork the repository on GitHub and clone your fork.
 
-2. Install the required tools — see [Prerequisites](./README.md#prerequisites) in the root README.
+2. Install [mise](https://mise.jdx.dev/) and the pinned toolchain — see [Prerequisites](./README.md#prerequisites) in the root README:
+
+   ```bash
+   mise trust && mise install
+   ```
+
+   Run the commands below with mise activated in your shell, or prefix them with `mise exec --`. The pre-commit hook does this for you.
 
 3. Install npm dependencies and build all packages:
 

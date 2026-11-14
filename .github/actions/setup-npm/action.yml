@@ -23,7 +23,8 @@ runs:
         # Keep Node's existing npm/npx launchers on both Unix and Windows.
         node_bin=$(node -p 'require("path").dirname(process.execPath).split(require("path").sep).join("/")')
         if [ "$RUNNER_OS" = Windows ]; then
-          modules=$(npm root --global | tr '\\' '/')
+          modules=$(npm root --global)
+          modules=${modules//\\//}
           if [ ! -d "$modules/npm" ]; then modules="$node_bin/node_modules"; fi
         else
           modules="$node_bin/../lib/node_modules"

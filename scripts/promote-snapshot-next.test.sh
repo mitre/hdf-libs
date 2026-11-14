@@ -11,7 +11,7 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT="$script_dir/promote-snapshot-next.sh"
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0

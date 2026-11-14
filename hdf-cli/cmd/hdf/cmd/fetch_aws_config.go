@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,6 +10,17 @@ import (
 	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	awsconfig "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/awsconfig/go"
 )
+
+// awsConfigFetcher is the part of the fetcher this command uses, so a test can
+// stand in for it without an AWS account.
+type awsConfigFetcher interface {
+	FetchWithReport(ctx context.Context) (awsconfig.FetchResult, error)
+}
+
+// newAWSConfigFetcher is a variable so tests can replace it.
+var newAWSConfigFetcher = func(ctx context.Context, params awsconfig.AWSConfigParams) (awsConfigFetcher, error) {
+	return awsconfig.NewAWSConfigFetcher(ctx, params)
+}
 
 func newFetchAWSConfigCmd() *cobra.Command {
 	var (
@@ -50,7 +62,7 @@ Output defaults to stdout when no output path is given.`,
 				return err
 			}
 
-			f, err := awsconfig.NewAWSConfigFetcher(cmd.Context(), awsconfig.AWSConfigParams{
+			f, err := newAWSConfigFetcher(cmd.Context(), awsconfig.AWSConfigParams{
 				Region:  region,
 				Profile: profile,
 				TLS:     fetchTLSOptions(cmd),
@@ -60,10 +72,16 @@ Output defaults to stdout when no output path is given.`,
 			}
 
 			printDebug("Fetching AWS Config rules and evaluation results from region %s", region)
-			raw, err := f.Fetch(cmd.Context())
+			res, err := f.FetchWithReport(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("failed to fetch AWS Config data: %w", err)
 			}
+			// Printed before the output is written, and before an empty export is
+			// refused, so the reason a rule is missing reaches the user either way.
+			if w := awsconfig.DroppedWarning(res.Dropped); w != "" {
+				fmt.Fprintln(cmd.ErrOrStderr(), w)
+			}
+			raw := res.Data
 			printDebug("Fetched %d bytes of raw AWS Config data", len(raw))
 
 			if format == fetchFormatRaw {

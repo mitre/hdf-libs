@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
@@ -181,5 +182,90 @@ func TestConvertCommand_FromInspecToExport_WithoutSupplement(t *testing.T) {
 	}
 	if strings.Contains(stderr, "normalized into") {
 		t.Errorf("no SAF deprecation warning should fire without a supplement; stderr=%s", stderr)
+	}
+}
+
+// A v3 document whose only component is named after its OS is not a legacy
+// upgrade: nothing says the component came from a platform, so convert appends
+// the target instead of renaming the component.
+func TestConvertCommand_V3OSNamedComponentIsNotRenamed(t *testing.T) {
+	var doc map[string]interface{}
+	if err := json.Unmarshal([]byte(safSupplementedResults), &doc); err != nil {
+		t.Fatal(err)
+	}
+	delete(doc, "passthrough")
+	doc["components"] = []interface{}{map[string]interface{}{"type": "host", "name": "ubuntu", "osName": "ubuntu"}}
+	doc["target"] = map[string]interface{}{"type": "host", "name": "web-01"}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "os-named.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for name, args := range map[string][]string{
+		"auto-detected": {"--to", "hdf@3"},
+		"--from hdf":    {"--from", "hdf", "--to", "hdf@3"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stdout, stderr, err := executeCommand(append([]string{"convert", path}, args...)...)
+			if err != nil {
+				t.Fatalf("convert failed: %v (stderr: %s)", err, stderr)
+			}
+			var out struct {
+				Components []map[string]interface{} `json:"components"`
+			}
+			if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+				t.Fatalf("output not JSON: %v", err)
+			}
+			if len(out.Components) != 2 {
+				t.Fatalf("want 2 components, got %d: %v", len(out.Components), out.Components)
+			}
+			if out.Components[0]["name"] != "ubuntu" || out.Components[1]["name"] != "web-01" {
+				t.Errorf("the OS-named component was renamed or the target was not appended: %v", out.Components)
+			}
+		})
+	}
+}
+
+// A v2 document that carries restored components is not describing a platform:
+// the upgrade puts those components back, so a component it restored keeps its
+// own name even though the document also carries a legacy target.
+func TestConvertCommand_RestoredComponentIsNotRenamed(t *testing.T) {
+	var doc map[string]interface{}
+	if err := json.Unmarshal(fixtures.Inspec.Ubi9Scan, &doc); err != nil {
+		t.Fatalf("fixture: %v", err)
+	}
+	doc["passthrough"] = map[string]interface{}{
+		legacyhdf.HDFComponentsKey: []interface{}{
+			map[string]interface{}{"type": "host", "name": "ubuntu", "osName": "ubuntu"},
+		},
+	}
+	doc["target"] = map[string]interface{}{"type": "host", "name": "web-01"}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "restored.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr, err := executeCommand("convert", path, "--to", "hdf@3")
+	if err != nil {
+		t.Fatalf("convert failed: %v (stderr: %s)", err, stderr)
+	}
+	var out struct {
+		Components []map[string]interface{} `json:"components"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+		t.Fatalf("output not JSON: %v", err)
+	}
+	if len(out.Components) != 2 {
+		t.Fatalf("want 2 components, got %d: %v", len(out.Components), out.Components)
+	}
+	if out.Components[0]["name"] != "ubuntu" || out.Components[1]["name"] != "web-01" {
+		t.Errorf("a restored component was renamed or the target was not appended: %v", out.Components)
 	}
 }
