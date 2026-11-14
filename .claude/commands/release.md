@@ -213,7 +213,7 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
-**Deliberately NOT swept:** `HDF_CLI_VERSION` / `HDF_CLI_SHA256` in `.github/workflows/ci.yml` (the CI scan gate's pinned released CLI). Bumping it to `NEW` here would point CI at a release whose assets don't exist yet — the download 404s and CI breaks on the release PR itself. It lags by design and is bumped post-publish in Phase 9.
+**Deliberately NOT swept:** `HDF_CLI_SOURCE_SHA` in `.github/workflows/ci.yml`, the commit the CI gates' CLI is built from. The `gate-cli` job checks out `mitre/hdf-libs` at that SHA and runs `go build` there, so a PR cannot change the CLI that judges it: the gate builds from the pinned commit, not from the PR's tree. The commit the release ships does not exist yet: the prepare PR is squash-merged, so its SHA is only known once it lands on `main`, and a commit cannot name its own SHA. The pin lags by design and moves after publish, in Phase 9.
 
 ### Phase 2.5 — Site archive: stage the new version's raw schema files *(minor/major only)*
 
@@ -321,8 +321,16 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
 **Gate condition — run this phase ONLY if the publishing pipeline itself changed since the last release.** Check:
 
 ```bash
-git diff --name-only "$BASE..HEAD" -- .github/workflows/release.yml .github/workflows/*publish* .goreleaser.yaml .goreleaser.yml
+git diff --name-only "$BASE..HEAD" -- \
+  .github/workflows/release.yml \
+  hdf-cli/.goreleaser.yml \
+  .github/actions/setup-npm/action.yml \
+  scripts/list-npm-packages.sh \
+  scripts/set-go-module-versions.sh \
+  scripts/check-release-version.sh
 ```
+
+Every path is one `release.yml` runs on a tag: goreleaser runs with `workdir: hdf-cli`, `setup-npm` installs the pinned npm client the publish job runs for `npm version` (pnpm publishes natively), `list-npm-packages.sh` decides which packages publish, and the two scripts gate the tag against the `go.mod` requires and the built CLI version. The pnpm version also matters for OIDC publishing (`release.yml` says so); it comes from root `package.json` `packageManager` through `mise.lock`, so also run the dry-run when that pin moved: `git diff "$BASE..HEAD" -- package.json | grep -c packageManager` non-zero. Two neighbors stay out, because an RC tag would not exercise them: `snapshot.yml` publishes on every push to `main`, so `main` already runs it, and `deploy-schemas.yml` is skipped for `-rc` tags.
 
 Non-empty (or any change to how packages are published — OIDC, dist-tag logic, goreleaser config, SBOM/signing/provenance steps) → run the dry-run. Empty → **skip** to Phase 8; the pipeline is unchanged, so a stable publish carries no new pipeline risk. (This is deliberately conditional: an RC round-trip is cheap insurance against a *broken pipeline*, not something every release needs. When in doubt, run it.)
 
@@ -393,7 +401,9 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 2. **GitHub issues (public — do NOT close or comment as the user without explicit OK):** produce the list of issues fixed and now released, with a suggested resolution comment each (e.g. "Resolved in vNEW"). Present it for the user to action, or close only with explicit per-instance approval. We use `Refs #N` (never auto-closing `Closes #N`) precisely so closing happens here, at release time.
 3. **Beads backstop:** `bd dolt pull`; catch any straggler bead that was delivered but missed in Phase 1.5 and close it citing `vNEW`; `bd dolt push`. In the normal flow Phase 1.5 already handled these — this is only a safety net.
 4. Surface any mismatch (a bead with no issue, an issue with no shipped fix, a `Refs #N` whose issue is already closed) rather than papering over it.
-5. **Bump the CI scan gate's CLI pin** (couldn't happen in the release commit — the assets only exist now): in `.github/workflows/ci.yml` env, set `HDF_CLI_VERSION` to `NEW` and `HDF_CLI_SHA256` to the `linux_amd64` line of the release's published `checksums.txt` (`gh release download vNEW -p checksums.txt`). Propose it as its own follow-up commit; the next CI run proves the new pin end-to-end (the gate downloads, checksum-verifies, and gates with it). If a parked branch/card was waiting on gate-relevant CLI behavior shipping in this release (check `bd list --label breaking-change`), this bump is what unblocks it.
+5. **Move the CI gates' CLI pin** (it could not move in the release commit; see the Phase 6 note): in `.github/workflows/ci.yml` env, set `HDF_CLI_SOURCE_SHA` to the full 40-character SHA of the commit the `vNEW` tag points to, `git fetch origin --tags && git rev-parse 'vNEW^{commit}'`. The `gate-cli` job asserts `git rev-parse HEAD` equals the pin, so an abbreviated SHA fails the job. Propose it as its own follow-up commit on a short PR; that PR's CI run proves the pin end-to-end, since `gate-cli` builds from the new commit and every gate runs with that CLI. If a parked branch or card was waiting on gate-relevant CLI behavior shipping in this release (check `bd list --label breaking-change`), this move is what unblocks it.
+
+   The source pin is temporary: the comment above it in `ci.yml` says to restore a checksum-verified release after 3.8.0. If this release is the one that restores it, the follow-up commit instead replaces the `gate-cli` checkout-and-build steps with a download of the released `linux_amd64` archive verified against the release's published `checksums.txt` (`gh release download vNEW -p checksums.txt`), and swaps `HDF_CLI_SOURCE_SHA` for the version and checksum variables that step reads. Update this step, the Phase 6 note and the checklist in the same commit, so the skill and `ci.yml` keep naming the same variables.
 
 ## Quick checklist (paste into the response after Phase 0)
 
@@ -422,4 +432,4 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next` (or `rc`) at NEW, no per-major tag expected; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
-- [ ] Phase 9: CI scan-gate CLI pin bumped post-publish (`HDF_CLI_VERSION`/`HDF_CLI_SHA256` in ci.yml, sha from the release's checksums.txt) as its own commit; parked breaking-change cards waiting on the new CLI unblocked
+- [ ] Phase 9: CI gates' CLI pin moved post-publish (`HDF_CLI_SOURCE_SHA` in ci.yml, set to the full SHA of `vNEW^{commit}`) as its own commit, or the checksum-verified release download restored in its place; parked breaking-change cards waiting on the new CLI unblocked

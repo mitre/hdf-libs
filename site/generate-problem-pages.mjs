@@ -108,4 +108,7 @@ export function generateProblemPages(table = PROBLEM_TABLE, baseFile = PROBLEM_B
   console.log(`Generated problems/ — ${types.length} problem type pages.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) generateProblemPages();
+// Compare native paths: import.meta.url is percent-encoded and argv[1] is not.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  generateProblemPages();
+}

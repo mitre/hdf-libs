@@ -4,8 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
-import { generateProblemPages, PROBLEM_TABLE } from '../generate-problem-pages.mjs';
+import { generateProblemPages, PROBLEM_BASE_FILE, PROBLEM_TABLE } from '../generate-problem-pages.mjs';
 import { PROBLEM_BASE } from '../../hdf-openapi/dist/index.js';
+import { runAsScriptUnderSpacedPath } from './run-as-script.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -100,4 +101,13 @@ test('no rendered page carries MCP vocabulary', () => {
     const page = fs.readFileSync(path.join(PAGES_DIR, type, 'index.md'), 'utf-8');
     assert.doesNotMatch(page, /HDF_MCP_|\bhdf_[a-z]+/, `${type} names an MCP tool or variable`);
   }
+});
+
+test('run as a script from a path with a space, it still writes the pages', () => {
+  runAsScriptUnderSpacedPath('generate-problem-pages.mjs', [PROBLEM_TABLE, PROBLEM_BASE_FILE], (site) => {
+    assert.ok(fs.existsSync(path.join(site, 'problems', 'index.md')), 'no problems/index.md');
+    for (const type of Object.keys(table)) {
+      assert.ok(fs.existsSync(path.join(site, 'problems', type, 'index.md')), `${type} not written`);
+    }
+  });
 });

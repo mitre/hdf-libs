@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **The site's problem-type and OpenAPI generators run when invoked directly from a checkout whose path contains a space, or on Windows.** Their direct-invocation guard compared a percent-encoded file URL to a native path, so `pnpm generate` exited 0 having written neither the problem-type pages that RFC 9457 `type` URIs dereference to nor the OpenAPI page. Both use the native-path comparison the other generators already use, pinned by tests that run each as a script from a path with a space.
+
+- **SonarQube reads Go coverage for every module in `go.work`.** The scanner was given coverage for 5 of the 13 modules CI uploads, so the rest showed as uncovered.
+
 - **`sarif-to-hdf` keeps every location of a multi-location result, and the round trip through `hdf-to-sarif` re-emits them.** One SARIF result at N locations expands to N HDF results, but every expanded row carried the first location and the carried property bags were indexed per SARIF result rather than per HDF row, so on round trip the extra locations were lost and a bag could land on a neighbor's second location while its own result came back bare. Each row now carries its own location and its own bag, in both languages, pinned by a round-trip test built from a real multi-location Defender for DevOps scan. The msft-defender-devops golden changed in 14 `sarif-results[].location.region.startLine` values, each now matching its row's `codeDesc`.
 
 - **`hdf-to-sarif` restores a rule's level from the `sarif-level` tag `sarif-to-hdf` writes.** The exporter read `tags.severity`, which `sarif-to-hdf` stopped writing, so the restore path was dead and a rule whose `security-severity` set its impact came back with a re-derived level (`warning` with 9.8 returned as `error`). `tags.severity` is never read as a SARIF level; in HDF it carries an InSpec severity word.

@@ -5,6 +5,7 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { DOCUMENTS, generateOpenapiDocs, COMPONENTS_DOCUMENT } from '../generate-openapi-docs.mjs';
+import { runAsScriptUnderSpacedPath } from './run-as-script.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -149,4 +150,18 @@ test('an unbuilt required document fails loudly', () => {
     fs.renameSync(stashed, target);
     generateOpenapiDocs();
   }
+});
+
+test('run as a script from a path with a space, it still writes the page and archive', () => {
+  const inputs = [
+    'hdf-openapi/test/baseline/keywords.json',
+    ...DOCUMENTS.flatMap((d) => [d.json, d.yaml]),
+  ];
+  runAsScriptUnderSpacedPath('generate-openapi-docs.mjs', inputs, (site) => {
+    assert.ok(fs.existsSync(path.join(site, 'openapi', 'index.md')), 'no openapi/index.md');
+    for (const d of DOCUMENTS) {
+      const raw = path.join(site, 'public', 'openapi', `${d.name}.oas.json`);
+      assert.ok(fs.existsSync(raw), `${d.name}.oas.json not written`);
+    }
+  });
 });
