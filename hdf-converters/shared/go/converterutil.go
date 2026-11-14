@@ -1050,3 +1050,16 @@ func RequireHDFAmendmentsTyped(input []byte, converterName string, v *hdf.HDFAme
 	}
 	return nil
 }
+
+// EnsureDefaultDescription satisfies the schema's minItems:1 and
+// contains:{label:"default"} on descriptions: a list already holding a default is
+// returned as is, otherwise a default carrying data is prepended, the schema's
+// stated convention being that the default comes first.
+func EnsureDefaultDescription(descriptions []hdf.Description, data string) []hdf.Description {
+	for _, d := range descriptions {
+		if d.Label == "default" {
+			return descriptions
+		}
+	}
+	return append([]hdf.Description{{Label: "default", Data: data}}, descriptions...)
+}

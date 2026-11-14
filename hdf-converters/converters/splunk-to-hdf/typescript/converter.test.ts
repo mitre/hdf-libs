@@ -408,6 +408,26 @@ describe('splunk parity on absent/degenerate stored fields', () => {
     expectValidResults(hdf);
   });
 
+  // A control whose descriptions lack a default (others present) still needs
+  // one. Twin of the Go TestConvertSplunk_DescriptionsWithoutDefaultGetOneFromDesc.
+  it('prepends a default from desc when descriptions carry only other labels', async () => {
+    const events = JSON.parse(loadFixture('splunk-minimal.json')) as Record<string, unknown>[];
+    const descs = new Map<string, string>();
+    for (const e of events) {
+      if ((e.meta as Record<string, unknown> | undefined)?.subtype !== 'control') continue;
+      const d = e.descriptions as Record<string, string>;
+      delete d.default;
+      expect(Object.keys(d).length).toBeGreaterThan(0);
+      descs.set(e.id as string, e.desc as string);
+    }
+    expect(descs.size).toBeGreaterThan(0);
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    for (const req of hdf.baselines[0].requirements) {
+      expect(req.descriptions[0]).toEqual({ label: 'default', data: descs.get(req.id) });
+    }
+    expectValidResults(hdf);
+  });
+
   // The assertion above cannot fail on the translation guard: splunk-minimal's
   // only control has a passing result, so nothing-was-established is false
   // whatever the guard reads. Force the branch with a skipped-only control, so

@@ -968,3 +968,16 @@ interface SchemaViolation {
 function typeViolations(result: { valid: boolean; errors?: SchemaViolation[] }): string[] {
   return goDecodeRejections(result).map((e) => `${e.field ?? ''} ${e.message ?? ''}`.trim());
 }
+
+type Description = EvaluatedRequirement['descriptions'][number];
+
+/**
+ * Satisfies the schema's minItems:1 and contains:{label:"default"} on
+ * descriptions: a list already holding a default is returned as is, otherwise a
+ * new list with a default carrying `data` prepended, the schema's stated
+ * convention being that the default comes first. Parity: go/converterutil.go.
+ */
+export function ensureDefaultDescription(descriptions: Description[], data = ''): Description[] {
+  if (descriptions.some((d) => d.label === 'default')) return descriptions;
+  return [{ label: 'default', data }, ...descriptions];
+}

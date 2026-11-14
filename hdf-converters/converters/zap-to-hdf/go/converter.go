@@ -336,14 +336,8 @@ func buildSiteRequirements(site *ZapSite, startTime time.Time) []hdf.EvaluatedRe
 			})
 		}
 
-		// descriptions is schema-required and carries contains:{label:"default"},
-		// so a non-empty array is not enough: an alert with only a solution still
-		// needs the default entry. Prepended, per the schema's stated convention
-		// that the default description comes first. Same empty-data default
-		// splunk-to-hdf already uses, rather than a second invented shape.
-		if !hasDefaultDescription(descriptions) {
-			descriptions = append([]hdf.Description{{Label: "default", Data: ""}}, descriptions...)
-		}
+		// An alert with only a solution still needs the schema's default entry.
+		descriptions = shared.EnsureDefaultDescription(descriptions, "")
 
 		impact := riskCodeToImpact(alert.RiskCode)
 
@@ -588,15 +582,4 @@ func ExpectedRequirementCount(input []byte) (int, string, error) {
 		count += len(limited)
 	}
 	return count, unit, nil
-}
-
-// hasDefaultDescription reports whether descriptions satisfies the schema's
-// contains:{label:"default"} constraint.
-func hasDefaultDescription(descriptions []hdf.Description) bool {
-	for _, d := range descriptions {
-		if d.Label == "default" {
-			return true
-		}
-	}
-	return false
 }

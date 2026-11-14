@@ -1,5 +1,5 @@
 import { parseJSON, parseTimestamp, UNKNOWN_SEVERITY_IMPACT } from '@mitre/hdf-utilities';
-import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, markUnratedSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildHdfResults, deriveControlTypeFromTags, ensureDefaultDescription, goZeroDate, inputChecksum, inSpecEstablishedNothing, markUnratedSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -235,10 +235,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
 
       const requirements: EvaluatedRequirement[] = profileControls.map(
         (control) => {
-          const descriptions = convertDescriptions(control.descriptions);
-          if (descriptions.length === 0) {
-            descriptions.push(createDescription('default', control.desc ?? ''));
-          }
+          const descriptions = ensureDefaultDescription(convertDescriptions(control.descriptions), control.desc ?? '');
 
           const results: RequirementResult[] = Array.isArray(control.results)
             ? control.results.map((result) => {

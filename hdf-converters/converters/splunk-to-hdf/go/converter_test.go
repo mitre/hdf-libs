@@ -652,6 +652,36 @@ func TestConvertSplunk_TaglessControlIsSchemaValid(t *testing.T) {
 	assert.Truef(t, v.Valid, "tagless output must validate: %s", v.Error())
 }
 
+// A control whose descriptions lack a default (others present) still needs one.
+func TestConvertSplunk_DescriptionsWithoutDefaultGetOneFromDesc(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	descs := map[string]string{}
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			d, ok := e["descriptions"].(map[string]interface{})
+			require.True(t, ok)
+			delete(d, "default")
+			require.NotEmpty(t, d, "the case needs non-default descriptions left over")
+			descs[e["id"].(string)] = e["desc"].(string)
+		}
+	}
+	require.NotEmpty(t, descs)
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	for _, req := range out.Baselines[0].Requirements {
+		require.NotEmpty(t, req.Descriptions)
+		assert.Equal(t, hdf.Description{Label: "default", Data: descs[req.ID]}, req.Descriptions[0])
+	}
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+}
+
 // TestConvertSplunk_AgreesWithLegacyhdfOnAbsence is the contract that matters
 // here: the two readers of an InSpec control payload must treat an ABSENT field
 // identically. They diverged before — Go read absent impact as 0 while TS

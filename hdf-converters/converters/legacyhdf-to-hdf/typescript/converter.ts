@@ -20,7 +20,7 @@ import {
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, markUnratedSeverity, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, ensureDefaultDescription, GO_ZERO_TIME, inSpecEstablishedNothing, markUnratedSeverity, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -498,11 +498,7 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // descriptions is required in v3 with minItems:1 and must contain a 'default',
   // so both null and [] are invalid. Guarantee a 'default', synthesized from the
   // control desc when absent — symmetric with the downgrade's default→desc map.
-  const descriptions = [...(v1Control.descriptions ?? [])];
-  if (!descriptions.some((d) => d.label === 'default')) {
-    descriptions.unshift({label: 'default', data: v1Control.desc ?? ''});
-  }
-  v2Req.descriptions = descriptions;
+  v2Req.descriptions = ensureDefaultDescription([...(v1Control.descriptions ?? [])], v1Control.desc ?? '');
   // tags is schema-required, so an absent source map becomes an empty object
   // rather than being omitted — omission is as invalid as null.
   v2Req.tags = v1Control.tags ?? {};

@@ -23,6 +23,12 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`splunk-to-hdf` adds a `default` description, from the control's `desc`, whenever the control's descriptions lack one.** It did so only when the control had no descriptions at all, so a control carrying only `check` and `fix` produced output that failed schema validation. Both languages are fixed, and the rule that `descriptions` must contain a default is now one shared helper (`EnsureDefaultDescription`, TypeScript `ensureDefaultDescription`) that zap-to-hdf, gitlab-to-hdf and legacyhdf-to-hdf use in place of their own copies; their output is unchanged.
+
+- **`ionchannel-to-hdf` and `nessus-to-hdf` (Go) emit their wall-clock fallback timestamps in canonical trimmed UTC,** as the TypeScript converters already did. They carried the host's zone offset and sub-millisecond digits when the source had no parseable time. `nessus-to-hdf` (Go) also uses the start time as the end time when `HOST_END` cannot be parsed, so the duration is 0 as in TypeScript rather than the time between the scan and the conversion.
+
+- **`nessus-to-hdf` (TypeScript) no longer throws on a `.nessus` document with no `ReportHost`, no `<Report>` or no `<Policy>`.** It converts each as the Go converter does: no baselines and zero duration for a missing report, an empty policy name for a missing policy.
+
 - **The TypeScript XML converters apply the same input gate as their Go twins.** burpsuite, dbprotect, fortify, junit, netsparker, nessus, xccdf-results and veracode only checked size before parsing; they now refuse inline entity declarations, SYSTEM/PUBLIC external DTD references and a DOCTYPE whose declarations cannot be parsed, with the Go wording (`validateXmlInput` in the shared converter utilities). A shared table holds both languages to the same verdicts. An oversized XML input now reports `XML input exceeds …`, and the xccdf entry points prefix `xccdf:` as Go does.
 
 - **The XML prologue scanner (Go and TypeScript) no longer loses track inside a DTD internal subset at a processing instruction containing a quote.** That quote hid a following `<!ENTITY>` or `SYSTEM` from the gate. Processing instructions are skipped, and an unterminated one is refused as unparseable.

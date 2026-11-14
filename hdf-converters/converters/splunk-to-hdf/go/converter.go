@@ -384,13 +384,7 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 		})
 	}
 
-	// If no descriptions exist, add a default one from Desc.
-	if len(descriptions) == 0 {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "default",
-			Data:  ctrl.Desc,
-		})
-	}
+	descriptions = shared.EnsureDefaultDescription(descriptions, ctrl.Desc)
 
 	// Convert results.
 	results := make([]hdf.RequirementResult, 0, len(ctrl.Results))

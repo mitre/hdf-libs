@@ -253,22 +253,15 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// SAF-produced HDF carries no descriptions[] and hit this on every requirement.
 	// Guarantee a 'default', synthesized from the control desc when absent,
 	// symmetric with the downgrade's default→desc mapping.
-	v2.Descriptions = make([]hdf.Description, 0, len(v1.Descriptions)+1)
-	hasDefault := false
+	descriptions := make([]hdf.Description, 0, len(v1.Descriptions))
 	for _, d := range v1.Descriptions {
-		if d.Label == "default" {
-			hasDefault = true
-		}
-		v2.Descriptions = append(v2.Descriptions, hdf.Description{Label: d.Label, Data: d.Data})
+		descriptions = append(descriptions, hdf.Description{Label: d.Label, Data: d.Data})
 	}
-	if !hasDefault {
-		data := ""
-		if v1.Desc != nil {
-			data = *v1.Desc
-		}
-		// Convention: the default description comes first.
-		v2.Descriptions = append([]hdf.Description{{Label: "default", Data: data}}, v2.Descriptions...)
+	desc := ""
+	if v1.Desc != nil {
+		desc = *v1.Desc
 	}
+	v2.Descriptions = shared.EnsureDefaultDescription(descriptions, desc)
 
 	// Convert source location
 	if v1.SourceLocation != nil {
