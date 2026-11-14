@@ -100,7 +100,7 @@ Distinct from the clean-scan case above, which concerns a whole scan that found 
 | Field | Value |
 |-------|-------|
 | `results[0].status` | `notReviewed` |
-| `results[0].codeDesc` | `Synthesized because <reason>.` — the reason names what the source did not carry, in that format's own vocabulary |
+| `results[0].codeDesc` | `Synthesized because <reason>`, with no closing period — the reason names what the source did not carry, in that format's own vocabulary |
 | `results[0].startTime` | the same scan timestamp the requirement's real results would carry; the zero time when the source supplies none |
 
 **Why not `passed`.** `passed` is a positive assertion that the scan checked this requirement and found it compliant. A source that recorded no result made no such claim, and a converter cannot manufacture one: a report-only-failures tool omits what it did not flag, but it equally omits what it never ran, and the two are indistinguishable from the output alone. `notReviewed` says only what is true — the requirement is present and nothing was established about it. It also lands in the compliance denominator rather than the numerator (see `../architecture/status-determination.md`), so the gap lowers the score instead of silently inflating it.
