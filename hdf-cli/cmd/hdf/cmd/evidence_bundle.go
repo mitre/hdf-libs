@@ -552,7 +552,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			unverifiable = append(unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
 			return nil
 		}
-		if got != checksum {
+		if !hdfengine.ChecksumEqual(checksum, got) {
 			return fmt.Errorf("checksum mismatch for %s: the package records %s but the file hashes to %s; "+
 				"no archive written", subject, checksum, got)
 		}

@@ -636,6 +636,19 @@ func TestEvidenceVerify_CorrectExternalEvidenceChecksumStillPasses(t *testing.T)
 		"both arrays count toward the verdict, so the total spans them")
 }
 
+// Checksum.value has no case constraint, and Get-FileHash records uppercase hex: the
+// correct digest in uppercase names the same bytes, so verify and bundle both pass it.
+func TestEvidenceVerifyAndBundle_AcceptAnUppercaseHexDigest(t *testing.T) {
+	sum := sha256.Sum256([]byte("log\n"))
+	dir, pkgPath := externalEvidenceVerifyPackage(t, strings.ToUpper(hex.EncodeToString(sum[:])))
+
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
+	assert.NoError(t, err, "an uppercase spelling of the correct digest is not a changed file")
+	assert.Contains(t, stdout, "Verified: 3/3 checksums valid")
+	_, _, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "out.tar.gz"))
+	assert.NoError(t, bundleErr, "bundle must agree with verify on the same package")
+}
+
 // The counts must reconcile with bundle's, which is the specific discrepancy
 // hdf-libs-52n0c.16 documented: verify said 1 skipped where bundle said 2, because
 // bundle's count spanned both arrays and verify's spanned one.

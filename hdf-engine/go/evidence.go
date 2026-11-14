@@ -15,6 +15,7 @@ import (
 	"hash"
 	"net/url"
 	"sort"
+	"strings"
 	"unicode/utf8"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -185,7 +186,7 @@ func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResu
 		} else if data, err := fetch(c.URI); err != nil {
 			r.Status = ChecksumError
 			r.Error = err.Error()
-		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); actual == c.Checksum {
+		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); ChecksumEqual(c.Checksum, actual) {
 			r.Status = ChecksumMatch
 		} else {
 			r.Status = ChecksumMismatch
@@ -307,6 +308,14 @@ func Completeness(planned, covered []string) CompletenessResult {
 		Missing:  missing,
 		Complete: len(missing) == 0,
 	}
+}
+
+// ChecksumEqual reports whether a recorded Checksum.value names the digest ChecksumHex
+// computed. Hex case carries no meaning and the schema puts no case constraint on the
+// value, so uppercase (as PowerShell's Get-FileHash writes it) compares equal. Every
+// consumer comparing a recorded checksum calls this, so verify, bundle and update agree.
+func ChecksumEqual(recorded, computed string) bool {
+	return strings.EqualFold(recorded, computed)
 }
 
 // effectiveAlgorithm names the algorithm an entry's checksum is verified under:

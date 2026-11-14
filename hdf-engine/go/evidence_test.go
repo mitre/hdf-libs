@@ -90,6 +90,52 @@ func TestParseEvidencePackage_Invalid(t *testing.T) {
 	}
 }
 
+// The typed decode's verdict on wrong-typed LEAF fields, which test/evidence.test.ts
+// mirrors case for case: a wrong type is an error, a JSON null is the zero value.
+func TestParseEvidencePackage_WrongTypedLeafFields(t *testing.T) {
+	rejected := []string{
+		`{"planRef":1}`,
+		`{"contents":[{"uri":1}]}`,
+		`{"contents":[{"type":true}]}`,
+		`{"contents":[{"checksum":"abc"}]}`,
+		`{"contents":[{"checksum":[]}]}`,
+		`{"contents":[{"checksum":{"value":1}}]}`,
+		`{"contents":[{"checksum":{"algorithm":{}}}]}`,
+	}
+	for _, in := range rejected {
+		if _, _, err := ParseEvidencePackage([]byte(in)); err == nil {
+			t.Errorf("ParseEvidencePackage(%s) = nil error, want a decode error", in)
+		}
+	}
+	externalRejected := []string{
+		`{"externalEvidence":[{"uri":1}]}`,
+		`{"externalEvidence":[{"format":[]}]}`,
+		`{"externalEvidence":[{"checksum":"abc"}]}`,
+		`{"externalEvidence":[{"checksum":{"value":false}}]}`,
+	}
+	for _, in := range externalRejected {
+		if _, err := ParseExternalEvidence([]byte(in)); err == nil {
+			t.Errorf("ParseExternalEvidence(%s) = nil error, want a decode error", in)
+		}
+	}
+	if _, err := PlannedBaselineRefs([]byte(`{"assessments":[{"baselineRef":1}]}`)); err == nil {
+		t.Error("PlannedBaselineRefs: a non-string baselineRef must be a decode error")
+	}
+	if _, err := CoveredBaselineNames([]byte(`{"baselines":[{"name":[]}]}`)); err == nil {
+		t.Error("CoveredBaselineNames: a non-string name must be a decode error")
+	}
+	nulls := `{"planRef":null,"contents":[{"uri":null,"type":null,"checksum":null}],` +
+		`"externalEvidence":[{"uri":null,"format":null,"checksum":{"value":null,"algorithm":null}}]}`
+	planRef, contents, err := ParseEvidencePackage([]byte(nulls))
+	if err != nil || planRef != "" || len(contents) != 1 || contents[0].ChecksumRecorded {
+		t.Errorf("null leaves: planRef=%q contents=%+v err=%v, want zero values and no checksum", planRef, contents, err)
+	}
+	external, err := ParseExternalEvidence([]byte(nulls))
+	if err != nil || len(external) != 1 || !external[0].ChecksumRecorded || external[0].Checksum != "" {
+		t.Errorf("null leaves: external=%+v err=%v, want a recorded checksum with an empty value", external, err)
+	}
+}
+
 func TestPlannedBaselineRefs(t *testing.T) {
 	plan := []byte(`{"assessments":[{"baselineRef":"A"},{"baselineRef":"B"},{"baselineRef":"A"},{"baselineRef":""}]}`)
 	got, err := PlannedBaselineRefs(plan)

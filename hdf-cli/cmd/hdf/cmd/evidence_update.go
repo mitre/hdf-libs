@@ -421,7 +421,7 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, refs evidenceref
 //
 // Mirrors hdfengine.VerifyChecksums in all three of ITS decisions, each of which was a
 // separate disagreement before it was matched: the algorithm is the ENTRY'S OWN, not the
-// one this build writes; the comparison is EXACT, not case-folded; and "nothing recorded"
+// one this build writes; the comparison is ChecksumEqual, not ==; and "nothing recorded"
 // means exactly empty, not whitespace-trimmed. The invariant is that these are the SAME
 // tests, so if verification's ever change, this must change with them.
 //
@@ -453,7 +453,7 @@ func checksumDivergesFrom(entry map[string]interface{}, raw []byte) bool {
 	if err != nil {
 		return false
 	}
-	return actual != recorded
+	return !hdfengine.ChecksumEqual(recorded, actual)
 }
 
 // sameNameDifferentSpelling reports whether two references are the SAME NAME written

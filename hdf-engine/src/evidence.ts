@@ -105,29 +105,52 @@ function objectArray(value: unknown, what: string, field: string): RawObject[] {
   });
 }
 
-function str(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+/** A string field as Go's `string` decode reads it: absent or null is '', any other
+ * non-string is a decode error naming the field. */
+function str(value: unknown, what: string, field: string): string {
+  if (value === undefined || value === null) return '';
+  if (typeof value !== 'string') {
+    throw new Error(`parse ${what}: cannot unmarshal ${describe(value)} into ${field}`);
+  }
+  return value;
 }
 
 function describe(value: unknown): string {
   return Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
 }
 
+/** An entry's checksum as Go's `*struct` decode reads it: absent or null records none,
+ * a non-object is a decode error, and its value and algorithm are string fields. */
+function entryChecksum(
+  entry: RawObject,
+  field: string,
+): Pick<EvidenceContent, 'checksum' | 'checksumAlgorithm' | 'checksumRecorded'> {
+  const what = 'evidence package';
+  const checksum = entry.checksum;
+  if (checksum === undefined || checksum === null) {
+    return { checksum: '', checksumAlgorithm: '', checksumRecorded: false };
+  }
+  if (typeof checksum !== 'object' || Array.isArray(checksum)) {
+    throw new Error(`parse ${what}: cannot unmarshal ${describe(checksum)} into ${field}.checksum`);
+  }
+  const cs = checksum as RawObject;
+  return {
+    checksum: str(cs.value, what, `${field}.checksum.value`),
+    checksumAlgorithm: str(cs.algorithm, what, `${field}.checksum.algorithm`),
+    checksumRecorded: true,
+  };
+}
+
 /** Extracts the planRef and content entries from an evidence-package document. */
 export function parseEvidencePackage(pkg: string): { planRef: string; contents: EvidenceContent[] } {
-  const doc = parseDocument(pkg, 'evidence package');
-  const contents: EvidenceContent[] = objectArray(doc.contents, 'evidence package', 'contents').map((c) => {
-    const checksum = c.checksum;
-    const isObject = typeof checksum === 'object' && checksum !== null;
-    return {
-      uri: str(c.uri),
-      type: str(c.type),
-      checksum: isObject ? str((checksum as RawObject).value) : '',
-      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
-      checksumRecorded: isObject,
-    };
-  });
-  return { planRef: str(doc.planRef), contents };
+  const what = 'evidence package';
+  const doc = parseDocument(pkg, what);
+  const contents: EvidenceContent[] = objectArray(doc.contents, what, 'contents').map((c) => ({
+    uri: str(c.uri, what, 'contents.uri'),
+    type: str(c.type, what, 'contents.type'),
+    ...entryChecksum(c, 'contents'),
+  }));
+  return { planRef: str(doc.planRef, what, 'planRef'), contents };
 }
 
 /** Returns the `externalEvidence[]` entries as the same shape `contents[]` parses
@@ -139,19 +162,14 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
  * Additive on purpose: `verifyChecksums` is reused unchanged on what this returns,
  * so the hashing has one implementation rather than one per array. */
 export function parseExternalEvidence(pkg: string): EvidenceContent[] {
-  const doc = parseDocument(pkg, 'evidence package');
-  return objectArray(doc.externalEvidence, 'evidence package', 'externalEvidence').map((e) => {
-    const checksum = e.checksum;
-    const isObject = typeof checksum === 'object' && checksum !== null;
-    return {
-      uri: str(e.uri),
-      type: '',
-      format: str(e.format),
-      checksum: isObject ? str((checksum as RawObject).value) : '',
-      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
-      checksumRecorded: isObject,
-    };
-  });
+  const what = 'evidence package';
+  const doc = parseDocument(pkg, what);
+  return objectArray(doc.externalEvidence, what, 'externalEvidence').map((e) => ({
+    uri: str(e.uri, what, 'externalEvidence.uri'),
+    type: '',
+    format: str(e.format, what, 'externalEvidence.format'),
+    ...entryChecksum(e, 'externalEvidence'),
+  }));
 }
 
 /** Verifies each content entry against fetch(uri) using the algorithm the entry
@@ -192,10 +210,18 @@ async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<Check
     return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
   }
   const actual = await checksumHex(c.checksumAlgorithm, data);
-  if (actual === c.checksum) {
+  if (checksumEqual(c.checksum, actual)) {
     return { ...r, status: 'match' };
   }
   return { ...r, status: 'mismatch', expected: c.checksum, actual };
+}
+
+/** Whether a recorded Checksum.value names the computed digest. Hex case carries no
+ * meaning and the schema puts no case constraint on the value, so uppercase (as
+ * PowerShell's Get-FileHash writes it) compares equal. Kept identical to Go's
+ * ChecksumEqual. */
+function checksumEqual(recorded: string, computed: string): boolean {
+  return recorded.toLowerCase() === computed.toLowerCase();
 }
 
 /** Extracts assessment baselineRefs from a plan document, deduped in first-seen
@@ -203,7 +229,7 @@ async function verifyChecksum(c: EvidenceContent, fetch: FetchFn): Promise<Check
 export function plannedBaselineRefs(plan: string): string[] {
   const doc = parseDocument(plan, 'plan');
   const refs = objectArray(doc.assessments, 'plan', 'assessments')
-    .map((a) => str(a.baselineRef))
+    .map((a) => str(a.baselineRef, 'plan', 'assessments.baselineRef'))
     .filter((s) => s !== '');
   return dedupe(refs);
 }
@@ -212,7 +238,7 @@ export function plannedBaselineRefs(plan: string): string[] {
 export function coveredBaselineNames(results: string): string[] {
   const doc = parseDocument(results, 'results');
   const names = objectArray(doc.baselines, 'results', 'baselines')
-    .map((b) => str(b.name))
+    .map((b) => str(b.name, 'results', 'baselines.name'))
     .filter((s) => s !== '');
   return dedupe(names);
 }
