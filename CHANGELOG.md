@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`legacyhdf-to-hdf` and `splunk-to-hdf` mark a defaulted impact as unrated.** A control that carries no `impact` resolves to 0.5, the unknown-severity default, and now also carries `tags.severity_rating: "unrated"`, so it can no longer pass for a genuine medium; a control whose `tags.severity` gives a real rating, and any explicit impact including 0, is left unmarked. The 0.5 default is now one shared constant, `hdfutil.UnknownSeverityImpact` (Go) and `UNKNOWN_SEVERITY_IMPACT` (`@mitre/hdf-utilities`), which `kics-to-hdf`, `semgrep-to-hdf` and the TypeScript `severityToImpact` fallback use too.
+
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.

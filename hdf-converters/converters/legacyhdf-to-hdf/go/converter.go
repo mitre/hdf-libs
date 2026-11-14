@@ -3,6 +3,7 @@ package legacyhdf
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -209,19 +210,12 @@ func convertRefs(refs []interface{}) []hdf.Reference {
 	return out
 }
 
-// unknownSeverityImpact is what an ABSENT impact resolves to: the repo's
-// unknown-severity default, which says "we do not know whether this is good or
-// bad" rather than "this carries no risk". An explicit 0 is a different claim
-// and is carried as written. Matches the 0.5 fallback most converters pass to
-// hdfutil.SeverityToImpact, and kics-to-hdf's local defaultImpact.
-const unknownSeverityImpact = 0.5
-
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// An absent impact is unknown severity, not zero severity. Resolve it once
 	// here so every use below agrees, and keep the source's own nil-ness for the
 	// score-0 translation, which only an explicit 0 may trigger.
-	impact := unknownSeverityImpact
+	impact := hdfutil.UnknownSeverityImpact
 	if v1.Impact != nil {
 		impact = *v1.Impact
 	}
@@ -235,6 +229,13 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	}
 	if v2.Tags == nil {
 		v2.Tags = map[string]interface{}{}
+	}
+	// A defaulted impact is unrated unless the source's own tags.severity rated it.
+	// Cloned so marking does not write into the caller's parsed control.
+	if v1.Impact == nil {
+		v2.Tags = maps.Clone(v2.Tags)
+		severity, _ := v2.Tags["severity"].(string)
+		shared.MarkUnratedSeverity(v2.Tags, severity)
 	}
 
 	if v1.Title != nil {

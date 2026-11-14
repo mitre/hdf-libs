@@ -463,3 +463,36 @@ describe('document timestamp', () => {
     expect(out.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/);
   });
 });
+
+// Twin of the Go TestConvertSplunk_AbsentImpactMarksUnrated, and of legacyhdf's
+// table: the same InSpec control must be marked the same in both readers.
+describe('absent impact marks the requirement unrated', () => {
+  const cases: Array<[string, Record<string, unknown>, number, boolean]> = [
+    ['absent impact, empty tags', {tags: {}}, 0.5, true],
+    ['absent impact, no tags key', {title: 't'}, 0.5, true],
+    ['absent impact, unrated token', {tags: {severity: 'unknown'}}, 0.5, true],
+    ['absent impact, non-string severity', {tags: {severity: 3}}, 0.5, true],
+    ['absent impact, rated severity', {tags: {severity: 'high'}}, 0.5, false],
+    ['explicit 0', {impact: 0, tags: {}}, 0, false],
+    ['explicit 0.5', {impact: 0.5, tags: {}}, 0.5, false],
+    ['explicit 0.5, unrated token', {impact: 0.5, tags: {severity: 'unknown'}}, 0.5, false],
+  ];
+  const meta = {filetype: 'evaluation', hdf_splunk_schema: '1.0', guid: 'g1', filename: 'f.json'};
+  it.each(cases)('%s', async (_name, fields, impact, unrated) => {
+    const events = [
+      {meta: {...meta, subtype: 'header'}, profiles: [], platform: {name: 'centos', release: '7'},
+        statistics: {}, version: '4.16.0'},
+      {meta: {...meta, subtype: 'profile', profile_sha256: 'abc'}, name: 'p', sha256: 'abc',
+        controls: []},
+      {meta: {...meta, subtype: 'control', profile_sha256: 'abc'}, id: 'V-1', ...fields,
+        results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}]},
+    ];
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(impact, 5);
+    if (unrated) expect(req.tags.severity_rating).toBe('unrated');
+    else expect(req.tags).not.toHaveProperty('severity_rating');
+    expectValidResults(hdf);
+  });
+});

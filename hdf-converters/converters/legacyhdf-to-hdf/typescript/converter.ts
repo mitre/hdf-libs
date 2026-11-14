@@ -13,13 +13,14 @@ import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
 import {
   impactToSeverity,
+  UNKNOWN_SEVERITY_IMPACT,
   parseTimestamp,
   formatTimestamp,
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, markUnratedSeverity, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -347,11 +348,6 @@ function synthesizedErrorResult(results: V2Result[]): V2Result {
   };
 }
 
-// What an ABSENT impact resolves to: the unknown-severity default, which says
-// "we do not know whether this is good or bad" rather than "this carries no
-// risk". Parity: unknownSeverityImpact in go/converter.go.
-const UNKNOWN_SEVERITY_IMPACT = 0.5;
-
 /**
  * Encodes the scope declaration InSpec states as an impact of 0 rather than as a
  * result (matching the Go converter).
@@ -510,6 +506,13 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // tags is schema-required, so an absent source map becomes an empty object
   // rather than being omitted — omission is as invalid as null.
   v2Req.tags = v1Control.tags ?? {};
+  // A defaulted impact is unrated unless the source's own tags.severity rated it.
+  // Copied so marking does not write into the caller's control. Parity: go/converter.go.
+  if (v1Control.impact == null) {
+    v2Req.tags = {...v2Req.tags};
+    const severity = v2Req.tags.severity;
+    markUnratedSeverity(v2Req.tags, typeof severity === 'string' ? severity : '');
+  }
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
     const refs = convertRefs(v1Control.refs);

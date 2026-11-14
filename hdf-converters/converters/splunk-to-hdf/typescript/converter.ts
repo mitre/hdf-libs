@@ -1,5 +1,5 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp, UNKNOWN_SEVERITY_IMPACT } from '@mitre/hdf-utilities';
+import { buildHdfResults, deriveControlTypeFromTags, goZeroDate, inputChecksum, inSpecEstablishedNothing, markUnratedSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -65,11 +65,6 @@ interface SplunkProfile extends SplunkEvent {
   attributes: unknown[];
   controls: unknown[];
 }
-
-// What an ABSENT impact resolves to: the unknown-severity default rather than
-// zero, which would claim the control carries no risk.
-// Parity: unknownSeverityImpact in go/converter.go.
-const UNKNOWN_SEVERITY_IMPACT = 0.5;
 
 interface SplunkControl extends SplunkEvent {
   id: string;
@@ -270,6 +265,13 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
           } = {
             tags: control.tags ?? {},
           };
+          // A defaulted impact is unrated unless the source's tags.severity rated it,
+          // as in the file importer. Copied so marking does not write into control.
+          if (control.impact == null) {
+            options.tags = {...options.tags};
+            const severity = options.tags.severity;
+            markUnratedSeverity(options.tags, typeof severity === 'string' ? severity : '');
+          }
 
           if (control.source_location) {
             options.sourceLocation = control.source_location;

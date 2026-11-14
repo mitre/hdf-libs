@@ -1,4 +1,4 @@
-import { parseJSON, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { parseJSON, severityToImpactWithAliases, UNKNOWN_SEVERITY_IMPACT } from '@mitre/hdf-utilities';
 import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import {
   buildHdfResults,
@@ -85,8 +85,6 @@ interface KicsReport {
  */
 const KICS_SEVERITY_ALIASES: Record<string, number> = { trace: 0.0 };
 
-const DEFAULT_IMPACT = 0.5;
-
 /**
  * Records which tier resolved a requirement's NIST tags, so a reviewed mapping
  * stays distinguishable from a CWE-derived guess and from a static default.
@@ -106,7 +104,7 @@ const NIST_MAPPING_CWE = 'cwe-derived';
 const NIST_MAPPING_FALLBACK = 'static-fallback';
 
 function impactFor(severity?: string): number {
-  return severityToImpactWithAliases(severity, KICS_SEVERITY_ALIASES, DEFAULT_IMPACT);
+  return severityToImpactWithAliases(severity, KICS_SEVERITY_ALIASES, UNKNOWN_SEVERITY_IMPACT);
 }
 
 /** KICS emits the bare number, e.g. "778". Normalize before the lookup. */

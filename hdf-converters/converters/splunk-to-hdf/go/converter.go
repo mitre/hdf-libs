@@ -3,6 +3,7 @@ package splunk
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -365,11 +366,6 @@ func convertProfileToBaseline(
 	return baseline
 }
 
-// unknownSeverityImpact mirrors legacyhdf-to-hdf's: an absent impact resolves to
-// the unknown-severity default rather than to zero, which would claim the
-// control carries no risk.
-const unknownSeverityImpact = 0.5
-
 // convertControlToRequirement converts a single SplunkControl into an HDF
 // EvaluatedRequirement.
 func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
@@ -416,7 +412,7 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 
 	// An absent impact is unknown severity, not zero severity — the same rule
 	// the file importer applies, since these are the same InSpec controls.
-	impact := unknownSeverityImpact
+	impact := hdfutil.UnknownSeverityImpact
 	if ctrl.Impact != nil {
 		impact = *ctrl.Impact
 	}
@@ -424,6 +420,13 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 	tags := ctrl.Tags
 	if tags == nil {
 		tags = map[string]interface{}{}
+	}
+	// A defaulted impact is unrated unless the source's own tags.severity rated it,
+	// matching the file importer. Cloned so marking does not write into ctrl.
+	if ctrl.Impact == nil {
+		tags = maps.Clone(tags)
+		severity, _ := tags["severity"].(string)
+		shared.MarkUnratedSeverity(tags, severity)
 	}
 
 	req := hdf.EvaluatedRequirement{

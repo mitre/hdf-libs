@@ -731,3 +731,49 @@ func TestConvertSplunk_ResultlessControlIsSchemaValid(t *testing.T) {
 	v := validators.Validate(serialized, validators.TypeResults)
 	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
 }
+
+// Twin of legacyhdf's TestConvertLegacyHDF_AbsentImpactMarksUnrated: the same
+// InSpec control read from a store must be marked exactly as the file reader marks it.
+func TestConvertSplunk_AbsentImpactMarksUnrated(t *testing.T) {
+	cases := []struct {
+		name    string
+		control string
+		impact  float64
+		unrated bool
+	}{
+		{"absent impact, empty tags", `"tags":{}`, 0.5, true},
+		{"absent impact, no tags key", `"title":"t"`, 0.5, true},
+		{"absent impact, unrated token", `"tags":{"severity":"unknown"}`, 0.5, true},
+		{"absent impact, non-string severity", `"tags":{"severity":3}`, 0.5, true},
+		{"absent impact, rated severity", `"tags":{"severity":"high"}`, 0.5, false},
+		{"explicit 0", `"impact":0,"tags":{}`, 0, false},
+		{"explicit 0.5", `"impact":0.5,"tags":{}`, 0.5, false},
+		{"explicit 0.5, unrated token", `"impact":0.5,"tags":{"severity":"unknown"}`, 0.5, false},
+	}
+	const meta = `"filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json"`
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := `[{"meta":{"subtype":"header",` + meta + `},"profiles":[],
+"platform":{"name":"centos","release":"7"},"statistics":{},"version":"4.16.0"},
+{"meta":{"subtype":"profile",` + meta + `,"profile_sha256":"abc"},"name":"p","sha256":"abc",
+"controls":[]},
+{"meta":{"subtype":"control",` + meta + `,"profile_sha256":"abc"},"id":"V-1",` + tc.control + `,
+"results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]`
+			out, err := ConvertSplunkToHDF([]byte(doc), testConverterVersion)
+			require.NoError(t, err)
+
+			req := out.Baselines[0].Requirements[0]
+			assert.InDelta(t, tc.impact, req.Impact, 0.0001)
+			if tc.unrated {
+				assert.Equal(t, "unrated", req.Tags["severity_rating"])
+			} else {
+				assert.NotContains(t, req.Tags, "severity_rating")
+			}
+
+			raw, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+		})
+	}
+}
