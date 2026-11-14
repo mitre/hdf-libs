@@ -135,6 +135,10 @@ func TestEvidenceReferenceFlags_RefuseAValueThatIsNotUTF8(t *testing.T) {
 			return []string{"evidence", "add-reference", pkg, "--source-name", "ctx",
 				"--href", nonUTF8Name}
 		}},
+		{"add-reference --href (remote)", func(pkg string) []string {
+			return []string{"evidence", "add-reference", pkg, "--source-name", "ctx",
+				"--href", "https://cti.example/" + nonUTF8Name}
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := writeTestEvidence(t)

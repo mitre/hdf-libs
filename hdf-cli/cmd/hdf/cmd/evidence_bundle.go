@@ -349,6 +349,19 @@ func escapesPackageRef(uri string) bool {
 	return strings.HasPrefix(uri, "/") || strings.HasPrefix(uri, `\`) || filepath.IsAbs(uri)
 }
 
+// refuseBackslashRef rejects an archive entry name carrying a backslash, which a Windows
+// extractor reads as a separator while POSIX path cleaning leaves it alone.
+func refuseBackslashRef(label, subject, name string) error {
+	if !strings.Contains(name, `\`) {
+		return nil
+	}
+	return fmt.Errorf("%s %q cannot be bundled: its name contains a backslash, which an "+
+		"extractor may read as a path separator and write outside the root", label, subject)
+}
+
+// stdinBundlePackageEntry is the archive name of a stdin package, which has no file name.
+const stdinBundlePackageEntry = "hdf-evidence-package.json"
+
 // isRemoteURI reports whether a URI names something the archive cannot carry.
 func isRemoteURI(uri string) bool { return strings.Contains(uri, "://") }
 
@@ -426,9 +439,13 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
+	if err := refuseStdinPackageRelativeRefs(pkgPath, refs); err != nil {
+		return err
+	}
 	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
 	}
+	fromStdin := pkgPath == stdinPackage
 	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
 	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
 	// may be any pre-existing file they pointed at — so this says only what is known: nothing
@@ -448,7 +465,11 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 
 	// Collect and verify EVERYTHING before opening the output. Nothing is written
 	// until every document is present and every recorded checksum matches.
-	entries := []bundleEntry{{path: filepath.ToSlash(filepath.Base(pkgPath)), data: pkgData}}
+	pkgEntry := filepath.ToSlash(filepath.Base(pkgPath))
+	if fromStdin {
+		pkgEntry = stdinBundlePackageEntry
+	}
+	entries := []bundleEntry{{path: pkgEntry, data: pkgData}}
 	collected := map[string][]byte{entries[0].path: pkgData}
 
 	// subject is what the PACKAGE records and is what every message quotes; uri is
@@ -490,6 +511,11 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		// a relative ref by here. For a contents[] reference the two are the same string.
 		if err := checkContentRefShape(string(uri), label); err != nil {
 			return fmt.Errorf("cannot bundle: %w", err)
+		}
+		// Before the ".." checks, which cannot see "..\" as traversal on POSIX. Repeated
+		// here for the name an absolute reference resolved to inside the package.
+		if err := refuseBackslashRef(label, subject, string(uri)); err != nil {
+			return err
 		}
 		ref := filepath.ToSlash(filepath.Clean(string(uri)))
 		if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
@@ -618,7 +644,18 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 			aside("not a valid uri-reference")
 			continue
 		}
+		// Judged on the DECODED reference before any path cleaning: on Windows Clean would
+		// turn "..\x" into "../x" and the package would be refused on POSIX but not there.
+		if !escapesPackageRef(string(r.decoded)) {
+			if err := refuseBackslashRef(r.label, r.uri, string(r.decoded)); err != nil {
+				return err
+			}
+		}
 		ref, inTree := packageSubtreeRef(pkgDir, r.decoded)
+		if fromStdin {
+			aside(stdinNoDirectory)
+			continue
+		}
 		if !inTree {
 			aside("outside the package's directory")
 			continue
@@ -667,7 +704,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		if r.uri == "" || r.kind == refContext || isRemoteURI(r.uri) || !filepath.IsAbs(r.uri) {
 			continue
 		}
-		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok {
+		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok && !fromStdin {
 			fmt.Fprintf(os.Stderr,
 				"  %s records %s; it is carried as %s, so the extracted package will not resolve it as recorded\n",
 				r.field, sanitizeOutput(r.uri), resolved)

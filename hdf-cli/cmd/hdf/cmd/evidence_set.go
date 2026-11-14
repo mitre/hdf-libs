@@ -53,10 +53,13 @@ Examples:
 			if name == "" && description == "" && packageID == "" && systemRef == "" && planRef == "" && docVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --package-id, --system-ref, --plan-ref, --version, --unset)")
 			}
+			if err := requireOutputForStdinPackage(args[0], outputPath); err != nil {
+				return err
+			}
 			// Normalized against the INPUT package's directory, which is where the documents
-			// sit. Whether -o moving the package should re-base its references is a separate
-			// question and belongs to the -o coverage card, not here.
-			pkgDir := filepath.Dir(args[0])
+			// sit (for a stdin package, the -o file's). Whether -o moving the package should
+			// re-base its references is a separate question, not settled here.
+			pkgDir := evidencePackageDir(args[0], outputPath)
 			sysRef, err := packageRelativeIfInside(pkgDir, systemRef)
 			if err != nil {
 				return fmt.Errorf("--system-ref %w", err)

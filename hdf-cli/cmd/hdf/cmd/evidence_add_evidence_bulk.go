@@ -65,7 +65,7 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	}
 	// The same directory the per-uri loop normalizes against; a reference is
 	// package-relative by contract, so containment is measured from here.
-	pkgDir := filepath.Dir(pkg)
+	pkgDir := evidencePackageDir(pkg, opts.outputPath)
 	// Keyed on the absolute path so a repeat is recognized however it was reached;
 	// a repeat is a slip only when BOTH namings were literal.
 	seen := make(map[string]seenSelection)

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -357,6 +358,9 @@ func embedReferenceDocument(path string) (map[string]interface{}, error) {
 }
 
 func runEvidenceAddReference(file string, opts addReferenceOpts) error {
+	if err := requireOutputForStdinPackage(file, opts.outputPath); err != nil {
+		return err
+	}
 	// sourceName is the schema's only required field on External_Reference, and it
 	// carries minLength 1 — so a whitespace-only value is refused here rather than
 	// left for the validator to reject after the work is done.
@@ -487,12 +491,13 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	}
 
 	if opts.href != "" {
-		// ENCODED, like every other command that records a reference.
-		// externalReferences[].href is the same uri-reference primitive as
-		// contents[].uri, so an unescaped name here is the same contract violation —
-		// and this was the one write path that still wrote the raw value while build,
-		// set, add-evidence and update all encoded.
-		href, hrefErr := evidenceref.Encode(filepath.ToSlash(opts.href))
+		// A remote URI is recorded verbatim, as add-evidence --uri and set record one:
+		// Encode is a path encoder and would escape its "?" and "#". A local path is
+		// encoded into a uri-reference. Neither may carry bytes that are not UTF-8.
+		href, hrefErr := opts.href, evidenceref.Recordable(opts.href)
+		if !isRemoteURI(opts.href) {
+			href, hrefErr = evidenceref.Encode(filepath.ToSlash(opts.href))
+		}
 		if hrefErr != nil {
 			return fmt.Errorf("--href %q cannot be recorded as a reference: %w", opts.href, hrefErr)
 		}
@@ -521,7 +526,8 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 		// unhashed by exactly the same rule, rather than a second implementation of it —
 		// which means it also shares the package-relative resolution: an href is read from
 		// beside the PACKAGE, not from the process CWD.
-		resolved, algorithm, csErr := resolveEvidenceChecksum(filepath.Dir(file), opts.href, "")
+		resolved, algorithm, csErr := resolveEvidenceChecksum(
+			evidencePackageDir(file, opts.outputPath), opts.href, "")
 		if csErr != nil {
 			return csErr
 		}
@@ -557,7 +563,7 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	if opts.outputPath != "" {
 		target = opts.outputPath
 	}
-	if err := os.WriteFile(target, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
 

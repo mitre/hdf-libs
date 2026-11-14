@@ -1127,3 +1127,35 @@ func TestEvidenceAddReference_RefusesAnHrefThatCannotBeHashed(t *testing.T) {
 	require.Error(t, err, "a directory cannot be hashed here either")
 	assert.Contains(t, err.Error(), "a directory", "and the kind must be named")
 }
+
+// A remote --href is recorded byte-for-byte, as add-evidence --uri and set record one: it
+// is not a path, so encoding it escaped "?" and "#" and named a different resource.
+func TestEvidenceAddReference_RecordsARemoteHrefVerbatim(t *testing.T) {
+	for _, href := range []string{
+		"https://nvd.nist.gov/vuln/search/results?query=log4j&form_type=Basic",
+		"https://github.com/advisories#GHSA-jfh8-c2jp-5v3q",
+		"https://cti.example/taxii2/collections/x/objects/?added_after=2099-12-31T00:00:00Z&limit=50#page-2",
+	} {
+		t.Run(href, func(t *testing.T) {
+			_, pkgPath := referencePackage(t)
+			_, stderr, err := executeCommand("evidence", "add-reference", pkgPath,
+				"--source-name", "nvd", "--href", href, "-o", pkgPath)
+			require.NoError(t, err, stderr)
+			assert.Equal(t, []string{href}, recordedReferenceValues(t, pkgPath, "externalReferences"))
+			_, _, vErr := executeCommand("validate", pkgPath)
+			require.NoError(t, vErr)
+		})
+	}
+}
+
+// The local branch is unchanged by the remote split: a path is still a path, and its
+// "?" and space are escaped into a uri-reference that decodes back to the file.
+func TestEvidenceAddReference_StillEncodesALocalHref(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "why? notes.txt"), []byte("n"), 0o600))
+	_, stderr, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "notes", "--href", "why? notes.txt", "-o", pkgPath)
+	require.NoError(t, err, stderr)
+	assert.Equal(t, []string{"why%3F%20notes.txt"},
+		recordedReferenceValues(t, pkgPath, "externalReferences"))
+}

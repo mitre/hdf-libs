@@ -363,6 +363,9 @@ func formatFromContent(data []byte) string {
 }
 
 func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
+	if err := requireOutputForStdinPackage(file, opts.outputPath); err != nil {
+		return err
+	}
 	var expandErr error
 	opts, expandErr = expandEvidenceInputs(file, opts)
 	if expandErr != nil {
@@ -385,7 +388,8 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 		return fmt.Errorf("--checksum names a single artifact's digest and cannot apply to %d --uri "+
 			"values; add those artifacts in separate invocations", len(opts.uris))
 	}
-	formats, err := resolveEvidenceFormats(filepath.Dir(file), opts)
+	pkgDir := evidencePackageDir(file, opts.outputPath)
+	formats, err := resolveEvidenceFormats(pkgDir, opts)
 	if err != nil {
 		return err
 	}
@@ -411,7 +415,6 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	// and `evidence set` use; an artifact outside the package is external by design and
 	// is recorded exactly as given. Done BEFORE the duplicate guard below, so two
 	// spellings of one artifact collide rather than landing as two entries.
-	pkgDir := filepath.Dir(file)
 	added := make([]interface{}, 0, len(opts.uris))
 	for i, uri := range opts.uris {
 		// The package and the output are never evidence of themselves: the digest of

@@ -37,7 +37,11 @@ Examples:
   hdf evidence export package.json --format oscal -o output/
   hdf evidence export package.json --format oscal`,
 		Args: evidencePackageArg,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
+			// A stdin package resolves against -o, so the default "." must not stand in for it.
+			if args[0] == stdinPackage && !c.Flags().Changed("output") {
+				return stdinNeedsOutput("package", "<dir>")
+			}
 			return runEvidenceExport(args[0], format, outputDir)
 		},
 	}
@@ -173,7 +177,12 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 	if err != nil {
 		return err
 	}
-	targets, convertible, err := collectExportTargets(doc, refs, filepath.Dir(pkgPath))
+	// A stdin package has no directory; the output directory is where its exports live.
+	pkgDir := filepath.Dir(pkgPath)
+	if pkgPath == stdinPackage {
+		pkgDir = outputDir
+	}
+	targets, convertible, err := collectExportTargets(doc, refs, pkgDir)
 	if err != nil {
 		return err
 	}
