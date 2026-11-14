@@ -6,6 +6,7 @@
  * differs between the two languages writes a bag only one of them can restore.
  */
 
+import { isGoZeroTime, parseTimestamp } from '@mitre/hdf-utilities';
 import { validateResults } from '@mitre/hdf-validators';
 import { goDecodeRejections } from '../../../shared/typescript/converterutil.js';
 
@@ -406,6 +407,8 @@ function restoreInventedOverrideFields(req: Record<string, unknown>, bag: Record
     const by = c.appliedBy as {identifier?: string} | undefined;
     if (by?.identifier) row.appliedBy = c.appliedBy;
     if (c.appliedAt) row.appliedAt = c.appliedAt;
-    row.expiresAt = c.expiresAt;
+    // Go's IsZero guard: absent, null and the zero time carry no expiry.
+    const expires = typeof c.expiresAt === 'string' ? parseTimestamp(c.expiresAt) : null;
+    if (expires && !isGoZeroTime(expires)) row.expiresAt = c.expiresAt;
   });
 }

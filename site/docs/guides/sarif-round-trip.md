@@ -21,7 +21,8 @@ it.
 | What | Outcome | Asserted |
 |---|---|---|
 | Rule identity, for every rule a result references | preserved | both languages |
-| Result count per rule | preserved | both |
+| Result count per rule, where each result has at most one location | preserved | both |
+| A result at N locations | becomes N results, each at its own location and carrying that result's property bag | both |
 | Each result's `kind` | preserved | both |
 | Each result's message text, where one was present | preserved | both |
 | Each result's resolved level (§3.27.10) | preserved | both |

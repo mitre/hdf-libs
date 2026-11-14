@@ -23,6 +23,16 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`sarif-to-hdf` keeps every location of a multi-location result, and the round trip through `hdf-to-sarif` re-emits them.** One SARIF result at N locations expands to N HDF results, but every expanded row carried the first location and the carried property bags were indexed per SARIF result rather than per HDF row, so on round trip the extra locations were lost and a bag could land on a neighbor's second location while its own result came back bare. Each row now carries its own location and its own bag, in both languages, pinned by a round-trip test built from a real multi-location Defender for DevOps scan. The msft-defender-devops golden changed in 14 `sarif-results[].location.region.startLine` values, each now matching its row's `codeDesc`.
+
+- **`hdf-to-sarif` restores a rule's level from the `sarif-level` tag `sarif-to-hdf` writes.** The exporter read `tags.severity`, which `sarif-to-hdf` stopped writing, so the restore path was dead and a rule whose `security-severity` set its impact came back with a re-derived level (`warning` with 9.8 returned as `error`). `tags.severity` is never read as a SARIF level; in HDF it carries an InSpec severity word.
+
+- **A carried status override with no usable `expiresAt` keeps the default expiry the converter derives.** TypeScript accepted an absent or null carried value and emitted an override missing its schema-required `expiresAt`; Go assigned the zero time and emitted one already expired in year 1. Both now replace the default only with a value that parses to a real date-time.
+
+- **`hdf-to-sarif` lowercases CWE tags ASCII-only in both languages.** TypeScript used Unicode case mapping where Go lowered A-Z only, so a non-ASCII CWE value exported differently. One helper per language in `@mitre/hdf-utilities` (`asciiLower`, Go `hdfutil.ASCIILower`) replaces the copies in the SARIF, BOM-fingerprint and OSCAL code, pinned by a shared case table.
+
+- **`sarif-to-hdf` (Go) checks the input size before hashing it,** as every other converter and the TypeScript twin do.
+
 - **`hdf evidence add-reference --href` records a remote URL exactly as typed.** The value went through the local-path encoder, so a query string or fragment was escaped (`?` to `%3F`, `#` to `%23`) and the recorded `externalReferences[].href` named a different resource. A URL is now recorded verbatim; a local path is still recorded as an escaped uri-reference, and a name that is not UTF-8 is still refused.
 
 - **`hdf evidence update` and `hdf evidence add-reference` write the package atomically.** Both wrote with a truncate-then-write where every sibling command stages beside the file and renames, so an interrupted write could leave the only copy of an attestation empty. A test now fails if any command in the CLI writes with `os.WriteFile`.

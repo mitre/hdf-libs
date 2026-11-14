@@ -30,6 +30,16 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Lowercase A-Z and nothing else. `toLowerCase` applies Unicode lowercase
+ * mapping (U+0130 becomes two code points) and Go's `strings.ToLower` and
+ * `strings.EqualFold` apply their own Unicode tables, so this is the one
+ * lowering both languages agree on. Parity: hdfutil.ASCIILower.
+ */
+export function asciiLower(s: string): string {
+  return s.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
+}
+
+/**
  * Replace every `<...>` tag span with `replacement`, in a single linear scan.
  *
  * Matches the historical `replace(/<[^>]*>/g, replacement)` span semantics: a

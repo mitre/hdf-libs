@@ -492,6 +492,9 @@ func restoreInventedOverrideFields(req *hdf.EvaluatedRequirement, bag map[string
 		if !carried[i].AppliedAt.IsZero() {
 			req.StatusOverrides[i].AppliedAt = carried[i].AppliedAt
 		}
-		req.StatusOverrides[i].ExpiresAt = carried[i].ExpiresAt
+		// Absent, null and Go's zero time all decode to IsZero: no expiry was carried.
+		if !carried[i].ExpiresAt.IsZero() {
+			req.StatusOverrides[i].ExpiresAt = carried[i].ExpiresAt
+		}
 	}
 }

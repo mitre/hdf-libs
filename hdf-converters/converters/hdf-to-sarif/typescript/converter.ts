@@ -8,7 +8,7 @@
  * both languages canonicalize the whole document instead of maintaining two
  * field orders by hand.
  */
-import { formatJsonNumber, impactToSeverity } from '@mitre/hdf-utilities';
+import { asciiLower, formatJsonNumber, impactToSeverity } from '@mitre/hdf-utilities';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
   type Obj,
@@ -390,30 +390,16 @@ function resultBlock(
 
 // --- level and kind ---
 
-/**
- * The set a carried severity tag must belong to before it is trusted as a SARIF
- * level rather than an HDF severity word.
- */
+/** The set a carried level must belong to before it is trusted as a SARIF level. */
 const SARIF_LEVELS = new Set(['none', 'note', 'warning', 'error']);
 
 /**
- * Resolves the SARIF severity level for a requirement.
- *
- * A tags.severity written by sarif-to-hdf holds the source level verbatim and is
- * the only thing that can restore "none", which HDF impact cannot express —
- * impact 0.0 means no impact, not ungraded. Absent that, the level is derived
- * from impact on the repo's own severity bands, which is the inverse of the alias
- * table sarif-to-hdf maps levels through.
- */
-/**
  * The level for ONE result, preferring the level sarif-to-hdf carried for it.
- * tags["severity"] is a requirement-level summary, so a rule whose results carried
- * different levels had them all re-emitted at the summary's level and the RESOLVED
- * level (SARIF 3.27.10) came back changed for every result but one.
- *
- * A result the source left level-less carries nothing here and falls through to the
- * rule level, which is the rule's defaultConfiguration — so the level still resolves
- * to what it resolved to before. Mirrors Go's resultLevel.
+ * tags["sarif-level"] is a requirement-level summary, so a rule whose results
+ * carried different levels had them all re-emitted at the summary's level and the
+ * RESOLVED level (SARIF 3.27.10) came back changed for every result but one. A
+ * result the source left level-less carries nothing here and falls through to the
+ * rule level. Mirrors Go's resultLevel.
  */
 function resultLevel(req: Obj, ordinal: number): string {
   const carried = carriedResultField(req, ordinal, 'level');
@@ -421,9 +407,19 @@ function resultLevel(req: Obj, ordinal: number): string {
   return ruleLevel(req);
 }
 
+/**
+ * Resolves the SARIF severity level for a requirement.
+ *
+ * The tags["sarif-level"] sarif-to-hdf writes holds the source level verbatim and
+ * is the only thing that can restore "none", which HDF impact cannot express, or a
+ * level that security-severity outranked for impact. tags["severity"] is never
+ * read: in HDF it is an InSpec severity word, not a SARIF level. Absent a carried
+ * level, it is derived from impact on the repo's own severity bands, the inverse
+ * of the alias table sarif-to-hdf maps levels through. Mirrors Go's ruleLevel.
+ */
 function ruleLevel(req: Obj): string {
   const tags = asMap(req.tags);
-  const carried = getStr(tags, 'severity');
+  const carried = getStr(tags, 'sarif-level');
   if (SARIF_LEVELS.has(carried)) return carried;
   const impact = typeof req.impact === 'number' ? req.impact : 0;
   switch (impactToSeverity(impact)) {
@@ -550,7 +546,8 @@ function ruleTags(req: Obj): string[] {
   // from that list, so they degraded to the static-analysis fallback too.
   for (const src of [stringSlice(req.cwe), stringSlice(reqTags?.cwe)]) {
     for (const cwe of src) {
-      if (cwe !== '') tags.add(`external/cwe/${cwe.toLowerCase()}`);
+      // CWE-79 renders as cwe-79, the casing the external/cwe/ convention uses.
+      if (cwe !== '') tags.add(`external/cwe/${asciiLower(cwe)}`);
     }
   }
   for (const nist of stringSlice(reqTags?.nist)) if (nist !== '') tags.add(`nist/${nist}`);

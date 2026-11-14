@@ -366,12 +366,11 @@ var sarifAliases = map[string]float64{
 // supported, so any other explicit value is refused rather than silently ignored;
 // omitting it accepts whatever the document declares on a best-effort basis.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
-	resultsChecksum := shared.InputChecksum(input)
-
 	sarif, err := parseSarif(input, inputVersion...)
 	if err != nil {
 		return nil, err
 	}
+	resultsChecksum := shared.InputChecksum(input)
 
 	// NormalizeTimestamp, not .UTC(): canonical HDF time is UTC AT MILLISECOND
 	// precision, and the helper exists so converter output is byte-identical to the
@@ -526,17 +525,14 @@ func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, r
 	bagGroups := make([]bagGroup, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
 		g := groupMap[ruleID]
-		req := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
+		req, rowProps := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
 		requirements = append(requirements, req)
 
-		// Collected in the same order the requirement's results are built, so a
-		// carried bag's ordinal addresses the result it came from.
-		bg := bagGroup{ruleID: g.ruleID}
+		// One bag per HDF result row, so a carried bag's ordinal addresses the row
+		// hdf-to-sarif re-emits as a result.
+		bg := bagGroup{ruleID: g.ruleID, resultProps: rowProps}
 		if g.rule != nil {
 			bg.ruleProps = g.rule.Properties
-		}
-		for _, sr := range g.results {
-			bg.resultProps = append(bg.resultProps, sr.Properties)
 		}
 		bagGroups = append(bagGroups, bg)
 	}
@@ -659,7 +655,9 @@ func lookupRule(ruleMap map[string]ReportingDescriptor, result SarifResult) *Rep
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, sourceIndices []int, raws []json.RawMessage, timestamp time.Time) hdf.EvaluatedRequirement {
+// convertResultGroup also returns each HDF result row's source property bag, in
+// row order: a SARIF result at N locations contributes its bag N times.
+func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, sourceIndices []int, raws []json.RawMessage, timestamp time.Time) (hdf.EvaluatedRequirement, []map[string]interface{}) {
 	// Derive requirement-level metadata from the rule and first result
 	firstResult := sarifResults[0]
 	title, description := deriveMetadata(firstResult, rule)
@@ -728,8 +726,9 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 	// SARIF result share its record and its pointer, because they share its source.
 	var results []hdf.RequirementResult
 	perResult := make([]map[string]interface{}, 0, len(sarifResults))
+	rowProps := make([]map[string]interface{}, 0, len(sarifResults))
 	for i, sr := range sarifResults {
-		expanded := convertSarifResultToHDFResults(sr, rule, timestamp)
+		expanded, sources := convertSarifResultToHDFResults(sr, rule, timestamp)
 		srcIdx := i
 		if i < len(sourceIndices) {
 			srcIdx = sourceIndices[i]
@@ -756,7 +755,8 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			// share its carriage the way they share its record.
 			restoreUnexpressibleResult(&expanded[j], resultBagRow(sr))
 			restoreCarriedStatus(&expanded[j], resultBagRow(sr), sr.Kind)
-			perResult = append(perResult, perResultTagEntry(sr))
+			perResult = append(perResult, perResultTagEntry(sr, sources[j]))
+			rowProps = append(rowProps, sr.Properties)
 		}
 		results = append(results, expanded...)
 	}
@@ -876,7 +876,7 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 		restoreUnexpressible(&req, bag)
 	}
 
-	return req
+	return req, rowProps
 }
 
 // packageFromSarifProperties extracts an Affected_Package from a SARIF
@@ -1102,7 +1102,8 @@ func rawSourceRecordFor(raw json.RawMessage, runIdx, resultIdx int) *hdf.RawSour
 // holds the whole record but as an opaque string, so nothing can filter on what is
 // inside it; fingerprints exist for cross-run correlation, which needs them
 // addressable. Only fields a requirement-level summary cannot represent go here.
-func perResultTagEntry(result SarifResult) map[string]interface{} {
+// loc is the location this HDF row was expanded from.
+func perResultTagEntry(result SarifResult, loc *SarifLocation) map[string]interface{} {
 	entry := map[string]interface{}{}
 	// The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
 	// key, so applying the default here invents no history; tags["kind"] stays
@@ -1134,8 +1135,8 @@ func perResultTagEntry(result SarifResult) map[string]interface{} {
 	// the first and an exporter re-emitting them gave all ten that one location.
 	// Region members beyond line have no HDF home at all; they ride here under the
 	// documented sarif-region vocabulary hdf-to-sarif already parses.
-	if loc := perResultLocation(result); len(loc) > 0 {
-		entry["location"] = loc
+	if carried := perResultLocation(loc); len(carried) > 0 {
+		entry["location"] = carried
 	}
 	return entry
 }
@@ -1163,8 +1164,11 @@ func uniformKind(results []SarifResult) (string, bool) {
 	return kind, kind != ""
 }
 
-// convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
-func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescriptor, timestamp time.Time) []hdf.RequirementResult {
+// convertSarifResultToHDFResults converts a single SARIF result into one or more HDF
+// RequirementResults, and returns beside each the location it was expanded from.
+// The location-less row a result with nothing representable gets is given the
+// first location, which has nothing representable either.
+func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescriptor, timestamp time.Time) ([]hdf.RequirementResult, []*SarifLocation) {
 	// Map kind to HDF status. The raw status stays the tool's — an accepted
 	// suppression becomes a structured, attributed override on the requirement
 	// (see convertResultGroup), not a laundered notReviewed status.
@@ -1182,7 +1186,9 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 
 	// Create results for each location
 	var results []hdf.RequirementResult
-	for _, loc := range result.Locations {
+	var sources []*SarifLocation
+	for i := range result.Locations {
+		loc := result.Locations[i]
 		// Keep a location when there is something representable in it. The schema's
 		// physicalLocation.anyOf admits an address instead of an artifactLocation, so
 		// requiring artifactLocation discarded a region's line; accepting any
@@ -1196,6 +1202,7 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 			continue
 		}
 		results = append(results, createHDFResult(loc, status, timestamp, backtrace))
+		sources = append(sources, &result.Locations[i])
 	}
 
 	// If no locations, create a location-less result so the finding isn't silently dropped
@@ -1206,6 +1213,11 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 			StartTime: timestamp,
 			Backtrace: backtrace,
 		})
+		var first *SarifLocation
+		if len(result.Locations) > 0 {
+			first = &result.Locations[0]
+		}
+		sources = append(sources, first)
 	}
 
 	// Add suppression justification as message on results
@@ -1216,7 +1228,7 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 		}
 	}
 
-	return results
+	return results, sources
 }
 
 // --- Message resolution ---
@@ -1775,15 +1787,14 @@ func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string
 	return count, unit, nil
 }
 
-// perResultLocation carries one result's first location: the uri and the region
-// members SARIF defines as integers. Only the FIRST — a multi-location result is
-// expanded into several HDF results on import, so each expanded row carries the
-// location it was expanded from.
-func perResultLocation(result SarifResult) map[string]interface{} {
-	if len(result.Locations) == 0 {
+// perResultLocation carries the location one HDF row was expanded from: the uri and
+// the region members SARIF defines as integers. A multi-location result is
+// expanded into one HDF result per location, so each row carries its own.
+func perResultLocation(loc *SarifLocation) map[string]interface{} {
+	if loc == nil {
 		return nil
 	}
-	phys := result.Locations[0].PhysicalLocation
+	phys := loc.PhysicalLocation
 	if phys == nil {
 		return nil
 	}
