@@ -17,6 +17,7 @@
     "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml",
     "./problems.json": "./dist/problems.json"
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],

@@ -38,6 +38,7 @@
       "import": "./dist/string/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
