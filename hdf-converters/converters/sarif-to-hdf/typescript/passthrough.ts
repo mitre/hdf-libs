@@ -388,6 +388,11 @@ export function restoreCarriedStatus(
   out.status = carried;
 }
 
+function carriesTime(v: unknown): boolean {
+  const t = typeof v === 'string' ? parseTimestamp(v) : null;
+  return t !== null && !isGoZeroTime(t);
+}
+
 /**
  * Replaces the identity, application time and expiry this converter invented with
  * the carried ones, position by position, leaving the type, status and reason it
@@ -406,9 +411,8 @@ function restoreInventedOverrideFields(req: Record<string, unknown>, bag: Record
     const row = d as Record<string, unknown>;
     const by = c.appliedBy as {identifier?: string} | undefined;
     if (by?.identifier) row.appliedBy = c.appliedBy;
-    if (c.appliedAt) row.appliedAt = c.appliedAt;
-    // Go's IsZero guard: absent, null and the zero time carry no expiry.
-    const expires = typeof c.expiresAt === 'string' ? parseTimestamp(c.expiresAt) : null;
-    if (expires && !isGoZeroTime(expires)) row.expiresAt = c.expiresAt;
+    // Go's IsZero guard: absent, null and the zero time carry no time at all.
+    if (carriesTime(c.appliedAt)) row.appliedAt = c.appliedAt;
+    if (carriesTime(c.expiresAt)) row.expiresAt = c.expiresAt;
   });
 }

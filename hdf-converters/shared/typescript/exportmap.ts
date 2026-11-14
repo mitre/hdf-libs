@@ -20,6 +20,7 @@ import {
   worstStatus,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
+import { ExternalReferenceEncoding, type RawSourceRecord } from '@mitre/hdf-schema';
 import { requireHdfResults } from './converterutil.js';
 import { absentIfGoZeroTime } from './status.js';
 
@@ -463,4 +464,42 @@ export function disposition(req: Obj, now?: string): string {
   if (gov) return getStr(gov, 'type');
   if (overrides.length === 0) return getStr(req, 'disposition');
   return '';
+}
+
+// --- rawSourceRecord carriage ---
+
+/** A rawSourceRecord's JSON layout: stringifyLine or stringifyDocument. */
+export type RecordLayout = 'compact' | 'indented';
+
+/**
+ * Carries a source tool's JSON record on an HDF result. `parsed` is the record as
+ * parseJSONPreservingNumbers gave it, so every number token survives as written;
+ * keys are sorted, < > & stay raw and U+2028/U+2029 are escaped, byte-identical
+ * with Go's exportmap.BuildJSONRawSourceRecord. Undefined when there is nothing
+ * to carry.
+ */
+export function buildJsonRawSourceRecord(
+  parsed: unknown,
+  pointer: string,
+  layout: RecordLayout,
+): RawSourceRecord | undefined {
+  return buildJsonRawSourceRecordFromValue(canonicalize(parsed), pointer, layout);
+}
+
+/**
+ * buildJsonRawSourceRecord for a value already in hand, encoded in its own key
+ * order, as Go's BuildJSONRawSourceRecordFromValue keeps a struct's declaration order.
+ */
+export function buildJsonRawSourceRecordFromValue(
+  value: unknown,
+  pointer: string,
+  layout: RecordLayout,
+): RawSourceRecord | undefined {
+  if (value === undefined) return undefined;
+  return {
+    content: layout === 'indented' ? stringifyDocument(value) : stringifyLine(value),
+    encoding: ExternalReferenceEncoding.UTF8,
+    mediaType: 'application/json',
+    pointer,
+  };
 }

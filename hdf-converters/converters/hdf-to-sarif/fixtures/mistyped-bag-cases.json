@@ -24,6 +24,8 @@
     {"on": "rule", "key": "status_overrides", "value": [{"type": "waiver", "status": "passed", "reason": "ISSM accepted"}], "why": "an override with no expiresAt; the derived default expiry must survive rather than an absent or zero one"},
     {"on": "rule", "key": "status_overrides", "value": [{"type": "waiver", "status": "passed", "reason": "ISSM accepted", "expiresAt": null}], "why": "a null expiresAt carries no value, so the derived default expiry must survive"},
     {"on": "rule", "key": "status_overrides", "value": [{"type": "waiver", "status": "passed", "reason": "ISSM accepted", "expiresAt": "0001-01-01T00:00:00Z"}], "why": "Go's zero time is how Go spells an unset expiry, so it must not replace the derived default"},
+    {"on": "rule", "key": "status_overrides", "value": [{"type": "waiver", "status": "passed", "reason": "ISSM accepted", "appliedAt": null}], "why": "a null appliedAt carries no value, so the derived application time must survive; the absent case is the no-expiresAt row above, which carries no appliedAt either"},
+    {"on": "rule", "key": "status_overrides", "value": [{"type": "waiver", "status": "passed", "reason": "ISSM accepted", "appliedAt": "0001-01-01T00:00:00Z"}], "why": "Go's zero time is how Go spells an unset application time, so it must not replace the derived one"},
     {"on": "rule", "key": "descriptions", "value": [{"label": "fix", "data": 5}], "why": "a fix description whose text is not a string; Go drops the whole carried list when one element fails to decode"},
     {"on": "result", "key": "resource", "value": 5, "why": "a number where the schema wants a string"},
     {"on": "result", "key": "resourceId", "value": {"purl": "pkg:pypi/jinja2@2.10"}, "why": "an object where the schema wants a string"},

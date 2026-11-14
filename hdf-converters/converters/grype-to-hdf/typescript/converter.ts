@@ -6,7 +6,6 @@ import {
   createMinimalBaseline,
   type Cvss,
   Ecosystem,
-  ExternalReferenceEncoding,
   type Epss,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -19,7 +18,7 @@ import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings'
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
 import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
-import {canonicalize, parseJSONPreservingNumbers, stringifyDocument} from '../../../shared/typescript/exportmap.js';
+import {buildJsonRawSourceRecord, parseJSONPreservingNumbers} from '../../../shared/typescript/exportmap.js';
 
 // Input types for Grype JSON
 
@@ -445,14 +444,9 @@ function convertMatchToRequirement(match: GrypeMatch, rawMatch: unknown, isIgnor
 
   // The match that produced this result, carried on the RESULT per ADR-0017 §5
   // — one CVE against two packages is two matches, and roll-up's first-wins on
-  // `code` would otherwise discard the second. stringifyDocument matches the Go
-  // twin's exportmap.EncodeDocument byte for byte; the twins share goldens.
-  result.rawSourceRecord = {
-    content: stringifyDocument(canonicalize(rawMatch)),
-    encoding: ExternalReferenceEncoding.UTF8,
-    mediaType: 'application/json',
-    pointer: sourcePointer,
-  };
+  // `code` would otherwise discard the second.
+  const record = buildJsonRawSourceRecord(rawMatch, sourcePointer, 'indented');
+  if (record) result.rawSourceRecord = record;
 
   // Get CCI mappings for NIST controls using curated mapping table
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);

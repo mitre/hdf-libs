@@ -1,7 +1,6 @@
 package grype_to_hdf
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -90,7 +89,7 @@ type GrypeMatch struct {
 	// raw is the match exactly as Grype emitted it. Grype carries no literal
 	// source snippet, so the result's rawSourceRecord is the whole match, with
 	// every field the typed struct does not model and the source number tokens
-	// (see renderMatchRecord).
+	// (see exportmap.BuildJSONRawSourceRecord).
 	raw json.RawMessage
 }
 
@@ -344,27 +343,6 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// renderMatchRecord renders the untyped match through exportmap's document
-// encoder, which the TypeScript twin's stringifyDocument matches byte for byte:
-// keys sorted, U+2028/U+2029 escaped, < > & raw. UseNumber keeps every number
-// token as Grype wrote it. Source key order and escapes are not preserved.
-func renderMatchRecord(match GrypeMatch) string {
-	if len(match.raw) == 0 {
-		return "{}"
-	}
-	dec := json.NewDecoder(bytes.NewReader(match.raw))
-	dec.UseNumber()
-	var untyped interface{}
-	if err := dec.Decode(&untyped); err != nil {
-		return "{}"
-	}
-	encoded, err := exportmap.EncodeDocument(untyped)
-	if err != nil {
-		return "{}"
-	}
-	return string(bytes.TrimRight(encoded, "\n"))
-}
-
 // buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
 // primitive. Related-vulnerability CVSS arrays are NOT merged in — the schema
 // contract is "one entry per source-CVE CVSS metric set", and the source CVE
@@ -574,14 +552,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	// two matches, and roll-up's first-wins on `code` would otherwise discard
 	// the second. `code` stays absent — Grype runs no executable check — and the
 	// v2 downgrade reconstructs its CODE tab from this record.
-	if len(match.raw) > 0 {
-		result.RawSourceRecord = &hdf.RawSourceRecord{
-			Content:   renderMatchRecord(match),
-			Encoding:  hdf.UTF8,
-			MediaType: "application/json",
-			Pointer:   hdfutil.Ptr(sourcePointer),
-		}
-	}
+	result.RawSourceRecord = exportmap.BuildJSONRawSourceRecord(match.raw, sourcePointer, exportmap.RecordIndented)
 
 	// Get CCI tags from curated NIST → CCI mapping
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)

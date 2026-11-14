@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -440,8 +441,8 @@ func TestConvertTwistlock_RawSourceRecordCarriesUnmappedFields(t *testing.T) {
 	assert.Contains(t, rec.Content, "\"layerTime\":")
 }
 
-func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
-	code := renderVulnRecord(TwistlockVuln{
+func TestConvertTwistlock_VulnRecord_OrderAndOmission(t *testing.T) {
+	rec := exportmap.BuildJSONRawSourceRecordFromValue(TwistlockVuln{
 		ID:             "CVE-X",
 		Status:         "affected",
 		CVSS:           7.5,
@@ -449,7 +450,8 @@ func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
 		PackageName:    "openssl",
 		PackageVersion: "1.0",
 		Link:           "https://example.test/CVE-X",
-	})
+	}, "/vulnerabilities/0", exportmap.RecordIndented)
+	require.NotNil(t, rec)
 	// Fixed two-space indent, declaration-order fields, empties dropped.
 	expected := "{\n" +
 		"  \"id\": \"CVE-X\",\n" +
@@ -460,7 +462,7 @@ func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
 		"  \"packageVersion\": \"1.0\",\n" +
 		"  \"link\": \"https://example.test/CVE-X\"\n" +
 		"}"
-	assert.Equal(t, expected, code)
+	assert.Equal(t, expected, rec.Content)
 }
 
 func TestConvertTwistlock_ControlType(t *testing.T) {

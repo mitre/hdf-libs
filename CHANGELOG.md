@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`sarif-to-hdf` (TypeScript) no longer throws on a SARIF location that is JSON `null` or whose `physicalLocation`, `artifactLocation` or `region` is `null`.** Such a location is skipped as the Go converter skips it, and the raw source record still carries the input as written. A carried `appliedAt` of Go's zero time (`0001-01-01T00:00:00Z`) or `null` no longer replaces the derived application time, matching Go and the `expiresAt` guard.
+
 - **hdf-diff's TypeScript engine orders `requirementDiffs`, `componentDiffs`, `packageDiffs` and event chains by code point, the order Go already used.** It sorted with locale collation, so ids that mix case or differ only in `-` and `_` produced a different comparison document from each language and from host to host. A shared vector table holds both to one order.
 
 - **Normalizing a legacy SAF supplement that carries both a top-level `passthrough` and a different `extensions.passthrough` warns that the top-level one was dropped,** in Go and TypeScript, in place of the deprecation notice that claimed it was normalized, instead of discarding it silently. An identical pair is reported as normalized, since nothing is lost.
@@ -100,6 +102,8 @@ All notable changes to this project will be documented in this file.
   No committed fixture carries either shape, so no golden moved and no existing document changes. The parity harness masks neither field, so the divergence would have failed a snapshot — the branch was simply never executed.
 
 ### Changed
+
+- **`grype-to-hdf`, `sarif-to-hdf` and `twistlock-to-hdf` build `rawSourceRecord` through one shared builder per language** (`exportmap.BuildJSONRawSourceRecord` in Go, `buildJsonRawSourceRecord` in TypeScript), held to one shared case table, in place of three copies of the decode, canonical-encode and wrap pipeline. Output is unchanged; `sarif-to-hdf` (TypeScript) now emits no record, as Go does, where it used to emit one with empty content when a snapshot was missing.
 
 - **A `refs` entry with an undeclared member is now rejected by `hdf validate` and both shipped validators.** The `Reference` primitive was closed with `unevaluatedProperties`, which neither shipped validator implements (both are draft-07 engines), so `hdf-validators` in Go and TypeScript accepted a reference such as `{"url": "…", "bogus": 1}` that the schema said was rejected. `ref`, `url` and `uri` are now declared at the top level and closed with `additionalProperties: false`; the anyOf branches still require at least one of them, and the items of a `ref` array stay open so a source's own reference record carries verbatim. A shared case table holds both shipped validators to it. The generated Go `Reference` struct now lists `URI` before `URL`; JSON tags are unchanged.
 

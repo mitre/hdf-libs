@@ -1,7 +1,6 @@
 package sarif
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -733,9 +732,11 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 		if i < len(sourceIndices) {
 			srcIdx = sourceIndices[i]
 		}
+		// The SARIF result, complete and untyped, so properties SarifResult does not
+		// declare survive. utf-8 rather than base64: a SARIF result is JSON, so UTF-8 text.
 		var record *hdf.RawSourceRecord
-		if i < len(raws) && raws[i] != nil {
-			record = rawSourceRecordFor(raws[i], runIdx, srcIdx)
+		if i < len(raws) {
+			record = exportmap.BuildJSONRawSourceRecord(raws[i], fmt.Sprintf("/runs/%d/results/%d", runIdx, srcIdx), exportmap.RecordCompact)
 		}
 		for j := range expanded {
 			// The record goes on the FIRST expanded result only. All of them came from
@@ -1051,50 +1052,6 @@ func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string,
 		return LevelNone, severitySourceResultLevel
 	default:
 		return "warning", severitySourceFallback
-	}
-}
-
-// rawSourceRecordFor carries one SARIF result, complete, on the HDF result(s) it
-// produced. ADR-0017 scoped this to the result deliberately: records merged onto the
-// requirement collide, and merging entries that share an id has to discard one, which
-// is exactly how the non-first result's metadata used to be lost. Encoding is utf-8
-// rather than base64 because a SARIF result is JSON and therefore valid UTF-8 text;
-// base64 would inflate it by a third and make it unreadable for no gain.
-func rawSourceRecordFor(raw json.RawMessage, runIdx, resultIdx int) *hdf.RawSourceRecord {
-	// Re-marshalled from the UNTYPED result, not from SarifResult: marshalling the
-	// struct would emit only the fields it declares, silently dropping every SARIF
-	// property this converter does not model — the opposite of a verbatim record.
-	// Keys come out sorted because Go sorts map keys, and the TypeScript peer sorts
-	// to match, so the two languages agree byte for byte. Original key order and
-	// whitespace are therefore not preserved; the content is complete, not byte-exact.
-	// UseNumber, not plain Unmarshal: decoding into interface{} turns every number
-	// into a float64, which silently rounds any integer above 2^53 — the record would
-	// then carry a DIFFERENT value than the source, which no reading of "complete"
-	// permits. json.Number keeps the original token and encoding/json re-emits it
-	// literally. The TypeScript peer recovers the same token through its parser's
-	// source access and wraps it in exportmap's RawNumber, so the two still agree.
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.UseNumber()
-	var untyped interface{}
-	if err := dec.Decode(&untyped); err != nil {
-		return nil
-	}
-	// exportmap's canonical encoder, not json.Marshal: Go HTML-escapes <, > and & by
-	// default while JavaScript's JSON.stringify does not, so a record holding a C
-	// snippet with an ampersand would differ byte for byte between the two languages.
-	// It also escapes U+2028/U+2029 and normalizes negative zero, which are the other
-	// three places the two disagree.
-	encoded, err := exportmap.EncodeLine(untyped)
-	if err != nil {
-		return nil
-	}
-	content := bytes.TrimRight(encoded, "\n")
-	pointer := fmt.Sprintf("/runs/%d/results/%d", runIdx, resultIdx)
-	return &hdf.RawSourceRecord{
-		Content:   string(content),
-		Encoding:  hdf.UTF8,
-		MediaType: "application/json",
-		Pointer:   &pointer,
 	}
 }
 
