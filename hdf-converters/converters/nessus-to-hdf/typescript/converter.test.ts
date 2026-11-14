@@ -1048,3 +1048,12 @@ describe('Nessus unmapped NIST fallback', () => {
     expect(req.tags.nist).toBeUndefined();
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertNessusToHdf(input)).rejects.toThrow(
+      new Error('nessus: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

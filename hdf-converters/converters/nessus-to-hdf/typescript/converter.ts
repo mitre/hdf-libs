@@ -1,6 +1,6 @@
 import { parseXmlWithArrays, parseTimestamp, replaceHtmlTags, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { DEFAULT_REMEDIATION_NIST_TAGS, buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { DEFAULT_REMEDIATION_NIST_TAGS, buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateXmlInput } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -157,7 +157,7 @@ function decodeEntitiesDeep(value: unknown): unknown {
  * Convert Nessus XML scan results to HDF format
  */
 export async function convertNessusToHdf(nessusXml: string, converterVersion = '1.0.0'): Promise<HDFResults> {
-  validateInputSize(nessusXml, 'nessus');
+  validateXmlInput(nessusXml, 'nessus');
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 

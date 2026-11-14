@@ -6,21 +6,6 @@ import (
 	"strings"
 )
 
-// scanXMLPrologue walks the prologue — everything before the root element, the only
-// region where a DOCTYPE may legally appear — and reports which declarations it holds.
-//
-// It reports rather than returning the text to search, because the text would still
-// contain commented-out declarations: `<!-- <!DOCTYPE x> -->` is not a declaration, and
-// grepping a region that includes it cannot tell the difference.
-//
-// A fixed byte window cannot bound this region: the prologue may carry any amount of
-// comment and processing-instruction text, so a declaration can be pushed past any
-// constant. Walking to the root element has no such hole, and it is also what stops
-// declaration-shaped CONTENT from false-positiving — once the root is reached, nothing
-// after it is a declaration.
-//
-// An unterminated construct yields no root element, and so no prologue: there is
-// nothing a document that never opens an element can be said to have declared.
 // XMLPrologueDeclarations is what a document's prologue declares. The three facts are
 // separate because they are three different attack surfaces, and which of them a given
 // boundary refuses is a policy decision belonging to that boundary, not here:
@@ -82,6 +67,13 @@ func scanInternalSubset(s []byte) (end int, hasEntity, hasExternalID, ok bool) {
 				return 0, hasEntity, hasExternalID, false // unterminated literal
 			}
 			i++
+		case bytes.HasPrefix(s[i:], []byte("<?")):
+			// A PI's content is not a literal: a quote inside it must not open one.
+			closeAt := bytes.Index(s[i:], []byte("?>"))
+			if closeAt == -1 {
+				return 0, hasEntity, hasExternalID, false
+			}
+			i += closeAt + 2
 		case bytes.HasPrefix(s[i:], []byte("<!--")):
 			closeAt := bytes.Index(s[i:], []byte("-->"))
 			if closeAt == -1 {
@@ -121,8 +113,14 @@ func scanInternalSubset(s []byte) (end int, hasEntity, hasExternalID, ok bool) {
 	return 0, hasEntity, hasExternalID, false // subset never closed
 }
 
-// scanXMLPrologue walks the prologue — everything before the root element — and reports
-// what it declares, plus whether a root element was reached at all.
+// scanXMLPrologue walks the prologue — everything before the root element, the only
+// region where a DOCTYPE may legally appear — and reports what it declares, plus whether
+// a root element was reached at all. It reports facts rather than returning text to
+// search, because that text would still hold commented-out declarations. No fixed byte
+// window can bound the region, since comments and PIs can push a declaration past any
+// constant; walking to the root has no such hole, and it stops declaration-shaped
+// content from false-positiving. An unterminated construct yields no root element, and
+// so no prologue to trust.
 func scanXMLPrologue(input []byte) (decls XMLPrologueDeclarations, foundRoot bool) {
 	// One leading UTF-8 BOM is an encoding signature (XML 1.0 §4.3.3), not character data.
 	i := 0

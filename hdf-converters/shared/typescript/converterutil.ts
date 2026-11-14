@@ -6,7 +6,7 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isGoZeroTime, worstStatus, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isGoZeroTime, worstStatus, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE, inspectXmlPrologue } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
@@ -252,6 +252,34 @@ export function validateInputSize(
     // ValidateJSONSize wraps with %w — otherwise the two languages report the
     // same rejection differently.
     throw new Error(`${converterName}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+/**
+ * The XML input gate every XML converter runs first: the size limit, then the DTD
+ * policy — refuse inline entities, external identifiers, and any DOCTYPE the prologue
+ * scan could not finish. Go parity: shared.ValidateXMLInput, pinned by
+ * testdata/xml-input-gate-cases.json; errors carry the converter name as Go's `%w` does.
+ */
+export function validateXmlInput(input: string, converterName: string, maxSize = 0): void {
+  const refuse = (message: string): never => {
+    throw new Error(`${converterName}: ${message}`);
+  };
+  try {
+    guardInputSize(input, maxSize);
+  } catch (err) {
+    // Go's ValidateXMLSize names the input kind; the wording is otherwise the guard's.
+    refuse(`XML ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const decls = inspectXmlPrologue(input);
+  if (decls.malformed && (decls.hasDoctype || /<!DOCTYPE/i.test(input))) {
+    refuse('XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked');
+  }
+  if (decls.hasEntityDecl) {
+    refuse('XML input contains entity declarations which are not supported (potential entity expansion attack)');
+  }
+  if (decls.hasExternalId) {
+    refuse('XML input references an external DTD or entity which is not supported (potential external entity attack)');
   }
 }
 

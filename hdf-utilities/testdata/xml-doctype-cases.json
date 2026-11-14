@@ -245,6 +245,51 @@
       "externalId": false,
       "why": "only one leading BOM is an encoding signature; a second is character data, so the prologue is malformed and the gate must refuse it on that ground",
       "malformed": true
+    },
+    {
+      "name": "processing instruction with a quote before an entity declaration",
+      "xml": "<!DOCTYPE x [<?p \"?><!ENTITY e \"v\"><?p \"?>]><x>&e;</x>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "XML 1.0 section 2.8 admits a PI in the internal subset; its content is not a literal, so a quote inside it must not swallow the declaration that follows",
+      "malformed": false
+    },
+    {
+      "name": "processing instruction with a quote before an external entity",
+      "xml": "<!DOCTYPE x [<?p \"?><!ENTITY e SYSTEM \"file:///etc/passwd\"><?p \"?>]><x>&e;</x>",
+      "doctype": true,
+      "entity": true,
+      "externalId": true,
+      "why": "the same PI evasion aimed at the XXE vector",
+      "malformed": false
+    },
+    {
+      "name": "unterminated processing instruction in the internal subset",
+      "xml": "<!DOCTYPE x [<?p <!ENTITY e \"v\">]><x/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": false,
+      "why": "a PI that never closes runs to the end of input, so the subset cannot be parsed and the scan must fail closed",
+      "malformed": true
+    },
+    {
+      "name": "a <? inside a quoted DTD literal is literal text, so a following entity is still seen",
+      "xml": "<!DOCTYPE x [<!ATTLIST x a CDATA \"<?\"><!ENTITY e \"v\">]><x/>",
+      "doctype": true,
+      "entity": true,
+      "externalId": false,
+      "why": "the quote branch runs before the PI branch, so a quoted <? never opens a processing instruction",
+      "malformed": false
+    },
+    {
+      "name": "a <? and a ?> split across two quoted DTD literals stay literal text",
+      "xml": "<!DOCTYPE x [<!ATTLIST x a CDATA \"<?\"><!ATTLIST x b CDATA \"?>\">]><x/>",
+      "doctype": true,
+      "entity": false,
+      "externalId": false,
+      "why": "neither quoted token is markup, so the subset is clean and parses to the end",
+      "malformed": false
     }
   ]
 }

@@ -261,24 +261,8 @@ function extractTextRecursive(obj: unknown): string {
 }
 
 /**
- * Walks the XML prologue — everything before the root element, the only region where a
- * DOCTYPE may legally appear — and reports which declarations it holds.
- *
- * It reports rather than returning the text to search, because the text would still
- * contain commented-out declarations: `<!-- <!DOCTYPE x> -->` is not a declaration, and
- * grepping a region that includes it cannot tell the difference.
- *
- * A fixed byte window cannot bound this region: the prologue may carry any amount of
- * comment and processing-instruction text, so a declaration can be pushed past any
- * constant. Walking to the root element has no such hole, and it is also what stops
- * declaration-shaped CONTENT from false-positiving — once the root is reached, nothing
- * after it is a declaration.
- *
- * An unterminated construct yields no root element, and so no prologue: there is nothing
- * a document that never opens an element can be said to have declared.
- *
- * Kept in parity with Go's scanXMLPrologue by testdata/xml-doctype-cases.json, which
- * both suites read.
+ * What a document's prologue declares. Kept in parity with Go's XMLPrologueDeclarations
+ * by testdata/xml-doctype-cases.json, which both suites read.
  */
 export interface XmlPrologueDeclarations {
   /** A DOCTYPE of any kind. A subset of only ELEMENT/ATTLIST/NOTATION is inert. */
@@ -327,6 +311,11 @@ function scanInternalSubset(s: string): SubsetScan {
       while (i < s.length && s[i] !== c) i++;
       if (i >= s.length) return fail(); // unterminated literal
       i++;
+    } else if (s.startsWith('<?', i)) {
+      // A PI's content is not a literal: a quote inside it must not open one.
+      const closeAt = s.indexOf('?>', i);
+      if (closeAt === -1) return fail();
+      i = closeAt + 2;
     } else if (s.startsWith('<!--', i)) {
       const closeAt = s.indexOf('-->', i);
       if (closeAt === -1) return fail();
@@ -355,6 +344,16 @@ function scanInternalSubset(s: string): SubsetScan {
 
 type PrologueScan = XmlPrologueDeclarations & { foundRoot: boolean };
 
+/**
+ * Walks the prologue — everything before the root element, the only region where a
+ * DOCTYPE may legally appear — and reports what it declares, plus whether a root element
+ * was reached at all. It reports facts rather than returning text to search, because
+ * that text would still hold commented-out declarations. No fixed byte window can bound
+ * the region, since comments and PIs can push a declaration past any constant; walking
+ * to the root has no such hole, and it stops declaration-shaped content from
+ * false-positiving. An unterminated construct yields no root element, and so no
+ * prologue to trust. Go twin: scanXMLPrologue.
+ */
 function scanXmlPrologue(input: string): PrologueScan {
   let hasDoctype = false;
   let hasEntityDecl = false;

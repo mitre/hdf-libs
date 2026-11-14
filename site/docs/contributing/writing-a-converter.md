@@ -52,7 +52,7 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 
 The document type is `HDFResults` — or `HDFBaseline`, `HDFPlan` or `HDFAmendments` for converters that produce those. Decide which you are producing before you start; the registration helper differs per type.
 
-**Validate size first.** `validateInputSize` / `ValidateJSONSize` (or `ValidateXMLInput` for XML) must be the first operation, before parsing. This is a security requirement, not a style preference — it is what stops a hostile input from exhausting memory during the parse.
+**Validate size first.** `validateInputSize` / `ValidateJSONSize` (or `validateXmlInput` / `ValidateXMLInput` for XML, which also refuse inline entity declarations, external DTD references, and a DOCTYPE they cannot parse) must be the first operation, before parsing. This is a security requirement, not a style preference — it is what stops a hostile input from exhausting memory during the parse.
 
 ## The steps
 

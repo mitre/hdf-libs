@@ -23,6 +23,12 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **The TypeScript XML converters apply the same input gate as their Go twins.** burpsuite, dbprotect, fortify, junit, netsparker, nessus, xccdf-results and veracode only checked size before parsing; they now refuse inline entity declarations, SYSTEM/PUBLIC external DTD references and a DOCTYPE whose declarations cannot be parsed, with the Go wording (`validateXmlInput` in the shared converter utilities). A shared table holds both languages to the same verdicts. An oversized XML input now reports `XML input exceeds …`, and the xccdf entry points prefix `xccdf:` as Go does.
+
+- **The XML prologue scanner (Go and TypeScript) no longer loses track inside a DTD internal subset at a processing instruction containing a quote.** That quote hid a following `<!ENTITY>` or `SYSTEM` from the gate. Processing instructions are skipped, and an unterminated one is refused as unparseable.
+
+- **`XMLPrologueDeclarations` godoc describes the type** instead of the internal scanner, in Go and in the TypeScript interface.
+
 - **The specification documents this release's schema additions.** `content` and `encoding` on External_Reference (with the rule that each requires the other, and the ExternalReferenceEncoding enumeration), `results[].rawSourceRecord` with a Raw_Source_Record section stating that a record is complete but not necessarily byte-exact, and `extensions.rawSourceArtifacts[]` with a Raw_Source_Artifact section stating its byte-exact carriage, why `document` is forbidden there, and how it relates to `passthrough` and to `rawSourceRecord`. A site test holds those tables to the schema in both directions.
 
 - **Documentation that disagreed with the code now matches it.** `hdf list --all` is described as what it does (switch `--detail requirements` to the flat ID/Status/Title table, nothing else), in the flag's help and the README; `hdf fetch --help` lists `gitlab-vulnerabilities`, and a test holds the hand-written source list to the registered subcommands; the hdf-engine README names `planRef` as the first return of `parseEvidencePackage` and passes text, not bytes, to the TypeScript `detect`; hdf-utilities documents `string | Uint8Array` input for its hash functions, the `sha384` algorithm, and all four XML exports; hdf-extension-graph no longer calls `@mitre/hdf-schema` a peer dependency; hdf-schema gives the testhdf Go module path with its `/v3` suffix.

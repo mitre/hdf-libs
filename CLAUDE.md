@@ -121,7 +121,7 @@ hdf-converters/converters/<name>/
 
 ### Shared helpers
 - **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"` — `BuildHDFResults()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`. `SeverityToImpact()` is not here — it lives in `hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"` alongside `ParseTimestamp()`.
-- **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
+- **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `validateXmlInput()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
 
 ### Timestamps (canonical = trimmed-UTC RFC3339)
 Always parse tool timestamps with `hdfutil.ParseTimestamp` (Go) / `parseTimestamp` from `@mitre/hdf-utilities` (TS) — **never** raw `new Date(value)` or `time.Parse(time.RFC3339, ...)` (zone-less input is read as host-local and diverges across languages). Serialize via `buildHdfResults`/`serializeHdf` (TS) so the fraction is trimmed. Result `startTime` is schema-required → on a missing/unparseable source time, fall back to a valid value (never omit). Enforced by an ESLint rule + `pnpm lint:timestamps`. Full convention: `site/docs/contributing/developer-guide.md` (Timestamp Handling); rationale in beads memory `hdf-timestamp-canonical-utc`.
@@ -145,8 +145,8 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 ## Security Requirements
 
-- All converters must call `ValidateJSONSize` / `ValidateXMLInput` as first operation
-- XML converters must check for entity expansion (`ValidateXMLInput` handles this)
+- All converters must call `ValidateJSONSize` / `ValidateXMLInput` (Go) or `validateInputSize` / `validateXmlInput` (TS) as first operation
+- XML converters must check for entity expansion (`ValidateXMLInput` / `validateXmlInput` handle this)
 - File paths from JSON must be validated with `safePath()` (evidence_verify, generators)
 - No secrets in code; test tokens annotated with `//nolint:gosec`
 

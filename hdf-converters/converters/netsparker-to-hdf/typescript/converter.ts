@@ -12,7 +12,7 @@ import {
   limitArray,
   markUnratedSeverity,
   stripHTML,
-  validateInputSize,
+  validateXmlInput,
   buildHdfResults,
   buildNoFindingsRequirement,
 } from '../../../shared/typescript/converterutil.js';
@@ -479,7 +479,7 @@ export async function convertNetsparkerToHdf(input: string, converterVersion = '
   if (!input || input.trim().length === 0) {
     throw new Error('netsparker: empty input');
   }
-  validateInputSize(input, 'netsparker');
+  validateXmlInput(input, 'netsparker');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
