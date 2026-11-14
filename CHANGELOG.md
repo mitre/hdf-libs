@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`gitlab-vulnerabilities-to-hdf` gives a vulnerability with no description an empty default description, never its title.** Both languages copied the title into `descriptions[default]`, which the specification's default-description convention says is wrong; they now write `{label: "default", data: ""}` first, as `gitlab-to-hdf` and `zap-to-hdf` do, and keep any `fix` description after it. The title is still carried in `title`. **Behavior change** for a reader that took the title from `descriptions[default]` for these findings.
+
 - **`legacyhdf-to-hdf` and `splunk-to-hdf` mark a defaulted impact as unrated.** A control that carries no `impact` resolves to 0.5, the unknown-severity default, and now also carries `tags.severity_rating: "unrated"`, so it can no longer pass for a genuine medium; a control whose `tags.severity` gives a real rating, and any explicit impact including 0, is left unmarked. The 0.5 default is now one shared constant, `hdfutil.UnknownSeverityImpact` (Go) and `UNKNOWN_SEVERITY_IMPACT` (`@mitre/hdf-utilities`), which `kics-to-hdf`, `semgrep-to-hdf` and the TypeScript `severityToImpact` fallback use too.
 
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
