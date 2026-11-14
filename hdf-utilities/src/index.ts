@@ -99,3 +99,6 @@ export { parsePurl, type ParsedPurl } from './purl/index.js';
 
 // Input-size guard (schema-free; used by the engine loader)
 export { validateInputSize, resolveMaxInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from './size/index.js';
+
+// Code-point string order (Go's byte order over UTF-8)
+export { compareCodePoint } from './string/index.js';

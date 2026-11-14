@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`compareCodePoint` in `@mitre/hdf-utilities`:** a sort comparator matching Go's string order, now used by hdf-diff, hdf-parsers and the hdf-converters exporters in place of three local copies. `@mitre/hdf-parsers` now depends on `@mitre/hdf-utilities`.
+
 - **`hdf evidence build --require-readable`.** With `--from-dir`, the build fails (exit 1, nothing written) when the scan skipped any file it could not read, whether over `--max-size` or refused by permissions, and names each file with its remedy. Without it such files are still skipped and reported at exit 0. It follows `--require-reachable` and `--require-checksums`: strict by request, never by default.
 
 - **`hdfengine.NewChecksumHash` (Go).** A streaming hasher for any algorithm `Hash_Algorithm` admits. `ChecksumHex` is built on it, and the CLI's own copy of the supported-algorithm list is gone, so there is one definition of what the codebase can hash.
@@ -22,6 +24,10 @@ All notable changes to this project will be documented in this file.
   The thresholds live in one config that both the Go and the TypeScript checker read, and a shared fixture corpus runs every case through both so a divergence on a listed shape fails a test. Neither side reads comments by line shape: Go uses `go/ast` and TypeScript is driven by its own parser, because a `//` inside a string, a regex literal or a template substitution is not a comment and a line-based reader reports one. Existing comments are frozen in a recorded baseline rather than rewritten: the check fails only when a file rises above its own baseline, or when a file absent from the baseline has any violation at all. Regenerate with `pnpm lint:comments --update-baseline` once a file has been tightened.
 
 ### Fixed
+
+- **hdf-diff's TypeScript engine orders `requirementDiffs`, `componentDiffs`, `packageDiffs` and event chains by code point, the order Go already used.** It sorted with locale collation, so ids that mix case or differ only in `-` and `_` produced a different comparison document from each language and from host to host. A shared vector table holds both to one order.
+
+- **Normalizing a legacy SAF supplement that carries both a top-level `passthrough` and a different `extensions.passthrough` warns that the top-level one was dropped,** in Go and TypeScript, in place of the deprecation notice that claimed it was normalized, instead of discarding it silently. An identical pair is reported as normalized, since nothing is lost.
 
 - **`splunk-to-hdf` adds a `default` description, from the control's `desc`, whenever the control's descriptions lack one.** It did so only when the control had no descriptions at all, so a control carrying only `check` and `fix` produced output that failed schema validation. Both languages are fixed, and the rule that `descriptions` must contain a default is now one shared helper (`EnsureDefaultDescription`, TypeScript `ensureDefaultDescription`) that zap-to-hdf, gitlab-to-hdf and legacyhdf-to-hdf use in place of their own copies; their output is unchanged.
 

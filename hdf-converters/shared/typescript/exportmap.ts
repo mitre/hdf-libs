@@ -11,6 +11,7 @@
  */
 
 import {
+  compareCodePoint,
   computeEffectiveStatus,
   formatJsonNumber,
   governingOverrideIndex,
@@ -292,28 +293,6 @@ const RAWNUM_MARK = String.fromCharCode(1);
 const RAWNUM_RE = /"\\u0001(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\\u0001"/g;
 
 /**
- * Compare two strings by Unicode code point. This matches Go's `encoding/json`
- * key ordering, which is a bytewise comparison of the UTF-8 encoding \u2014 and UTF-8
- * byte order is identical to code-point order. JS's default Array.sort() instead
- * compares UTF-16 code units, which diverges for supplementary-plane (non-BMP)
- * characters: a lead surrogate (0xD800\u20130xDBFF) sorts before a BMP char in
- * [0xE000,0xFFFF] under UTF-16, but a non-BMP code point (\u22650x10000) sorts after
- * it under UTF-8. Iterating the string yields whole code points (surrogate pairs
- * combined), so this comparator is correct for the full Unicode range.
- */
-export function byCodePoint(a: string, b: string): number {
-  const ai = [...a];
-  const bi = [...b];
-  const n = Math.min(ai.length, bi.length);
-  for (let i = 0; i < n; i++) {
-    const ca = ai[i]?.codePointAt(0) ?? 0;
-    const cb = bi[i]?.codePointAt(0) ?? 0;
-    if (ca !== cb) return ca - cb;
-  }
-  return ai.length - bi.length;
-}
-
-/**
  * Recursively sort object keys in Go's map-key order (bytewise UTF-8 / code
  * point) so the emitted JSON is byte-identical to Go's encoder.
  */
@@ -323,7 +302,7 @@ export function canonicalize(v: unknown): unknown {
   const m = asMap(v);
   if (m) {
     const out: Obj = {};
-    for (const k of Object.keys(m).sort(byCodePoint)) out[k] = canonicalize(m[k]);
+    for (const k of Object.keys(m).sort(compareCodePoint)) out[k] = canonicalize(m[k]);
     return out;
   }
   return v;

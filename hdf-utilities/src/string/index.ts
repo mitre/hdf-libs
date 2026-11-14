@@ -247,3 +247,21 @@ export function normalizeHdfTimestamps(json: string): string {
     return `"${trimUtcFraction(parsed.toISOString())}"`;
   });
 }
+
+/**
+ * Sort comparator ordering strings by Unicode code point, which is Go's byte
+ * order over UTF-8 (`<`, sort.Strings). Use it wherever a TypeScript twin must
+ * emit the same order as Go: localeCompare folds case and punctuation and varies
+ * with the host's ICU, and the default sort compares UTF-16 units, which puts
+ * U+10000 before U+E000.
+ */
+export function compareCodePoint(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length) {
+    const ca = a.codePointAt(i) ?? 0;
+    const cb = b.codePointAt(i) ?? 0;
+    if (ca !== cb) return ca - cb;
+    i += ca > 0xffff ? 2 : 1;
+  }
+  return a.length - b.length;
+}

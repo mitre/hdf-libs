@@ -216,6 +216,9 @@ importers:
       '@mitre/hdf-schema':
         specifier: workspace:^
         version: link:../hdf-schema
+      '@mitre/hdf-utilities':
+        specifier: workspace:^
+        version: link:../hdf-utilities
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators

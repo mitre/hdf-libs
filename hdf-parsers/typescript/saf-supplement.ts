@@ -3,10 +3,13 @@
 // validation. Mirrors the Go side at hdf-parsers/go/saf_supplement.go — the two
 // are pinned against a shared legacy-in/v3-out fixture pair.
 
+import { compareCodePoint } from '@mitre/hdf-utilities';
+
 const SAF_TARGET_DEPRECATION =
   "deprecated: top-level 'target' (saf supplement target write) was normalized into components[]; emit a component directly — this compatibility shim will be removed in a future release";
 const SAF_PROVENANCE_DEPRECATION =
   "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release";
+const SAF_PASSTHROUGH_DROPPED = "top-level 'passthrough' was dropped: extensions.passthrough already holds a value";
 
 // v3 component/target types. Kept in sync with the schema's Target_Type enum; an
 // unknown type is left for the schema to reject rather than guessed.
@@ -27,7 +30,7 @@ export interface SafNormalizeOptions {
 export interface SafNormalizeResult {
   /** The normalized JSON string (byte-identical to the input when nothing was rewritten). */
   output: string;
-  /** One deprecation warning per rewritten legacy key. */
+  /** One warning per rewritten legacy key (or its drop), then one per moved sibling. */
   warnings: string[];
 }
 
@@ -69,14 +72,26 @@ export function normalizeSafSupplement(input: string, options: SafNormalizeOptio
   }
 
   if ('passthrough' in doc) {
-    const relocations = rewritePassthrough(doc);
-    warnings.push(SAF_PROVENANCE_DEPRECATION, ...relocations);
+    warnings.push(...rewritePassthrough(doc));
   }
 
   return { output: JSON.stringify(doc), warnings };
 }
 
 const UNMAPPED_TYPE = 'target.type is not a recognized component type';
+
+/** Deep equality over parsed JSON, as Go's reflect.DeepEqual compares decoded values:
+ * key order is irrelevant, a null-valued key is still a key. */
+function jsonEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => jsonEqual(v, b[i]));
+  }
+  if (isObject(a) && isObject(b)) {
+    const ka = Object.keys(a);
+    return ka.length === Object.keys(b).length && ka.every((k) => hasOwn(b, k) && jsonEqual(a[k], b[k]));
+  }
+  return a === b;
+}
 
 /** Lift a legacy top-level `target` object into components[]. Returns a reason,
  * leaving `target` in place, when it cannot be placed: not an object, a type
@@ -174,25 +189,20 @@ const EXTENSIONS_DEFINED_MEMBERS = new Set(['passthrough', 'rawSourceArtifacts']
 /** Move the legacy top-level `passthrough` under extensions.passthrough, then
  * relocate any other key left beside it into passthrough too: `extensions` is a
  * closed object, so a sibling it does not define makes the document invalid.
- * Returns a warning per relocated or undroppable key. */
+ * The first warning says what became of the legacy carrier: normalized (a deep-equal
+ * extensions.passthrough loses nothing), or dropped because extensions.passthrough
+ * holds a different value; then one per relocated or stuck sibling. */
 function rewritePassthrough(doc: Record<string, unknown>): string[] {
   const ext = isObject(doc.extensions) ? doc.extensions : {};
-  if (!('passthrough' in ext)) ext.passthrough = doc.passthrough;
+  let lead = SAF_PROVENANCE_DEPRECATION;
+  if ('passthrough' in ext) {
+    if (!jsonEqual(ext.passthrough, doc.passthrough)) lead = SAF_PASSTHROUGH_DROPPED;
+  } else {
+    ext.passthrough = doc.passthrough;
+  }
   doc.extensions = ext;
   delete doc.passthrough;
-  return relocateExtensionSiblings(ext);
-}
-
-/** Orders strings by code point, which is Go's byte order over UTF-8; the default
- * sort compares UTF-16 units and puts U+10000 before U+E000. */
-function byCodePoint(a: string, b: string): number {
-  const ai = [...a];
-  const bi = [...b];
-  for (let i = 0; i < Math.min(ai.length, bi.length); i++) {
-    const d = (ai[i]?.codePointAt(0) ?? 0) - (bi[i]?.codePointAt(0) ?? 0);
-    if (d !== 0) return d;
-  }
-  return ai.length - bi.length;
+  return [lead, ...relocateExtensionSiblings(ext)];
 }
 
 /** Move undefined `extensions` keys into extensions.passthrough. Without this, a
@@ -203,7 +213,7 @@ function relocateExtensionSiblings(ext: Record<string, unknown>): string[] {
   const warnings: string[] = [];
   const siblings = Object.keys(ext)
     .filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k))
-    .sort(byCodePoint);
+    .sort(compareCodePoint);
   if (siblings.length === 0) return warnings;
 
   if ('passthrough' in ext && !isObject(ext.passthrough)) {

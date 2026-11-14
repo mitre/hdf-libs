@@ -3,6 +3,7 @@ package hdfparsers
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -13,6 +14,7 @@ import (
 const (
 	safTargetDeprecation     = "deprecated: top-level 'target' (saf supplement target write) was normalized into components[]; emit a component directly — this compatibility shim will be removed in a future release"
 	safProvenanceDeprecation = "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release"
+	safPassthroughDropped    = "top-level 'passthrough' was dropped: extensions.passthrough already holds a value"
 )
 
 // validComponentType reports whether s is a v3 component/target type. Kept in
@@ -51,7 +53,7 @@ func MergePlatformComponent() SAFSupplementOption {
 // boundary winning; merged into a same-name component rather than duplicated,
 // and only with MergePlatformComponent into the platform-derived one);
 // `passthrough` → extensions.passthrough. Returns the (possibly rewritten)
-// document plus a deprecation warning per rewritten key. Input that is not JSON
+// document plus a warning per rewritten key and per moved sibling. Input that is not JSON
 // or carries neither key is returned BYTE-IDENTICAL with no warnings; a target of
 // unmapped type is left in place, with a warning, for the schema to reject.
 func NormalizeSAFSupplement(input []byte, opts ...SAFSupplementOption) ([]byte, []string) {
@@ -80,9 +82,7 @@ func NormalizeSAFSupplement(input []byte, opts ...SAFSupplementOption) ([]byte, 
 	}
 
 	if hasPassthrough {
-		relocations := rewritePassthrough(doc)
-		warnings = append(warnings, safProvenanceDeprecation)
-		warnings = append(warnings, relocations...)
+		warnings = append(warnings, rewritePassthrough(doc)...)
 	}
 
 	out, err := json.Marshal(doc)
@@ -224,18 +224,25 @@ func applyLabels(c map[string]any, labels map[string]string) {
 // rewritePassthrough moves the legacy top-level `passthrough` under
 // extensions.passthrough, then relocates any other key the producer left beside
 // it into passthrough as well: `extensions` is a closed object, so a sibling it
-// does not define makes the document invalid.
+// does not define makes the document invalid. The first warning says what became
+// of the legacy carrier: normalized (a deep-equal extensions.passthrough loses
+// nothing), or dropped because extensions.passthrough holds a different value.
 func rewritePassthrough(doc map[string]any) []string {
 	ext, ok := doc["extensions"].(map[string]any)
 	if !ok {
 		ext = map[string]any{}
 	}
-	if _, exists := ext["passthrough"]; !exists {
+	lead := safProvenanceDeprecation
+	if existing, exists := ext["passthrough"]; exists {
+		if !reflect.DeepEqual(existing, doc["passthrough"]) {
+			lead = safPassthroughDropped
+		}
+	} else {
 		ext["passthrough"] = doc["passthrough"]
 	}
 	doc["extensions"] = ext
 	delete(doc, "passthrough")
-	return relocateExtensionSiblings(ext)
+	return append([]string{lead}, relocateExtensionSiblings(ext)...)
 }
 
 // extensionsDefinedMembers are the only keys `extensions` admits. Anything else

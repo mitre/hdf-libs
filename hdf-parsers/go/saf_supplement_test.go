@@ -172,13 +172,12 @@ func TestNormalizeSAFSupplement_ExtensionSiblingWarningsMatchTheSharedVectors(t 
 
 	for _, v := range table.Vectors {
 		t.Run(v.Why, func(t *testing.T) {
-			want := append([]string{safProvenanceDeprecation}, v.Warnings...)
 			for range 20 {
 				in := validV3WithExtra(t, map[string]any{
 					"extensions": v.Extensions, "passthrough": v.Passthrough,
 				})
 				_, warnings := NormalizeSAFSupplement(in)
-				require.Equal(t, want, warnings)
+				require.Equal(t, v.Warnings, warnings)
 			}
 		})
 	}

@@ -95,8 +95,7 @@ describe('normalizeSafSupplement', () => {
         const { warnings } = normalizeSafSupplement(
           validV3WithExtra({ extensions: v.extensions, passthrough: v.passthrough }),
         );
-        expect(warnings.slice(1)).toEqual(v.warnings);
-        expect(warnings[0]).toMatch(/^deprecated: top-level 'passthrough'/);
+        expect(warnings).toEqual(v.warnings);
       });
     }
   });
