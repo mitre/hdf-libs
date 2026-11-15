@@ -804,6 +804,16 @@ One extensible `Bom` shape, discriminated by `bomType`, carries any manifest kin
 | model | AIModelExtension | no | Normalized `ai-model` extension: `modelArchitecture`, `parameterCount`, `serializationFormat`, `adaptationType` (`finetune` \| `adapter` \| `quantized` \| `merge`), `baseModelRef`, `datasetRefs[]`, `intendedUse`, `learningApproach`, `task`, `performanceMetrics[]`, `hyperparameters[]`, `inputOutput` |
 | dataset | DatasetExtension | no | Normalized `dataset` extension: `recordCount`, `datasetFormat`, `dataClassification`, `intendedUse`, `modality`, `provenance`, `statisticalProperties`, `baseDatasetRefs[]`, `derivation` (`filtered` \| `augmented` \| `merged` \| `sampled`) |
 
+### Reference *(closed v3.8.0)*
+
+The InSpec-inherited reference shape carried in a requirement's `refs[]`. The object is closed from v3.8.0: `ref`, `url` and `uri` are its only members, at least one must be present, and the shipped validators enforce the closure. `External_Reference`, below, is the STIX-aligned type a new converter should reach for; `refs` survives because HDF consumes InSpec output.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| ref | string \| object[] | no | A human-meaningful citation (a book title, as InSpec's `ref 'title'` emits), or an array of reference objects. The array's items are deliberately open, so a source format's own reference record travels verbatim; XCCDF's DPMS target identifiers reach HDF this way |
+| url | URI | no | A URL locating the reference |
+| uri | URI | no | A synonym of `url`, accepted for documents that spell it that way |
+
 ### External_Reference *(v3.5.0)*
 
 A generalized, purpose-agnostic reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`), so the by-identity and by-location forms stay interconvertible. A reference is **inert context** — it overrides nothing and carries only lightweight optional attribution. An entry carries `sourceName` and at least one of `externalId`, `href`, `description`, `content` or `document`. It may carry the artifact itself instead of pointing at it: `document` for a JSON object, `content` + `encoding` for anything else. Embedding satisfies the at-least-one rule on its own, so an artifact with no meaningful public location needs no synthetic `href` *(`content` and `document` satisfy the rule from v3.8.0)*. An embedded `document` turns a bare reference into a lossless enrichment envelope (the shape `hdf enrich` writes). Wired onto the results root, `Status_Override`, and other document types.

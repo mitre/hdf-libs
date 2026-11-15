@@ -237,6 +237,8 @@ git add 'site/public/schemas/*/v$NEW/'
 git diff --name-only "$(git describe --tags --abbrev=0)"..HEAD -- 'site/public/*/*/v*/index.json'
 ```
 
+It has happened: between 3.7.2 and 3.8.0, two merged PRs ran `pnpm generate` while the `$id` still read v3.7.0 (the 3.7.x patches kept it), so the released v3.7.0 archive picked up a description edit and new examples. Restore any such file to the last stable tag's bytes before the bump commit, `git checkout vOLD -- 'site/public/schemas/*/vOLD_ID/index.json'`, where `vOLD_ID` is the `$id` version the last release carried.
+
 The generator cannot enforce this: it has no way to know which versions are released, and refusing every overwrite blocks iterating on an unreleased one. What it does enforce is that two different contracts cannot share a version — `hdf-openapi/test/baseline/contract.json` records the reference API's digest and fails when it moves under an unchanged `API_VERSION`. Re-recording with `pnpm run contract:update` is correct while that version is unreleased and wrong once it has shipped, which is what this step checks.
 
 If you forget the archive step, the archive 404s as soon as the next release ships and the rendered v$NEW snapshot is missing from the docs site. The site `pnpm exec vitepress build` smoke job in `ci.yml` won't catch this (it builds whatever's on disk locally) — only the post-deploy archive coverage suffers. Treat it as a release-time checklist item.
