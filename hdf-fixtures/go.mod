@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-fixtures/v3
 
-go 1.26.11
+go 1.27.4
 
 require (
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0
