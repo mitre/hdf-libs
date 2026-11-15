@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`hdf-to-ecs` and `hdf-to-splunk` export the baseline's declared `integrity`.** Both read a baseline `checksum` key the schema never declared, so a real document's integrity (where an InSpec profile's sha256 lands) never reached the SIEM. The baseline metadata both exporters carry now comes from one shared table in `exportmap` (Go and TypeScript): `hdf.baseline_title`, `hdf.baseline_version` and `hdf.baseline_integrity`, the integrity object whole. **Output change:** `hdf.baseline_checksum` is gone, and ECS events gain `hdf.baseline_version` when the baseline has a version, as Splunk events already did.
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.

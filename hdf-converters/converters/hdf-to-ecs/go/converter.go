@@ -116,15 +116,9 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	if labels := buildLabels(req); labels != nil {
 		obj["labels"] = labels
 	}
-	// hdf.* lossless block, plus the baseline fields the shared allowlist omits
-	// (title and integrity checksum) so the block stays genuinely lossless.
+	// hdf.* lossless block, with the baseline's metadata beyond its name.
 	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
+	exportmap.AddBaselineMetadata(hdf, baseline)
 	obj["hdf"] = hdf
 
 	return obj

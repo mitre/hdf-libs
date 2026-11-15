@@ -100,7 +100,8 @@ describe('hdf-to-ecs converter', () => {
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
     expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
-    expect(hdf.baseline_checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+    expect(hdf.baseline_version).toBe('1.0.0');
+    expect(hdf.baseline_integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
     expect(hdf.status_overrides).toHaveLength(1);
     expect(obj((hdf.status_overrides as unknown[])[0]).type).toBe('waiver');
     // override provenance -> labels.*

@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   asMap,
   asArr,
+  addBaselineMetadata,
   buildHDFBlock,
   getStr,
   setIf,
@@ -398,5 +399,27 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
     for (const k of ['evidence', 'effective_checksum', 'control_type', 'verification_method', 'applicability']) {
       expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
     }
+  });
+});
+
+describe('addBaselineMetadata', () => {
+  // Integrity goes whole: a consumer verifying a profile hash needs the
+  // algorithm and any signature with it.
+  it('carries the declared baseline fields by value', () => {
+    const integrity = {
+      algorithm: 'sha256',
+      checksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      signature: 'MEUCIQ',
+      signedBy: 'release@example.com',
+    };
+    const hdf: Record<string, unknown> = {};
+    addBaselineMetadata(hdf, { name: 'b', title: 'B Baseline', version: '2.1.0', integrity });
+    expect(hdf).toEqual({ baseline_title: 'B Baseline', baseline_version: '2.1.0', baseline_integrity: integrity });
+  });
+
+  it('omits what the baseline lacks', () => {
+    const hdf: Record<string, unknown> = {};
+    addBaselineMetadata(hdf, { name: 'b' });
+    expect(hdf).toEqual({});
   });
 });

@@ -232,6 +232,24 @@ export function buildHDFBlock(
   return hdf;
 }
 
+/**
+ * The declared baseline fields the exporters carry, mapped to their hdf.* keys.
+ * Integrity is where a profile's hash lives (an InSpec sha256 lands in
+ * integrity.checksum), so it goes whole, algorithm and signature with it.
+ */
+const BASELINE_METADATA: ReadonlyArray<readonly [src: string, dst: string]> = [
+  ['title', 'baseline_title'],
+  ['version', 'baseline_version'],
+  ['integrity', 'baseline_integrity'],
+];
+
+/** Copy the baseline's declared metadata into hdf.* verbatim, only keys it carries. */
+export function addBaselineMetadata(hdf: Obj, baseline: Obj): void {
+  for (const [src, dst] of BASELINE_METADATA) {
+    if (src in baseline) hdf[dst] = baseline[src];
+  }
+}
+
 // --- canonical line serialization ---
 
 /**

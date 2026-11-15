@@ -164,9 +164,9 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
-	// baseline title + integrity checksum, previously dropped by the fixed allowlist.
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc123"}, hdf["baseline_checksum"])
+	assert.Equal(t, "1.0.0", hdf["baseline_version"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, hdf["baseline_integrity"])
 	overrides, ok := hdf["status_overrides"].([]interface{})
 	require.True(t, ok, "hdf.status_overrides present")
 	require.Len(t, overrides, 1)

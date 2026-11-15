@@ -294,6 +294,25 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 	return hdf
 }
 
+// baselineMetadata maps the declared baseline fields the exporters carry to
+// their hdf.* keys. Integrity is where a profile's hash lives (an InSpec sha256
+// lands in integrity.checksum), so it goes whole, algorithm and signature with it.
+var baselineMetadata = [...]struct{ src, dst string }{
+	{"title", "baseline_title"},
+	{"version", "baseline_version"},
+	{"integrity", "baseline_integrity"},
+}
+
+// AddBaselineMetadata copies the baseline's declared metadata into an hdf.*
+// block, verbatim, adding only the keys the baseline carries.
+func AddBaselineMetadata(hdf, baseline map[string]interface{}) {
+	for _, f := range baselineMetadata {
+		if v, ok := baseline[f.src]; ok {
+			hdf[f.dst] = v
+		}
+	}
+}
+
 // --- canonical line encoding ---
 
 // EncodeLine returns v as compact JSON with HTML escaping disabled and a

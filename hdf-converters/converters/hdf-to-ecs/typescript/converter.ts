@@ -9,6 +9,7 @@ import {
   firstResultStartTime,
   defaultDescription,
   eventID,
+  addBaselineMetadata,
   buildHDFBlock,
   runExport,
   governingOverrideOf,
@@ -117,11 +118,9 @@ function buildEvent(
   const labels = buildLabels(req);
   if (labels) obj.labels = labels;
 
-  // hdf.* lossless block, plus the baseline fields the shared allowlist omits
-  // (title and integrity checksum) so the block stays genuinely lossless.
+  // hdf.* lossless block, with the baseline's metadata beyond its name.
   const hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
-  if ('title' in baseline) hdf.baseline_title = baseline.title;
-  if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
+  addBaselineMetadata(hdf, baseline);
   obj.hdf = hdf;
 
   return obj;

@@ -523,3 +523,31 @@ func TestBuildHDFBlock_CarriesRequirementExternalReferences(t *testing.T) {
 		map[string]interface{}{"sourceName": "NVD", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-1", "kind": "advisory"},
 	}, hdf["external_references"])
 }
+
+// The baseline's declared metadata reaches hdf.* by value, integrity whole: a
+// consumer verifying a profile hash needs the algorithm and any signature with it.
+func TestAddBaselineMetadata_CarriesTheDeclaredBaselineFields(t *testing.T) {
+	integrity := map[string]interface{}{
+		"algorithm": "sha256",
+		"checksum":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		"signature": "MEUCIQ",
+		"signedBy":  "release@example.com",
+	}
+	hdf := map[string]interface{}{}
+	AddBaselineMetadata(hdf, map[string]interface{}{
+		"name": "b", "title": "B Baseline", "version": "2.1.0", "integrity": integrity,
+	})
+
+	assert.Equal(t, map[string]interface{}{
+		"baseline_title":     "B Baseline",
+		"baseline_version":   "2.1.0",
+		"baseline_integrity": integrity,
+	}, hdf)
+}
+
+func TestAddBaselineMetadata_OmitsWhatTheBaselineLacks(t *testing.T) {
+	hdf := map[string]interface{}{}
+	AddBaselineMetadata(hdf, map[string]interface{}{"name": "b"})
+
+	assert.Empty(t, hdf, "absent baseline fields must not appear as empty keys")
+}
