@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **`hdf-to-ecs` and `hdf-to-splunk` export the baseline's declared `integrity`.** Both read a baseline `checksum` key the schema never declared, so a real document's integrity (where an InSpec profile's sha256 lands) never reached the SIEM. The baseline metadata both exporters carry now comes from one shared table in `exportmap` (Go and TypeScript): `hdf.baseline_title`, `hdf.baseline_version` and `hdf.baseline_integrity`, the integrity object whole. **Output change:** `hdf.baseline_checksum` is gone, and ECS events gain `hdf.baseline_version` when the baseline has a version, as Splunk events already did.
+- **`hdf convert` no longer stamps `effectiveChecksum` onto baseline definitions.** The stamping is for requirements in results documents; on a baseline it produced a field the baseline schema does not declare.
+
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
@@ -45,6 +47,8 @@ All notable changes to this project will be documented in this file.
   No committed fixture carries either shape, so no golden moved and no existing document changes. The parity harness masks neither field, so the divergence would have failed a snapshot — the branch was simply never executed.
 
 ### Changed
+
+- **BEHAVIOR CHANGE — the Go and TypeScript validators enforce JSON Schema 2020-12, the dialect the schemas are written in.** The TypeScript validator used Ajv's draft-07 class and the Go validator used `xeipuuv/gojsonschema`; both ignored `unevaluatedProperties`, so an undeclared property in a closed object was accepted. TypeScript now uses Ajv2020, and Go uses `santhosh-tekuri/jsonschema/v6` for v3 documents (legacy v2 documents keep `gojsonschema` and their own schema). A document carrying a field its schema does not declare now fails validation. Those documents were always invalid by the schema's own text, but a file that passed `hdf validate` before can fail now. To fix one, move producer-specific data under `extensions.passthrough`, namespaced by tool name, or correct the field name. The decision and its evidence are in `dev-docs/adr-0018-validator-dialect.md`.
 
 - **`fast-xml-parser` raised to 5.12.0.** `hdf-utilities` pinned 5.7.1, which CVE-2026-126066 affects: scanning an unterminated stop-node tag takes quadratic CPU, an availability concern the advisory does not quantify. `fortify-to-hdf` is the converter that sets `stopNodes`, to keep the embedded HTML in a finding's abstract and explanation intact, so this repository is in the affected path rather than merely carrying the package. Seven of the parser's own helpers move or arrive with it, three of them new packages, all published by the same account that publishes the parser. The builder it writes XML through is one of them. Go consumers are unaffected; npm consumers of `@mitre/hdf-utilities` get the new parser transitively.
 

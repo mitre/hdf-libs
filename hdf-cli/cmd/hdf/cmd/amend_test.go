@@ -18,11 +18,11 @@ import (
 const testResults = `{
   "baselines": [{
     "name": "test-baseline",
-    "checksum": {"algorithm": "sha256", "value": "abc123"},
+    "integrity": {"algorithm": "sha256", "checksum": "abc123"},
     "depends": [],
     "description": "Test baseline",
     "groups": [],
-    "inspecVersion": "5.0.0",
+    "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
     "requirements": [{
       "id": "AC-1",
       "impact": 0.5,
@@ -960,7 +960,7 @@ func TestAmendVerifyIgnoresAmendmentsSideResultsLink(t *testing.T) {
 	// be applied to many results files, so it cannot carry a single results
 	// hash, and nothing ever wrote the field. Verify must not report a verdict
 	// on it either way.
-	t.Run("no results-link verdict is reported, even when the field is present", func(t *testing.T) {
+	t.Run("no results-link verdict is reported for passthrough metadata", func(t *testing.T) {
 		dir := t.TempDir()
 		resultsPath := writeResults(t, dir)
 		sum := sha256.Sum256([]byte(testResults))
@@ -968,7 +968,7 @@ func TestAmendVerifyIgnoresAmendmentsSideResultsLink(t *testing.T) {
 		amendPath := filepath.Join(dir, "amend.json")
 		doc := fmt.Sprintf(`{
 			"name": "linked",
-			"previousChecksum": {"algorithm": "sha256", "value": %q},
+			"extensions": {"passthrough": {"previousChecksum": {"algorithm": "sha256", "value": %q}}},
 			"overrides": [{
 				"type": "waiver",
 				"requirementId": "AC-1",
@@ -1067,7 +1067,7 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 
 		stdout, _, err := executeCommand("amend", "verify", path)
 		require.Error(t, err)
-		assert.Contains(t, stdout, "Invalid type", "the schema error must still be reported")
+		assert.Contains(t, stdout, "got number, want string", "the schema error must still be reported")
 		assert.Contains(t, stdout, "RED", "the offending key is still named, just defanged")
 		assert.NotContains(t, stdout, "\x1b")
 	})

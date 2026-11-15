@@ -9,9 +9,9 @@
       "supports": [],
       "inputs": [],
       "groups": [],
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "abc123"
+        "checksum": "abc123"
       },
       "requirements": [
         {

@@ -29,7 +29,7 @@ func resultsWithRawSourceRecord(t *testing.T, record any) []byte {
 	return []byte(`{
 		"baselines": [{
 			"name": "Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],
@@ -71,7 +71,7 @@ func TestValidateResults_RawSourceRecordIsOptional(t *testing.T) {
 	doc := []byte(`{
 		"baselines": [{
 			"name": "B",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],

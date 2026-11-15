@@ -391,6 +391,8 @@ func TestEnrichStix_Errors(t *testing.T) {
 
 func TestEnrichStix_Recompute(t *testing.T) {
 	results := enrichFixture(t, "results-with-cvss.json")
+	inputValidation := hdfvalidators.ValidateResults(results)
+	require.True(t, inputValidation.Valid, inputValidation.Error())
 	bundle := enrichFixture(t, "poison-ivy-exploited-stix21.json")
 	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
 

@@ -232,7 +232,7 @@ func TestParseHDFBaseline_TrailingGarbage(t *testing.T) {
 	copy(withGarbage[len(baseline):], `  "extra"`)
 	_, err := parseHDFBaseline(withGarbage)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected data after end of object")
+	assert.Contains(t, err.Error(), "unexpected trailing data after end of JSON value")
 }
 
 func TestParseHDFBaseline_SchemaInvalid(t *testing.T) {
@@ -254,7 +254,7 @@ func TestParseHDFResults_SchemaValidThenTrailingGarbage(t *testing.T) {
 	copy(withGarbage[len(resultsJSON):], ` null`)
 	_, err := parseHDFResults(withGarbage)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected data after end of object")
+	assert.Contains(t, err.Error(), "unexpected trailing data after end of JSON value")
 }
 
 // ---------------------------------------------------------------------------
@@ -501,9 +501,9 @@ func buildBaselineFixtureJSON(t *testing.T) []byte {
 	t.Helper()
 	baseline := map[string]any{
 		"name": "test-baseline",
-		"checksum": map[string]any{
+		"integrity": map[string]any{
 			"algorithm": "sha256",
-			"value":     "abc123",
+			"checksum":  "abc123",
 		},
 		"depends":  []any{},
 		"groups":   []any{},
@@ -537,8 +537,8 @@ func buildResultsFixtureJSON(t *testing.T) []byte {
 	results := map[string]any{
 		"baselines": []any{
 			map[string]any{
-				"name":     "test-baseline",
-				"checksum": map[string]any{"algorithm": "sha256", "value": "abc"},
+				"name":      "test-baseline",
+				"integrity": map[string]any{"algorithm": "sha256", "checksum": "abc"},
 				"requirements": []any{
 					map[string]any{
 						"id":           "REQ-001",

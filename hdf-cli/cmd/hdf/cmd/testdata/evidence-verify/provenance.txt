@@ -1,0 +1,46 @@
+# Evidence fixture adaptations — provenance
+
+Recorded 2026-11-07. Scope: plan.json and the named migrations below; other existing files are not covered.
+
+## plan.json
+Schema-confirmed adaptation, not a new real tool capture.
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/plan.json
+Source SHA-256: 17748ce73adc8db8e8c96d40f5b9ed9fbb6aab5b1fe56c669fbc99728644e07d
+Moved the undeclared root createdAt timestamp to extensions.passthrough.createdAt without changing its value. Every other field and value is unchanged.
+
+Tool and version read from file: generator.name=hdf-cli; generator.version=dev.
+The original run environment/version beyond dev is not established.
+Schema: hdf-schema/dist/schemas/hdf-plan.schema.json, JSON Schema 2020-12.
+Validation on 2026-11-07: built hdf validate plan.json --json returned type=plan,
+valid=true, exit 0. No fields or timestamp values were discarded.
+
+## rhel9-results.json — adapted 2026-11-07
+Schema-confirmed adaptation, not a new tool capture. Original capture provenance
+beyond the committed baseline has not been established.
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/rhel9-results.json
+Source SHA-256: 6d8e309f4f15a5b67bb52ef2079ea532d2bb3f0fcb6f869cf829ec5e3631d737
+Moved the old root platform and version values into extensions.passthrough, preserving their complete values. All requirement prose, statuses and timestamps are unchanged.
+Tool version: not determinable from these files; the retained legacy version
+field is not asserted to be a scanner version.
+
+## postgres-results.json — adapted 2026-11-07
+Schema-confirmed adaptation, not a new tool capture. Original capture provenance
+beyond the committed baseline has not been established.
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/postgres-results.json
+Source SHA-256: a7325dd1f666e1f9923d2638a801e720bdab543fba8cd2a3bbd3d8ba09a730af
+Moved the old root platform and version values into extensions.passthrough, preserving their complete values. All requirement prose, statuses and timestamps are unchanged.
+Tool version: not determinable from these files; the retained legacy version
+field is not asserted to be a scanner version.
+
+## evidence.json — adapted 2026-11-07
+Schema-confirmed adaptation, not a new tool capture. Original capture provenance
+beyond the committed baseline has not been established.
+Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/evidence.json
+Source SHA-256: d0ac3d2ea005e31410a1b63eb12abc7a44facd76eb36bb1f50bc7cf8c2a810e3
+Recomputed SHA-256 references from the actual local system, plan and results file bytes after the named migrations; URIs and document membership are unchanged.
+Tool version: not determinable from these files; the retained legacy version
+field is not asserted to be a scanner version.
+
+Both migrated results documents validate through the built hdf validate --json
+command (exit 0, valid=true, 2026-11-07). Package checksums are derived from
+file bytes; evidence verification is tested separately.

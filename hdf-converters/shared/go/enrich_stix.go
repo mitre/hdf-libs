@@ -317,7 +317,6 @@ func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src ma
 		"expiresAt": expiresAt.Format(time.RFC3339),
 		"cvss": map[string]interface{}{
 			"version":       "3.1",
-			"id":            cve,
 			"baseVector":    baseVector,
 			"baseScore":     score.BaseScore,
 			"threatVector":  "E:H",

@@ -1,5 +1,6 @@
 import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
+import Ajv2020 from 'ajv/dist/2020.js';
 
 // Pinned HDF v2 (Heimdall/InSpec exec-json) schema — sourced from heimdall2
 // inspecjs (see ../go/legacy/PROVENANCE.md). One copy, which Go embeds from its
@@ -70,8 +71,8 @@ export interface ValidationResult {
 /**
  * Create and configure Ajv instance with all HDF schemas
  */
-function createValidator(): Ajv {
-  const ajv = new Ajv({
+function createValidator(): Ajv2020 {
+  const ajv = new Ajv2020({
     allErrors: true,
     verbose: true,
     strict: false,
@@ -213,7 +214,7 @@ function formatErrors(errors: ErrorObject[] | null | undefined): ValidationError
       .replace(/\//g, '.');
 
     // If field is empty, use the data path from the error
-    if (!field && err.schemaPath) {
+    if (!field && err.schemaPath && err.keyword !== 'unevaluatedProperties') {
       const pathParts = err.schemaPath.split('/');
       field = pathParts[pathParts.length - 1] || '(root)';
     }
@@ -227,6 +228,13 @@ function formatErrors(errors: ErrorObject[] | null | undefined): ValidationError
         message = 'is required';
       } else if ('additionalProperty' in err.params) {
         field = field ? `${field}.${err.params.additionalProperty}` : err.params.additionalProperty;
+        message = 'is not allowed';
+        if (err.keyword === 'additionalProperties'
+          && /^\/(?:baselines\/\d+\/)?extensions$/.test(err.instancePath)) {
+          message += '. Move producer-specific data under extensions.passthrough, namespaced by tool name.';
+        }
+      } else if ('unevaluatedProperty' in err.params) {
+        field = field ? `${field}.${err.params.unevaluatedProperty}` : err.params.unevaluatedProperty;
         message = 'is not allowed';
       } else if ('limit' in err.params) {
         message = `${message} (limit: ${err.params.limit})`;
@@ -390,6 +398,10 @@ export function validate(data: unknown): ValidationResult {
       return validateAmendments(data);
     }
 
+    if ('eventId' in obj && 'requirementId' in obj) {
+      return validateRequirementChangeEvent(data);
+    }
+
     // HDF Comparison has 'requirementDiffs' at root (unique discriminator)
     if ('requirementDiffs' in obj) {
       return validateComparison(data);
@@ -401,16 +413,6 @@ export function validate(data: unknown): ValidationResult {
     }
   }
 
-  // Cannot determine type, try results first (most common)
-  const resultsResult = validateResults(data);
-  if (resultsResult.valid) {
-    return resultsResult;
-  }
-
-  const baselineResult = validateBaseline(data);
-  if (baselineResult.valid) {
-    return baselineResult;
-  }
-
-  return resultsResult;
+  // Results/baselines already match above; keep results diagnostics for unknown input.
+  return validateResults(data);
 }

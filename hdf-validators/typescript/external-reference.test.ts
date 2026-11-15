@@ -12,7 +12,7 @@ function resultsWithExtRefs(externalReferences: unknown): unknown {
     baselines: [
       {
         name: 'Test Baseline',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         requirements: [
           {
             id: 'REQ-001',
@@ -117,13 +117,13 @@ describe('External_Reference enrichment envelope (document + kind)', () => {
 describe('External_Reference on inherited carriers', () => {
   const baseline = (rootRefs: unknown, reqRefs: unknown) => ({
     name: 'B', title: 'T', version: '1.0.0',
-    checksum: { algorithm: 'sha256', value: 'abc' },
+    integrity: { algorithm: 'sha256', checksum: 'abc' },
     externalReferences: rootRefs,
     requirements: [{ id: 'R1', title: 't', descriptions: [{ label: 'default', data: 'd' }], impact: 0.5, tags: {}, externalReferences: reqRefs }],
   });
   const resultsSub = (blRefs: unknown, reqRefs: unknown) => ({
     baselines: [{
-      name: 'B', checksum: { algorithm: 'sha256', value: 'abc' },
+      name: 'B', integrity: { algorithm: 'sha256', checksum: 'abc' },
       externalReferences: blRefs,
       requirements: [{ id: 'R1', descriptions: [{ label: 'default', data: 'd' }], impact: 0.5, tags: {}, externalReferences: reqRefs, results: [{ status: 'passed', codeDesc: 'ok', startTime: '2025-01-01T00:00:00Z' }] }],
     }],
@@ -139,11 +139,11 @@ describe('External_Reference on inherited carriers', () => {
       externalReferences: refs,
     }],
   });
-  // Inline Status_Override on Evaluated_Requirement.overrides[] — the carrier the
+  // Inline Status_Override on Evaluated_Requirement.statusOverrides[] — the carrier the
   // enrich pass's E:A riskAdjustment writes; gains externalReferences[] in 1b.
   const resultsInlineOverride = (refs: unknown) => ({
     baselines: [{
-      name: 'B', checksum: { algorithm: 'sha256', value: 'abc' },
+      name: 'B', integrity: { algorithm: 'sha256', checksum: 'abc' },
       requirements: [{
         id: 'CVE-2021-44228', descriptions: [{ label: 'default', data: 'd' }], impact: 0.5, tags: {},
         results: [{ status: 'failed', codeDesc: 'x', startTime: '2025-01-01T00:00:00Z' }],

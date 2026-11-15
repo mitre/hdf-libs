@@ -160,6 +160,8 @@ describe('enrichStix — opt-in E:H recompute', () => {
 
   it('authors an inline riskAdjustment for an exploited 3.1 finding', () => {
     const doc = JSON.parse(enrichStix(recResults(), recBundle(), { recomputeCvss: true, asOf })) as Doc;
+    const validation = validateResults(doc);
+    expect(validation.valid, JSON.stringify(validation.errors)).toBe(true);
     const req = requirementById(doc, 'CVE-2012-0158');
     const so = (req.statusOverrides as Doc[]) ?? [];
     expect(so).toHaveLength(1);
