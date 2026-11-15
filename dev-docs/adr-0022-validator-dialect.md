@@ -1,4 +1,4 @@
-# ADR-0018: Enforce the declared schema dialect in HDF validators
+# ADR-0022: Enforce the declared schema dialect in HDF validators
 
 **Date:** 2026-11-07
 **Status:** accepted for implementation on 2026-11-07; independent acceptance review required
