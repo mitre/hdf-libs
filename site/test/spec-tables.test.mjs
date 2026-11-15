@@ -21,7 +21,7 @@ function schemaDef(file, name) {
 
 // The body of `### <heading>` (version marker allowed), up to the next heading.
 function section(heading) {
-  const lines = SPEC.split('\n');
+  const lines = SPEC.split(/\r?\n/); // a CRLF checkout must find the same headings
   const start = lines.findIndex((l) => l === `### ${heading}` || l.startsWith(`### ${heading} *(`));
   assert.notEqual(start, -1, `the spec has no "### ${heading}" section`);
   const rest = lines.slice(start + 1);

@@ -64,13 +64,16 @@ func TestEvidenceReaders_RefuseAStdinPackageWithAPackageRelativeReference(t *tes
 func TestEvidenceInfoVerify_StdinPackageReadsNoAbsoluteReferenceAsInPackage(t *testing.T) {
 	cwd := t.TempDir()
 	t.Chdir(cwd)
+	// Recorded forward-slashed: the field is a uri-reference, and a Windows separator
+	// would fail schema validation before the stdin rule is reached.
 	abs := filepath.Join(cwd, "r.json")
 	require.NoError(t, os.WriteFile(abs, []byte("not the recorded bytes"), 0o600))
-	pkg := stdinPackageBytes(t, abs, sha256Hex([]byte("the recorded bytes")))
+	pkg := stdinPackageBytes(t, filepath.ToSlash(abs), sha256Hex([]byte("the recorded bytes")))
 
 	stdout, stderr, err := executeCommandWithStdin(t, pkg, "evidence", "info", "-", "--verify")
 	require.NoError(t, err, "a stdin package with only absolute references proceeds; %s%s", stdout, stderr)
 	assert.NotContains(t, stdout+stderr, "MISMATCH")
+	assert.Contains(t, stdout+stderr, stdinNoDirectory, "the reference is reported, not dropped")
 }
 
 func TestEvidenceInfoVerify_StdinPackageWithOnlyRemoteReferencesProceeds(t *testing.T) {
@@ -88,7 +91,7 @@ func TestEvidenceBundle_StdinPackageCarriesNoAbsoluteReferenceAndIsNotNamedDash(
 	t.Chdir(cwd)
 	abs := filepath.Join(cwd, "r.json")
 	require.NoError(t, os.WriteFile(abs, results, 0o600))
-	pkg := stdinPackageBytes(t, abs, sha256Hex(results))
+	pkg := stdinPackageBytes(t, filepath.ToSlash(abs), sha256Hex(results))
 	out := filepath.Join(cwd, "out.zip")
 
 	_, stderr, err := executeCommandWithStdin(t, pkg, "evidence", "bundle", "-", "-o", out)

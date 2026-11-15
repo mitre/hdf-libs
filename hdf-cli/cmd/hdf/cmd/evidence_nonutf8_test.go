@@ -18,14 +18,30 @@ const (
 )
 
 // writeNonUTF8File creates a file under a name that is not valid UTF-8, or skips where
-// the filesystem refuses one (macOS APFS does); detected by trying, not by GOOS.
+// the filesystem refuses one (macOS APFS does) or stores it under another name (Windows
+// writes U+FFFD for the bad byte); detected by trying, not by GOOS.
 func writeNonUTF8File(t *testing.T, dir string, data []byte) string {
 	t.Helper()
 	path := filepath.Join(dir, nonUTF8Name)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Skipf("this filesystem refuses a name that is not valid UTF-8: %v", err)
 	}
+	requireNameOnDisk(t, dir, nonUTF8Name)
 	return path
+}
+
+// requireNameOnDisk skips the test when the directory lists no entry with exactly these
+// bytes, because the name the filesystem kept is then valid UTF-8 and the case is gone.
+func requireNameOnDisk(t *testing.T, dir, name string) {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	for _, e := range entries {
+		if e.Name() == name {
+			return
+		}
+	}
+	t.Skipf("this filesystem stores %q under a different, valid UTF-8 name", name)
 }
 
 func fixtureBytes(t *testing.T, name string) []byte {
@@ -164,6 +180,7 @@ func TestEvidenceBuild_FromDirSkipsADirectoryWhoseNameIsNotUTF8(t *testing.T) {
 	if err := os.Mkdir(sub, 0o750); err != nil {
 		t.Skipf("this filesystem refuses a name that is not valid UTF-8: %v", err)
 	}
+	requireNameOnDisk(t, dir, nonUTF8Dir)
 	require.NoError(t, os.WriteFile(filepath.Join(sub, "r.json"), fixtureBytes(t, "postgres-results.json"), 0o600))
 	outputPath := filepath.Join(dir, "pkg.json")
 

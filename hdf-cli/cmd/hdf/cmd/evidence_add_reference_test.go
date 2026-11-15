@@ -1152,7 +1152,9 @@ func TestEvidenceAddReference_RecordsARemoteHrefVerbatim(t *testing.T) {
 // "?" and space are escaped into a uri-reference that decodes back to the file.
 func TestEvidenceAddReference_StillEncodesALocalHref(t *testing.T) {
 	dir, pkgPath := referencePackage(t)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "why? notes.txt"), []byte("n"), 0o600))
+	if err := os.WriteFile(filepath.Join(dir, "why? notes.txt"), []byte("n"), 0o600); err != nil {
+		t.Skipf("this filesystem refuses '?' in a file name: %v", err)
+	}
 	_, stderr, err := executeCommand("evidence", "add-reference", pkgPath,
 		"--source-name", "notes", "--href", "why? notes.txt", "-o", pkgPath)
 	require.NoError(t, err, stderr)
