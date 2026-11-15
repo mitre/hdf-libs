@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertSemgrepToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { assertSchemaValid, loadSchemaValidator } from '../../../shared/typescript/schema-validation.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { ResultStatus } from '@mitre/hdf-schema';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
@@ -30,6 +31,36 @@ runConverterContractTests({
 });
 
 describe('semgrep to HDF converter', () => {
+  // Rule authors publish the ported rule's link under two independent keys:
+  // source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
+  // Bandit-derived Python rule). The case file is shared with the Go suite.
+  const validateSource = loadSchemaValidator(join(FIXTURES_DIR, 'semgrep_output_v1-1.183.0.schema.json'));
+  const sourceReferenceCases = JSON.parse(
+    readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8'),
+  ) as { name: string; input: Record<string, unknown>; urls: string[] }[];
+
+  it('preserves published source rule references', async () => {
+    assertSchemaValid(validateSource, 'source-rule-urls.json', JSON.parse(loadFixture('source-rule-urls.json')));
+    const hdf = await convert('source-rule-urls.json');
+    expectValidResults(hdf);
+    expect(findReq(hdf, 'use-of-unsafe-block')?.refs?.map((ref) => ref.url)).toEqual([
+      'https://cwe.mitre.org/data/definitions/242.html',
+      'https://github.com/securego/gosec/blob/master/rules/unsafe.go',
+    ]);
+    expect(findReq(hdf, 'subprocess-shell-true')?.refs?.map((ref) => ref.url)).toEqual([
+      'https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess',
+      'https://docs.python.org/3/library/subprocess.html',
+      'https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html',
+    ]);
+  });
+
+  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, urls }) => {
+    assertSchemaValid(validateSource, name, input);
+    const hdf = JSON.parse(await convertSemgrepToHdf(JSON.stringify(input))) as HDFResults;
+    expectValidResults(hdf);
+    expect((findReq(hdf, 'use-of-unsafe-block')?.refs ?? []).map((ref) => ref.url)).toEqual(urls);
+  });
+
   it('rejects input that is not a Semgrep report', async () => {
     await expect(convertSemgrepToHdf('{"foo":1}')).rejects.toThrow(
       'does not look like a Semgrep report',

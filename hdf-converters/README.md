@@ -67,6 +67,17 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Veracode | `convertVeracodeToHdf` | XML |
 | XCCDF Results | `convertXccdfResultsToHdf` | XML |
 
+### Semgrep rule references
+
+Native Semgrep conversion reads the rule-author metadata keys `source-rule-url` and
+`source_rule_url` independently. Published rules use them to link to the rule they port
+or its documentation (for example gosec or Bandit); neither is a spelling of the other.
+Both contribute to requirement `refs` alongside the other reference fields: distinct URLs
+are kept, identical URLs appear once, and neither key masks the other. Other spellings
+are not inferred. Empty, redacted or non-string values are filtered as the other
+reference fields are. `refs` carries the links, not the metadata keys they came from;
+keep the original scanner output when that provenance is needed.
+
 ### HDF to Other Formats
 
 | Target Format | Function |

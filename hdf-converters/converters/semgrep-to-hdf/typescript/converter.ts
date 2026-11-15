@@ -55,7 +55,9 @@ interface SemgrepMetadata {
   category?: string;
   source?: string;
   shortlink?: string;
+  // Rule authors publish the ported rule's link under either key; both are read.
   'source-rule-url'?: string;
+  source_rule_url?: string;
   'bandit-code'?: string;
   asvs?: Record<string, unknown>;
 }
@@ -269,6 +271,7 @@ function referencesFor(metadata: SemgrepMetadata): string[] {
     metadata.source,
     metadata.shortlink,
     metadata['source-rule-url'],
+    metadata.source_rule_url,
     typeof metadata.asvs?.control_url === 'string' ? metadata.asvs.control_url : undefined,
   ].filter(isPresent);
   return [...new Set(urls)];

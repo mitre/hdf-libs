@@ -51,6 +51,60 @@ func contains(haystack, needle string) bool {
 	})()
 }
 
+func referenceURLs(refs []hdf.Reference) []string {
+	urls := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		if ref.URL != nil {
+			urls = append(urls, *ref.URL)
+		}
+	}
+	return urls
+}
+
+// Rule authors publish the ported rule's link under two independent keys:
+// source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
+// Bandit-derived Python rule).
+func TestPublishedSourceRuleReferences(t *testing.T) {
+	out := convertFixture(t, "source-rule-urls.json")
+	reqs := out.Baselines[0].Requirements
+	goRule := findReq(reqs, "use-of-unsafe-block")
+	pythonRule := findReq(reqs, "subprocess-shell-true")
+	require.NotNil(t, goRule)
+	require.NotNil(t, pythonRule)
+	assert.Equal(t, []string{
+		"https://cwe.mitre.org/data/definitions/242.html",
+		"https://github.com/securego/gosec/blob/master/rules/unsafe.go",
+	}, referenceURLs(goRule.Refs))
+	assert.Equal(t, []string{
+		"https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
+		"https://docs.python.org/3/library/subprocess.html",
+		"https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+	}, referenceURLs(pythonRule.Refs))
+}
+
+// The case file is shared with the TypeScript suite, so both languages are held
+// to the same refs for every case.
+func TestSourceRuleReferenceMapping(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "fixtures", "source-rule-url-cases.json"))
+	require.NoError(t, err)
+	var cases []struct {
+		Name  string          `json:"name"`
+		Input json.RawMessage `json:"input"`
+		URLs  []string        `json:"urls"`
+	}
+	require.NoError(t, json.Unmarshal(data, &cases))
+	require.NotEmpty(t, cases)
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			out, err := ConvertSemgrepToHDF(tc.Input, testVersion)
+			require.NoError(t, err)
+			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
+			require.NotNil(t, req)
+			assert.Equal(t, tc.URLs, referenceURLs(req.Refs))
+		})
+	}
+}
+
 // ---- Contract ----
 
 func TestRejectsEmptyInput(t *testing.T) {
