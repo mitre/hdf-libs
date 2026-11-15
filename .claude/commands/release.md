@@ -305,6 +305,8 @@ pnpm security           # pnpm audit + govulncheck + gosec
 
 If any step fails, fix before proposing the commit. A common failure: forgetting one `go.mod` require line — `go build ./...` per-module will surface it.
 
+Also run `bash scripts/check-go-mod-tidy.sh`, which `pnpm check` does not include but CI's Check Go job does. `go mod tidy` ignores `go.work`, so a module that reaches a sibling only transitively (hdf-generators reached hdf-validators through hdf-fixtures' tests) and carries no `replace` for it resolves that sibling from the module proxy at the bumped version, which does not exist until the tag is pushed. At the old version the proxy answered, so the gap was invisible until the bump; the fix is the missing `replace` plus `go mod tidy` in that module.
+
 ### Phase 7 — Stage and propose the commit
 
 0. **Branch first.** If the current branch is `main`, create `release/vNEW-prep` before staging anything: a release commit on the default branch has had to be moved to a branch after the fact, and the `main` ruleset now requires the gate checks on a pull request anyway.

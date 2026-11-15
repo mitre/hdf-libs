@@ -13,3 +13,5 @@ require go.yaml.in/yaml/v3 v3.0.5 // indirect
 replace github.com/mitre/hdf-libs/hdf-fixtures/v3 => ../../hdf-fixtures
 
 replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../../hdf-schema/dist/go
+
+replace github.com/mitre/hdf-libs/hdf-validators/go/v3 => ../../hdf-validators/go
