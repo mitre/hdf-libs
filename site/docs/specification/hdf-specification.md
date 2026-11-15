@@ -344,6 +344,7 @@ Describes a system under assessment. A system document defines the authorization
 | labels | {string: string} | no | Key-value grouping metadata |
 | integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | version | string | no | Document version |
+| createdAt | date-time | no | When this document was created (RFC 3339) *(v3.8.0)* |
 | generator | Generator | no | Tool that produced this file |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts describing the system's threat environment or context (CTI/STIX, BOMs, advisories) *(v3.5.0)* |
 
@@ -398,6 +399,7 @@ Assessment plan defining what to assess and how. A plan document describes the s
 | labels | {string: string} | no | Key-value grouping metadata |
 | integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | version | string | no | Document version |
+| createdAt | date-time | no | When this document was created (RFC 3339) *(v3.8.0)* |
 | generator | Generator | no | Tool that produced this file |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the plan (CTI/STIX, advisories, methodology documents) *(v3.5.0)* |
 

@@ -7411,6 +7411,14 @@
             "type": "string",
             "description": "Version of this system document."
           },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this system document was created, as an RFC 3339 date-time. Set by the producer that wrote it.",
+            "examples": [
+              "2026-11-15T20:35:00Z"
+            ]
+          },
           "generator": {
             "$ref": "#/components/schemas/Generator",
             "description": "Information about the tool that generated this system document."
@@ -7534,6 +7542,14 @@
           "version": {
             "type": "string",
             "description": "Version of this plan document."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this plan was created, as an RFC 3339 date-time. Set by the producer that wrote it.",
+            "examples": [
+              "2026-11-15T20:35:00Z"
+            ]
           },
           "generator": {
             "$ref": "#/components/schemas/Generator",

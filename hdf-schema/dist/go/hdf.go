@@ -1996,6 +1996,9 @@ type HDFSystem struct {
 	// provides them. Maps to NIST SP 800-53 control designations and OSCAL
 	// leveraged-authorizations.
 	ControlDesignations                                                                         []ControlDesignation `json:"controlDesignations,omitempty"`
+	// When this system document was created, as an RFC 3339 date-time. Set by the producer that
+	// wrote it.
+	CreatedAt                                                                                   *time.Time           `json:"createdAt,omitempty"`
 	// Inter-component data flows describing how components communicate. Supports local,
 	// cross-system, and external flows. Replaces the interconnections[] field.
 	DataFlows                                                                                   []DataFlow           `json:"dataFlows,omitempty"`
@@ -2090,6 +2093,8 @@ type HDFPlan struct {
 	// The assessments to perform. Each assessment pairs a baseline with targets and resolved
 	// inputs.
 	Assessments                                                                                 []Assessment        `json:"assessments"`
+	// When this plan was created, as an RFC 3339 date-time. Set by the producer that wrote it.
+	CreatedAt                                                                                   *time.Time          `json:"createdAt,omitempty"`
 	// Description of the plan's purpose and scope.
 	Description                                                                                 *string             `json:"description,omitempty"`
 	// Producer data outside the HDF model, and the pre-converted source artifact(s) this plan
