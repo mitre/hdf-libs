@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,19 +110,56 @@ func TestReadInputFile_BOMOnly(t *testing.T) {
 	}
 }
 
-func TestReadFromFile_TooLarge(t *testing.T) {
-	// Create a file that exceeds the size limit
-	// We'll test this by temporarily setting a small limit
-	// Since MaxHDFFileSize is a const, we can't easily test this
-	// without creating a huge file, so we'll skip this test
-	t.Skip("skipping large file test - would require creating 256MB+ file")
+func TestReadAtMostRejectsExcessBytes(t *testing.T) {
+	const limit = 16
+	exact := strings.Repeat("a", limit)
+
+	data, err := readAtMost(strings.NewReader(exact), limit, "test input")
+	if err != nil {
+		t.Fatalf("input of exactly the limit: unexpected error: %v", err)
+	}
+	if string(data) != exact {
+		t.Fatalf("input of exactly the limit: got %d bytes, want all %d", len(data), limit)
+	}
+
+	data, err = readAtMost(strings.NewReader(exact+"b"), limit, "test input")
+	if err == nil {
+		t.Fatalf("input one byte over the limit: got %d bytes and no error, want an error", len(data))
+	}
+	if data != nil {
+		t.Errorf("input one byte over the limit: got %d bytes alongside the error, want none", len(data))
+	}
+	if !strings.Contains(err.Error(), "input too large") || !strings.Contains(err.Error(), "--max-size") {
+		t.Errorf("error %q should say the input is too large and name --max-size", err)
+	}
 }
 
-func TestReadInputFile_StdinPath(t *testing.T) {
-	// When path is "-", it should try to read from stdin
-	// This is hard to test without mocking stdin
-	// The function returns "no input provided" for empty stdin
-	t.Skip("skipping stdin test - requires stdin mocking")
+func TestReadFromFileReportsTheLimitInEffect(t *testing.T) {
+	oldMax := maxSizeMB
+	maxSizeMB = 0 // --max-size 0 falls back to the default limit
+	defer func() { maxSizeMB = oldMax }()
+
+	// A sparse file reports its full size to Stat without writing the bytes.
+	big := filepath.Join(t.TempDir(), "big.json")
+	f, err := os.Create(big)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(getMaxFileSize() + 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = readFromFile(big, false)
+	if err == nil {
+		t.Fatal("expected an error for a file over the default limit")
+	}
+	want := fmt.Sprintf("max %d MB", DefaultMaxSizeMB)
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("error %q should report the limit in effect (%s)", err, want)
+	}
 }
 
 func TestParseHDFResults_InvalidJSON(t *testing.T) {

@@ -118,15 +118,9 @@ func readInputFileAndRaw(path string) (parse, raw []byte, err error) {
 // readFromStdin reads from stdin with a size limit. When allowEmpty is false,
 // empty stdin is rejected.
 func readFromStdin(allowEmpty bool) ([]byte, error) {
-	maxSize := getMaxFileSize()
-	limited := io.LimitReader(os.Stdin, maxSize+1)
-	data, err := io.ReadAll(limited)
+	data, err := readAtMost(os.Stdin, getMaxFileSize(), "stdin")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read stdin: %w", err)
-	}
-
-	if int64(len(data)) > maxSize {
-		return nil, fmt.Errorf("input too large: exceeds %d MB limit (use --max-size to increase)", maxSizeMB)
+		return nil, err
 	}
 
 	if len(data) == 0 && !allowEmpty {
@@ -197,17 +191,36 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 
 	maxSize := getMaxFileSize()
 	if info.Size() > maxSize {
-		return nil, fmt.Errorf("file too large: %d bytes (max %d MB, use --max-size to increase)",
-			info.Size(), maxSizeMB)
+		return nil, fmt.Errorf("file too large: %d bytes (max %s, use --max-size to increase)",
+			info.Size(), describeLimit(maxSize))
 	}
 
-	// Read with limit as defense-in-depth
-	data, err := io.ReadAll(io.LimitReader(f, maxSize))
+	// The file can grow between Stat and the read, so the read enforces the limit too.
+	return readAtMost(f, maxSize, "file")
+}
+
+// readAtMost reads all of r, refusing input longer than limit bytes. It reads one byte
+// past the limit so an over-long input is an error rather than a silently truncated
+// prefix. source names the input in read-failure messages.
+func readAtMost(r io.Reader, limit int64, source string) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(r, limit+1))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to read %s: %w", source, err)
 	}
-
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("input too large: exceeds %s limit (use --max-size to increase)", describeLimit(limit))
+	}
 	return data, nil
+}
+
+// describeLimit renders a byte limit for an error message: whole megabytes as "N MB",
+// matching the unit of --max-size, and anything else in bytes.
+func describeLimit(limit int64) string {
+	const mb = 1024 * 1024
+	if limit >= mb && limit%mb == 0 {
+		return fmt.Sprintf("%d MB", limit/mb)
+	}
+	return fmt.Sprintf("%d bytes", limit)
 }
 
 // parseHDFResults validates and parses JSON data into HDFResults via

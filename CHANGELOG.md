@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **The `hdf` CLI no longer reads a truncated prefix of a file that grows past `--max-size` after its size is checked.** File input was checked with `Stat` and then read through a reader capped at exactly the limit, so a file that grew between the two returned its first `--max-size` bytes with no error, and the CLI parsed, hashed or archived that prefix. File and stdin input now share one bounded read that takes one byte past the limit and fails with `input too large ... (use --max-size to increase)`; the `Stat` check still refuses an oversized file before any read. The size errors now report the limit in effect, so `--max-size 0` (which falls back to 256 MB) no longer reports a 0 MB limit.
+
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
