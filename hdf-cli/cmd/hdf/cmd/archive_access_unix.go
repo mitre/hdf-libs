@@ -17,7 +17,7 @@ func openStagedArchiveWith(path string, access archiveAccess,
 	if access == archiveInherit {
 		return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o666)
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+	f, err := createPrivateFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -13,6 +13,12 @@ import (
 
 const nfs4ACLAttr = "system.nfs4_acl"
 
+// createPrivateFile creates the staged archive exclusively with mode 0600; a 0600
+// create also sets a POSIX ACL's mask to none, so no inherited entry takes effect.
+func createPrivateFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+}
+
 func platformPrivateCheck(f *os.File) error {
 	return checkLinuxPrivate(int(f.Fd()), unix.Fgetxattr, unix.Fstatfs, os.Stderr)
 }

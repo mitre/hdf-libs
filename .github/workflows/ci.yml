@@ -814,6 +814,48 @@ jobs:
           path: '**/coverage.out'
           retention-days: 30
 
+  # macOS ACL behaviour needs a Mac: a private archive is created through libSystem
+  # (purego, cgo off as in release builds), so it runs natively on both architectures.
+  test-archive-macos:
+    name: Test archive access (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: amd64
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          go: 'true'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-artifacts
+      - name: Test archive access natively
+        working-directory: hdf-cli
+        run: |
+          go test ./cmd/hdf/cmd -run 'TestArchiveAccess|TestEvidenceBundle' -count=1 \
+            -coverprofile=coverage-darwin-${{ matrix.arch }}.out
+          go vet ./cmd/hdf/cmd
+      - name: Upload macOS coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-darwin-${{ matrix.arch }}
+          path: hdf-cli/coverage-darwin-${{ matrix.arch }}.out
+          if-no-files-found: error
+          retention-days: 30
+
   # ── Gate: test results, judged as HDF ────────────────────────────────────
   # The other half of the pair (see gate-hdf-scans): the same convert-then-
   # threshold shape, applied to what the suites report by RUNNING the code.
@@ -828,7 +870,7 @@ jobs:
     name: Gate test results on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [gate-cli, test-ts, test-go]
+    needs: [gate-cli, test-ts, test-go, test-archive-macos]
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -850,6 +892,11 @@ jobs:
         run: |
           chmod +x "${{ runner.temp }}/gate-cli/hdf"
           echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
+      - name: macOS archive access must pass
+        if: needs.test-archive-macos.result != 'success'
+        run: |
+          echo "::error::macOS archive access tests did not succeed on both architectures"
+          exit 1
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
@@ -977,7 +1024,7 @@ jobs:
     name: SonarQube Cloud
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [test-ts, test-go]
+    needs: [test-ts, test-go, test-archive-macos]
     env:
       # Job-level so the scan step's `if` can test it: secrets are not exposed
       # to fork PRs, so an empty value means "cannot scan", not "misconfigured".
@@ -996,6 +1043,11 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-reports-go
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: coverage-reports-go-darwin-*
+          path: hdf-cli
+          merge-multiple: true
       # vitest writes lcov SF: paths relative to each package, but the Sonar
       # scanner resolves them against the repo root — prefix the package dir
       # so every source file resolves instead of silently reporting 0%.
