@@ -200,7 +200,7 @@ func TestEvidenceBundle_NeverReplacesAFileCreatedDuringTheRun(t *testing.T) {
 	dir, pkgPath := bundleTree(t)
 	archive := filepath.Join(dir, "boe.zip")
 
-	err := runEvidenceBundle(pkgPath, archive, false, func(f *os.File) archiveWriter {
+	err := runEvidenceBundle(pkgPath, archive, false, archivePrivate, func(f *os.File) archiveWriter {
 		return &clobberingWriter{archiveWriter: newZipWriter(f), out: archive, content: theirs}
 	})
 	require.Error(t, err)
@@ -666,7 +666,7 @@ func TestEvidenceBundle_WriterSeamAcceptsAnotherImplementation(t *testing.T) {
 	// The command is driven THROUGH the seam. Constructing the fake and calling
 	// Add on it directly would only prove the interface compiles; it would pass
 	// with the command still making zip calls of its own.
-	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"), false,
+	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"), false, archivePrivate,
 		func(*os.File) archiveWriter { return fake }))
 
 	assert.Equal(t, []string{

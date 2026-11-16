@@ -57,7 +57,7 @@ type bundleEntry struct {
 }
 
 func newEvidenceBundleCmd() *cobra.Command {
-	var outputPath string
+	var outputPath, outputAccess string
 	var overwrite bool
 
 	cmd := &cobra.Command{
@@ -137,12 +137,18 @@ Examples:
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")
 			}
-			return runEvidenceBundle(args[0], outputPath, overwrite, newArchiveWriter)
+			access, err := parseArchiveAccess(outputAccess)
+			if err != nil {
+				return err
+			}
+			return runEvidenceBundle(args[0], outputPath, overwrite, access, newArchiveWriter)
 		},
 	}
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Archive to write (required)")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false,
 		"Replace an existing archive at -o (without this, an existing path is refused)")
+	cmd.Flags().StringVar(&outputAccess, "output-access", string(archivePrivate),
+		"Who may read the archive: private (owner only) or inherit (the directory's umask and default ACLs)")
 	return cmd
 }
 
@@ -403,7 +409,8 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
-func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter func(*os.File) archiveWriter) (err error) {
+func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess,
+	makeWriter func(*os.File) archiveWriter) (err error) {
 	pkgData, err := readInputFile(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -640,7 +647,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// Sorted order plus a fixed timestamp make the archive reproducible.
 	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
 
-	if err := writeArchiveAtomically(outputPath, overwrite, entries, makeWriter); err != nil {
+	if err := writeArchiveAtomically(outputPath, overwrite, access, entries, makeWriter); err != nil {
 		return err
 	}
 
@@ -800,12 +807,12 @@ func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 // complete. Without overwrite the move refuses a name that already exists. It takes
 // the writer constructor so the seam is exercised by the command, not merely
 // implemented beside it.
-func writeArchiveAtomically(outputPath string, overwrite bool, entries []bundleEntry,
+func writeArchiveAtomically(outputPath string, overwrite bool, access archiveAccess, entries []bundleEntry,
 	makeWriter func(*os.File) archiveWriter) error {
 	dir := filepath.Dir(outputPath)
-	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
+	tmp, err := createStagedArchive(dir, access)
 	if err != nil {
-		return fmt.Errorf("failed to create the archive: %w", err)
+		return fmt.Errorf("-o %s: %w", outputPath, err)
 	}
 	tmpName := tmp.Name()
 	defer func() {
@@ -830,9 +837,6 @@ func writeArchiveAtomically(outputPath string, overwrite bool, entries []bundleE
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close the archive: %w", err)
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		return fmt.Errorf("failed to set archive permissions: %w", err)
 	}
 	if overwrite {
 		return platformNoClobber.replace(tmpName, outputPath)
