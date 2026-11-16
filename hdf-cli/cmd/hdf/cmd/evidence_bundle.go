@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -437,7 +439,8 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	if overwrite {
 		if info, statErr := os.Stat(outputPath); statErr == nil && !info.IsDir() {
 			defer func() {
-				if err != nil {
+				var published *archivePublishedError
+				if err != nil && !errors.As(err, &published) {
 					fmt.Fprintf(os.Stderr,
 						"Note: %s was not replaced; the file already at that path is unchanged.\n",
 						outputPath)
@@ -637,7 +640,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// Sorted order plus a fixed timestamp make the archive reproducible.
 	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
 
-	if err := writeArchiveAtomically(outputPath, entries, makeWriter); err != nil {
+	if err := writeArchiveAtomically(outputPath, overwrite, entries, makeWriter); err != nil {
 		return err
 	}
 
@@ -751,10 +754,18 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 	// flag makes that acceptable. A prior archive, by contrast, is the operator's own
 	// deliverable and is replaced on request — still before any document is read, so a run
 	// that will not proceed costs nothing and reports nothing else first.
-	if info, err := os.Stat(outputPath); err == nil && !info.IsDir() && !overwrite {
+	if outputTaken(outputPath) && !overwrite {
 		return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", outputPath)
 	}
 	return nil
+}
+
+// outputTaken reports whether a non-directory entry is at path, a dangling symlink
+// included: publication refuses every existing name, so this up-front check, which runs
+// before any document is read, must see the same ones.
+func outputTaken(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && !info.IsDir()
 }
 
 // samePath reports whether two paths name the same file. os.SameFile is asked first
@@ -784,11 +795,13 @@ func samePath(a, b string) bool {
 // replaces this one function and nothing else.
 func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 
-// writeArchiveAtomically writes to a temporary file beside the target and renames it
+// writeArchiveAtomically writes to a temporary file beside the target and moves it
 // into place, so a failure part-way cannot leave a partial archive that looks
-// complete. It takes the writer constructor so the seam is exercised by the command,
-// not merely implemented beside it.
-func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter) error {
+// complete. Without overwrite the move refuses a name that already exists. It takes
+// the writer constructor so the seam is exercised by the command, not merely
+// implemented beside it.
+func writeArchiveAtomically(outputPath string, overwrite bool, entries []bundleEntry,
+	makeWriter func(*os.File) archiveWriter) error {
 	dir := filepath.Dir(outputPath)
 	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
 	if err != nil {
@@ -821,8 +834,106 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	if err := os.Chmod(tmpName, 0o600); err != nil {
 		return fmt.Errorf("failed to set archive permissions: %w", err)
 	}
-	if err := os.Rename(tmpName, outputPath); err != nil {
-		return fmt.Errorf("failed to write %s: %w", outputPath, err)
+	if overwrite {
+		return platformNoClobber.replace(tmpName, outputPath)
+	}
+	return platformNoClobber.publish(tmpName, outputPath)
+}
+
+// noClobberOps publishes a staged file under a name that must not already exist. The
+// existence check before any document is read cannot stop a file appearing at -o while
+// the archive is built, so publication itself refuses: an exclusive rename where the
+// filesystem has one, else a hard link, which also refuses an existing name. Neither
+// ever falls back to a replacing rename. The functions are fields so the fallback
+// order can be tested without a filesystem that lacks each primitive.
+type noClobberOps struct {
+	rename            func(oldpath, newpath string) error
+	renameUnsupported func(error) bool
+	link              func(oldpath, newpath string) error
+	linkUnsupported   func(error) bool
+	syncDir           func(dir string) error
+}
+
+var platformNoClobber = noClobberOps{
+	rename:            renameNoReplace,
+	renameUnsupported: renameUnsupported,
+	link:              os.Link,
+	linkUnsupported:   linkUnsupported,
+	syncDir:           syncDir,
+}
+
+func (o noClobberOps) publish(staged, out string) error {
+	err := o.rename(staged, out)
+	if err != nil && o.renameUnsupported(err) {
+		linkErr := o.link(staged, out)
+		if linkErr == nil {
+			// The archive is published under out; the staged name is only a second link
+			// to it, and writeArchiveAtomically removes it again if this fails.
+			_ = os.Remove(staged)
+			return o.durable(out)
+		}
+		if o.linkUnsupported(linkErr) {
+			return fmt.Errorf("-o %s: this filesystem can neither rename nor link a file into "+
+				"place without the risk of replacing one created during the run (%v; %v); "+
+				"write to another directory, or pass --overwrite to allow replacement",
+				out, opCause(err), opCause(linkErr))
+		}
+		err = linkErr
+	}
+	if err == nil {
+		return o.durable(out)
+	}
+	if errors.Is(err, fs.ErrExist) {
+		return existingOutputError(out)
+	}
+	return fmt.Errorf("failed to write %s: %w", out, err)
+}
+
+// replace is --overwrite: an ordinary rename, which replaces whatever is at out.
+func (o noClobberOps) replace(staged, out string) error {
+	if err := os.Rename(staged, out); err != nil {
+		return fmt.Errorf("failed to write %s: %w", out, err)
+	}
+	return o.durable(out)
+}
+
+// durable flushes the directory entry once out is published. A failure here comes
+// after publication, so it is reported as such and the archive is kept.
+func (o noClobberOps) durable(out string) error {
+	if err := o.syncDir(filepath.Dir(out)); err != nil {
+		return &archivePublishedError{out: out, err: err}
 	}
 	return nil
+}
+
+// archivePublishedError is a failure after the archive reached -o: the archive is
+// there, so nothing may report the path as unchanged.
+type archivePublishedError struct {
+	out string
+	err error
+}
+
+func (e *archivePublishedError) Error() string {
+	return fmt.Sprintf("the archive was written to %s, but flushing its directory entry to disk failed: %v",
+		e.out, e.err)
+}
+
+func (e *archivePublishedError) Unwrap() error { return e.err }
+
+// opCause renders a rename or link failure as its operation and cause, leaving out the
+// staged file's name, which the operator never typed.
+func opCause(err error) string {
+	var le *os.LinkError
+	if errors.As(err, &le) {
+		return le.Op + ": " + le.Err.Error()
+	}
+	return err.Error()
+}
+
+// existingOutputError is the refusal for a name taken after the up-front check.
+func existingOutputError(out string) error {
+	if info, err := os.Lstat(out); err == nil && info.IsDir() {
+		return fmt.Errorf("-o %s is a directory; name the archive file to write", out)
+	}
+	return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", out)
 }

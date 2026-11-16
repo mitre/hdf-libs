@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`hdf evidence bundle` no longer replaces a file created at `-o` while the archive is being built.** Without `--overwrite` the command refused an existing `-o` once, before reading any document, and then published with a rename that replaces, so a file another process created at that path during the run was silently overwritten. Publication now refuses an existing name itself: an exclusive rename (`renameat2` with `RENAME_NOREPLACE` on Linux, `renameatx_np` with `RENAME_EXCL` on macOS, `MoveFileEx` without `MOVEFILE_REPLACE_EXISTING` on Windows), or a hard link where the filesystem has no exclusive rename, the model of Rust's `tempfile` `persist_noclobber`. Where the filesystem has neither (exFAT on macOS), the run refuses without `--overwrite` and says so. A dangling symlink at `-o` is now refused up front, and a failure after the archive is published (flushing the directory entry) reports that the archive was written instead of claiming the path is unchanged. `--overwrite` still replaces atomically.
+
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**
 
   Both are schema-required with `minItems: 1`, so an empty array is as invalid as a missing one and the converter rejected its own output. A Fortify `<Description>` whose classID matched no `<Vulnerability>` produced a requirement with no results; a ZAP alert with no `instances[]` produced the same, and an alert carrying no `desc`, `solution` or `otherinfo` additionally reached output with `descriptions: null`. A GitLab vulnerability carrying no `description` or remediation did the same.
