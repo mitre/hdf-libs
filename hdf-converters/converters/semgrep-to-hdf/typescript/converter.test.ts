@@ -37,7 +37,7 @@ describe('semgrep to HDF converter', () => {
   const validateSource = loadSchemaValidator(join(FIXTURES_DIR, 'semgrep_output_v1-1.183.0.schema.json'));
   const sourceReferenceCases = JSON.parse(
     readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8'),
-  ) as { name: string; input: Record<string, unknown>; urls: string[] }[];
+  ) as { name: string; input: Record<string, unknown>; urls: string[]; tags?: Record<string, unknown> }[];
 
   it('preserves published source rule references', async () => {
     assertSchemaValid(validateSource, 'source-rule-urls.json', JSON.parse(loadFixture('source-rule-urls.json')));
@@ -54,11 +54,23 @@ describe('semgrep to HDF converter', () => {
     ]);
   });
 
-  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, urls }) => {
+  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, urls, tags }) => {
     assertSchemaValid(validateSource, name, input);
     const hdf = JSON.parse(await convertSemgrepToHdf(JSON.stringify(input))) as HDFResults;
     expectValidResults(hdf);
-    expect((findReq(hdf, 'use-of-unsafe-block')?.refs ?? []).map((ref) => ref.url)).toEqual(urls);
+    const req = findReq(hdf, 'use-of-unsafe-block')!;
+    expect((req.refs ?? []).map((ref) => ref.url)).toEqual(urls);
+    // A case-variant key at any level leaves the finding as the canonical keys describe.
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe(ResultStatus.Failed);
+    expect(req.impact).toBe(0.5);
+    expect(req.severity).toBe('medium');
+    expect(req.sourceLocation?.line).toBe(21);
+    expect(findReq(hdf, 'semgrep-scan-coverage')?.tags?.filesScanned).toBe(2);
+    for (const [key, value] of Object.entries(tags ?? {})) {
+      if (value === null) expect(req.tags).not.toHaveProperty(key);
+      else expect(req.tags?.[key]).toEqual(value);
+    }
   });
 
   it('rejects input that is not a Semgrep report', async () => {

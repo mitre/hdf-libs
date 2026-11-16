@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **The Go Semgrep converter matches JSON member names exactly, as the TypeScript converter does.** Go's `encoding/json` matched names case-insensitively, so a member such as `SOURCE-RULE-URL`, `Extra`, `METADATA`, `LINE` or `RESULTS` was read as the canonical one, or overwrote it when it came later. The Go converter now decodes with `encoding/json/v2` using v1 semantics except for name case; every existing Semgrep fixture converts to the same output, and 15 new shared cases pin both languages.
+
 - **`semgrep-to-hdf` now carries the `source_rule_url` rule link into `refs`, in Go and TypeScript.** Published Semgrep rules link the rule they port under one of two independent metadata keys, `source-rule-url` (the Bandit-derived Python rules) or `source_rule_url` (for example the Go `unsafe` rule, which links gosec). Only the hyphenated key was read, so the underscore key's URL never reached `refs`. Both keys are now read with the converter's existing filtering and de-duplication; distinct URLs are kept and identical ones appear once. **Output change:** requirements from rules carrying `source_rule_url` gain that URL in `refs`. A real Semgrep 1.183.0 capture and 20 schema-confirmed cases, validated against the vendored Semgrep 1.183.0 output schema, are shared by both test suites.
 
 - **`fortify-to-hdf`, `zap-to-hdf` and `gitlab-to-hdf` no longer emit a requirement with an invalid `results` or `descriptions` array.**

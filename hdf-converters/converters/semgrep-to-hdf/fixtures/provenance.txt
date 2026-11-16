@@ -53,8 +53,13 @@ results, errors and paths members unchanged, and replaces only that finding's
 `extra.metadata` to cover: each key alone, both keys with distinct and with
 duplicate URLs, no reference keys, empty, redacted, null, number, boolean, array
 and object values of either key alongside a valid value of the other, and
-unrecognized key punctuation. `name` and `urls` are test-vector annotations, not
-Semgrep fields. Both languages consume these same inputs.
+unrecognized key punctuation. Fifteen more cases add members that differ from a
+canonical name only by case, alone, before and after the canonical member, at
+every level the converters decode (report RESULTS, finding EXTRA, envelope
+METADATA, metadata keys, position LINE, paths SCANNED); one carries two exact
+`source_rule_url` members in its JSON text, and the last value is expected.
+`name`, `urls` and `tags` are test-vector annotations, not Semgrep fields. Both
+languages consume these same inputs.
 
 ## `expected/`
 
@@ -81,4 +86,4 @@ The 1.183.0 output schema is vendored as `semgrep_output_v1-1.183.0.schema.json`
 and recorded in provenance.json. The TypeScript converter tests validate the
 real capture and every adapted case against it with Ajv2020 through the shared
 schema validator; metadata is raw JSON in the official schema. Validation passed
-for the real capture and all 20 adapted cases on 2026-11-15 (Ajv2020).
+for the real capture and all 35 adapted cases on 2026-11-16 (Ajv2020).

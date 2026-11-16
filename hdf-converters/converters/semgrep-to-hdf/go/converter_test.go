@@ -91,6 +91,7 @@ func TestSourceRuleReferenceMapping(t *testing.T) {
 		Name  string          `json:"name"`
 		Input json.RawMessage `json:"input"`
 		URLs  []string        `json:"urls"`
+		Tags  map[string]any  `json:"tags"`
 	}
 	require.NoError(t, json.Unmarshal(data, &cases))
 	require.NotEmpty(t, cases)
@@ -101,8 +102,35 @@ func TestSourceRuleReferenceMapping(t *testing.T) {
 			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
 			require.NotNil(t, req)
 			assert.Equal(t, tc.URLs, referenceURLs(req.Refs))
+			// A case-variant key at any level must leave the finding as the
+			// canonical keys describe it.
+			require.Len(t, req.Results, 1)
+			assert.Equal(t, hdf.Failed, req.Results[0].Status)
+			assert.InDelta(t, 0.5, req.Impact, 0.0001)
+			require.NotNil(t, req.Severity)
+			assert.Equal(t, hdf.SeverityMedium, *req.Severity)
+			require.NotNil(t, req.SourceLocation)
+			require.NotNil(t, req.SourceLocation.Line)
+			assert.InDelta(t, 21, *req.SourceLocation.Line, 0.0001)
+			coverage := findReq(out.Baselines[0].Requirements, coverageID)
+			require.NotNil(t, coverage)
+			assert.Equal(t, 2, coverage.Tags["filesScanned"])
+			for key, expected := range tc.Tags {
+				if expected == nil {
+					assert.NotContains(t, req.Tags, key)
+					continue
+				}
+				assert.JSONEq(t, mustJSON(t, expected), mustJSON(t, req.Tags[key]), key)
+			}
 		})
 	}
+}
+
+func mustJSON(t *testing.T, v any) string {
+	t.Helper()
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	return string(b)
 }
 
 // ---- Contract ----
