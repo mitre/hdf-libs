@@ -14,9 +14,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// fileAllAccess is the FA right: every standard and file-specific right.
-const fileAllAccess = windows.STANDARD_RIGHTS_REQUIRED | windows.SYNCHRONIZE | 0x1ff
-
 func effectiveUserSID(t *testing.T) *windows.SID {
 	t.Helper()
 	user, err := windows.GetCurrentThreadEffectiveToken().GetTokenUser()
@@ -168,7 +165,7 @@ func TestArchiveAccessWindowsPathForms(t *testing.T) {
 	require.NoError(t, err)
 	assertCreatorOnly(t, sd)
 
-	nul := filepath.Join(t.TempDir(), "bad\x00name")
+	nul := t.TempDir() + `\bad` + "\x00" + "name"
 	_, err = createPrivateWindows(nul, volumeACLFlags)
 	assert.Error(t, err)
 }
