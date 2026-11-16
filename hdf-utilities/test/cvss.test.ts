@@ -9,7 +9,7 @@ import {
   computeCvss40Score,
   cvss40MacroVector,
 } from '../src/cvss/index.js';
-import { cvssScoreToSeverity } from '../src/severity/index.js';
+import { cvssScoreToSeverity, cvssSeverityForVersion } from '../src/severity/index.js';
 
 interface CvssScoreCase {
   vector: string;
@@ -29,6 +29,27 @@ function loadVectorCases<T>(name: string): T[] {
 const cvss31Cases = loadVectorCases<CvssScoreCase>('cvss31-vectors.json');
 const cvss30Cases = loadVectorCases<CvssScoreCase>('cvss30-vectors.json');
 const cvss20Cases = loadVectorCases<CvssScoreCase>('cvss20-vectors.json');
+
+interface CvssSeverityCase {
+  version: string;
+  score: number;
+  severity: string;
+}
+
+describe('cvssSeverityForVersion', () => {
+  it.each(loadVectorCases<CvssSeverityCase>('cvss-severity-cases.json'))(
+    'CVSS $version score $score is $severity',
+    (c) => {
+      expect(cvssSeverityForVersion(c.version, c.score)).toBe(c.severity);
+    },
+  );
+
+  it.each(['2.0', '3.1'])('treats a non-finite CVSS %s score as no rating', (version) => {
+    for (const score of [NaN, Infinity, -Infinity]) {
+      expect(cvssSeverityForVersion(version, score)).toBe('none');
+    }
+  });
+});
 
 describe('cvssScoreToSeverity', () => {
   it('returns "none" for 0.0', () => {

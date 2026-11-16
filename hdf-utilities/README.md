@@ -451,6 +451,18 @@ declares. Go: `ComputeCvssScore(vector string) (CvssScore, error)`.
   malformed (a segment that is not `NAME:VALUE`, an empty value, a repeated
   metric): never a guessed score
 
+#### `cvssSeverityForVersion(version: string, score: number): string`
+
+The severity of a CVSS score on its version's scale. Go: `CvssSeverityForVersion`.
+
+- **Parameters:**
+  - `version` - `"2.0"`, `"3.0"`, `"3.1"` or `"4.0"`
+  - `score` - The score
+- **Returns:** For CVSS 2.0, NVD's v2 ranges: `low` 0.0–3.9, `medium` 4.0–6.9,
+  `high` 7.0–10.0 (2.0 has no `none` or `critical`). For 3.0, 3.1 and 4.0, the
+  specification's scale (`cvssScoreToSeverity`). A negative or non-finite score
+  is `none`.
+
 #### `computeCvss40Score(vector: string): CvssScore`
 
 The CVSS 4.0 MacroVector engine that `computeCvssScore` uses for 4.0 vectors;
