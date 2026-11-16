@@ -447,8 +447,9 @@ declares. Go: `ComputeCvssScore(vector string) (CvssScore, error)`.
   implemented as the 3.1 specification's Appendix A advises, so floating-point
   error cannot raise a score.
 - **Throws:** Error if CVSS does not define the version, a required metric is
-  missing, or a metric value is outside that version's values (never a guessed
-  score)
+  missing, a metric value is outside that version's values, or the vector is
+  malformed (a segment that is not `NAME:VALUE`, an empty value, a repeated
+  metric): never a guessed score
 
 #### `computeCvss40Score(vector: string): CvssScore`
 

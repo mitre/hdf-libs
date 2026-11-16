@@ -276,25 +276,25 @@ export interface CvssScore {
 
 // CVSS 3.x metric weights. CVSS 3.0 (specification §8.4) and 3.1 (§7.4) use the
 // same values; Privileges Required is scope-dependent, hence two tables.
-const CVSS3X_AV: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.2 };
-const CVSS3X_AC: Record<string, number> = { L: 0.77, H: 0.44 };
-const CVSS3X_UI: Record<string, number> = { N: 0.85, R: 0.62 };
-const CVSS3X_CIA: Record<string, number> = { N: 0.0, L: 0.22, H: 0.56 };
-const CVSS3X_PR_UNCHANGED: Record<string, number> = { N: 0.85, L: 0.62, H: 0.27 };
-const CVSS3X_PR_CHANGED: Record<string, number> = { N: 0.85, L: 0.68, H: 0.5 };
-const CVSS3X_E: Record<string, number> = { X: 1.0, H: 1.0, F: 0.97, P: 0.94, U: 0.91 };
-const CVSS3X_RL: Record<string, number> = { X: 1.0, U: 1.0, W: 0.97, T: 0.96, O: 0.95 };
-const CVSS3X_RC: Record<string, number> = { X: 1.0, C: 1.0, R: 0.96, U: 0.92 };
+const CVSS3X_AV: ReadonlyMap<string, number> = new Map([['N', 0.85], ['A', 0.62], ['L', 0.55], ['P', 0.2]]);
+const CVSS3X_AC: ReadonlyMap<string, number> = new Map([['L', 0.77], ['H', 0.44]]);
+const CVSS3X_UI: ReadonlyMap<string, number> = new Map([['N', 0.85], ['R', 0.62]]);
+const CVSS3X_CIA: ReadonlyMap<string, number> = new Map([['N', 0.0], ['L', 0.22], ['H', 0.56]]);
+const CVSS3X_PR_UNCHANGED: ReadonlyMap<string, number> = new Map([['N', 0.85], ['L', 0.62], ['H', 0.27]]);
+const CVSS3X_PR_CHANGED: ReadonlyMap<string, number> = new Map([['N', 0.85], ['L', 0.68], ['H', 0.5]]);
+const CVSS3X_E: ReadonlyMap<string, number> = new Map([['X', 1.0], ['H', 1.0], ['F', 0.97], ['P', 0.94], ['U', 0.91]]);
+const CVSS3X_RL: ReadonlyMap<string, number> = new Map([['X', 1.0], ['U', 1.0], ['W', 0.97], ['T', 0.96], ['O', 0.95]]);
+const CVSS3X_RC: ReadonlyMap<string, number> = new Map([['X', 1.0], ['C', 1.0], ['R', 0.96], ['U', 0.92]]);
 
 // CVSS 2.0 metric weights (FIRST CVSS v2 guide §3.2.1 and §3.2.2). ND (not
 // defined) leaves a temporal score unchanged.
-const CVSS20_AV: Record<string, number> = { L: 0.395, A: 0.646, N: 1.0 };
-const CVSS20_AC: Record<string, number> = { H: 0.35, M: 0.61, L: 0.71 };
-const CVSS20_AU: Record<string, number> = { M: 0.45, S: 0.56, N: 0.704 };
-const CVSS20_CIA: Record<string, number> = { N: 0.0, P: 0.275, C: 0.66 };
-const CVSS20_E: Record<string, number> = { U: 0.85, POC: 0.9, F: 0.95, H: 1.0, ND: 1.0 };
-const CVSS20_RL: Record<string, number> = { OF: 0.87, TF: 0.9, W: 0.95, U: 1.0, ND: 1.0 };
-const CVSS20_RC: Record<string, number> = { UC: 0.9, UR: 0.95, C: 1.0, ND: 1.0 };
+const CVSS20_AV: ReadonlyMap<string, number> = new Map([['L', 0.395], ['A', 0.646], ['N', 1.0]]);
+const CVSS20_AC: ReadonlyMap<string, number> = new Map([['H', 0.35], ['M', 0.61], ['L', 0.71]]);
+const CVSS20_AU: ReadonlyMap<string, number> = new Map([['M', 0.45], ['S', 0.56], ['N', 0.704]]);
+const CVSS20_CIA: ReadonlyMap<string, number> = new Map([['N', 0.0], ['P', 0.275], ['C', 0.66]]);
+const CVSS20_E: ReadonlyMap<string, number> = new Map([['U', 0.85], ['POC', 0.9], ['F', 0.95], ['H', 1.0], ['ND', 1.0]]);
+const CVSS20_RL: ReadonlyMap<string, number> = new Map([['OF', 0.87], ['TF', 0.9], ['W', 0.95], ['U', 1.0], ['ND', 1.0]]);
+const CVSS20_RC: ReadonlyMap<string, number> = new Map([['UC', 0.9], ['UR', 0.95], ['C', 1.0], ['ND', 1.0]]);
 
 /**
  * CVSS 3.x Round up, defined in the same words by the 3.0 specification (§8.1,
@@ -322,9 +322,37 @@ function roundTo1Decimal20(x: number): number {
   return Math.round(x * 10) / 10;
 }
 
+/**
+ * Refuses a vector scoring would otherwise have to guess at: parseCvssVector
+ * skips a segment that is not NAME:VALUE and keeps the last of a repeated metric,
+ * which is right for reading but would turn an empty value into "not defined" or
+ * pick one of two conflicting values.
+ */
+function assertCvssVectorStructure(vector: string): void {
+  const seen = new Set<string>();
+  let first = true;
+  for (const seg of vector.split('/')) {
+    if (seg === '') continue;
+    if (first && seg.startsWith('CVSS:')) {
+      first = false;
+      continue;
+    }
+    first = false;
+    const colon = seg.indexOf(':');
+    if (colon <= 0 || colon === seg.length - 1) {
+      throw new Error(`cvss: malformed metric "${seg}" in vector`);
+    }
+    const name = seg.slice(0, colon);
+    if (seen.has(name)) {
+      throw new Error(`cvss: metric "${name}" appears more than once`);
+    }
+    seen.add(name);
+  }
+}
+
 /** Weight of a required metric; throws naming the metric when absent or out of enum. */
 function cvssWeight(
-  table: Record<string, number>,
+  table: ReadonlyMap<string, number>,
   metrics: Map<string, string>,
   key: string,
   version: string,
@@ -333,7 +361,7 @@ function cvssWeight(
   if (v === undefined) {
     throw new Error(`cvss: missing required ${version} base metric "${key}"`);
   }
-  const w = table[v];
+  const w = table.get(v);
   if (w === undefined) {
     throw new Error(`cvss: invalid ${version} metric value ${key}:"${v}"`);
   }
@@ -342,7 +370,7 @@ function cvssWeight(
 
 /** Weight of a temporal metric: 1.0 when absent; throws when out of enum. */
 function cvssTemporalWeight(
-  table: Record<string, number>,
+  table: ReadonlyMap<string, number>,
   metrics: Map<string, string>,
   key: string,
   version: string,
@@ -351,7 +379,7 @@ function cvssTemporalWeight(
   if (v === undefined) {
     return 1.0;
   }
-  const w = table[v];
+  const w = table.get(v);
   if (w === undefined) {
     throw new Error(`cvss: invalid ${version} ${key} value "${v}"`);
   }
@@ -437,6 +465,7 @@ function cvss20Score(metrics: Map<string, string>): CvssScore {
  *   any metric value is out of that version's enum.
  */
 export function computeCvssScore(vector: string): CvssScore {
+  assertCvssVectorStructure(vector);
   const { version, metrics } = parseCvssVector(vector);
   switch (version) {
     case '4.0':
@@ -761,6 +790,7 @@ function cvss40StripExploitMaturity(vector: string): string {
  *   metric value is out of the 4.0 enum.
  */
 export function computeCvss40Score(vector: string): CvssScore {
+  assertCvssVectorStructure(vector);
   const { version } = parseCvssVector(vector);
   if (version !== '4.0') {
     throw new Error(`cvss: 4.0 score compute supports only CVSS 4.0, got "${version}"`);

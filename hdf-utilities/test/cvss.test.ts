@@ -291,10 +291,6 @@ describe('computeCvssScore (CVSS 3.1)', () => {
     });
   }
 
-  it('throws on a version CVSS does not define', () => {
-    expect(() => computeCvssScore('CVSS:3.2/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow();
-    expect(() => computeCvssScore('CVSS:5.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow();
-  });
 
   it('throws on a structurally invalid 3.1 vector (missing a required base metric)', () => {
     expect(() => computeCvssScore('CVSS:3.1/AV:N/AC:L')).toThrow();
@@ -316,6 +312,21 @@ describe('computeCvssScore (CVSS 3.1)', () => {
   });
 });
 
+interface CvssInvalidCase {
+  vector: string;
+  mentions: string;
+  note: string;
+}
+
+describe('computeCvssScore refuses invalid vectors', () => {
+  it.each(loadVectorCases<CvssInvalidCase>('cvss-invalid-vectors.json'))(
+    'refuses $vector ($note)',
+    (c) => {
+      expect(() => computeCvssScore(c.vector)).toThrow(c.mentions);
+    },
+  );
+});
+
 describe('computeCvssScore (CVSS 3.0)', () => {
   for (const c of cvss30Cases) {
     it(`${c.vector} → base ${c.base}, temporal ${c.temporal} (${c.note})`, () => {
@@ -326,13 +337,6 @@ describe('computeCvssScore (CVSS 3.0)', () => {
     });
   }
 
-  it.each([
-    ['CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H', 'metric "A"'],
-    ['CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:X/C:H/I:H/A:H', 'Scope'],
-    ['CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/RC:Z', 'RC'],
-  ])('throws on invalid vector %s, naming %s', (vector, mentions) => {
-    expect(() => computeCvssScore(vector)).toThrow(mentions);
-  });
 });
 
 describe('computeCvssScore (CVSS 2.0)', () => {
@@ -346,15 +350,6 @@ describe('computeCvssScore (CVSS 2.0)', () => {
     });
   }
 
-  it.each([
-    ['AV:N/AC:L/Au:N/C:P/I:P', 'metric "A"'],
-    ['AV:N/AC:L/Au:X/C:P/I:P/A:P', 'Au'],
-    ['AV:N/AC:L/Au:N/C:P/I:P/A:P/E:Z', 'E'],
-    ['AV:N/AC:L/Au:N/C:P/I:P/A:P/RL:Z', 'RL'],
-    ['AV:N/AC:L/Au:N/C:P/I:P/A:P/RC:Z', 'RC'],
-  ])('throws on invalid vector %s, naming %s', (vector, mentions) => {
-    expect(() => computeCvssScore(vector)).toThrow(mentions);
-  });
 });
 
 interface Cvss40Case {

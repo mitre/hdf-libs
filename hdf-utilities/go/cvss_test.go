@@ -73,37 +73,18 @@ func TestComputeCvssScore20(t *testing.T) {
 	}
 }
 
-func TestComputeCvssScore20_InvalidVector(t *testing.T) {
-	for _, tc := range []struct{ vector, mentions string }{
-		{"AV:N/AC:L/Au:N/C:P/I:P", `metric "A"`},
-		{"AV:N/AC:L/Au:X/C:P/I:P/A:P", "Au"},
-		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/E:Z", "E"},
-		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/RL:Z", "RL"},
-		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/RC:Z", "RC"},
-	} {
-		_, err := ComputeCvssScore(tc.vector)
-		assert.ErrorContains(t, err, tc.mentions, tc.vector)
-	}
+type cvssInvalidCase struct {
+	Vector   string `json:"vector"`
+	Mentions string `json:"mentions"`
+	Note     string `json:"note"`
 }
 
-func TestComputeCvssScore30_InvalidVector(t *testing.T) {
-	for _, tc := range []struct{ vector, mentions string }{
-		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H", `metric "A"`},
-		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:X/C:H/I:H/A:H", "Scope"},
-		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/RC:Z", "RC"},
-	} {
-		_, err := ComputeCvssScore(tc.vector)
-		assert.ErrorContains(t, err, tc.mentions, tc.vector)
-	}
-}
-
-func TestComputeCvssScore_UnsupportedVersion(t *testing.T) {
-	for _, v := range []string{
-		"CVSS:3.2/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-		"CVSS:5.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-	} {
-		_, err := ComputeCvssScore(v)
-		assert.Error(t, err, v)
+func TestComputeCvssScore_RefusesInvalidVectors(t *testing.T) {
+	for _, c := range loadVectorCases[cvssInvalidCase](t, "cvss-invalid-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			assert.ErrorContains(t, err, c.Mentions, "%s; scored %+v", c.Note, s)
+		})
 	}
 }
 

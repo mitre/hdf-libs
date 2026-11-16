@@ -260,6 +260,9 @@ var (
 // not define, a missing required metric or an out-of-enum value returns an
 // error rather than a guessed number.
 func ComputeCvssScore(vector string) (CvssScore, error) {
+	if err := cvssVectorStructureError(vector); err != nil {
+		return CvssScore{}, err
+	}
 	version, m := ParseCvssVector(vector)
 	switch version {
 	case "4.0":
@@ -271,6 +274,35 @@ func ComputeCvssScore(vector string) (CvssScore, error) {
 	default:
 		return CvssScore{}, fmt.Errorf("cvss: score compute supports CVSS 2.0, 3.0, 3.1 and 4.0, got %q", version)
 	}
+}
+
+// cvssVectorStructureError refuses a vector that scoring would otherwise have
+// to guess at: ParseCvssVector skips a segment that is not NAME:VALUE and keeps
+// the last of a repeated metric, which is right for reading but would turn an
+// empty value into "not defined" or pick one of two conflicting values.
+func cvssVectorStructureError(vector string) error {
+	seen := map[string]bool{}
+	first := true
+	for _, seg := range strings.Split(vector, "/") {
+		if seg == "" {
+			continue
+		}
+		if first && strings.HasPrefix(seg, "CVSS:") {
+			first = false
+			continue
+		}
+		first = false
+		colon := strings.Index(seg, ":")
+		if colon <= 0 || colon == len(seg)-1 {
+			return fmt.Errorf("cvss: malformed metric %q in vector", seg)
+		}
+		name := seg[:colon]
+		if seen[name] {
+			return fmt.Errorf("cvss: metric %q appears more than once", name)
+		}
+		seen[name] = true
+	}
+	return nil
 }
 
 // cvssWeight returns the weight of a required metric, or an error naming the
@@ -750,6 +782,9 @@ func anyNegative(vals ...float64) bool {
 // CVSS 4.0 vectors are accepted; any other version, a missing required base
 // metric, or an out-of-enum value returns an error (never a fabricated number).
 func ComputeCvss40Score(vector string) (CvssScore, error) {
+	if err := cvssVectorStructureError(vector); err != nil {
+		return CvssScore{}, err
+	}
 	version, _ := ParseCvssVector(vector)
 	if version != "4.0" {
 		return CvssScore{}, fmt.Errorf("cvss: 4.0 score compute supports only CVSS 4.0, got %q", version)

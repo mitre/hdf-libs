@@ -1,0 +1,24 @@
+{
+  "_comment": "Vectors computeCvssScore / ComputeCvssScore must refuse rather than score, with a text the error must contain. Shared by go/cvss_test.go and test/cvss.test.ts so both languages refuse the same inputs with the same message. Metric names that are also JavaScript object properties (toString, constructor, __proto__, hasOwnProperty) must be refused like any other out-of-enum value.",
+  "cases": [
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P", "mentions": "metric \"A\"", "note": "2.0 missing a base metric" },
+    { "vector": "AV:N/AC:L/Au:X/C:P/I:P/A:P", "mentions": "Au:\"X\"", "note": "2.0 out-of-enum base value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/E:Z", "mentions": "E value \"Z\"", "note": "2.0 out-of-enum temporal value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/RL:Z", "mentions": "RL value \"Z\"", "note": "2.0 out-of-enum temporal value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/RC:Z", "mentions": "RC value \"Z\"", "note": "2.0 out-of-enum temporal value" },
+    { "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H", "mentions": "metric \"A\"", "note": "3.0 missing a base metric" },
+    { "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:X/C:H/I:H/A:H", "mentions": "Scope value \"X\"", "note": "3.0 invalid Scope" },
+    { "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/RC:Z", "mentions": "RC value \"Z\"", "note": "3.0 out-of-enum temporal value" },
+    { "vector": "AV:toString/AC:L/Au:N/C:P/I:P/A:P", "mentions": "AV:\"toString\"", "note": "inherited object property as a base value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/E:constructor", "mentions": "E value \"constructor\"", "note": "inherited object property as a temporal value" },
+    { "vector": "CVSS:3.1/AV:__proto__/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "mentions": "AV:\"__proto__\"", "note": "inherited object property as a 3.1 base value" },
+    { "vector": "CVSS:3.0/AV:N/AC:L/PR:hasOwnProperty/UI:N/S:U/C:H/I:H/A:H", "mentions": "PR:\"hasOwnProperty\"", "note": "inherited object property as a 3.0 base value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/E:", "mentions": "malformed metric \"E:\"", "note": "empty temporal value is not 'not defined'" },
+    { "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/RL:", "mentions": "malformed metric \"RL:\"", "note": "empty temporal value" },
+    { "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:", "mentions": "malformed metric \"E:\"", "note": "empty 4.0 threat value" },
+    { "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/junk", "mentions": "malformed metric \"junk\"", "note": "segment without a metric name" },
+    { "vector": "AV:N/AV:L/AC:L/Au:N/C:P/I:P/A:P", "mentions": "metric \"AV\" appears more than once", "note": "repeated metric makes the score ambiguous" },
+    { "vector": "CVSS:3.2/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", "mentions": "got \"3.2\"", "note": "a version CVSS does not define" },
+    { "vector": "CVSS:5.0/AV:N", "mentions": "got \"5.0\"", "note": "a version CVSS does not define" }
+  ]
+}
