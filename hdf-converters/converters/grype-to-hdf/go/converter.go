@@ -1,7 +1,6 @@
 package grype_to_hdf
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -87,10 +87,9 @@ type GrypeMatch struct {
 	Artifact               GrypeArtifact               `json:"artifact"`
 
 	// raw is the match exactly as Grype emitted it. Grype carries no literal
-	// source snippet, so the result's rawSourceRecord is the whole match
-	// re-indented in place — preserving source key order, every field the typed struct does
-	// not model, and the source number literals, so the output is byte-identical
-	// to the TypeScript twin's JSON.stringify(match, null, 2).
+	// source snippet, so the result's rawSourceRecord is the whole match, with
+	// every field the typed struct does not model and the source number tokens
+	// (see exportmap.BuildJSONRawSourceRecord).
 	raw json.RawMessage
 }
 
@@ -344,21 +343,6 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// renderMatchRecord renders the raw match as indented JSON. json.Indent
-// re-formats the original bytes in place, preserving source key order so the
-// output is byte-identical to the TypeScript twin's JSON.stringify(match, null,
-// 2) — the twins share goldens, so the record cannot be the raw bytes.
-func renderMatchRecord(match GrypeMatch) string {
-	if len(match.raw) == 0 {
-		return "{}"
-	}
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, match.raw, "", "  "); err != nil {
-		return "{}"
-	}
-	return buf.String()
-}
-
 // buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
 // primitive. Related-vulnerability CVSS arrays are NOT merged in — the schema
 // contract is "one entry per source-CVE CVSS metric set", and the source CVE
@@ -568,14 +552,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	// two matches, and roll-up's first-wins on `code` would otherwise discard
 	// the second. `code` stays absent — Grype runs no executable check — and the
 	// v2 downgrade reconstructs its CODE tab from this record.
-	if len(match.raw) > 0 {
-		result.RawSourceRecord = &hdf.RawSourceRecord{
-			Content:   renderMatchRecord(match),
-			Encoding:  hdf.UTF8,
-			MediaType: "application/json",
-			Pointer:   hdfutil.Ptr(sourcePointer),
-		}
-	}
+	result.RawSourceRecord = exportmap.BuildJSONRawSourceRecord(match.raw, sourcePointer, exportmap.RecordIndented)
 
 	// Get CCI tags from curated NIST → CCI mapping
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)

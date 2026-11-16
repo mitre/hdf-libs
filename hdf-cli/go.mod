@@ -8,23 +8,22 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.2
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/tiktoken-go/tokenizer v0.10.0
 	golang.org/x/term v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
-	lukechampine.com/blake3 v1.4.1
 )
 
 require (
@@ -46,6 +45,7 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
+	lukechampine.com/blake3 v1.4.1 // indirect
 )
 
 require (

@@ -55,10 +55,10 @@ export {
 export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 
 // String utilities
-export { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
+export { asciiLower, stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';
+export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact, UNKNOWN_SEVERITY_IMPACT } from './severity/index.js';
 
 // Canonical status ordering + effective-status computation
 export {
@@ -99,3 +99,6 @@ export { parsePurl, type ParsedPurl } from './purl/index.js';
 
 // Input-size guard (schema-free; used by the engine loader)
 export { validateInputSize, resolveMaxInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from './size/index.js';
+
+// Code-point string order (Go's byte order over UTF-8)
+export { compareCodePoint } from './string/index.js';

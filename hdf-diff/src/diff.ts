@@ -12,7 +12,7 @@ import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
-import { parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
+import { compareCodePoint, parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
 
 /**
  * Options for configuring the diff behavior.
@@ -164,7 +164,7 @@ export function diffHdf(
   );
 
   // Sort by id
-  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+  requirementDiffs.sort((a, b) => compareCodePoint(a.id, b.id));
 
   // Extract drift: unchanged requirements with metadata changes
   const drift = extractDrift(requirementDiffs);
@@ -295,7 +295,7 @@ function diffFleet(
 
   // Sort by id, then by sourceIndex
   allRequirementDiffs.sort((a, b) => {
-    const idCmp = a.id.localeCompare(b.id);
+    const idCmp = compareCodePoint(a.id, b.id);
     if (idCmp !== 0) return idCmp;
     /* c8 ignore next -- sourceIndex is always set in fleet mode; ?? 0 is defensive typing */
     return (a.sourceIndex ?? 0) - (b.sourceIndex ?? 0);
@@ -1060,7 +1060,7 @@ export function diffBaselines(
   }
 
   // Sort by id
-  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+  requirementDiffs.sort((a, b) => compareCodePoint(a.id, b.id));
 
   // Build baseline diff from top-level baseline metadata
   const oldName = oldBaseline['name'] as string | undefined ?? '';
@@ -1163,7 +1163,7 @@ export function diffSystems(
     }
   }
 
-  componentDiffs.sort((a, b) => a.name.localeCompare(b.name));
+  componentDiffs.sort((a, b) => compareCodePoint(a.name, b.name));
 
   // Compare top-level system fields
   const systemFieldChanges = computeComponentFieldChanges(

@@ -32,6 +32,8 @@ Parse and load Heimdall Data Format (HDF) documents with validation. Provides a 
 npm install @mitre/hdf-parsers
 ```
 
+Its runtime dependencies, installed with it, are `@mitre/hdf-schema`, `@mitre/hdf-validators` and `@mitre/hdf-utilities`.
+
 ## Usage
 
 ### TypeScript

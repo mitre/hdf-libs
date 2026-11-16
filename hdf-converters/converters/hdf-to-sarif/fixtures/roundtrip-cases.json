@@ -1,0 +1,49 @@
+{
+  "$comment": "Shared Go/TypeScript round-trip inputs for SARIF -> HDF -> SARIF, read by go/roundtrip_cases_test.go and typescript/roundtrip-cases.test.ts so both languages are held to one case. See provenance.txt for where each comes from.",
+  "multiLocation": {
+    "$comment": "One SARIF result at three locations followed by a second result of the same rule. The document is built at test time from `source` by keeping runs[run], rules[0:keepRules] and the results at keepResults, dropping every other element whole; rules[0] is kept so the results' ruleIndex 1 still resolves. resultBags is the test input: each non-null entry becomes the properties bag of the kept result at that position. Every expanded result must come back at its own location, and the bag only on the result it was written on.",
+    "source": "msft-defender-devops-to-hdf/fixtures/input/sda.sarif",
+    "run": 5,
+    "keepRules": 2,
+    "keepResults": [2, 3],
+    "resultBags": [null, {"triageState": "confirmed"}]
+  },
+  "levelAgainstSecuritySeverity": {
+    "$comment": "A rule whose defaultConfiguration.level and GitHub security-severity disagree, with a result that states no level of its own, so its resolved level is the rule's. Impact comes from security-severity on import; the level must come back as the rule stated it, not re-derived from that impact.",
+    "wantLevel": "warning",
+    "sarif": {
+      "version": "2.1.0",
+      "runs": [
+        {
+          "tool": {
+            "driver": {
+              "name": "roundtrip-case",
+              "rules": [
+                {
+                  "id": "js/sql-injection",
+                  "shortDescription": {"text": "Database query built from user-controlled sources"},
+                  "defaultConfiguration": {"level": "warning"},
+                  "properties": {"security-severity": "9.8", "tags": ["security", "external/cwe/cwe-089"]}
+                }
+              ]
+            }
+          },
+          "results": [
+            {
+              "ruleId": "js/sql-injection",
+              "message": {"text": "This query string depends on a user-provided value."},
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {"uri": "src/db.js"},
+                    "region": {"startLine": 12}
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

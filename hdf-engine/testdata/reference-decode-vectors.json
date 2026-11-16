@@ -27,6 +27,16 @@
       "malformed": true
     },
     {
+      "why": "a well-formed escape whose bytes are not UTF-8 names no string, so it is malformed in both languages rather than decoded to raw bytes in one and refused in the other",
+      "uri": "caf%E9.json",
+      "malformed": true
+    },
+    {
+      "why": "the UTF-8 spelling of that same name decodes to the multi-byte character it encodes",
+      "uri": "caf%C3%A9.json",
+      "decoded": "café.json"
+    },
+    {
       "why": "%2F decodes to a separator. Harmless on a filesystem where / is always a separator and a filename can never contain one, but it must be the DECODED form that meets the containment check",
       "uri": "a%2Fb.json",
       "decoded": "a/b.json"

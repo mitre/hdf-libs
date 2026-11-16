@@ -1,0 +1,35 @@
+{
+  "$comment": "Vectors pinning how a recorded Checksum.value is compared with the digest computed over the referenced bytes. Checksum.value carries no case constraint in the schema, so a hex digest recorded in uppercase or mixed case (PowerShell's Get-FileHash writes uppercase) names the same bytes as its lowercase spelling. Each uri resolves under testdata/evidence. Shared by go/evidence_parity_test.go and test/evidence.test.ts so the two verifiers cannot drift.",
+  "vectors": [
+    {
+      "why": "lowercase, as this toolchain records it: the control case",
+      "uri": "plan.json",
+      "algorithm": "sha256",
+      "recorded": "cee36f04033eacb1119e718852c557365f23c36c9c149818bc73e19b6b891a2b",
+      "status": "match"
+    },
+    {
+      "why": "the correct digest in uppercase is the same digest, not a changed file",
+      "uri": "plan.json",
+      "algorithm": "sha256",
+      "recorded": "CEE36F04033EACB1119E718852C557365F23C36C9C149818BC73E19B6B891A2B",
+      "status": "match"
+    },
+    {
+      "why": "mixed case under another algorithm: case-folding is a property of hex, not of sha256",
+      "uri": "rhel-results.json",
+      "algorithm": "sha512",
+      "recorded": "29E56BDDFEF1B8C4248E3EC5E4A04B2EF5775F5DF4A3A191EA009964C8DB2F5932052b8330ed623bc51cca29afabcb835136b0658ead70e0a5d88a045f6ea6d2",
+      "status": "match"
+    },
+    {
+      "why": "an uppercase digest of DIFFERENT bytes still mismatches, and the report quotes the value exactly as recorded",
+      "uri": "plan.json",
+      "algorithm": "sha256",
+      "recorded": "651E8F83291553986888187F0D7A6A350BF7FD98C8AD463001CA2BA524890EDD",
+      "status": "mismatch",
+      "expected": "651E8F83291553986888187F0D7A6A350BF7FD98C8AD463001CA2BA524890EDD",
+      "actual": "cee36f04033eacb1119e718852c557365f23c36c9c149818bc73e19b6b891a2b"
+    }
+  ]
+}

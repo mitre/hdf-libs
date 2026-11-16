@@ -176,3 +176,30 @@ func TestConvertHDFToSARIF_DoesNotEchoRawSourceArtifacts(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"keep": "me"}, passthrough["vendor"],
 		"producer data in passthrough is carried; only the source artifact is dropped")
 }
+
+// SARIF admits only string fingerprint values. A per-result map carried in
+// tags["sarif-results"] is filtered exactly as the requirement-level one is, and a map
+// left empty is omitted rather than written as {}. The TypeScript peer pins the same.
+func TestConvertHDFToSARIF_PerResultFingerprintsAreStringOnly(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[` +
+		`{"id":"V-1","impact":0.5,"descriptions":[{"label":"default","data":"d"}],` +
+		`"tags":{"sarif-results":[` +
+		`{"fingerprints":{"count":7},"partialFingerprints":{"primaryLocationLineHash":"39fa2ee980eb94b0:1","line":12}},` +
+		`{"fingerprints":{},"partialFingerprints":{"primaryLocationLineHash":"5a0c87e2a1c2c0f1:1"}}]},` +
+		`"results":[{"status":"failed","codeDesc":"a","startTime":"2020-01-01T00:00:00Z"},` +
+		`{"status":"failed","codeDesc":"b","startTime":"2020-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToSARIF(input, testVersion)
+	require.NoError(t, err)
+	requireValidSARIF(t, sarifSchema(t), "non-string per-result fingerprints", out)
+
+	var log map[string]interface{}
+	require.NoError(t, json.Unmarshal(out, &log))
+	res := results0(t, log)
+	require.Len(t, res, 2)
+	for i, want := range []string{"39fa2ee980eb94b0:1", "5a0c87e2a1c2c0f1:1"} {
+		r, _ := res[i].(map[string]interface{})
+		assert.NotContains(t, r, "fingerprints", "result %d: nothing string-valued is left to write", i)
+		assert.Equal(t, map[string]interface{}{"primaryLocationLineHash": want}, r["partialFingerprints"],
+			"result %d: only the string-valued entry survives", i)
+	}
+}

@@ -94,6 +94,13 @@ export function createSupportedPlatform(
 
 export function createSourceLocation(ref: string, line: number): SourceLocation;
 
+/**
+ * Builds an inline Status_Override that satisfies the schema's type-dependent rule:
+ * operationalRequirement carries neither status nor impact; riskAdjustment carries
+ * the given impact only; any other type defaults status to 'notApplicable' when
+ * given neither. Throws a TypeError when the input is one the schema rejects: a
+ * status or impact on operationalRequirement, a status or no impact on riskAdjustment.
+ */
 export function createStatusOverride(
   type: OverrideType | string,
   options?: {

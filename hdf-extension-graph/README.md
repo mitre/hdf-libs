@@ -22,7 +22,7 @@ This is the same graph algorithm that powers Heimdall's control detail panel, ex
 pnpm add @mitre/hdf-extension-graph
 ```
 
-Requires `@mitre/hdf-schema` as a peer dependency.
+Depends on `@mitre/hdf-schema`, which the package manager installs with it.
 
 ```bash
 go get github.com/mitre/hdf-libs/hdf-extension-graph/go/v3

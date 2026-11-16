@@ -30,8 +30,6 @@ import (
 // KICS-specific and joins the info tier as an alias.
 var kicsSeverityAliases = map[string]float64{"trace": 0.0}
 
-const defaultImpact = 0.5
-
 // Records which tier resolved a requirement's NIST tags, so a reviewed mapping
 // stays distinguishable from a CWE-derived guess and from a static default.
 // Follows the precedent set by MarkUnratedSeverity, which exists so a defaulted
@@ -55,7 +53,7 @@ var (
 )
 
 func impactFor(severity string) float64 {
-	return hdfutil.SeverityToImpactWithAliases(severity, kicsSeverityAliases, defaultImpact)
+	return hdfutil.SeverityToImpactWithAliases(severity, kicsSeverityAliases, hdfutil.UnknownSeverityImpact)
 }
 
 // cweIdentifiers normalizes KICS's bare number form, e.g. "778".

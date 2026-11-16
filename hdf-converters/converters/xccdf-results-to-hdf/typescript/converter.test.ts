@@ -1706,3 +1706,16 @@ describe('extractCheckContentRef', () => {
     ).toEqual({ name: '', href: '' });
   });
 });
+
+describe('XML input gate', () => {
+  const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+  const refusal = new Error(
+    'xccdf: XML input contains entity declarations which are not supported (potential entity expansion attack)',
+  );
+
+  it('refuses an inline entity declaration in every entry point with the Go twin\'s wording', async () => {
+    await expect(convertXccdfResultsToHdf(input)).rejects.toThrow(refusal);
+    await expect(convertXccdfBenchmarkToHdf(input)).rejects.toThrow(refusal);
+    await expect(convertXccdfToHdf(input)).rejects.toThrow(refusal);
+  });
+});

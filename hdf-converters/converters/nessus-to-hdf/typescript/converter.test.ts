@@ -5,6 +5,7 @@ import { convertNessusToHdf } from './index.js';
 import { TargetType } from '@mitre/hdf-schema';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { serializeHdf } from '../../../shared/typescript/converterutil.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -1046,5 +1047,87 @@ describe('Nessus unmapped NIST fallback', () => {
     const req = result.baselines[0].requirements[0];
     expect(req.id).toBe('nessus-no-findings');
     expect(req.tags.nist).toBeUndefined();
+  });
+});
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertNessusToHdf(input)).rejects.toThrow(
+      new Error('nessus: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});
+
+// The no-hosts input Go's TestConvertNessusToHDF_EmptyHosts converts.
+const NO_HOSTS_XML = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Empty Scan</policyName>
+    <Preferences>
+      <ServerPreferences></ServerPreferences>
+    </Preferences>
+  </Policy>
+  <Report name="Empty Scan"></Report>
+</NessusClientData_v2>`;
+
+function hostXml(props: string): string {
+  return '<?xml version="1.0"?><NessusClientData_v2><Policy><policyName>Scan</policyName>' +
+    '<Preferences><ServerPreferences></ServerPreferences></Preferences></Policy>' +
+    `<Report name="Scan"><ReportHost name="h"><HostProperties>${props}</HostProperties></ReportHost>` +
+    '</Report></NessusClientData_v2>';
+}
+
+describe('report with no ReportHost', () => {
+  it('converts as Go does: no baselines, no components, zero duration', async () => {
+    const result = await convertNessusToHdf(NO_HOSTS_XML);
+    expect(result.baselines).toEqual([]);
+    expect(result.components).toEqual([]);
+    expect(result.statistics.duration).toBe(0);
+  });
+});
+
+describe('wall-clock timestamp fallback', () => {
+  it('serializes to canonical trimmed-UTC RFC3339 when the report has no hosts', async () => {
+    const doc = JSON.parse(serializeHdf(await convertNessusToHdf(NO_HOSTS_XML))) as { timestamp: string };
+    expect(doc.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/);
+  });
+});
+
+// Twin of the Go TestCalculateTiming_UnparseableEndFallsBackToStart.
+describe('end-time fallback', () => {
+  it.each([
+    ['unparseable HOST_END', '<tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag><tag name="HOST_END">not a time</tag>'],
+    ['unparseable HOST_START and HOST_END', '<tag name="HOST_START">not a time</tag><tag name="HOST_END">not a time</tag>'],
+  ])('ends at the start time on %s, so duration is 0', async (_name, props) => {
+    const result = await convertNessusToHdf(hostXml(props));
+    expect(result.statistics.duration).toBe(0);
+  });
+});
+
+// Go's decoder reads a missing element as an empty struct; these pin the same
+// outcome as Go's TestConvertNessusToHDF_MissingReport / _MissingPolicy.
+describe('document missing <Report>', () => {
+  it('converts as Go does: no baselines, no components, zero duration', async () => {
+    const result = await convertNessusToHdf('<?xml version="1.0"?><NessusClientData_v2>' +
+      '<Policy><policyName>Scan</policyName></Policy></NessusClientData_v2>');
+    expect(result.baselines).toEqual([]);
+    expect(result.components).toEqual([]);
+    expect(result.statistics.duration).toBe(0);
+  });
+});
+
+describe('document missing <Policy>', () => {
+  it('converts as Go does: an empty policy name and one no-findings baseline', async () => {
+    const result = await convertNessusToHdf('<?xml version="1.0"?><NessusClientData_v2>' +
+      '<Report name="Scan"><ReportHost name="h"><HostProperties>' +
+      '<tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>' +
+      '</HostProperties></ReportHost></Report></NessusClientData_v2>');
+    expect(result.baselines).toHaveLength(1);
+    expect(result.baselines[0]!.name).toBe('Nessus ');
+    expect(result.baselines[0]!.requirements.map((r) => r.id)).toEqual(['nessus-no-findings']);
+    expect(result.components).toHaveLength(1);
+    expect(result.statistics.duration).toBe(0);
+    expect(JSON.parse(serializeHdf(result)).timestamp).toBe('2024-01-29T10:00:00Z');
   });
 });
