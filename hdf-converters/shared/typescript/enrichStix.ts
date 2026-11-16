@@ -1,4 +1,4 @@
-import { computeCvssScore, roundImpact } from '@mitre/hdf-utilities';
+import { computeCvssScore, parseCvssVector, roundImpact, type CvssScore } from '@mitre/hdf-utilities';
 import { limitArrayWithWarning, validateInputSize } from './converterutil.js';
 import {
   parseStixBundle,
@@ -92,6 +92,9 @@ export function enrichStix(resultsInput: string, bundleInput: string, opts?: Enr
   return JSON.stringify(doc, null, 2);
 }
 
+/** The CVSS version the exploitation recompute is defined for; E:H is a 3.1 value. */
+const RECOMPUTE_CVSS_VERSION = '3.1';
+
 /**
  * Author an inline riskAdjustment on each CVE-matched finding that has a 3.1 base
  * vector and whose CVE carries a structural exploitation signal in the bundle.
@@ -108,11 +111,14 @@ function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, 
       const entry = findBaseVectorEntry(req, cve);
       if (!entry) continue; // no base vector → cannot recompute honestly; skip
       const baseVector = entry.baseVector as string;
-      let score: { baseScore: number; temporalScore: number };
+      if (parseCvssVector(baseVector).version !== RECOMPUTE_CVSS_VERSION) {
+        continue; // another CVSS version → skip, never fabricate
+      }
+      let score: CvssScore;
       try {
         score = computeCvssScore(`${baseVector}/E:H`);
       } catch {
-        continue; // non-3.1 (e.g. 4.0) or unparseable → skip, never fabricate
+        continue; // invalid 3.1 vector → skip, never fabricate
       }
       const ov = buildRiskAdjustment(cve, baseVector, score, src, appliedAt, expiresAt);
       const existing = Array.isArray(req.statusOverrides) ? req.statusOverrides : [];
@@ -175,7 +181,7 @@ function findBaseVectorEntry(req: Doc, cve: string): Doc | undefined {
 function buildRiskAdjustment(
   cve: string,
   baseVector: string,
-  score: { baseScore: number; temporalScore: number },
+  score: CvssScore,
   src: Doc,
   appliedAt: Date,
   expiresAt: Date,
@@ -188,7 +194,7 @@ function buildRiskAdjustment(
     appliedAt: toRfc3339(appliedAt),
     expiresAt: toRfc3339(expiresAt),
     cvss: {
-      version: '3.1',
+      version: score.version,
       id: cve,
       baseVector,
       baseScore: score.baseScore,

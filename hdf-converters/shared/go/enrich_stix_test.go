@@ -425,6 +425,31 @@ func TestEnrichStix_Recompute(t *testing.T) {
 	assert.True(t, r.Valid, r.Error())
 }
 
+// The E:H recompute is defined for CVSS 3.1 only: an exploited finding whose
+// base vector is another version gets no riskAdjustment, even though the
+// scoring engine can score that version.
+func TestEnrichStix_RecomputeSkipsOtherCvssVersions(t *testing.T) {
+	bundle := enrichFixture(t, "poison-ivy-exploited-stix21.json")
+	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
+	for _, tc := range []struct{ version, vector string }{
+		{"2.0", "AV:N/AC:M/Au:N/C:C/I:C/A:C"},
+		{"3.0", "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			doc := enrichDoc(t, enrichFixture(t, "results-with-cvss.json"))
+			requirementByID(t, doc, "CVE-2012-0158")["cvss"] = []interface{}{
+				map[string]interface{}{"version": tc.version, "id": "CVE-2012-0158", "baseVector": tc.vector},
+			}
+			results, err := json.Marshal(doc)
+			require.NoError(t, err)
+
+			out, err := EnrichStix(results, bundle, EnrichOptions{RecomputeCVSS: true, AsOf: asOf})
+			require.NoError(t, err)
+			assert.Empty(t, reqRefsUnderKey(requirementByID(t, enrichDoc(t, out), "CVE-2012-0158"), "statusOverrides"))
+		})
+	}
+}
+
 func TestEnrichStix_RecomputeMultiCVEVulnerability(t *testing.T) {
 	// One STIX vulnerability citing TWO CVEs, with one sighting of it: the
 	// exploitation signal must reach BOTH findings, not just the last CVE
