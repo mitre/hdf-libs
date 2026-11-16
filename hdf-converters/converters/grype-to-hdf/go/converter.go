@@ -343,16 +343,32 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
-// primitive. Related-vulnerability CVSS arrays are NOT merged in — the schema
-// contract is "one entry per source-CVE CVSS metric set", and the source CVE
-// is always the match's primary vulnerability id.
-func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
-	if len(vuln.CVSS) == 0 {
+// cvssForMatch returns the CVSS metric sets of the match's own CVE: the
+// vulnerability's cvss[] when present, otherwise those of the related entry
+// with the same id (Grype puts NVD's record there for distro-namespace
+// matches), as getDescription does for descriptions. A related entry with a
+// different id is another vulnerability and is never used.
+func cvssForMatch(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) []GrypeCVSS {
+	if len(vuln.CVSS) > 0 {
+		return vuln.CVSS
+	}
+	for _, related := range relatedVulns {
+		if related.ID == vuln.ID && len(related.CVSS) > 0 {
+			return related.CVSS
+		}
+	}
+	return nil
+}
+
+// buildCvssEntries maps each CVSS metric set of the match's own CVE (see
+// cvssForMatch) to a schema Cvss primitive, with the CVE id as its source.
+func buildCvssEntries(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) []hdf.Cvss {
+	metricSets := cvssForMatch(vuln, relatedVulns)
+	if len(metricSets) == 0 {
 		return nil
 	}
-	out := make([]hdf.Cvss, 0, len(vuln.CVSS))
-	for _, c := range vuln.CVSS {
+	out := make([]hdf.Cvss, 0, len(metricSets))
+	for _, c := range metricSets {
 		var bs *float64
 		if c.Metrics != nil {
 			s := c.Metrics.BaseScore
@@ -593,7 +609,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 		Refs:               hdfRefs,
 		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
-		Cvss:               buildCvssEntries(vuln),
+		Cvss:               buildCvssEntries(vuln, match.RelatedVulnerabilities),
 		AffectedPackages:   buildAffectedPackages(match),
 		Cwe:                extractCWE(vuln.CWE),
 		Epss:               buildEpss(vuln.EPSS),

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`grype-to-hdf` takes a match's CVSS from the related vulnerability with the same id when the match carries none,** in Go and TypeScript. Grype reports a distro-namespace match (`debian:distro:…`, `alpine:distro:…`) with an empty `vulnerability.cvss` and puts NVD's CVSS for the same CVE under `relatedVulnerabilities`; the converter ignored it, so in a real debian:12 scan 65 of 213 matches had no CVSS. Those entries are now carried with the CVE id as `source`, as the description already was. A match's own `cvss` is still used alone when present, and a related entry with a different id (an alias, another CVE) is never used. In the committed corpus 24 requirements of `anchore_grype.json` and 18 of `tensorflow.json` gain CVSS; nothing else in their output changes.
+
 ## [3.8.0] - 2026-11-15
 
 ### Highlights
