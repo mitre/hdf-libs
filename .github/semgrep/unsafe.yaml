@@ -35,11 +35,13 @@ rules:
     likelihood: LOW
     impact: LOW
   pattern-either:
+  # Outside any purego.SyscallN call: every operation but Sizeof and the ACE SID read.
   - patterns:
     - pattern: unsafe.$FUNC(...)
     - pattern-not: unsafe.Sizeof(...)
-    - pattern-not-inside: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
+    - pattern-not-inside: purego.SyscallN(...)
     - pattern-not-inside: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
+  # Within the ACE expression of the SID read.
   - patterns:
     - pattern: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
     - metavariable-pattern:
@@ -48,11 +50,39 @@ rules:
         - pattern: unsafe.$FUNC(...)
         - pattern-not: unsafe.Sizeof(...)
     - focus-metavariable: $ACE
+  # Inside a SyscallN call, each argument is judged alone: any operation other than
+  # unsafe.Pointer is reported,
   - patterns:
-    - pattern: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
+    - pattern-inside: purego.SyscallN(...)
+    - pattern: unsafe.$FUNC(...)
+    - pattern-not: unsafe.Sizeof(...)
+    - pattern-not: unsafe.Pointer(...)
+  # an argument after the function address that uses unsafe.Pointer other than as
+  # exactly uintptr(unsafe.Pointer(x)) is reported,
+  - patterns:
+    - pattern: purego.SyscallN($FN, ..., $ARG, ...)
+    - metavariable-pattern:
+        metavariable: $ARG
+        patterns:
+        - pattern: <... unsafe.Pointer(...) ...>
+        - pattern-not: uintptr(unsafe.Pointer($X))
+        - pattern-not: unsafe.Pointer($Y)
+    - focus-metavariable: $ARG
+  # an unsafe operation inside x is reported,
+  - patterns:
+    - pattern: purego.SyscallN($FN, ..., uintptr(unsafe.Pointer($X)), ...)
     - metavariable-pattern:
         metavariable: $X
         patterns:
         - pattern: unsafe.$FUNC(...)
         - pattern-not: unsafe.Sizeof(...)
     - focus-metavariable: $X
+  # and the function address is not an argument the call keeps alive.
+  - patterns:
+    - pattern: purego.SyscallN($FN, ...)
+    - metavariable-pattern:
+        metavariable: $FN
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $FN

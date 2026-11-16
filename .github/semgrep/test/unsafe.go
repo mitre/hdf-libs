@@ -35,6 +35,20 @@ func audit(ace *windows.ACCESS_ALLOWED_ACE, fn uintptr, data []byte, pointer *by
 	purego.SyscallN(fn, uintptr(unsafe.Pointer(unsafe.Add(raw, 1))))
 	// ruleid: use-of-unsafe-block
 	purego.SyscallN(fn, uintptr(unsafe.Pointer(unsafe.StringData(text))))
+	// Each argument stands alone: an allowed one does not excuse its neighbours.
+	// ok: use-of-unsafe-block
+	purego.SyscallN(fn, uintptr(unsafe.Pointer(pointer)), uintptr(unsafe.Pointer(&out)))
+	// ruleid: use-of-unsafe-block
+	purego.SyscallN(fn, uintptr(unsafe.Pointer(pointer)), uintptr(unsafe.Add(raw, 1)))
+	// ruleid: use-of-unsafe-block
+	purego.SyscallN(fn, uintptr(unsafe.Pointer(pointer)), uintptr(unsafe.Pointer(pointer))+1)
+	// ruleid: use-of-unsafe-block
+	purego.SyscallN(fn, uintptr(unsafe.Pointer(pointer)), uintptr(unsafe.Slice(pointer, 1)[0]))
+	// The function address is not an argument the call keeps alive.
+	// ruleid: use-of-unsafe-block
+	purego.SyscallN(uintptr(unsafe.Pointer(pointer)), 0)
+	// ruleid: use-of-unsafe-block
+	purego.SyscallN(fn, uintptr(unsafe.Pointer(unsafe.Pointer(pointer))))
 
 	// An ACE's SID is variable-length and starts at SidStart (ACCESS_ALLOWED_ACE layout).
 	// ok: use-of-unsafe-block

@@ -408,9 +408,11 @@ The local rule reports every `unsafe` operation except three:
   `purego.SyscallN`. Go keeps `x` alive and unmoved for the call when the
   conversion is in the argument list ([rule 4 of the `unsafe`
   docs](https://pkg.go.dev/unsafe#Pointer)); `golang.org/x/sys/unix` passes
-  pointers to libSystem on macOS the same way. Storing the `uintptr` first, or
-  passing it to any other function, is still reported, and so is an `unsafe`
-  call inside the argument.
+  pointers to libSystem on macOS the same way. Each argument is judged alone:
+  storing the `uintptr` first, passing it to any other function, arithmetic on
+  it, an `unsafe` call inside it, any other `unsafe` use in the call's other
+  arguments, and an `unsafe` conversion of the function address are still
+  reported.
 - `(*windows.SID)(unsafe.Pointer(&ace.SidStart))`: an ACE's SID is variable-length
   and stored from `SidStart` on ([`ACCESS_ALLOWED_ACE`](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace));
   `golang.org/x/sys/windows` has no accessor for it. The address of any other
