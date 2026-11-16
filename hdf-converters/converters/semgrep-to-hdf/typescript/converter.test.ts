@@ -35,9 +35,14 @@ describe('semgrep to HDF converter', () => {
   // source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
   // Bandit-derived Python rule). The case file is shared with the Go suite.
   const validateSource = loadSchemaValidator(join(FIXTURES_DIR, 'semgrep_output_v1-1.183.0.schema.json'));
-  const sourceReferenceCases = JSON.parse(
-    readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8'),
-  ) as { name: string; input: Record<string, unknown>; urls: string[]; tags?: Record<string, unknown> }[];
+  const caseText = readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8');
+  const parsedCases = JSON.parse(caseText) as {
+    name: string; input: Record<string, unknown>; urls: string[]; tags?: Record<string, unknown>;
+  }[];
+  // JSON.parse would collapse duplicate members, so each input reaches the converter as its
+  // own text from the file, the way the Go suite passes it.
+  const inputTexts = caseInputTexts(caseText);
+  const sourceReferenceCases = parsedCases.map((c, i) => ({ ...c, text: inputTexts[i]! }));
 
   it('preserves published source rule references', async () => {
     assertSchemaValid(validateSource, 'source-rule-urls.json', JSON.parse(loadFixture('source-rule-urls.json')));
@@ -54,9 +59,14 @@ describe('semgrep to HDF converter', () => {
     ]);
   });
 
-  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, urls, tags }) => {
+  it('reads every case input as its own text', () => {
+    expect(inputTexts).toHaveLength(parsedCases.length);
+    expect(inputTexts.map((t) => JSON.parse(t) as unknown)).toEqual(parsedCases.map((c) => c.input));
+  });
+
+  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, text, urls, tags }) => {
     assertSchemaValid(validateSource, name, input);
-    const hdf = JSON.parse(await convertSemgrepToHdf(JSON.stringify(input))) as HDFResults;
+    const hdf = JSON.parse(await convertSemgrepToHdf(text)) as HDFResults;
     expectValidResults(hdf);
     const req = findReq(hdf, 'use-of-unsafe-block')!;
     expect((req.refs ?? []).map((ref) => ref.url)).toEqual(urls);
@@ -666,3 +676,39 @@ describe('semgrep fingerprint scoring', () => {
     expect(semgrepFingerprint.detectVersion?.({ version: 5 })).toBe('');
   });
 });
+
+/** The text of each case's "input" object in the case file, in order, unparsed. */
+function caseInputTexts(text: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let inString = false;
+  let key = '';
+  let keyStart = -1;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (inString) {
+      if (ch === '\\') i++;
+      else if (ch === '"') {
+        inString = false;
+        if (depth === 2) key = text.slice(keyStart + 1, i);
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      keyStart = i;
+    } else if (ch === '{' || ch === '[') {
+      if (depth === 2 && key === 'input' && start < 0) start = i;
+      depth++;
+    } else if (ch === '}' || ch === ']') {
+      depth--;
+      if (depth === 2 && start >= 0) {
+        out.push(text.slice(start, i + 1));
+        start = -1;
+        key = '';
+      }
+    }
+  }
+  return out;
+}
