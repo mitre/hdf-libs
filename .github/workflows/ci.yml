@@ -304,6 +304,10 @@ jobs:
           for d in go/lang/security javascript/lang/security typescript/lang/security typescript/react/security; do
             [ -d ".semgrep-rules/$d" ] || { echo "::error::ruleset dir missing: $d"; exit 1; }
           done
+          # The repository's narrowed unsafe rule replaces the fetched one at the same
+          # path, so its finding id is unchanged (see .github/semgrep/unsafe.yaml).
+          test -f .semgrep-rules/go/lang/security/audit/unsafe.yaml
+          cp .github/semgrep/unsafe.yaml .semgrep-rules/go/lang/security/audit/unsafe.yaml
       # Exit codes with --error: 0 clean, 1 findings (the gate judges those),
       # 2 target error, 7 bad config. Only 0 and 1 are tolerated here.
       #
@@ -317,6 +321,8 @@ jobs:
           # is honest. The pinned file also fixes every transitive dependency, so
           # nothing in the scanner's tree can move underneath a run.
           pip install --quiet --require-hashes -r .github/requirements/semgrep.txt
+          semgrep --test --metrics off \
+            --config .semgrep-rules/go/lang/security/audit/unsafe.yaml .github/semgrep/test/unsafe.go
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \

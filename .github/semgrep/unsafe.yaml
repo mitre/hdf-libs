@@ -1,0 +1,46 @@
+# Local copy of semgrep-rules go/lang/security/audit/unsafe.yaml at SEMGREP_RULES_SHA.
+# CI copies it over the fetched rule, so the rule ID and metadata stay the same.
+# It reports every unsafe operation except two that read no memory unsafely:
+# unsafe.Sizeof (a compile-time constant whose operand is not evaluated), and
+# uintptr(unsafe.Pointer(x)) written directly as a purego.SyscallN argument, which
+# Go keeps alive and unmoved for the call (rule 4 of the unsafe package docs).
+# An unsafe operation inside such an argument is still reported.
+rules:
+- id: use-of-unsafe-block
+  message: >-
+    Using the unsafe package in Go gives you low-level memory management and many of the strengths of
+    the C language, but also steps around the type safety of Go and can lead to buffer overflows and
+    possible arbitrary code execution by an attacker.
+    Only use this package if you absolutely know what you're doing.
+  languages: [go]
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-242: Use of Inherently Dangerous Function'
+    source_rule_url: https://github.com/securego/gosec/blob/master/rules/unsafe.go
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://cwe.mitre.org/data/definitions/242.html
+    - https://pkg.go.dev/unsafe#Pointer
+    - https://pkg.go.dev/unsafe#Sizeof
+    - https://pkg.go.dev/github.com/ebitengine/purego#SyscallN
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+  pattern-either:
+  - patterns:
+    - pattern: unsafe.$FUNC(...)
+    - pattern-not: unsafe.Sizeof(...)
+    - pattern-not-inside: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
+  - patterns:
+    - pattern: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
+    - metavariable-pattern:
+        metavariable: $X
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $X

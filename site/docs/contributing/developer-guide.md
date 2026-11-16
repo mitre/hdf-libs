@@ -392,6 +392,42 @@ Full rationale documented in CHANGELOG.md.
 
 ---
 
+## Security scanner rule regression tests
+
+CI scans Go with a local copy of Semgrep's `use-of-unsafe-block` audit rule,
+`.github/semgrep/unsafe.yaml`. CI copies it over the fetched rule at the same path,
+so the finding's HDF requirement id and the rest of the pinned ruleset are
+unchanged. It is the only check that audits `unsafe`: gosec's G103 is filtered by
+golangci-lint's `common-false-positives` preset, which both `.golangci.yml` files
+enable.
+
+The local rule reports every `unsafe` operation except two:
+
+- `unsafe.Sizeof(...)`: a compile-time constant; its operand is never evaluated.
+- `uintptr(unsafe.Pointer(x))` written directly as an argument of
+  `purego.SyscallN`. Go keeps `x` alive and unmoved for the call when the
+  conversion is in the argument list ([rule 4 of the `unsafe`
+  docs](https://pkg.go.dev/unsafe#Pointer)); `golang.org/x/sys/unix` passes
+  pointers to libSystem on macOS the same way. Storing the `uintptr` first, or
+  passing it to any other function, is still reported, and so is an `unsafe`
+  call inside the argument.
+
+Allowing a form in the rule, rather than adding an HDF amendment, keeps every
+other `unsafe` use reported; an amendment would apply to the whole rule and
+expire. The cases live in `.github/semgrep/test/unsafe.go`, annotated for
+[Semgrep's rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+CI runs them before the scan and fails if any case fails. To run them locally,
+install the hash-pinned Semgrep (`.github/requirements/semgrep.txt`) and run from
+the repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+Keep every case passing when changing the rule or the pinned Semgrep version.
+
+---
+
 ## Schema Development Pattern
 
 ### Adding a New Document Type
