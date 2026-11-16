@@ -101,3 +101,38 @@ func TestFsMagicFoldsSignedThirtyTwoBitTypes(t *testing.T) {
 	assert.Equal(t, cifs, fsMagic(cifs), "int64 (amd64, arm64)")
 	assert.Equal(t, "SMB", networkStorage(fsMagic(asInt32)))
 }
+
+// xattrSequence answers successive Fgetxattr calls in order, as an attribute that
+// changes between the size probe and the read would.
+func xattrSequence(steps ...struct {
+	n   int
+	err error
+}) func(int, string, []byte) (int, error) {
+	i := 0
+	return func(int, string, []byte) (int, error) {
+		s := steps[i]
+		i++
+		return s.n, s.err
+	}
+}
+
+type step = struct {
+	n   int
+	err error
+}
+
+// The attribute can change between the size probe and the read; neither ordering may
+// panic, and an ACL removed in between means there is none.
+func TestLinuxPrivate_ACLChangingBetweenProbeAndRead(t *testing.T) {
+	ext4 := statfsOf(unix.EXT4_SUPER_MAGIC)
+	assert.NoError(t, checkLinuxPrivate(3, xattrSequence(step{16, nil}, step{0, unix.ENODATA}), ext4, &bytes.Buffer{}),
+		"removed before the read: no ACL")
+	assert.NotPanics(t, func() {
+		assert.Error(t, checkLinuxPrivate(3, xattrSequence(step{0, nil}, step{16, nil}), ext4, &bytes.Buffer{}),
+			"an empty ACL is not a valid one")
+	})
+	assert.NotPanics(t, func() {
+		assert.Error(t, checkLinuxPrivate(3, xattrSequence(step{8, nil}, step{64, nil}), ext4, &bytes.Buffer{}),
+			"a read longer than the buffer is refused")
+	})
+}

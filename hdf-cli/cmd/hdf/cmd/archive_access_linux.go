@@ -38,19 +38,31 @@ func checkLinuxPrivate(fd int, getxattr func(int, string, []byte) (int, error),
 }
 
 // checkNFS4ACL reads system.nfs4_acl from the open file. ENODATA and EOPNOTSUPP mean
-// there is no NFSv4 ACL; any other failure means the check could not be made.
+// there is no NFSv4 ACL, on the size probe or on the read (the attribute can change
+// between them); any other failure means the check could not be made.
 func checkNFS4ACL(fd int, getxattr func(int, string, []byte) (int, error)) error {
 	size, err := getxattr(fd, nfs4ACLAttr, nil)
-	if errors.Is(err, unix.ENODATA) || errors.Is(err, unix.EOPNOTSUPP) {
+	if noNFS4ACL(err) {
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("cannot read the staged archive's NFSv4 ACL: %w", err)
 	}
+	// A zero-length buffer would make the read a second size query, and no valid ACL
+	// is shorter than its four-byte entry count.
+	if size < 4 {
+		return fmt.Errorf("cannot read the staged archive's NFSv4 ACL: %d bytes is shorter than any ACL", size)
+	}
 	buf := make([]byte, size)
 	n, err := getxattr(fd, nfs4ACLAttr, buf)
+	if noNFS4ACL(err) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("cannot read the staged archive's NFSv4 ACL: %w", err)
+	}
+	if n < 0 || n > len(buf) {
+		return fmt.Errorf("cannot read the staged archive's NFSv4 ACL: read %d bytes into %d", n, len(buf))
 	}
 	aces, err := decodeNFS4ACL(buf[:n])
 	if err != nil {
@@ -62,6 +74,10 @@ func checkNFS4ACL(fd int, getxattr func(int, string, []byte) (int, error)) error
 			"if that sharing is intended", who)
 	}
 	return nil
+}
+
+func noNFS4ACL(err error) bool {
+	return errors.Is(err, unix.ENODATA) || errors.Is(err, unix.EOPNOTSUPP)
 }
 
 // fsMagic widens Statfs_t.Type (int64, int32 or uint32 by architecture) to the
