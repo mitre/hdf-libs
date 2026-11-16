@@ -7,6 +7,13 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **`computeCvssScore` (Go `ComputeCvssScore`) scores every CVSS version.** CVSS 2.0 (Base and Temporal, FIRST v2 guide §3.2) and 3.0 (specification §8) join 3.1, and 4.0 vectors go to the MacroVector engine through the same call, so a caller never picks an engine; the result names the version that scored it. Every 2.0, 3.0 and 3.1 vector in a real Grype debian:12 scan scores to the value NVD reports, and Go, TypeScript and an independent implementation agree on all 1,006,749 2.0, 3.0 and 3.1 base and temporal vectors. A version CVSS does not define, a missing metric or an out-of-range value is still an error. `computeCvss40Score` remains as the 4.0 engine underneath.
+- **`cvssSeverityForVersion` (Go `CvssSeverityForVersion`) gives a CVSS score the severity of its version's scale:** NVD's v2 ranges for 2.0 (low, medium, high), the specification's scale for 3.0, 3.1 and 4.0.
+- **Converters fill in a CVSS score the source left out.** When a source gives a vector but no score (grype with no metrics, a zero score from neuvector or snyk, an unparseable jfrog-xray score), the converter's CVSS entry now carries the score and severity computed from that vector through `computeCvssScore`, provided the vector's version is the entry's version. A score the source gives is never replaced.
+
+### Changed
+
+- **A CVSS 2.0 entry's severity follows NVD's v2 ranges,** in every converter: a 2.0 score of 7.0 to 10.0 is `high` (it was `critical` from 9.0) and 0.0 is `low` (it was `none`); 2.0 defines neither rating. In the committed corpus 8 entries change from `critical` to `high`: 2 in grype's `anchore_grype.json`, 2 in jfrog-xray's `jfrog_xray_sample.json`, 4 in neuvector's `neuvector-mitre-heimdall.json`. Nessus base and computed severities and GitLab computed severities use the same function.
+- **Go: `shared.CvssSeverityFromScore` takes the entry's version** (`CvssSeverityFromScore(version, score)`), and `shared.CvssVersionFromVector` reads a prefix-less vector carrying the 2.0-only `Au` metric as CVSS 2.0. The TypeScript peers in the converters' shared module change the same way.
 
 ### Fixed
 

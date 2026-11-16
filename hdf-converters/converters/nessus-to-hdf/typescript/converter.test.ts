@@ -859,7 +859,8 @@ describe('Nessus to HDF Converter', async () => {
       expect(c.version).toBe('2.0');
       expect(c.baseVector).toBe('AV:N/AC:L/Au:N/C:C/I:C/A:C'); // CVSS2# stripped
       expect(c.baseScore).toBeCloseTo(9.8, 3);
-      expect(c.baseSeverity).toBe('critical');
+      // CVSS 2.0 has no critical rating: 9.8 is high.
+      expect(c.baseSeverity).toBe('high');
       expect(c.threatVector).toBe('E:F/RL:OF/RC:C');
       expect(c.threatScore).toBeCloseTo(8.5, 3);
       expect(c.computedSeverity).toBe('high');

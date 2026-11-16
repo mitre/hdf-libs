@@ -642,7 +642,7 @@ function buildCvss(v: Vulnerability): Cvss[] {
     if (sev) entry.baseSeverity = sev;
     if (typeof e.overallScore === 'number' && Number.isFinite(e.overallScore)) {
       entry.computedScore = e.overallScore;
-      entry.computedSeverity = cvssSeverityFromScore(e.overallScore);
+      entry.computedSeverity = cvssSeverityFromScore(entry.version, e.overallScore);
     }
     return entry;
   });

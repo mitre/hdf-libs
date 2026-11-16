@@ -382,7 +382,7 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
   if (baseVector) entry.baseVector = baseVector;
   if (baseScore !== undefined) {
     entry.baseScore = baseScore;
-    entry.baseSeverity = cvssSeverityFromScore(baseScore);
+    entry.baseSeverity = cvssSeverityFromScore(version, baseScore);
   }
   if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
   if (threatScore !== undefined) {
@@ -390,7 +390,7 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
     // Per the spec, the temporal score IS the post-threat-enrichment
     // computed score for both v2 and v3.
     entry.computedScore = threatScore;
-    entry.computedSeverity = cvssSeverityFromScore(threatScore);
+    entry.computedSeverity = cvssSeverityFromScore(version, threatScore);
   }
 
   return [entry];

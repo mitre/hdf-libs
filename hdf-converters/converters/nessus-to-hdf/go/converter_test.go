@@ -695,7 +695,7 @@ func TestCvssSeverityMapping(t *testing.T) {
 		{9.5, hdf.CVSSSeverityCritical},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(tt.score))
+		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(hdf.The31, tt.score))
 	}
 }
 

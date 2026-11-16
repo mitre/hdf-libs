@@ -647,11 +647,11 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 	}
 
 	if c.BaseScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.BaseScore)
+		sev := shared.CvssSeverityFromScore(c.Version, *c.BaseScore)
 		c.BaseSeverity = &sev
 	}
 	if c.ComputedScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.ComputedScore)
+		sev := shared.CvssSeverityFromScore(c.Version, *c.ComputedScore)
 		c.ComputedSeverity = &sev
 	}
 

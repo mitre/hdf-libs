@@ -396,7 +396,8 @@ describe('Grype Converter', async () => {
       expect(req?.cvss?.[0].baseScore).toBe(7.5);
       expect(req?.cvss?.[0].baseVector).toBeUndefined();
       expect(req?.cvss?.[1].baseVector).toContain('AV:N');
-      expect(req?.cvss?.[1].baseScore).toBeUndefined();
+      // A vector without a score is scored from the vector.
+      expect(req?.cvss?.[1].baseScore).toBe(7.5);
     });
 
     it('should handle sparse CVE-ecosystem fields', async () => {
