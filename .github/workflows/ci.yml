@@ -490,6 +490,15 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
+      # Statfs_t.Type is int64, int32 or uint32 depending on the Linux
+      # architecture, and the archive access check compares it against filesystem
+      # magics; vet compiles that code at each width the runners above never build.
+      - name: Vet the CLI for every Statfs_t.Type width
+        working-directory: hdf-cli
+        run: |
+          for arch in 386 arm s390x; do
+            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go vet ./cmd/hdf/cmd
+          done
       # In SARIF mode govulncheck exits 0 even with findings — by design, so
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own

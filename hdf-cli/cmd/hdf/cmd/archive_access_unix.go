@@ -26,6 +26,11 @@ func openStagedArchiveWith(path string, access archiveAccess,
 		_ = os.Remove(path)
 		return nil, err
 	}
+	if err := platformPrivateCheck(f); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return nil, err
+	}
 	return f, nil
 }
 
