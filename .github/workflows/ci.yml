@@ -824,6 +824,40 @@ jobs:
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
+      # The built CLI, not a test seam: bundle into a folder that passes Everyone read to
+      # new files, under each policy, and show what Windows itself reports with icacls.
+      - name: Archive access on Windows, as icacls reports it
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $hdf = Join-Path $env:RUNNER_TEMP 'hdf.exe'
+          go -C hdf-cli build -o $hdf ./cmd/hdf
+          $work = Join-Path $env:RUNNER_TEMP 'archive-access'
+          $fixtures = 'hdf-cli/cmd/hdf/cmd/testdata/evidence-verify'
+          New-Item -ItemType Directory -Path "$work/scans", "$work/shared" | Out-Null
+          Copy-Item "$fixtures/system.json", "$fixtures/plan.json" $work
+          Copy-Item "$fixtures/rhel9-results.json", "$fixtures/postgres-results.json" "$work/scans"
+          Push-Location $work
+          & $hdf evidence build --system system.json --results scans/rhel9-results.json `
+            --results scans/postgres-results.json --plan plan.json -o pkg.json
+          # Everyone by SID (S-1-1-0), so the grant does not depend on the runner's language.
+          icacls shared /grant '*S-1-1-0:(OI)(CI)R'
+          & $hdf evidence bundle pkg.json -o shared/private.zip
+          & $hdf evidence bundle pkg.json -o shared/inherited.zip --output-access inherit
+          icacls shared/private.zip
+          icacls shared/inherited.zip
+          $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+          $sid = { param($rule) $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value }
+          $private = Get-Acl shared/private.zip
+          if (-not $private.AreAccessRulesProtected) { throw 'the private archive takes grants from its folder' }
+          if ($private.Access.Count -ne 1 -or (& $sid $private.Access[0]) -ne $me.Value) {
+            throw 'the private archive grants access to someone other than the current user'
+          }
+          $everyone = (Get-Acl shared/inherited.zip).Access | Where-Object { $_.IsInherited -and (& $sid $_) -eq 'S-1-1-0' }
+          if (-not $everyone) { throw 'the inherited archive did not keep the folder''s Everyone grant' }
+          Pop-Location
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
