@@ -76,6 +76,21 @@
       "requirementId": "semgrep-rules.javascript.lang.security.audit.detect-redos",
       "status": "notApplicable",
       "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-11-16T04:55:47Z",
+      "appliedBy": {
+        "identifier": "aaronlippold",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "02d61f51de6ba8b0575a49a4af6f2411aafd45ffd2e84f324c273ea51dc32f0d"
+      },
+      "reason": "Rule: use of the unsafe package. The one match (hdf-cli/cmd/hdf/cmd/archive_access_darwin.go, createPrivate) converts the NUL-terminated path from unix.BytePtrFromString to a uintptr in the argument list of purego.SyscallN, which calls libSystem's openx_np. Release builds disable cgo, so a native call takes its pointer arguments as uintptr; SyscallN is marked go:uintptrescapes, which keeps the path alive and unmoved for the call, and the conversion happens in the call expression as unsafe.Pointer rule 4 requires. purego's typed RegisterFunc would pass the path without unsafe but does not return errno, and the staging retry needs EEXIST from this call. No other unsafe use exists in hdf-cli. Reviewed 2026-11-15 with the macOS private-archive change; the owner chose this amendment over dropping errno. Revisit if purego's typed calls gain errno capture or the call is replaced.",
+      "requirementId": "semgrep-rules.go.lang.security.audit.use-of-unsafe-block",
+      "type": "operationalRequirement"
     }
   ]
 }
