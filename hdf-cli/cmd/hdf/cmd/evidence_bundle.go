@@ -851,6 +851,7 @@ type noClobberOps struct {
 	renameUnsupported func(error) bool
 	link              func(oldpath, newpath string) error
 	linkUnsupported   func(error) bool
+	remove            func(name string) error
 	syncDir           func(dir string) error
 }
 
@@ -859,6 +860,7 @@ var platformNoClobber = noClobberOps{
 	renameUnsupported: renameUnsupported,
 	link:              os.Link,
 	linkUnsupported:   linkUnsupported,
+	remove:            os.Remove,
 	syncDir:           syncDir,
 }
 
@@ -868,9 +870,12 @@ func (o noClobberOps) publish(staged, out string) error {
 		linkErr := o.link(staged, out)
 		if linkErr == nil {
 			// The archive is published under out; the staged name is only a second link
-			// to it, and writeArchiveAtomically removes it again if this fails.
-			_ = os.Remove(staged)
-			return o.durable(out)
+			// to it, and leaving it would leave a copy of the archive behind.
+			var after []error
+			if rmErr := o.remove(staged); rmErr != nil && !errors.Is(rmErr, fs.ErrNotExist) {
+				after = append(after, &afterPublicationError{step: "removing the staged copy", err: rmErr})
+			}
+			return o.durable(out, after...)
 		}
 		if o.linkUnsupported(linkErr) {
 			return fmt.Errorf("-o %s: this filesystem can neither rename nor link a file into "+
@@ -886,39 +891,69 @@ func (o noClobberOps) publish(staged, out string) error {
 	if errors.Is(err, fs.ErrExist) {
 		return existingOutputError(out)
 	}
-	return fmt.Errorf("failed to write %s: %w", out, err)
+	return &writeError{out: out, err: err}
 }
 
 // replace is --overwrite: an ordinary rename, which replaces whatever is at out.
 func (o noClobberOps) replace(staged, out string) error {
 	if err := os.Rename(staged, out); err != nil {
-		return fmt.Errorf("failed to write %s: %w", out, err)
+		return &writeError{out: out, err: err}
 	}
 	return o.durable(out)
 }
 
-// durable flushes the directory entry once out is published. A failure here comes
-// after publication, so it is reported as such and the archive is kept.
-func (o noClobberOps) durable(out string) error {
+// durable flushes the directory entry once out is published. Every failure here, and
+// any passed in, comes after publication, so it is reported as such and the archive is
+// kept.
+func (o noClobberOps) durable(out string, after ...error) error {
 	if err := o.syncDir(filepath.Dir(out)); err != nil {
-		return &archivePublishedError{out: out, err: err}
+		after = append(after, &afterPublicationError{step: "flushing its directory entry to disk", err: err})
 	}
-	return nil
+	if len(after) == 0 {
+		return nil
+	}
+	return &archivePublishedError{out: out, errs: after}
 }
 
-// archivePublishedError is a failure after the archive reached -o: the archive is
-// there, so nothing may report the path as unchanged.
-type archivePublishedError struct {
+// writeError is a publication failure before the archive reached -o. It names -o and
+// the operation's cause, never the staged file's name, which the operator never typed.
+type writeError struct {
 	out string
 	err error
 }
 
-func (e *archivePublishedError) Error() string {
-	return fmt.Sprintf("the archive was written to %s, but flushing its directory entry to disk failed: %v",
-		e.out, e.err)
+func (e *writeError) Error() string {
+	return fmt.Sprintf("failed to write %s: %s", e.out, opCause(e.err))
 }
 
-func (e *archivePublishedError) Unwrap() error { return e.err }
+func (e *writeError) Unwrap() error { return e.err }
+
+// afterPublicationError is one step that failed once the archive was already at -o.
+type afterPublicationError struct {
+	step string
+	err  error
+}
+
+func (e *afterPublicationError) Error() string { return e.step + " failed: " + opCause(e.err) }
+
+func (e *afterPublicationError) Unwrap() error { return e.err }
+
+// archivePublishedError is a failure after the archive reached -o: the archive is
+// there, so nothing may report the path as unchanged.
+type archivePublishedError struct {
+	out  string
+	errs []error
+}
+
+func (e *archivePublishedError) Error() string {
+	parts := make([]string, len(e.errs))
+	for i, err := range e.errs {
+		parts[i] = err.Error()
+	}
+	return fmt.Sprintf("the archive was written to %s, but %s", e.out, strings.Join(parts, "; and "))
+}
+
+func (e *archivePublishedError) Unwrap() []error { return e.errs }
 
 // opCause renders a rename or link failure as its operation and cause, leaving out the
 // staged file's name, which the operator never typed.

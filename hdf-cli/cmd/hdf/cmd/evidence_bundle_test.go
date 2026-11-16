@@ -232,7 +232,8 @@ func unsupportedRename(string, string) error { return errFakeUnsupported }
 // it refuses an existing name just as the rename does.
 func TestNoClobberPublish_FallsBackToAHardLinkOnlyWhenTheRenameIsUnsupported(t *testing.T) {
 	ops := noClobberOps{rename: unsupportedRename, renameUnsupported: isFakeUnsupported,
-		link: os.Link, linkUnsupported: isFakeUnsupported, syncDir: func(string) error { return nil }}
+		link: os.Link, linkUnsupported: isFakeUnsupported, remove: os.Remove,
+		syncDir: func(string) error { return nil }}
 
 	t.Run("publishes through the link", func(t *testing.T) {
 		staged, out := publishFixture(t)
@@ -260,12 +261,52 @@ func TestNoClobberPublish_FallsBackToAHardLinkOnlyWhenTheRenameIsUnsupported(t *
 		denied := errors.New("permission denied")
 		linked := false
 		other := ops
-		other.rename = func(string, string) error { return denied }
+		other.rename = func(oldpath, newpath string) error {
+			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: denied}
+		}
 		other.link = func(string, string) error { linked = true; return nil }
 		err := other.publish(staged, out)
 		require.ErrorIs(t, err, denied)
 		assert.False(t, linked, "only an unsupported rename may fall back to the link")
+		assert.Contains(t, err.Error(), out)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
 	})
+
+	t.Run("another link error names -o, not the staged file", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		full := errors.New("no space left on device")
+		other := ops
+		other.link = func(oldpath, newpath string) error {
+			return &os.LinkError{Op: "link", Old: oldpath, New: newpath, Err: full}
+		}
+		err := other.publish(staged, out)
+		require.ErrorIs(t, err, full)
+		assert.Contains(t, err.Error(), out)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
+	})
+
+	t.Run("a staged copy that cannot be removed is reported after publication", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		stuck := errors.New("operation not permitted")
+		other := ops
+		other.remove = func(string) error { return stuck }
+		err := other.publish(staged, out)
+		require.ErrorIs(t, err, stuck)
+		var published *archivePublishedError
+		require.ErrorAs(t, err, &published, "the archive is at -o, so the failure is reported as after publication")
+		assert.Contains(t, err.Error(), "was written to "+out)
+		assert.FileExists(t, out, "the published archive is kept")
+	})
+}
+
+// Under --overwrite a failed replacing rename names -o and not the staged file either.
+func TestNoClobberPublish_OverwriteErrorsNameOutputNotTheStagedFile(t *testing.T) {
+	staged, _ := publishFixture(t)
+	out := filepath.Join(t.TempDir(), "missing-dir", "boe.zip")
+	err := platformNoClobber.replace(staged, out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), out)
+	assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
 }
 
 // Where neither primitive exists the run refuses rather than replace anything, and says
@@ -278,7 +319,7 @@ func TestNoClobberPublish_RefusesWhereNeitherPrimitiveExists(t *testing.T) {
 		}
 	}
 	ops := noClobberOps{rename: failing("rename"), renameUnsupported: isFakeUnsupported,
-		link: failing("link"), linkUnsupported: isFakeUnsupported,
+		link: failing("link"), linkUnsupported: isFakeUnsupported, remove: os.Remove,
 		syncDir: func(string) error { return nil }}
 
 	err := ops.publish(staged, out)
