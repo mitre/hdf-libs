@@ -955,12 +955,16 @@ func (e *archivePublishedError) Error() string {
 
 func (e *archivePublishedError) Unwrap() []error { return e.errs }
 
-// opCause renders a rename or link failure as its operation and cause, leaving out the
-// staged file's name, which the operator never typed.
+// opCause renders a rename, link or remove failure as its operation and cause, leaving
+// out the staged file's name, which the operator never typed.
 func opCause(err error) string {
 	var le *os.LinkError
 	if errors.As(err, &le) {
 		return le.Op + ": " + le.Err.Error()
+	}
+	var pe *os.PathError
+	if errors.As(err, &pe) {
+		return pe.Op + ": " + pe.Err.Error()
 	}
 	return err.Error()
 }

@@ -289,9 +289,10 @@ func TestNoClobberPublish_FallsBackToAHardLinkOnlyWhenTheRenameIsUnsupported(t *
 		staged, out := publishFixture(t)
 		stuck := errors.New("operation not permitted")
 		other := ops
-		other.remove = func(string) error { return stuck }
+		other.remove = func(name string) error { return &os.PathError{Op: "remove", Path: name, Err: stuck} }
 		err := other.publish(staged, out)
 		require.ErrorIs(t, err, stuck)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
 		var published *archivePublishedError
 		require.ErrorAs(t, err, &published, "the archive is at -o, so the failure is reported as after publication")
 		assert.Contains(t, err.Error(), "was written to "+out)
