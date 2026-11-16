@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func audit(fn uintptr, data []byte, pointer *byte, raw unsafe.Pointer, text string, address uintptr, out uintptr) {
+func audit(ace *windows.ACCESS_ALLOWED_ACE, fn uintptr, data []byte, pointer *byte, raw unsafe.Pointer, text string, address uintptr, out uintptr) {
 	// unsafe.Sizeof is a compile-time constant; its operand is never evaluated.
 	// ok: use-of-unsafe-block
 	_ = unsafe.Sizeof(windows.SecurityAttributes{})
@@ -35,6 +35,18 @@ func audit(fn uintptr, data []byte, pointer *byte, raw unsafe.Pointer, text stri
 	purego.SyscallN(fn, uintptr(unsafe.Pointer(unsafe.Add(raw, 1))))
 	// ruleid: use-of-unsafe-block
 	purego.SyscallN(fn, uintptr(unsafe.Pointer(unsafe.StringData(text))))
+
+	// An ACE's SID is variable-length and starts at SidStart (ACCESS_ALLOWED_ACE layout).
+	// ok: use-of-unsafe-block
+	_ = (*windows.SID)(unsafe.Pointer(&ace.SidStart))
+	// ruleid: use-of-unsafe-block
+	_ = (*byte)(unsafe.Pointer(&ace.SidStart))
+	// ruleid: use-of-unsafe-block
+	_ = (*windows.SID)(unsafe.Pointer(&ace.Mask))
+	// ruleid: use-of-unsafe-block
+	_ = unsafe.Pointer(&ace.SidStart)
+	// ruleid: use-of-unsafe-block
+	_ = (*windows.SID)(unsafe.Pointer(&(*windows.ACCESS_ALLOWED_ACE)(unsafe.Pointer(pointer)).SidStart))
 
 	// ruleid: use-of-unsafe-block
 	_ = unsafe.Pointer(pointer)

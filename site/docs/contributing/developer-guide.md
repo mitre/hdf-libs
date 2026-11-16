@@ -401,7 +401,7 @@ unchanged. It is the only check that audits `unsafe`: gosec's G103 is filtered b
 golangci-lint's `common-false-positives` preset, which both `.golangci.yml` files
 enable.
 
-The local rule reports every `unsafe` operation except two:
+The local rule reports every `unsafe` operation except three:
 
 - `unsafe.Sizeof(...)`: a compile-time constant; its operand is never evaluated.
 - `uintptr(unsafe.Pointer(x))` written directly as an argument of
@@ -411,6 +411,11 @@ The local rule reports every `unsafe` operation except two:
   pointers to libSystem on macOS the same way. Storing the `uintptr` first, or
   passing it to any other function, is still reported, and so is an `unsafe`
   call inside the argument.
+- `(*windows.SID)(unsafe.Pointer(&ace.SidStart))`: an ACE's SID is variable-length
+  and stored from `SidStart` on ([`ACCESS_ALLOWED_ACE`](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace));
+  `golang.org/x/sys/windows` has no accessor for it. The address of any other
+  field, a conversion to any other type, and an `unsafe` call inside the ACE
+  expression are still reported.
 
 Allowing a form in the rule, rather than adding an HDF amendment, keeps every
 other `unsafe` use reported; an amendment would apply to the whole rule and

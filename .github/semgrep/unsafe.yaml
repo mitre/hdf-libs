@@ -1,10 +1,12 @@
 # Local copy of semgrep-rules go/lang/security/audit/unsafe.yaml at SEMGREP_RULES_SHA.
 # CI copies it over the fetched rule, so the rule ID and metadata stay the same.
-# It reports every unsafe operation except two that read no memory unsafely:
-# unsafe.Sizeof (a compile-time constant whose operand is not evaluated), and
-# uintptr(unsafe.Pointer(x)) written directly as a purego.SyscallN argument, which
-# Go keeps alive and unmoved for the call (rule 4 of the unsafe package docs).
-# An unsafe operation inside such an argument is still reported.
+# It reports every unsafe operation except three documented safe forms:
+#   - unsafe.Sizeof(...): a compile-time constant; its operand is not evaluated.
+#   - uintptr(unsafe.Pointer(x)) written directly as a purego.SyscallN argument:
+#     Go keeps x alive and unmoved for the call (rule 4 of the unsafe docs).
+#   - (*windows.SID)(unsafe.Pointer(&ace.SidStart)): an ACE's variable-length SID,
+#     stored from SidStart on in Microsoft's ACCESS_ALLOWED_ACE layout.
+# An unsafe operation inside the last two forms is still reported.
 rules:
 - id: use-of-unsafe-block
   message: >-
@@ -27,6 +29,7 @@ rules:
     - https://pkg.go.dev/unsafe#Pointer
     - https://pkg.go.dev/unsafe#Sizeof
     - https://pkg.go.dev/github.com/ebitengine/purego#SyscallN
+    - https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace
     subcategory:
     - audit
     likelihood: LOW
@@ -36,6 +39,15 @@ rules:
     - pattern: unsafe.$FUNC(...)
     - pattern-not: unsafe.Sizeof(...)
     - pattern-not-inside: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
+    - pattern-not-inside: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
+  - patterns:
+    - pattern: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
+    - metavariable-pattern:
+        metavariable: $ACE
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $ACE
   - patterns:
     - pattern: purego.SyscallN(..., uintptr(unsafe.Pointer($X)), ...)
     - metavariable-pattern:
