@@ -463,6 +463,28 @@ The severity of a CVSS score on its version's scale. Go: `CvssSeverityForVersion
   specification's scale (`cvssScoreToSeverity`). A negative or non-finite score
   is `none`.
 
+#### `normalizeCvssMetrics(vector: string): CvssMetrics`
+
+The four exposure metrics of a vector of any CVSS version in one vocabulary, the
+FIRST CVSS 3.x JSON schema names, for comparing findings across versions. Go:
+`NormalizeCvssMetrics`.
+
+- **Parameters:**
+  - `vector` - A CVSS 2.0, 3.0, 3.1 or 4.0 vector
+- **Returns:** `{ version, attackVector, attackComplexity, privilegesRequired,
+  userInteraction, baseScore? }`, each field `"unknown"` when the version has no
+  such metric or the value is absent or invalid; `baseScore` when the vector
+  scores. Never throws.
+
+| Field | Values | Across versions |
+|---|---|---|
+| `attackVector` | `NETWORK`, `ADJACENT_NETWORK`, `LOCAL`, `PHYSICAL` | 4.0 `ADJACENT` is `ADJACENT_NETWORK` (same definition) |
+| `attackComplexity` | `LOW`, `HIGH`; `MEDIUM` from 2.0 only | 2.0's MEDIUM has no 3.x equivalent; 4.0 Attack Requirements is not folded in |
+| `privilegesRequired` | `NONE`, `LOW`, `HIGH` | 2.0 Authentication `N`/`S`/`M` is `NONE`/`LOW`/`LOW`: a library convention, since Authentication counts logins and states no privilege level |
+| `userInteraction` | `NONE`, `REQUIRED` | 4.0 `PASSIVE` and `ACTIVE` are `REQUIRED`; 2.0 has no such metric (`unknown`) |
+
+`parseCvssVector` keeps the exact values when the distinctions above matter.
+
 #### `computeCvss40Score(vector: string): CvssScore`
 
 The CVSS 4.0 MacroVector engine that `computeCvssScore` uses for 4.0 vectors;

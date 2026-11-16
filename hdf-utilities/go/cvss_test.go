@@ -415,3 +415,30 @@ func containsSubstr(s, sub string) bool {
 	}
 	return false
 }
+
+type cvssNormalizeCase struct {
+	Vector             string   `json:"vector"`
+	Version            string   `json:"version"`
+	AttackVector       string   `json:"attackVector"`
+	AttackComplexity   string   `json:"attackComplexity"`
+	PrivilegesRequired string   `json:"privilegesRequired"`
+	UserInteraction    string   `json:"userInteraction"`
+	BaseScore          *float64 `json:"baseScore"`
+	Note               string   `json:"note"`
+}
+
+func TestNormalizeCvssMetrics(t *testing.T) {
+	for _, c := range loadVectorCases[cvssNormalizeCase](t, "cvss-normalize-cases.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			want := CvssMetrics{
+				Version:            c.Version,
+				AttackVector:       c.AttackVector,
+				AttackComplexity:   c.AttackComplexity,
+				PrivilegesRequired: c.PrivilegesRequired,
+				UserInteraction:    c.UserInteraction,
+				BaseScore:          c.BaseScore,
+			}
+			assert.Equal(t, want, NormalizeCvssMetrics(c.Vector), c.Note)
+		})
+	}
+}

@@ -811,3 +811,79 @@ func cvss40StripExploitMaturity(vector string) string {
 	}
 	return strings.Join(out, "/")
 }
+
+// CvssMetrics is the exposure view of a CVSS vector: the four base metrics in
+// one vocabulary, the FIRST CVSS 3.x JSON schema names, whatever the version.
+// A field is "unknown" when the version has no such metric or the value is
+// absent or not one of the version's values. BaseScore is set when the vector
+// scores through ComputeCvssScore. ParseCvssVector keeps the exact values.
+type CvssMetrics struct {
+	Version            string
+	AttackVector       string
+	AttackComplexity   string
+	PrivilegesRequired string
+	UserInteraction    string
+	BaseScore          *float64
+}
+
+// cvssNormalizedField is one field of CvssMetrics for one CVSS version: the
+// vector metric it reads and the 3.x name of each of that metric's values.
+type cvssNormalizedField struct {
+	metric string
+	names  map[string]string
+}
+
+// cvssNormalizedFields maps each version's metrics onto the 3.x names, only
+// where the 3.x name has the same meaning; a field a version lacks is absent.
+// 4.0 renamed ADJACENT_NETWORK to ADJACENT (same definition) and split user
+// interaction into PASSIVE and ACTIVE, both REQUIRED in 3.x terms; its Attack
+// Requirements metric has no 3.x counterpart and is not read. 2.0 has no user
+// interaction metric, and its Access Complexity MEDIUM has no 3.x equivalent.
+// 2.0 Authentication counts logins rather than naming a privilege level, so
+// NONE is NONE and SINGLE or MULTIPLE, an account of some kind, is LOW: a
+// library convention, not a FIRST rule.
+var cvssNormalizedFields = func() map[string][4]*cvssNormalizedField {
+	av3 := map[string]string{"N": "NETWORK", "A": "ADJACENT_NETWORK", "L": "LOCAL", "P": "PHYSICAL"}
+	acLH := map[string]string{"L": "LOW", "H": "HIGH"}
+	pr := map[string]string{"N": "NONE", "L": "LOW", "H": "HIGH"}
+	v3 := [4]*cvssNormalizedField{
+		{"AV", av3}, {"AC", acLH}, {"PR", pr},
+		{"UI", map[string]string{"N": "NONE", "R": "REQUIRED"}},
+	}
+	return map[string][4]*cvssNormalizedField{
+		"2.0": {
+			{"AV", map[string]string{"N": "NETWORK", "A": "ADJACENT_NETWORK", "L": "LOCAL"}},
+			{"AC", map[string]string{"L": "LOW", "M": "MEDIUM", "H": "HIGH"}},
+			{"Au", map[string]string{"N": "NONE", "S": "LOW", "M": "LOW"}},
+			nil,
+		},
+		"3.0": v3,
+		"3.1": v3,
+		"4.0": {
+			{"AV", av3}, {"AC", acLH}, {"PR", pr},
+			{"UI", map[string]string{"N": "NONE", "P": "REQUIRED", "A": "REQUIRED"}},
+		},
+	}
+}()
+
+// NormalizeCvssMetrics returns the exposure view of a vector of any CVSS
+// version (see CvssMetrics). It reads the vector through ParseCvssVector and
+// scores it through ComputeCvssScore, never panics, and returns "unknown" for
+// every field of malformed input or a version CVSS does not define.
+func NormalizeCvssMetrics(vector string) CvssMetrics {
+	version, metrics := ParseCvssVector(vector)
+	out := CvssMetrics{Version: version}
+	fields := cvssNormalizedFields[version]
+	for i, dst := range []*string{&out.AttackVector, &out.AttackComplexity, &out.PrivilegesRequired, &out.UserInteraction} {
+		*dst = "unknown"
+		if f := fields[i]; f != nil {
+			if name, ok := f.names[metrics[f.metric]]; ok {
+				*dst = name
+			}
+		}
+	}
+	if s, err := ComputeCvssScore(vector); err == nil {
+		out.BaseScore = &s.BaseScore
+	}
+	return out
+}

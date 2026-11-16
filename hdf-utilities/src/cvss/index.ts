@@ -804,3 +804,95 @@ export function computeCvss40Score(vector: string): CvssScore {
   const baseScore = cvss40Score(parseCvssVector(cvss40StripExploitMaturity(vector)).metrics);
   return { version: '4.0', baseScore, temporalScore };
 }
+
+/**
+ * The exposure view of a CVSS vector: the four base metrics in one vocabulary,
+ * the FIRST CVSS 3.x JSON schema names, whatever the version. A field is
+ * "unknown" when the version has no such metric or the value is absent or not
+ * one of the version's values. `baseScore` is set when the vector scores through
+ * computeCvssScore. parseCvssVector keeps the exact values.
+ */
+export interface CvssMetrics {
+  version: string;
+  attackVector: string;
+  attackComplexity: string;
+  privilegesRequired: string;
+  userInteraction: string;
+  baseScore?: number;
+}
+
+/** One CvssMetrics field for one version: its metric and each value's 3.x name. */
+interface CvssNormalizedField {
+  metric: string;
+  names: ReadonlyMap<string, string>;
+}
+
+const AV3_NAMES = new Map([['N', 'NETWORK'], ['A', 'ADJACENT_NETWORK'], ['L', 'LOCAL'], ['P', 'PHYSICAL']]);
+const AC_LH_NAMES = new Map([['L', 'LOW'], ['H', 'HIGH']]);
+const PR_NAMES = new Map([['N', 'NONE'], ['L', 'LOW'], ['H', 'HIGH']]);
+const V3_FIELDS: ReadonlyArray<CvssNormalizedField | undefined> = [
+  { metric: 'AV', names: AV3_NAMES },
+  { metric: 'AC', names: AC_LH_NAMES },
+  { metric: 'PR', names: PR_NAMES },
+  { metric: 'UI', names: new Map([['N', 'NONE'], ['R', 'REQUIRED']]) },
+];
+
+/**
+ * Each version's metrics mapped onto the 3.x names, only where the 3.x name has
+ * the same meaning. 4.0 renamed ADJACENT_NETWORK to ADJACENT and split user
+ * interaction into PASSIVE and ACTIVE (both REQUIRED in 3.x terms); its Attack
+ * Requirements has no 3.x counterpart. 2.0 has no user interaction metric; its
+ * MEDIUM complexity has no 3.x equivalent; its Authentication counts logins, so
+ * SINGLE or MULTIPLE (an account) is LOW: a library convention, not a FIRST rule.
+ */
+const CVSS_NORMALIZED_FIELDS: ReadonlyMap<string, ReadonlyArray<CvssNormalizedField | undefined>> = new Map([
+  [
+    '2.0',
+    [
+      { metric: 'AV', names: new Map([['N', 'NETWORK'], ['A', 'ADJACENT_NETWORK'], ['L', 'LOCAL']]) },
+      { metric: 'AC', names: new Map([['L', 'LOW'], ['M', 'MEDIUM'], ['H', 'HIGH']]) },
+      { metric: 'Au', names: new Map([['N', 'NONE'], ['S', 'LOW'], ['M', 'LOW']]) },
+      undefined,
+    ],
+  ],
+  ['3.0', V3_FIELDS],
+  ['3.1', V3_FIELDS],
+  [
+    '4.0',
+    [
+      { metric: 'AV', names: AV3_NAMES },
+      { metric: 'AC', names: AC_LH_NAMES },
+      { metric: 'PR', names: PR_NAMES },
+      { metric: 'UI', names: new Map([['N', 'NONE'], ['P', 'REQUIRED'], ['A', 'REQUIRED']]) },
+    ],
+  ],
+]);
+
+/**
+ * The exposure view of a vector of any CVSS version (see CvssMetrics), read
+ * through parseCvssVector and scored through computeCvssScore. Never throws;
+ * malformed input or a version CVSS does not define gives "unknown" fields.
+ * Peer of the Go `NormalizeCvssMetrics`.
+ */
+export function normalizeCvssMetrics(vector: string): CvssMetrics {
+  const { version, metrics } = parseCvssVector(vector);
+  const fields = CVSS_NORMALIZED_FIELDS.get(version) ?? [];
+  const name = (i: number): string => {
+    const field = fields[i];
+    const value = field === undefined ? undefined : metrics.get(field.metric);
+    return (value === undefined ? undefined : field?.names.get(value)) ?? 'unknown';
+  };
+  const out: CvssMetrics = {
+    version,
+    attackVector: name(0),
+    attackComplexity: name(1),
+    privilegesRequired: name(2),
+    userInteraction: name(3),
+  };
+  try {
+    out.baseScore = computeCvssScore(vector).baseScore;
+  } catch {
+    // An unscorable vector has no base score; its metrics are still reported.
+  }
+  return out;
+}

@@ -8,6 +8,7 @@ import {
   computeCvssScore,
   computeCvss40Score,
   cvss40MacroVector,
+  normalizeCvssMetrics,
 } from '../src/cvss/index.js';
 import { cvssScoreToSeverity, cvssSeverityForVersion } from '../src/severity/index.js';
 
@@ -451,3 +452,32 @@ describe('computeCvss40Score (CVSS 4.0)', () => {
     ).toThrow();
   });
 });
+
+interface CvssNormalizeCase {
+  vector: string;
+  version: string;
+  attackVector: string;
+  attackComplexity: string;
+  privilegesRequired: string;
+  userInteraction: string;
+  baseScore: number | null;
+  note: string;
+}
+
+describe('normalizeCvssMetrics', () => {
+  it.each(loadVectorCases<CvssNormalizeCase>('cvss-normalize-cases.json'))(
+    'normalizes "$vector" ($note)',
+    (c) => {
+      const want: Record<string, unknown> = {
+        version: c.version,
+        attackVector: c.attackVector,
+        attackComplexity: c.attackComplexity,
+        privilegesRequired: c.privilegesRequired,
+        userInteraction: c.userInteraction,
+      };
+      if (c.baseScore !== null) want.baseScore = c.baseScore;
+      expect(normalizeCvssMetrics(c.vector)).toStrictEqual(want);
+    },
+  );
+});
+

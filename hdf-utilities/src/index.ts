@@ -81,11 +81,13 @@ export {
   parseCvssVector,
   validateCvssVector,
   computeCvssScore,
+  normalizeCvssMetrics,
   computeCvss40Score,
   cvss40MacroVector,
   type ParsedCvssVector,
   type CvssValidationResult,
   type CvssScore,
+  type CvssMetrics,
 } from './cvss/index.js';
 
 // CWE identifier extraction (twin of go/cwe.go)
