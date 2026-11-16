@@ -67,7 +67,7 @@ env:
 #   check-go ───────┤
 #   check-openapi-matrix ┘
 #   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests (+ gate-cli)
-#           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
+#           ├── test-go (junit; ubuntu leg = coverage) ─┘
 #           ├── verify-packages                            (intended required check)
 #           └── site-build
 #
@@ -958,65 +958,6 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  # ── Coverage ingestion: SonarQube Cloud ──────────────────────────────────
-  # The ubuntu test legs ARE the coverage run, so this job consumes the
-  # profiles they upload instead of re-running the whole suite the way the
-  # dedicated coverage job it replaces did. It still needs its own checkout:
-  # Sonar wants full history for blame and new-code attribution, which the
-  # test legs' shallow clone cannot provide.
-  sonar:
-    name: SonarQube Cloud
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [test-ts, test-go]
-    env:
-      # Job-level so the scan step's `if` can test it: secrets are not exposed
-      # to fork PRs, so an empty value means "cannot scan", not "misconfigured".
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          # Sonar needs full history for accurate blame/new-code attribution.
-          fetch-depth: 0
-      # The uploads preserve their repo-relative paths, so the profiles land
-      # exactly where sonar-project.properties expects them.
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: coverage-reports-ts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: coverage-reports-go
-      # vitest writes lcov SF: paths relative to each package, but the Sonar
-      # scanner resolves them against the repo root — prefix the package dir
-      # so every source file resolves instead of silently reporting 0%.
-      - name: Rebase lcov paths to repo root
-        run: |
-          for f in */coverage/lcov.info; do
-            pkg="${f%%/*}"
-            sed -i "s|^SF:|SF:${pkg}/|" "$f"
-          done
-      # CI-based SonarCloud analysis (Automatic Analysis is off), ingesting
-      # the lcov + coverprofile outputs above per sonar-project.properties.
-      # No token means a fork PR or a not-yet-onboarded project: skip rather
-      # than fail this job. continue-on-error covers what that check cannot —
-      # a token that is present but unusable, which fails the scanner on an
-      # authentication error and has nothing to do with the code under test.
-      # The steps above stay blocking; only the upload is advisory.
-      # Drop continue-on-error once a scan authenticates, or the analysis stops
-      # being enforced without anyone deciding that.
-      - name: SonarCloud scan
-        id: sonar
-        if: env.SONAR_TOKEN != ''
-        continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
-      # Advisory must not mean invisible.
-      - name: Report Sonar scan outcome
-        if: always() && steps.sonar.outcome != 'success'
-        env:
-          SONAR_OUTCOME: ${{ steps.sonar.outcome }}
-        run: |
-          echo "::warning title=SonarCloud scan did not complete::outcome=${SONAR_OUTCOME}. Coverage was collected and its steps passed; the analysis was not uploaded."
 
   # ── Verify packed tarballs (publint + attw) ──────────────────────────────
   # Packs every publishable workspace package and runs publint +

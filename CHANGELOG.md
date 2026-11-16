@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **SonarQube Cloud analyses hdf-libs with Automatic Analysis, as the other mitre projects do; the CI Sonar scan is removed.** The CI scan never uploaded (its token was refused on every run), so the project had no analysis. Automatic Analysis needs no token but does not import coverage; CI still collects coverage and keeps it as build artifacts.
+
 ## [3.8.0] - 2026-11-15
 
 ### Highlights
