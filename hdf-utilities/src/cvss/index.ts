@@ -263,35 +263,48 @@ export function validateCvssVector(
 
 /** A computed CVSS score. */
 export interface CvssScore {
-  /** CVSS major.minor version the score was computed under (currently always "3.1"). */
+  /** The CVSS version that scored the vector: "2.0", "3.0", "3.1" or "4.0". */
   version: string;
   /** Base score (0.0–10.0). */
   baseScore: number;
   /**
    * Temporal (Threat) score (0.0–10.0). Equals baseScore when no temporal
-   * metrics (E/RL/RC) are present, per the CVSS 3.1 spec.
+   * metric is present.
    */
   temporalScore: number;
 }
 
-// CVSS 3.1 metric weights (FIRST v3.1 specification §7). Privileges Required is
-// scope-dependent, hence two tables.
-const CVSS31_AV: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.2 };
-const CVSS31_AC: Record<string, number> = { L: 0.77, H: 0.44 };
-const CVSS31_UI: Record<string, number> = { N: 0.85, R: 0.62 };
-const CVSS31_CIA: Record<string, number> = { N: 0.0, L: 0.22, H: 0.56 };
-const CVSS31_PR_UNCHANGED: Record<string, number> = { N: 0.85, L: 0.62, H: 0.27 };
-const CVSS31_PR_CHANGED: Record<string, number> = { N: 0.85, L: 0.68, H: 0.5 };
-const CVSS31_E: Record<string, number> = { X: 1.0, H: 1.0, F: 0.97, P: 0.94, U: 0.91 };
-const CVSS31_RL: Record<string, number> = { X: 1.0, U: 1.0, W: 0.97, T: 0.96, O: 0.95 };
-const CVSS31_RC: Record<string, number> = { X: 1.0, C: 1.0, R: 0.96, U: 0.92 };
+// CVSS 3.x metric weights. CVSS 3.0 (specification §8.4) and 3.1 (§7.4) use the
+// same values; Privileges Required is scope-dependent, hence two tables.
+const CVSS3X_AV: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.2 };
+const CVSS3X_AC: Record<string, number> = { L: 0.77, H: 0.44 };
+const CVSS3X_UI: Record<string, number> = { N: 0.85, R: 0.62 };
+const CVSS3X_CIA: Record<string, number> = { N: 0.0, L: 0.22, H: 0.56 };
+const CVSS3X_PR_UNCHANGED: Record<string, number> = { N: 0.85, L: 0.62, H: 0.27 };
+const CVSS3X_PR_CHANGED: Record<string, number> = { N: 0.85, L: 0.68, H: 0.5 };
+const CVSS3X_E: Record<string, number> = { X: 1.0, H: 1.0, F: 0.97, P: 0.94, U: 0.91 };
+const CVSS3X_RL: Record<string, number> = { X: 1.0, U: 1.0, W: 0.97, T: 0.96, O: 0.95 };
+const CVSS3X_RC: Record<string, number> = { X: 1.0, C: 1.0, R: 0.96, U: 0.92 };
+
+// CVSS 2.0 metric weights (FIRST CVSS v2 guide §3.2.1 and §3.2.2). ND (not
+// defined) leaves a temporal score unchanged.
+const CVSS20_AV: Record<string, number> = { L: 0.395, A: 0.646, N: 1.0 };
+const CVSS20_AC: Record<string, number> = { H: 0.35, M: 0.61, L: 0.71 };
+const CVSS20_AU: Record<string, number> = { M: 0.45, S: 0.56, N: 0.704 };
+const CVSS20_CIA: Record<string, number> = { N: 0.0, P: 0.275, C: 0.66 };
+const CVSS20_E: Record<string, number> = { U: 0.85, POC: 0.9, F: 0.95, H: 1.0, ND: 1.0 };
+const CVSS20_RL: Record<string, number> = { OF: 0.87, TF: 0.9, W: 0.95, U: 1.0, ND: 1.0 };
+const CVSS20_RC: Record<string, number> = { UC: 0.9, UR: 0.95, C: 1.0, ND: 1.0 };
 
 /**
- * CVSS 3.1 Roundup (spec §7.4): the smallest number, to one decimal place, that
- * is >= the input — computed via integer math to avoid the floating-point edge
- * cases 3.0 rounding suffered.
+ * CVSS 3.x Round up, defined in the same words by the 3.0 specification (§8.1,
+ * note 4) and 3.1 (§7): the smallest number, to one decimal place, equal to or
+ * higher than its input. It works on the input scaled by 100,000 as 3.1 Appendix
+ * A advises, because ceil(x × 10) / 10, the form FIRST's v3.0 calculator uses,
+ * rounds floating-point error up (10 × 0.92 is 9.200000000000001 and would
+ * become 9.3, not 9.2).
  */
-function roundUp31(x: number): number {
+function roundUp3x(x: number): number {
   const intInput = Math.round(x * 100000);
   if (intInput % 10000 === 0) {
     return intInput / 100000;
@@ -299,65 +312,75 @@ function roundUp31(x: number): number {
   return (Math.floor(intInput / 10000) + 1) / 10;
 }
 
-function cvss31TemporalWeight(
+/**
+ * The CVSS 2.0 round_to_1_decimal. The guide does not define it; rounding half
+ * away from zero reproduces the base scores NVD publishes for every 2.0 vector
+ * in testdata/cvss20-vectors.json. Scores are never negative here, so
+ * Math.round's half-up matches Go's math.Round.
+ */
+function roundTo1Decimal20(x: number): number {
+  return Math.round(x * 10) / 10;
+}
+
+/** Weight of a required metric; throws naming the metric when absent or out of enum. */
+function cvssWeight(
   table: Record<string, number>,
   metrics: Map<string, string>,
   key: string,
+  version: string,
 ): number {
   const v = metrics.get(key);
   if (v === undefined) {
-    return 1.0; // absent → X
+    throw new Error(`cvss: missing required ${version} base metric "${key}"`);
   }
   const w = table[v];
   if (w === undefined) {
-    throw new Error(`cvss: invalid 3.1 ${key} value "${v}"`);
+    throw new Error(`cvss: invalid ${version} metric value ${key}:"${v}"`);
+  }
+  return w;
+}
+
+/** Weight of a temporal metric: 1.0 when absent; throws when out of enum. */
+function cvssTemporalWeight(
+  table: Record<string, number>,
+  metrics: Map<string, string>,
+  key: string,
+  version: string,
+): number {
+  const v = metrics.get(key);
+  if (v === undefined) {
+    return 1.0;
+  }
+  const w = table[v];
+  if (w === undefined) {
+    throw new Error(`cvss: invalid ${version} ${key} value "${v}"`);
   }
   return w;
 }
 
 /**
- * Compute the CVSS 3.1 Base and Temporal (Threat) scores for a vector string.
- *
- * Only CVSS 3.1 is supported here — CVSS 4.0's MacroVector engine lives
- * separately — so any other version throws rather than returning a wrong number.
- * The peer of the Go `ComputeCvssScore` (kept byte-identical via shared fixtures).
- *
- * @throws if the version is not 3.1, a required base metric is missing, or any
- *   metric value is out of the 3.1 enum.
+ * Scores a CVSS 3.0 or 3.1 vector. The two versions share every Base and Temporal
+ * equation, every weight and the definition of Round up; they differ only in the
+ * Environmental equations, which are not computed here.
  */
-export function computeCvssScore(vector: string): CvssScore {
-  const { version, metrics } = parseCvssVector(vector);
-  if (version !== '3.1') {
-    throw new Error(`cvss: score compute supports only CVSS 3.1, got "${version}"`);
-  }
-  for (const k of ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A']) {
-    if (!metrics.has(k)) {
-      throw new Error(`cvss: missing required 3.1 base metric "${k}"`);
-    }
-  }
-
+function cvss3xScore(metrics: Map<string, string>, version: string): CvssScore {
   const scope = metrics.get('S');
+  if (scope === undefined) {
+    throw new Error(`cvss: missing required ${version} base metric "S"`);
+  }
   if (scope !== 'U' && scope !== 'C') {
-    throw new Error(`cvss: invalid 3.1 Scope value "${scope ?? ''}"`);
+    throw new Error(`cvss: invalid ${version} Scope value "${scope}"`);
   }
   const scopeChanged = scope === 'C';
+  const prTable = scopeChanged ? CVSS3X_PR_CHANGED : CVSS3X_PR_UNCHANGED;
 
-  const prTable = scopeChanged ? CVSS31_PR_CHANGED : CVSS31_PR_UNCHANGED;
-  const lookup = (table: Record<string, number>, metric: string): number => {
-    const key = metrics.get(metric);
-    const w = key === undefined ? undefined : table[key];
-    if (w === undefined) {
-      throw new Error(`cvss: invalid 3.1 metric value ${metric}:"${key ?? ''}"`);
-    }
-    return w;
-  };
-  const av = lookup(CVSS31_AV, 'AV');
-  const ac = lookup(CVSS31_AC, 'AC');
-  const ui = lookup(CVSS31_UI, 'UI');
-  const pr = lookup(prTable, 'PR');
-  const c = lookup(CVSS31_CIA, 'C');
-  const i = lookup(CVSS31_CIA, 'I');
-  const a = lookup(CVSS31_CIA, 'A');
+  const av = cvssWeight(CVSS3X_AV, metrics, 'AV', version);
+  const ac = cvssWeight(CVSS3X_AC, metrics, 'AC', version);
+  const pr = cvssWeight(prTable, metrics, 'PR', version);
+  const ui = cvssWeight(CVSS3X_UI, metrics, 'UI', version);
+  const c = cvssWeight(CVSS3X_CIA, metrics, 'C', version);
+  const i = cvssWeight(CVSS3X_CIA, metrics, 'I', version);
+  const a = cvssWeight(CVSS3X_CIA, metrics, 'A', version);
 
   const iss = 1 - (1 - c) * (1 - i) * (1 - a);
   const impact = scopeChanged
@@ -369,17 +392,63 @@ export function computeCvssScore(vector: string): CvssScore {
   if (impact <= 0) {
     baseScore = 0.0;
   } else if (scopeChanged) {
-    baseScore = roundUp31(Math.min(1.08 * (impact + exploitability), 10));
+    baseScore = roundUp3x(Math.min(1.08 * (impact + exploitability), 10));
   } else {
-    baseScore = roundUp31(Math.min(impact + exploitability, 10));
+    baseScore = roundUp3x(Math.min(impact + exploitability, 10));
   }
 
-  const e = cvss31TemporalWeight(CVSS31_E, metrics, 'E');
-  const rl = cvss31TemporalWeight(CVSS31_RL, metrics, 'RL');
-  const rc = cvss31TemporalWeight(CVSS31_RC, metrics, 'RC');
-  const temporalScore = roundUp31(baseScore * e * rl * rc);
+  const e = cvssTemporalWeight(CVSS3X_E, metrics, 'E', version);
+  const rl = cvssTemporalWeight(CVSS3X_RL, metrics, 'RL', version);
+  const rc = cvssTemporalWeight(CVSS3X_RC, metrics, 'RC', version);
+  return { version, baseScore, temporalScore: roundUp3x(baseScore * e * rl * rc) };
+}
 
-  return { version: '3.1', baseScore, temporalScore };
+/** Scores a CVSS 2.0 vector by the FIRST v2 guide §3.2 base and temporal equations. */
+function cvss20Score(metrics: Map<string, string>): CvssScore {
+  const version = '2.0';
+  const av = cvssWeight(CVSS20_AV, metrics, 'AV', version);
+  const ac = cvssWeight(CVSS20_AC, metrics, 'AC', version);
+  const au = cvssWeight(CVSS20_AU, metrics, 'Au', version);
+  const c = cvssWeight(CVSS20_CIA, metrics, 'C', version);
+  const i = cvssWeight(CVSS20_CIA, metrics, 'I', version);
+  const a = cvssWeight(CVSS20_CIA, metrics, 'A', version);
+
+  const impact = 10.41 * (1 - (1 - c) * (1 - i) * (1 - a));
+  const exploitability = 20 * av * ac * au;
+  // f(Impact) is 0 when Impact is 0, which zeroes the score; returning 0
+  // directly keeps a negative bracket from producing -0.
+  const baseScore =
+    impact === 0 ? 0 : roundTo1Decimal20((0.6 * impact + 0.4 * exploitability - 1.5) * 1.176);
+
+  const e = cvssTemporalWeight(CVSS20_E, metrics, 'E', version);
+  const rl = cvssTemporalWeight(CVSS20_RL, metrics, 'RL', version);
+  const rc = cvssTemporalWeight(CVSS20_RC, metrics, 'RC', version);
+  return { version, baseScore, temporalScore: roundTo1Decimal20(baseScore * e * rl * rc) };
+}
+
+/**
+ * The scoring entry point for every CVSS version: scores the vector by the rules
+ * of the version it declares (2.0 and 3.x equations, the 4.0 MacroVector engine)
+ * and records that version, so a caller never chooses an engine and checks
+ * `version` when it supports only some. `temporalScore` is the Temporal (2.0,
+ * 3.x) or Threat (4.0) score. Peer of the Go `ComputeCvssScore`.
+ *
+ * @throws if CVSS does not define the version, a required metric is missing, or
+ *   any metric value is out of that version's enum.
+ */
+export function computeCvssScore(vector: string): CvssScore {
+  const { version, metrics } = parseCvssVector(vector);
+  switch (version) {
+    case '4.0':
+      return computeCvss40Score(vector);
+    case '3.0':
+    case '3.1':
+      return cvss3xScore(metrics, version);
+    case '2.0':
+      return cvss20Score(metrics);
+    default:
+      throw new Error(`cvss: score compute supports CVSS 2.0, 3.0, 3.1 and 4.0, got "${version}"`);
+  }
 }
 
 // --- CVSS 4.0 scoring (MacroVector engine) ---
@@ -682,7 +751,7 @@ function cvss40StripExploitMaturity(vector: string): string {
 }
 
 /**
- * Compute the CVSS 4.0 score for a vector string, split into a Base score
+ * The CVSS 4.0 engine behind computeCvssScore, which callers should use: a Base score
  * (`baseScore`, with Exploit Maturity stripped to its worst-case default E:A) and
  * a Threat score (`temporalScore`, with the E value present in the vector). For a
  * base-only vector the two are equal. The peer of the Go `ComputeCvss40Score`;

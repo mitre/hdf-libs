@@ -11,19 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type cvss31Case struct {
+type cvssScoreCase struct {
 	Vector   string  `json:"vector"`
 	Base     float64 `json:"base"`
 	Temporal float64 `json:"temporal"`
 	Note     string  `json:"note"`
 }
 
-func loadCvss31Cases(t *testing.T) []cvss31Case {
+// loadVectorCases reads the cases of a shared vector file in testdata; the
+// TypeScript tests read the same files, so both languages assert identical values.
+func loadVectorCases[T any](t *testing.T, name string) []T {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss31-vectors.json"))
+	data, err := os.ReadFile(filepath.Join("..", "testdata", name))
 	require.NoError(t, err)
 	var fx struct {
-		Cases []cvss31Case `json:"cases"`
+		Cases []T `json:"cases"`
 	}
 	require.NoError(t, json.Unmarshal(data, &fx))
 	require.NotEmpty(t, fx.Cases)
@@ -31,7 +33,7 @@ func loadCvss31Cases(t *testing.T) []cvss31Case {
 }
 
 func TestComputeCvssScore31(t *testing.T) {
-	for _, c := range loadCvss31Cases(t) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss31-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			s, err := ComputeCvssScore(c.Vector)
@@ -43,11 +45,62 @@ func TestComputeCvssScore31(t *testing.T) {
 	}
 }
 
+func TestComputeCvssScore30(t *testing.T) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss30-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "3.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+		})
+	}
+}
+
+func TestComputeCvssScore20(t *testing.T) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss20-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "2.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+			// A zero impact multiplies a negative term by f(Impact) = 0; the
+			// result must be +0, which serializes as 0 rather than -0.
+			assert.False(t, math.Signbit(s.BaseScore), "base must not be negative zero")
+			assert.False(t, math.Signbit(s.TemporalScore), "temporal must not be negative zero")
+		})
+	}
+}
+
+func TestComputeCvssScore20_InvalidVector(t *testing.T) {
+	for _, tc := range []struct{ vector, mentions string }{
+		{"AV:N/AC:L/Au:N/C:P/I:P", `metric "A"`},
+		{"AV:N/AC:L/Au:X/C:P/I:P/A:P", "Au"},
+		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/E:Z", "E"},
+		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/RL:Z", "RL"},
+		{"AV:N/AC:L/Au:N/C:P/I:P/A:P/RC:Z", "RC"},
+	} {
+		_, err := ComputeCvssScore(tc.vector)
+		assert.ErrorContains(t, err, tc.mentions, tc.vector)
+	}
+}
+
+func TestComputeCvssScore30_InvalidVector(t *testing.T) {
+	for _, tc := range []struct{ vector, mentions string }{
+		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H", `metric "A"`},
+		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:X/C:H/I:H/A:H", "Scope"},
+		{"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/RC:Z", "RC"},
+	} {
+		_, err := ComputeCvssScore(tc.vector)
+		assert.ErrorContains(t, err, tc.mentions, tc.vector)
+	}
+}
+
 func TestComputeCvssScore_UnsupportedVersion(t *testing.T) {
 	for _, v := range []string{
-		"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
-		"AV:N/AC:L/Au:N/C:C/I:C/A:C",
-		"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+		"CVSS:3.2/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+		"CVSS:5.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 	} {
 		_, err := ComputeCvssScore(v)
 		assert.Error(t, err, v)
@@ -290,20 +343,22 @@ type cvss40Case struct {
 	Note        string  `json:"note"`
 }
 
-func loadCvss40Cases(t *testing.T) []cvss40Case {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss40-vectors.json"))
-	require.NoError(t, err)
-	var fx struct {
-		Cases []cvss40Case `json:"cases"`
+// ComputeCvssScore is the entry point for every version; a 4.0 vector reaches
+// the MacroVector engine through it with the same results.
+func TestComputeCvssScore40(t *testing.T) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "4.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "threat")
+		})
 	}
-	require.NoError(t, json.Unmarshal(data, &fx))
-	require.NotEmpty(t, fx.Cases)
-	return fx.Cases
 }
 
 func TestComputeCvss40Score(t *testing.T) {
-	for _, c := range loadCvss40Cases(t) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			s, err := ComputeCvss40Score(c.Vector)
@@ -324,7 +379,7 @@ func TestComputeCvss40Score_FirstTestVector(t *testing.T) {
 }
 
 func TestComputeCvss40Score_MacroVector(t *testing.T) {
-	for _, c := range loadCvss40Cases(t) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			assert.Equal(t, c.MacroVector, Cvss40MacroVector(c.Vector))

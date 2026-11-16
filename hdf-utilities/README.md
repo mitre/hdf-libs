@@ -226,6 +226,27 @@ const safeReq = sanitizeCsvObject(requirement);
 // { id: 'REQ-001', title: 'Title with "quotes"', tags: 'AC-1,' }
 ```
 
+### CVSS Scoring
+
+`computeCvssScore` (Go `ComputeCvssScore`) scores a vector of any CVSS version.
+It reads the version the vector declares and scores it by that version's own
+rules, so the caller never picks an engine: the equations of CVSS 2.0 (FIRST v2
+guide §3.2), 3.0 (specification §8) and 3.1 (specification §7), or the
+MacroVector engine of CVSS 4.0. The result names the version that scored it;
+check it when only some versions apply.
+
+```typescript
+import { computeCvssScore } from '@mitre/hdf-utilities';
+
+computeCvssScore('AV:N/AC:M/Au:N/C:P/I:N/A:N');
+// { version: '2.0', baseScore: 4.3, temporalScore: 4.3 }
+
+computeCvssScore('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:U/RL:O/RC:C');
+// { version: '3.0', baseScore: 7.5, temporalScore: 6.5 }
+
+computeCvssScore('CVSS:5.0/AV:N'); // throws: CVSS defines no version 5.0
+```
+
 ## API Reference
 
 ### JSON Utilities
@@ -410,6 +431,29 @@ Apply `sanitizeCsvValue` to each own enumerable value of an object.
   - `obj` - Object to sanitize
 - **Returns:** A flat string map — one level only, every value stringified (an
   array value becomes its comma-joined `String()` form)
+
+### CVSS Scoring
+
+#### `computeCvssScore(vector: string): CvssScore`
+
+Score a CVSS 2.0, 3.0, 3.1 or 4.0 vector by the rules of the version it
+declares. Go: `ComputeCvssScore(vector string) (CvssScore, error)`.
+
+- **Parameters:**
+  - `vector` - The vector string; a CVSS 2.0 vector carries no `CVSS:` prefix
+- **Returns:** `{ version, baseScore, temporalScore }`. `temporalScore` is the
+  Temporal score (2.0, 3.x) or the Threat score (4.0) and equals `baseScore`
+  when the vector carries no such metric. CVSS 3.0 and 3.1 share one Round up,
+  implemented as the 3.1 specification's Appendix A advises, so floating-point
+  error cannot raise a score.
+- **Throws:** Error if CVSS does not define the version, a required metric is
+  missing, or a metric value is outside that version's values (never a guessed
+  score)
+
+#### `computeCvss40Score(vector: string): CvssScore`
+
+The CVSS 4.0 MacroVector engine that `computeCvssScore` uses for 4.0 vectors;
+callers should use `computeCvssScore`. Go: `ComputeCvss40Score`.
 
 ## Development
 

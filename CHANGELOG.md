@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **`computeCvssScore` (Go `ComputeCvssScore`) scores every CVSS version.** CVSS 2.0 (Base and Temporal, FIRST v2 guide §3.2) and 3.0 (specification §8) join 3.1, and 4.0 vectors go to the MacroVector engine through the same call, so a caller never picks an engine; the result names the version that scored it. Every 2.0, 3.0 and 3.1 vector in a real Grype debian:12 scan scores to the value NVD reports, and Go, TypeScript and an independent implementation agree on all 1,006,749 2.0, 3.0 and 3.1 base and temporal vectors. A version CVSS does not define, a missing metric or an out-of-range value is still an error. `computeCvss40Score` remains as the 4.0 engine underneath.
+
+### Fixed
+
+- **CVSS 3.0 and 3.1 share one Round up,** the one the 3.1 specification's Appendix A describes. FIRST's own v3.0 calculator rounds with `ceil(x × 10) / 10`, which turns floating-point error into a higher score (a temporal score of 10 × 0.92 becomes 9.3, not 9.2) on 513 of 466,560 3.0 vectors; the 3.0 specification defines Round up in the same words as 3.1, and both now give 9.2.
+- **`hdf enrich --recompute-cvss` checks for a CVSS 3.1 base vector explicitly** instead of relying on the score engine refusing other versions, and records the version that scored. Without the check, the engine's new 2.0 and 3.0 support would have produced a riskAdjustment labelled CVSS 3.1 around a 2.0 or 3.0 vector.
+
 ## [3.8.0] - 2026-11-15
 
 ### Highlights
