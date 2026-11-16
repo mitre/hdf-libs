@@ -32,4 +32,4 @@ Some threshold files for particular tools may need additional clauses or modific
 
 1. Write `<tool>.yaml` with the bounds, plus the `rules:` block above, and any additional rules you believe necessary to properly gate that tool, into your PR.
 2. Add the tool to the loop in `ci.yml`.
-3. Adjudicate findings in `../hdf-amendments/<tool>.json`, if necessary, with consultation from the maintainers.
+3. Adjudicate findings in `../hdf-amendments/<tool>.json`, if necessary, with consultation from the maintainers. Keep each `reason` to a sentence or two on why the amendment is appropriate ("reachable only in development"); the scan already records what and where the finding was.
