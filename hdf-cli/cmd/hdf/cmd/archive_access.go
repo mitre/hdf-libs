@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // archiveAccess is who may read the archive bundle writes: its creator alone
@@ -45,4 +46,36 @@ func createStagedArchiveWith(dir string, access archiveAccess,
 		return f, err
 	}
 	return nil, fmt.Errorf("cannot allocate a unique staged archive name in %s: %w", dir, os.ErrExist)
+}
+
+// archiveWindowsName returns the name to give CreateFileW, following Go's own
+// os.addExtendedPrefix: raw CreateFileW does not get Go's long-path handling. A path
+// already in the extended namespace is used as given; otherwise the resolved full
+// path gets the \\?\ prefix (\\?\UNC\ for a share) from 248 characters on, the
+// length at which Windows stops accepting a plain path. A \\.\ device path is never
+// prefixed, since that would change what it names.
+func archiveWindowsName(path string, fullPath func(string) (string, error)) (string, error) {
+	if windowsExtendedPath(path) {
+		return path, nil
+	}
+	full, err := fullPath(path)
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case len(full) < 248, strings.HasPrefix(full, `\\.\`):
+		return full, nil
+	case strings.HasPrefix(full, `\\`):
+		return `\\?\UNC\` + full[2:], nil
+	default:
+		return `\\?\` + full, nil
+	}
+}
+
+// windowsExtendedPath reports a path already in the extended namespace: \??\, or \\?\
+// written with either separator.
+func windowsExtendedPath(path string) bool {
+	separator := func(c byte) bool { return c == '\\' || c == '/' }
+	return strings.HasPrefix(path, `\??\`) ||
+		len(path) >= 4 && separator(path[0]) && separator(path[1]) && path[2] == '?' && separator(path[3])
 }
