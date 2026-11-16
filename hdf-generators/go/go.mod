@@ -3,8 +3,8 @@ module github.com/mitre/hdf-libs/hdf-generators/go/v3
 go 1.26.11
 
 require (
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-rc.1
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-rc.1
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-next.43908964592.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-next.43908964592.1
 	github.com/stretchr/testify v1.12.1
 )
 
