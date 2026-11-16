@@ -30,6 +30,8 @@ const (
 	aceAllow, aceDeny          = 0, 1
 	readData, writeData        = 0x1, 0x2
 	appendData, readAttributes = 0x4, 0x80
+	execute                    = 0x20
+	writeACL, writeOwner       = 0x40000, 0x80000
 	inheritOnly, inheritedACE  = 0x8, 0x80
 )
 
@@ -48,13 +50,17 @@ func TestNFS4ACLGrantsOthers(t *testing.T) {
 		{"inherit-only entry does not apply to the file", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritOnly, mask: readData, who: "bob@example.org"}}, ""},
 		{"a deny entry grants nothing", []nfs4ACE{owner, {aceType: aceDeny, mask: readData, who: "EVERYONE@"}}, ""},
 		{"attribute access is not data access", []nfs4ACE{owner, {aceType: aceAllow, mask: readAttributes, who: "EVERYONE@"}}, ""},
+		{"a principal that may rewrite the ACL can grant itself read", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritedACE, mask: writeACL, who: "carol@example.org"}}, "carol@example.org"},
+		{"a principal that may take ownership can grant itself read", []nfs4ACE{owner, {aceType: aceAllow, mask: writeOwner, who: "GROUP@"}}, "GROUP@"},
+		{"inherit-only control entry does not apply to the file", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritOnly, mask: writeACL | writeOwner, who: "bob@example.org"}}, ""},
+		{"execute does not expose an archive's contents", []nfs4ACE{owner, {aceType: aceAllow, mask: execute, who: "EVERYONE@"}}, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			aces, err := decodeNFS4ACL(encodeNFS4ACL(c.aces...))
 			require.NoError(t, err)
 			require.Equal(t, c.aces, aces, "decoded entries match what was encoded")
-			who, grants := grantsDataToOthers(aces)
+			who, grants := grantsAccessToOthers(aces)
 			assert.Equal(t, c.who != "", grants)
 			assert.Equal(t, c.who, who)
 		})
@@ -84,7 +90,7 @@ func FuzzNFS4ACL(f *testing.F) {
 	f.Add([]byte{0, 0, 0, 1})
 	f.Fuzz(func(_ *testing.T, b []byte) {
 		if aces, err := decodeNFS4ACL(b); err == nil {
-			_, _ = grantsDataToOthers(aces)
+			_, _ = grantsAccessToOthers(aces)
 		}
 	})
 }

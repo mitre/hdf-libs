@@ -68,7 +68,7 @@ func checkNFS4ACL(fd int, getxattr func(int, string, []byte) (int, error)) error
 	if err != nil {
 		return fmt.Errorf("cannot read the staged archive's NFSv4 ACL: %w", err)
 	}
-	if who, ok := grantsDataToOthers(aces); ok {
+	if who, ok := grantsAccessToOthers(aces); ok {
 		return fmt.Errorf("cannot create a private archive here: an NFSv4 ACL entry gives %s "+
 			"access to it; remove that entry from the directory, or pass --output-access inherit "+
 			"if that sharing is intended", who)

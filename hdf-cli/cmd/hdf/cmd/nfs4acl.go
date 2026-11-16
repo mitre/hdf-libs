@@ -18,7 +18,8 @@ type nfs4ACE struct {
 const (
 	nfs4ACEAllowed     = 0
 	nfs4ACEInheritOnly = 0x8
-	nfs4ACEDataAccess  = 0x1 | 0x2 | 0x4 // READ_DATA, WRITE_DATA, APPEND_DATA
+	nfs4ACEDataAccess  = 0x1 | 0x2 | 0x4   // READ_DATA, WRITE_DATA, APPEND_DATA
+	nfs4ACEControl     = 0x40000 | 0x80000 // WRITE_ACL, WRITE_OWNER: the holder can grant itself data access
 	nfs4OwnerPrincipal = "OWNER@"
 )
 
@@ -63,13 +64,14 @@ func decodeNFS4ACL(b []byte) ([]nfs4ACE, error) {
 	return aces, nil
 }
 
-// grantsDataToOthers reports the first principal other than the file's owner that an
-// ALLOW entry applying to the file gives read, write or append access. Inherit-only
-// entries apply to children, not the file, and deny entries grant nothing.
-func grantsDataToOthers(aces []nfs4ACE) (string, bool) {
+// grantsAccessToOthers reports the first principal other than the file's owner that an
+// ALLOW entry applying to the file gives read, write or append access, or the right to
+// rewrite its ACL or owner. Inherit-only entries apply to children, not the file, and
+// deny entries grant nothing. EXECUTE is not counted: it does not expose the contents.
+func grantsAccessToOthers(aces []nfs4ACE) (string, bool) {
 	for _, a := range aces {
 		if a.aceType != nfs4ACEAllowed || a.flag&nfs4ACEInheritOnly != 0 ||
-			a.mask&nfs4ACEDataAccess == 0 || a.who == nfs4OwnerPrincipal {
+			a.mask&(nfs4ACEDataAccess|nfs4ACEControl) == 0 || a.who == nfs4OwnerPrincipal {
 			continue
 		}
 		return a.who, true
