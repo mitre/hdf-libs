@@ -496,6 +496,21 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
+      # The same modules again as Windows builds them: files with a windows build
+      # tag are invisible to the pass above. Same gate, same thresholds.
+      - name: golangci-lint for Windows (SARIF; findings gate via HDF)
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        run: |
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-windows.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
+          done
       # Statfs_t.Type is int64, int32 or uint32 depending on the Linux
       # architecture, and the archive access check compares it against filesystem
       # magics; vet compiles that code at each width the runners above never build.
@@ -801,7 +816,10 @@ jobs:
         shell: bash
         env:
           OS_TAG: ${{ matrix.os }}
-          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
+          GO_COVERAGE: '1'
+          # Windows-only code is measured by the Windows leg; its profiles get their
+          # own name so neither leg overwrites the other's.
+          GO_COVERAGE_FILE: ${{ matrix.os == 'windows-latest' && 'coverage-windows.out' || 'coverage.out' }}
         run: .github/scripts/test-go-junit.sh
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
@@ -818,6 +836,14 @@ jobs:
         with:
           name: coverage-reports-go
           path: '**/coverage.out'
+          retention-days: 30
+      - name: Upload Windows coverage reports
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-reports-go-windows
+          path: '**/coverage-windows.out'
+          if-no-files-found: error
           retention-days: 30
 
   # macOS ACL behaviour needs a Mac: a private archive is created through libSystem
@@ -1052,6 +1078,9 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-reports-go
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-reports-go-windows
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: coverage-reports-go-darwin-*

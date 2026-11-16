@@ -7,8 +7,9 @@
 # and the gate is the uniform evidence bundle plus the policy point for what
 # an exit code cannot express (see .github/hdf-thresholds/tests.yaml).
 #
-# GO_COVERAGE=1 (the ubuntu leg) also writes per-module coverage profiles,
-# absorbing what used to be a separate coverage job.
+# GO_COVERAGE=1 also writes per-module coverage profiles, absorbing what used
+# to be a separate coverage job; GO_COVERAGE_FILE names them (default
+# coverage.out), so each OS leg keeps its own.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 OS_TAG="${OS_TAG:?set OS_TAG (e.g. ubuntu-latest)}"
@@ -24,8 +25,8 @@ for dir in $(go work edit -json | jq -r '.Use[].DiskPath' | tr -d '\r'); do
   junit="$OUT/go-$(echo "${dir#./}" | tr '/' '-')-$OS_TAG.xml"
   rc=0
   if [ "${GO_COVERAGE:-}" = "1" ]; then
-    (cd "$dir" && "$GOTESTSUM" --junitfile "$junit" -- -coverprofile=coverage.out ./...) || rc=$?
-    (cd "$dir" && go tool cover -func=coverage.out | tail -1) || true
+    (cd "$dir" && "$GOTESTSUM" --junitfile "$junit" -- -coverprofile="${GO_COVERAGE_FILE:-coverage.out}" ./...) || rc=$?
+    (cd "$dir" && go tool cover -func="${GO_COVERAGE_FILE:-coverage.out}" | tail -1) || true
   else
     (cd "$dir" && "$GOTESTSUM" --junitfile "$junit" -- ./...) || rc=$?
   fi

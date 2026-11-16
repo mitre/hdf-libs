@@ -1,4 +1,6 @@
-# Applies to: golangci-lint, one document per Go module from go.work — the policy is applied to each.
+# Applies to: golangci-lint, one document per Go module from go.work and per target OS
+# (the Linux pass, and a GOOS=windows pass that sees windows-tagged files) — the policy
+# is applied to each.
 rules:
     - name: no requirement errored
       where:
