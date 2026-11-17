@@ -10,7 +10,7 @@
 
 ## Summary for the reviewer
 
-Two questions, everything else follows from them.
+Three questions, everything else follows from them.
 
 **A. Record who calculated each score.** Add two optional fields to the CVSS entry: `provider` (who
 calculated it — NVD, Red Hat, Tenable) and `role` (`primary` or `secondary`, as NVD, Grype and
@@ -27,19 +27,31 @@ today, or one is put in the override's slot where it means something else. B add
 published scores beside the overrides; applying the amendments adds them to the requirement's
 score list.
 
+**C. Record where the vulnerability record came from, separately from who scored it.**
+CycloneDX (`vulnerability.source`, "the source that published the vulnerability", beside
+`rating.source`, "the source that calculated" the score), Trivy (`DataSource` beside a `CVSS`
+object keyed by scorer) and Grype (`namespace` and `dataSource` beside `cvss[].source`) keep the
+two apart, and NVD files the scores it relays under their authors' names. JFrog Xray's `provider`,
+Dependency-Track's `source` and Trivy's `DataSource` are this kind of field: they name the
+database a finding came from, not who calculated its scores (JFrog's own samples carry NVD,
+distribution and Snyk scores under one issue-level `provider`). HDF has no field for it, so
+converters drop it or put it in tags. C adds an optional `vulnerabilitySource` to the evaluated
+requirement, the same `{name, identifier}` shape as `provider`.
+
 **Shape, top to bottom:**
 
 | Level | Change |
 |---|---|
 | Amendments document | **new** list of published scores beside `overrides` (B) |
 | Results document | none — `requirement.cvss[]` is already a list |
+| Evaluated requirement | **new** optional `vulnerabilitySource` (C) |
 | Override | none — its `cvss` stays the reviewer's re-score |
 | CVSS entry | **new** optional `provider` and `role` (A) |
 | Impact | one shared rule picks the score that drives it (primary first, then version) |
 
 All of it is additive: existing documents stay valid.
 
-**Order of work if agreed:** this ADR → one schema PR (both changes, generated types, spec docs)
+**Order of work if agreed:** this ADR → one schema PR (all three changes, generated types, spec docs)
 → one shared-code PR (the CVSS builder, merging the new list, the selection rule) → one PR per
 converter → exporters. One question for you on the schema PR: 3.8.0 before it is final, or 3.9.0.
 
@@ -82,11 +94,33 @@ Every format that carries more than one score per vulnerability records its prov
 | Trivy `CVSS` | an object keyed by vendor |
 | CSAF 2.1 `vulnerabilities[].metrics[]` | `source`, "the URL of the source that originally determined the metric" |
 | SPDX 3.0.1 CVSS assessment relationships | `suppliedBy` on each assessment |
-| Dependency-Track finding | the vulnerability record's `source` (NVD, GITHUB, OSV …), which owns its CVSS fields |
 | Nessus plugin | `cvss_score_source`, `cvss3_score_source`, `cvss4_score_source`: the CVE the score is derived from, or `manual` when Tenable assigned it |
 
 The external formats' field names are from their published schemas and documentation; the Grype,
 Snyk and Trivy shapes were read from the fixtures in this repository.
+
+## Who published the record is a different fact from who scored it
+
+Formats that carry both keep them in different fields, and a party that relays a score keeps the
+author's name on it:
+
+| Format or tool | Where the vulnerability record came from | Who calculated each score |
+|---|---|---|
+| CycloneDX 1.6 | `vulnerability.source` — "The source that published the vulnerability" | `rating.source` — "The source that calculated the severity or risk rating" |
+| Trivy | `DataSource` (for example `{ID: ubuntu, Name: Ubuntu CVE Tracker}`) | `CVSS` keys (`nvd`, `redhat`, `ghsa`, `bitnami`) |
+| Grype | `namespace` (`alpine:distro:alpine:3.11`) and `dataSource` | `cvss[].source` |
+| NVD API 2.0 | NVD | each metric's `source`; Red Hat's and Snyk's scores appear as `secalert@redhat.com` and `report@snyk.io`, not under NVD |
+| Dependency-Track | the vulnerability's `source` (NVD, GITHUB, OSV …) | not recorded |
+| JFrog Xray | the issue's `provider` (`JFrog`, `npm advisory`, `Snyk`) | not recorded |
+
+JFrog's case shows why the two cannot share a field. Checked against the NVD API on 2026-11-16,
+21 scored CVEs in this repository's Xray fixture and DefectDojo's Xray samples
+(`unittests/scans/jfrog*`): 15 carry exactly NVD's primary scores. Six do not: CVE-2019-5482
+(curl, an OS package) carries 6.3 `AV:A` where NVD has 9.8; CVE-2019-9074 and CVE-2017-8923
+carry other 3.x scores; CVE-2016-5300 carries a 2.0 score of 4.3 where NVD has 7.8;
+CVE-2019-17594 carries NVD's 3.1 vector labelled 3.0; and CVE-2014-3488, under
+`provider: Snyk`, carries a 3.0 score NVD never published. Within one finding the 2.0 score can
+be NVD's while the 3.x score is not. None of it is labelled per score.
 
 ## Where the VEX formats put scores
 
@@ -118,7 +152,7 @@ override field (spdx-vex-to-hdf), where it reads as a re-score nobody made.
      JFrog Xray is the case in this repository: its documentation names NVD and operating-system
      security advisories as score sources, it drew on VulnDB until February 2024, and its sample
      report scores issues that have no CVE id; each report carries only an issue-level `provider`
-     ("JFrog"), which says nothing about who calculated a given score.
+     ("JFrog"), which names where the record came from (decision 8), not who calculated a score.
    - `role`: `primary` or `secondary`, as NVD, Grype and Snyk use the terms; absent when the
      source does not say.
 2. **`source` keeps its documented meaning**, the identifier the score belongs to (a CVE,
@@ -137,6 +171,11 @@ override field (spdx-vex-to-hdf), where it reads as a re-score nobody made.
    and `role` as above. Merging the amendments into results appends those entries to the
    requirement's `cvss` list. `Standalone_Override.cvss` keeps its meaning. Field names here are
    a proposal for the schema PR.
+8. **The evaluated requirement gains an optional `vulnerabilitySource`:** the database or feed the
+   vulnerability record came from, as the input names it — CycloneDX `vulnerability.source`,
+   Trivy `DataSource`, Grype `namespace`, Dependency-Track `source`, JFrog Xray `provider`. It
+   uses the same `{name, identifier}` shape as `provider`, defined once and referenced by both.
+   It never fills `provider`: a record source is not the author of the scores it carries.
 
 The change is additive: an existing document stays valid and a consumer that ignores the new
 fields reads what it read before.
@@ -144,6 +183,9 @@ fields reads what it read before.
 ## Consequences
 
 - A consumer can tell NVD's score from a vendor's and rank by the one it trusts.
+- A consumer can also see which feed a finding came from (an Ubuntu tracker, GitHub advisories,
+  JFrog's database) without mistaking it for the scores' author; converters that keep that today
+  only in tags (deptrack-to-hdf's `vulnerabilitySource` tag) move it to the new field.
 - Files written before this change keep provider names in `source` where trivy-to-hdf or
   cyclonedx-to-hdf wrote them; readers cannot tell those apart from identifiers. The CHANGELOG
   states which converters did this and from which release they stop.
