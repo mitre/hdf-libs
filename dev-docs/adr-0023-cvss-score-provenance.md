@@ -114,9 +114,11 @@ override field (spdx-vex-to-hdf), where it reads as a re-score nobody made.
      the severity or risk rating") and CSAF 2.1 gives `metrics[].source` ("the source that
      originally determined the metric"), and follows CVE 5's `providerMetadata`. Values are
      written as the source gives them; no alias table is imposed. A tool that passes on another
-     party's score without naming that party is not the provider, and the field stays absent:
-     JFrog Xray's documentation says its CVSS scores come from NVD or an operating system's
-     security advisory, and its reports carry an issue-level `provider` that does not say which.
+     party's score without naming that party is not the provider, and the field stays absent.
+     JFrog Xray is the case in this repository: its documentation names NVD and operating-system
+     security advisories as score sources, it drew on VulnDB until February 2024, and its sample
+     report scores issues that have no CVE id; each report carries only an issue-level `provider`
+     ("JFrog"), which says nothing about who calculated a given score.
    - `role`: `primary` or `secondary`, as NVD, Grype and Snyk use the terms; absent when the
      source does not say.
 2. **`source` keeps its documented meaning**, the identifier the score belongs to (a CVE,
