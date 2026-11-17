@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from '../src/string/index.js';
+import { asciiLower, stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from '../src/string/index.js';
 
 describe('stripHtml', () => {
   it('should strip simple tags', () => {
@@ -281,5 +284,20 @@ describe('Go zero time', () => {
     expect(absentIfGoZeroTime(undefined)).toBeUndefined();
     expect(absentIfGoZeroTime('')).toBeUndefined();
     expect(absentIfGoZeroTime('not a time')).toBe('not a time');
+  });
+});
+
+// The Go peer (hdfutil.ASCIILower) asserts against this same table.
+describe('asciiLower matches the shared cross-language table', () => {
+  const table = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'ascii-lower-cases.json'), 'utf-8'),
+  ) as { cases: Array<{ input: string; lowered: string; why: string }> };
+
+  it('has a populated table', () => {
+    expect(table.cases.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(table.cases.map((c) => [c.input, c] as const))('lowers %j', (_v, c) => {
+    expect(asciiLower(c.input), c.why).toBe(c.lowered);
   });
 });

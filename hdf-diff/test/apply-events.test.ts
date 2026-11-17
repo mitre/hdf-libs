@@ -7,6 +7,7 @@ import { changeEventFromPrevious, type KeyState } from '../src/change-event.js';
 import { computeEffectiveChecksum, computeEffectiveImpact } from '../src/effective-checksum.js';
 import { computeEffectiveStatus } from '../src/status.js';
 import { applyChangeEvents, type ApplyInputs } from '../src/apply-events.js';
+import { ORDER_VECTORS, orderResultsDoc } from './order-vectors.js';
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
@@ -315,5 +316,16 @@ describe('applyChangeEvents defensive edges', () => {
       applyInputs(),
     );
     expect(warnings.some((w) => w.kind === 'chainGap')).toBe(true);
+  });
+});
+
+describe('applyChangeEvents insertion order (shared vectors)', () => {
+  it('inserts same-sequence new requirements in code-point order, as Go does', async () => {
+    const { ids, codePointOrder } = ORDER_VECTORS;
+    const seedJson = JSON.stringify(orderResultsDoc('passed', []));
+    const events = await deriveStream(seedJson, JSON.stringify(orderResultsDoc('failed', ids)));
+    for (const ev of events) ev['sequence'] = 1;
+    const { results } = await applyChangeEvents(seedJson, events, applyInputs());
+    expect(requirementsOf(results).map((r) => r['id'])).toEqual(codePointOrder);
   });
 });

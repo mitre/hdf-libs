@@ -190,6 +190,23 @@ func TestListRequirementsAllFlag(t *testing.T) {
 	})
 }
 
+// --all is read only by the requirements detail view, so its help must say so
+// rather than promise to expand every section.
+func TestListAllFlagHelpNamesTheViewItChanges(t *testing.T) {
+	usage := NewListCmd().Flags().Lookup("all").Usage
+	assert.Contains(t, usage, "--detail requirements")
+	assert.NotContains(t, usage, "Show all details")
+}
+
+func TestListAllFlagIsIgnoredOutsideRequirementsDetail(t *testing.T) {
+	fixture := writeRichFixture(t)
+	without, _, err := executeCommand("list", fixture)
+	require.NoError(t, err)
+	with, _, err := executeCommand("list", fixture, "--all")
+	require.NoError(t, err)
+	assert.Equal(t, without, with)
+}
+
 func TestListErrorCases(t *testing.T) {
 	t.Run("nonexistent file", func(t *testing.T) {
 		_, _, err := executeCommand("list", "/nonexistent/file.json")

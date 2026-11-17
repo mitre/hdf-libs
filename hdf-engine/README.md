@@ -24,12 +24,12 @@ go get github.com/mitre/hdf-libs/hdf-engine/go/v3
 
 ### Detect a document's type
 
-Returns the HDF document type, or an empty result when the bytes are not an HDF document:
+Returns the HDF document type, or an empty string when the input is not an HDF document. TypeScript takes the document's text, Go its bytes:
 
 ```ts
 import { detect } from '@mitre/hdf-engine';
 
-const docType = detect(bytes); // 'results' | 'baseline' | 'system' | ...
+const docType = detect(text); // 'results' | 'baseline' | 'system' | ... ('' when not HDF)
 ```
 
 ```go
@@ -120,7 +120,7 @@ each baseline's labels instead.
 Parse a package, check the checksums of everything it references, and report whether the plan's baselines are covered:
 
 ```go
-name, contents, err := hdfengine.ParseEvidencePackage(pkg)
+planRef, contents, err := hdfengine.ParseEvidencePackage(pkg)
 results := hdfengine.VerifyChecksums(contents, fetch)
 report := hdfengine.Completeness(planned, covered)
 ```
@@ -131,7 +131,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 
 ### Detection
 
-- `detect(data)` / `Detect(data)` — the document's type, empty when not HDF
+- `detect(text)` / `Detect(data)` — the document's type, empty when not HDF. The TypeScript form takes a string, the Go form `[]byte`
 - `KnownTypes()` (Go) — every type detection can return
 
 ### Query
@@ -169,7 +169,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 
 ### Evidence
 
-- `parseEvidencePackage` / `ParseEvidencePackage` — package name and contents
+- `parseEvidencePackage` / `ParseEvidencePackage` — the package's `planRef` and its `contents[]` entries (TypeScript returns `{ planRef, contents }`)
 - `verifyChecksums` / `VerifyChecksums` — per-reference checksum status. Asynchronous in TypeScript (`await verifyChecksums(...)`): it hashes the SHA family with Web Crypto so the package bundles for the browser.
 - `checksumHex` / `ChecksumHex` — hash bytes under a named `Hash_Algorithm`; the one definition of which algorithms this codebase can verify. Asynchronous in TypeScript for the same reason.
 - `plannedBaselineRefs`, `coveredBaselineNames`, `coveredBaselinesInPackage` — plan coverage inputs

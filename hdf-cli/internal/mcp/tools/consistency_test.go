@@ -136,11 +136,19 @@ func TestAllToolsAgreeOnStatusDistribution(t *testing.T) {
 			insStatus := zeroStatus()
 			if baselines, ok := ins.Structure["baselines"].([]map[string]any); ok {
 				for _, b := range baselines {
-					if sb, ok := b["statusBreakdown"].(map[string]int); ok {
-						for k, v := range sb {
-							insStatus[k] += v
-						}
+					sb, ok := b["statusBreakdown"].(map[string]any)
+					if !ok {
+						t.Fatalf("hdf_inspect statusBreakdown must be a JSON object, got %T", b["statusBreakdown"])
 					}
+					var bd resultsStatusBreakdown
+					if err := remarshalInto(sb, &bd); err != nil {
+						t.Fatalf("hdf_inspect statusBreakdown: %v", err)
+					}
+					insStatus["passed"] += bd.Passed
+					insStatus["failed"] += bd.Failed
+					insStatus["notApplicable"] += bd.NotApplicable
+					insStatus["notReviewed"] += bd.NotReviewed
+					insStatus["error"] += bd.Error
 				}
 			}
 			if !mapsEqual(insStatus, gtStatus) {

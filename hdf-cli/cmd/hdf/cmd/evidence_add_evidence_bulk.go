@@ -65,7 +65,7 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 	}
 	// The same directory the per-uri loop normalizes against; a reference is
 	// package-relative by contract, so containment is measured from here.
-	pkgDir := filepath.Dir(pkg)
+	pkgDir := evidencePackageDir(pkg, opts.outputPath)
 	// Keyed on the absolute path so a repeat is recognized however it was reached;
 	// a repeat is a slip only when BOTH namings were literal.
 	seen := make(map[string]seenSelection)
@@ -110,17 +110,6 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 				}
 				return opts, fmt.Errorf("cannot add the package or output itself as evidence: %q", path)
 			}
-			selected++
-			if previous, exists := seen[abs]; exists {
-				if previous.format != format {
-					return opts, fmt.Errorf("%q is selected with conflicting formats %q and %q", path, previous.format, format)
-				}
-				if previous.literal && !discovered {
-					return opts, fmt.Errorf("%q is selected twice by --file; name it once", path)
-				}
-				continue
-			}
-			seen[abs] = seenSelection{format: format, literal: !discovered}
 			// A discovered name is a filesystem path, not a reference, but every consumer
 			// of opts.uris Decodes a uri as an already-encoded reference, so recording the
 			// raw path attested a%2Fb.json as a/b.json. It takes the two steps
@@ -138,7 +127,26 @@ func expandEvidenceInputs(pkg string, opts addEvidenceOpts) (addEvidenceOpts, er
 					"discovery records package-relative references, so use --uri to reference an "+
 					"external artifact deliberately", path, shown)
 			}
-			uris = append(uris, evidenceref.Encode(string(rel)))
+			encoded, encErr := encodeRef(path, string(rel))
+			if encErr != nil {
+				if discovered {
+					skipped = append(skipped, skippedKind{path: abs, kind: unrecordableNameKind, mode: info.Mode()})
+					continue
+				}
+				return opts, fmt.Errorf("selected evidence %w", encErr)
+			}
+			selected++
+			if previous, exists := seen[abs]; exists {
+				if previous.format != format {
+					return opts, fmt.Errorf("%q is selected with conflicting formats %q and %q", path, previous.format, format)
+				}
+				if previous.literal && !discovered {
+					return opts, fmt.Errorf("%q is selected twice by --file; name it once", path)
+				}
+				continue
+			}
+			seen[abs] = seenSelection{format: format, literal: !discovered}
+			uris = append(uris, encoded)
 			if perSelector {
 				formats = append(formats, format)
 			}

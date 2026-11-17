@@ -373,7 +373,7 @@ The user-facing table is the "Exit codes" section of `hdf-cli/README.md`; this s
 
 `hdf diff` keeps its own verdict codes because they encode the comparison, not the run. A diff that fails to run (an unreadable input, a bad flag) uses the codes above.
 
-**Basic mode (`--exit-code`)**, GNU diff compatible: `0` identical, `1` differences.
+**Basic mode**, always on and GNU diff compatible: `0` identical, `1` differences. `--exit-code` is accepted and changes nothing, and a failed run is also `1`.
 
 **Detailed mode (`--detailed-exitcode`)**:
 

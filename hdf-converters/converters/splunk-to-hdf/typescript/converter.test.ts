@@ -408,6 +408,26 @@ describe('splunk parity on absent/degenerate stored fields', () => {
     expectValidResults(hdf);
   });
 
+  // A control whose descriptions lack a default (others present) still needs
+  // one. Twin of the Go TestConvertSplunk_DescriptionsWithoutDefaultGetOneFromDesc.
+  it('prepends a default from desc when descriptions carry only other labels', async () => {
+    const events = JSON.parse(loadFixture('splunk-minimal.json')) as Record<string, unknown>[];
+    const descs = new Map<string, string>();
+    for (const e of events) {
+      if ((e.meta as Record<string, unknown> | undefined)?.subtype !== 'control') continue;
+      const d = e.descriptions as Record<string, string>;
+      delete d.default;
+      expect(Object.keys(d).length).toBeGreaterThan(0);
+      descs.set(e.id as string, e.desc as string);
+    }
+    expect(descs.size).toBeGreaterThan(0);
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+    for (const req of hdf.baselines[0].requirements) {
+      expect(req.descriptions[0]).toEqual({ label: 'default', data: descs.get(req.id) });
+    }
+    expectValidResults(hdf);
+  });
+
   // The assertion above cannot fail on the translation guard: splunk-minimal's
   // only control has a passing result, so nothing-was-established is false
   // whatever the guard reads. Force the branch with a skipped-only control, so
@@ -452,5 +472,47 @@ describe('impact-0 control with no results at all', () => {
     expect(req!.results[0]!.codeDesc).toBeTruthy();
     // The Go twin emits Go's zero time here; the two must not drift.
     expect(new Date(req!.results[0]!.startTime).toISOString()).toBe('0001-01-01T00:00:00.000Z');
+  });
+});
+
+// Mirrors the Go twin's TestConvertSplunkToHDF_TimestampIsCanonicalUTC.
+describe('document timestamp', () => {
+  it('is trimmed UTC with at most millisecond precision', async () => {
+    const input = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'splunk-minimal.json'), 'utf-8');
+    const out = JSON.parse(await convertSplunkToHdf(input)) as { timestamp: string };
+    expect(out.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/);
+  });
+});
+
+// Twin of the Go TestConvertSplunk_AbsentImpactMarksUnrated, and of legacyhdf's
+// table: the same InSpec control must be marked the same in both readers.
+describe('absent impact marks the requirement unrated', () => {
+  const cases: Array<[string, Record<string, unknown>, number, boolean]> = [
+    ['absent impact, empty tags', {tags: {}}, 0.5, true],
+    ['absent impact, no tags key', {title: 't'}, 0.5, true],
+    ['absent impact, unrated token', {tags: {severity: 'unknown'}}, 0.5, true],
+    ['absent impact, non-string severity', {tags: {severity: 3}}, 0.5, true],
+    ['absent impact, rated severity', {tags: {severity: 'high'}}, 0.5, false],
+    ['explicit 0', {impact: 0, tags: {}}, 0, false],
+    ['explicit 0.5', {impact: 0.5, tags: {}}, 0.5, false],
+    ['explicit 0.5, unrated token', {impact: 0.5, tags: {severity: 'unknown'}}, 0.5, false],
+  ];
+  const meta = {filetype: 'evaluation', hdf_splunk_schema: '1.0', guid: 'g1', filename: 'f.json'};
+  it.each(cases)('%s', async (_name, fields, impact, unrated) => {
+    const events = [
+      {meta: {...meta, subtype: 'header'}, profiles: [], platform: {name: 'centos', release: '7'},
+        statistics: {}, version: '4.16.0'},
+      {meta: {...meta, subtype: 'profile', profile_sha256: 'abc'}, name: 'p', sha256: 'abc',
+        controls: []},
+      {meta: {...meta, subtype: 'control', profile_sha256: 'abc'}, id: 'V-1', ...fields,
+        results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}]},
+    ];
+    const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
+
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(impact, 5);
+    if (unrated) expect(req.tags.severity_rating).toBe('unrated');
+    else expect(req.tags).not.toHaveProperty('severity_rating');
+    expectValidResults(hdf);
   });
 });

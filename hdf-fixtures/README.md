@@ -110,7 +110,7 @@ const raw = results.inspecMultilayered.read();
 **Go:**
 
 ```go
-import fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+import fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 
 data := fixtures.Results.InspecMultilayered // []byte, //go:embed'd at build
 ```

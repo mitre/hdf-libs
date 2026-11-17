@@ -7,12 +7,16 @@
 package hdfengine
 
 import (
+	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"net/url"
 	"sort"
+	"strings"
+	"unicode/utf8"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -182,7 +186,7 @@ func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResu
 		} else if data, err := fetch(c.URI); err != nil {
 			r.Status = ChecksumError
 			r.Error = err.Error()
-		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); actual == c.Checksum {
+		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); ChecksumEqual(c.Checksum, actual) {
 			r.Status = ChecksumMatch
 		} else {
 			r.Status = ChecksumMismatch
@@ -306,6 +310,14 @@ func Completeness(planned, covered []string) CompletenessResult {
 	}
 }
 
+// ChecksumEqual reports whether a recorded Checksum.value names the digest ChecksumHex
+// computed. Hex case carries no meaning and the schema puts no case constraint on the
+// value, so uppercase (as PowerShell's Get-FileHash writes it) compares equal. Every
+// consumer comparing a recorded checksum calls this, so verify, bundle and update agree.
+func ChecksumEqual(recorded, computed string) bool {
+	return strings.EqualFold(recorded, computed)
+}
+
 // effectiveAlgorithm names the algorithm an entry's checksum is verified under:
 // an unstated algorithm means sha256, so reporting "" would understate it.
 func effectiveAlgorithm(recorded string) string {
@@ -317,28 +329,35 @@ func effectiveAlgorithm(recorded string) string {
 
 // ChecksumHex hashes data with the named Hash_Algorithm, hex-encoded. An empty
 // algorithm means sha256, so a package that records only a value keeps its meaning.
-// Every algorithm the enum admits is computed here; one from outside it is refused by
-// name rather than silently treated as something else. This is the single definition
-// of which algorithms this codebase can verify — the CLI reads it rather than keeping
-// its own copy.
+// The algorithms it computes are NewChecksumHash's, so the one-shot and streaming
+// digests cannot disagree.
 func ChecksumHex(algorithm string, data []byte) (string, error) {
+	h, err := NewChecksumHash(algorithm)
+	if err != nil {
+		return "", err
+	}
+	_, _ = h.Write(data) // hash.Hash.Write never returns an error
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// NewChecksumHash returns a streaming hash for the named Hash_Algorithm, for content
+// too large to hold in memory. This is the single definition of which algorithms this
+// codebase can verify: every one the enum admits is computed, and one from outside it
+// is refused by name rather than silently treated as something else.
+func NewChecksumHash(algorithm string) (hash.Hash, error) {
 	switch algorithm {
 	case "", "sha256":
-		return hdfutil.SHA256Hex(data), nil
+		return sha256.New(), nil
 	case "sha384":
-		sum := sha512.Sum384(data)
-		return hex.EncodeToString(sum[:]), nil
+		return sha512.New384(), nil
 	case "sha512":
-		sum := sha512.Sum512(data)
-		return hex.EncodeToString(sum[:]), nil
+		return sha512.New(), nil
 	case "blake3":
-		// The 32-byte default-length digest, which is what the BLAKE3 reference vectors
-		// direct implementations to compare against; the function's extended output has no
-		// meaning for a recorded Checksum.
-		sum := blake3.Sum256(data)
-		return hex.EncodeToString(sum[:]), nil
+		// The 32-byte unkeyed digest the BLAKE3 reference vectors direct implementations
+		// to compare against; extended output has no meaning for a recorded Checksum.
+		return blake3.New(32, nil), nil
 	default:
-		return "", fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
+		return nil, fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
 	}
 }
 
@@ -379,6 +398,10 @@ func DecodeReference(uri string) (string, error) {
 	decoded, err := url.PathUnescape(uri)
 	if err != nil {
 		return "", fmt.Errorf("reference %q is not a valid uri-reference: %w", uri, err)
+	}
+	// PathUnescape admits escapes that decode to non-UTF-8 bytes; TypeScript refuses them.
+	if !utf8.ValidString(decoded) {
+		return "", fmt.Errorf("reference %q is not a valid uri-reference: its escapes do not decode to UTF-8", uri)
 	}
 	return decoded, nil
 }

@@ -361,7 +361,7 @@ func analysisTimestamp(a IonChannelAnalysis) time.Time {
 	if t := hdfutil.ParseTimestamp(a.CreatedAt); !t.IsZero() {
 		return t
 	}
-	return time.Now()
+	return hdfutil.NormalizeTimestamp(time.Now())
 }
 
 // buildScanRequirement builds the single inventory requirement emitted for a

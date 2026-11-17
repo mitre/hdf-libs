@@ -725,3 +725,23 @@ describe('twistlock result instance identity', () => {
     expect(names).toEqual(['nss', 'nss-softokn', 'nss-softokn-freebl', 'nss-sysinit', 'nss-util']);
   });
 });
+
+// The Go twin reads the same case table (TestRawSourceRecord_SharedCases), so both
+// languages are held to one rendering of each record.
+describe('twistlock-to-hdf rawSourceRecord shared cases (Go parity)', () => {
+  const casesPath = join(__dirname, '..', 'go', 'testdata', 'raw-source-record-cases.json');
+  const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+    cases: Array<{ why: string; input: string; pointer: string; content: string }>;
+  };
+
+  it('has cases', () => {
+    expect(cases.length).toBeGreaterThan(0);
+  });
+
+  it.each(cases)('renders $why the same as the Go twin', async ({ input, pointer, content }) => {
+    const out = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+    const record = out.baselines[0]!.requirements[0]!.results[0]!.rawSourceRecord!;
+    expect(record.pointer).toBe(pointer);
+    expect(record.content).toBe(content);
+  });
+});

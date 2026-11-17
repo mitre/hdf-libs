@@ -198,7 +198,7 @@ func ToKebabCase(title, fallback string) string {
 // defines that control at any supported revision. Any other target, including one
 // shaped like a control that NIST does not define, reports false.
 func ConfirmedControlID(targetID string) (string, bool) {
-	target := asciiLower(targetID)
+	target := hdfutil.ASCIILower(targetID)
 	controlID := objectiveIDRe.FindString(target)
 	if controlID == "" || !isObjectiveOrStatementSuffix(target[len(controlID):]) {
 		return "", false
@@ -210,17 +210,6 @@ func ConfirmedControlID(targetID string) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-// asciiLower lowercases only ASCII letters, so Go and TypeScript fold identically.
-func asciiLower(s string) string {
-	b := []byte(s)
-	for i, c := range b {
-		if c >= 'A' && c <= 'Z' {
-			b[i] = c + ('a' - 'A')
-		}
-	}
-	return string(b)
 }
 
 // isObjectiveOrStatementSuffix reports whether rest, what follows a control id in

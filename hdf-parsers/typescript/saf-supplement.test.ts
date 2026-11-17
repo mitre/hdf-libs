@@ -79,6 +79,27 @@ describe('normalizeSafSupplement', () => {
     expect(warnings.some((w: string) => w.includes('extensions.audit was dropped'))).toBe(true);
   });
 
+  // The SHARED table, read rather than restated: Go reads the same file, so the two
+  // emit the same warnings in the same order or one side fails.
+  describe('extension-sibling warning order (shared vectors)', () => {
+    const table = JSON.parse(
+      readFileSync(join(__dirname, '..', 'testdata', 'extension-sibling-warning-vectors.json'), 'utf-8'),
+    ) as { vectors: { why: string; extensions: object; passthrough: object; warnings: string[] }[] };
+
+    it('has vectors to check, so a pass cannot mean an empty table', () => {
+      expect(table.vectors.length).toBeGreaterThan(0);
+    });
+
+    for (const v of table.vectors) {
+      it(v.why, () => {
+        const { warnings } = normalizeSafSupplement(
+          validV3WithExtra({ extensions: v.extensions, passthrough: v.passthrough }),
+        );
+        expect(warnings).toEqual(v.warnings);
+      });
+    }
+  });
+
   it('passes a doc with no legacy keys through byte-identical with no warnings', () => {
     const input = validV3WithExtra({});
     const { output, warnings } = normalizeSafSupplement(input);

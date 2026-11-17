@@ -559,8 +559,9 @@ function sortKeysDeep(value: unknown): unknown {
   return value;
 }
 
+// The default stays empty without a description; the title already lives in title.
 function buildDescriptions(v: Vulnerability): Description[] {
-  const descriptions: Description[] = [{ label: 'default', data: v.description || v.title || '' }];
+  const descriptions: Description[] = [{ label: 'default', data: v.description ?? '' }];
   if (v.solution) descriptions.push({ label: 'fix', data: v.solution });
   return descriptions;
 }

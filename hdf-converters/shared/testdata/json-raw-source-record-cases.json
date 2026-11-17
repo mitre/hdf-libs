@@ -1,0 +1,108 @@
+{
+  "$comment": "Pins Go exportmap.BuildJSONRawSourceRecord and TypeScript buildJsonRawSourceRecord to one behavior; both suites read this file. `raw` is the source record as JSON text: Go passes its bytes, TypeScript passes parseJSONPreservingNumbers of it, and an empty `raw` stands for a record that is absent (Go: no bytes, TypeScript: undefined). `want` is the whole rawSourceRecord, or null for none.",
+  "cases": [
+    {
+      "name": "keys come out sorted at every depth",
+      "raw": "{\"b\":1,\"a\":{\"d\":true,\"c\":null}}",
+      "pointer": "/matches/0",
+      "layout": "compact",
+      "want": {
+        "content": "{\"a\":{\"c\":null,\"d\":true},\"b\":1}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/0"
+      }
+    },
+    {
+      "name": "keys sort by code point, not UTF-16 unit or locale",
+      "raw": "{\"é\":1,\"z\":2,\"😀\":3,\"Z\":4,\"～\":5,\"a\":6}",
+      "pointer": "/runs/0/results/3",
+      "layout": "compact",
+      "want": {
+        "content": "{\"Z\":4,\"a\":6,\"z\":2,\"é\":1,\"～\":5,\"😀\":3}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/runs/0/results/3"
+      }
+    },
+    {
+      "name": "the indented layout uses two spaces and no trailing newline",
+      "raw": "{\"b\":[1,2],\"a\":\"x\"}",
+      "pointer": "/results/0/vulnerabilities/1",
+      "layout": "indented",
+      "want": {
+        "content": "{\n  \"a\": \"x\",\n  \"b\": [\n    1,\n    2\n  ]\n}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/results/0/vulnerabilities/1"
+      }
+    },
+    {
+      "name": "the compact layout has no trailing newline",
+      "raw": "  {\"a\":\"x\"}\n",
+      "pointer": "/matches/2",
+      "layout": "compact",
+      "want": {
+        "content": "{\"a\":\"x\"}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/2"
+      }
+    },
+    {
+      "name": "< > and & stay literal, whether written raw or escaped",
+      "raw": "{\"code\":\"if (a < b && c > d)\",\"esc\":\"\\u003cscript\\u003e \\u0026\"}",
+      "pointer": "/matches/0",
+      "layout": "compact",
+      "want": {
+        "content": "{\"code\":\"if (a < b && c > d)\",\"esc\":\"<script> &\"}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/0"
+      }
+    },
+    {
+      "name": "U+2028 and U+2029 are escaped, whether written raw or escaped",
+      "raw": "{\"raw\":\"a\u2028b\u2029c\",\"esc\":\"d\\u2028e\\u2029f\"}",
+      "pointer": "/matches/0",
+      "layout": "compact",
+      "want": {
+        "content": "{\"esc\":\"d\\u2028e\\u2029f\",\"raw\":\"a\\u2028b\\u2029c\"}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/0"
+      }
+    },
+    {
+      "name": "number tokens are kept as written",
+      "raw": "{\"big\":12345678901234567890,\"dec\":9.80,\"exp\":1e5,\"flt\":1.0,\"negz\":-0,\"tiny\":0.1}",
+      "pointer": "/matches/0",
+      "layout": "compact",
+      "want": {
+        "content": "{\"big\":12345678901234567890,\"dec\":9.80,\"exp\":1e5,\"flt\":1.0,\"negz\":-0,\"tiny\":0.1}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/0"
+      }
+    },
+    {
+      "name": "number tokens are kept as written in the indented layout",
+      "raw": "{\"cvss\":[{\"baseScore\":9.80}]}",
+      "pointer": "/matches/0",
+      "layout": "indented",
+      "want": {
+        "content": "{\n  \"cvss\": [\n    {\n      \"baseScore\": 9.80\n    }\n  ]\n}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/0"
+      }
+    },
+    {
+      "name": "nothing to carry yields no record",
+      "raw": "",
+      "pointer": "/matches/0",
+      "layout": "compact",
+      "want": null
+    }
+  ]
+}
