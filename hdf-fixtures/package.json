@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-fixtures",
-  "version": "3.8.0",
+  "version": "3.8.1-next.44129658261.1",
   "description": "Shared real-world HDF reference fixtures for cross-package consumers (parsers, validators, extension-graph)",
   "type": "module",
   "main": "./dist/index.js",
