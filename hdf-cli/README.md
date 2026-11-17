@@ -256,7 +256,9 @@ FLAGS
                                never tags.cwe, so a SARIF-derived document matches nothing
                                until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
-      --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
+      --nist stringArray       Filter by NIST control (repeatable, OR logic). Exact by default, so
+                               AC-2 reaches neither AC-2 (1) nor CM-6 b; a * or ? wildcard globs —
+                               AC-2* for one control's enhancements and sub-parts, AC-* for the family
       --id string              Filter by requirement ID, STIG ID, GID, or group title (exact; * or ? globs)
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
       --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
@@ -273,7 +275,8 @@ FLAGS
                                which kind it is, and reads the GOVERNING plan only
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
-      --search string          Search in control title and description
+      --search string          Search requirement id, title, and description (case-insensitive
+                               substring). It does not read code.
   -p, --baseline string        Filter by profile name
       --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
                                glob allowed on the value, e.g. environment:prod*). Labels say which
