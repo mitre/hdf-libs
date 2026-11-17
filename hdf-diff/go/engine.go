@@ -484,7 +484,7 @@ func isZeroValue(v any) bool {
 	}
 	//nolint:exhaustive // Only nilable kinds need special handling; scalars return false.
 	switch rv.Kind() {
-	case reflect.Ptr, reflect.Interface:
+	case reflect.Pointer, reflect.Interface:
 		return rv.IsNil()
 	case reflect.Map, reflect.Slice:
 		return rv.IsNil()
