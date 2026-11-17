@@ -6,9 +6,21 @@ import {
   cvssScoreToSeverity,
   isUnratedSeverity,
   roundImpact,
+  UNKNOWN_SEVERITY_IMPACT,
 } from '../src/severity/index.js';
+import { UNKNOWN_SEVERITY_IMPACT as BARREL_UNKNOWN_SEVERITY_IMPACT } from '../src/index.js';
 
 describe('Severity Utilities', () => {
+  describe('UNKNOWN_SEVERITY_IMPACT', () => {
+    // Twin of the Go TestUnknownSeverityImpact.
+    it('is the mid-band default severityToImpact falls back to', () => {
+      expect(UNKNOWN_SEVERITY_IMPACT).toBe(0.5);
+      expect(BARREL_UNKNOWN_SEVERITY_IMPACT).toBe(UNKNOWN_SEVERITY_IMPACT);
+      expect(severityToImpact('wibble')).toBe(UNKNOWN_SEVERITY_IMPACT);
+      expect(impactToSeverity(UNKNOWN_SEVERITY_IMPACT)).toBe('medium');
+    });
+  });
+
   describe('severityToImpact', () => {
     it('should map "critical" to 0.9', () => {
       expect(severityToImpact('critical')).toBe(0.9);

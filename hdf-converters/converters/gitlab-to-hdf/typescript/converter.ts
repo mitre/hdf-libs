@@ -20,7 +20,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, markUnratedSeverity, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, ensureDefaultDescription, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, markUnratedSeverity, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -347,13 +347,6 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
 
     const impact = gitlabSeverityToImpact(vuln.severity ?? 'Unknown');
 
-    // descriptions is required with minItems:1 and contains:{label:"default"}.
-    // The data stays empty rather than borrowing vuln.name, which would assert
-    // the title is the description the source never carried.
-    if (!descriptions.some((d) => d.label === 'default')) {
-      descriptions.unshift({label: 'default', data: ''});
-    }
-
     // GitLab carries no literal source snippet, so code holds the whole
     // vulnerability serialized as indented JSON (byte-identical to the Go twin's
     // json.Indent output — same source key order, same dropped fields preserved).
@@ -364,7 +357,8 @@ export async function convertGitlabToHdf(input: string, converterVersion = '1.0.
       code: JSON.stringify(vuln, null, 2),
       results: [result],
       tags,
-      descriptions,
+      // The default description stays empty, not vuln.name: the source carried none.
+      descriptions: ensureDefaultDescription(descriptions),
       verificationMethod: VerificationMethodEnum.Automated,
     };
 

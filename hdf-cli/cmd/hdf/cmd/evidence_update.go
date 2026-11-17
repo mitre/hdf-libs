@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -84,6 +85,14 @@ func updateTarget(pkgPath string, opts evidenceUpdateOpts) (string, error) {
 	if opts.outputPath != "" && opts.overwrite {
 		return "", fmt.Errorf("-o and --overwrite both name where to write; pass one")
 	}
+	// Refused for a dry run too, which must accept only what the real run accepts.
+	if pkgPath == stdinPackage && opts.overwrite {
+		return "", fmt.Errorf("--overwrite replaces the input package, and one read from stdin "+
+			"has no file to replace; %w", errStdinPackageNeedsOutput)
+	}
+	if err := requireOutputForStdinPackage(pkgPath, opts.outputPath); err != nil {
+		return "", err
+	}
 	switch {
 	case opts.outputPath != "":
 		return opts.outputPath, nil
@@ -125,7 +134,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
-	pkgDir := filepath.Dir(pkgPath)
+	pkgDir := evidencePackageDir(pkgPath, opts.outputPath)
 
 	contents, _ := doc["contents"].([]interface{})
 	// The enumeration as the package stands NOW. It is re-collected twice below —
@@ -321,7 +330,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		fmt.Fprintf(os.Stderr, "Dry run: nothing written.\n")
 		return nil
 	}
-	if err := os.WriteFile(target, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Updated %s\n", target)
@@ -421,7 +430,7 @@ func indexesOfResultsRef(pkgDir string, contents []interface{}, refs evidenceref
 //
 // Mirrors hdfengine.VerifyChecksums in all three of ITS decisions, each of which was a
 // separate disagreement before it was matched: the algorithm is the ENTRY'S OWN, not the
-// one this build writes; the comparison is EXACT, not case-folded; and "nothing recorded"
+// one this build writes; the comparison is ChecksumEqual, not ==; and "nothing recorded"
 // means exactly empty, not whitespace-trimmed. The invariant is that these are the SAME
 // tests, so if verification's ever change, this must change with them.
 //
@@ -453,7 +462,7 @@ func checksumDivergesFrom(entry map[string]interface{}, raw []byte) bool {
 	if err != nil {
 		return false
 	}
-	return actual != recorded
+	return !hdfengine.ChecksumEqual(recorded, actual)
 }
 
 // sameNameDifferentSpelling reports whether two references are the SAME NAME written

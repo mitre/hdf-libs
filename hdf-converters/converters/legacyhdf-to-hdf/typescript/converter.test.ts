@@ -2116,3 +2116,37 @@ describe('absence in the source is not a value', () => {
     expect((req.results ?? []).map((r) => r.status)).toContain('notApplicable');
   });
 });
+
+// Twin of the Go TestConvertLegacyHDF_AbsentImpactMarksUnrated. A defaulted impact
+// carries the unrated marker unless the source's tags.severity rated it; an
+// explicit impact, 0 included, is never marked.
+describe('absent impact marks the requirement unrated', () => {
+  const cases: Array<[string, Record<string, unknown>, number, boolean]> = [
+    ['absent impact, empty tags', {tags: {}}, 0.5, true],
+    ['absent impact, no tags key', {title: 't'}, 0.5, true],
+    ['absent impact, unrated token', {tags: {severity: 'unknown'}}, 0.5, true],
+    ['absent impact, non-string severity', {tags: {severity: 3}}, 0.5, true],
+    ['absent impact, rated severity', {tags: {severity: 'high'}}, 0.5, false],
+    ['explicit 0', {impact: 0, tags: {}}, 0, false],
+    ['explicit 0.5', {impact: 0.5, tags: {}}, 0.5, false],
+    ['explicit 0.5, unrated token', {impact: 0.5, tags: {severity: 'unknown'}}, 0.5, false],
+  ];
+  it.each(cases)('%s', (_name, fields, impact, unrated) => {
+    const out = convertLegacyHdf({
+      platform: {name: 'centos', release: '7'},
+      version: '4.16.0',
+      statistics: {},
+      profiles: [{name: 'p', sha256: 'abc', controls: [{
+        id: 'V-1',
+        ...fields,
+        results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+      }]}],
+    } as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(impact, 5);
+    if (unrated) expect(req.tags?.severity_rating).toBe('unrated');
+    else expect(req.tags).not.toHaveProperty('severity_rating');
+    expectValidResults(out);
+  });
+});

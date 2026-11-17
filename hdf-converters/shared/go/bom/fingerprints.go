@@ -7,7 +7,11 @@
 
 package bom
 
-import "strings"
+import (
+	"strings"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+)
 
 // FormatDetection reports a detected BOM format and a 0..1 confidence.
 type FormatDetection struct {
@@ -23,7 +27,7 @@ type FormatDetection struct {
 // with surrounding whitespace is a different value.
 func isCycloneDXFormat(v any) bool {
 	s, ok := v.(string)
-	return ok && asciiLower(s) == "cyclonedx"
+	return ok && hdfutil.ASCIILower(s) == "cyclonedx"
 }
 
 // DetectCycloneDX reports confidence that input is a CycloneDX document
@@ -168,31 +172,16 @@ func isSPDX3ContextAt(v any, depth int) bool {
 	return false
 }
 
-// asciiLower lowercases A-Z and nothing else. strings.EqualFold applies Unicode
-// simple case folding, which matches U+017F LATIN SMALL LETTER LONG S against
-// "s"; JavaScript's toLowerCase applies Unicode lowercase mapping, which does
-// not. Two stdlib case operations that look equivalent are not, so neither is
-// used — RFC 3986 section 6.2.2.1 specifies ASCII case normalization for the
-// scheme and host, which is what this does.
-func asciiLower(s string) string {
-	b := []byte(s)
-	for i := range b {
-		if b[i] >= 'A' && b[i] <= 'Z' {
-			b[i] += 'a' - 'A'
-		}
-	}
-	return string(b)
-}
-
 func isSPDX3ContextURL(s string) bool {
 	// These exact bytes, not a category: see the doc comment above for what is and
 	// is not covered, and the table for which of them a row isolates.
 	if strings.ContainsAny(s, " \t\r\n\\%") || strings.Contains(s, "..") {
 		return false
 	}
+	// RFC 3986 section 6.2.2.1: scheme and host compare ASCII case-insensitively.
 	rest := ""
 	for _, scheme := range [...]string{"https://", "http://"} {
-		if len(s) >= len(scheme) && asciiLower(s[:len(scheme)]) == scheme {
+		if len(s) >= len(scheme) && hdfutil.ASCIILower(s[:len(scheme)]) == scheme {
 			rest = s[len(scheme):]
 			break
 		}
@@ -208,7 +197,7 @@ func isSPDX3ContextURL(s string) bool {
 	if colon := strings.Index(host, ":"); colon >= 0 {
 		host = host[:colon]
 	}
-	if asciiLower(host) != "spdx.org" {
+	if hdfutil.ASCIILower(host) != "spdx.org" {
 		return false
 	}
 	version, ok := strings.CutPrefix(rest[slash:], "/rdf/")

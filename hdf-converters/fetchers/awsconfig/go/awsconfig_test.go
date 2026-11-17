@@ -1,12 +1,13 @@
 package awsconfig
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,9 @@ type mockConfigClient struct {
 	remediationBatchErr error            // returned only for a multi-name call: the all-or-nothing batch case
 	remediationErrs     map[string]error // returned for a single-name call by name
 	remediationBatches  [][]string       // captures each call's requested rule names
+	// cancel runs after the remediation call numbered cancelOnRemediationCall (1-based).
+	cancel                  context.CancelFunc
+	cancelOnRemediationCall int
 }
 
 func (m *mockConfigClient) DescribeRemediationConfigurations(
@@ -50,6 +54,9 @@ func (m *mockConfigClient) DescribeRemediationConfigurations(
 	_ ...func(*configservice.Options),
 ) (*configservice.DescribeRemediationConfigurationsOutput, error) {
 	m.remediationBatches = append(m.remediationBatches, in.ConfigRuleNames)
+	if m.cancel != nil && len(m.remediationBatches) == m.cancelOnRemediationCall {
+		defer m.cancel()
+	}
 	if m.remediationErr != nil {
 		return nil, m.remediationErr
 	}
@@ -1214,23 +1221,69 @@ func TestAWSConfigFetcher_PackOnlyAccount_ConvertsEndToEnd(t *testing.T) {
 
 // ---- grouped warning tests ----
 
-// captureStderr runs fn with os.Stderr redirected and returns what it wrote.
+// captureStderr returns what fn writes to os.Stderr.
 func captureStderr(t *testing.T, fn func()) string {
 	t.Helper()
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
-	old := os.Stderr
+	defer func() { _ = r.Close() }()
+	orig := os.Stderr
 	os.Stderr = w
-	done := make(chan string)
+	done := make(chan string, 1) // buffered, so the reader never blocks if fn fails the test
 	go func() {
-		var buf bytes.Buffer
-		_, _ = buf.ReadFrom(r)
-		done <- buf.String()
+		b, _ := io.ReadAll(r)
+		done <- string(b)
 	}()
-	fn()
-	os.Stderr = old
-	require.NoError(t, w.Close())
+	// Restore and close even if fn fails the test, so the reader goroutine ends.
+	func() {
+		defer func() { os.Stderr = orig; _ = w.Close() }()
+		fn()
+	}()
 	return <-done
+}
+
+func ruleNamesN(n int) []string {
+	names := make([]string, n)
+	for i := range names {
+		names[i] = fmt.Sprintf("rule-%02d", i)
+	}
+	return names
+}
+
+// A read-phase deadline that lands mid-lookup must not drop rules silently:
+// every name never looked up is named in the one warning, with the context error.
+func TestFetchRemediations_ContextEndNamesUnprocessedRules(t *testing.T) {
+	names := ruleNamesN(60) // batches of 25, 25, 10
+	for _, tc := range []struct {
+		name       string
+		batchErr   error
+		callErr    error // returned by every call, as the SDK does once the deadline passes
+		cancelCall int
+		looked     int // names that got a lookup before the context ended
+	}{
+		{name: "during batches", cancelCall: 1, looked: 25},
+		{name: "during per-name retry", batchErr: fmt.Errorf("batch refused"), cancelCall: 4, looked: 3},
+		{name: "the batch call itself fails on the context", callErr: context.Canceled, cancelCall: 1, looked: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			mock := &mockConfigClient{remediationBatchErr: tc.batchErr, remediationErr: tc.callErr,
+				cancel: cancel, cancelOnRemediationCall: tc.cancelCall}
+			stderr := captureStderr(t, func() {
+				NewAWSConfigFetcherWithClient(mock).fetchRemediations(ctx, names)
+			})
+			require.Len(t, mock.remediationBatches, tc.cancelCall, "no lookup after the context ends")
+			unprocessed := names[tc.looked:]
+			assert.Equal(t, 1, strings.Count(stderr, "WARNING"), "one warning, got: %s", stderr)
+			assert.Contains(t, stderr, fmt.Sprintf("skipping remediation for %d rule(s)", len(unprocessed)))
+			// Rules cut off for one cause are grouped, the cause stated once.
+			assert.Contains(t, stderr, strings.Join(unprocessed, ", ")+" ("+context.Canceled.Error()+")")
+			for _, n := range names[:tc.looked] {
+				assert.NotContains(t, stderr, n, "%s was looked up and must not be reported", n)
+			}
+		})
+	}
 }
 
 // rulesNamed is one page of readable rules with the given names.

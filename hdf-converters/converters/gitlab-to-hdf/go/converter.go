@@ -500,6 +500,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			title = vuln.ID
 		}
 
+		// The default description stays empty, not vuln.Name: the source carried none.
 		req := hdf.EvaluatedRequirement{
 			ID:                 vuln.ID,
 			Title:              &title,
@@ -507,7 +508,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			Code:               hdfutil.Ptr(buildVulnCode(vuln)),
 			Results:            []hdf.RequirementResult{result},
 			Tags:               tags,
-			Descriptions:       ensureDefaultDescription(descriptions),
+			Descriptions:       shared.EnsureDefaultDescription(descriptions, ""),
 			Refs:               buildRefs(vuln),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
@@ -576,17 +577,4 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	})
 
 	return hdfResult, nil
-}
-
-// ensureDefaultDescription satisfies descriptions' schema constraints: required,
-// minItems:1 and contains:{label:"default"}. The data stays empty rather than
-// borrowing the vulnerability name, which would assert the title is the
-// description the source never carried; same default splunk-to-hdf uses.
-func ensureDefaultDescription(descriptions []hdf.Description) []hdf.Description {
-	for _, d := range descriptions {
-		if d.Label == "default" {
-			return descriptions
-		}
-	}
-	return append([]hdf.Description{{Label: "default", Data: ""}}, descriptions...)
 }

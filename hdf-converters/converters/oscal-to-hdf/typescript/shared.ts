@@ -5,7 +5,7 @@
  */
 
 import { SUPPORTED_NIST_REVISIONS, nistExists, normalizeNistId } from '@mitre/hdf-mappings';
-import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { asciiLower, impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
 import { findVocabularyProp, vocabularyProp } from './vocabulary.js';
@@ -213,11 +213,6 @@ export function confirmedControlId(targetId: string): string | undefined {
   }
   const tag = controlIdToNistTag(controlId);
   return SUPPORTED_NIST_REVISIONS.some((rev) => nistExists(tag, rev)) ? nistTagToControlId(tag) : undefined;
-}
-
-/** Lowercases only ASCII letters, so Go and TypeScript fold identically. */
-function asciiLower(s: string): string {
-  return s.replace(/[A-Z]/g, (c) => c.toLowerCase());
 }
 
 /**

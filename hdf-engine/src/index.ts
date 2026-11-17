@@ -64,6 +64,7 @@ export {
   parseEvidencePackage,
   parseExternalEvidence,
   decodeReference,
+  checksumHex,
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,

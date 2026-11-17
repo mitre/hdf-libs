@@ -1,3 +1,4 @@
+import { compareCodePoint } from '@mitre/hdf-utilities';
 import { computeEffectiveChecksum } from './effective-checksum.js';
 
 type Doc = Record<string, unknown>;
@@ -44,13 +45,13 @@ export function groupEventChains(events: Doc[]): { byKey: Map<string, Doc[]>; ke
     chain.push(ev);
     byKey.set(id, chain);
   }
-  const keys = [...byKey.keys()].sort();
+  const keys = [...byKey.keys()].sort(compareCodePoint);
   for (const [, chain] of byKey) {
     chain.sort((a, b) => {
       const seqA = a['sequence'] as number;
       const seqB = b['sequence'] as number;
       if (seqA !== seqB) return seqA - seqB;
-      return String(a['eventId']).localeCompare(String(b['eventId']));
+      return compareCodePoint(String(a['eventId']), String(b['eventId']));
     });
   }
   return { byKey, keys };

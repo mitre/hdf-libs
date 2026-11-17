@@ -1,0 +1,60 @@
+{
+  "$comment": "Pins Go EnsureDefaultDescription and TypeScript ensureDefaultDescription to one behavior. Both test suites read this file. Each case gives the input descriptions and the default data to synthesize, and the expected output. A list that already holds a 'default' entry is returned unchanged, wherever that entry sits and whatever its data; otherwise a 'default' entry carrying the given data is prepended.",
+  "cases": [
+    {
+      "name": "empty list gets a default",
+      "descriptions": [],
+      "data": "",
+      "want": [{ "label": "default", "data": "" }]
+    },
+    {
+      "name": "empty list takes the given default data",
+      "descriptions": [],
+      "data": "Control desc carried by the source",
+      "want": [{ "label": "default", "data": "Control desc carried by the source" }]
+    },
+    {
+      "name": "list without a default gets one prepended",
+      "descriptions": [
+        { "label": "check", "data": "Review the configuration" },
+        { "label": "fix", "data": "Set the value to 1" }
+      ],
+      "data": "",
+      "want": [
+        { "label": "default", "data": "" },
+        { "label": "check", "data": "Review the configuration" },
+        { "label": "fix", "data": "Set the value to 1" }
+      ]
+    },
+    {
+      "name": "list with a default first is unchanged",
+      "descriptions": [
+        { "label": "default", "data": "The primary description" },
+        { "label": "check", "data": "Review the configuration" }
+      ],
+      "data": "ignored fallback",
+      "want": [
+        { "label": "default", "data": "The primary description" },
+        { "label": "check", "data": "Review the configuration" }
+      ]
+    },
+    {
+      "name": "default not first is left where it is",
+      "descriptions": [
+        { "label": "check", "data": "Review the configuration" },
+        { "label": "default", "data": "The primary description" }
+      ],
+      "data": "ignored fallback",
+      "want": [
+        { "label": "check", "data": "Review the configuration" },
+        { "label": "default", "data": "The primary description" }
+      ]
+    },
+    {
+      "name": "an empty default still counts as present",
+      "descriptions": [{ "label": "default", "data": "" }],
+      "data": "ignored fallback",
+      "want": [{ "label": "default", "data": "" }]
+    }
+  ]
+}

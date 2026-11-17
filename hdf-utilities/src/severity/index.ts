@@ -24,25 +24,29 @@ const severityMap: Record<string, number> = {
   information: 0.0,
 };
 
+/** Impact for a severity the source did not state: "we do not know", not "no risk". */
+export const UNKNOWN_SEVERITY_IMPACT = 0.5;
+
 /**
  * Map a severity string to an impact score.
  *
  * @param severity - Severity level (case-insensitive), or null for no severity assessment
- * @returns Impact score between 0.0 and 1.0; null when input is null; defaults to 0.5 for unrecognized values
+ * @returns Impact score between 0.0 and 1.0; null when input is null;
+ *   UNKNOWN_SEVERITY_IMPACT for unrecognized values
  */
 export function severityToImpact(severity: null): null;
 export function severityToImpact(severity: string | undefined): number;
 export function severityToImpact(severity: string | null | undefined): number | null;
 export function severityToImpact(severity: string | null | undefined): number | null {
   if (severity === null) return null;
-  // Absent field: match Go's zero-value semantics ("" → the 0.5 default)
+  // Absent field: match Go's zero-value semantics ("" → the unknown default)
   // rather than throwing on .toLowerCase() of undefined.
   const normalized = (severity ?? '').toLowerCase();
   // Own-property guard: a prototype-named token ("constructor") must take the
   // default like any unknown word, not return an inherited Object member.
   return Object.prototype.hasOwnProperty.call(severityMap, normalized)
     ? severityMap[normalized]!
-    : 0.5;
+    : UNKNOWN_SEVERITY_IMPACT;
 }
 
 /**

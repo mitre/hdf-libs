@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -567,5 +568,20 @@ func TestInspect_MergedDocumentShowsPerBaselineProvenance(t *testing.T) {
 	_, out = callInspect(t, inspectInput{Source: handle.Source{Path: big}})
 	if out.Truncated {
 		t.Errorf("duplicate-baselines.json (16 baselines) must fit the concise budget; notice %q", out.Notice)
+	}
+}
+
+// The per-baseline statusBreakdown is wire output: its bytes, keys sorted, are pinned
+// so a change to how it is built cannot reorder or retype it.
+func TestHdfInspect_StatusBreakdownWireBytes(t *testing.T) {
+	path := writeRoot(t, "query-results.json", readToolsFixture(t, "query-results.json"))
+	_, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
+	got := regexp.MustCompile(`"statusBreakdown":\{[^}]*\}`).FindAllString(structureJSON(t, out), -1)
+	want := []string{
+		`"statusBreakdown":{"error":0,"failed":2,"notApplicable":0,"notReviewed":0,"passed":1}`,
+		`"statusBreakdown":{"error":1,"failed":0,"notApplicable":1,"notReviewed":0,"passed":0}`,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("statusBreakdown bytes changed:\n got  %q\n want %q", got, want)
 	}
 }

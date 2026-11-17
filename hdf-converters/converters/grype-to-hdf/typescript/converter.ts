@@ -6,7 +6,6 @@ import {
   createMinimalBaseline,
   type Cvss,
   Ecosystem,
-  ExternalReferenceEncoding,
   type Epss,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -19,6 +18,7 @@ import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings'
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
 import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
+import {buildJsonRawSourceRecord, parseJSONPreservingNumbers} from '../../../shared/typescript/exportmap.js';
 
 // Input types for Grype JSON
 
@@ -390,7 +390,7 @@ function buildKev(k?: GrypeKev): Kev | undefined {
   return out;
 }
 
-function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, targetName: string, startTime: Date, sourcePointer: string): EvaluatedRequirement {
+function convertMatchToRequirement(match: GrypeMatch, rawMatch: unknown, isIgnored: boolean, targetName: string, startTime: Date, sourcePointer: string): EvaluatedRequirement {
   const vuln = match.vulnerability;
   const cveId = vuln.id;
   const severity = vuln.severity;
@@ -444,14 +444,9 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // The match that produced this result, carried on the RESULT per ADR-0017 §5
   // — one CVE against two packages is two matches, and roll-up's first-wins on
-  // `code` would otherwise discard the second. The rendering matches the Go
-  // twin's json.Indent byte for byte; the twins share goldens.
-  result.rawSourceRecord = {
-    content: JSON.stringify(match, null, 2),
-    encoding: ExternalReferenceEncoding.UTF8,
-    mediaType: 'application/json',
-    pointer: sourcePointer,
-  };
+  // `code` would otherwise discard the second.
+  const record = buildJsonRawSourceRecord(rawMatch, sourcePointer, 'indented');
+  if (record) result.rawSourceRecord = record;
 
   // Get CCI mappings for NIST controls using curated mapping table
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
@@ -542,6 +537,9 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
 
   // Parse Grype JSON
   const grypeData = parseJSON<GrypeReport>(input);
+  // A second parse for the records only: it keeps each number token as written,
+  // where the typed parse above holds doubles (9.80 would come back 9.8).
+  const preserved = parseJSONPreservingNumbers(input) as {matches?: unknown[]; ignoredMatches?: unknown[]} | null;
 
   // Build requirements from matches
   let requirements: EvaluatedRequirement[] = [];
@@ -563,7 +561,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
     }
     for (const [i, match] of limitedMatches.entries()) {
-      requirements.push(convertMatchToRequirement(match, false, targetName, resultStart, `/matches/${i}`));
+      requirements.push(convertMatchToRequirement(match, preserved?.matches?.[i] ?? match, false, targetName, resultStart, `/matches/${i}`));
     }
   }
 
@@ -576,7 +574,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);
     }
     for (const [i, match] of limitedIgnored.entries()) {
-      requirements.push(convertMatchToRequirement(match, true, targetName, resultStart, `/ignoredMatches/${i}`));
+      requirements.push(convertMatchToRequirement(match, preserved?.ignoredMatches?.[i] ?? match, true, targetName, resultStart, `/ignoredMatches/${i}`));
     }
   }
 

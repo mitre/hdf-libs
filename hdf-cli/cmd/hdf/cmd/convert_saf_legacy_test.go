@@ -63,6 +63,10 @@ func assertSAFAbsorbed(t *testing.T, stdout, stderr string) {
 	if !strings.Contains(stderr, "normalized into extensions.passthrough") {
 		t.Errorf("expected the passthrough deprecation warning on stderr; stderr=%s", stderr)
 	}
+	// The upgrade already copied passthrough into extensions, so nothing was lost.
+	if strings.Contains(stderr, "'passthrough' was dropped") {
+		t.Errorf("an equal passthrough must not be reported as dropped; stderr=%s", stderr)
+	}
 }
 
 // Auto-detected InSpec exec-json input carrying SAF target/passthrough must have
