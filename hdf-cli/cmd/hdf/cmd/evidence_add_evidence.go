@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"crypto/sha256"
-	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,7 +16,6 @@ import (
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
-	"lukechampine.com/blake3"
 )
 
 // evidenceSchemaBytes is the schema reader behind the --format vocabulary; a
@@ -367,6 +363,9 @@ func formatFromContent(data []byte) string {
 }
 
 func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
+	if err := requireOutputForStdinPackage(file, opts.outputPath); err != nil {
+		return err
+	}
 	var expandErr error
 	opts, expandErr = expandEvidenceInputs(file, opts)
 	if expandErr != nil {
@@ -389,7 +388,8 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 		return fmt.Errorf("--checksum names a single artifact's digest and cannot apply to %d --uri "+
 			"values; add those artifacts in separate invocations", len(opts.uris))
 	}
-	formats, err := resolveEvidenceFormats(filepath.Dir(file), opts)
+	pkgDir := evidencePackageDir(file, opts.outputPath)
+	formats, err := resolveEvidenceFormats(pkgDir, opts)
 	if err != nil {
 		return err
 	}
@@ -415,7 +415,6 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	// and `evidence set` use; an artifact outside the package is external by design and
 	// is recorded exactly as given. Done BEFORE the duplicate guard below, so two
 	// spellings of one artifact collide rather than landing as two entries.
-	pkgDir := filepath.Dir(file)
 	added := make([]interface{}, 0, len(opts.uris))
 	for i, uri := range opts.uris {
 		// The package and the output are never evidence of themselves: the digest of
@@ -425,7 +424,11 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 				return fmt.Errorf("cannot add the package or output itself as evidence: %q", uri)
 			}
 		}
-		normalized := filepath.ToSlash(packageRelativeIfInside(pkgDir, uri))
+		inPackage, refErr := packageRelativeIfInside(pkgDir, uri)
+		if refErr != nil {
+			return fmt.Errorf("--uri %w", refErr)
+		}
+		normalized := filepath.ToSlash(inPackage)
 		// Asked in the same terms the map is keyed in. packageRelativeIfInside returns a
 		// uri-reference, so the lookup decodes it back to the artifact it names.
 		lookup := normalized
@@ -650,28 +653,6 @@ func localArtifactPath(pkgDir, uri string) (string, bool) {
 // cap: the cap guards against loading untrusted input into memory, and this
 // read is constant-memory by construction, so capping it would only reject
 // large evidence artifacts (logs, packet captures, images) for no safety gain.
-// streamingHasher returns a streaming hash for one of the algorithms Hash_Algorithm
-// admits. Separate from hdfengine.ChecksumHex, which takes the whole []byte: an evidence
-// corpus can be large, and the point of hashing it here is to never hold it in memory.
-// The algorithms are the same set, so a value recorded by one verifies under the other.
-func streamingHasher(algorithm string) (hash.Hash, error) {
-	switch algorithm {
-	case "", "sha256":
-		return sha256.New(), nil
-	case "sha384":
-		return sha512.New384(), nil
-	case "sha512":
-		return sha512.New(), nil
-	case "blake3":
-		// 32 bytes, no key: the default-length digest ChecksumHex computes and the one the
-		// BLAKE3 reference vectors compare against. A different length here would hash the
-		// same bytes to a value verification could never reproduce.
-		return blake3.New(32, nil), nil
-	default:
-		return nil, fmt.Errorf("cannot compute %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
-	}
-}
-
 func fileChecksumHex(path string) (value, algorithm string, err error) {
 	if err := refuseSymlinkIfConfigured(path); err != nil {
 		return "", "", err
@@ -681,7 +662,7 @@ func fileChecksumHex(path string) (value, algorithm string, err error) {
 		return "", "", err
 	}
 	defer f.Close() //nolint:errcheck // read-only handle
-	h, hErr := streamingHasher(evidenceComputedAlgorithm)
+	h, hErr := hdfengine.NewChecksumHash(evidenceComputedAlgorithm)
 	if hErr != nil {
 		return "", "", hErr
 	}

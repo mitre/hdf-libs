@@ -9,6 +9,8 @@
  * - SPDX: has `spdxVersion`, packages in `packages[]`
  */
 
+import { compareCodePoint } from '@mitre/hdf-utilities';
+
 /**
  * The comparison result for a single package between two SBOMs.
  */
@@ -109,7 +111,7 @@ export function diffSboms(oldJson: string, newJson: string): SbomDiffResult {
   }
 
   // Sort by name for deterministic output
-  diffs.sort((a, b) => a.name.localeCompare(b.name));
+  diffs.sort((a, b) => compareCodePoint(a.name, b.name));
 
   // Count states
   let added = 0;

@@ -56,7 +56,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.7.2
+VERSION=3.8.0
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -71,7 +71,7 @@ Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm6
 
 ### Build from source
 
-**Requirements:** Go 1.26+, pnpm
+**Requirements:** Go 1.27.4+, pnpm
 
 ```bash
 # From the hdf-libs monorepo root
@@ -193,7 +193,8 @@ FLAGS
                          error (not_applicable and not_reviewed also accepted). A value outside the
                          vocabulary is rejected, not matched against nothing. The listed forms are
                          rendered from the engine's vocabulary, so help and refusal cannot disagree.
-  -a, --all              Show all details (expand every section)
+  -a, --all              With --detail requirements, print a flat ID/Status/Title table instead of
+                         grouping by status. No effect on the summary or on any other section.
 
 EXAMPLES
   hdf list results.json                              # summary (counts + status breakdown)
@@ -204,27 +205,27 @@ EXAMPLES
   hdf list results.json --json
 ```
 
-Example output:
+Example output, from the shared fixture `hdf-fixtures/results/inspec-multilayered.json` (the detail listing is cut to its first rows):
 
 ```console
-$ hdf list results.json
+$ hdf list hdf-fixtures/results/inspec-multilayered.json
 Baselines:    5
 Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          271
-  ○ not_applicable  233
-  ? not_reviewed    965
+  ✗ failed          273
+  ? not_reviewed    1196
 
-$ hdf list results.json --detail requirements -s failed
-Requirements: 271
+$ hdf list hdf-fixtures/results/inspec-multilayered.json --detail requirements -s failed
+Requirements: 273
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
-V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
 ```
 
 ### query
@@ -311,20 +312,22 @@ EXAMPLES
 
 Example output:
 
+Run on `hdf-fixtures/results/inspec-multilayered.json`, the same document as the `list` example:
+
 ```console
-$ hdf query results.json --status failed --limit 5
+$ hdf query inspec-multilayered.json --status failed --limit 5
 Found 5 matching requirement(s):
 
-ID        Status  Severity  Title
---------  ------  --------  -------------------------------------------------------
-V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
-V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
-V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
+ID         Status  Severity  Title
+---------  ------  --------  -------------------------------------------------------
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
 
-$ hdf query results.json --status failed --count
-271
+$ hdf query inspec-multilayered.json --status failed --count
+273
 ```
 
 ### diff
@@ -343,8 +346,8 @@ FLAGS
       --name-only          List only changed requirement IDs
       --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
-  -q, --quiet              Suppress output, return exit code only (implies --exit-code)
-      --exit-code          POSIX diff exit codes: 0=identical, 1=differences
+  -q, --quiet              Suppress output, return exit code only
+      --exit-code          Accepted for compatibility; changes nothing (0/1 is always on)
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
       --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
@@ -371,6 +374,24 @@ REQ-001  Test Requirement               passed      failed      regressed
 REQ-002  Audit logging must be enabled  -           passed      new
 
 Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
+**Exit codes.** `hdf diff` exits 0 when the documents are identical and 1 when they differ, as GNU diff does, whatever flags are passed; `--exit-code` is accepted and changes nothing. A script running under `set -e` that only wants the report must therefore allow for 1. A diff that cannot run at all (a missing file, a document it cannot parse) also exits 1, so in this mode 1 does not tell a failure from a difference. `--detailed-exitcode` replaces the 0/1 verdict and keeps 1 for failure alone:
+
+| Code | `--detailed-exitcode` meaning |
+|------|---------|
+| `0` | Identical |
+| `1` | The diff could not read its inputs (a missing file, a document it cannot parse) |
+| `10` | Fixes only |
+| `11` | Regressions only |
+| `12` | Both fixes and regressions |
+| `13` | Baseline changed: only new or absent requirements |
+| `14` | Metadata drift only: no status changed |
+
+```bash
+# Produce a report whatever changed, but fail the job if the diff itself fails.
+hdf diff old-scan.json new-scan.json --detailed-exitcode > report.txt; rc=$?
+[ "$rc" -eq 0 ] || [ "$rc" -ge 10 ]
 ```
 
 ### events
@@ -681,6 +702,7 @@ EXAMPLES
   hdf evidence build --system system.json --results r1.json --results r2.json -o q1.hdf-evidence-package.json
   hdf evidence build --system system.json --results "scans/*.json" --plan q3-plan.json --baseline rhel9.json -o q1.hdf-evidence-package.json
   hdf evidence build --results "scans/*.json" -o lib.hdf-evidence-package.json
+  hdf evidence build --from-dir artifacts -o artifacts/q1.hdf-evidence-package.json --require-readable
   hdf evidence info q1.hdf-evidence-package.json
   hdf evidence info q1.hdf-evidence-package.json --verify
   hdf evidence info q1.hdf-evidence-package.json --verify --require-reachable
@@ -698,9 +720,16 @@ EXAMPLES
   hdf evidence update q1.hdf-evidence-package.json --results "scans/*.json" --overwrite
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip --overwrite
+  hdf evidence export q1.hdf-evidence-package.json --format oscal -o oscal/
 ```
 
+**A package read from stdin needs `-o`.** Passing `-` as the package reads it from stdin, and the commands that write a package (`add-evidence`, `add-reference`, `set` and `update`) then require `-o <file>` and resolve its package-relative references beside that file, because a stdin package has no file to write back to; `update` refuses `--overwrite` with one for the same reason. Of the commands that only read a package, `info --verify` and `bundle` refuse a stdin package that records any package-relative reference, since there is no directory for it to be relative to, and `export` requires an explicit `-o` for one.
+
+**`export` writes one file per document, named for its source.** Each `hdf-results` entry becomes `<name>.oscal-sar.json` and each `hdf-amendments` entry `<name>.oscal-poam.json` in the `-o` directory, where `<name>` is the referenced file's name without its extension — `scans/rhel9-results.json` exports to `rhel9-results.oscal-sar.json`. Every entry used to go to one fixed `oscal-sar.json` or `oscal-poam.json`, so a package with two results documents kept only the last while counting both as exported. Two entries that would share an output name, such as `rhel9/results.json` and `postgres/results.json`, are refused before anything is written, naming both; names are compared case-insensitively, because on a case-insensitive volume `Results.json` and `results.json` are one file. An entry that cannot be read or converted is a warning and the rest still export, and the closing count says how many failed. When the package lists results or amendments and none of them exports, the command exits 1, and when only some export it exits 3, the CLI's code for a partial run; a package with neither is not a failure, and says so.
+
 **`--system` is optional, and a package that records no `systemRef` asserts no system.** The schema requires `name` and `contents` only, and a package without a system reference stands for the documents it lists and nothing more — which is what an assessment of a library, or any other lone component, actually claims: there is no authorization boundary, no categorization and no authorizing official to point at. `build` says so on stderr when the flag is omitted, names the package `evidence-package`, and leaves `systemRef` absent rather than empty, since an empty `uri-reference` would claim a reference to nothing. The completeness check then claims neither full baseline coverage nor component coverage, because both are claims about system components and there is no system document to check against; `hdf evidence update` reports the same thing for a package whose `systemRef` stops resolving. `--from-dir` behaves the same way — a CI artifacts directory for a software package has no system document in it — while a directory holding more than one is still refused. `hdf evidence set --system-ref` records a system later, and `--name` names the package. `info --verify` reads completeness from the plan, never from the system document, so a system-less package verifies normally.
+
+**`build --from-dir` routes every file by its content, and reports what it cannot read.** The scan recurses through the directory and files each document under the `Content_Type` its content detects, never its filename. A file over `--max-size` is never opened, and one the scan has no permission to read cannot be; each is named on stderr as `present but could not be read`, with the `--max-size` remedy when that is the cause, and by default the package is built without it at exit 0, because an artifacts directory routinely holds a capture or log nobody meant to package. Pass `--require-readable` when the tree is meant to be packaged whole: any such skip then fails the build at exit 1, the error names every skipped file with its remedy, and nothing is written. The flag only means something with `--from-dir` and is refused without it, since an explicitly named file that cannot be read already fails the build. A file or directory whose name is not valid UTF-8 is a different case: it is readable, but no reference can record its name, so the scan skips it with a notice saying so whether or not `--require-readable` is set, and naming such a file explicitly fails the build.
 
 **`hdf evidence verify` has been REMOVED; it is now `hdf evidence info --verify`.** A breaking change, and a deliberate one: the two commands read one document and described it, and five separate fixes in this release were places where they described it differently. `info` without the flag stays a single-document read that opens nothing it references, so it reports what the package **records** — an entry recording a checksum, an empty one, or none — and hashes nothing, so it ticks nothing. `--verify` opens every reference and reaches a verdict, and every flag the old command took still works there: `--checksums-only`, `--require-reachable`, `--require-checksums-match`. The old name exits non-zero and names the replacement rather than silently doing nothing, because a removed gate that exits 0 is worse than one that fails.
 
@@ -710,7 +739,7 @@ EXAMPLES
 
 **Two sibling commands, two arrays.** `add-evidence` writes `externalEvidence[]` — native-format material that IS evidence, such as a log or telemetry corpus, indexed by uri + hash + format. `add-reference` (alias `add-ref`) writes `externalReferences[]` — inert context that overrides nothing, which the schema names as CTI/STIX, BOMs and advisories. The test: if the artifact would support or contradict a finding it is evidence; if it only explains one it is a reference. Neither array is ever fetched over the network.
 
-`add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href`, `--description`, `--content-file` or `--document-file` — one per branch of `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. The command reads that rule from the schema rather than restating it, so a branch added there cannot quietly become unauthorable. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time; a URL is left unhashed.
+`add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href`, `--description`, `--content-file` or `--document-file` — one per branch of `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. The command reads that rule from the schema rather than restating it, so a branch added there cannot quietly become unauthorable. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time and recorded as an escaped uri-reference; a URL is recorded exactly as typed, query string and fragment included, and left unhashed.
 
 **Embedding an artifact rather than pointing at one.** `--document-file` reads a JSON **object** and stores it verbatim in `document`. It is deliberately **not hashed**: `document` holds a parsed object, which cannot preserve the source file's whitespace, key order or trailing bytes, so a digest of those bytes would not verify against what is stored — pass `--checksum` to record the source artifact's digest as a claim about it. `--content-file` reads a non-empty file's bytes into `content`, the branch for artifacts `document` cannot hold (XML, CSV, NDJSON, text, or bytes that are not text at all); carriage is byte-exact, so those bytes **are** hashed. `--encoding` is derived from the bytes — `utf-8` when they are valid UTF-8, `base64` otherwise — because an embedded copy whose encoding a consumer has to guess is not lossless; `base64` is the only valid override for bytes that are not valid UTF-8, and the vocabulary is read from the schema's own enum. An explicit `--checksum` always wins over either derivation, and when bytes are embedded alongside `--href` it is the **embedded** bytes that are hashed, since those are the copy a consumer can verify. Note the two kinds of path differ: `--href` names an artifact relative to the **package's** own directory, because it is recorded and read by whoever opens the package, while `--content-file` and `--document-file` name a file relative to the **directory the command runs in**, like `--results` or `--system`, because they are inputs consumed here and nothing about them is recorded.
 
@@ -728,18 +757,18 @@ Because a package is an attestation, `update` never silently rewrites one: name 
 
 Discovery excludes the package and output file, and skips hidden entries and hidden subtrees such as `.git/` with a count on stderr (a dotfile named literally by `--file` is selected); a discovered symlink or other non-regular entry is skipped with a notice naming it, while one named by `--file` is refused, and `--no-follow-symlinks` refuses a symlinked file on every selector including `--uri`. Same-format discovery overlaps are deduplicated; literal duplicates, conflicting formats, and already-recorded references are refused. Selected local files are independently hashed with SHA-512, so `--checksum` is unavailable with local selectors. A selection/read/validation failure writes nothing; an empty selection exits 4. See [bulk native report examples](../site/docs/guides/evidence-package-workflow.md#add-native-reports-in-bulk) for mixed formats and recursion.
 
-Example output:
+Example output, from the CLI test package `hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/evidence.json`. Without `--verify` nothing is hashed, so each row says only whether the package records a checksum:
 
 ```console
-$ hdf evidence info q1-2026.hdf-evidence-package.json
+$ hdf evidence info cmd/hdf/cmd/testdata/evidence-verify/evidence.json
 Evidence Package: Portal Prod Q1 Evidence
 System: system.json
 
 Contents (4):
-  hdf-system       system.json  ✓ checksum
-  hdf-plan         plan.json  ✓ checksum
-  hdf-results      rhel9-results.json  ✓ checksum
-  hdf-results      postgres-results.json  ✓ checksum
+  hdf-system       system.json  checksum recorded
+  hdf-plan         plan.json  checksum recorded
+  hdf-results      rhel9-results.json  checksum recorded
+  hdf-results      postgres-results.json  checksum recorded
 ```
 
 ### label
@@ -1210,14 +1239,14 @@ One vocabulary for every command, so a pipeline can test the code rather than pa
 | Code | Meaning |
 |------|---------|
 | `0` | Success. In a bulk run, every file succeeded. |
-| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written; `query` with no matching requirements. |
+| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written — for `evidence build --from-dir` that means a named input, while a file the scan could not read is skipped and reported at exit 0 unless `--require-readable` is passed; `query` with no matching requirements. |
 | `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command name that does not exist — at the root (`hdf bogus`) or under a group (`hdf evidence bogus`). A group invoked with no subcommand at all prints its help and exits 0. |
 | `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
 | `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
 
-`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff` is the one command whose successful run can exit non-zero: it exits 1 when the documents differ, as GNU diff does, with or without `--exit-code`, and `--detailed-exitcode` replaces that verdict with codes 10 to 14. Both are documented under [diff](#diff); a diff that cannot read its inputs exits 1, as above, and a usage error such as an unknown flag exits 2 like any other command.
 
-One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
+One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run (under `--from-dir`, only with `--require-readable`).
 
 ## Supported Conversions
 
@@ -1341,7 +1370,8 @@ From the monorepo root:
 ```bash
 pnpm build           # build everything (schema types + hdf binary)
 pnpm test            # run all tests (Go + TypeScript)
-pnpm lint            # run golangci-lint
+pnpm lint            # ESLint (TypeScript)
+pnpm lint:go         # golangci-lint (hdf-cli, hdf-converters, hdf-utilities)
 ```
 
 From within `hdf-cli/` directly:

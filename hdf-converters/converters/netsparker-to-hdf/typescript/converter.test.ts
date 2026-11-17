@@ -809,3 +809,12 @@ describe('structured CVSS', () => {
     expect(out[0]!.version).toBe('3.1');
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertNetsparkerToHdf(input)).rejects.toThrow(
+      new Error('netsparker: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

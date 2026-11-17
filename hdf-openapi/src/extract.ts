@@ -1,7 +1,6 @@
+import { COMPONENT_PREFIX, DIALECT } from './components.js';
 import type { ComponentsDocument, JsonSchema } from './components.js';
 
-const DIALECT = 'https://json-schema.org/draft/2020-12/schema';
-const COMPONENT_PREFIX = '#/components/schemas/';
 const LOCAL_PREFIX = '#/$defs/';
 
 /** Every component name a schema references directly. */

@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags, emitConverterWarning } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateXmlInput, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags, emitConverterWarning } from '../../../shared/typescript/converterutil.js';
 import { isCheckovTestCaseName } from './fingerprint.js';
 import type {
   EvaluatedBaseline,
@@ -112,7 +112,7 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'junit');
+  validateXmlInput(input, 'junit');
 
   const { suites, name } = parseJUnitXML(input);
   warnIfCheckov(suites);

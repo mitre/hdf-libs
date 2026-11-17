@@ -329,9 +329,9 @@ func TestSnapshots(t *testing.T) {
 // ---- Edge cases ----
 
 func TestImpactForFallsBackToModerate(t *testing.T) {
-	assert.Equal(t, defaultImpact, impactFor(Result{}))
-	assert.Equal(t, defaultImpact, impactFor(Result{Extra: Extra{Severity: "NOVEL"}}))
-	assert.Equal(t, defaultImpact, impactFor(Result{Extra: Extra{Severity: redactedPlaceholder}}))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor(Result{}))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor(Result{Extra: Extra{Severity: "NOVEL"}}))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor(Result{Extra: Extra{Severity: redactedPlaceholder}}))
 	assert.Equal(t, 0.9, impactFor(Result{Extra: Extra{Severity: "CRITICAL"}}))
 }
 
