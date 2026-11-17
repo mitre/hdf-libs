@@ -5,7 +5,7 @@
  */
 
 import { CloudProvider, type Component } from '@mitre/hdf-schema';
-import { byCodePoint } from '../../../shared/typescript/exportmap.js';
+import { compareCodePoint } from '@mitre/hdf-utilities';
 import { emitConverterWarning } from '../../../shared/typescript/converterutil.js';
 import type { Property } from './types.js';
 import { emptyFieldProp, findVocabularyProp, pushVocabularyProp, vocabularyProp, vocabularyString } from './vocabulary.js';
@@ -257,7 +257,7 @@ function readComponentProp(props: Property[] | undefined, e: ComponentProp): str
 function appendComponentMap(props: Property[], g: ComponentGroupProp, m: Record<string, string> | undefined): void {
   if (!m) return;
   Object.keys(m)
-    .sort(byCodePoint)
+    .sort(compareCodePoint)
     .forEach((k, i) => {
       const group = `${g.prefix}-${i + 1}`;
       props.push(groupedComponentProp(g.keyProp, 'key', group, k));

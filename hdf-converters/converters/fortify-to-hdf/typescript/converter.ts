@@ -11,7 +11,7 @@ import {
   stripHTML,
   ensureArray,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
-  validateInputSize,
+  validateXmlInput,
   serializeHdf,
   synthesizedNoResultsResult,
 } from '../../../shared/typescript/converterutil.js';
@@ -506,7 +506,7 @@ export async function convertFortifyToHdf(input: string, converterVersion = '1.0
   if (!input || input.trim().length === 0) {
     throw new Error('fortify: empty input');
   }
-  validateInputSize(input, 'fortify');
+  validateXmlInput(input, 'fortify');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

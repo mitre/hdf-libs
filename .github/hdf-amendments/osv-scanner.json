@@ -120,40 +120,8 @@
         "algorithm": "sha256",
         "value": "9aa8dd627dbe5422cb53a21db83ad761decf269b3459ad71c1f5ac924773c5f0"
       },
-      "reason": "GHSA-rq7h-c2jc-7f22: files outside server.fs.allow can be served when a project path matches a system path, on non-Windows machines — the inverse exposure to the launch-editor three above, which are Windows-only. It needs the project to reference a path concatenated with root (the advisory's example is \u003croot\u003e/etc/hosts), which nothing in this repo's docs build does. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
+      "reason": "GHSA-rq7h-c2jc-7f22: files outside server.fs.allow can be served when a project path matches a system path, on non-Windows machines — the inverse exposure to the launch-editor three above, which are Windows-only. It needs the project to reference a path concatenated with root (the advisory's example is <root>/etc/hosts), which nothing in this repo's docs build does. Exposure requires a developer to be running 'vitepress dev' locally: vite 5.4.21 reaches this repo only as a transitive dev dependency of the documentation site, which is not a published package, and the prod audit is clean. No 5.x fix exists — 5.4.21 is the last 5.x and the fix line starts at 6.4.4 — so it clears with the vitepress 2.x bump (hdf-libs-34nl). The workspace's other vite is 8.3.4, above the 8.3.3 fix.",
       "requirementId": "CVE-2026-112946",
-      "status": "notApplicable",
-      "type": "waiver"
-    },
-    {
-      "appliedAt": "2026-10-31T21:32:45Z",
-      "appliedBy": {
-        "identifier": "wdower",
-        "type": "username"
-      },
-      "expiresAt": "2026-12-31T23:59:59Z",
-      "previousChecksum": {
-        "algorithm": "sha256",
-        "value": "98458c80ef3f624997e2a326788cca8d84dd09e0e59d18ff609893bde190e7b2"
-      },
-      "reason": "GHSA-3g3m-2fjr-6pw4: glob 13.0.6 keeps reading directories after its AbortSignal fires, so a caller that passes signal or AbortSignal.timeout() to bound a walk still pays the I/O. The vulnerable branch is only entered when a signal is supplied. glob reaches this repo solely through rimraf 6.1.3 (dev), whose only use is the per-package 'clean' scripts invoking the rimraf CLI on literal paths; the CLI exposes no signal option and rimraf forwards one to glob only when its caller supplies it, so the abort branch is never taken. 'pnpm why -r --prod glob' returns no paths. The fix (14.0.2) is a new major published 2026-10-27 that also pulls in a path-scurry major and a brand-new package, all inside the seven-day release cooldown; it is taken once they clear the cooldown, and this waiver goes with it.",
-      "requirementId": "CVE-2026-118773",
-      "status": "notApplicable",
-      "type": "waiver"
-    },
-    {
-      "appliedAt": "2026-10-31T21:32:45Z",
-      "appliedBy": {
-        "identifier": "wdower",
-        "type": "username"
-      },
-      "expiresAt": "2026-12-31T23:59:59Z",
-      "previousChecksum": {
-        "algorithm": "sha256",
-        "value": "0571087668d90a1dc17e26f64081634be378e890ae0b3712325af51c490d075b"
-      },
-      "reason": "GHSA-g3hv-75wg-m249: minimatch below 11.0.1 lets an attacker-controlled glob pattern amplify globParts in firstPhasePreProcess and then pay quadratic pairwise work, so it is a CPU/memory denial of service against whoever compiles the pattern. Every minimatch in this tree is dev (3.1.4 under eslint 8 via the SARIF formatter, 5.1.9 under @redocly/openapi-core, 10.2.3 under stryker, 10.2.6 under eslint 10 and typescript-eslint); 'pnpm why -r --prod minimatch' returns no paths. Every pattern those consumers compile comes from checked-in configuration (eslint ignore globs, stryker mutate globs, the OpenAPI tooling config), none from input a third party supplies, so the precondition is not met. The only fix (11.0.1) is a new major published 2026-10-27 that depends on a brand-new package, both inside the seven-day release cooldown; it is taken once they clear the cooldown, and this waiver goes with it.",
-      "requirementId": "CVE-2026-118764",
       "status": "notApplicable",
       "type": "waiver"
     }

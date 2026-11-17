@@ -684,63 +684,57 @@
           "title": "Dependency"
         },
         "Reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "A human readable/meaningful reference. Example: a book title."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "description": "An array of reference objects."
+                }
+              ]
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
           "anyOf": [
             {
-              "type": "object",
               "required": [
                 "ref"
               ],
-              "properties": {
-                "ref": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "description": "A human readable/meaningful reference. Example: a book title."
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": true
-                      },
-                      "description": "An array of reference objects."
-                    }
-                  ]
-                }
-              },
               "description": "A reference using the 'ref' field."
             },
             {
-              "type": "object",
               "required": [
                 "url"
               ],
-              "properties": {
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
               "description": "A URL pointing at the reference."
             },
             {
-              "type": "object",
               "required": [
                 "uri"
               ],
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
               "description": "A URI pointing at the reference."
             }
           ],
           "description": "A reference to an external document.",
           "title": "Reference",
-          "unevaluatedProperties": false,
-          "$comment": "Examples, in order: 1) By-locator: a plain URL, the commonest form by far in practice; 2) By-name: a human-meaningful citation with no locator, as InSpec's `ref 'title'` emits; 3) Both together, since this is an anyOf rather than a oneOf; 4) The ref-as-array form, whose items are deliberately open so a source format's own reference record can be carried verbatim — XCCDF's DPMS target identifiers reach HDF this way; 5) uri, accepted as a synonym of url for documents that spell it that way. The object itself is CLOSED: a member none of the three branches declares is rejected. The openness that matters here is one level down, on the items of the ref array, and it is declared there explicitly. This primitive predates External_Reference, which is the STIX-aligned type a new converter should reach for; refs survives because it is InSpec-inherited and HDF consumes InSpec output.",
+          "$comment": "Examples, in order: 1) By-locator: a plain URL, the commonest form by far in practice; 2) By-name: a human-meaningful citation with no locator, as InSpec's `ref 'title'` emits; 3) Both together, since this is an anyOf rather than a oneOf; 4) The ref-as-array form, whose items are deliberately open so a source format's own reference record can be carried verbatim — XCCDF's DPMS target identifiers reach HDF this way; 5) uri, accepted as a synonym of url for documents that spell it that way. The object itself is CLOSED: a member other than ref, url and uri is rejected, and the shipped validators enforce it. The members are declared at the top level and closed with additionalProperties rather than the house unevaluatedProperties, because both shipped validators are draft-07 engines that ignore unevaluatedProperties; the anyOf branches carry only which member must be present. The openness that matters here is one level down, on the items of the ref array, and it is declared there explicitly. This primitive predates External_Reference, which is the STIX-aligned type a new converter should reach for; refs survives because it is InSpec-inherited and HDF consumes InSpec output.",
           "examples": [
             {
               "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"

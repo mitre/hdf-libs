@@ -214,3 +214,44 @@ describe('hdf-to-sarif re-derives rather than replaying stored bytes', () => {
     expect(log.properties.hdf.extensions.passthrough.vendor).toEqual({ keep: 'me' });
   });
 });
+
+// SARIF admits only string fingerprint values. A per-result map carried in
+// tags["sarif-results"] is filtered exactly as the requirement-level one is, and a map
+// left empty is omitted rather than written as {}. The Go peer pins the same.
+describe('hdf-to-sarif per-result fingerprints', () => {
+  it('writes only string values and omits a map left empty', () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'V-1',
+          impact: 0.5,
+          descriptions: [{ label: 'default', data: 'd' }],
+          tags: {
+            'sarif-results': [
+              {
+                fingerprints: { count: 7 },
+                partialFingerprints: { primaryLocationLineHash: '39fa2ee980eb94b0:1', line: 12 },
+              },
+              { fingerprints: {}, partialFingerprints: { primaryLocationLineHash: '5a0c87e2a1c2c0f1:1' } },
+            ],
+          },
+          results: [
+            { status: 'failed', codeDesc: 'a', startTime: '2020-01-01T00:00:00Z' },
+            { status: 'failed', codeDesc: 'b', startTime: '2020-01-01T00:00:00Z' },
+          ],
+        }],
+      }],
+    });
+    const out = convertHdfToSarif(input, TEST_VERSION);
+    expectValidSarif(loadSarifValidator(), 'non-string per-result fingerprints', out);
+
+    const results = (JSON.parse(out) as { runs: { results: Record<string, unknown>[] }[] }).runs[0]!.results;
+    expect(results).toHaveLength(2);
+    ['39fa2ee980eb94b0:1', '5a0c87e2a1c2c0f1:1'].forEach((want, i) => {
+      expect(results[i], `result ${i}: nothing string-valued is left to write`).not.toHaveProperty('fingerprints');
+      expect(results[i]!.partialFingerprints, `result ${i}: only the string-valued entry survives`)
+        .toEqual({ primaryLocationLineHash: want });
+    });
+  });
+});

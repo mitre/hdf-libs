@@ -96,7 +96,7 @@ func extractVersion(nessus *NessusXML) string {
 
 func calculateTiming(hosts []ReportHost) (time.Time, float64) {
 	if len(hosts) == 0 {
-		return time.Now(), 0
+		return hdfutil.NormalizeTimestamp(time.Now()), 0
 	}
 
 	firstHost := hosts[0]
@@ -109,7 +109,11 @@ func calculateTiming(hosts []ReportHost) (time.Time, float64) {
 	}
 
 	startTime := parseHostTime(startTimeStr)
-	endTime := parseHostTime(endTimeStr)
+	// An unparseable end falls back to the start, so duration is 0, not a wall-clock gap.
+	endTime := hdfutil.ParseTimestamp(endTimeStr)
+	if endTime.IsZero() {
+		endTime = startTime
+	}
 
 	duration := endTime.Sub(startTime).Seconds()
 	if duration < 0 {
@@ -122,7 +126,7 @@ func calculateTiming(hosts []ReportHost) (time.Time, float64) {
 func parseHostTime(timeStr string) time.Time {
 	t := hdfutil.ParseTimestamp(timeStr)
 	if t.IsZero() {
-		return time.Now()
+		return hdfutil.NormalizeTimestamp(time.Now())
 	}
 	return t
 }

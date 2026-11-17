@@ -3,7 +3,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, markUnratedSeverity, validateXmlInput, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -333,7 +333,7 @@ export async function convertDbprotectToHdf(input: string, converterVersion = '1
   if (!input || input.trim().length === 0) {
     throw new Error('dbprotect: empty input');
   }
-  validateInputSize(input, 'dbprotect');
+  validateXmlInput(input, 'dbprotect');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

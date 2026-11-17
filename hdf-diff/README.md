@@ -53,7 +53,7 @@ const json = render(comparison, 'json');
 
 // Check exit codes for CI
 import { computeExitCode, EXIT_IDENTICAL } from '@mitre/hdf-diff';
-const code = computeExitCode(comparison);
+const code = computeExitCode(comparison.summary);
 if (code !== EXIT_IDENTICAL) process.exit(code);
 ```
 

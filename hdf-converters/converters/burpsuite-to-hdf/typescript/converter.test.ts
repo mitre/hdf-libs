@@ -566,3 +566,19 @@ describe('burpsuite-to-hdf ground-truth anchor', () => {
     );
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertBurpsuiteToHdf(input)).rejects.toThrow(
+      new Error('burpsuite: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+
+  it('does not let a byte-order mark hide the DTD', async () => {
+    const input = '﻿<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertBurpsuiteToHdf(input)).rejects.toThrow(
+      new Error('burpsuite: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

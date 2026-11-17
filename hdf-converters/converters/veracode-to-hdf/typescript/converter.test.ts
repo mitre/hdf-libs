@@ -593,3 +593,12 @@ describe('veracode result instance identity', () => {
     expect(req.results[0]!.resourceId).toBe('1793362a-098a-47f2-95e8-0565117aa7fd');
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertVeracodeToHdf(input)).rejects.toThrow(
+      new Error('veracode: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

@@ -27,9 +27,10 @@ The plumbing in `hash` and `json` has no Go counterpart because Go's standard li
 TypeScript module parses and builds CSV, while the Go one carries only the
 formula-injection policy and leaves writing to `encoding/csv`.
 
-XML shows the pattern most clearly. Go's `xml.go` exports only
-`ContainsXMLEntityDeclarations` and `ExtractXMLRootElement` — an XXE-safety
-policy and a domain helper — and leaves parsing to `encoding/xml`. The
+XML shows the pattern most clearly. Go's `xml.go` exports an XXE-safety policy
+(`InspectXMLPrologue`, `ContainsXMLDoctype` and `ContainsXMLEntityDeclarations`)
+and one domain helper (`ExtractXMLRootElement`), and leaves parsing to
+`encoding/xml`. The
 TypeScript `xml/` module wraps fast-xml-parser and carries the same policy in its
 defaults.
 
@@ -54,7 +55,7 @@ serializer.
 
 **Example:**
 - `isValidJSON('{"foo": "bar"}')` → `true` (hdf-utilities - syntax check)
-- `validateHdfResults({baselines: []})` → validates against HDF schema (hdf-validators)
+- `validateResults({baselines: []})` → validates against HDF schema (hdf-validators)
 
 ## Installation
 
@@ -154,9 +155,7 @@ const xmlOutput = buildXml(data);
 
 // Parse XML with automatic array detection
 const nessusXml = '<Report><ReportHost>...</ReportHost><ReportHost>...</ReportHost></Report>';
-const report = parseXmlWithArrays(nessusXml, {
-  arrayPaths: ['Report.ReportHost'] // Force these to always be arrays
-});
+const report = parseXmlWithArrays(nessusXml, ['ReportHost']); // tag names always parsed as arrays
 
 // Check if string is well-formed XML
 if (isValidXml(userInput)) {
@@ -261,29 +260,29 @@ Check if string can be parsed as JSON.
 
 ### Hash Utilities
 
-#### `sha256(data: string): Promise<string>`
+#### `sha256(data: HashInput): Promise<string>`
 
 Generate SHA-256 hash (hex-encoded).
 
 - **Parameters:**
-  - `data` - String to hash
+  - `data` - Text or bytes to hash (`HashInput = string | Uint8Array`; text is hashed as its UTF-8 bytes)
 - **Returns:** Promise resolving to a hex-encoded hash string
 
-#### `sha512(data: string): Promise<string>`
+#### `sha512(data: HashInput): Promise<string>`
 
 Generate SHA-512 hash (hex-encoded).
 
 - **Parameters:**
-  - `data` - String to hash
+  - `data` - Text or bytes to hash, as for `sha256`
 - **Returns:** Promise resolving to a hex-encoded hash string
 
-#### `generateHash(data: string, options?: HashOptions): Promise<string>`
+#### `generateHash(data: HashInput, options?: HashOptions): Promise<string>`
 
 Generate hash with custom algorithm and encoding.
 
 - **Parameters:**
-  - `data` - String to hash
-  - `options.algorithm` - Hash algorithm: `'sha256'` | `'sha512'` (default: `'sha256'`)
+  - `data` - Text or bytes to hash, as for `sha256`
+  - `options.algorithm` - Hash algorithm: `'sha256'` | `'sha384'` | `'sha512'` (default: `'sha256'`)
   - `options.encoding` - Output encoding: `'hex'` | `'base64'` (default: `'hex'`)
 - **Returns:** Promise resolving to the encoded hash string
 
@@ -296,7 +295,7 @@ Generate deterministic hash of JavaScript object.
   - `options` - Same as `generateHash`
 - **Returns:** Promise resolving to the hash of the serialized object
 
-#### `verifyHash(data: string, expectedHash: string, options?: HashOptions): Promise<boolean>`
+#### `verifyHash(data: HashInput, expectedHash: string, options?: HashOptions): Promise<boolean>`
 
 Verify data matches expected hash.
 
@@ -328,15 +327,16 @@ Build XML string from JavaScript object.
 - **Returns:** XML string with header
 - **Throws:** Error if conversion fails
 
-#### `parseXmlWithArrays(xml: string, options: { arrayPaths: string[] }): object`
+#### `parseXmlWithArrays(xml: string, arrayTags: string[], options?: object): Record<string, unknown>`
 
-Parse XML with specified paths forced as arrays.
+Parse XML with the named tags always parsed as arrays.
 
 - **Parameters:**
   - `xml` - XML string to parse
-  - `options.arrayPaths` - Dot-notation paths to treat as arrays (e.g., `'Report.ReportHost'`)
+  - `arrayTags` - Bare tag names to treat as arrays wherever they occur (e.g., `'ReportHost'`, not a path)
+  - `options` - fast-xml-parser parser options, plus `maxSize`, the maximum input length (optional)
 - **Returns:** Parsed object with consistent arrays
-- **Throws:** Error if XML is malformed
+- **Throws:** Error if XML is malformed or longer than `maxSize`
 
 #### `isValidXml(xml: string): boolean`
 

@@ -8,7 +8,7 @@
   "keywordCounts": {
     "$comment": 49,
     "$ref": 246,
-    "additionalProperties": 26,
+    "additionalProperties": 27,
     "allOf": 24,
     "anyOf": 14,
     "const": 24,
@@ -28,12 +28,12 @@
     "not": 5,
     "oneOf": 9,
     "pattern": 12,
-    "properties": 126,
+    "properties": 124,
     "required": 130,
     "then": 13,
     "title": 141,
-    "type": 661,
-    "unevaluatedProperties": 77
+    "type": 659,
+    "unevaluatedProperties": 76
   },
   "lint": {
     "redocly": {

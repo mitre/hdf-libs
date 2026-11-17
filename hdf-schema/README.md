@@ -75,18 +75,22 @@ import { severityToImpact, impactToSeverity, computeEffectiveStatus } from '@mit
 
 ### Validating Documents (TypeScript/JavaScript)
 
+Use `@mitre/hdf-validators`, which registers every schema for you:
+
 ```typescript
-import Ajv from 'ajv';
-import { hdfResultsSchema } from '@mitre/hdf-schema';
+import { validateResults } from '@mitre/hdf-validators';
 
-const ajv = new Ajv({ strict: false });
-const validate = ajv.compile(hdfResultsSchema);
-
-const isValid = validate(myDocument);
-if (!isValid) {
-  console.error(validate.errors);
+const result = validateResults(myDocument);
+if (!result.valid) {
+  console.error(result.getErrorMessage());
 }
 ```
+
+The schema objects this package exports (`hdfResultsSchema` and the rest) are in source form,
+with their `$ref`s to the primitive schemas left in place. A bare `new Ajv().compile(hdfResultsSchema)`
+therefore throws. To drive Ajv yourself, turn off meta-schema validation (or use Ajv's 2020-12
+build) and `addSchema` every other exported schema before compiling, as `createValidator()` in
+`hdf-validators/typescript/index.ts` does.
 
 ### Using Generated Types (TypeScript)
 
@@ -197,7 +201,9 @@ Interactive schema reference documentation is published at:
 - **`External_Reference` gains `content` and `encoding`**, and its `anyOf` widens so an entry that only embeds is valid.
 - **Mutual-requirement rules are now enforced by the shipped validators. Tightening.** The `content`/`encoding` pair on `External_Reference` and the `algorithm`/`checksum` pair on `Integrity` were written with `dependentRequired`, a 2019-09 keyword that both shipped validators ignore — the Go one is draft-07, and `hdf-validators` builds a default Ajv — so neither rule was ever applied by `hdf validate`. Both are `if`/`then` pairs now. A document with `encoding` but no `content`, or `algorithm` but no `checksum`, previously validated and now does not.
 - **`computeEffectiveStatus` no longer reads `impact`. Behavior change** for `@mitre/hdf-schema/helpers` consumers. The canonical ladder it delegates to is now a governing non-expired override, else the worst-wins roll-up; the `impact === 0 → notApplicable` short-circuit is gone, along with the error rung it needed (`error` already outranks every other status). A requirement at impact 0 whose results establish nothing returns `notReviewed` where it previously returned `notApplicable`. Not-applicability is now stated as a `notApplicable` result — which every reader of an InSpec control payload synthesizes for a control scored 0, `legacyhdf-to-hdf` for exec JSON and `splunk-to-hdf` for the same controls read out of Splunk — rather than inferred from a severity score. This retracts the v3.6.0 note below, which described the short-circuit as live.
-- **Compatibility.** The additive fields validate v3.7.x documents cleanly. The three breaking items are the `extensions` closure, the refusal of `document` on a raw-source entry, and the two newly-enforced mutual requirements.
+- **`createStatusOverride` follows the type-dependent status/impact rule. Behavior change** for `@mitre/hdf-schema/helpers` consumers. It used to default `status: 'notApplicable'` and pass a supplied status through on every type, so it built `riskAdjustment` and `operationalRequirement` overrides the v3.8.0 validators reject. An `operationalRequirement` is now built with neither status nor impact. A `riskAdjustment` is built with the caller's impact and no status, and the helper invents no impact for it, because a default re-score of 0 would read as "no longer applicable". Input the schema rejects throws a `TypeError` rather than being dropped: a status or impact on `operationalRequirement`, and a status or a missing impact on `riskAdjustment`. Every other type behaves as before.
+- **`Reference` is a closed object. Tightening.** A `refs` entry carries `ref`, `url` or `uri` and nothing else; a member HDF does not declare is now rejected by `hdf validate` and both shipped validators. The type was closed with `unevaluatedProperties`, which the draft-07 engines ignore, so `{"url": "…", "bogus": 1}` validated. The three members are declared at the top level under `additionalProperties: false`; the `anyOf` still requires at least one, and the items of a `ref` array stay open so a source's own reference record carries verbatim.
+- **Compatibility.** The additive fields validate v3.7.x documents cleanly. The four breaking items are the `extensions` closure, the refusal of `document` on a raw-source entry, the two newly-enforced mutual requirements, and the `Reference` closure.
 
 ### What's new in v3.7.0
 
@@ -211,7 +217,7 @@ Interactive schema reference documentation is published at:
 - **`previousChecksum` semantics stated precisely** (description-only, on `Standalone_Override`, `Status_Override`, and the POA&M element) — each amendment's checksum is recorded by the *next* one, so an in-place edit is detectable only for an amendment that has a later one chained to it. The chain is not tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a wholesale recompute are outside what it can detect; use `signature` for non-repudiation. The field is omitted (not `null`) on the first amendment. This is the contract `hdf amend verify` enforces.
 - **Schema descriptions reflowed into paragraphs** and the source files pretty-printed one value per line. Cosmetic in the source, but the bundled `dist/schemas/` descriptions now carry paragraph breaks, which IDE tooltips render.
 - **`computeEffectiveStatus` helper delegates to the canonical status ladder** in `@mitre/hdf-utilities`. **Behavior change** for `@mitre/hdf-schema/helpers` consumers: the helper no longer returns a pre-set `effectiveStatus` verbatim, and it now applies the governing non-expired `statusOverrides` entry and the error roll-up ahead of the impact-0 `notApplicable` short-circuit, matching the CLI and converters.
-- **`@mitre/hdf-schema/testhdf` sub-path export** — test-only builders (`req`, `baseline`, `doc`, `results`, `baselineDoc`, `override`, `amendments`, `system`, `plan`, `evidencePackage`, `changeEvent`, `comparison`, and friends) that construct schema-valid documents for downstream test suites, with a Go counterpart at `github.com/mitre/hdf-libs/hdf-schema/testhdf/go`.
+- **`@mitre/hdf-schema/testhdf` sub-path export** — test-only builders (`req`, `baseline`, `doc`, `results`, `baselineDoc`, `override`, `amendments`, `system`, `plan`, `evidencePackage`, `changeEvent`, `comparison`, and friends) that construct schema-valid documents for downstream test suites, with a Go counterpart at `github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3`.
 - **Compatibility.** The one schema addition is optional, so v3.5.x documents validate unchanged under v3.6.0. A v3.6.0 document carrying `preAmendmentChecksum` will not validate against the v3.5.x schemas, which reject unevaluated properties; strip the field or validate against v3.6.0.
 
 ### What's new in v3.5.0

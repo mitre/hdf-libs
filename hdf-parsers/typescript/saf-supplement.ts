@@ -3,10 +3,13 @@
 // validation. Mirrors the Go side at hdf-parsers/go/saf_supplement.go — the two
 // are pinned against a shared legacy-in/v3-out fixture pair.
 
+import { compareCodePoint } from '@mitre/hdf-utilities';
+
 const SAF_TARGET_DEPRECATION =
   "deprecated: top-level 'target' (saf supplement target write) was normalized into components[]; emit a component directly — this compatibility shim will be removed in a future release";
 const SAF_PROVENANCE_DEPRECATION =
   "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release";
+const SAF_PASSTHROUGH_DROPPED = "top-level 'passthrough' was dropped: extensions.passthrough already holds a value";
 
 // v3 component/target types. Kept in sync with the schema's Target_Type enum; an
 // unknown type is left for the schema to reject rather than guessed.
@@ -16,10 +19,18 @@ const VALID_COMPONENT_TYPES = new Set([
   'dataset', 'host', 'network', 'repository',
 ]);
 
+export interface SafNormalizeOptions {
+  /** Let the target absorb the lone component the caller built from an InSpec
+   * `platform` (no componentId, OS name standing in as the name). Only that
+   * caller knows where the component came from; on a plain parse the same shape
+   * is a genuine component and is never renamed. */
+  mergePlatformComponent?: boolean;
+}
+
 export interface SafNormalizeResult {
   /** The normalized JSON string (byte-identical to the input when nothing was rewritten). */
   output: string;
-  /** One deprecation warning per rewritten legacy key. */
+  /** One warning per rewritten legacy key (or its drop), then one per moved sibling. */
   warnings: string[];
 }
 
@@ -29,18 +40,16 @@ function isObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * Rewrite the legacy SAF-supplement top-level keys into v3-native carriers so a
- * SAF-produced document becomes valid v3 before schema validation: `target` → a
+ * SAF-produced document is valid v3 before schema validation: `target` → a
  * components[] entry (type validated; id, or failing that name, → name; id alone →
  * accountId for cloudAccount; labels and boundary → labels, boundary winning;
- * merged into a matching or platform-derived component rather than duplicated);
- * `passthrough` →
- * extensions.passthrough.
- *
- * Deliberately narrow: input that is not a JSON object, or carries neither legacy
- * key, is returned BYTE-IDENTICAL with no warnings. A target whose type is not a
- * valid component type is left in place (with a warning) for the schema to reject.
+ * merged into a same-name component rather than duplicated, and only with
+ * `mergePlatformComponent` into the platform-derived one); `passthrough` →
+ * extensions.passthrough. Deliberately narrow: input that is not a JSON object,
+ * or carries neither legacy key, is returned BYTE-IDENTICAL with no warnings. A
+ * target of unmapped type is left in place, with a warning, for the schema to reject.
  */
-export function normalizeSafSupplement(input: string): SafNormalizeResult {
+export function normalizeSafSupplement(input: string, options: SafNormalizeOptions = {}): SafNormalizeResult {
   let doc: unknown;
   try {
     doc = JSON.parse(input);
@@ -54,7 +63,7 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
   const warnings: string[] = [];
 
   if ('target' in doc) {
-    const reason = rewriteTarget(doc);
+    const reason = rewriteTarget(doc, options.mergePlatformComponent === true);
     if (reason === null) {
       warnings.push(SAF_TARGET_DEPRECATION);
     } else {
@@ -63,8 +72,7 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
   }
 
   if ('passthrough' in doc) {
-    const relocations = rewritePassthrough(doc);
-    warnings.push(SAF_PROVENANCE_DEPRECATION, ...relocations);
+    warnings.push(...rewritePassthrough(doc));
   }
 
   return { output: JSON.stringify(doc), warnings };
@@ -72,11 +80,25 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
 
 const UNMAPPED_TYPE = 'target.type is not a recognized component type';
 
+/** Deep equality over parsed JSON, as Go's reflect.DeepEqual compares decoded values:
+ * key order is irrelevant, a null-valued key is still a key. */
+function jsonEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => jsonEqual(v, b[i]));
+  }
+  if (isObject(a) && isObject(b)) {
+    const ka = Object.keys(a);
+    return ka.length === Object.keys(b).length && ka.every((k) => hasOwn(b, k) && jsonEqual(a[k], b[k]));
+  }
+  return a === b;
+}
+
 /** Lift a legacy top-level `target` object into components[]. Returns a reason,
  * leaving `target` in place, when it cannot be placed: not an object, a type
- * that is not a component type, or no identity and no platform-derived
- * component to take it. */
-function rewriteTarget(doc: Record<string, unknown>): string | null {
+ * that is not a component type, or no identity and no component to take it.
+ * mergePlatform lets the component the v2 upgrade derived from `platform` take
+ * it, renaming that component. */
+function rewriteTarget(doc: Record<string, unknown>, mergePlatform: boolean): string | null {
   const tgt = doc.target;
   if (!isObject(tgt)) return UNMAPPED_TYPE;
   const typ = typeof tgt.type === 'string' ? tgt.type : '';
@@ -93,7 +115,7 @@ function rewriteTarget(doc: Record<string, unknown>): string | null {
   const comps: unknown[] = Array.isArray(doc.components) ? doc.components : [];
 
   let c = findComponent(comps, name, typ);
-  if (!c) {
+  if (!c && mergePlatform) {
     c = platformComponent(comps, typ);
     if (c && name !== '') c.name = name;
   }
@@ -167,21 +189,31 @@ const EXTENSIONS_DEFINED_MEMBERS = new Set(['passthrough', 'rawSourceArtifacts']
 /** Move the legacy top-level `passthrough` under extensions.passthrough, then
  * relocate any other key left beside it into passthrough too: `extensions` is a
  * closed object, so a sibling it does not define makes the document invalid.
- * Returns a warning per relocated or undroppable key. */
+ * The first warning says what became of the legacy carrier: normalized (a deep-equal
+ * extensions.passthrough loses nothing), or dropped because extensions.passthrough
+ * holds a different value; then one per relocated or stuck sibling. */
 function rewritePassthrough(doc: Record<string, unknown>): string[] {
   const ext = isObject(doc.extensions) ? doc.extensions : {};
-  if (!('passthrough' in ext)) ext.passthrough = doc.passthrough;
+  let lead = SAF_PROVENANCE_DEPRECATION;
+  if ('passthrough' in ext) {
+    if (!jsonEqual(ext.passthrough, doc.passthrough)) lead = SAF_PASSTHROUGH_DROPPED;
+  } else {
+    ext.passthrough = doc.passthrough;
+  }
   doc.extensions = ext;
   delete doc.passthrough;
-  return relocateExtensionSiblings(ext);
+  return [lead, ...relocateExtensionSiblings(ext)];
 }
 
 /** Move undefined `extensions` keys into extensions.passthrough. Without this, a
  * legacy document carrying something like extensions.audit normalizes into a
- * document the closed `extensions` rejects. */
+ * document the closed `extensions` rejects. Keys are visited in code-point order,
+ * not insertion order, because Go decodes into a map and cannot see source order. */
 function relocateExtensionSiblings(ext: Record<string, unknown>): string[] {
   const warnings: string[] = [];
-  const siblings = Object.keys(ext).filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k));
+  const siblings = Object.keys(ext)
+    .filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k))
+    .sort(compareCodePoint);
   if (siblings.length === 0) return warnings;
 
   if ('passthrough' in ext && !isObject(ext.passthrough)) {

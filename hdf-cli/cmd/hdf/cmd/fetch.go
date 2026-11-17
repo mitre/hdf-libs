@@ -70,6 +70,7 @@ Available sources:
   aws-securityhub   AWS Security Hub ASFF findings (supports --check for credential verification)
   defectdojo        DefectDojo findings (supports --check for credential verification)
   gitlab            GitLab pipeline security scan artifacts
+  gitlab-vulnerabilities  GitLab Vulnerability Report with triage state (Ultimate; supports --check)
   sonarqube         SonarQube static analysis issues
   splunk            Splunk HDF evaluation events
 
@@ -79,6 +80,7 @@ Examples:
   hdf fetch aws-securityhub --region us-east-1 --check       # verify creds only
   hdf fetch defectdojo --url https://defectdojo.example.com output.json
   hdf fetch gitlab --project my-org/my-project --job semgrep-sast output.json
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project output.json
   hdf fetch sonarqube --url https://sonarqube.example.com --project-key my-project output.json
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid <guid> output.json
 

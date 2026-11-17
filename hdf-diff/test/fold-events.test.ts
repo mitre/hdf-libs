@@ -12,6 +12,7 @@ import { changeEventFromPrevious, type KeyState } from '../src/change-event.js';
 import { computeEffectiveChecksum, computeEffectiveImpact } from '../src/effective-checksum.js';
 import { computeEffectiveStatus } from '../src/status.js';
 import { foldChangeEventsIntoComparison } from '../src/fold-events.js';
+import { ORDER_VECTORS, orderResultsDoc } from './order-vectors.js';
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const load = (name: string): string => readFileSync(join(FIXTURES, name), 'utf-8');
@@ -421,5 +422,15 @@ describe('foldChangeEventsIntoComparison — timestamp-less seed', () => {
     const diffs = result.comparison['requirementDiffs'] as Req[];
     expect(diffs).toHaveLength(1);
     expect(diffs[0]?.['oldEffectiveStatus'], 'expiry must anchor to the event occurrence, never the wall clock').toBe('passed');
+  });
+});
+
+describe('foldChangeEventsIntoComparison identifier order (shared vectors)', () => {
+  it('orders requirementDiffs by code point, as Go does', async () => {
+    const { ids, codePointOrder } = ORDER_VECTORS;
+    const seedJson = JSON.stringify(orderResultsDoc('passed', ids));
+    const events = await deriveStream(seedJson, JSON.stringify(orderResultsDoc('failed', [...ids].reverse())));
+    const { comparison } = await foldChangeEventsIntoComparison(seedJson, events);
+    expect((comparison['requirementDiffs'] as Req[]).map((d) => d['id'])).toEqual(codePointOrder);
   });
 });

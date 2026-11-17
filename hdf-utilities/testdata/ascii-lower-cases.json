@@ -1,0 +1,14 @@
+{
+  "$comment": "Shared table for ASCII-only lowercasing, read by go/strings_test.go (ASCIILower) and test/string.test.ts (asciiLower) so neither language can drift. Only A-Z changes; every other code point passes through, which is what makes the two languages agree: JavaScript's toLowerCase applies Unicode lowercase mapping and Go's strings.ToLower and strings.EqualFold apply their own Unicode tables.",
+  "cases": [
+    {"input": "", "lowered": "", "why": "empty stays empty"},
+    {"input": "CWE-79", "lowered": "cwe-79", "why": "the ordinary CWE identifier"},
+    {"input": "CycloneDX", "lowered": "cyclonedx", "why": "mixed-case ASCII"},
+    {"input": "HTTPS://SPDX.ORG/rdf", "lowered": "https://spdx.org/rdf", "why": "punctuation and digits are untouched"},
+    {"input": "CWE-İ", "lowered": "cwe-İ", "why": "U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE; toLowerCase turns it into two code points"},
+    {"input": "CWE-Ä", "lowered": "cwe-Ä", "why": "U+00C4 LATIN CAPITAL LETTER A WITH DIAERESIS; a Unicode lowercase mapping would change it"},
+    {"input": "ẞ", "lowered": "ẞ", "why": "U+1E9E LATIN CAPITAL LETTER SHARP S"},
+    {"input": "K", "lowered": "K", "why": "U+212A KELVIN SIGN, which a Unicode mapping lowers to ASCII k"},
+    {"input": "ſ", "lowered": "ſ", "why": "U+017F LATIN SMALL LETTER LONG S, which Unicode case folding matches against s"}
+  ]
+}
