@@ -265,6 +265,11 @@ func modernValidationErrors(failure *jsonschema.ValidationError, document any) [
 			return result
 		}
 	}
+	return append(result, modernErrorDetails(failure, document)...)
+}
+
+func modernErrorDetails(failure *jsonschema.ValidationError, document any) []ValidationError {
+	var result []ValidationError
 	field := strings.Join(failure.InstanceLocation, ".")
 	if field == "" {
 		field = "(root)"
