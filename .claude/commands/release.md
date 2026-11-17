@@ -324,7 +324,7 @@ Also run `bash scripts/check-go-mod-tidy.sh`, which `pnpm check` does not includ
    - **Subject:** `chore(release): bump workspace from OLD to NEW`
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
-6. **Only the root tag is pushed by hand, and only onto a prepare commit.** The workflow runs on a pushed `vNEW` or `vNEW-rc.N` root tag and creates the per-module tags itself (`hdf-cli/vNEW`, `hdf-converters/vNEW`, etc.) in lockstep on the same commit; never push those by hand. The root tag must sit on the squash commit of that version's prepare PR (Phase 7.5 step 0), checked by subject before tagging — on any other commit the modules publish with requires no tag provides.
+6. **Only the root tag is pushed by hand, and only onto a prepare commit.** The workflow runs on a pushed `vNEW` or `vNEW-rc.N` root tag and creates the per-module tags itself (`hdf-cli/vNEW`, `hdf-converters/vNEW`, etc.) in lockstep on the same commit; never push those by hand. The root tag must sit on the squash commit of that version's prepare PR (Phase 7.5 step 0), checked by subject before tagging — on any other commit the modules publish with requires no tag provides. Push it only after that commit's `main` CI run has completed green: `release-evidence` takes the evidence package from that run and fails closed while it is still running, and a tag pushed straight after the merge (3.8.0-rc.1) lands in exactly that window. Recovery is `gh run rerun <id> --failed` once CI is green; the tag itself is fine.
 7. **npm dist-tags are workflow-owned.** Formal stable releases publish `@mitre/hdf-converters` under `stable`; its `latest` remains owned by heimdall2's v2 line. Other packages keep `latest` for a stable release. Formal RCs publish under `rc`. `next` belongs to the automatic main-snapshot workflow and must not be moved by a formal release. Never run a manual publish for hdf-converters or move its `latest` to v3. See `site/docs/contributing/main-snapshots.md` for the channel migration and snapshot policy. The formal workflow retains its inline Bash publisher, including dependency order, pnpm packing, provenance and immutable-content retry verification; the preparation, review, signing and approval phases of this skill remain required for formal releases.
 
 ### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
@@ -360,7 +360,11 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
    # Check the subject before tagging; 3.7.2-rc.1 was tagged on the commit
    # BEFORE its prepare commit and published modules nobody could build:
    git fetch origin && git log -1 --format='%h %s' origin/main   # must read "chore(release): prepare vNEW-rc.1"
-   git tag vNEW-rc.1 origin/main && git push origin vNEW-rc.1
+   # Wait for main's CI on that commit to finish green. release-evidence fetches the
+   # evidence package from that run and fails closed when it is still in progress;
+   # 3.8.0-rc.1 was tagged three minutes after the merge and died there.
+   gh run list --workflow ci.yml --branch main --event push --commit "$(git rev-parse origin/main)" --json status,conclusion
+   git tag -s vNEW-rc.1 origin/main -m vNEW-rc.1 && git push origin vNEW-rc.1
    ```
 
    Without it the tag publishes Go modules that resolve for nobody: Go reads each module's `go.mod` from the tagged commit and ignores its `replace` directives, so requires naming the stable `vNEW` point at a version no tag provides. `go get` still succeeds and only `go build` fails, which is why rc.1 through rc.4 of 3.6.0 all shipped broken. This mirrors etcd's `release_mod.sh` and opentelemetry-go's `multimod prerelease`; both commit the rewrite before tagging.
@@ -438,7 +442,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] The new entry opens with a `### Highlights` prose summary: one paragraph per consumer-visible theme, each linked to its detail, behaviour changes named, nothing internal in it — and the user edited the draft before it went in
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
-- [ ] Each root tag (`vNEW-rc.N`, then `vNEW`) was pushed onto its own prepare commit, subject checked first; no per-module tag pushed by hand
+- [ ] Each root tag (`vNEW-rc.N`, then `vNEW`) was pushed onto its own prepare commit, subject checked first and that commit's `main` CI already green; no per-module tag pushed by hand
 - [ ] Each root tag is a signed tag object (`git tag -s`, never `-a` alone or a lightweight tag) made with a key GitHub verifies for a maintainer: the workflow's `verify-tag-signature` job fails the whole release — nothing publishes — when GitHub reports `verification.verified` false (reason `unsigned`, `unknown_key`, `bad_email`, `expired_key`, …) or the ref is not a tag object. On that failure: delete the tag, re-create it signed on the same commit, push it again. Never bypass the job or the ruleset.
 - [ ] *(when cutting any prerelease tag)* Phase 7.5 step 0 prepare-release commit: `scripts/set-go-module-versions.sh vNEW-rc.N` run and committed BEFORE the tag, and a consumer `go build` against the published prerelease passes outside the repo
 - [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
