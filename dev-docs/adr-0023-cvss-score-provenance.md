@@ -1,4 +1,4 @@
-# ADR-0023: Who supplied a CVSS score, and where a VEX document's scores go
+# ADR-0023: Who calculated a CVSS score, and where a VEX document's scores go
 
 - **Status:** Proposed
 - **Date:** 2026-11-16
@@ -12,7 +12,7 @@
 
 Two questions, everything else follows from them.
 
-**A. Record who supplied each score.** Add two optional fields to the CVSS entry: `provider` (who
+**A. Record who calculated each score.** Add two optional fields to the CVSS entry: `provider` (who
 calculated it — NVD, Red Hat, Tenable) and `role` (`primary` or `secondary`, as NVD, Grype and
 Snyk mark it). `source` keeps its meaning, the CVE or advisory the score belongs to. Today
 converters disagree on what goes in `source`, and a scanner that sends several scores per CVE
@@ -47,7 +47,7 @@ converter → exporters. One question for you on the schema PR: 3.8.0 before it 
 
 A CVSS entry (`cvss.schema.json`) has one field about origin, `source`, documented as "the
 identifier the CVSS data is associated with — most commonly a CVE ID … but may also be a vendor
-advisory ID, GHSA, or similar". Nothing records **who supplied** the score, or whether it is that
+advisory ID, GHSA, or similar". Nothing records **who calculated** the score, or whether it is that
 provider's **primary** assessment or a **secondary** one.
 
 Scanners routinely report several scores for one CVE, each from a different provider. With no
@@ -108,10 +108,15 @@ override field (spdx-vex-to-hdf), where it reads as a re-score nobody made.
 ## Decision (proposed)
 
 1. **Add two optional fields to the Cvss primitive:**
-   - `provider`: who supplied the score — `name` (required within the object) and an optional
-     `identifier` (an e-mail, an organisation UUID or a URL, as the source gives it). This
-     follows CycloneDX's `source { name, url }` and CVE 5's `providerMetadata`. Values are written
-     as the source gives them; no alias table is imposed.
+   - `provider`: who calculated the score, as the input names it — `name` (required within the
+     object) and an optional `identifier` (an e-mail, an organisation UUID or a URL, as the source
+     gives it). This is the meaning CycloneDX gives `rating.source` ("the source that calculated
+     the severity or risk rating") and CSAF 2.1 gives `metrics[].source` ("the source that
+     originally determined the metric"), and follows CVE 5's `providerMetadata`. Values are
+     written as the source gives them; no alias table is imposed. A tool that passes on another
+     party's score without naming that party is not the provider, and the field stays absent:
+     JFrog Xray's documentation says its CVSS scores come from NVD or an operating system's
+     security advisory, and its reports carry an issue-level `provider` that does not say which.
    - `role`: `primary` or `secondary`, as NVD, Grype and Snyk use the terms; absent when the
      source does not say.
 2. **`source` keeps its documented meaning**, the identifier the score belongs to (a CVE,
