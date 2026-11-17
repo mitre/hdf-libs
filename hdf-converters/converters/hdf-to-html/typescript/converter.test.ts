@@ -9,7 +9,7 @@ import { results as sharedResults } from '@mitre/hdf-fixtures';
 import { resultsCorpus } from '../../../shared/typescript/schema-corpus.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { SeverityCounts } from '@mitre/hdf-engine';
-import { byCodePoint } from '../../../shared/typescript/exportmap.js';
+import { compareCodePoint } from '@mitre/hdf-utilities';
 import {
   compliance,
   convertHdfDocumentsToHtml,
@@ -969,8 +969,8 @@ describe('hdf-to-html helpers', () => {
 
   it('orders strings by code point, as Go does', () => {
     // U+FF5E sorts before U+1F600 by code point but after it by UTF-16 unit.
-    expect(['\u{1F600}', '～', 'b', 'a', 'ab'].sort(byCodePoint)).toEqual(['a', 'ab', 'b', '～', '\u{1F600}']);
-    expect(byCodePoint('a', 'a')).toBe(0);
+    expect(['\u{1F600}', '～', 'b', 'a', 'ab'].sort(compareCodePoint)).toEqual(['a', 'ab', 'b', '～', '\u{1F600}']);
+    expect(compareCodePoint('a', 'a')).toBe(0);
   });
 });
 

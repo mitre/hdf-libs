@@ -17,6 +17,7 @@
  * is a sub-document concern with no CLI converter until Phase 3.
  */
 
+import { asciiLower } from '@mitre/hdf-utilities';
 import type { BomFormat } from './model.js';
 
 export interface FormatDetection {
@@ -143,22 +144,11 @@ function isSPDX3Context(v: unknown, depth = 0): boolean {
   return false;
 }
 
-/**
- * Lowercases A-Z and nothing else. `String.prototype.toLowerCase` applies Unicode
- * lowercase mapping and Go's `strings.EqualFold` applies Unicode simple case
- * folding — which matches U+017F LATIN SMALL LETTER LONG S against 's' where
- * toLowerCase does not. Two stdlib case operations that look equivalent are not,
- * so neither is used: RFC 3986 section 6.2.2.1 specifies ASCII case
- * normalization for the scheme and host, which is what this does.
- */
-function asciiLower(s: string): string {
-  return s.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
-}
-
 function isSPDX3ContextURL(s: string): boolean {
   // These exact characters, not a category: see the doc comment above for what is
   // and is not covered, and the table for which of them a row isolates.
   if (/[ \t\r\n\\%]/.test(s) || s.includes('..')) return false;
+  // RFC 3986 section 6.2.2.1: scheme and host compare ASCII case-insensitively.
   let rest: string | undefined;
   for (const scheme of ['https://', 'http://']) {
     if (asciiLower(s.slice(0, scheme.length)) === scheme) {

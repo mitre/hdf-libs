@@ -20,6 +20,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
@@ -528,4 +529,54 @@ func Disposition(req map[string]interface{}, ref time.Time) string {
 		return GetStr(req, "disposition")
 	}
 	return ""
+}
+
+// --- rawSourceRecord carriage ---
+
+// RecordLayout selects how a rawSourceRecord's JSON content is laid out.
+type RecordLayout int
+
+const (
+	// RecordCompact is EncodeLine's single-line form.
+	RecordCompact RecordLayout = iota
+	// RecordIndented is EncodeDocument's two-space-indented form.
+	RecordIndented
+)
+
+// BuildJSONRawSourceRecord carries a source tool's JSON record on an HDF result: the
+// bytes are decoded with UseNumber, so every number token survives as written, then
+// re-encoded canonically (keys sorted, < > & raw, U+2028/U+2029 escaped) so the
+// TypeScript peer, buildJsonRawSourceRecord, is byte-identical. Returns nil when
+// there is nothing to carry or the bytes do not decode.
+func BuildJSONRawSourceRecord(raw json.RawMessage, pointer string, layout RecordLayout) *hdf.RawSourceRecord {
+	if len(raw) == 0 {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var untyped interface{}
+	if err := dec.Decode(&untyped); err != nil {
+		return nil
+	}
+	return BuildJSONRawSourceRecordFromValue(untyped, pointer, layout)
+}
+
+// BuildJSONRawSourceRecordFromValue is BuildJSONRawSourceRecord for a value already
+// in hand, encoded as it stands: a struct keeps its declaration order. Returns nil
+// when v does not encode.
+func BuildJSONRawSourceRecordFromValue(v interface{}, pointer string, layout RecordLayout) *hdf.RawSourceRecord {
+	encode := EncodeLine
+	if layout == RecordIndented {
+		encode = EncodeDocument
+	}
+	encoded, err := encode(v)
+	if err != nil {
+		return nil
+	}
+	return &hdf.RawSourceRecord{
+		Content:   string(bytes.TrimRight(encoded, "\n")),
+		Encoding:  hdf.UTF8,
+		MediaType: "application/json",
+		Pointer:   &pointer,
+	}
 }

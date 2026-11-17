@@ -554,3 +554,12 @@ describe('dbprotect to HDF converter', () => {
     });
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertDbprotectToHdf(input)).rejects.toThrow(
+      new Error('dbprotect: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

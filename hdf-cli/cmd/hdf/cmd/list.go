@@ -75,7 +75,8 @@ Examples:
 	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
 	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "",
 		"Filter by status: "+FilterHelpVocabulary("status"))
-	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
+	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false,
+		"With --detail requirements, print a flat ID/Status/Title table instead of grouping by status")
 
 	return cmd
 }

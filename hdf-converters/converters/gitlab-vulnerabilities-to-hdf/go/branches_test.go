@@ -90,14 +90,18 @@ func TestResultStartTime_Fallbacks(t *testing.T) {
 	assert.Equal(t, "2026-09-20T19:50:18Z", stamp(resultStartTime(&Vulnerability{}, fetched)), "never omit startTime: the fetch time is the last resort")
 }
 
-func TestBuildDescriptions_FallsBackToTitleAndOmitsEmptySolution(t *testing.T) {
+func TestBuildDescriptions_NoDescriptionGivesEmptyDefaultNeverTheTitle(t *testing.T) {
 	d := buildDescriptions(&Vulnerability{Title: "Only a title", Solution: str("")})
-	require.Len(t, d, 1)
-	assert.Equal(t, "Only a title", d[0].Data)
+	assert.Equal(t, []hdf.Description{{Label: "default", Data: ""}}, d)
+
+	d = buildDescriptions(&Vulnerability{Title: "T", Solution: str("Fix it")})
+	assert.Equal(t, []hdf.Description{{Label: "default", Data: ""}, {Label: "fix", Data: "Fix it"}}, d)
+	for _, desc := range d {
+		assert.NotEqual(t, "T", desc.Data, "the title is carried in title, never in descriptions")
+	}
 
 	d = buildDescriptions(&Vulnerability{Title: "T", Description: "D", Solution: str("Fix it")})
-	require.Len(t, d, 2)
-	assert.Equal(t, hdf.Description{Label: "fix", Data: "Fix it"}, d[1])
+	assert.Equal(t, []hdf.Description{{Label: "default", Data: "D"}, {Label: "fix", Data: "Fix it"}}, d)
 }
 
 func TestTagHelpers_NilInputs(t *testing.T) {

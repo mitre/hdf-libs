@@ -582,6 +582,14 @@ func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
 	assert.Contains(t, err.Error(), "entity declarations")
 }
 
+// A byte-order mark is an encoding signature, not content: it must not hide the DTD.
+func TestConvertBurpsuiteToHDF_EntityExpansionAfterBOM(t *testing.T) {
+	input := []byte("\xEF\xBB\xBF" + `<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
+
 // --- Result start_time backfill (sourced from exportTime) ---
 
 func TestConvertBurpsuiteToHDF_ResultStartTime(t *testing.T) {

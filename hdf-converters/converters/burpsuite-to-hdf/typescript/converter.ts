@@ -12,7 +12,7 @@ import {
   stripHTML,
   mapCWEToNIST,
   extractCWEIDs,
-  validateInputSize,
+  validateXmlInput,
   serializeHdf,
 } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -199,7 +199,7 @@ export async function convertBurpsuiteToHdf(input: string, converterVersion = '1
   if (!input || input.trim().length === 0) {
     throw new Error('burpsuite: empty input');
   }
-  validateInputSize(input, 'burpsuite');
+  validateXmlInput(input, 'burpsuite');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

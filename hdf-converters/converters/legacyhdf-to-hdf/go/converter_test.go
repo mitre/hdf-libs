@@ -1693,7 +1693,7 @@ func TestConvertLegacyHDF_ExplicitImpactZeroStillTranslates(t *testing.T) {
 // the equivalence rests on, so setting the default to 0 fails here loudly
 // instead of silently re-coupling absence to the translation.
 func TestUnknownSeverityImpactIsNotZero(t *testing.T) {
-	assert.NotZero(t, unknownSeverityImpact,
+	assert.NotZero(t, hdfutil.UnknownSeverityImpact,
 		"an unknown severity must not collide with the author's explicit 0, "+
 			"which is what triggers the notApplicable translation")
 }
@@ -1724,4 +1724,48 @@ func TestConvertLegacyHDF_ResultlessControlIsSchemaValid(t *testing.T) {
 	assert.NotContains(t, string(raw), `"results":null`)
 	v := validators.Validate(raw, validators.TypeResults)
 	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
+}
+
+// A defaulted impact must carry the shared unrated marker so it cannot pass for a
+// genuine medium; the source's own tags.severity decides whether it was rated.
+// An explicit impact, 0 included, is the author's rating and is never marked.
+func TestConvertLegacyHDF_AbsentImpactMarksUnrated(t *testing.T) {
+	cases := []struct {
+		name    string
+		control string
+		impact  float64
+		unrated bool
+	}{
+		{"absent impact, empty tags", `"tags":{}`, 0.5, true},
+		{"absent impact, no tags key", `"title":"t"`, 0.5, true},
+		{"absent impact, unrated token", `"tags":{"severity":"unknown"}`, 0.5, true},
+		{"absent impact, non-string severity", `"tags":{"severity":3}`, 0.5, true},
+		{"absent impact, rated severity", `"tags":{"severity":"high"}`, 0.5, false},
+		{"explicit 0", `"impact":0,"tags":{}`, 0, false},
+		{"explicit 0.5", `"impact":0.5,"tags":{}`, 0.5, false},
+		{"explicit 0.5, unrated token", `"impact":0.5,"tags":{"severity":"unknown"}`, 0.5, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := []byte(`{"platform":{"name":"centos","release":"7"},"version":"4.16.0",
+"statistics":{},"profiles":[{"name":"p","sha256":"abc","controls":[{"id":"V-1",` + tc.control + `,
+"results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+			v1, err := ParseLegacyHDF(doc)
+			require.NoError(t, err)
+			out := ConvertLegacyHDF(v1, "1.0.0")
+
+			req := out.Baselines[0].Requirements[0]
+			assert.InDelta(t, tc.impact, req.Impact, 0.0001)
+			if tc.unrated {
+				assert.Equal(t, "unrated", req.Tags["severity_rating"])
+			} else {
+				assert.NotContains(t, req.Tags, "severity_rating")
+			}
+
+			raw, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+		})
+	}
 }

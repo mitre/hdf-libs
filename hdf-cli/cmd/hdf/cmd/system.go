@@ -159,6 +159,9 @@ var requiredSystemFields = map[string]bool{
 }
 
 func runSystemSet(inputPath, outputPath, owner, description, name, systemID string, unsetFields []string) error {
+	if err := requireOutputForStdin(inputPath, outputPath, "document"); err != nil {
+		return err
+	}
 	data, err := readInputFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read system document: %w", err)
