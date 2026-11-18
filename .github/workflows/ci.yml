@@ -402,6 +402,7 @@ jobs:
           pnpm run lint:timestamps
           pnpm run lint:generated-html
           pnpm run lint:package-names
+          pnpm run lint:side-effects
       # The consumer check installs with the same pinned npm client as publishing.
       - uses: $/.github/actions/setup-npm
       - name: Shared npm consumer smoke tests
