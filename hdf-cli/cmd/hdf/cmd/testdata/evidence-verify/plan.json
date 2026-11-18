@@ -7,11 +7,7 @@
       "baselineRef": "PostgreSQL-STIG"
     }
   ],
-  "extensions": {
-    "passthrough": {
-      "createdAt": "2026-03-31T02:19:54Z"
-    }
-  },
+  "createdAt": "2026-03-31T02:19:54Z",
   "generator": {
     "name": "hdf-cli",
     "version": "dev"
