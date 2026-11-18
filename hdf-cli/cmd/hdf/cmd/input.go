@@ -196,8 +196,23 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 			info.Size(), describeLimit(maxSize))
 	}
 
-	// The file can grow between Stat and the read, so the read enforces the limit too.
-	return readAtMost(f, maxSize, "file")
+	return readStatted(f, info.Size(), path)
+}
+
+// readStatted reads the file f whose Stat reported size bytes. It asks for one byte
+// more: receiving it means the file grew after the size check, and a partial snapshot
+// of a file still being written is refused rather than parsed, hashed or archived.
+func readStatted(f io.Reader, size int64, path string) ([]byte, error) {
+	buf := make([]byte, size+1)
+	n, err := io.ReadFull(f, buf)
+	switch {
+	case err == nil:
+		return nil, fmt.Errorf("input grew while it was read: %s (%d bytes at open)", path, size)
+	case errors.Is(err, io.EOF), errors.Is(err, io.ErrUnexpectedEOF):
+		return buf[:n], nil
+	default:
+		return nil, fmt.Errorf("failed to read %s: %w", path, err)
+	}
 }
 
 // readAtMost reads all of r through the shared bounded reader and renders an over-long

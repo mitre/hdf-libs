@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- **The `hdf` CLI no longer reads a truncated prefix of a file that grows past `--max-size` after its size is checked.** File input was checked with `Stat` and then read through a reader capped at exactly the limit, so a file that grew between the two returned its first `--max-size` bytes with no error, and the CLI parsed, hashed or archived that prefix. File and stdin input now share one bounded read that takes one byte past the limit and fails with `input too large ... (use --max-size to increase)`; the `Stat` check still refuses an oversized file before any read. The size errors now report the limit in effect, so `--max-size 0` (which falls back to 256 MB) no longer reports a 0 MB limit.
+- **The `hdf` CLI refuses a file that grows while it is read, instead of parsing, hashing or archiving a partial snapshot of it.** File input was checked with `Stat` and then read through a reader capped at exactly `--max-size`, so a file that grew between the two returned its first `--max-size` bytes with no error, and a file still being appended under the limit returned whatever had been written so far. A file is now read against the size its `Stat` reported: one more byte arriving means the file is still being written, and the read fails with `input grew while it was read: <path> (<n> bytes at open)`; the `Stat` check still refuses an oversized file before any read. Stdin is read through a bound one byte past the limit and fails with `input too large ... (use --max-size to increase)` rather than returning a truncated prefix. The size errors report the limit in effect, so `--max-size 0` (which falls back to 256 MB) no longer reports a 0 MB limit.
 
 ## [3.8.0] - 2026-11-16
 

@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 )
 
 func TestReadFromFile_NotFound(t *testing.T) {
@@ -205,5 +207,60 @@ func TestGetMaxFileSize(t *testing.T) {
 	actual := getMaxFileSize()
 	if actual != expected {
 		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
+	}
+}
+
+func TestReadStatted_ReturnsTheStattedBytes(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		size  int64
+	}{
+		{"exactly the stat'd size", "abc", 3},
+		{"shrunk since the stat", "ab", 3},
+		{"empty file", "", 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			data, err := readStatted(strings.NewReader(c.input), c.size, "scan.json")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if string(data) != c.input {
+				t.Errorf("got %q, want %q", data, c.input)
+			}
+		})
+	}
+}
+
+// A file appended to between its Stat and its read delivers more bytes than the Stat
+// reported. That is a partial snapshot of a file still being written, so it is refused
+// however far under --max-size it is, instead of being parsed, hashed or archived.
+func TestReadStatted_RefusesAFileThatGrewSinceTheStat(t *testing.T) {
+	data, err := readStatted(strings.NewReader("abcd"), 3, "scan.json")
+	if err == nil {
+		t.Fatalf("a reader yielding more than the stat'd 3 bytes must error, got %q", data)
+	}
+	if data != nil {
+		t.Errorf("got %d bytes alongside the error, want none", len(data))
+	}
+	for _, want := range []string{"input grew while it was read", "scan.json", "(3 bytes at open)"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestReadStatted_ReportsAReadFailureWithThePath(t *testing.T) {
+	cause := errors.New("disk fell over")
+	data, err := readStatted(iotest.ErrReader(cause), 3, "scan.json")
+	if data != nil {
+		t.Errorf("got %d bytes alongside the error, want none", len(data))
+	}
+	if !errors.Is(err, cause) {
+		t.Fatalf("error %v should wrap the read failure %v", err, cause)
+	}
+	if !strings.Contains(err.Error(), "failed to read scan.json") {
+		t.Errorf("error %q should name the path", err)
 	}
 }
