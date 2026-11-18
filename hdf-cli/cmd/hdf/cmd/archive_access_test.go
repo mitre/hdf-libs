@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,4 +73,61 @@ func TestArchiveAccess_WindowsNamePrefixesLongResolvedPaths(t *testing.T) {
 	failure := errors.New("cannot resolve")
 	_, err := archiveWindowsName("archive.zip", func(string) (string, error) { return "", failure })
 	assert.ErrorIs(t, err, failure)
+}
+
+func existsAt(path string) error { return &os.PathError{Op: "open", Path: path, Err: fs.ErrExist} }
+
+// A staged name already taken is tried again under another name in the same directory,
+// under the prefix, with the access policy asked for each time.
+func TestCreateStagedArchive_RetriesATakenName(t *testing.T) {
+	dir := t.TempDir()
+	var names []string
+	f, err := createStagedArchiveWith(dir, archivePrivate, func(path string, access archiveAccess) (*os.File, error) {
+		names = append(names, path)
+		assert.Equal(t, archivePrivate, access)
+		if len(names) < 3 {
+			return nil, existsAt(path)
+		}
+		return os.Create(path)
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = f.Close() })
+
+	require.Len(t, names, 3, "two taken names, then the one that was free")
+	seen := map[string]bool{}
+	for _, name := range names {
+		assert.Equal(t, dir, filepath.Dir(name))
+		assert.True(t, strings.HasPrefix(filepath.Base(name), stagedArchivePrefix), name)
+		seen[name] = true
+	}
+	assert.Len(t, seen, 3, "every attempt is a different name")
+	assert.Equal(t, names[2], f.Name())
+}
+
+// Ten taken names in a row stop the loop with an error that names the directory and
+// still reads as "exists", so nothing above retries it once more.
+func TestCreateStagedArchive_GivesUpAfterTenTakenNames(t *testing.T) {
+	dir := t.TempDir()
+	calls := 0
+	f, err := createStagedArchiveWith(dir, archiveInherit, func(path string, _ archiveAccess) (*os.File, error) {
+		calls++
+		return nil, existsAt(path)
+	})
+	require.Error(t, err)
+	assert.Nil(t, f)
+	assert.Equal(t, 10, calls)
+	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Contains(t, err.Error(), "cannot allocate a unique staged archive name in "+dir)
+	assert.NotContains(t, err.Error(), stagedArchivePrefix, "no attempted name is shown")
+}
+
+// Any other failure is returned as it is, after one attempt.
+func TestCreateStagedArchive_ReturnsOtherFailuresAtOnce(t *testing.T) {
+	calls := 0
+	_, err := createStagedArchiveWith(t.TempDir(), archivePrivate, func(path string, _ archiveAccess) (*os.File, error) {
+		calls++
+		return nil, &os.PathError{Op: "open", Path: path, Err: fs.ErrPermission}
+	})
+	assert.ErrorIs(t, err, fs.ErrPermission)
+	assert.Equal(t, 1, calls)
 }
