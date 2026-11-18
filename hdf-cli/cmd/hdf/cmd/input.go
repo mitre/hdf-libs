@@ -177,6 +177,12 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	}
 	defer func() { _ = f.Close() }()
 
+	return readOpenedFile(f, path, allowEmpty)
+}
+
+// readOpenedFile applies readFromFile's type, size and read limits to a file the caller
+// has already opened, so a read through a held directory root gets the same checks.
+func readOpenedFile(f *os.File, path string, allowEmpty bool) ([]byte, error) {
 	// Validate file type and size
 	info, err := f.Stat()
 	if err != nil {

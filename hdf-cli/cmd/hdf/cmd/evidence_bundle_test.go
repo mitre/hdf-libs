@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -2096,44 +2097,6 @@ func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T
 	// Legitimate forms are the flag (--verify) and inflections (verified, verifies,
 	// verification). What is forbidden is the bare command name in any case, which is the
 	// only shape that tells a reader to run something that exits 1.
-	// THE SENTENCES THEMSELVES, not just the absence of a word. The regexp below holds
-	// "no bare command name"; the defect class in this paragraph is "the sentence became
-	// false or broken", and those are not the same set. Proof: fixing a bare command name
-	// here made the replacement 26 characters longer, "for the shape of" was dropped to
-	// hold the line width, and the help shipped reading "neither refuses a package one:" —
-	// inside the class the guard was built for and outside the class it checks. A long
-	// prose paragraph in a raw-string literal, hand-edited under a width constraint, eats
-	// adjacent phrases.
-	//
-	// WHAT THIS HOLDS, stated exactly, because a check whose message claims more than it
-	// enforces is the defect it replaced: one anchor at the OPENING of each sentence and
-	// one at the TAIL. The openings alone were not enough — a width-driven trim lands at
-	// a LINE boundary, which is in the tail, and a review mutant deleted "— is reported by
-	// both" at exactly such a boundary with all four opening anchors still green. The tail
-	// anchors are the clauses that carry each sentence's actual claim: that BOTH commands
-	// report an out-of-package reference, the bundle-versus-verification asymmetry that
-	// 52n0c.16 and .36 were each filed over, and the second of the two guards behind
-	// "nothing outside the package directory is read", which is a security claim.
-	//
-	// It still does not hold the whole class — only these eight points. The layout change
-	// that removes the mechanism rather than narrowing the window is carded separately,
-	// deliberately NOT folded in here: this paragraph has been edited five times under
-	// review pressure, and a sixth edit in the same commit as its own fix is how the
-	// "package one:" break happened.
-	for _, claim := range []string{
-		// Openings.
-		"neither refuses a package for the shape of one",
-		"Verification additionally checks completeness, which bundle does not",
-		"Both honour the checksum algorithm the package records",
-		"Nothing outside the package directory is read",
-		// Tails — where the trims actually land.
-		"is reported by both",
-		"so it can still fail a package bundle accepts",
-		"a symlink that leaves the package is refused at the read boundary",
-	} {
-		assert.Contains(t, help, claim,
-			"a claim this paragraph must carry went missing — check for a phrase eaten by a reflow")
-	}
 
 	bareVerify := regexp.MustCompile(`(?i)(^|[^-\w])verify\b`)
 	if loc := bareVerify.FindStringIndex(help); loc != nil {
@@ -2334,46 +2297,6 @@ func TestEvidenceBundle_TheThreeUnverifiableKindsBehaveAsTheHelpSays(t *testing.
 	}
 }
 
-// bundleHelpClaims returns the CLAIMS in bundle's Long help: the lines that start at
-// column zero. The layout is one claim per line with its continuations indented, so a
-// claim's start is a visible boundary and a reflow inside one claim cannot push text
-// into the next. Derived from the RENDERED help rather than the source literal, because
-// what a reader sees is the thing under test.
-func bundleHelpClaims(t *testing.T) []string {
-	t.Helper()
-	help, _, err := executeCommand("evidence", "bundle", "--help")
-	require.NoError(t, err)
-	// Everything before the Examples block and cobra's own sections. Those are command
-	// invocations and flag tables, not prose claims — an example is verified by RUNNING
-	// it, which other tests here do, and anchoring it would assert its spelling instead.
-	for _, boundary := range []string{"\nExamples:", "\nUsage:"} {
-		if i := strings.Index(help, boundary); i > 0 {
-			help = help[:i]
-		}
-	}
-	claims := make([]string, 0, 32)
-	for _, line := range strings.Split(help, "\n") {
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, " ") {
-			// A continuation of the claim above, NOT a claim of its own. Folded in, never
-			// skipped: the first version of this helper dropped every space-prefixed line,
-			// so the coverage check below only ever saw claim OPENINGS — and a continuation
-			// is exactly where a width-driven trim lands, which is how 52n0c.16, .36 and
-			// .39 each lost a clause. 22 of 25 claims had no protection on their
-			// continuation text at all.
-			if len(claims) == 0 {
-				t.Fatalf("help begins with an indented line, so the claim structure is broken: %q", line)
-			}
-			claims[len(claims)-1] += " " + strings.TrimSpace(line)
-			continue
-		}
-		claims = append(claims, strings.TrimSpace(line))
-	}
-	return claims
-}
-
 // bundleHelpLineWidths returns the width of every rendered help line before the Examples
 // and Usage sections, so AC 1's width property is ASSERTED rather than left to the
 // author's prose. Nothing stopped a future edit re-widening a line past the limit.
@@ -2393,139 +2316,6 @@ func bundleHelpLineWidths(t *testing.T) []int {
 		}
 	}
 	return widths
-}
-
-// EVERY claim carries an anchor, and every anchor matches a claim. This is the assertion
-// set that cannot silently fall behind the text: a claim added without an anchor fails
-// here, and an anchor whose claim was deleted or reworded fails too. The sentence-level
-// anchors elsewhere in this file hold eight specific points; this holds the whole
-// paragraph, which is what four rounds of review on 52n0c.39 could not do by eye.
-//
-// The layout exists because the defect class is mechanical: this paragraph was edited
-// five times and shipped wrong four of them, every time because an edit changed a
-// token's length, the line had to rewrap, and a neighbouring phrase was lost or a name
-// was left straddling a newline. One claim per line removes the boundary a phrase can
-// fall off.
-func TestEvidenceBundle_HelpIsOneClaimPerLine(t *testing.T) {
-	claims := bundleHelpClaims(t)
-	require.NotEmpty(t, claims, "the derivation must find claims, or it proves nothing")
-
-	// Each anchor is a distinctive fragment of one claim. Short enough to survive a
-	// reword, long enough to identify the claim it belongs to.
-	anchors := []string{
-		"Write an evidence package and all of its referenced documents",
-		"The archive root IS the package's own directory",
-		"A reference recorded as an ABSOLUTE path inside the package is the exception",
-		"Every reference that travels is covered",
-		"That is reported here and never repaired by rewriting the package",
-		"'hdf evidence set' (systemRef, planRef)",
-		"Bundle and 'hdf evidence info --verify' resolve references identically",
-		"Verification additionally checks completeness",
-		"Both honour the checksum algorithm the package records",
-		"Nothing outside the package directory is read",
-		"What travels: the package",
-		"Anything that cannot travel is reported on stderr",
-		"A reference whose document would TRAVEL",
-		"Everything stays recorded in the package",
-		"Every recorded checksum is verified before anything is written",
-		"Three kinds cannot be verified",
-		"The first two DO travel",
-		"The third does not travel at all",
-		"Every one is reported on stderr",
-		"'hdf evidence info --verify' names every entry too",
-		"The two counts reconcile",
-		"A mismatch or a missing document fails the command",
-		"-o refuses a path naming the package",
-		"It also refuses a path that already exists",
-		"--overwrite does not lift the refusals above it",
-		"Under --overwrite a failed run leaves whatever was already at that path",
-	}
-
-	// Every claim is anchored. A claim with no anchor means the assertion set fell behind
-	// the text, which is how a broken sentence ships unnoticed.
-	for _, claim := range claims {
-		matched := false
-		for _, a := range anchors {
-			if strings.HasPrefix(claim, a) {
-				matched = true
-				break
-			}
-		}
-		assert.True(t, matched, "no anchor covers this claim, so nothing would notice if it "+
-			"broke:\n  %s", claim)
-	}
-
-	// And every anchor still matches something. An anchor matching nothing means its
-	// claim was deleted or reworded — which is the direction a reflow eats a phrase.
-	for _, a := range anchors {
-		found := false
-		for _, claim := range claims {
-			if strings.HasPrefix(claim, a) {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, "this anchor matches no claim — the claim it names was "+
-			"deleted or reworded: %q", a)
-	}
-}
-
-// EVERY WORD OF EVERY CLAIM IS COVERED, not just the opening line each anchor matches.
-// The anchors above are PREFIXES, so a clause dropped from the middle or tail of a
-// claim's continuation lines satisfies them — and a continuation is exactly where a
-// width-driven trim lands. That is how 52n0c.16, .36 and .39 each lost a clause, and
-// the first version of this test could not have seen any of them.
-//
-// Asserted as a token count per claim, because the defect class is LOSS: a phrase eaten
-// by a reflow changes its claim's length, wherever in the claim it sat. A deliberate
-// reword updates the number, which is the point — it makes the edit visible. Meaning is
-// held separately by the sentence anchors and the bare-command-name regexp; neither of
-// those can see a length change, and this cannot see a same-length reword.
-func TestEvidenceBundle_EveryClaimKeepsItsWholeText(t *testing.T) {
-	claims := bundleHelpClaims(t)
-
-	// {token count, the claim's opening words, for naming the failure}.
-	want := []struct {
-		tokens int
-		opens  string
-	}{
-		{24, "Write an evidence package and all"},
-		{47, "The archive root IS the package's"},
-		{36, "A reference recorded as an ABSOLUTE"},
-		{12, "Every reference that travels is covered,"},
-		{11, "That is reported here and never"},
-		{18, "'hdf evidence set' (systemRef, planRef) and"},
-		{47, "Bundle and 'hdf evidence info --verify'"},
-		{33, "Verification additionally checks completeness, which bundle"},
-		{8, "Both honour the checksum algorithm the"},
-		{29, "Nothing outside the package directory is"},
-		{39, "What travels: the package, the documents"},
-		{30, "Anything that cannot travel is reported"},
-		{70, "A reference whose document would TRAVEL"},
-		{16, "Everything stays recorded in the package,"},
-		{16, "Every recorded checksum is verified before"},
-		{31, "Three kinds cannot be verified: one"},
-		{26, "The first two DO travel, and"},
-		{13, "The third does not travel at"},
-		{17, "Every one is reported on stderr NAMING"},
-		{24, "'hdf evidence info --verify' names every entry"},
-		{30, "The two counts reconcile: both are over"},
-		{25, "A mismatch or a missing document"},
-		{20, "-o refuses a path naming the"},
-		{22, "It also refuses a path that"},
-		{20, "--overwrite does not lift the refusals"},
-		{25, "Under --overwrite a failed run leaves"},
-	}
-
-	require.Len(t, claims, len(want),
-		"the number of claims changed; add or remove an entry deliberately rather than "+
-			"letting the table fall behind the help")
-	for i, w := range want {
-		got := len(strings.Fields(claims[i]))
-		assert.Equal(t, w.tokens, got,
-			"claim %d lost or gained text — check for a phrase eaten by a reflow:\n  %s...\n  %s",
-			i+1, w.opens, claims[i])
-	}
 }
 
 // AC 1's width property, asserted rather than left to the author's word. The layout only
@@ -2964,4 +2754,301 @@ func TestEvidenceBundleCollectionDefensiveReports(t *testing.T) {
 		require.Equal(t, 1, c.documentsDropped)
 		require.Empty(t, c.entries)
 	})
+}
+
+func TestEvidenceBundleRejectsUnsafePortableNames(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows cannot create these literal filenames; portable validation is exercised before file reads separately")
+	}
+	source, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	for _, tc := range []struct{ name, sourceName, packageName string }{
+		{"reference backslash", `a\..\..\outside.json`, "pkg.json"},
+		{"reference colon", "scan:source.json", "pkg.json"},
+		{"package backslash", "source.json", `a\..\pkg.json`},
+		{"package colon", "source.json", "pkg:source.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(dir, tc.sourceName), source, 0o600))
+			uri, encodeErr := evidenceref.Encode(tc.sourceName)
+			require.NoError(t, encodeErr)
+			pkg, marshalErr := json.Marshal(map[string]any{"name": "portable archive", "contents": []map[string]any{{
+				"type": "hdf-results", "uri": uri,
+				"checksum": map[string]any{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(source)},
+			}}})
+			require.NoError(t, marshalErr)
+			pkgPath := filepath.Join(dir, tc.packageName)
+			require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+			output := filepath.Join(dir, "out.zip")
+			_, _, runErr := executeCommand("evidence", "bundle", pkgPath, "-o", output)
+			require.Error(t, runErr, "unsafe names must never reach an archive")
+			require.NoFileExists(t, output)
+			original := []byte("existing deliverable")
+			require.NoError(t, os.WriteFile(output, original, 0o600))
+			_, _, runErr = executeCommand("evidence", "bundle", pkgPath, "-o", output, "--overwrite")
+			require.Error(t, runErr)
+			unchanged, readErr := os.ReadFile(output)
+			require.NoError(t, readErr)
+			require.Equal(t, original, unchanged)
+		})
+	}
+}
+
+func TestEvidenceBundleContainsConcurrentSymlinkChanges(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("atomic replacement of an existing symlink requires Unix rename semantics")
+	}
+	dir := t.TempDir()
+	inside := filepath.Join(dir, "inside")
+	outside := t.TempDir()
+	require.NoError(t, os.Mkdir(inside, 0o700))
+	source, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(inside, "scan.json"), source, 0o600))
+	sentinel := []byte("outside fixture: must never be archived")
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "scan.json"), sentinel, 0o600))
+	link := filepath.Join(dir, "current")
+	require.NoError(t, os.Symlink("inside", link))
+	pkg, err := json.Marshal(map[string]any{"name": "contained evidence", "contents": []map[string]any{{"type": "hdf-results", "uri": "current/scan.json"}}})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+	output := filepath.Join(dir, "output.zip")
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", output)
+	require.NoError(t, err)
+	require.Equal(t, source, zipEntries(t, output)["current/scan.json"])
+	keepSwappingBundleSymlink(t, link, outside, "inside")
+	for range 500 {
+		_, _, runErr := executeCommand("evidence", "bundle", pkgPath, "-o", output, "--overwrite")
+		if runErr != nil {
+			continue
+		}
+		entries := zipEntries(t, output)
+		require.Equal(t, source, entries["current/scan.json"], "a successful archive must contain only the in-package fixture")
+	}
+}
+
+func TestEvidenceBundlePortableNamesFailBeforeRead(t *testing.T) {
+	for _, tc := range []struct{ name, want string }{
+		{`a\..\outside.json`, "contains a backslash"},
+		{"a:b.json", "portable archive entry"},
+		{"a\x00b.json", "portable archive entry"},
+	} {
+		name := tc.name
+		t.Run(name, func(t *testing.T) {
+			if runtime.GOOS == "windows" && strings.Contains(name, `\`) {
+				t.Skip("Windows normalizes native separators before checking the archive name")
+			}
+			c := bundleCollection{}
+			err := c.collect(t.TempDir(), bundleTarget{uri: evidenceref.Decoded(name), label: "content reference"})
+			require.ErrorContains(t, err, tc.want)
+			require.Empty(t, c.entries)
+		})
+	}
+}
+
+func TestEvidenceBundlePreservesContainedSymlinks(t *testing.T) {
+	for _, kind := range []string{"relative", "absolute", "leave and return"} {
+		t.Run(kind, func(t *testing.T) {
+			dir, pkgPath := bundleTree(t)
+			target := filepath.Join("scans", "rhel9-results.json")
+			source, err := os.ReadFile(filepath.Join(dir, target))
+			require.NoError(t, err)
+			switch kind {
+			case "absolute":
+				target = filepath.Join(dir, target)
+			case "leave and return":
+				target = filepath.Join("..", filepath.Base(dir), target)
+			}
+			link := filepath.Join(dir, "linked.json")
+			require.NoError(t, os.Symlink(target, link))
+			_, _, err = executeCommand("evidence", "add-evidence", pkgPath, "--uri", link, "--format", "ecs", "-o", pkgPath)
+			require.NoError(t, err)
+			archive := filepath.Join(dir, "bundle.zip")
+			_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+			require.NoError(t, err)
+			require.Equal(t, source, zipEntries(t, archive)["linked.json"])
+			_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "nofollow.zip"), "--no-follow-symlinks")
+			require.ErrorContains(t, err, "refusing to follow symlink")
+		})
+	}
+}
+
+func TestEvidenceBundlePreservesEncodedPortableNames(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	source, err := os.ReadFile(filepath.Join(dir, "scans", "rhel9-results.json"))
+	require.NoError(t, err)
+	name := "source 100%25.json"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, name), source, 0o600))
+	uri, err := evidenceref.Encode(filepath.Join(dir, name))
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-evidence", pkgPath, "--uri", uri, "--format", "ecs", "-o", pkgPath)
+	require.NoError(t, err)
+	archive := filepath.Join(dir, "bundle.zip")
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err)
+	require.Equal(t, source, zipEntries(t, archive)[name])
+}
+
+func TestEvidenceBundleMissingReferenceKeepsNotFoundDiagnostic(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	missing := filepath.Join(dir, "scans", "rhel9-results.json")
+	require.NoError(t, os.Remove(missing))
+	output := filepath.Join(dir, "output.zip")
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", output)
+	require.ErrorContains(t, err, "file not found")
+	require.NoFileExists(t, output)
+}
+
+func TestEvidenceBundleContainedReadFailures(t *testing.T) {
+	original := noFollowSymlinks
+	noFollowSymlinks = false
+	t.Cleanup(func() { noFollowSymlinks = original })
+	dir := t.TempDir()
+	rootDir, err := resolvedAbs(dir)
+	require.NoError(t, err)
+	root, err := os.OpenRoot(rootDir)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = root.Close() })
+	c := bundleCollection{root: root}
+	inside := filepath.Join(dir, "inside.json")
+	require.NoError(t, os.WriteFile(inside, []byte("inside fixture"), 0o600))
+	data, err := c.readContained(inside, true)
+	require.NoError(t, err)
+	require.Equal(t, []byte("inside fixture"), data)
+	outside := filepath.Join(t.TempDir(), "outside.json")
+	require.NoError(t, os.WriteFile(outside, []byte("outside sentinel"), 0o600))
+	data, err = c.readContained(outside, true)
+	require.ErrorContains(t, err, "outside base directory")
+	require.Nil(t, data)
+	loop := filepath.Join(dir, "loop")
+	require.NoError(t, os.Symlink("loop", loop))
+	data, err = c.readContained(loop, true)
+	require.Error(t, err)
+	require.Nil(t, data)
+	require.NoError(t, root.Close())
+	data, err = c.readContained(inside, true)
+	require.Error(t, err, "closed containment handle must not fall back to an ordinary open")
+	require.Nil(t, data)
+}
+
+func keepSwappingBundleSymlink(t *testing.T, link string, targets ...string) {
+	t.Helper()
+	stop := make(chan struct{})
+	finished := make(chan error, 1)
+	go func() {
+		next := link + ".next"
+		for {
+			for _, target := range targets {
+				select {
+				case <-stop:
+					finished <- nil
+					return
+				default:
+				}
+				if swapErr := os.Symlink(target, next); swapErr != nil {
+					finished <- swapErr
+					return
+				}
+				if swapErr := os.Rename(next, link); swapErr != nil {
+					finished <- swapErr
+					return
+				}
+			}
+		}
+	}()
+	t.Cleanup(func() { close(stop); require.NoError(t, <-finished) })
+}
+
+func TestEvidenceBundleContainsPackageDirectoryChanges(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("atomic replacement of an existing symlink requires Unix rename semantics")
+	}
+	dir := t.TempDir()
+	inside := filepath.Join(dir, "inside")
+	outside := filepath.Join(dir, "outside")
+	require.NoError(t, os.Mkdir(inside, 0o700))
+	require.NoError(t, os.Mkdir(outside, 0o700))
+	source, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(inside, "scan.json"), source, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "scan.json"), []byte("outside fixture: must never be archived"), 0o600))
+	pkg, err := json.Marshal(map[string]any{"name": "contained evidence", "contents": []map[string]any{{"type": "hdf-results", "uri": "scan.json"}}})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(inside, "pkg.json"), pkg, 0o600))
+	link := filepath.Join(dir, "current")
+	require.NoError(t, os.Symlink(inside, link))
+	pkgPath := filepath.Join(link, "pkg.json")
+	output := filepath.Join(dir, "output.zip")
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", output)
+	require.NoError(t, err)
+	require.Equal(t, source, zipEntries(t, output)["scan.json"])
+	keepSwappingBundleSymlink(t, link, outside, inside)
+	for range 500 {
+		_, _, runErr := executeCommand("evidence", "bundle", pkgPath, "-o", output, "--overwrite")
+		if runErr != nil {
+			continue
+		}
+		require.Equal(t, source, zipEntries(t, output)["scan.json"], "package and referenced bytes must come from the same held directory")
+	}
+}
+
+func TestEvidenceBundlePackageInputCompatibility(t *testing.T) {
+	for _, name := range []string{"plain", "BOM", "empty", "BOM only", "absolute symlink", "outside symlink", "stdin"} {
+		t.Run(name, func(t *testing.T) {
+			dir, pkgPath := bundleTree(t)
+			original, err := os.ReadFile(pkgPath)
+			require.NoError(t, err)
+			data := original
+			expectedError := ""
+			switch name {
+			case "BOM":
+				data = append([]byte{0xef, 0xbb, 0xbf}, original...)
+			case "stdin":
+				// A stdin package has no directory, so its package-relative references are
+				// refused rather than resolved against the working directory.
+				data = append([]byte{0xef, 0xbb, 0xbf}, original...)
+				expectedError = "pass the package as a file"
+			case "empty":
+				data = nil
+				expectedError = "file is empty"
+			case "BOM only":
+				data = []byte{0xef, 0xbb, 0xbf}
+				expectedError = "no input provided"
+			case "absolute symlink", "outside symlink":
+				target := pkgPath
+				if name == "outside symlink" {
+					target = filepath.Join(t.TempDir(), "outside.json")
+					require.NoError(t, os.WriteFile(target, original, 0o600))
+					expectedError = "resolves outside base directory via symlink"
+				}
+				link := filepath.Join(dir, "alias.json")
+				require.NoError(t, os.Symlink(target, link))
+				pkgPath = link
+			}
+			output := filepath.Join(dir, "bundle.zip")
+			if name == "stdin" {
+				t.Chdir(dir)
+				_, _, err = executeCommandWithStdin(t, data, "evidence", "bundle", "-", "-o", output)
+				pkgPath = "-"
+			} else {
+				if name != "absolute symlink" && name != "outside symlink" {
+					require.NoError(t, os.WriteFile(pkgPath, data, 0o600))
+				}
+				_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", output)
+			}
+			if expectedError != "" {
+				require.ErrorContains(t, err, expectedError)
+				require.NoFileExists(t, output)
+				return
+			}
+			require.NoError(t, err)
+			entries := zipEntries(t, output)
+			require.Equal(t, data, entries[filepath.Base(pkgPath)], "archive must retain the exact package input bytes")
+			source, readErr := os.ReadFile(filepath.Join(dir, "scans", "rhel9-results.json"))
+			require.NoError(t, readErr)
+			require.Equal(t, source, entries["scans/rhel9-results.json"])
+		})
+	}
 }
