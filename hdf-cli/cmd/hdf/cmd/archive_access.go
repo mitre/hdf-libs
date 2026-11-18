@@ -17,6 +17,10 @@ const (
 	archiveInherit archiveAccess = "inherit"
 )
 
+// stagedArchivePrefix starts the name of the file an archive is built in before it
+// is published under -o.
+const stagedArchivePrefix = ".hdf-bundle-"
+
 // parseArchiveAccess accepts exactly the two policy names, so a typo or a case
 // variant never silently selects one.
 func parseArchiveAccess(value string) (archiveAccess, error) {
@@ -39,7 +43,7 @@ func createStagedArchive(dir string, access archiveAccess) (*os.File, error) {
 func createStagedArchiveWith(dir string, access archiveAccess,
 	open func(path string, access archiveAccess) (*os.File, error)) (*os.File, error) {
 	for range 10 {
-		f, err := open(filepath.Join(dir, ".hdf-bundle-"+rand.Text()), access)
+		f, err := open(filepath.Join(dir, stagedArchivePrefix+rand.Text()), access)
 		if os.IsExist(err) {
 			continue
 		}

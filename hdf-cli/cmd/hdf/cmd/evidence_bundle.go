@@ -860,9 +860,8 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
 		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
 	}
-	// Checked here rather than left to os.CreateTemp, which fails after every read and
-	// hash with an "open <dir>/.hdf-bundle-NNN" naming a temp path the operator never
-	// typed.
+	// Checked here so a missing directory is reported by the name the operator typed,
+	// before any document is read.
 	if parent := filepath.Dir(outputPath); parent != "" {
 		if _, err := os.Stat(parent); err != nil {
 			return fmt.Errorf("-o %s: the directory %s does not exist", outputPath, parent)
@@ -946,7 +945,7 @@ func writeArchiveAtomically(outputPath string, overwrite bool, access archiveAcc
 	dir := filepath.Dir(outputPath)
 	tmp, err := createStagedArchive(dir, access)
 	if err != nil {
-		return fmt.Errorf("-o %s: %w", outputPath, err)
+		return &stagingError{out: outputPath, err: err}
 	}
 	tmpName := tmp.Name()
 	defer func() {
@@ -1052,6 +1051,17 @@ func (o noClobberOps) durable(out string, after ...error) error {
 	}
 	return &archivePublishedError{out: out, errs: after}
 }
+
+// stagingError is a failure to create the staged archive. It names -o and the
+// operation's cause, never the staged file's name, which the operator never typed.
+type stagingError struct {
+	out string
+	err error
+}
+
+func (e *stagingError) Error() string { return "-o " + e.out + ": " + opCause(e.err) }
+
+func (e *stagingError) Unwrap() error { return e.err }
 
 // writeError is a publication failure before the archive reached -o. It names -o and
 // the operation's cause, never the staged file's name, which the operator never typed.

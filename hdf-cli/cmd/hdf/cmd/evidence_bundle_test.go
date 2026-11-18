@@ -210,7 +210,7 @@ func TestEvidenceBundle_NeverReplacesAFileCreatedDuringTheRun(t *testing.T) {
 	got, readErr := os.ReadFile(archive)
 	require.NoError(t, readErr)
 	assert.Equal(t, theirs, string(got), "the file created mid-run must be byte-identical")
-	staged, globErr := filepath.Glob(filepath.Join(dir, ".hdf-bundle-*"))
+	staged, globErr := filepath.Glob(filepath.Join(dir, stagedArchivePrefix+"*"))
 	require.NoError(t, globErr)
 	assert.Empty(t, staged, "no staged archive may be left behind")
 }
@@ -221,7 +221,7 @@ var errFakeUnsupported = errors.New("operation not supported by this filesystem"
 func publishFixture(t *testing.T) (staged, out string) {
 	t.Helper()
 	dir := t.TempDir()
-	staged = filepath.Join(dir, ".hdf-bundle-test")
+	staged = filepath.Join(dir, stagedArchivePrefix+"test")
 	require.NoError(t, os.WriteFile(staged, []byte("archive"), 0o600))
 	return staged, filepath.Join(dir, "boe.zip")
 }
@@ -1655,7 +1655,7 @@ func TestEvidenceBundle_RefusesAMissingOutputDirectoryByName(t *testing.T) {
 	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "nope", "a.zip"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "does not exist")
-	assert.NotContains(t, err.Error(), ".hdf-bundle-",
+	assert.NotContains(t, err.Error(), stagedArchivePrefix,
 		"the error must not name an internal temp file")
 }
 
@@ -1803,7 +1803,7 @@ func TestEvidenceBundle_RequiresAnOutputPath(t *testing.T) {
 	_, _, err := executeCommand("evidence", "bundle", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "-o is required")
-	assert.NotContains(t, err.Error(), ".hdf-bundle-",
+	assert.NotContains(t, err.Error(), stagedArchivePrefix,
 		"the error must not name an internal temp file")
 	assert.NotContains(t, err.Error(), "rename",
 		"nor surface as a filesystem failure after the work is done")

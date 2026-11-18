@@ -60,3 +60,21 @@ func TestEvidenceBundle_RefusesAnEntryNameContainingABackslash(t *testing.T) {
 		})
 	}
 }
+
+// A staged archive that cannot be created is reported as -o and the operation that
+// failed; the staged file's name, which the operator never typed, is left out.
+func TestEvidenceBundle_StagingFailureNamesOutputNotTheStagedFile(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root creates files in a read-only directory")
+	}
+	dir, pkgPath := bundleTree(t)
+	sealed := filepath.Join(dir, "sealed")
+	require.NoError(t, os.Mkdir(sealed, 0o500))
+	out := filepath.Join(sealed, "boe.zip")
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+out, "the error names -o")
+	assert.Contains(t, err.Error(), "open: permission denied", "and the operation that failed")
+	assert.NotContains(t, err.Error(), stagedArchivePrefix, "but never the staged file")
+}
