@@ -505,16 +505,6 @@ func TestConvertCycloneDX_DefaultDescription(t *testing.T) {
 
 // ---- External references (refs[]) ----
 
-func refURLs(refs []hdf.Reference) []string {
-	out := make([]string, 0, len(refs))
-	for _, r := range refs {
-		if r.URL != nil {
-			out = append(out, *r.URL)
-		}
-	}
-	return out
-}
-
 func TestConvertCycloneDX_Refs(t *testing.T) {
 	// vex.json carries all three link sources: source.url, references[].source.url,
 	// and advisories[].url. Emitted de-duplicated in first-seen order.
@@ -529,7 +519,7 @@ func TestConvertCycloneDX_Refs(t *testing.T) {
 		"https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59",
 		"https://github.com/FasterXML/jackson-databind/issues/2589",
 		"https://bugzilla.redhat.com/show_bug.cgi?id=1887664",
-	}, refURLs(req.Refs))
+	}, shared.RefURLs(req.Refs))
 }
 
 func TestConvertCycloneDX_RefsSourceURLOnly(t *testing.T) {
@@ -539,7 +529,7 @@ func TestConvertCycloneDX_RefsSourceURLOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
-	assert.Equal(t, []string{"https://github.com/advisories"}, refURLs(req.Refs))
+	assert.Equal(t, []string{"https://github.com/advisories"}, shared.RefURLs(req.Refs))
 }
 
 func TestConvertCycloneDX_RefsAbsent(t *testing.T) {
@@ -588,7 +578,7 @@ func TestConvertCycloneDX_RefsDedupAndSkip(t *testing.T) {
 		"https://example.com/a",
 		"https://example.com/b",
 		"https://example.com/c",
-	}, refURLs(result.Baselines[0].Requirements[0].Refs))
+	}, shared.RefURLs(result.Baselines[0].Requirements[0].Refs))
 }
 
 // ---- Full fixture smoke test ----

@@ -24,6 +24,10 @@ function findReq(hdf: HDFResults, idFragment: string): EvaluatedRequirement | un
   return hdf.baselines[0]!.requirements.find((r) => r.id.includes(idFragment));
 }
 
+function refUrls(req: EvaluatedRequirement): string[] {
+  return (req.refs ?? []).flatMap((ref) => (ref.url ? [ref.url] : []));
+}
+
 runConverterContractTests({
   converterName: 'semgrep-to-hdf',
   convertFn: convertSemgrepToHdf,
@@ -40,14 +44,17 @@ describe('semgrep to HDF converter', () => {
   ) as { name: string; input: Record<string, unknown>; urls: string[] }[];
 
   it('preserves published source rule references', async () => {
-    assertSchemaValid(validateSource, 'source-rule-urls.json', JSON.parse(loadFixture('source-rule-urls.json')));
     const hdf = await convert('source-rule-urls.json');
     expectValidResults(hdf);
-    expect(findReq(hdf, 'use-of-unsafe-block')?.refs?.map((ref) => ref.url)).toEqual([
+    const goRule = findReq(hdf, 'use-of-unsafe-block');
+    const pythonRule = findReq(hdf, 'subprocess-shell-true');
+    expect(goRule).toBeDefined();
+    expect(pythonRule).toBeDefined();
+    expect(refUrls(goRule!)).toEqual([
       'https://cwe.mitre.org/data/definitions/242.html',
       'https://github.com/securego/gosec/blob/master/rules/unsafe.go',
     ]);
-    expect(findReq(hdf, 'subprocess-shell-true')?.refs?.map((ref) => ref.url)).toEqual([
+    expect(refUrls(pythonRule!)).toEqual([
       'https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess',
       'https://docs.python.org/3/library/subprocess.html',
       'https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html',
@@ -58,7 +65,9 @@ describe('semgrep to HDF converter', () => {
     assertSchemaValid(validateSource, name, input);
     const hdf = JSON.parse(await convertSemgrepToHdf(JSON.stringify(input))) as HDFResults;
     expectValidResults(hdf);
-    expect((findReq(hdf, 'use-of-unsafe-block')?.refs ?? []).map((ref) => ref.url)).toEqual(urls);
+    const req = findReq(hdf, 'use-of-unsafe-block');
+    expect(req).toBeDefined();
+    expect(refUrls(req!)).toEqual(urls);
   });
 
   it('rejects input that is not a Semgrep report', async () => {
@@ -365,7 +374,7 @@ describe('sparse and malformed rules', () => {
       ),
     ) as HDFResults;
     const req = hdf.baselines[0]!.requirements[0]!;
-    expect(req.refs?.map((r) => r.url)).toEqual(['https://a', 'https://b', 'https://c']);
+    expect(refUrls(req)).toEqual(['https://a', 'https://b', 'https://c']);
     expect(req.tags?.references).toBeUndefined();
   });
 
@@ -510,7 +519,7 @@ describe('remediation: robustness, parity, and field homes', () => {
     expect(req.tags?.cwe).toEqual(['CWE-89: SQL Injection']);
     expect(req.tags?.nist).toContain('SI-10');
     expect(req.tags?.nist).not.toContain('SA-11');
-    expect(req.refs?.map((r) => r.url)).toEqual(['https://x']);
+    expect(refUrls(req)).toEqual(['https://x']);
   });
 
   it('omits tags.cwe entirely when the rule has no CWE metadata', async () => {

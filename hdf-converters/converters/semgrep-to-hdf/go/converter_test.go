@@ -56,16 +56,6 @@ func contains(haystack, needle string) bool {
 	})()
 }
 
-func referenceURLs(refs []hdf.Reference) []string {
-	urls := make([]string, 0, len(refs))
-	for _, ref := range refs {
-		if ref.URL != nil {
-			urls = append(urls, *ref.URL)
-		}
-	}
-	return urls
-}
-
 // Rule authors publish the ported rule's link under two independent keys:
 // source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
 // Bandit-derived Python rule).
@@ -80,12 +70,12 @@ func TestPublishedSourceRuleReferences(t *testing.T) {
 	assert.Equal(t, []string{
 		"https://cwe.mitre.org/data/definitions/242.html",
 		"https://github.com/securego/gosec/blob/master/rules/unsafe.go",
-	}, referenceURLs(goRule.Refs))
+	}, shared.RefURLs(goRule.Refs))
 	assert.Equal(t, []string{
 		"https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
 		"https://docs.python.org/3/library/subprocess.html",
 		"https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
-	}, referenceURLs(pythonRule.Refs))
+	}, shared.RefURLs(pythonRule.Refs))
 }
 
 // The case file is shared with the TypeScript suite, so both languages are held
@@ -93,14 +83,12 @@ func TestPublishedSourceRuleReferences(t *testing.T) {
 // output schema it declares before it is converted.
 func TestSourceRuleReferenceMapping(t *testing.T) {
 	validator := semgrepSchema(t, "1.183.0")
-	data, err := os.ReadFile(filepath.Join("..", "fixtures", "source-rule-url-cases.json"))
-	require.NoError(t, err)
 	var cases []struct {
 		Name  string          `json:"name"`
 		Input json.RawMessage `json:"input"`
 		URLs  []string        `json:"urls"`
 	}
-	require.NoError(t, json.Unmarshal(data, &cases))
+	shared.LoadJSON(t, filepath.Join("..", "fixtures", "source-rule-url-cases.json"), &cases)
 	require.NotEmpty(t, cases)
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -109,7 +97,7 @@ func TestSourceRuleReferenceMapping(t *testing.T) {
 			require.NoError(t, err)
 			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
 			require.NotNil(t, req)
-			assert.Equal(t, tc.URLs, referenceURLs(req.Refs))
+			assert.Equal(t, tc.URLs, shared.RefURLs(req.Refs))
 		})
 	}
 }
