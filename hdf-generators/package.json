@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-generators",
-  "version": "3.8.0",
+  "version": "3.8.1-next.44227665811.1",
   "description": "Generate InSpec profile stubs from HDF Baseline definitions",
   "publishConfig": {
     "access": "public"
@@ -38,7 +38,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-schema": "workspace:^"
+    "@mitre/hdf-schema": "3.8.1-next.44227665811.1"
   },
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^"
