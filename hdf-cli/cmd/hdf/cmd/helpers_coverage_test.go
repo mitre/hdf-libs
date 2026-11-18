@@ -193,6 +193,8 @@ func TestReadFromStdin_TooLarge(t *testing.T) {
 	_, readErr := readFromStdin(false)
 	require.Error(t, readErr)
 	assert.Contains(t, readErr.Error(), "input too large")
+	assert.Contains(t, readErr.Error(), "stdin exceeds 1 MB limit")
+	assert.Contains(t, readErr.Error(), "--max-size")
 }
 
 func TestReadFromStdin_ValidData(t *testing.T) {

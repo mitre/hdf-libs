@@ -112,30 +112,6 @@ func TestReadInputFile_BOMOnly(t *testing.T) {
 	}
 }
 
-func TestReadAtMostRejectsExcessBytes(t *testing.T) {
-	const limit = 16
-	exact := strings.Repeat("a", limit)
-
-	data, err := readAtMost(strings.NewReader(exact), limit, "test input")
-	if err != nil {
-		t.Fatalf("input of exactly the limit: unexpected error: %v", err)
-	}
-	if string(data) != exact {
-		t.Fatalf("input of exactly the limit: got %d bytes, want all %d", len(data), limit)
-	}
-
-	data, err = readAtMost(strings.NewReader(exact+"b"), limit, "test input")
-	if err == nil {
-		t.Fatalf("input one byte over the limit: got %d bytes and no error, want an error", len(data))
-	}
-	if data != nil {
-		t.Errorf("input one byte over the limit: got %d bytes alongside the error, want none", len(data))
-	}
-	if !strings.Contains(err.Error(), "input too large") || !strings.Contains(err.Error(), "--max-size") {
-		t.Errorf("error %q should say the input is too large and name --max-size", err)
-	}
-}
-
 func TestReadFromFileReportsTheLimitInEffect(t *testing.T) {
 	oldMax := maxSizeMB
 	maxSizeMB = 0 // --max-size 0 falls back to the default limit
@@ -161,6 +137,27 @@ func TestReadFromFileReportsTheLimitInEffect(t *testing.T) {
 	want := fmt.Sprintf("max %d MB", DefaultMaxSizeMB)
 	if !strings.Contains(err.Error(), want) {
 		t.Errorf("error %q should report the limit in effect (%s)", err, want)
+	}
+	if !strings.Contains(err.Error(), big) {
+		t.Errorf("error %q should name the file it refused", err)
+	}
+}
+
+func TestMaxSizeFlag_RejectsAValueWhoseByteCountOverflows(t *testing.T) {
+	oldMax := maxSizeMB
+	defer func() { maxSizeMB = oldMax }()
+
+	_, _, err := executeCommand("--max-size", "17592186044416", "version")
+	if err == nil {
+		t.Fatal("expected --max-size 17592186044416 to be refused: its byte count wraps to 0")
+	}
+	for _, want := range []string{"--max-size 17592186044416", "largest supported value"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+	if maxSizeMB != oldMax {
+		t.Errorf("a refused flag must not reach the global: got %d", maxSizeMB)
 	}
 }
 
@@ -262,5 +259,15 @@ func TestReadStatted_ReportsAReadFailureWithThePath(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "failed to read scan.json") {
 		t.Errorf("error %q should name the path", err)
+	}
+}
+
+func TestGetMaxFileSize_LargestFlagDoesNotOverflow(t *testing.T) {
+	oldMax := maxSizeMB
+	maxSizeMB = maxMaxSizeMB
+	defer func() { maxSizeMB = oldMax }()
+
+	if got := getMaxFileSize(); got <= 0 || got != int64(maxMaxSizeMB)*1024*1024 {
+		t.Errorf("getMaxFileSize() at the largest flag = %d, want %d", got, int64(maxMaxSizeMB)*1024*1024)
 	}
 }

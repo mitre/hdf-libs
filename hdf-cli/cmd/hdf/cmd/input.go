@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 
@@ -19,6 +20,10 @@ const (
 	// DefaultMaxSizeMB is the default maximum file size in megabytes (matches
 	// hdfutil.DefaultMaxInputSize; raise per-invocation with --max-size).
 	DefaultMaxSizeMB = 256
+	// bytesPerMB converts a --max-size value to bytes.
+	bytesPerMB = 1024 * 1024
+	// maxMaxSizeMB is the largest --max-size whose byte count fits an int.
+	maxMaxSizeMB = math.MaxInt / bytesPerMB
 )
 
 // utf8BOM is the UTF-8 byte-order-mark sequence that some Windows tools prepend.
@@ -26,16 +31,20 @@ const (
 // the input boundary before any downstream consumer sees the bytes.
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 
-// maxInputSizeBytes resolves the --max-size flag (megabytes) to a byte count,
-// falling back to the 256 MB default. Single source of truth for both the CLI's
-// pre-read file guard (getMaxFileSize) and the converter input-size ceiling
+// effectiveMaxSizeMB is the --max-size in effect: the flag when set, else the default.
+// Every message that renders the limit takes it from here, in the flag's own unit.
+func effectiveMaxSizeMB() int {
+	if maxSizeMB <= 0 {
+		return DefaultMaxSizeMB
+	}
+	return maxSizeMB
+}
+
+// maxInputSizeBytes is effectiveMaxSizeMB in bytes. Single source of truth for both
+// the CLI's pre-read file guard (getMaxFileSize) and the converter input-size ceiling
 // threaded via hdfutil.SetDefaultMaxInputSize, so the two never diverge.
 func maxInputSizeBytes() int {
-	mb := maxSizeMB
-	if mb <= 0 {
-		mb = DefaultMaxSizeMB
-	}
-	return mb * 1024 * 1024
+	return effectiveMaxSizeMB() * bytesPerMB
 }
 
 // getMaxFileSize returns the maximum allowed file size in bytes.
@@ -119,7 +128,11 @@ func readInputFileAndRaw(path string) (parse, raw []byte, err error) {
 // readFromStdin reads from stdin with a size limit. When allowEmpty is false,
 // empty stdin is rejected.
 func readFromStdin(allowEmpty bool) ([]byte, error) {
-	data, err := readAtMost(os.Stdin, getMaxFileSize(), "stdin")
+	data, err := hdfutil.ReadAtMost(os.Stdin, getMaxFileSize(), "stdin")
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, fmt.Errorf("input too large: stdin exceeds %d MB limit (use --max-size to increase)",
+			effectiveMaxSizeMB())
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -190,10 +203,9 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 		return nil, fmt.Errorf("file is empty: %s", path)
 	}
 
-	maxSize := getMaxFileSize()
-	if info.Size() > maxSize {
-		return nil, fmt.Errorf("file too large: %d bytes (max %s, use --max-size to increase)",
-			info.Size(), describeLimit(maxSize))
+	if info.Size() > getMaxFileSize() {
+		return nil, fmt.Errorf("file too large: %s is %d bytes (max %d MB, use --max-size to increase)",
+			path, info.Size(), effectiveMaxSizeMB())
 	}
 
 	return readStatted(f, info.Size(), path)
@@ -213,26 +225,6 @@ func readStatted(f io.Reader, size int64, path string) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("failed to read %s: %w", path, err)
 	}
-}
-
-// readAtMost reads all of r through the shared bounded reader and renders an over-long
-// input as the CLI's --max-size error. source names the input in read-failure messages.
-func readAtMost(r io.Reader, limit int64, source string) ([]byte, error) {
-	data, err := hdfutil.ReadAtMost(r, limit, source)
-	if errors.Is(err, hdfutil.ErrInputTooLarge) {
-		return nil, fmt.Errorf("input too large: exceeds %s limit (use --max-size to increase)", describeLimit(limit))
-	}
-	return data, err
-}
-
-// describeLimit renders a byte limit for an error message: whole megabytes as "N MB",
-// matching the unit of --max-size, and anything else in bytes.
-func describeLimit(limit int64) string {
-	const mb = 1024 * 1024
-	if limit >= mb && limit%mb == 0 {
-		return fmt.Sprintf("%d MB", limit/mb)
-	}
-	return fmt.Sprintf("%d bytes", limit)
 }
 
 // parseHDFResults validates and parses JSON data into HDFResults via

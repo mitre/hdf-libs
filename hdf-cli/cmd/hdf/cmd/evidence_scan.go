@@ -62,7 +62,7 @@ func (out *scanResult) skipUnreadable(path string, _ error) error {
 // skipOversize records a file over --max-size, which the scan never opens.
 func (out *scanResult) skipOversize(path string, size int64) error {
 	out.unreadable = append(out.unreadable, unreadEntry{path: path,
-		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, getMaxFileSize()/(1024*1024))})
+		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, effectiveMaxSizeMB())})
 	return nil
 }
 
