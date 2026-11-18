@@ -1,0 +1,11 @@
+{
+  "description": "Twistlock reports and the exact rawSourceRecord.content each language must render for them, read by the Go (converter_test.go) and TypeScript (converter.test.ts) tests. input is the report text verbatim; content is the shared-encoder rendering of the vulnerability projection: TwistlockVuln field order, two-space indent, U+2028/U+2029 escaped, < > & left raw. The projection carries cvss as a parsed number, so 9.80 renders 9.8 in both languages.",
+  "cases": [
+    {
+      "why": "line and paragraph separators (raw and escaped), < (raw and escaped), and a number with a trailing zero",
+      "input": "{\"results\":[{\"id\":\"sha256:1f3c\",\"name\":\"app:latest\",\"distro\":\"Red Hat Enterprise Linux release 8.6 (Ootpa)\",\"vulnerabilities\":[{\"id\":\"CVE-2021-44228\",\"cvss\":9.80,\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H\",\"description\":\"Apache Log4j2 <=2.14.1 JNDI features\u2028do not protect\u2029against attacker \\u003ccontrolled> LDAP\\u2028endpoints.\",\"severity\":\"critical\",\"packageName\":\"org.apache.logging.log4j_log4j-core\",\"packageVersion\":\"2.14.1\"}]}]}",
+      "pointer": "/results/0/vulnerabilities/0",
+      "content": "{\n  \"id\": \"CVE-2021-44228\",\n  \"cvss\": 9.8,\n  \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H\",\n  \"description\": \"Apache Log4j2 <=2.14.1 JNDI features\\u2028do not protect\\u2029against attacker <controlled> LDAP\\u2028endpoints.\",\n  \"severity\": \"critical\",\n  \"packageName\": \"org.apache.logging.log4j_log4j-core\",\n  \"packageVersion\": \"2.14.1\"\n}"
+    }
+  ]
+}

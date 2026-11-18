@@ -1,0 +1,65 @@
+{
+  "$comment": "Vectors pinning the full, ordered warning list NormalizeSAFSupplement emits when it rewrites a legacy top-level `passthrough`: first either the deprecation notice (it was normalized into extensions.passthrough) or, in its place, the notice that it was dropped because extensions.passthrough already holds a different value (a deep-equal one counts as normalized); then one warning per undeclared `extensions` sibling. Shared by Go and TypeScript so the two cannot drift. Each case writes its siblings in an insertion order that differs from the sorted one: Go reads them into a map and so cannot see source order, which is why the rule is code-point order of the key in both languages. Each case's `extensions` is spliced into a minimal valid results document beside a legacy top-level `passthrough`, which is what triggers the relocation.",
+  "vectors": [
+    {
+      "why": "three siblings, one clashing with a key already in passthrough, are reported in key order",
+      "extensions": { "zeta": 1, "mid": 2, "alpha": 3 },
+      "passthrough": { "mid": "kept" },
+      "warnings": [
+        "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release",
+        "extensions.alpha was moved into extensions.passthrough.alpha; `extensions` accepts only its defined members",
+        "extensions.mid was dropped: `extensions` is closed and extensions.passthrough.mid already holds a value",
+        "extensions.zeta was moved into extensions.passthrough.zeta; `extensions` accepts only its defined members"
+      ]
+    },
+    {
+      "why": "a non-object passthrough leaves every sibling in place, and reports them in key order",
+      "extensions": { "passthrough": "not-an-object", "zeta": 1, "mid": 2, "alpha": 3 },
+      "passthrough": { "ignored": true },
+      "warnings": [
+        "top-level 'passthrough' was dropped: extensions.passthrough already holds a value",
+        "extensions.alpha could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate",
+        "extensions.mid could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate",
+        "extensions.zeta could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate"
+      ]
+    },
+    {
+      "why": "a legacy top-level passthrough beside an existing extensions.passthrough object is dropped, and the drop is reported in place of the deprecation notice",
+      "extensions": { "passthrough": { "kept": true }, "zeta": 1 },
+      "passthrough": { "legacy": true },
+      "warnings": [
+        "top-level 'passthrough' was dropped: extensions.passthrough already holds a value",
+        "extensions.zeta was moved into extensions.passthrough.zeta; `extensions` accepts only its defined members"
+      ]
+    },
+    {
+      "why": "a legacy top-level passthrough deep-equal to the existing extensions.passthrough loses nothing, so it is reported as normalized, not dropped",
+      "extensions": { "passthrough": { "scan": { "id": 7, "tags": ["a", "b"] } }, "zeta": 1 },
+      "passthrough": { "scan": { "tags": ["a", "b"], "id": 7 } },
+      "warnings": [
+        "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release",
+        "extensions.zeta was moved into extensions.passthrough.zeta; `extensions` accepts only its defined members"
+      ]
+    },
+    {
+      "why": "a key holding null is a value, so passthroughs differing only by it are not equal and the legacy one is dropped",
+      "extensions": { "passthrough": { "scan": null } },
+      "passthrough": {},
+      "warnings": [
+        "top-level 'passthrough' was dropped: extensions.passthrough already holds a value"
+      ]
+    },
+    {
+      "why": "key order is by code point, not UTF-16 unit: U+E000 sorts before U+10000 although its UTF-16 unit is higher, and a prefix sorts first",
+      "extensions": { "𐀀": 1, "": 2, "ab": 3, "a": 4 },
+      "passthrough": {},
+      "warnings": [
+        "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release",
+        "extensions.a was moved into extensions.passthrough.a; `extensions` accepts only its defined members",
+        "extensions.ab was moved into extensions.passthrough.ab; `extensions` accepts only its defined members",
+        "extensions. was moved into extensions.passthrough.; `extensions` accepts only its defined members",
+        "extensions.𐀀 was moved into extensions.passthrough.𐀀; `extensions` accepts only its defined members"
+      ]
+    }
+  ]
+}

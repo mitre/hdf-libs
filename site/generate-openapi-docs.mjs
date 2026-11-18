@@ -203,4 +203,7 @@ ${compatibilitySection(baseline)}`;
   console.log(`Generated openapi/index.md — ${published.length} document(s): ${names}${note}.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) generateOpenapiDocs();
+// Compare native paths: import.meta.url is percent-encoded and argv[1] is not.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  generateOpenapiDocs();
+}

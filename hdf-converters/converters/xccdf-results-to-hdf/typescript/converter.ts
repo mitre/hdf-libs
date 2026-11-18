@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateInputSize, serializeHdf } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -352,7 +352,7 @@ export async function convertXccdfResultsToHdf(input: string, converterVersion =
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf-results');
+  validateXmlInput(input, 'xccdf');
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
@@ -394,7 +394,7 @@ export async function convertXccdfBenchmarkToHdf(input: string, converterVersion
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf-benchmark');
+  validateXmlInput(input, 'xccdf');
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
@@ -430,7 +430,7 @@ export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf');
+  validateXmlInput(input, 'xccdf');
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")

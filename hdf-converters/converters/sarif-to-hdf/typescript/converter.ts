@@ -6,10 +6,10 @@ import {
 import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, buildRunFailedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
-import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import { buildJsonRawSourceRecord, canonicalize, parseJSONPreservingNumbers } from '../../../shared/typescript/exportmap.js';
 import { buildPassthroughBlock, collectPropertyBags, restoreUnexpressible, restoreUnexpressibleResult, restoreCarriedStatus, resultBagRow, ruleBag, type BagGroup, type SarifLike, restoreBaselineFields, runBag} from './passthrough.js';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
-import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
+import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -348,10 +348,14 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
   // the parsed objects in place, and rawSourceRecord is built from them, so without
   // this a record would carry the uri THIS CONVERTER inferred rather than what the
-  // tool wrote. Go captures the unparsed bytes at decode time for the same reason.
+  // tool wrote. Go captures the unparsed bytes at decode time for the same reason;
+  // canonicalize builds new objects, so its output is that snapshot.
   const preservedResults = (preservedRun as {results?: unknown[]} | undefined)?.results;
-  const rawSnapshots = (run.results ?? []).map((r, i) =>
-    stringifyLine(canonicalize(preservedResults?.[i] ?? r)).replace(/\n$/, ''));
+  const rawSnapshots = (run.results ?? []).map((r, i) => canonicalize(preservedResults?.[i] ?? r));
+  // Go decodes a null element of locations to an empty SarifLocation; do the same here.
+  for (const r of run.results ?? []) {
+    if (r.locations) r.locations = r.locations.map(loc => loc ?? {});
+  }
   resolveArtifactIndices(run);
 
   const ruleMap = buildRuleMap(run);
@@ -368,7 +372,7 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   const groupOrder: string[] = [];
   // indices is parallel to results: indices[i] is results[i]'s position in
   // run.results, which rawSourceRecord.pointer needs to address the source record.
-  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[]; raws: string[] }>();
+  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[]; raws: unknown[] }>();
   for (const [srcIdx, result] of limitedResults.entries()) {
     const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
     let group = groupMap.get(groupKey);
@@ -380,20 +384,17 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
     }
     group.results.push(result);
     group.indices.push(srcIdx);
-    group.raws.push(rawSnapshots[srcIdx] ?? '');
+    group.raws.push(rawSnapshots[srcIdx]);
   }
 
-  // Collected in the same order the requirement's results are built, so a carried
-  // bag's ordinal addresses the result it came from.
+  // One bag per HDF result row, so a carried bag's ordinal addresses the row
+  // hdf-to-sarif re-emits as a result.
   const bagGroups: BagGroup[] = [];
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
-    bagGroups.push({
-      ruleId,
-      ruleProps: group.rule?.properties,
-      resultProps: group.results.map(r => r.properties),
-    });
-    return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
+    const { requirement, rowProps } = convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
+    bagGroups.push({ ruleId, ruleProps: group.rule?.properties, resultProps: rowProps });
+    return requirement;
   });
 
   // Use tool name for baseline name if available
@@ -468,7 +469,9 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], raws: string[], timestamp: Date): EvaluatedRequirement {
+// Also returns each HDF result row's source property bag, in row order: a SARIF
+// result at N locations contributes its bag N times. Mirrors Go's convertResultGroup.
+function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], raws: unknown[], timestamp: Date): { requirement: EvaluatedRequirement; rowProps: (Record<string, unknown> | undefined)[] } {
   const firstResult = sarifResults[0]!;
 
   // Derive requirement-level metadata from the rule and first result
@@ -511,9 +514,12 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   // share its record and pointer, because they share its source.
   const results: RequirementResult[] = [];
   const perResult: Record<string, unknown>[] = [];
+  const rowProps: (Record<string, unknown> | undefined)[] = [];
   for (const [i, sr] of sarifResults.entries()) {
-    const expanded = convertSarifResultToHDFResults(sr);
-    const record = rawSourceRecordFor(raws[i] ?? '', runIdx, sourceIndices[i] ?? i);
+    const { results: expanded, sources } = convertSarifResultToHDFResults(sr);
+    // The SARIF result, complete and untyped, so properties SarifResult does not
+    // declare survive. utf-8 rather than base64: a SARIF result is JSON, so UTF-8 text.
+    const record = buildJsonRawSourceRecord(raws[i], `/runs/${runIdx}/results/${sourceIndices[i] ?? i}`, 'compact');
     for (const [j, r] of expanded.entries()) {
       // The record goes on the FIRST expanded result only. All of them came from one
       // SARIF result and so share one source record, and that record contains the whole
@@ -522,13 +528,14 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
       // locations produced 4.3MB). One record per SARIF result is the honest cardinality
       // and keeps ADR-0017's rule intact, since nothing is merged across SARIF results;
       // the record's own pointer still says which result it came from.
-      if (j === 0) r.rawSourceRecord = record;
+      if (j === 0 && record) r.rawSourceRecord = record;
       // Result fields SARIF cannot carry, from the row hdf-to-sarif put on this
       // result's own bag. Every expanded row came from one SARIF result, so they
       // share its carriage the way they share its record.
       restoreUnexpressibleResult(r as unknown as Record<string, unknown>, resultBagRow(sr));
       restoreCarriedStatus(r as unknown as Record<string, unknown>, resultBagRow(sr), sr.kind);
-      perResult.push(perResultTagEntry(sr));
+      perResult.push(perResultTagEntry(sr, sources[j]));
+      rowProps.push(sr.properties);
     }
     results.push(...expanded);
   }
@@ -646,7 +653,7 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   const bag = ruleBag(rule);
   if (bag) restoreUnexpressible(req as unknown as Record<string, unknown>, bag);
 
-  return req;
+  return { requirement: req, rowProps };
 }
 
 /**
@@ -779,33 +786,12 @@ function resolveRuleLevel(
   return {level: 'warning', source: SEVERITY_SOURCE_FALLBACK};
 }
 
-// Carries one SARIF result, complete, on the HDF result(s) it produced. ADR-0017 scoped
-// this to the result deliberately: records merged onto the requirement collide, and
-// merging entries that share an id has to discard one, which is how the non-first
-// result's metadata used to be lost. Encoding is utf-8 rather than base64 because a
-// SARIF result is JSON and therefore valid UTF-8 text. Mirrors Go's rawSourceRecordFor.
-function rawSourceRecordFor(content: string, runIdx: number, resultIdx: number): RawSourceRecord {
-  return {
-    // The parsed result carries every property the document had, including the 17 of
-    // SARIF's 30 that SarifResult does not declare; sorting matches Go, whose record
-    // is re-marshalled from the untyped result for the same reason. Original key order
-    // and whitespace are therefore not preserved — the content is complete, not
-    // byte-exact. The shared canonical encoder is used rather than JSON.stringify
-    // because Go HTML-escapes <, > and & while JavaScript does not, and because it
-    // sorts keys, escapes U+2028/U+2029 and normalizes negative zero — the four
-    // places the two languages' serializers disagree.
-    content,
-    encoding: ExternalReferenceEncoding.UTF8,
-    mediaType: 'application/json',
-    pointer: `/runs/${runIdx}/results/${resultIdx}`,
-  };
-}
-
 // The queryable half of per-result carriage. rawSourceRecord holds the whole record
 // but as an opaque string, so nothing can filter on what is inside it; fingerprints
 // exist for cross-run correlation, which needs them addressable. Only fields a
-// requirement-level summary cannot represent go here. Mirrors Go's perResultTagEntry.
-function perResultTagEntry(result: SarifResult): Record<string, unknown> {
+// requirement-level summary cannot represent go here. loc is the location this HDF
+// row was expanded from. Mirrors Go's perResultTagEntry.
+function perResultTagEntry(result: SarifResult, loc: SarifLocation | undefined): Record<string, unknown> {
   const entry: Record<string, unknown> = {
     // The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
     // key, so applying the default invents no history; tags["kind"] stays verbatim.
@@ -828,18 +814,18 @@ function perResultTagEntry(result: SarifResult): Record<string, unknown> {
   // sits on the REQUIREMENT, so a rule with ten results at ten places kept only the
   // first and an exporter re-emitting them gave all ten that one location. Mirrors
   // Go's perResultLocation.
-  const loc = perResultLocation(result);
-  if (loc) entry.location = loc;
+  const carried = perResultLocation(loc);
+  if (carried) entry.location = carried;
   return entry;
 }
 
 /**
- * Carries one result's first location: the uri and the region members SARIF defines
- * as integers. Only the FIRST — a multi-location result is expanded into several
- * HDF results on import, so each expanded row carries what it was expanded from.
+ * Carries the location one HDF row was expanded from: the uri and the region
+ * members SARIF defines as integers. A multi-location result is expanded into one
+ * HDF result per location, so each row carries its own.
  */
-function perResultLocation(result: SarifResult): Record<string, unknown> | undefined {
-  const phys = result.locations?.[0]?.physicalLocation;
+function perResultLocation(loc: SarifLocation | undefined): Record<string, unknown> | undefined {
+  const phys = loc?.physicalLocation;
   if (!phys) return undefined;
   const out: Record<string, unknown> = {};
   if (phys.artifactLocation?.uri) out.ref = phys.artifactLocation.uri;
@@ -881,8 +867,13 @@ function uniformKind(results: SarifResult[]): string | undefined {
   return kind;
 }
 
-// Converts a single SARIF result into one or more HDF RequirementResults.
-function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[] {
+/**
+ * Converts a single SARIF result into one or more HDF RequirementResults, and
+ * returns beside each the location it was expanded from. The location-less row a
+ * result with nothing representable gets is given the first location, which has
+ * nothing representable either. Mirrors Go's convertSarifResultToHDFResults.
+ */
+function convertSarifResultToHDFResults(result: SarifResult): { results: RequirementResult[]; sources: (SarifLocation | undefined)[] } {
   // Map kind to HDF status. The raw status stays the tool's — an accepted
   // suppression becomes a structured, attributed override on the requirement
   // (see convertResultGroup), not a laundered notReviewed status.
@@ -899,19 +890,20 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
   const backtrace = extractBacktrace(result.codeFlows);
 
   // Create results for each location
-  const results = (result.locations || [])
+  const sources = (result.locations || [])
     // Keep a location when there is something representable in it. Filtering on a
     // truthy uri discarded a position that was known, because §3.4.5 permits an
     // artifactLocation carrying only an index and region is a sibling of
     // artifactLocation. Accepting any physicalLocation went too far the other way: the
     // schema's anyOf admits an address instead of an artifactLocation, and an address
-    // with no region became "LINE : 0 COLUMN : 0". Mirrors Go's gate.
+    // with no region became "LINE : 0 COLUMN : 0". Mirrors Go's gate, where a JSON null
+    // decodes to a nil pointer, hence != null rather than !== undefined.
     .filter(
       loc =>
-        loc.physicalLocation !== undefined &&
-        (loc.physicalLocation.artifactLocation !== undefined || loc.physicalLocation.region !== undefined)
-    )
-    .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
+        loc.physicalLocation != null &&
+        (loc.physicalLocation.artifactLocation != null || loc.physicalLocation.region != null)
+    );
+  const results = sources.map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
 
   // If no locations, create a location-less result so the finding isn't silently dropped
   if (results.length === 0) {
@@ -927,9 +919,10 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
       locationlessResult.message = `Suppressed: ${suppressionJustification}`;
     }
     results.push(locationlessResult);
+    return { results, sources: [result.locations?.[0]] };
   }
 
-  return results;
+  return { results, sources };
 }
 
 // --- Message resolution ---

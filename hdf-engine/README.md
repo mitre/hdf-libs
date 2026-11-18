@@ -24,12 +24,12 @@ go get github.com/mitre/hdf-libs/hdf-engine/go/v3
 
 ### Detect a document's type
 
-Returns the HDF document type, or an empty result when the bytes are not an HDF document:
+Returns the HDF document type, or an empty string when the input is not an HDF document. TypeScript takes the document's text, Go its bytes:
 
 ```ts
 import { detect } from '@mitre/hdf-engine';
 
-const docType = detect(bytes); // 'results' | 'baseline' | 'system' | ...
+const docType = detect(text); // 'results' | 'baseline' | 'system' | ... ('' when not HDF)
 ```
 
 ```go
@@ -58,7 +58,11 @@ matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 })
 ```
 
-`Tag` matches `key=value` and accepts globs, which is how source-specific data reaches a query without this package knowing the vocabulary of every scanner.
+`Tag` matches `key:value` — the colon is required — and globs the value, which is how source-specific data reaches a query without this package knowing the vocabulary of every scanner.
+
+`Nist` is a glob too, so a value without a wildcard is an exact match — `AC-2` reaches neither the enhancement `AC-2 (1)` nor the statement sub-part `CM-6 b`. Reach them with a wildcard: `AC-2*` covers one control's enhancements and sub-parts in both spellings NIST documents use (`AC-2 (1)`, `AC-2(1)`), and `AC-*` covers the family. The axis is deliberately not hierarchy-aware: a control id is a string here, and inferring the hierarchy would mean choosing one normalized spelling for every consumer. `Cci` is not a glob — it is case-insensitive equality against each value of the `cci` tag.
+
+`Search` is a case-insensitive substring over a requirement's id, title and descriptions. It does not read `code`, and it does read id, so it matches a CVE another finding merely cross-references — use an `Id` glob when you mean the identifier alone.
 
 ### Roll up compliance
 
@@ -120,7 +124,7 @@ each baseline's labels instead.
 Parse a package, check the checksums of everything it references, and report whether the plan's baselines are covered:
 
 ```go
-name, contents, err := hdfengine.ParseEvidencePackage(pkg)
+planRef, contents, err := hdfengine.ParseEvidencePackage(pkg)
 results := hdfengine.VerifyChecksums(contents, fetch)
 report := hdfengine.Completeness(planned, covered)
 ```
@@ -131,7 +135,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 
 ### Detection
 
-- `detect(data)` / `Detect(data)` — the document's type, empty when not HDF
+- `detect(text)` / `Detect(data)` — the document's type, empty when not HDF. The TypeScript form takes a string, the Go form `[]byte`
 - `KnownTypes()` (Go) — every type detection can return
 
 ### Query
@@ -169,7 +173,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 
 ### Evidence
 
-- `parseEvidencePackage` / `ParseEvidencePackage` — package name and contents
+- `parseEvidencePackage` / `ParseEvidencePackage` — the package's `planRef` and its `contents[]` entries (TypeScript returns `{ planRef, contents }`)
 - `verifyChecksums` / `VerifyChecksums` — per-reference checksum status. Asynchronous in TypeScript (`await verifyChecksums(...)`): it hashes the SHA family with Web Crypto so the package bundles for the browser.
 - `checksumHex` / `ChecksumHex` — hash bytes under a named `Hash_Algorithm`; the one definition of which algorithms this codebase can verify. Asynchronous in TypeScript for the same reason.
 - `plannedBaselineRefs`, `coveredBaselineNames`, `coveredBaselinesInPackage` — plan coverage inputs

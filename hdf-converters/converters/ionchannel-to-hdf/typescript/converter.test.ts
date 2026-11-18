@@ -581,3 +581,10 @@ describe('ionchannel to HDF converter', async () => {
     });
   });
 });
+
+describe('document timestamp fallback', () => {
+  it('emits canonical trimmed-UTC RFC3339 when the analysis carries no parseable time', async () => {
+    const out = JSON.parse(await convertIonchannelToHdf('{"scan_summaries": []}')) as { timestamp: string };
+    expect(out.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/);
+  });
+});

@@ -1,0 +1,11 @@
+{
+  "description": "Grype reports and the exact rawSourceRecord.content each language must render for them, read by the Go (converter_test.go) and TypeScript (converter.test.ts) tests. input is the report text verbatim; content is the shared-encoder rendering: keys sorted, two-space indent, U+2028/U+2029 escaped, < > & left raw, and every number token exactly as the source wrote it.",
+  "cases": [
+    {
+      "why": "line and paragraph separators (raw and escaped), < (raw and escaped), and a number with a trailing zero",
+      "input": "{\"matches\":[{\"vulnerability\":{\"id\":\"CVE-2021-44228\",\"severity\":\"Critical\",\"description\":\"Apache Log4j2 <=2.14.1 JNDI features\u2028do not protect\u2029against attacker \\u003ccontrolled> LDAP\\u2028endpoints.\",\"cvss\":[{\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":9.80}}]},\"matchDetails\":[],\"artifact\":{\"name\":\"log4j-core\",\"version\":\"2.14.1\",\"type\":\"java-archive\"}}],\"source\":{\"type\":\"image\",\"target\":{\"userInput\":\"app:latest\"}},\"descriptor\":{\"name\":\"grype\",\"version\":\"0.74.0\"}}",
+      "pointer": "/matches/0",
+      "content": "{\n  \"artifact\": {\n    \"name\": \"log4j-core\",\n    \"type\": \"java-archive\",\n    \"version\": \"2.14.1\"\n  },\n  \"matchDetails\": [],\n  \"vulnerability\": {\n    \"cvss\": [\n      {\n        \"metrics\": {\n          \"baseScore\": 9.80\n        },\n        \"vector\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H\",\n        \"version\": \"3.1\"\n      }\n    ],\n    \"description\": \"Apache Log4j2 <=2.14.1 JNDI features\\u2028do not protect\\u2029against attacker <controlled> LDAP\\u2028endpoints.\",\n    \"id\": \"CVE-2021-44228\",\n    \"severity\": \"Critical\"\n  }\n}"
+    }
+  ]
+}

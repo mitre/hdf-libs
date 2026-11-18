@@ -53,16 +53,27 @@ Examples:
 			if name == "" && description == "" && packageID == "" && systemRef == "" && planRef == "" && docVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --package-id, --system-ref, --plan-ref, --version, --unset)")
 			}
+			if err := requireOutputForStdinPackage(args[0], outputPath); err != nil {
+				return err
+			}
 			// Normalized against the INPUT package's directory, which is where the documents
-			// sit. Whether -o moving the package should re-base its references is a separate
-			// question and belongs to the -o coverage card, not here.
-			pkgDir := filepath.Dir(args[0])
+			// sit (for a stdin package, the -o file's). Whether -o moving the package should
+			// re-base its references is a separate question, not settled here.
+			pkgDir := evidencePackageDir(args[0], outputPath)
+			sysRef, err := packageRelativeIfInside(pkgDir, systemRef)
+			if err != nil {
+				return fmt.Errorf("--system-ref %w", err)
+			}
+			plRef, err := packageRelativeIfInside(pkgDir, planRef)
+			if err != nil {
+				return fmt.Errorf("--plan-ref %w", err)
+			}
 			return runGenericDocSet(args[0], outputPath, "evidence-package", unsetFields, requiredEvidenceFields, map[string]string{
 				"name":        name,
 				"description": description,
 				"packageId":   packageID,
-				"systemRef":   packageRelativeIfInside(pkgDir, systemRef),
-				"planRef":     packageRelativeIfInside(pkgDir, planRef),
+				"systemRef":   sysRef,
+				"planRef":     plRef,
 				"version":     docVersion,
 			})
 		},
@@ -111,9 +122,15 @@ var requiredEvidenceFields = map[string]bool{
 // uri-reference does not admit is recorded as the operator wrote it. It RESOLVES
 // correctly — that is measured — but it is not a spelling the format admits, and the
 // operator owns that because they supplied a reference rather than a path.
-func packageRelativeIfInside(pkgDir, ref string) string {
+//
+// A value that is not valid UTF-8 is refused in every shape: no reference can carry it,
+// and encoding/json would rewrite its bytes to U+FFFD, recording a different name.
+func packageRelativeIfInside(pkgDir, ref string) (string, error) {
+	if err := evidenceref.Recordable(ref); err != nil {
+		return "", fmt.Errorf("%q cannot be recorded as a reference: %w", ref, err)
+	}
 	if ref == "" || isRemoteURI(ref) || !filepath.IsAbs(ref) {
-		return ref
+		return ref, nil
 	}
 	// Decoded before resolving and re-encoded by nothing: what this returns is a
 	// reference to RECORD, and recording the decoded form would write a value the schema
@@ -122,17 +139,15 @@ func packageRelativeIfInside(pkgDir, ref string) string {
 	// only when that form needs no escaping — otherwise the absolute spelling stands,
 	// which the caller already reports.
 	decoded, decErr := evidenceref.Decode(ref)
-	if decErr != nil {
-		return ref
+	if decErr == nil {
+		if resolved, ok := packageSubtreeRef(pkgDir, decoded); ok {
+			// RE-ENCODED, because what this returns is a reference to RECORD and the field
+			// is a uri-reference: writing the decoded form would store a value the schema
+			// calls malformed the moment the name contains a space. Per SEGMENT, since
+			// PathEscape escapes a separator too — escaping the whole path turned every
+			// "scans/x.json" into "scans%2Fx.json", which silently stopped normalizing.
+			return encodeRef(ref, string(resolved))
+		}
 	}
-	if resolved, ok := packageSubtreeRef(pkgDir, decoded); ok {
-		// RE-ENCODED, because what this returns is a reference to RECORD and the field is
-		// a uri-reference: writing the decoded form would store a value the schema calls
-		// malformed the moment the name contains a space. Per SEGMENT, since PathEscape
-		// escapes a separator too — escaping the whole path turned every ordinary
-		// "scans/x.json" into "scans%2Fx.json", which is why the first attempt at this
-		// guard silently stopped normalizing anything.
-		return evidenceref.Encode(string(resolved))
-	}
-	return ref
+	return ref, nil
 }

@@ -613,3 +613,23 @@ describe('grype result instance identity', () => {
     expect(names).toEqual(['busybox', 'ssl_client']);
   });
 });
+
+// The Go twin reads the same case table (TestRawSourceRecord_SharedCases), so both
+// languages are held to one rendering of each record.
+describe('grype-to-hdf rawSourceRecord shared cases (Go parity)', () => {
+  const casesPath = join(__dirname, '..', 'go', 'testdata', 'raw-source-record-cases.json');
+  const {cases} = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+    cases: Array<{why: string; input: string; pointer: string; content: string}>;
+  };
+
+  it('has cases', () => {
+    expect(cases.length).toBeGreaterThan(0);
+  });
+
+  it.each(cases)('renders $why the same as the Go twin', async ({input, pointer, content}) => {
+    const out = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    const record = out.baselines[0]!.requirements[0]!.results[0]!.rawSourceRecord!;
+    expect(record.pointer).toBe(pointer);
+    expect(record.content).toBe(content);
+  });
+});

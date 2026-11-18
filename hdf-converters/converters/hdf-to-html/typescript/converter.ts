@@ -5,7 +5,7 @@
  * and is pinned by the shared goldens.
  */
 
-import { canonicalJson, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
+import { canonicalJson, compareCodePoint, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
 import {
   addCounts,
   calculateCompliance,
@@ -17,7 +17,6 @@ import {
 } from '@mitre/hdf-engine';
 import type { EvaluatedBaseline, EvaluatedRequirement, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
-import { byCodePoint } from '../../../shared/typescript/exportmap.js';
 import { requirementEffectiveImpact, requirementDisposition } from '../../../shared/typescript/status.js';
 import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 
@@ -630,7 +629,7 @@ class Renderer {
   /** A map as key/value chips in key order. An empty value is kept: the key itself is the information. */
   private chips(heading: string, value: unknown): void {
     const m = obj(value);
-    const keys = Object.keys(m).sort(byCodePoint);
+    const keys = Object.keys(m).sort(compareCodePoint);
     if (keys.length === 0) return;
 
     this.line(`<h4>${heading}</h4>`);
@@ -1137,7 +1136,7 @@ class Renderer {
    */
   private tagChips(tags: Json): void {
     const entries: Array<readonly [string, string]> = [];
-    for (const key of Object.keys(tags).sort(byCodePoint)) {
+    for (const key of Object.keys(tags).sort(compareCodePoint)) {
       if (key === 'nist' || key === 'cci') continue;
       const value = tagText(tags[key]);
       if (value !== null) entries.push([key, value]);
@@ -1178,7 +1177,7 @@ function referenceCensus(doc: Json): string {
     }
   }
   if (total === 0) return '';
-  const parts = [...kinds.keys()].sort(byCodePoint).map((kind) => `${kind} ${kinds.get(kind)}`);
+  const parts = [...kinds.keys()].sort(compareCodePoint).map((kind) => `${kind} ${kinds.get(kind)}`);
   return parts.length === 0 ? String(total) : `${total} (${parts.join(', ')})`;
 }
 
@@ -1341,7 +1340,7 @@ function referenceLines(refs: Json[]): string[] {
     } else if (Array.isArray(ref.ref)) {
       const urls = new Set<string>();
       collectUrls(ref.ref, urls);
-      lines.push(...[...urls].sort(byCodePoint));
+      lines.push(...[...urls].sort(compareCodePoint));
     }
     for (const s of [text(ref.url), text(ref.uri)]) {
       if (s !== '') lines.push(s);

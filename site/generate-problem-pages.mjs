@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 export const PROBLEM_TABLE = 'hdf-openapi/dist/problems.json';
+export const PROBLEM_BASE_FILE = 'hdf-openapi/dist/problem-base.json';
 const PAGES_DIR = path.resolve(__dirname, 'problems');
 
 const OWNER_NOTE = {
@@ -21,7 +22,7 @@ const OWNER_NOTE = {
   service: 'Raised by the service that stores the documents, not by document content.',
 };
 
-function page(type, entry) {
+function page(type, entry, typeUri) {
   const owned = OWNER_NOTE[entry.owner];
   if (owned === undefined) throw new Error(`${type}: no note for owner ${entry.owner}`);
   return `---
@@ -30,7 +31,7 @@ title: ${type}
 
 # \`${type}\`
 
-**HTTP status ${entry.status}** · problem type \`https://mitre.github.io/hdf-libs/problems/${type}\`
+**HTTP status ${entry.status}** · problem type \`${typeUri}\`
 
 ${owned}
 
@@ -49,8 +50,8 @@ problem document, served as \`application/problem+json\`:
 
 \`\`\`json
 {
-  "type": "https://mitre.github.io/hdf-libs/problems/${type}",
-  "title": "${type.toUpperCase().replace(/-/g, '_')}",
+  "type": ${JSON.stringify(typeUri)},
+  "title": ${JSON.stringify(entry.title)},
   "status": ${entry.status}
 }
 \`\`\`
@@ -81,12 +82,18 @@ ${rows}
 `;
 }
 
-export function generateProblemPages(table = PROBLEM_TABLE) {
-  const source = path.resolve(REPO_ROOT, table);
+function readBuilt(rel) {
+  const source = path.resolve(REPO_ROOT, rel);
   if (!fs.existsSync(source)) {
-    throw new Error(`${table} is not built; run hdf-openapi's build first`);
+    throw new Error(`${rel} is not built; run hdf-openapi's build:components first`);
   }
-  const docs = JSON.parse(fs.readFileSync(source, 'utf-8'));
+  return JSON.parse(fs.readFileSync(source, 'utf-8'));
+}
+
+export function generateProblemPages(table = PROBLEM_TABLE, baseFile = PROBLEM_BASE_FILE) {
+  const docs = readBuilt(table);
+  const { base } = readBuilt(baseFile);
+  if (typeof base !== 'string' || base === '') throw new Error(`${baseFile} names no base URI`);
   const types = Object.keys(docs);
   if (types.length === 0) throw new Error(`${table} documents no problem types`);
 
@@ -94,11 +101,14 @@ export function generateProblemPages(table = PROBLEM_TABLE) {
   for (const [type, entry] of Object.entries(docs)) {
     const dir = path.join(PAGES_DIR, type);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.md'), page(type, entry));
+    fs.writeFileSync(path.join(dir, 'index.md'), page(type, entry, `${base}/${type}`));
   }
   fs.mkdirSync(PAGES_DIR, { recursive: true });
   fs.writeFileSync(path.join(PAGES_DIR, 'index.md'), indexPage(docs));
   console.log(`Generated problems/ — ${types.length} problem type pages.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) generateProblemPages();
+// Compare native paths: import.meta.url is percent-encoded and argv[1] is not.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  generateProblemPages();
+}

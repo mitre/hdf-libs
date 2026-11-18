@@ -132,13 +132,19 @@ describe('convertHdfToSarif', () => {
   });
 
   // Impact 0.0 means no impact, not ungraded, so it cannot produce level "none"
-  // by itself — but a severity tag written by sarif-to-hdf holds the source level
+  // by itself — but the sarif-level tag sarif-to-hdf writes holds the source level
   // verbatim and is the one thing that can restore it.
-  it('restores the source level from a carried severity tag', () => {
-    const none = convert(doc(requirement({ impact: 0.9, tags: { severity: 'none' } })));
-    expect(rule0(none).defaultConfiguration.level).toBe('none');
-    const hdfWord = convert(doc(requirement({ impact: 0.9, tags: { severity: 'critical' } })));
-    expect(rule0(hdfWord).defaultConfiguration.level).toBe('error');
+  it.each([
+    ['sarif-level', 'none', 'none'],
+    ['sarif-level', 'warning', 'warning'],
+    // Not a SARIF level, so impact decides.
+    ['sarif-level', 'critical', 'error'],
+    // tags.severity is an InSpec severity word in HDF, never a SARIF level.
+    ['severity', 'none', 'error'],
+    ['severity', 'note', 'error'],
+  ])('reads tags[%s]=%s as level %s', (key, value, want) => {
+    const log = convert(doc(requirement({ impact: 0.9, tags: { [key]: value } })));
+    expect(rule0(log).defaultConfiguration.level).toBe(want);
   });
 
   it('restores collapsed kinds from a carried kind tag, but never against the status', () => {
@@ -211,6 +217,13 @@ describe('convertHdfToSarif', () => {
       'external/cwe/cwe-20',
       'nist/SI-10',
     ]);
+  });
+
+  // Only A-Z is lowered, so a non-ASCII capital comes out the same in both languages;
+  // go/converter_test.go pins the same value.
+  it('lowers a CWE tag ASCII-only', () => {
+    const log = convert(doc(requirement({ tags: { cwe: ['CWE-\u0130'] } })));
+    expect(rule0(log).properties.tags).toContain('external/cwe/cwe-\u0130');
   });
 
   // helpUri carries format uri, so free text would make the document invalid.

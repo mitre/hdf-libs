@@ -832,3 +832,12 @@ describe('junit-to-hdf suite provenance', () => {
     }
   });
 });
+
+describe('XML input gate', () => {
+  it('refuses an inline entity declaration with the Go twin\'s wording', async () => {
+    const input = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>';
+    await expect(convertJunitToHdf(input)).rejects.toThrow(
+      new Error('junit: XML input contains entity declarations which are not supported (potential entity expansion attack)'),
+    );
+  });
+});

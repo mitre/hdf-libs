@@ -179,13 +179,16 @@ func restoreUnexpressible(req *hdf.EvaluatedRequirement, bag map[string]interfac
 }
 
 // decodeBagField decodes one bag value into a typed field, skipping when the
-// mapping already set it or when the carried value does not fit the type.
+// mapping already set it, when the carried value is null, or when it does not fit
+// the type. The TypeScript peer's decodesInto applies the same rule.
 func decodeBagField(bag map[string]interface{}, key string, target interface{}, alreadySet bool) {
 	if alreadySet {
 		return
 	}
 	raw, ok := bag[key]
-	if !ok {
+	// A null carries no value. Decoding it would succeed and clear an overriding field
+	// (title, verificationMethod) or zero a startTime instead of leaving the fallback.
+	if !ok || raw == nil {
 		return
 	}
 	encoded, err := json.Marshal(raw)
@@ -489,6 +492,9 @@ func restoreInventedOverrideFields(req *hdf.EvaluatedRequirement, bag map[string
 		if !carried[i].AppliedAt.IsZero() {
 			req.StatusOverrides[i].AppliedAt = carried[i].AppliedAt
 		}
-		req.StatusOverrides[i].ExpiresAt = carried[i].ExpiresAt
+		// Absent, null and Go's zero time all decode to IsZero: no expiry was carried.
+		if !carried[i].ExpiresAt.IsZero() {
+			req.StatusOverrides[i].ExpiresAt = carried[i].ExpiresAt
+		}
 	}
 }

@@ -22,8 +22,13 @@ var standardSeverityMap = map[string]float64{
 	"information":   0.0,
 }
 
+// UnknownSeverityImpact is the impact for a severity the source did not state:
+// "we do not know", not "no risk". Pair it with the unrated severity marker.
+const UnknownSeverityImpact = 0.5
+
 // SeverityToImpact maps a standard severity string to an HDF impact value.
-// Case-insensitive. Returns defaultVal if severity is not recognized.
+// Case-insensitive. Returns defaultVal (normally UnknownSeverityImpact) if
+// severity is not recognized.
 // Standard mappings: critical=0.9, high=0.7, medium=0.5, low=0.3,
 // info/none/informational/information=0.0.
 //

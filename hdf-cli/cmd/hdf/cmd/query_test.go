@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -793,4 +794,126 @@ func TestQueryVulnerabilityFilters_RefuseBadValues(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.wants, "must be refused before the file is opened")
 		})
 	}
+}
+
+// namesFieldPositively reports whether usage claims the filter reads field. A word
+// inside a negation is the opposite claim, so "it does not read code" must not count
+// as naming code — otherwise correct documentation would fail the test below.
+func namesFieldPositively(usage, field string) bool {
+	re := regexp.MustCompile(`\b` + regexp.QuoteMeta(field) + `\b`)
+	for _, loc := range re.FindAllStringIndex(usage, -1) {
+		start := max(loc[0]-24, 0)
+		if strings.Contains(usage[start:loc[0]], "not ") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// The --search help must name exactly the fields the filter reads. Asserting a
+// literal usage string would pin today's wording rather than its truth, so this
+// probes the filter — one requirement per candidate field, carrying the needle in
+// that field alone — and fails if help and behaviour disagree in either direction.
+func TestQuerySearchFlagHelpNamesEveryMatchedField(t *testing.T) {
+	const needle = "zqneedleqz"
+	defaultDesc := []any{map[string]any{"label": "default", "data": "ordinary text"}}
+
+	probes := []struct {
+		helpWord string
+		req      map[string]any
+	}{
+		{"id", map[string]any{"id": needle, "title": "ordinary", "descriptions": defaultDesc}},
+		{"title", map[string]any{"id": "R1", "title": needle, "descriptions": defaultDesc}},
+		{"description", map[string]any{
+			"id":           "R1",
+			"title":        "ordinary",
+			"descriptions": []any{map[string]any{"label": "default", "data": needle}},
+		}},
+		{"code", map[string]any{
+			"id": "R1", "title": "ordinary", "code": needle, "descriptions": defaultDesc,
+		}},
+	}
+
+	usage := strings.ToLower(NewQueryCmd().Flags().Lookup("search").Usage)
+
+	for _, p := range probes {
+		t.Run(p.helpWord, func(t *testing.T) {
+			req := p.req
+			req["impact"] = 0.5
+			req["tags"] = map[string]any{}
+			req["results"] = []any{map[string]any{
+				"status": "passed", "codeDesc": "check", "startTime": "2025-01-01T00:00:00Z",
+			}}
+
+			path := buildQueryFixture(t, []map[string]any{req})
+			stdout, _, err := executeCommand("query", "--search", needle, "--count", path)
+			require.NoError(t, err)
+
+			matched := strings.TrimSpace(stdout) == "1"
+			named := namesFieldPositively(usage, p.helpWord)
+			assert.Equal(t, matched, named,
+				"--search matches %s=%v but the help names it=%v; usage=%q",
+				p.helpWord, matched, named, usage)
+		})
+	}
+}
+
+// A bare --nist value is an exact glob, so AC-2 reaches neither its own
+// enhancements nor a statement sub-part. That is the half users get wrong, so the
+// behaviour is pinned here and the help is required to disclose it — the
+// disclosure requirement is conditional on the measured behaviour, so making the
+// axis hierarchical later fails this test instead of silently stranding the help.
+func TestQueryNISTBareValueIsExactAndHelpSaysSo(t *testing.T) {
+	reqWithNIST := func(id string, nist []any) map[string]any {
+		return map[string]any{
+			"id":           id,
+			"title":        id + " title",
+			"descriptions": []any{map[string]any{"label": "default", "data": "d"}},
+			"impact":       0.5,
+			"tags":         map[string]any{"nist": nist},
+			"results": []any{map[string]any{
+				"status": "passed", "codeDesc": "check", "startTime": "2025-01-01T00:00:00Z",
+			}},
+		}
+	}
+
+	cases := []struct {
+		name, pattern string
+		tags          []any
+		want          string
+	}{
+		{"bare id misses a parenthesised enhancement", "AC-2", []any{"AC-2 (1)"}, "0"},
+		{"bare id misses an unspaced enhancement", "AC-2", []any{"AC-2(1)"}, "0"},
+		{"bare id misses a statement sub-part", "CM-6", []any{"CM-6 b"}, "0"},
+		{"bare id matches its exact self", "AC-2", []any{"AC-2"}, "1"},
+		{"trailing glob reaches a parenthesised enhancement", "AC-2*", []any{"AC-2 (1)"}, "1"},
+		{"trailing glob reaches an unspaced enhancement", "AC-2*", []any{"AC-2(1)"}, "1"},
+		{"trailing glob reaches a sub-part", "CM-6*", []any{"CM-6 b"}, "1"},
+		{"family glob reaches an enhancement", "AC-*", []any{"AC-2 (1)"}, "1"},
+	}
+
+	exactnessObserved := false
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			path := buildQueryFixture(t, []map[string]any{reqWithNIST("R1", c.tags)})
+			stdout, _, err := executeCommand("query", "--nist", c.pattern, "--count", path)
+			require.NoError(t, err)
+			got := strings.TrimSpace(stdout)
+			assert.Equal(t, c.want, got, "--nist %q against tags.nist=%v", c.pattern, c.tags)
+
+			// Read from what the binary printed, not from c.want: the help
+			// requirement below must rest on measured behaviour, so that making
+			// the axis hierarchical stops requiring the caveat instead of
+			// leaving a now-false one in place.
+			if !strings.Contains(c.pattern, "*") && got == "0" {
+				exactnessObserved = true
+			}
+		})
+	}
+
+	require.True(t, exactnessObserved, "probe did not observe the exact-match behaviour it documents")
+	usage := strings.ToLower(NewQueryCmd().Flags().Lookup("nist").Usage)
+	assert.Contains(t, usage, "exact",
+		"a bare --nist value is exact, so the flag help must say so; usage=%q", usage)
 }

@@ -166,7 +166,7 @@ Requirements are matched by ID across the two documents and classified as:
   new        - present only in the new file
   absent     - present only in the old file
 
-Exit codes (--exit-code): GNU diff compatible
+Exit codes (always on; --exit-code is accepted and changes nothing): GNU diff compatible
   0 - no differences found (assessments are identical)
   1 - differences found (any kind)
 
@@ -210,10 +210,10 @@ Examples:
 	cmd.Flags().BoolVar(&flags.newOnly, "new", false, "Show only new requirements")
 	cmd.Flags().BoolVar(&flags.absent, "absent", false, "Show only absent requirements")
 	cmd.Flags().BoolVar(&flags.all, "all", false, "Include unchanged requirements/components in output")
-	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences")
+	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Accepted for compatibility; changes nothing (0=identical, 1=differences is always on)")
 	cmd.Flags().BoolVar(&flags.detailedExitCode, "detailed-exitcode", false,
 		"Use detailed exit codes: 0=identical, 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift")
-	cmd.Flags().BoolVarP(&flags.quiet, "quiet", "q", false, "Suppress output, return exit code only (implies --exit-code)")
+	cmd.Flags().BoolVarP(&flags.quiet, "quiet", "q", false, "Suppress output, return exit code only")
 	cmd.Flags().BoolVar(&flags.stat, "stat", false, "Show summary counts only (like git diff --stat)")
 	cmd.Flags().BoolVar(&flags.nameOnly, "name-only", false, "List only changed requirement IDs")
 	cmd.Flags().StringVar(&flags.system, "system", "", "System document for component-aware comparison")
@@ -471,7 +471,7 @@ func outputComponentSummariesIfPresent(result diffResult) {
 	}
 }
 
-// computeDiffExitCode returns an exit code error if --exit-code or --detailed-exitcode is set.
+// computeDiffExitCode returns the detailed code under --detailed-exitcode, else GNU diff's 0/1.
 func computeDiffExitCode(summary diff.ComparisonSummary, flags *diffFlags) error {
 	if flags.detailedExitCode {
 		code := diff.ComputeDetailedExitCode(summary)

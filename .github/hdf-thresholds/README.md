@@ -16,11 +16,11 @@ rules:
       where:
           status: failed
           disposition:
-              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
+              not: [waiver, attestation, poam, inherited, falsePositive, operationalRequirement]
       max: 0
 ```
 
-The adjudications live in [`../hdf-amendments/`](../hdf-amendments), applied by the gate before it judges. Every override requires an `expiresAt`, so no decision is permanent — when one lapses the finding returns to the gate on its own.
+The adjudications live in [`../hdf-amendments/`](../hdf-amendments), applied by the gate before it judges. Every override requires an `expiresAt`, so no decision is permanent — when one lapses the finding returns to the gate on its own. `riskAdjustment` is deliberately absent from the `not:` list: that override re-rates impact and carries no status, so a risk-adjusted failure is still failing and nobody has accepted it. The apply loop in `ci.yml` does not pass `--require-match`, so an amendment whose finding has gone matches nothing and fails nothing; retire those by hand at each release (release skill, Phase 1.6).
 
 You may note that most scans in most CI runs will not produce any failures at all, so the disposition clause does nothing on a clean run. That is not a reason to leave out the disposition check. When scans *do* find failures, we are forced to address them with a documented amendment (or otherwise fix them, e.g. by patching) before we can get a clean run.
 
@@ -32,4 +32,4 @@ Some threshold files for particular tools may need additional clauses or modific
 
 1. Write `<tool>.yaml` with the bounds, plus the `rules:` block above, and any additional rules you believe necessary to properly gate that tool, into your PR.
 2. Add the tool to the loop in `ci.yml`.
-3. Adjudicate findings in `../hdf-amendments/<tool>.json`, if necessary, with consultation from the maintainers.
+3. Adjudicate findings in `../hdf-amendments/<tool>.json`, if necessary, with consultation from the maintainers. Keep each `reason` to a sentence or two on why the amendment is appropriate ("reachable only in development"); the scan already records what and where the finding was.

@@ -802,12 +802,10 @@ func cveIdentifier(identifiers []Identifier) string {
 	return ""
 }
 
+// buildDescriptions leaves the default empty when GitLab has no description:
+// the title is already in title, and copying it would claim prose the source lacks.
 func buildDescriptions(v *Vulnerability) []hdf.Description {
-	text := v.Description
-	if text == "" {
-		text = v.Title
-	}
-	descriptions := []hdf.Description{{Label: "default", Data: text}}
+	descriptions := []hdf.Description{{Label: "default", Data: v.Description}}
 	if v.Solution != nil && *v.Solution != "" {
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: *v.Solution})
 	}

@@ -139,7 +139,7 @@ func TestEvidenceExport_RejectsOversizeReferencedFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(pkg), 0o600))
 
 	_, stderr, err := executeCommand("evidence", "export", path, "-o", filepath.Join(dir, "out"), "--max-size", "1")
-	require.NoError(t, err)
+	require.Error(t, err, "the package's only convertible document was refused")
 	assert.Contains(t, stderr, "could not read")
 	assert.Contains(t, stderr, "too large")
 }
@@ -634,6 +634,19 @@ func TestEvidenceVerify_CorrectExternalEvidenceChecksumStillPasses(t *testing.T)
 	// both arrays, which is the count that has to reconcile with bundle's.
 	assert.Contains(t, stdout, "Verified: 3/3 checksums valid",
 		"both arrays count toward the verdict, so the total spans them")
+}
+
+// Checksum.value has no case constraint, and Get-FileHash records uppercase hex: the
+// correct digest in uppercase names the same bytes, so verify and bundle both pass it.
+func TestEvidenceVerifyAndBundle_AcceptAnUppercaseHexDigest(t *testing.T) {
+	sum := sha256.Sum256([]byte("log\n"))
+	dir, pkgPath := externalEvidenceVerifyPackage(t, strings.ToUpper(hex.EncodeToString(sum[:])))
+
+	stdout, _, err := executeCommand("evidence", "info", "--verify", pkgPath)
+	assert.NoError(t, err, "an uppercase spelling of the correct digest is not a changed file")
+	assert.Contains(t, stdout, "Verified: 3/3 checksums valid")
+	_, _, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "out.tar.gz"))
+	assert.NoError(t, bundleErr, "bundle must agree with verify on the same package")
 }
 
 // The counts must reconcile with bundle's, which is the specific discrepancy

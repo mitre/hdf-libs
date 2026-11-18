@@ -102,7 +102,19 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable, requireC
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
+	if err := refuseStdinPackageRelativeRefs(pkgPath, recorded); err != nil {
+		return err
+	}
 	refStatus := classifyReferences(pkgDir, recorded)
+	if pkgPath == stdinPackage {
+		// Only absolute references remain, and none is inside a package with no directory.
+		for i := range refStatus {
+			if refStatus[i].Reachable {
+				refStatus[i].Reachable, refStatus[i].resolved = false, ""
+				refStatus[i].Reason = stdinNoDirectory
+			}
+		}
+	}
 	resolvedBy := make(map[string]evidenceref.Decoded, len(refStatus))
 	unreachableBy := make(map[string]string, len(refStatus))
 	for _, st := range refStatus {

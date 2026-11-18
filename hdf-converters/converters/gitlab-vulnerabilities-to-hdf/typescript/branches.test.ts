@@ -106,7 +106,8 @@ describe('gitlab-vulnerabilities-to-hdf absent fields', () => {
       scanner: { name: 'Semgrep' },
       latestDetectedPipeline: { iid: '7', sha: 'abc', ref: 'main', createdAt: 'not-a-time' },
     });
-    expect(req.descriptions).toEqual([{ label: 'default', data: 'T' }, { label: 'fix', data: 'Patch it' }]);
+    expect(req.descriptions).toEqual([{ label: 'default', data: '' }, { label: 'fix', data: 'Patch it' }]);
+    expect(req.descriptions.map((d) => d.data)).not.toContain('T');
     expect(req.refs!.map((r) => r.url)).toEqual([
       'https://gitlab.example.com/g/p/-/security/vulnerabilities/1',
       'https://cwe.mitre.org/data/definitions/79.html',
@@ -118,6 +119,16 @@ describe('gitlab-vulnerabilities-to-hdf absent fields', () => {
     expect(req.tags.cve).toEqual(['CVE-2024-0001']);
     expect(req.tags['gitlab/scanner']).toEqual({ name: 'Semgrep', vendor: '', externalId: '' });
     expect(String(req.results[0]!.startTime)).toBe('2026-09-01T00:00:00Z');
+  });
+
+  it('keeps a present description as the default, unchanged, ahead of the fix', async () => {
+    const req = await convertOne({ description: 'D', solution: 'Patch it' });
+    expect(req.descriptions).toEqual([{ label: 'default', data: 'D' }, { label: 'fix', data: 'Patch it' }]);
+  });
+
+  it('gives a vulnerability with no description an empty default, never the title', async () => {
+    const req = await convertOne({});
+    expect(req.descriptions).toEqual([{ label: 'default', data: '' }]);
   });
 
   it('labels unknown report types verbatim and orders baselines by name', async () => {
