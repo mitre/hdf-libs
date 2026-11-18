@@ -33,7 +33,7 @@ readonly VERSION=3.8.0-next.4100.2
 readonly REGISTRY=https://registry.npmjs.org/
 readonly PROXY=https://proxy.golang.org/
 
-npm_url() { printf '%s@mitre%%2f%s/%s' "$REGISTRY" "$1" "$VERSION"; }
+npm_url() { printf '%s@mitre/%s/-/%s-%s.tgz' "$REGISTRY" "$1" "$1" "$VERSION"; }
 go_url() { printf '%s%s/@v/v%s.info' "$PROXY" "$1" "$VERSION"; }
 
 # The fake curl appends its argv to $FAKE_CURL_LOG and answers from
