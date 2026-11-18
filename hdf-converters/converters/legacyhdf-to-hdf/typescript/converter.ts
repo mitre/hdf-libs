@@ -10,6 +10,7 @@
  */
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
+import { InputType } from '@mitre/hdf-schema';
 import type { HDFResults } from '@mitre/hdf-schema';
 import {
   impactToSeverity,
@@ -364,6 +365,13 @@ function establishedNothing(results: V2Result[]): boolean {
   return inSpecEstablishedNothing(results.map((r) => r.status));
 }
 
+// Legacy exec-json permits null for fields the results schema types as
+// non-nullable, so a null source value is absence, not data. Go gets this free
+// from *string + omitempty; TypeScript has to ask.
+function present<T>(value: T | null | undefined): value is T {
+  return value !== undefined && value !== null;
+}
+
 /**
  * Convert v1.0 result to v2.0 result.
  * Transforms snake_case field names to camelCase.
@@ -393,19 +401,19 @@ function convertResult(v1Result: LegacyResult): V2Result {
   // codeDesc and startTime are schema-required; the Go converter always emits
   // them (zero values when absent), so mirror that rather than omitting.
   v2Result.codeDesc = v1Result.code_desc ?? '';
-  if (v1Result.run_time !== undefined) v2Result.runTime = v1Result.run_time;
+  if (present(v1Result.run_time)) v2Result.runTime = v1Result.run_time;
   v2Result.startTime = legacyStartTime(v1Result.start_time);
   // v1 skipped results carry their reason in skip_message; v2 has no dedicated
   // field, so surface it as the result message (without clobbering an explicit
   // message), mirroring the Go converter.
-  if (v1Result.message !== undefined) v2Result.message = v1Result.message;
-  else if (v1Result.skip_message !== undefined) v2Result.message = v1Result.skip_message;
-  if (v1Result.exception !== undefined) v2Result.exception = v1Result.exception;
-  if (v1Result.backtrace !== undefined) v2Result.backtrace = v1Result.backtrace;
-  if (v1Result.resource_class !== undefined) v2Result.resource = v1Result.resource_class;
+  if (present(v1Result.message)) v2Result.message = v1Result.message;
+  else if (present(v1Result.skip_message)) v2Result.message = v1Result.skip_message;
+  if (present(v1Result.exception)) v2Result.exception = v1Result.exception;
+  if (present(v1Result.backtrace)) v2Result.backtrace = v1Result.backtrace;
+  if (present(v1Result.resource_class)) v2Result.resource = v1Result.resource_class;
   // A string resource_id passes through; an out-of-spec object (or any non-string)
   // is normalized to canonical JSON — byte-identical to the Go peer's CanonicalJSON.
-  if (v1Result.resource_id !== undefined && v1Result.resource_id !== null) {
+  if (present(v1Result.resource_id)) {
     v2Result.resourceId =
       typeof v1Result.resource_id === 'string'
         ? v1Result.resource_id
@@ -494,7 +502,7 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // Copy simple fields. `waiver_data` is intentionally dropped (expressed via
   // amendments/overrides in v2, matching the Go converter); `desc` feeds the
   // synthesized 'default' description below.
-  if (v1Control.title !== undefined) v2Req.title = v1Control.title;
+  if (present(v1Control.title)) v2Req.title = v1Control.title;
   // descriptions is required in v3 with minItems:1 and must contain a 'default',
   // so both null and [] are invalid. Guarantee a 'default', synthesized from the
   // control desc when absent — symmetric with the downgrade's default→desc map.
@@ -509,15 +517,21 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
     const severity = v2Req.tags.severity;
     markUnratedSeverity(v2Req.tags, typeof severity === 'string' ? severity : '');
   }
-  if (v1Control.code !== undefined) v2Req.code = v1Control.code;
+  if (present(v1Control.code)) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
     const refs = convertRefs(v1Control.refs);
     if (refs) v2Req.refs = refs;
   }
 
-  // Transform snake_case to camelCase
-  if (v1Control.source_location !== undefined) {
-    v2Req.sourceLocation = v1Control.source_location;
+  // Project rather than copy: HDF's SourceLocation is a closed {ref, line} and
+  // the legacy schema makes both nullable, so a wholesale copy leaked nulls into
+  // fields typed string/number. Mirrors the Go converter's field-by-field build.
+  if (present(v1Control.source_location)) {
+    const src = v1Control.source_location as {ref?: unknown; line?: unknown};
+    const sourceLocation: {ref?: string; line?: number} = {};
+    if (typeof src.ref === 'string') sourceLocation.ref = src.ref;
+    if (typeof src.line === 'number') sourceLocation.line = src.line;
+    v2Req.sourceLocation = sourceLocation;
   }
 
   // The v1 control-level status is never baked through verbatim: the emitted
@@ -594,7 +608,7 @@ function convertGroup(v1Group: LegacyGroup): V2Group {
     requirements: v1Group.controls, // Rename controls to requirements
   };
 
-  if (v1Group.title !== undefined) {
+  if (present(v1Group.title)) {
     v2Group.title = v1Group.title;
   }
 
@@ -617,30 +631,32 @@ function convertDependency(v1Dep: LegacyDependency): V2Dependency {
   const v2Dep: V2Dependency = {};
 
   // Copy most fields as-is
-  if (v1Dep.name !== undefined) v2Dep.name = v1Dep.name;
-  if (v1Dep.url !== undefined) v2Dep.url = v1Dep.url;
-  if (v1Dep.path !== undefined) v2Dep.path = v1Dep.path;
-  if (v1Dep.git !== undefined) v2Dep.git = v1Dep.git;
-  if (v1Dep.branch !== undefined) v2Dep.branch = v1Dep.branch;
-  if (v1Dep.tag !== undefined) v2Dep.tag = v1Dep.tag;
-  if (v1Dep.commit !== undefined) v2Dep.commit = v1Dep.commit;
-  if (v1Dep.version !== undefined) v2Dep.version = v1Dep.version;
-  if (v1Dep.supermarket !== undefined) v2Dep.supermarket = v1Dep.supermarket;
-  if (v1Dep.compliance !== undefined) v2Dep.compliance = v1Dep.compliance;
-  if (v1Dep.status !== undefined) v2Dep.status = v1Dep.status;
+  if (present(v1Dep.name)) v2Dep.name = v1Dep.name;
+  if (present(v1Dep.url)) v2Dep.url = v1Dep.url;
+  if (present(v1Dep.path)) v2Dep.path = v1Dep.path;
+  if (present(v1Dep.git)) v2Dep.git = v1Dep.git;
+  if (present(v1Dep.branch)) v2Dep.branch = v1Dep.branch;
+  if (present(v1Dep.tag)) v2Dep.tag = v1Dep.tag;
+  if (present(v1Dep.commit)) v2Dep.commit = v1Dep.commit;
+  if (present(v1Dep.version)) v2Dep.version = v1Dep.version;
+  if (present(v1Dep.supermarket)) v2Dep.supermarket = v1Dep.supermarket;
+  if (present(v1Dep.compliance)) v2Dep.compliance = v1Dep.compliance;
+  if (present(v1Dep.status)) v2Dep.status = v1Dep.status;
 
   // Transform snake_case to camelCase
-  if (v1Dep.skip_message !== undefined) {
+  if (present(v1Dep.skip_message)) {
     v2Dep.skipMessage = v1Dep.skip_message;
   }
 
-  // Preserve any other fields
+  // Preserve any other fields, minus nulls: the legacy schema makes
+  // status_message nullable, and copying it under its snake_case name put a
+  // null into a shape HDF declares closed.
   const knownFields = new Set([
     'name', 'url', 'path', 'git', 'branch', 'tag', 'commit', 'version',
-    'supermarket', 'compliance', 'status', 'skip_message'
+    'supermarket', 'compliance', 'status', 'skip_message', 'status_message'
   ]);
   for (const [key, value] of Object.entries(v1Dep)) {
-    if (!knownFields.has(key) && !(key in v2Dep)) {
+    if (!knownFields.has(key) && !(key in v2Dep) && present(value)) {
       v2Dep[key] = value;
     }
   }
@@ -671,6 +687,15 @@ function convertSupports(supports: unknown[]): Record<string, string>[] | undefi
   return out.length ? out : undefined;
 }
 
+// InSpec declares seven input types; HDF's Input_Type has six, lacking Any. So a
+// type with no counterpart is omitted rather than emitted invalid, and matching
+// is case-insensitive because profiles write these in whatever case they like.
+// Derived from the generated enum; Go hardcodes the same six and a test there
+// pins them. Expectations live in shared/inspec-input-type-cases.json.
+const INPUT_TYPE_BY_LOWERCASE = new Map(
+  Object.values(InputType).map((t) => [t.toLowerCase(), t]),
+);
+
 /**
  * Convert v1.0 attributes to v2.0 Input objects. V1 attributes are
  * {name, options: {...}}; InSpec nests value/type/required/sensitive/description
@@ -688,11 +713,18 @@ function convertAttributes(attrs: unknown[]): Record<string, unknown>[] {
     const options = a.options;
     if (options !== null && typeof options === 'object') {
       const o = options as Record<string, unknown>;
-      if ('value' in o) input.value = o.value;
+      // Older InSpec stores the value under `default`; whichever KEY comes first
+      // wins, and a null there is absence — Go's interface{} + omitempty cannot
+      // emit a null, so carrying one here alone would diverge the two languages.
+      const sourced = 'value' in o ? o.value : o.default;
+      if (present(sourced)) input.value = sourced;
       if (typeof o.description === 'string') input.description = o.description;
       if (typeof o.sensitive === 'boolean') input.sensitive = o.sensitive;
       if (typeof o.required === 'boolean') input.required = o.required;
-      if (typeof o.type === 'string') input.type = o.type;
+      if (typeof o.type === 'string') {
+        const mapped = INPUT_TYPE_BY_LOWERCASE.get(o.type.toLowerCase());
+        if (mapped !== undefined) input.type = mapped;
+      }
     }
     inputs.push(input);
   }
@@ -709,13 +741,13 @@ function convertProfile(v1Profile: LegacyProfile): V2Baseline {
   };
 
   // Copy simple fields
-  if (v1Profile.version !== undefined) v2Baseline.version = v1Profile.version;
-  if (v1Profile.title !== undefined) v2Baseline.title = v1Profile.title;
-  if (v1Profile.maintainer !== undefined) v2Baseline.maintainer = v1Profile.maintainer;
-  if (v1Profile.summary !== undefined) v2Baseline.summary = v1Profile.summary;
-  if (v1Profile.license !== undefined) v2Baseline.license = v1Profile.license;
-  if (v1Profile.copyright !== undefined) v2Baseline.copyright = v1Profile.copyright;
-  if (v1Profile.copyright_email !== undefined) v2Baseline.copyrightEmail = v1Profile.copyright_email;
+  if (present(v1Profile.version)) v2Baseline.version = v1Profile.version;
+  if (present(v1Profile.title)) v2Baseline.title = v1Profile.title;
+  if (present(v1Profile.maintainer)) v2Baseline.maintainer = v1Profile.maintainer;
+  if (present(v1Profile.summary)) v2Baseline.summary = v1Profile.summary;
+  if (present(v1Profile.license)) v2Baseline.license = v1Profile.license;
+  if (present(v1Profile.copyright)) v2Baseline.copyright = v1Profile.copyright;
+  if (present(v1Profile.copyright_email)) v2Baseline.copyrightEmail = v1Profile.copyright_email;
   // Omit empty optional arrays so output matches the Go converter (which uses
   // omitempty); only emit when there is data to carry.
   if (v1Profile.supports?.length) {
@@ -723,7 +755,7 @@ function convertProfile(v1Profile: LegacyProfile): V2Baseline {
     if (supports) v2Baseline.supports = supports;
   }
   if (v1Profile.attributes?.length) v2Baseline.inputs = convertAttributes(v1Profile.attributes);
-  if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
+  if (present(v1Profile.status)) v2Baseline.status = v1Profile.status;
 
   // Transform sha256 to integrity object
   if (v1Profile.sha256) {
@@ -734,13 +766,13 @@ function convertProfile(v1Profile: LegacyProfile): V2Baseline {
   }
 
   // Transform snake_case to camelCase
-  if (v1Profile.parent_profile !== undefined) {
+  if (present(v1Profile.parent_profile)) {
     v2Baseline.parentBaseline = v1Profile.parent_profile;
   }
-  if (v1Profile.status_message !== undefined) {
+  if (present(v1Profile.status_message)) {
     v2Baseline.statusMessage = v1Profile.status_message;
   }
-  if (v1Profile.skip_message !== undefined) {
+  if (present(v1Profile.skip_message)) {
     v2Baseline.skipMessage = v1Profile.skip_message;
   }
 
@@ -984,8 +1016,11 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: LegacyProfile; war
   return {profile: p, warnings};
 }
 
-/** Project modern statistics down to the v1 shape (duration only), matching Go LegacyStatistics. */
-function projectV1Statistics(stats: unknown): {duration?: number} {
+// Both shapes also declare a result-count hash (legacy `controls`, HDF
+// `requirements`), which neither language maps today, so duration is all that
+// survives either direction. Projected, not copied: HDF's Statistics is closed.
+/** Carry the duration, the only statistic either direction currently maps. */
+function numericDurationOnly(stats: unknown): {duration?: number} {
   const duration = (stats as {duration?: unknown} | undefined)?.duration;
   return typeof duration === 'number' ? {duration} : {};
 }
@@ -1029,7 +1064,7 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     platform,
     profiles,
     // Mirror the Go LegacyStatistics: only the duration field survives to v1.
-    statistics: projectV1Statistics(v2Data.statistics),
+    statistics: numericDurationOnly(v2Data.statistics),
   };
 
   // Carry the full components[] and any provenance (extensions.passthrough)
@@ -1123,7 +1158,7 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
   validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
-    statistics: v1Data.statistics || {},
+    statistics: numericDurationOnly(v1Data.statistics),
   };
 
   // Transform platform to components array. Mirrors the Go converter: emit only

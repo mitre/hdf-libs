@@ -5,6 +5,8 @@ import Ajv from 'ajv';
 import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { validateLegacyV2 } from '@mitre/hdf-validators';
+import { InputType } from '@mitre/hdf-schema';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import { convertLegacyHdf, downgradeToLegacyHdf, isLegacyHdf, LegacyHDFResults, HDFV2Results } from './converter.js';
 import { createMinimalBaseline, createRequirement, createResult, createDescription } from '@mitre/hdf-schema/helpers';
@@ -310,25 +312,20 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.components![0]).not.toHaveProperty('release');
     });
 
-    it('should handle complex statistics object', () => {
-      const statistics = {
-        duration: 10.5,
-        total: 100,
-        passed: 80,
-        failed: 15,
-        skipped: 5,
-      };
-
+    // HDF's Statistics is a closed type (unevaluatedProperties: false) holding
+    // duration and a requirements hash, and Go carries only duration through
+    // LegacyStatistics. So extra legacy keys are projected away rather than
+    // copied: copying them emits properties the schema forbids, which today's
+    // validator lets pass only because it does not enforce that keyword yet.
+    it('projects statistics to duration rather than copying it wholesale', () => {
       const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
         profiles: [],
-        statistics,
+        statistics: { duration: 10.5, total: 100, passed: 80, failed: 15, skipped: 5 },
       };
 
-      const v2 = convertLegacyHdf(v1);
-
-      expect(v2.statistics).toEqual(statistics);
+      expect(convertLegacyHdf(v1).statistics).toEqual({ duration: 10.5 });
     });
 
     it('should handle undefined profiles with fallback', () => {
@@ -2147,6 +2144,356 @@ describe('absent impact marks the requirement unrated', () => {
     expect(req.impact).toBeCloseTo(impact, 5);
     if (unrated) expect(req.tags?.severity_rating).toBe('unrated');
     else expect(req.tags).not.toHaveProperty('severity_rating');
+    expectValidResults(out);
+  });
+});
+
+// ── A legacy null is absence, not a value (Go parity) ──────────────────────
+// The legacy exec-json schema permits null for each of these fields; the results
+// schema types every one of them as non-nullable. Go omits them by construction
+// (*string / *float64 + omitempty), so these cases pin TypeScript to the same
+// output rather than letting a null travel into a field that cannot hold one.
+describe('a legacy null is omitted, not copied through', () => {
+  function docWith(profileFields: Record<string, unknown>, statistics: unknown, groupTitle: unknown) {
+    return {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics,
+      profiles: [{
+        name: 'p',
+        sha256: 'abc',
+        supports: [],
+        attributes: [],
+        ...profileFields,
+        groups: [{id: 'g-1', title: groupTitle, controls: ['V-1']}],
+        controls: [{
+          id: 'V-1',
+          title: 't',
+          impact: 0.5,
+          tags: {},
+          refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+  }
+
+  // Every profile field the legacy exec-json schema types as ["string","null"]
+  // (or ["array","null"]), not just the four a consumer reported — each one lands
+  // in a results-schema field that cannot hold null.
+  const NULLABLE_PROFILE_FIELDS = [
+    'version', 'title', 'maintainer', 'summary', 'license', 'copyright',
+    'copyright_email', 'status', 'status_message', 'skip_message',
+    'parent_profile', 'depends',
+  ];
+  const BASELINE_KEYS: Record<string, string> = {
+    copyright_email: 'copyrightEmail',
+    status_message: 'statusMessage',
+    skip_message: 'skipMessage',
+    parent_profile: 'parentBaseline',
+  };
+
+  const ALL_NULL = docWith(
+    Object.fromEntries(NULLABLE_PROFILE_FIELDS.map((f) => [f, null])),
+    {duration: null},
+    null,
+  );
+
+  it('is a document the legacy schema accepts', () => {
+    const v = validateLegacyV2(ALL_NULL);
+    expect(v.valid, v.getErrorMessage()).toBe(true);
+  });
+
+  it('converts to valid results with every null field absent', () => {
+    const out = convertLegacyHdf(ALL_NULL as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    for (const field of NULLABLE_PROFILE_FIELDS) {
+      const key = BASELINE_KEYS[field] ?? field;
+      expect(baseline, key).not.toHaveProperty(key);
+    }
+    const group = (baseline.groups as Array<Record<string, unknown>>)[0]!;
+    expect(group).not.toHaveProperty('title');
+    expect(out.statistics as Record<string, unknown>).not.toHaveProperty('duration');
+    expectValidResults(out);
+  });
+
+  it('carries present values through, falsy-but-legitimate ones included', () => {
+    const doc = docWith(
+      {
+        maintainer: 'm', license: 'Apache-2.0', copyright: 'c', copyright_email: 'e@example.com',
+        version: '1.0.0', title: 't', summary: 's', status: 'loaded',
+        status_message: 'sm', skip_message: 'skm', parent_profile: 'pp',
+      },
+      {duration: 0},
+      '',
+    );
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    expect(baseline.maintainer).toBe('m');
+    expect(baseline.license).toBe('Apache-2.0');
+    expect(baseline.copyright).toBe('c');
+    expect(baseline.copyrightEmail).toBe('e@example.com');
+    expect(baseline.version).toBe('1.0.0');
+    expect(baseline.title).toBe('t');
+    expect(baseline.summary).toBe('s');
+    expect(baseline.status).toBe('loaded');
+    expect(baseline.statusMessage).toBe('sm');
+    expect(baseline.skipMessage).toBe('skm');
+    expect(baseline.parentBaseline).toBe('pp');
+    expect((baseline.groups as Array<Record<string, unknown>>)[0]!.title).toBe('');
+    expect((out.statistics as Record<string, unknown>).duration).toBe(0);
+    expectValidResults(out);
+  });
+
+  it('omits an absent field exactly as before', () => {
+    const doc = docWith({}, {}, undefined);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    for (const field of NULLABLE_PROFILE_FIELDS) {
+      const key = BASELINE_KEYS[field] ?? field;
+      expect(baseline, key).not.toHaveProperty(key);
+    }
+    expect((baseline.groups as Array<Record<string, unknown>>)[0]!).not.toHaveProperty('title');
+    expectValidResults(out);
+  });
+});
+
+// ── InSpec input types and options.default ────────────────────────────────
+// The type mapping is implemented twice, so its expectations live in one shared
+// file both languages read; two inline copies could drift without failing.
+interface InputTypeCase {
+  name: string;
+  type: string;
+  want: string | null;
+}
+interface InputValueCase {
+  name: string;
+  options: Record<string, unknown>;
+  present: boolean;
+  value?: unknown;
+}
+const INPUT_TABLE = JSON.parse(
+  readFileSync(join(__dirname, '..', '..', '..', 'shared', 'inspec-input-type-cases.json'), 'utf-8'),
+) as {cases: InputTypeCase[]; valueCases: InputValueCase[]};
+const INPUT_TYPE_CASES = INPUT_TABLE.cases;
+const INPUT_VALUE_CASES = INPUT_TABLE.valueCases;
+
+function docWithAttribute(options: Record<string, unknown>) {
+  return {
+    version: '1.0.0',
+    platform: {name: 'centos', release: '7'},
+    statistics: {duration: 0.1},
+    profiles: [{
+      name: 'p',
+      sha256: 'abc',
+      supports: [],
+      groups: [],
+      attributes: [{name: 'max_age', options}],
+      controls: [{
+        id: 'V-1',
+        title: 't',
+        impact: 0.5,
+        tags: {},
+        refs: [],
+        source_location: {ref: 'controls/V-1.rb', line: 1},
+        results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+      }],
+    }],
+  };
+}
+
+function firstInput(doc: unknown): Record<string, unknown> {
+  const out = convertLegacyHdf(doc as LegacyHDFResults) as unknown as HDFV2Results;
+  expectValidResults(out);
+  const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+  return (baseline.inputs as Array<Record<string, unknown>>)[0]!;
+}
+
+describe('InSpec input type normalization matches the shared table', () => {
+  it('has a populated shared table', () => {
+    expect(INPUT_TYPE_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of INPUT_TYPE_CASES) {
+    it(tc.name, () => {
+      const input = firstInput(docWithAttribute({type: tc.type, value: 'v'}));
+      if (tc.want === null) expect(input).not.toHaveProperty('type');
+      else expect(input.type).toBe(tc.want);
+    });
+  }
+});
+
+describe('how the input value is sourced matches the shared table', () => {
+  it('has a populated shared table', () => {
+    expect(INPUT_VALUE_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of INPUT_VALUE_CASES) {
+    it(tc.name, () => {
+      const input = firstInput(docWithAttribute({type: 'String', ...tc.options}));
+      if (!tc.present) expect(input).not.toHaveProperty('value');
+      else expect(input.value).toStrictEqual(tc.value);
+    });
+  }
+
+  it('accepts a document carrying lowercase types and options.default end to end', () => {
+    const doc = docWithAttribute({type: 'numeric', default: 90});
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.getErrorMessage()).toBe(true);
+    expect(firstInput(doc)).toEqual({name: 'max_age', type: 'Numeric', value: 90});
+  });
+});
+
+// ── Every nullable field the legacy schema declares, exercised at once ─────
+// Derived from the legacy schema, so a nullable field added upstream fails here
+// rather than reaching a consumer as invalid output. Fixing only the four fields
+// a consumer reported left this class live on fifteen more sites.
+describe('a null is absence everywhere the legacy schema permits one', () => {
+  const LEGACY_SCHEMA_PATH = join(
+    __dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'legacy', 'exec-json.schema.json',
+  );
+
+  // Unreachable, not untested: waiver_data is dropped by design (v3 uses
+  // amendments), and Statistic_Hash sits under statistics.controls, which
+  // neither language maps — a mapping gap, not a null-handling one.
+  const UNREACHED_DEFINITIONS = new Set(['Waiver_Data', 'Statistic_Hash']);
+
+  // Where each legacy definition actually lives in a document, so coverage is
+  // checked per definition rather than by bare property name — `title` appears
+  // on three definitions and a null in one must not vouch for the others.
+  function nodesByDefinition(d: unknown): Record<string, unknown[]> {
+    const doc = d as Record<string, any>;
+    const profiles: any[] = doc.profiles ?? [];
+    const controls: any[] = profiles.flatMap((pr) => pr.controls ?? []);
+    const results: any[] = controls.flatMap((c) => c.results ?? []);
+    const obj = (v: unknown) => (v && typeof v === 'object' ? [v] : []);
+    return {
+      Exec_JSON_Profile: profiles,
+      Exec_JSON_Control: controls,
+      Control_Result: results,
+      Control_Group: profiles.flatMap((pr) => pr.groups ?? []),
+      Dependency: profiles.flatMap((pr) => (Array.isArray(pr.depends) ? pr.depends : [])),
+      Supported_Platform: profiles.flatMap((pr) => pr.supports ?? []),
+      Source_Location: controls.flatMap((c) => obj(c.source_location)),
+      Platform: obj(doc.platform),
+      Statistics: obj(doc.statistics),
+    };
+  }
+
+  function nullableProperties(): Array<[string, string]> {
+    const schema = JSON.parse(readFileSync(LEGACY_SCHEMA_PATH, 'utf-8')) as {
+      definitions: Record<string, {properties?: Record<string, Record<string, unknown>>}>;
+    };
+    const out: Array<[string, string]> = [];
+    for (const [defName, def] of Object.entries(schema.definitions ?? {})) {
+      if (UNREACHED_DEFINITIONS.has(defName)) continue;
+      for (const [prop, spec] of Object.entries(def.properties ?? {})) {
+        const type = spec.type;
+        const anyOf = spec.anyOf as Array<{type?: string}> | undefined;
+        const nullableType = Array.isArray(type) && type.includes('null');
+        const nullableAnyOf = Array.isArray(anyOf) && anyOf.some((b) => b.type === 'null');
+        if (nullableType || nullableAnyOf) out.push([defName, prop]);
+      }
+    }
+    return out;
+  }
+
+  function control(extra: Record<string, unknown> = {}, result: Record<string, unknown> = {}) {
+    return {
+      id: 'V-1', impact: 0.5, tags: {}, refs: [],
+      source_location: {ref: 'c.rb', line: 1},
+      ...extra,
+      results: [{
+        status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z', ...result,
+      }],
+    };
+  }
+
+  function doc(profile: Record<string, unknown>, platform: Record<string, unknown> = {}, statistics: unknown = {duration: 0.1}) {
+    return {
+      version: '4.16.0',
+      platform: {name: 'centos', release: '7', ...platform},
+      statistics,
+      profiles: [{name: 'p', sha256: 'abc', supports: [], attributes: [], groups: [], ...profile}],
+    };
+  }
+
+  // Each document sets a different slice of the nullable surface to null; the
+  // coverage check below asserts their union is the whole surface.
+  const NULL_DOCUMENTS: Array<[string, unknown]> = [
+    ['every nullable scalar on the profile, plus a null group title and duration', doc({
+      title: null, maintainer: null, copyright: null, copyright_email: null,
+      parent_profile: null, license: null, summary: null, description: null,
+      inspec_version: null, status: null, status_message: null, skip_message: null,
+      version: null, depends: null,
+      groups: [{id: 'g-1', title: null, controls: ['V-1']}],
+      controls: [control()],
+    }, {target_id: null}, {duration: null, controls: null})],
+
+    ['nullable members inside depends, the control and its result', doc({
+      depends: [{
+        name: null, url: null, branch: null, path: null,
+        status_message: null, status: null, git: null, supermarket: null, compliance: null,
+      }],
+      controls: [control(
+        {title: null, desc: null, descriptions: null, code: null,
+         waiver_data: null, attestation_data: null},
+        {run_time: null, resource: null, message: null, skip_message: null,
+         exception: null, resource_id: null, backtrace: null,
+         // Not in the legacy schema (which names `resource`), but it is the key
+         // both converters read, so the schema-derived check cannot reach it.
+         resource_class: null},
+      )],
+    })],
+
+    ['a null source_location ref and line, and nullable supports keys', doc({
+      supports: [{
+        platform: null, 'platform-family': null, 'platform-name': null,
+        release: null, 'os-family': null, 'os-name': null,
+      }],
+      controls: [{...control(), source_location: {ref: null, line: null}}],
+    })],
+
+    ['a null result status', doc({controls: [control({}, {status: null})]})],
+  ];
+
+  it('exercises every nullable field the legacy schema declares', () => {
+    const exercised = new Set<string>();
+    for (const [, d] of NULL_DOCUMENTS) {
+      for (const [defName, nodes] of Object.entries(nodesByDefinition(d))) {
+        for (const node of nodes) {
+          for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+            if (v === null) exercised.add(`${defName}.${k}`);
+          }
+        }
+      }
+    }
+
+    const missing = nullableProperties()
+      .map(([defName, prop]) => `${defName}.${prop}`)
+      .filter((key) => !exercised.has(key));
+    expect(missing, 'the legacy schema declares nullable fields no document here exercises').toEqual([]);
+  });
+
+  // The enum is generated from the schema, so a new Input_Type member changes it
+  // and fails here, pointing at the shared table — which Go asserts against in
+  // turn, so neither language can silently leave a new member unmapped.
+  it('the generated Input_Type enum still matches the shared table', () => {
+    const declared = (JSON.parse(
+      readFileSync(join(__dirname, '..', '..', '..', 'shared', 'inspec-input-type-cases.json'), 'utf-8'),
+    ) as {hdfInputTypes: string[]}).hdfInputTypes;
+    expect([...Object.values(InputType)].sort()).toEqual([...declared].sort());
+  });
+
+  it.each(NULL_DOCUMENTS)('%s — the legacy schema accepts it', (_name, d) => {
+    const v = validateLegacyV2(d);
+    expect(v.valid, v.getErrorMessage()).toBe(true);
+  });
+
+  it.each(NULL_DOCUMENTS)('%s — converts with no null in a non-nullable field', (_name, d) => {
+    const out = convertLegacyHdf(d as LegacyHDFResults) as unknown as HDFV2Results;
+    expect(JSON.stringify(out)).not.toContain(':null');
     expectValidResults(out);
   });
 });
