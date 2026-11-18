@@ -192,7 +192,7 @@ answer "$(npm_url hdf-b)" 404 200
 answer "$(npm_url hdf-c)" 200
 answer "$(go_url "$CLI")" 000 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 3 1
+run "$VERSION" packages.txt gomods.txt 10 1
 report "second poll: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; [ "$(asked "$(npm_url hdf-b)")" -eq 2 ] && [ "$(asked "$(npm_url hdf-a)")" -eq 1 ] || ok=1
 report "second poll: the late package is asked twice, the others once" "$ok" "$(cat "$log")"
