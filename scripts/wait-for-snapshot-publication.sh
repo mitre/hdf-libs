@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Waits until a snapshot is served: every @mitre/<name>@<version> on
+# Waits until a snapshot is served: every @mitre/<name>@<version> tarball on
 # registry.npmjs.org, then every inventoried module's v<version>.info on
 # proxy.golang.org, asking each unserved item again every <interval> seconds
 # within one <bound> for both phases. Exits 0 once everything is served, 1 with
@@ -59,7 +59,9 @@ done < "$GOMODS"
 
 # --- one URL per artifact, one curl per ask -----------------------------------
 
-npm_url() { printf 'https://registry.npmjs.org/@mitre%%2f%s/%s' "$1" "$VERSION"; }
+# The tarball, not the version document: the document answers minutes before
+# the tarball is served, and the install check needs the tarball.
+npm_url() { printf 'https://registry.npmjs.org/@mitre/%s/-/%s-%s.tgz' "$1" "$1" "$VERSION"; }
 go_url() { printf 'https://proxy.golang.org/%s/@v/v%s.info' "$1" "$VERSION"; }
 
 # served <url>: 0 when the URL answers 200; any other code or a curl failure is 1

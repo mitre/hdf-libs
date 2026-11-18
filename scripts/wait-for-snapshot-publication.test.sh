@@ -33,7 +33,7 @@ readonly VERSION=3.8.0-next.4100.2
 readonly REGISTRY=https://registry.npmjs.org/
 readonly PROXY=https://proxy.golang.org/
 
-npm_url() { printf '%s@mitre%%2f%s/%s' "$REGISTRY" "$1" "$VERSION"; }
+npm_url() { printf '%s@mitre/%s/-/%s-%s.tgz' "$REGISTRY" "$1" "$1" "$VERSION"; }
 go_url() { printf '%s%s/@v/v%s.info' "$PROXY" "$1" "$VERSION"; }
 
 # The fake curl appends its argv to $FAKE_CURL_LOG and answers from
@@ -134,7 +134,7 @@ begin served
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "all served: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; grep -qF "served: 3 npm packages and 2 Go modules at $VERSION after " "$out" || ok=1
 report "all served: prints the success line" "$ok" "$(cat "$out")"
@@ -157,9 +157,9 @@ answer "$(npm_url hdf-a)" 200
 answer "$(npm_url hdf-c)" 200
 answer "$(go_url "$CLI")" 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved package: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
-ok=0; timeout_message 2 "@mitre/hdf-b $CLI $SCHEMA" || ok=1
+ok=0; timeout_message 6 "@mitre/hdf-b $CLI $SCHEMA" || ok=1
 report "unserved package: the four-part message names it" "$ok" "$(cat "$err")"
 ok=0; grep -qF "npm 2/3 served, 1 waiting: hdf-b" "$out" || ok=1
 report "unserved package: progress names the waiting package" "$ok" "$(cat "$out")"
@@ -175,9 +175,9 @@ report "unserved package: no success line" "$ok" "$(cat "$out")"
 begin go-missing
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved module: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
-ok=0; timeout_message 2 "$SCHEMA" || ok=1
+ok=0; timeout_message 6 "$SCHEMA" || ok=1
 report "unserved module: the four-part message names its path" "$ok" "$(cat "$err")"
 ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 1 ] && [ "$(asked "$(go_url "$SCHEMA")")" -ge 2 ] || ok=1
 report "unserved module: proxy URLs are asked, the served one once" "$ok" "$(cat "$log")"
@@ -206,7 +206,7 @@ report "second poll: prints the success line" "$ok" "$(cat "$out")"
 begin uppercase
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
-run "$VERSION" packages.txt gomods-upper.txt 2 1
+run "$VERSION" packages.txt gomods-upper.txt 6 1
 report "uppercase module path: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
 ok=0; grep -qF "github.com/mitre/hdf-libs/HdfUpper" "$err" && grep -qiF "case escaping" "$err" || ok=1
 report "uppercase module path: the message names the path" "$ok" "$(cat "$err")"

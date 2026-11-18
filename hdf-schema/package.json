@@ -50,6 +50,7 @@
       "import": "./dist/ts/hdf.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "testhdf/index.js",
