@@ -161,30 +161,68 @@ describe('enrichStix — opt-in E:H recompute', () => {
     { type: 'sighting', sighting_of_ref: '' },
     { type: 'relationship', relationship_type: 'targets', target_ref: '' },
     { type: 'report', object_refs: [''] },
-  ])('preserves empty-reference exploitation of an id-less vulnerability via $type', (signal) => {
+  ])('does not let an empty reference exploit an id-less vulnerability via $type', (signal) => {
     const source = JSON.parse(recBundle()) as { objects: Doc[] };
     const vulnerability = source.objects[0];
     delete vulnerability.id;
     source.objects = [vulnerability, signal];
     const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
-    const overrides = requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[];
-    expect(overrides).toHaveLength(1);
-    const references = overrides[0].externalReferences as Doc[];
-    expect(references).toHaveLength(1);
-    expect(references[0].document).toEqual(signal);
+    expect(requirementById(doc, 'CVE-2012-0158').statusOverrides ?? []).toEqual([]);
   });
 
-  it.each([
-    { type: 'sighting', sighting_of_ref: 7 },
-    { type: 'relationship', relationship_type: 'targets', target_ref: null },
-    { type: 'relationship', relationship_type: 'uses', target_ref: 'vulnerability--c7cab3fb-0822-43a5-b1ba-c9bab34361a2' },
-    { type: 'report', object_refs: 'not an array' },
-    { type: 'indicator', object_refs: [null, 7, {}] },
-  ])('does not infer exploitation from malformed or unrelated signal $type', (signal) => {
+  it('never treats id-less vulnerabilities as reference targets, however many there are', () => {
     const source = JSON.parse(recBundle()) as { objects: Doc[] };
-    source.objects = [source.objects[0], signal];
+    const first = source.objects[0];
+    delete first.id;
+    const second = { ...first, name: 'second' };
+    source.objects = [
+      first,
+      second,
+      { type: 'sighting', sighting_of_ref: '' },
+      { type: 'relationship', relationship_type: 'exploits', target_ref: '' },
+      { type: 'indicator', object_refs: [''] },
+    ];
     const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
     expect(requirementById(doc, 'CVE-2012-0158').statusOverrides ?? []).toEqual([]);
+  });
+
+  it('names an id-less exploitation source by its fallback label in the reason', () => {
+    const source = JSON.parse(recBundle()) as { objects: Doc[] };
+    const vulnerability = source.objects[0];
+    source.objects = [vulnerability, { type: 'sighting', sighting_of_ref: vulnerability.id }];
+    const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
+    const overrides = requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[];
+    expect(overrides).toHaveLength(1);
+    expect(overrides[0].reason).toBe(
+      'CVE-2012-0158 actively exploited per STIX threat intelligence (STIX sighting object); CVSS Threat recomputed with Exploit Maturity E:H.',
+    );
+  });
+
+  const vulnerabilityId = 'vulnerability--c7cab3fb-0822-43a5-b1ba-c9bab34361a2';
+  it.each([
+    { name: 'sighting', want: true, signal: { type: 'sighting', sighting_of_ref: vulnerabilityId } },
+    { name: 'targets', want: true, signal: { type: 'relationship', relationship_type: 'targets', target_ref: vulnerabilityId } },
+    { name: 'exploits', want: true, signal: { type: 'relationship', relationship_type: 'exploits', target_ref: vulnerabilityId } },
+    { name: 'indicator', want: true, signal: { type: 'indicator', object_refs: [null, 7, '', vulnerabilityId] } },
+    { name: 'report', want: true, signal: { type: 'report', object_refs: [vulnerabilityId] } },
+    { name: 'wrong sighting ref', want: false, signal: { type: 'sighting', sighting_of_ref: 7 } },
+    { name: 'empty sighting ref', want: false, signal: { type: 'sighting', sighting_of_ref: '' } },
+    { name: 'unrelated relationship', want: false, signal: { type: 'relationship', relationship_type: 'uses', target_ref: vulnerabilityId } },
+    { name: 'wrong target ref', want: false, signal: { type: 'relationship', relationship_type: 'targets', target_ref: 7 } },
+    { name: 'wrong object refs', want: false, signal: { type: 'report', object_refs: vulnerabilityId } },
+    { name: 'unsupported', want: false, signal: { type: 'campaign', object_refs: [vulnerabilityId] } },
+  ])('infers exploitation from a $name signal only when it should', ({ signal, want }) => {
+    const source = JSON.parse(recBundle()) as { objects: Doc[] };
+    expect(source.objects[0].id).toBe(vulnerabilityId);
+    source.objects = [source.objects[0], signal];
+    const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
+    const overrides = (requirementById(doc, 'CVE-2012-0158').statusOverrides ?? []) as Doc[];
+    if (!want) {
+      expect(overrides).toEqual([]);
+      return;
+    }
+    expect(overrides).toHaveLength(1);
+    expect((overrides[0].externalReferences as Doc[])[0].document).toEqual(signal);
   });
 
   it('merges duplicate vulnerability IDs and preserves the first exploitation source', () => {

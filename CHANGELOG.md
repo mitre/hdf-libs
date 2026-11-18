@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **STIX enrichment no longer treats an empty reference or a vulnerability without an `id` as an exploitation link.** Both languages indexed a vulnerability that has no `id` under the empty string; TypeScript then matched an empty `sighting_of_ref`, `target_ref` or `object_refs` entry to it and marked the vulnerability exploited. Go and TypeScript now index only vulnerabilities with an `id` and ignore empty references. A risk adjustment whose exploitation source has no `id` names it by its type (for example `STIX sighting object`) instead of empty parentheses.
+
 - **`hdf convert` no longer stamps `effectiveChecksum` onto baseline definitions.** The stamping is for requirements in results documents; on a baseline it produced a field the baseline schema does not declare.
 - **`hdf-to-ecs` and `hdf-to-splunk` export the baseline's declared `integrity`.** Both read a baseline `checksum` key the schema never declared, so a real document's integrity (where an InSpec profile's sha256 lands) never reached the SIEM. The baseline metadata both exporters carry now comes from one shared table in `exportmap` (Go and TypeScript): `hdf.baseline_title`, `hdf.baseline_version` and `hdf.baseline_integrity`, the integrity object whole. **Output change:** `hdf.baseline_checksum` is gone, and ECS events gain `hdf.baseline_version` when the baseline has a version, as Splunk events already did.
 
