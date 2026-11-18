@@ -261,11 +261,9 @@ type Dependency struct {
 // it. A key HDF does not define goes inside `passthrough` — that is what `passthrough` is for — so
 // `extensions` never becomes a second, unnamed schema that consumers must reverse-engineer from the
 // producers that happen to write it. Closed with `additionalProperties` rather than the house
-// `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is
-// a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two
-// validators enforces is not a closure. Declared on every HDF document type that carries a producer
-// envelope (`generator` / `integrity`), and on `Evaluated_Baseline`, so one rule governs both
-// sites.
+// `unevaluatedProperties` because this definition composes nothing, so the two keywords close it
+// identically. Declared on every HDF document type that carries a producer envelope (`generator` /
+// `integrity`), and on `Evaluated_Baseline`, so one rule governs both sites.
 type Extensions struct {
 	// Catch-all for producer data that HDF does not model — the role heimdall2's
 	// `passthrough.auxiliary_data` played: fields a converter deliberately carried but had no
@@ -921,9 +919,7 @@ type RequirementResult struct {
 // pointer are the whole of it. Producer data that HDF does not model belongs in
 // `extensions.passthrough`, which is document-scoped and permissive by design; this field is
 // neither. Closed with `additionalProperties` rather than the house `unevaluatedProperties` because
-// this definition composes nothing, and the shipped Go validator is a draft-07 engine that does not
-// implement `unevaluatedProperties` — a closure only one of the two validators enforces is not a
-// closure.
+// this definition composes nothing, so the two keywords close it identically.
 type RawSourceRecord struct {
 	// The source tool's own record for this result, carrying every field the record had.
 	//

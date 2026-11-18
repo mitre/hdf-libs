@@ -3,11 +3,8 @@
  * `results[].rawSourceRecord`.
  *
  * The record is a closed, defined object — `content`, `encoding`, `mediaType`
- * and an optional `pointer` — and is deliberately NOT a passthrough bag. The Go
- * validator is a draft-07 engine that silently ignores
- * `unevaluatedProperties`, so a closure written that way would hold here and
- * nowhere else. Both languages read
- * ../testdata/shipped-raw-source-record-cases.json.
+ * and an optional `pointer` — and is deliberately NOT a passthrough bag. Both
+ * languages read ../testdata/shipped-raw-source-record-cases.json.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
