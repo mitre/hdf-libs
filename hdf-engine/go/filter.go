@@ -351,7 +351,7 @@ func buildFilters(opts Options) []filterFunc {
 		// case-sensitive lookup it has always been. That matters because the id a
 		// user knows is often not the id the document carries — converters mint
 		// prefixed ids (Grype/CVE-...), so a bare CVE matches nothing — while
-		// `search` reaches title, description and code and therefore also matches a
+		// `search` reaches id, title and description and therefore also matches a
 		// CVE merely cross-referenced in another finding's prose. A glob reads only
 		// the identifier, so it can be precise about which requirement it names.
 		if strings.ContainsAny(id, "*?") {

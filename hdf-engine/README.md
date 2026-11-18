@@ -58,7 +58,11 @@ matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 })
 ```
 
-`Tag` matches `key=value` and accepts globs, which is how source-specific data reaches a query without this package knowing the vocabulary of every scanner.
+`Tag` matches `key:value` — the colon is required — and globs the value, which is how source-specific data reaches a query without this package knowing the vocabulary of every scanner.
+
+`Nist` is a glob too, so a value without a wildcard is an exact match — `AC-2` reaches neither the enhancement `AC-2 (1)` nor the statement sub-part `CM-6 b`. Reach them with a wildcard: `AC-2*` covers one control's enhancements and sub-parts in both spellings NIST documents use (`AC-2 (1)`, `AC-2(1)`), and `AC-*` covers the family. The axis is deliberately not hierarchy-aware: a control id is a string here, and inferring the hierarchy would mean choosing one normalized spelling for every consumer. `Cci` is not a glob — it is case-insensitive equality against each value of the `cci` tag.
+
+`Search` is a case-insensitive substring over a requirement's id, title and descriptions. It does not read `code`, and it does read id, so it matches a CVE another finding merely cross-references — use an `Id` glob when you mean the identifier alone.
 
 ### Roll up compliance
 
