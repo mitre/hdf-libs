@@ -43,7 +43,7 @@ func mcpRoot() string {
 }
 
 // mcpMaxInputSize is the per-document read ceiling in bytes: HDF_MCP_MAX_SIZE if
-// set to a positive integer, else hdfutil.DefaultMaxInputSize (50 MB). It gates a
+// set to a positive integer, else hdfutil.DefaultMaxInputSize (256 MB). It gates a
 // file BEFORE it is read into memory and is the same ceiling the loader applies
 // after the read (register.go builds the loader with it), so the two never
 // diverge.

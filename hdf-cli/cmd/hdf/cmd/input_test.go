@@ -117,7 +117,8 @@ func TestReadFromFileReportsTheLimitInEffect(t *testing.T) {
 	maxSizeMB = 0 // --max-size 0 falls back to the default limit
 	defer func() { maxSizeMB = oldMax }()
 
-	// A sparse file reports its full size to Stat without writing the bytes.
+	// Truncate extends the file without writing data (sparse on Unix; allocated but
+	// not zero-filled on NTFS), so Stat reports the size with no bytes written.
 	big := filepath.Join(t.TempDir(), "big.json")
 	f, err := os.Create(big)
 	if err != nil {
