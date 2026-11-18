@@ -78,3 +78,22 @@ func TestEvidenceBundle_StagingFailureNamesOutputNotTheStagedFile(t *testing.T) 
 	assert.Contains(t, err.Error(), "open: permission denied", "and the operation that failed")
 	assert.NotContains(t, err.Error(), stagedArchivePrefix, "but never the staged file")
 }
+
+// The staged archive is created before any referenced document is read, so a
+// destination that cannot take one is refused before any input is opened or hashed.
+// The referenced document is removed here: reading it first would report that instead.
+func TestEvidenceBundle_StagesTheArchiveBeforeReadingDocuments(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root creates files in a read-only directory")
+	}
+	dir, pkgPath := bundleTree(t)
+	require.NoError(t, os.Remove(filepath.Join(dir, "scans", "rhel9-results.json")))
+	sealed := filepath.Join(dir, "sealed")
+	require.NoError(t, os.Mkdir(sealed, 0o500))
+	out := filepath.Join(sealed, "boe.zip")
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+out, "the destination is refused")
+	assert.NotContains(t, err.Error(), "rhel9-results.json", "before the missing document is read")
+}

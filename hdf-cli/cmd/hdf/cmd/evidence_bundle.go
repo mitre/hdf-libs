@@ -505,7 +505,18 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 		}
 	}
 
-	// Verify all referenced bytes before opening the output.
+	// Staged before any referenced document is read, so a destination that cannot take
+	// an archive under the access policy is refused before any input is opened or hashed.
+	staged, err := createStagedArchive(filepath.Dir(outputPath), access)
+	if err != nil {
+		return &stagingError{out: outputPath, err: err}
+	}
+	stagedName := staged.Name()
+	defer func() {
+		_ = staged.Close()
+		_ = os.Remove(stagedName) // no-op once published
+	}()
+
 	c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
 	c.collected = map[string][]byte{packageName: pkgRaw}
 	c.carried = map[refKind]int{}
@@ -516,7 +527,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 	}
 	sort.Strings(c.notCarried)
 	sort.Slice(c.entries, func(i, j int) bool { return c.entries[i].path < c.entries[j].path })
-	if err := writeArchiveAtomically(outputPath, overwrite, access, c.entries, makeWriter); err != nil {
+	if err := writeArchiveAtomically(outputPath, overwrite, staged, c.entries, makeWriter); err != nil {
 		return err
 	}
 	c.report(pkgDir, outputPath, refs)
@@ -935,24 +946,14 @@ func samePath(a, b string) bool {
 // replaces this one function and nothing else.
 func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 
-// writeArchiveAtomically writes to a temporary file beside the target and moves it
-// into place, so a failure part-way cannot leave a partial archive that looks
+// writeArchiveAtomically writes the entries to the staged file beside the target and
+// moves it into place, so a failure part-way cannot leave a partial archive that looks
 // complete. Without overwrite the move refuses a name that already exists. It takes
 // the writer constructor so the seam is exercised by the command, not merely
-// implemented beside it.
-func writeArchiveAtomically(outputPath string, overwrite bool, access archiveAccess, entries []bundleEntry,
+// implemented beside it. The caller removes the staged file if it is not published.
+func writeArchiveAtomically(outputPath string, overwrite bool, tmp *os.File, entries []bundleEntry,
 	makeWriter func(*os.File) archiveWriter) error {
-	dir := filepath.Dir(outputPath)
-	tmp, err := createStagedArchive(dir, access)
-	if err != nil {
-		return &stagingError{out: outputPath, err: err}
-	}
 	tmpName := tmp.Name()
-	defer func() {
-		_ = tmp.Close()
-		_ = os.Remove(tmpName) // no-op once renamed
-	}()
-
 	w := makeWriter(tmp)
 	for _, e := range entries {
 		if err := w.Add(e.path, e.data); err != nil {
