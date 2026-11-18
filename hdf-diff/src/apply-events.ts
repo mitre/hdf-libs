@@ -1,4 +1,4 @@
-import { formatTimestamp, parseTimestamp, sha256 } from '@mitre/hdf-utilities';
+import { compareCodePoint, formatTimestamp, parseTimestamp, sha256 } from '@mitre/hdf-utilities';
 import {
   dedupEvents,
   groupEventChains,
@@ -147,7 +147,7 @@ export async function applyChangeEvents(
   }
 
   // Deterministic insertion order regardless of delivery order.
-  insertions.sort((a, b) => (a.sequence !== b.sequence ? a.sequence - b.sequence : a.id.localeCompare(b.id)));
+  insertions.sort((a, b) => (a.sequence !== b.sequence ? a.sequence - b.sequence : compareCodePoint(a.id, b.id)));
   if (insertions.length > 0) {
     const baselines = (doc['baselines'] as Doc[] | undefined) ?? [];
     const firstBaseline = baselines[0];

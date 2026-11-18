@@ -1,7 +1,6 @@
 package twistlock
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -51,7 +51,7 @@ type TwistlockPackage struct {
 
 // TwistlockVuln represents a single vulnerability entry. The json tags carry
 // omitempty because this struct is re-serialized into the result's
-// rawSourceRecord (renderVulnRecord) — the omission rules must mirror the TS
+// rawSourceRecord (buildRequirement) — the omission rules must mirror the TS
 // projection for byte parity, and the declaration order fixes the field order
 // of that output. Note the record is this STRUCT's projection, not the source
 // bytes: a Twistlock field the struct does not model does not reach it.
@@ -329,25 +329,6 @@ func formatMessage(vuln TwistlockVuln) string {
 		packageName, packageVersion, packageName)
 }
 
-// renderVulnRecord re-serializes the parsed vulnerability into indented JSON
-// for the result's rawSourceRecord, so fields with no structured HDF home (link, riskFactors, publishedDate,
-// fixDate, layerTime) are not lost. It is byte-identical to the TS projection:
-// json.Encoder with HTML escaping disabled and a two-space indent matches
-// JSON.stringify(obj, null, 2). The encoder appends a trailing newline that
-// JSON.stringify does not, so it is trimmed. Field order and omission follow
-// the TwistlockVuln declaration + omitempty tags — do not reorder without
-// updating the TS projection.
-func renderVulnRecord(vuln TwistlockVuln) string {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(vuln); err != nil {
-		return ""
-	}
-	return strings.TrimRight(buf.String(), "\n")
-}
-
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
 // The packageTypes map and distro provide context for resolving the package
 // ecosystem when the per-vulnerability entry doesn't include packageType.
@@ -388,14 +369,9 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 	// The vulnerability record that produced this result, carried on the RESULT
 	// per ADR-0017 §5 — one CVE against two packages is two records, and
 	// roll-up's first-wins on `code` would otherwise discard the second.
-	if record := renderVulnRecord(vuln); record != "" {
-		result.RawSourceRecord = &hdf.RawSourceRecord{
-			Content:   record,
-			Encoding:  hdf.UTF8,
-			MediaType: "application/json",
-			Pointer:   hdfutil.Ptr(sourcePointer),
-		}
-	}
+	// Encoded from the struct, so fields with no structured HDF home (link, riskFactors,
+	// publishedDate, fixDate, layerTime) survive in declaration order, as in the TS twin.
+	result.RawSourceRecord = exportmap.BuildJSONRawSourceRecordFromValue(vuln, sourcePointer, exportmap.RecordIndented)
 	results := []hdf.RequirementResult{result}
 
 	title := vuln.ID

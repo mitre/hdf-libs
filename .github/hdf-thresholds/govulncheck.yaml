@@ -18,5 +18,5 @@ rules:
           status: failed
           severity: [critical, high]
           disposition:
-              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
+              not: [waiver, attestation, poam, inherited, falsePositive, operationalRequirement]
       max: 0

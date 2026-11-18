@@ -763,8 +763,9 @@ func TestEvidenceExportCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
+		// The only convertible document failed, so the run fails and says why.
 		_, stderr, err := executeCommand("evidence", "export", pkgPath, "-o", outDir)
-		require.NoError(t, err)
+		require.Error(t, err)
 		assert.Contains(t, stderr, "could not read")
 	})
 
@@ -805,7 +806,7 @@ func TestEvidenceExportCommand(t *testing.T) {
 		if err == nil {
 			assert.Contains(t, stderr, "exported")
 			// Verify output file was created
-			_, statErr := os.Stat(filepath.Join(outDir, "oscal-sar.json"))
+			_, statErr := os.Stat(filepath.Join(outDir, "results.oscal-sar.json"))
 			assert.NoError(t, statErr)
 		}
 	})

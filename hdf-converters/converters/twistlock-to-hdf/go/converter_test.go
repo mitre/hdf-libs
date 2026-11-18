@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -440,8 +441,8 @@ func TestConvertTwistlock_RawSourceRecordCarriesUnmappedFields(t *testing.T) {
 	assert.Contains(t, rec.Content, "\"layerTime\":")
 }
 
-func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
-	code := renderVulnRecord(TwistlockVuln{
+func TestConvertTwistlock_VulnRecord_OrderAndOmission(t *testing.T) {
+	rec := exportmap.BuildJSONRawSourceRecordFromValue(TwistlockVuln{
 		ID:             "CVE-X",
 		Status:         "affected",
 		CVSS:           7.5,
@@ -449,7 +450,8 @@ func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
 		PackageName:    "openssl",
 		PackageVersion: "1.0",
 		Link:           "https://example.test/CVE-X",
-	})
+	}, "/vulnerabilities/0", exportmap.RecordIndented)
+	require.NotNil(t, rec)
 	// Fixed two-space indent, declaration-order fields, empties dropped.
 	expected := "{\n" +
 		"  \"id\": \"CVE-X\",\n" +
@@ -460,7 +462,7 @@ func TestConvertTwistlock_RenderVulnRecord_OrderAndOmission(t *testing.T) {
 		"  \"packageVersion\": \"1.0\",\n" +
 		"  \"link\": \"https://example.test/CVE-X\"\n" +
 		"}"
-	assert.Equal(t, expected, code)
+	assert.Equal(t, expected, rec.Content)
 }
 
 func TestConvertTwistlock_ControlType(t *testing.T) {
@@ -875,4 +877,32 @@ func TestConvertTwistlock_CarriesEveryVulnRecordThroughRollUp(t *testing.T) {
 	assert.Equal(t, want, len(records), "distinct source records (none lost to roll-up)")
 	assert.Equal(t, want, len(pointers), "distinct source pointers")
 	assert.Equal(t, 5, biggest, "sample-1's largest roll-up group is five packages under one CVE")
+}
+
+// The TypeScript twin reads the same case table, so both languages are held to one
+// rendering of each record.
+func TestRawSourceRecord_SharedCases(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "raw-source-record-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []struct {
+			Why     string `json:"why"`
+			Input   string `json:"input"`
+			Pointer string `json:"pointer"`
+			Content string `json:"content"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+	for _, tc := range table.Cases {
+		t.Run(tc.Why, func(t *testing.T) {
+			res, err := ConvertTwistlockToHDF([]byte(tc.Input), testVersion)
+			require.NoError(t, err)
+			rec := res.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+			require.NotNil(t, rec)
+			require.NotNil(t, rec.Pointer)
+			assert.Equal(t, tc.Pointer, *rec.Pointer)
+			assert.Equal(t, tc.Content, rec.Content)
+		})
+	}
 }

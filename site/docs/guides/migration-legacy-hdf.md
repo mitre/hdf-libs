@@ -190,14 +190,15 @@ cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ### Programmatic (Go)
 
 ```go
-import (
-    "encoding/json"
-    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
-)
+import legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 
-var v1 legacyhdf.HDFV1Results
-json.Unmarshal(input, &v1)
-v2 := legacyhdf.ConvertV1ToV2(&v1)
+// ParseLegacyHDF applies the size guard and format check, then decodes the input.
+v1, err := legacyhdf.ParseLegacyHDF(input)
+if err != nil {
+    return err
+}
+// The second argument is the generator version recorded in the output ("" uses the default).
+current := legacyhdf.ConvertLegacyHDF(v1, "")
 ```
 
 The Go converter performs a comprehensive transformation:
@@ -287,3 +288,16 @@ It also affects reimporting older OSCAL POA&M exports. If a risk carries the HDF
 Review the original decision before migrating it. If it changes compliance status, re-author the source amendment as the appropriate `waiver` or `falsePositive`, with the intended status. If it only changes impact, intentionally remove the status and retain the impact adjustment. Validate the revised amendment and export a new OSCAL POA&M; retain the original artifact for its audit history. Do not silently discard the status during import or bypass output validation to accept the old combination.
 
 For override semantics, see [Amendments](./amendments-workflow.md).
+
+### Status ladder and threshold bucket in v3.8.0
+
+Starting with hdf-libs v3.8.0, an impact of 0 is a severity band and nothing more. The effective-status ladder consults a governing non-expired override, else the worst-wins roll-up of the results, and never `impact`; `computeEffectiveStatus` in `@mitre/hdf-schema/helpers`, both engines, `hdf validate threshold` and the MCP all follow it. The InSpec convention that a control scored 0 with no pass or fail is not applicable is translated at import, as the [Status normalization](#status-normalization) section above describes: `legacyhdf-to-hdf` and `splunk-to-hdf` write an explicit `notApplicable` result for such a control.
+
+What this changes for documents you already have:
+
+- A results document an older binary converted from InSpec output carries impact 0, a `notReviewed` roll-up and no translated result. Recomputed under the new ladder it reports `notReviewed`, while its stored `effectiveStatus` still says `notApplicable`. Re-convert from the original exec JSON; nothing we ship rewrites an existing document.
+- A document from a converter that derives impact through the shared severity map was never saying "not applicable" with impact 0. For those, clean scans now report `passed` where they reported `notApplicable`, and the change is a correction.
+- Effective checksums hash the resolved status, so a requirement-change-event chain anchored on an affected requirement reports `chainGap` afterwards. Re-derive the chain from a fresh rescan.
+- Several converters now state the status their source established instead of leaning on the impact-0 rule: `xccdf-results-to-hdf` maps `notselected` and `informational` to `notApplicable` with impact kept, `grype-to-hdf` maps an ignore-rule match to `notApplicable`, `ionchannel-to-hdf` states `notApplicable` on inventory records, `msft-secure-score-to-hdf` reports `notReviewed` for an unscored control, and `asff-to-hdf` carries a suppression as a `waiver` override. A compliance figure or threshold computed from these inputs moves accordingly; a SCAP threshold that pinned a deselected rule under `skipped.informational` now finds it under `not_applicable.<severity>`.
+
+The threshold and compliance bucket for the `notApplicable` status is written `not_applicable`. `no_impact`, the SAF CLI spelling, is read permanently, in files and inline specs, and a spec that sets both is refused. Three surfaces this tool writes use the new key: templates from `hdf generate threshold`, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP envelopes, and `engine.statusCounts` in the MCP contract. Update any `jq` pipeline or dashboard keyed on `no_impact` there. In Go, `hdfengine.StatusCounts.NoImpact` is renamed `NotApplicable`; in TypeScript, `StatusCounts.noImpact` is `notApplicable`. A threshold file this tool generates is accepted by `saf validate threshold` but its `not_applicable` bounds are silently ignored there; rewrite that section as `no_impact` before handing the file to SAF.

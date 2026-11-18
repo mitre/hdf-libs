@@ -6,6 +6,10 @@
  * differs between the two languages writes a bag only one of them can restore.
  */
 
+import { isGoZeroTime, parseTimestamp } from '@mitre/hdf-utilities';
+import { validateResults } from '@mitre/hdf-validators';
+import { goDecodeRejections } from '../../../shared/typescript/converterutil.js';
+
 /** The objects a carried SARIF property bag can be addressed to. */
 export const BAG_ON_LOG = 'log';
 export const BAG_ON_RUN = 'run';
@@ -130,6 +134,21 @@ const UNEXPRESSIBLE_BAG_KEYS: Record<string, string> = {
   poams: 'poams',
 };
 
+/**
+ * Whether a carried value would decode into the HDF field it addresses, by Go's rule:
+ * null carries nothing, and otherwise only a JSON type mismatch or an unparseable
+ * date-time, at any depth, refuses it. Mirrors Go's decodeBagField. The value is
+ * probed in place inside a skeleton document and only violations under it count.
+ */
+function decodesInto(scope: 'requirement' | 'result', field: string, value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  const requirement = scope === 'requirement' ? {[field]: value} : {results: [{[field]: value}]};
+  const at = `baselines.0.requirements.0.${scope === 'requirement' ? '' : 'results.0.'}${field}`;
+  const probe = {baselines: [{requirements: [requirement]}]};
+  return !goDecodeRejections(validateResults(probe))
+    .some(e => e.field === at || e.field?.startsWith(`${at}.`));
+}
+
 /** The description labels hdf-to-sarif maps onto real SARIF fields. */
 const SARIF_EXPRESSES_DESCRIPTION = new Set(['default', 'check', 'rationale']);
 
@@ -141,9 +160,8 @@ const SARIF_EXPRESSES_DESCRIPTION = new Set(['default', 'check', 'rationale']);
  */
 export function restoreUnexpressible(req: Record<string, unknown>, bag: Record<string, unknown>): void {
   for (const [bagKey, hdfKey] of Object.entries(UNEXPRESSIBLE_BAG_KEYS)) {
-    if (!(bagKey in bag)) continue;
     if (req[hdfKey] !== undefined) continue;
-    req[hdfKey] = bag[bagKey];
+    if (decodesInto('requirement', hdfKey, bag[bagKey])) req[hdfKey] = bag[bagKey];
   }
   // These two OVERRIDE what the mapping produced, for two different reasons, and
   // are the one exception to the rule above. Mirrors Go's restoreUnexpressible.
@@ -156,7 +174,9 @@ export function restoreUnexpressible(req: Record<string, unknown>, bag: Record<s
   // check ran; it does not say the requirement is INTENDED to be automated. The
   // schema also says to infer no default when it is omitted. So the constant is an
   // inferred default, not a derived value, and a carried witness outranks it.
-  if ('verification_method' in bag) req.verificationMethod = bag.verification_method;
+  if (decodesInto('requirement', 'verificationMethod', bag.verification_method)) {
+    req.verificationMethod = bag.verification_method;
+  }
   // statusOverrides: ONLY the invented fields. This converter derives the override's
   // type, status and reason from the SARIF suppression, so those stay derived.
   // appliedBy, appliedAt and expiresAt are derived from nothing — it invents them —
@@ -174,7 +194,7 @@ export function restoreUnexpressible(req: Record<string, unknown>, bag: Record<s
  */
 function restoreUnexpressibleDescriptions(req: Record<string, unknown>, bag: Record<string, unknown>): void {
   const carried = bag.descriptions;
-  if (!Array.isArray(carried)) return;
+  if (!Array.isArray(carried) || !decodesInto('requirement', 'descriptions', carried)) return;
   const existing = Array.isArray(req.descriptions) ? [...req.descriptions] : [];
   const have = new Set(
     existing.map(d => (d as {label?: string})?.label).filter((l): l is string => typeof l === 'string'));
@@ -314,13 +334,13 @@ export function restoreUnexpressibleResult(out: Record<string, unknown>, row: Re
   if (!row) return;
   for (const field of ['resource', 'resourceId']) {
     if (out[field] !== undefined) continue;
-    if (row[field] !== undefined) out[field] = row[field];
+    if (decodesInto('result', field, row[field])) out[field] = row[field];
   }
   // startTime is the scan's time, not the conversion's. SARIF has no per-result
   // timestamp and this exporter writes no invocations block, so nothing in the SARIF
   // expresses it and the converter falls back to the current time — silently
   // restamping every finding with the moment it was converted.
-  if (row.startTime !== undefined) out.startTime = row.startTime;
+  if (decodesInto('result', 'startTime', row.startTime)) out.startTime = row.startTime;
 }
 
 /**
@@ -368,6 +388,11 @@ export function restoreCarriedStatus(
   out.status = carried;
 }
 
+function carriesTime(v: unknown): boolean {
+  const t = typeof v === 'string' ? parseTimestamp(v) : null;
+  return t !== null && !isGoZeroTime(t);
+}
+
 /**
  * Replaces the identity, application time and expiry this converter invented with
  * the carried ones, position by position, leaving the type, status and reason it
@@ -378,13 +403,16 @@ function restoreInventedOverrideFields(req: Record<string, unknown>, bag: Record
   const carried = bag.status_overrides;
   const derived = req.statusOverrides;
   if (!Array.isArray(carried) || !Array.isArray(derived) || derived.length === 0) return;
+  // Go decodes the whole list into []StatusOverride, so one bad element refuses it all.
+  if (!decodesInto('requirement', 'statusOverrides', carried)) return;
   derived.forEach((d, i) => {
     const c = carried[i] as Record<string, unknown> | undefined;
     if (!c || typeof c !== 'object') return;
     const row = d as Record<string, unknown>;
     const by = c.appliedBy as {identifier?: string} | undefined;
     if (by?.identifier) row.appliedBy = c.appliedBy;
-    if (c.appliedAt) row.appliedAt = c.appliedAt;
-    row.expiresAt = c.expiresAt;
+    // Go's IsZero guard: absent, null and the zero time carry no time at all.
+    if (carriesTime(c.appliedAt)) row.appliedAt = c.appliedAt;
+    if (carriesTime(c.expiresAt)) row.expiresAt = c.expiresAt;
   });
 }

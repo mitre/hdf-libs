@@ -9,7 +9,9 @@
 package evidenceref
 
 import (
+	"errors"
 	"net/url"
+	"unicode/utf8"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -89,6 +91,26 @@ func PathFromRecorded(pkgDir, raw string) (string, error) {
 //
 // url.PathEscape alone is the wrong call here — it escapes the separator too, turning
 // "scans/x.json" into "scans%2Fx.json".
-func Encode(path string) string {
-	return (&url.URL{Path: path}).EscapedPath()
+//
+// It refuses what Recordable refuses, so nothing it returns is one Decode rejects.
+func Encode(path string) (string, error) {
+	if err := Recordable(path); err != nil {
+		return "", err
+	}
+	return (&url.URL{Path: path}).EscapedPath(), nil
+}
+
+// ErrNameNotUTF8 is why a path Recordable refuses cannot be recorded.
+var ErrNameNotUTF8 = errors.New("its name is not valid UTF-8, and a recorded reference " +
+	"must decode to UTF-8; rename it to record it")
+
+// Recordable reports whether a path can be recorded as a reference at all. A name that is
+// not valid UTF-8 cannot: it encodes to escapes like "caf%E9.json", which Decode refuses
+// in both languages, so recording it writes a package that fails its own verification.
+// The one check Encode and every discovery path share, so they cannot disagree again.
+func Recordable(path string) error {
+	if !utf8.ValidString(path) {
+		return ErrNameNotUTF8
+	}
+	return nil
 }

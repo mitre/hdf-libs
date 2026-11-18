@@ -359,6 +359,9 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 // writeLabelOutput writes the result to the output path, or the original file
 // if no output path is specified.
 func writeLabelOutput(data []byte, originalPath, outputPath string) error {
+	if err := requireOutputForStdin(originalPath, outputPath, "document"); err != nil {
+		return err
+	}
 	target := originalPath
 	if outputPath != "" {
 		target = outputPath

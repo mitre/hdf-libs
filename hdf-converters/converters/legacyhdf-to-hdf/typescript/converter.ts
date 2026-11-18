@@ -13,13 +13,14 @@ import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
 import {
   impactToSeverity,
+  UNKNOWN_SEVERITY_IMPACT,
   parseTimestamp,
   formatTimestamp,
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, earliestResultStartTime, GO_ZERO_TIME, inSpecEstablishedNothing, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, ensureDefaultDescription, GO_ZERO_TIME, inSpecEstablishedNothing, markUnratedSeverity, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -347,11 +348,6 @@ function synthesizedErrorResult(results: V2Result[]): V2Result {
   };
 }
 
-// What an ABSENT impact resolves to: the unknown-severity default, which says
-// "we do not know whether this is good or bad" rather than "this carries no
-// risk". Parity: unknownSeverityImpact in go/converter.go.
-const UNKNOWN_SEVERITY_IMPACT = 0.5;
-
 /**
  * Encodes the scope declaration InSpec states as an impact of 0 rather than as a
  * result (matching the Go converter).
@@ -502,14 +498,17 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // descriptions is required in v3 with minItems:1 and must contain a 'default',
   // so both null and [] are invalid. Guarantee a 'default', synthesized from the
   // control desc when absent — symmetric with the downgrade's default→desc map.
-  const descriptions = [...(v1Control.descriptions ?? [])];
-  if (!descriptions.some((d) => d.label === 'default')) {
-    descriptions.unshift({label: 'default', data: v1Control.desc ?? ''});
-  }
-  v2Req.descriptions = descriptions;
+  v2Req.descriptions = ensureDefaultDescription([...(v1Control.descriptions ?? [])], v1Control.desc ?? '');
   // tags is schema-required, so an absent source map becomes an empty object
   // rather than being omitted — omission is as invalid as null.
   v2Req.tags = v1Control.tags ?? {};
+  // A defaulted impact is unrated unless the source's own tags.severity rated it.
+  // Copied so marking does not write into the caller's control. Parity: go/converter.go.
+  if (v1Control.impact == null) {
+    v2Req.tags = {...v2Req.tags};
+    const severity = v2Req.tags.severity;
+    markUnratedSeverity(v2Req.tags, typeof severity === 'string' ? severity : '');
+  }
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
     const refs = convertRefs(v1Control.refs);
@@ -985,7 +984,7 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: LegacyProfile; war
   return {profile: p, warnings};
 }
 
-/** Project modern statistics down to the v1 shape (duration only), matching Go V1Statistics. */
+/** Project modern statistics down to the v1 shape (duration only), matching Go LegacyStatistics. */
 function projectV1Statistics(stats: unknown): {duration?: number} {
   const duration = (stats as {duration?: unknown} | undefined)?.duration;
   return typeof duration === 'number' ? {duration} : {};
@@ -1029,7 +1028,7 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     version: downgradeV1Version(v2Data),
     platform,
     profiles,
-    // Mirror the Go V1Statistics: only the duration field survives to v1.
+    // Mirror the Go LegacyStatistics: only the duration field survives to v1.
     statistics: projectV1Statistics(v2Data.statistics),
   };
 

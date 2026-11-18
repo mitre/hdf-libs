@@ -165,8 +165,10 @@ export function createSourceLocation(ref, line) {
 
 /**
  * Create a minimal valid inline Status_Override (requirement.statusOverrides[]).
- * The schema requires one of status/impact; when neither is supplied this
- * defaults status to 'notApplicable' so the built override stays valid.
+ * The status/impact rule is type-dependent: operationalRequirement carries neither,
+ * riskAdjustment carries impact only (required, no default), and every other type
+ * needs one of the two, defaulting status to 'notApplicable' when neither is given.
+ * Throws a TypeError for an input the schema rejects instead of silently dropping it.
  * @param {string} type - Override_Type (waiver, attestation, falsePositive, riskAdjustment, ...)
  * @param {Object} [options] - reason, appliedBy, appliedAt, expiresAt, status, impact
  * @returns {Object}
@@ -179,6 +181,26 @@ export function createStatusOverride(type, options = {}) {
     appliedAt: options.appliedAt || '2025-01-01T00:00:00Z',
     expiresAt: options.expiresAt || '2099-12-31T00:00:00Z',
   };
+  if (type === 'operationalRequirement') {
+    if (options.status || options.impact) {
+      throw new TypeError(
+        'createStatusOverride: an operationalRequirement override cannot carry a status or impact',
+      );
+    }
+    return override;
+  }
+  if (type === 'riskAdjustment') {
+    if (options.status) {
+      throw new TypeError(
+        'createStatusOverride: a riskAdjustment override cannot carry a status; it re-rates impact only',
+      );
+    }
+    if (!options.impact) {
+      throw new TypeError('createStatusOverride: a riskAdjustment override requires an impact');
+    }
+    override.impact = options.impact;
+    return override;
+  }
   if (options.status) override.status = options.status;
   if (options.impact) override.impact = options.impact;
   if (!override.status && !override.impact) override.status = 'notApplicable';

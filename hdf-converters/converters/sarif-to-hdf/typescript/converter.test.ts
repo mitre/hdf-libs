@@ -2347,6 +2347,63 @@ describe('address locations keep only what is representable', () => {
   });
 });
 
+describe('null location elements', () => {
+  // Go decodes a null element of locations to an empty location; the rows match.
+  const doc = (locations: unknown[]) => JSON.stringify({
+    version: '2.1.0',
+    runs: [{
+      tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+      results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}, locations}],
+    }],
+  });
+
+  it.each([
+    ['null then a real location', [null, {physicalLocation: {artifactLocation: {uri: 'src/a.c'}, region: {startLine: 3, startColumn: 5}}}], 'URL : src/a.c LINE : 3 COLUMN : 5'],
+    ['only null', [null], 'No source location'],
+  ] as const)('%s', async (_name, locations, want) => {
+    const out = JSON.parse(await convertSarifToHdf(doc([...locations])));
+    const results = out.baselines[0].requirements[0].results;
+    expect(results).toHaveLength(1);
+    expect(results[0].codeDesc).toBe(want);
+    expectValidResults(out);
+  });
+});
+
+describe('a rule with neither description', () => {
+  // Nothing to put in the default description; it must still be present and empty.
+  it('keeps a schema-valid empty default description', async () => {
+    const out = JSON.parse(await convertSarifToHdf(JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}}],
+      }],
+    })));
+    expect(out.baselines[0].requirements[0].descriptions).toEqual([{label: 'default', data: ''}]);
+    expectValidResults(out);
+  });
+});
+
+describe('null location parts', () => {
+  // Go decodes a JSON null location part to a nil pointer and skips it; the rows match.
+  it('skips a null physicalLocation and a physicalLocation of nulls', async () => {
+    const out = JSON.parse(await convertSarifToHdf(JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}, locations: [
+          {physicalLocation: null},
+          {physicalLocation: {artifactLocation: null, region: null}},
+          {physicalLocation: {artifactLocation: {uri: 'src/a.c'}, region: {startLine: 3, startColumn: 5}}},
+        ]}],
+      }],
+    })));
+    const results = out.baselines[0].requirements[0].results;
+    expect(results).toHaveLength(1);
+    expect(results[0].codeDesc).toBe('URL : src/a.c LINE : 3 COLUMN : 5');
+  });
+});
+
 describe('rawSourceRecord numeric tokens', () => {
   // JSON.parse rounds any integer above 2^53 and re-formats 1.0, 1e5 and -0, so a
   // record built from a plain parse both diverges from its Go peer and reports a value

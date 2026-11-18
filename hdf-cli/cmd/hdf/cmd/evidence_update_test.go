@@ -1687,14 +1687,9 @@ func TestEvidenceUpdate_DoesNotCallABlankChecksumStale(t *testing.T) {
 	assert.Contains(t, verifyOut, "skipped")
 }
 
-// The warning must agree with VERIFICATION, which compares the recorded checksum
-// EXACTLY. hdfengine.VerifyChecksums uses actual == recorded against a lowercase hex
-// digest, so an uppercase-but-mathematically-correct value FAILS there — and this report
-// exists to predict that failure. Comparing case-insensitively here made the prediction
-// disagree with the thing it predicts: update went silent while 'info --verify' exited 1.
-//
-// The invariant is that one comparison mirrors the other. That is what this test pins,
-// not a preference about hex casing.
+// The warning must agree with VERIFICATION, which compares digests case-insensitively
+// through hdfengine.ChecksumEqual: an uppercase spelling of the correct digest
+// verifies, so update must not warn about it. Both halves are asserted.
 func TestEvidenceUpdate_AgreesWithVerificationOnCasedHex(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	scan := filepath.Join(dir, "scans", "rhel9.json")
@@ -1722,16 +1717,10 @@ func TestEvidenceUpdate_AgreesWithVerificationOnCasedHex(t *testing.T) {
 	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
 	require.NoError(t, err)
 
-	// Verification is the authority. Whatever it does, the warning must have predicted.
 	_, _, verr := executeCommand("evidence", "info", "--verify", out, "--checksums-only")
-	warned := strings.Contains(stderr, "already names this same file")
-	if verr != nil {
-		assert.True(t, warned,
-			"verification fails on this entry, so update had to say so — it stayed silent, "+
-				"which is the prediction disagreeing with the thing predicted")
-	} else {
-		assert.False(t, warned, "verification passes, so the warning would be a false claim")
-	}
+	require.NoError(t, verr, "an uppercase spelling of the correct digest is not a changed file")
+	assert.NotContains(t, stderr, "already names this same file",
+		"verification passes, so the warning would be a false claim")
 }
 
 // The other half of mirroring verification: the comparison uses the ENTRY'S OWN recorded

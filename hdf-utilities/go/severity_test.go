@@ -20,6 +20,13 @@ func TestIsUnratedSeverity(t *testing.T) {
 	}
 }
 
+func TestUnknownSeverityImpact(t *testing.T) {
+	// The value must stay a mid-band medium, and must never collide with an explicit 0.
+	assert.InDelta(t, 0.5, UnknownSeverityImpact, 1e-9)
+	assert.InDelta(t, UnknownSeverityImpact, SeverityToImpact("wibble", UnknownSeverityImpact), 1e-9)
+	assert.Equal(t, "medium", ImpactToSeverity(UnknownSeverityImpact))
+}
+
 func TestRoundImpact(t *testing.T) {
 	// The float-division noise case: 9.8/10 stores as 0.9800000000000001;
 	// RoundImpact returns the clean 0.98 double (would fail without rounding).

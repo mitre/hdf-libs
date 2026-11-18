@@ -49,8 +49,8 @@ jobs:
         run: cd hdf-schema && pnpm build:schemas
 
       # The site generator reads hdf-openapi's BUILT output and fails loudly if it is
-      # absent: the components document, and problems.json, from which it renders a page
-      # per RFC 9457 problem type. ci.yml's smoke build gets them from the build artifact;
+      # absent: the components document, and problems.json and problem-base.json, from which
+      # it renders a page per RFC 9457 problem type. ci.yml's smoke build gets them from the build artifact;
       # this workflow builds from a clean checkout, so it produces them here.
       - name: Build the OpenAPI components document and the problem-type table
         run: cd hdf-openapi && pnpm run build:components

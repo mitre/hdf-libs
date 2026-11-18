@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -58,6 +60,27 @@ func TestConvertSplunkToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "disa_stig-el7", baseline.Name)
 	require.Len(t, baseline.Requirements, 1, "Minimal fixture has 1 control")
 	require.Len(t, baseline.Requirements[0].Results, 1, "Minimal control has 1 result")
+}
+
+// Canonical HDF time is trimmed UTC at millisecond precision, whatever the host zone.
+// Local is pinned off UTC so the assertion cannot pass vacuously under TZ=UTC.
+func TestConvertSplunkToHDF_TimestampIsCanonicalUTC(t *testing.T) {
+	saved := time.Local
+	time.Local = time.FixedZone("TEST-06", -6*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	result, err := ConvertSplunkToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Regexp(t, regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$`), doc.Timestamp,
+		"the document timestamp must be trimmed UTC with at most millisecond precision")
 }
 
 // ---- Error tests ----
@@ -629,6 +652,36 @@ func TestConvertSplunk_TaglessControlIsSchemaValid(t *testing.T) {
 	assert.Truef(t, v.Valid, "tagless output must validate: %s", v.Error())
 }
 
+// A control whose descriptions lack a default (others present) still needs one.
+func TestConvertSplunk_DescriptionsWithoutDefaultGetOneFromDesc(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	descs := map[string]string{}
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			d, ok := e["descriptions"].(map[string]interface{})
+			require.True(t, ok)
+			delete(d, "default")
+			require.NotEmpty(t, d, "the case needs non-default descriptions left over")
+			descs[e["id"].(string)] = e["desc"].(string)
+		}
+	}
+	require.NotEmpty(t, descs)
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	for _, req := range out.Baselines[0].Requirements {
+		require.NotEmpty(t, req.Descriptions)
+		assert.Equal(t, hdf.Description{Label: "default", Data: descs[req.ID]}, req.Descriptions[0])
+	}
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+}
+
 // TestConvertSplunk_AgreesWithLegacyhdfOnAbsence is the contract that matters
 // here: the two readers of an InSpec control payload must treat an ABSENT field
 // identically. They diverged before — Go read absent impact as 0 while TS
@@ -707,4 +760,50 @@ func TestConvertSplunk_ResultlessControlIsSchemaValid(t *testing.T) {
 	require.NoError(t, err)
 	v := validators.Validate(serialized, validators.TypeResults)
 	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
+}
+
+// Twin of legacyhdf's TestConvertLegacyHDF_AbsentImpactMarksUnrated: the same
+// InSpec control read from a store must be marked exactly as the file reader marks it.
+func TestConvertSplunk_AbsentImpactMarksUnrated(t *testing.T) {
+	cases := []struct {
+		name    string
+		control string
+		impact  float64
+		unrated bool
+	}{
+		{"absent impact, empty tags", `"tags":{}`, 0.5, true},
+		{"absent impact, no tags key", `"title":"t"`, 0.5, true},
+		{"absent impact, unrated token", `"tags":{"severity":"unknown"}`, 0.5, true},
+		{"absent impact, non-string severity", `"tags":{"severity":3}`, 0.5, true},
+		{"absent impact, rated severity", `"tags":{"severity":"high"}`, 0.5, false},
+		{"explicit 0", `"impact":0,"tags":{}`, 0, false},
+		{"explicit 0.5", `"impact":0.5,"tags":{}`, 0.5, false},
+		{"explicit 0.5, unrated token", `"impact":0.5,"tags":{"severity":"unknown"}`, 0.5, false},
+	}
+	const meta = `"filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json"`
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := `[{"meta":{"subtype":"header",` + meta + `},"profiles":[],
+"platform":{"name":"centos","release":"7"},"statistics":{},"version":"4.16.0"},
+{"meta":{"subtype":"profile",` + meta + `,"profile_sha256":"abc"},"name":"p","sha256":"abc",
+"controls":[]},
+{"meta":{"subtype":"control",` + meta + `,"profile_sha256":"abc"},"id":"V-1",` + tc.control + `,
+"results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]`
+			out, err := ConvertSplunkToHDF([]byte(doc), testConverterVersion)
+			require.NoError(t, err)
+
+			req := out.Baselines[0].Requirements[0]
+			assert.InDelta(t, tc.impact, req.Impact, 0.0001)
+			if tc.unrated {
+				assert.Equal(t, "unrated", req.Tags["severity_rating"])
+			} else {
+				assert.NotContains(t, req.Tags, "severity_rating")
+			}
+
+			raw, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+		})
+	}
 }

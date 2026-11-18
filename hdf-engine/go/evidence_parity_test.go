@@ -1,6 +1,7 @@
 package hdfengine
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -213,5 +214,45 @@ func TestEvidence_ChecksumAlgorithm_CrossLanguageParity(t *testing.T) {
 	// so the blake3 entry is held to the same contract as every other status.
 	if got[3].Actual != "" {
 		t.Errorf("a matched entry reports no actual hash, got %q", got[3].Actual)
+	}
+}
+
+// Hex case carries no meaning, so a digest recorded in uppercase must verify. Read from
+// the SHARED table test/evidence.test.ts also reads, so the two verifiers cannot drift.
+func TestVerifyChecksums_HexCaseVectors_CrossLanguageParity(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "checksum-case-vectors.json"))
+	if err != nil {
+		t.Fatalf("read the shared table: %v", err)
+	}
+	var table struct {
+		Vectors []struct {
+			Why       string `json:"why"`
+			URI       string `json:"uri"`
+			Algorithm string `json:"algorithm"`
+			Recorded  string `json:"recorded"`
+			Status    string `json:"status"`
+			Expected  string `json:"expected"`
+			Actual    string `json:"actual"`
+		} `json:"vectors"`
+	}
+	if err := json.Unmarshal(raw, &table); err != nil {
+		t.Fatalf("parse the shared table: %v", err)
+	}
+	if len(table.Vectors) < 4 {
+		t.Fatalf("a pass must not mean an empty table: got %d vectors", len(table.Vectors))
+	}
+	dir := filepath.Join("..", "testdata", "evidence")
+	fetch := func(uri string) ([]byte, error) { return os.ReadFile(filepath.Join(dir, uri)) }
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			got := VerifyChecksums([]EvidenceContent{{
+				URI: v.URI, Type: "hdf-plan", Checksum: v.Recorded,
+				ChecksumAlgorithm: v.Algorithm, ChecksumRecorded: true,
+			}}, fetch)[0]
+			if string(got.Status) != v.Status || got.Expected != v.Expected || got.Actual != v.Actual {
+				t.Errorf("got status=%s expected=%q actual=%q, want status=%s expected=%q actual=%q",
+					got.Status, got.Expected, got.Actual, v.Status, v.Expected, v.Actual)
+			}
+		})
 	}
 }

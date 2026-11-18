@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -644,4 +645,94 @@ func TestEvidenceBuild_FromDirNamingASymlinkSkipsItsTarget(t *testing.T) {
 		"the named symlink and the scanned target are one document; got %v", listed)
 	assert.Equal(t, "scans/rhel9-results.json", listed[0],
 		"recorded under the resolved target, which is what resolvedAbs produces")
+}
+
+// The scan sniffed every file with fs.ReadFile, so --max-size never applied: a large
+// artifact in the tree was loaded whole before anything looked at its size. A file
+// over the limit is now reported unread. Padding a real results document with JSON
+// whitespace keeps it detectable, so had it been read it would be routed as results.
+func TestEvidenceBuild_FromDirDoesNotReadAFileOverMaxSize(t *testing.T) {
+	dir := scanTree(t)
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "postgres-results.json"))
+	require.NoError(t, err)
+	padding := []byte(strings.Repeat(" ", 2*1024*1024))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "big-results.json"),
+		append(append([]byte{}, src...), padding...), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "capture.log"), padding, 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, stderr, buildErr := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath,
+		"--max-size", "1")
+	require.NoError(t, buildErr, stderr)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	assert.NotContains(t, string(data), "big-results.json", "an unread file cannot be listed")
+	for _, name := range []string{"scans/big-results.json", "capture.log"} {
+		assert.Contains(t, stderr, "Skipped "+name+": present but could not be read", name)
+	}
+	assert.Contains(t, stderr, "use --max-size to increase")
+	assert.NotContains(t, stderr, "Skipped capture.log: not an HDF document",
+		"an oversize file is not classified, because classifying means reading it")
+}
+
+// The same tree under --require-readable: an oversize skip is now a failure that names
+// every skipped file and the --max-size remedy, and nothing is written.
+func TestEvidenceBuild_FromDirRequireReadableFailsOnAnOversizeFile(t *testing.T) {
+	dir := scanTree(t)
+	padding := []byte(strings.Repeat(" ", 2*1024*1024))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "big-results.json"), padding, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "capture.log"), padding, 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, stderr, buildErr := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath,
+		"--max-size", "1", "--require-readable")
+	require.Error(t, buildErr)
+	assert.Equal(t, 1, exitCodeOf(t, buildErr))
+	assert.NoFileExists(t, outputPath, "a refused build writes nothing")
+	for _, name := range []string{"scans/big-results.json", "capture.log"} {
+		assert.Contains(t, buildErr.Error(), name, "the failure names every skipped file")
+		assert.Contains(t, stderr, name)
+	}
+	assert.Contains(t, buildErr.Error(), "use --max-size to increase")
+	assert.Contains(t, buildErr.Error(), "--require-readable")
+}
+
+// A readable tree passes the strict flag, so it gates only what it says it gates.
+func TestEvidenceBuild_FromDirRequireReadablePassesAReadableTree(t *testing.T) {
+	dir := scanTree(t)
+	outputPath := filepath.Join(dir, "pkg.json")
+	_, stderr, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath,
+		"--require-readable")
+	require.NoError(t, err, stderr)
+	assert.FileExists(t, outputPath)
+}
+
+// Without --from-dir there is no scan to skip anything, so the flag is refused rather
+// than silently doing nothing.
+func TestEvidenceBuild_RequireReadableWithoutFromDirIsRefused(t *testing.T) {
+	results := filepath.Join(evidenceFixtureDir, "rhel9-results.json")
+	_, _, err := executeCommand("evidence", "build", "--results", results, "--require-readable")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--require-readable only means something with --from-dir")
+}
+
+// A permission-denied file is the other thing the scan records as unread, and the flag
+// is named for both, so it must fail on this one too.
+func TestEvidenceBuild_FromDirRequireReadableFailsOnAPermissionDeniedFile(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs a filesystem that enforces mode 000 against this user")
+	}
+	dir := scanTree(t)
+	locked := filepath.Join(dir, "scans", "locked.json")
+	require.NoError(t, os.WriteFile(locked, []byte(`{}`), 0o600))
+	require.NoError(t, os.Chmod(locked, 0o000))
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o600) })
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath,
+		"--require-readable")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "scans/locked.json")
+	assert.NoFileExists(t, outputPath)
 }

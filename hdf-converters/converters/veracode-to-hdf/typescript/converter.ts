@@ -13,7 +13,7 @@
 
 import { parseXml, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, markUnratedSeverity, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, markUnratedSeverity, DEFAULT_REMEDIATION_NIST_TAGS, validateXmlInput, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -652,7 +652,7 @@ export async function convertVeracodeToHdf(input: string, converterVersion = '1.
   if (!input || input.trim().length === 0) {
     throw new Error('veracode: empty input');
   }
-  validateInputSize(input, 'veracode');
+  validateXmlInput(input, 'veracode');
 
   // Parse XML with @_ attribute prefix to disambiguate attributes from child elements.
   // This is critical for the <component> element where both `vulnerabilities` attribute

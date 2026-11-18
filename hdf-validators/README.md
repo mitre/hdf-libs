@@ -357,8 +357,9 @@ Validate that your converter produces valid HDF:
 import { convertNessusToHdf } from '@mitre/hdf-converters';
 import { validateResults } from '@mitre/hdf-validators';
 
-const hdf = convertNessusToHdf(nessusXml);
-const result = validateResults(JSON.parse(hdf));
+const hdf = await convertNessusToHdf(nessusXml);
+// The converter returns timestamps as Date objects; validate the JSON form.
+const result = validateResults(JSON.parse(JSON.stringify(hdf)));
 
 if (!result.valid) {
   throw new Error(`Invalid HDF output: ${result.getErrorMessage()}`);
