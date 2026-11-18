@@ -23,6 +23,11 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
+func semgrepSchema(t *testing.T, version string) *shared.SchemaValidator {
+	t.Helper()
+	return shared.NewSchemaValidator(t, filepath.Join("..", "fixtures", "semgrep_output_v1-"+version+".schema.json"))
+}
+
 func convertFixture(t *testing.T, name string) *hdf.HDFResults {
 	t.Helper()
 	out, err := ConvertSemgrepToHDF(loadFixture(t, name), testVersion)
@@ -65,6 +70,7 @@ func referenceURLs(refs []hdf.Reference) []string {
 // source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
 // Bandit-derived Python rule).
 func TestPublishedSourceRuleReferences(t *testing.T) {
+	semgrepSchema(t, "1.183.0").RequireValid(t, "source-rule-urls.json", loadFixture(t, "source-rule-urls.json"))
 	out := convertFixture(t, "source-rule-urls.json")
 	reqs := out.Baselines[0].Requirements
 	goRule := findReq(reqs, "use-of-unsafe-block")
@@ -83,8 +89,10 @@ func TestPublishedSourceRuleReferences(t *testing.T) {
 }
 
 // The case file is shared with the TypeScript suite, so both languages are held
-// to the same refs for every case.
+// to the same refs for every case, and each input is checked against the Semgrep
+// output schema it declares before it is converted.
 func TestSourceRuleReferenceMapping(t *testing.T) {
+	validator := semgrepSchema(t, "1.183.0")
 	data, err := os.ReadFile(filepath.Join("..", "fixtures", "source-rule-url-cases.json"))
 	require.NoError(t, err)
 	var cases []struct {
@@ -96,6 +104,7 @@ func TestSourceRuleReferenceMapping(t *testing.T) {
 	require.NotEmpty(t, cases)
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			validator.RequireValid(t, tc.Name, tc.Input)
 			out, err := ConvertSemgrepToHDF(tc.Input, testVersion)
 			require.NoError(t, err)
 			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
