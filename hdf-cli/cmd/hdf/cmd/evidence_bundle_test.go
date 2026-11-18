@@ -3052,3 +3052,38 @@ func TestEvidenceBundlePackageInputCompatibility(t *testing.T) {
 		})
 	}
 }
+
+func TestEvidenceBundleRefusesUnsafePackageFilenameBeforeReading(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.zip")
+	// The package does not exist: an unsafe name must be refused before any read is attempted.
+	_, _, err := executeCommand("evidence", "bundle", filepath.Join(dir, "missing:pkg.json"), "-o", output)
+	require.ErrorContains(t, err, "cannot name a portable archive entry")
+	require.NoFileExists(t, output)
+}
+
+func TestEvidenceBundleAcceptsPackageSymlinkSpelledInAnotherCase(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	resolvedDir, err := resolvedAbs(dir)
+	require.NoError(t, err)
+	respelled := filepath.Join(strings.ToLower(resolvedDir), filepath.Base(pkgPath))
+	if respelled == filepath.Join(resolvedDir, filepath.Base(pkgPath)) {
+		respelled = filepath.Join(strings.ToUpper(resolvedDir), filepath.Base(pkgPath))
+	}
+	original, err := os.Stat(pkgPath)
+	require.NoError(t, err)
+	aliased, err := os.Stat(respelled)
+	if err != nil || !os.SameFile(original, aliased) {
+		t.Skip("the filesystem is case-sensitive, so the other spelling names no file")
+	}
+	link := filepath.Join(dir, "alias.json")
+	require.NoError(t, os.Symlink(respelled, link))
+	output := filepath.Join(dir, "bundle.zip")
+	_, _, err = executeCommand("evidence", "bundle", link, "-o", output)
+	require.NoError(t, err, "a symlink to the package directory spelled in another case is still inside it")
+	data, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+	entries := zipEntries(t, output)
+	require.Equal(t, data, entries["alias.json"])
+	require.Contains(t, entries, "scans/rhel9-results.json")
+}

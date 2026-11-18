@@ -435,6 +435,14 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 // the seam itself, rather than only constructing an alternative writer beside it.
 func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess,
 	makeWriter func(*os.File) archiveWriter) (err error) {
+	fromStdin := pkgPath == stdinPackage
+	packageName := filepath.ToSlash(filepath.Base(pkgPath))
+	if fromStdin {
+		packageName = stdinBundlePackageEntry
+	}
+	if !portableArtifactPath(packageName) {
+		return fmt.Errorf("package filename %q cannot name a portable archive entry", packageName)
+	}
 	pkgDir := filepath.Dir(pkgPath)
 	rootDir, err := resolvedAbs(pkgDir)
 	if err != nil {
@@ -445,7 +453,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 		return fmt.Errorf("failed to read evidence package: open package directory: %w", err)
 	}
 	defer func() { _ = root.Close() }()
-	c := bundleCollection{root: root}
+	c := bundleCollection{root: root, fromStdin: fromStdin}
 	pkgRaw, err := c.readPackage(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -479,7 +487,6 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
 	}
-	c.fromStdin = pkgPath == stdinPackage
 	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
 	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
 	// may be any pre-existing file they pointed at — so this says only what is known: nothing
@@ -498,13 +505,6 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 		}
 	}
 
-	packageName := filepath.ToSlash(filepath.Base(pkgPath))
-	if c.fromStdin {
-		packageName = stdinBundlePackageEntry
-	}
-	if !portableArtifactPath(packageName) {
-		return fmt.Errorf("package filename %q cannot name a portable archive entry", packageName)
-	}
 	// Verify all referenced bytes before opening the output.
 	c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
 	c.collected = map[string][]byte{packageName: pkgRaw}
@@ -595,6 +595,30 @@ func (c *bundleCollection) readPackage(path string) ([]byte, error) {
 	return c.readContained(path, false)
 }
 
+// rootRelative names resolved relative to the held root. The spelled path is tried
+// first; failing that, the root is found among resolved's parents by file identity,
+// because a case-insensitive filesystem lets a symlink spell the package directory
+// differently from the name the root was opened with. Only the name is derived here:
+// the open still goes through the root, which confines it.
+func (c *bundleCollection) rootRelative(resolved string) (string, bool) {
+	if relative, err := filepath.Rel(c.root.Name(), resolved); err == nil && filepath.IsLocal(relative) {
+		return relative, true
+	}
+	rootInfo, err := c.root.Stat(".")
+	if err != nil {
+		return "", false
+	}
+	for dir := filepath.Dir(resolved); ; dir = filepath.Dir(dir) {
+		if info, statErr := os.Stat(dir); statErr == nil && os.SameFile(rootInfo, info) {
+			relative, relErr := filepath.Rel(dir, resolved)
+			return relative, relErr == nil && filepath.IsLocal(relative)
+		}
+		if filepath.Dir(dir) == dir {
+			return "", false
+		}
+	}
+}
+
 func (c *bundleCollection) readContained(path string, allowEmpty bool) ([]byte, error) {
 	if err := refuseSymlinkIfConfigured(path); err != nil {
 		return nil, err
@@ -607,8 +631,8 @@ func (c *bundleCollection) readContained(path string, allowEmpty bool) ([]byte, 
 		return nil, err
 	}
 	// Canonical names preserve in-tree absolute symlinks; Root confines the actual open.
-	relative, err := filepath.Rel(c.root.Name(), resolved)
-	if err != nil || !filepath.IsLocal(relative) {
+	relative, ok := c.rootRelative(resolved)
+	if !ok {
 		return nil, fmt.Errorf("path %q resolves outside base directory via symlink", path)
 	}
 	file, err := c.root.Open(relative)
