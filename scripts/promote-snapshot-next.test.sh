@@ -99,7 +99,7 @@ url_of() { echo "https://registry.npmjs.org/-/package/@mitre%2f$1/dist-tags"; }
 
 # Case 1: every add succeeds and every package converges on the first poll.
 fixtures all
-run all 3 1 "$VERSION" "$work/packages.txt"
+run all 10 1 "$VERSION" "$work/packages.txt"
 d="$work/all"
 report "all converge: exit 0" "$(cat "$d/rc")" "exit $(cat "$d/rc")"
 ok=0
@@ -166,7 +166,7 @@ report "never converges: the stale package is polled until the bound" "$ok"
 # Case 4: one add fails; the rest are still attempted and the read-back still runs.
 fixtures addfail
 echo hdf-mappings > "$work/addfail/fail.txt"
-run addfail 3 1 "$VERSION" "$work/packages.txt"
+run addfail 10 1 "$VERSION" "$work/packages.txt"
 d="$work/addfail"
 ok=0; [ "$(cat "$d/rc")" -eq 1 ] || ok=1
 report "add fails: exit 1" "$ok" "exit $(cat "$d/rc")"
