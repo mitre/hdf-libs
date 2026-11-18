@@ -390,7 +390,7 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
       verificationMethod: 'automated',
       applicability: 'required',
     };
-    const hdf = buildHDFBlockFromStatus(req, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus(req, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
 
     expect(hdf.evidence).toEqual([{ type: 'log', data: 'bG9n' }]);
     expect(hdf.effective_checksum).toEqual({ algorithm: 'sha256', value: 'abc' });
@@ -403,12 +403,12 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
   // composes, so it is a requirement field as well as a document-root one.
   it('carries requirement-level externalReferences', () => {
     const refs = [{ sourceName: 'NVD', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1', kind: 'advisory' }];
-    const hdf = buildHDFBlockFromStatus({ id: 'V-4', externalReferences: refs }, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus({ id: 'V-4', externalReferences: refs }, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     expect(hdf.external_references).toEqual(refs);
   });
 
   it('adds no empty keys when the requirement omits them', () => {
-    const hdf = buildHDFBlockFromStatus({ id: 'V-3' }, { name: 'b' }, { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus({ id: 'V-3' }, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     for (const k of ['evidence', 'effective_checksum', 'control_type', 'verification_method', 'applicability']) {
       expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
     }
