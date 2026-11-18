@@ -181,20 +181,18 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
 /**
  * Build the lossless hdf.* namespace shared by the export converters: promoted
  * snake_case scalars plus the full requirement sub-objects preserved verbatim.
- * `status` is the lossless results roll-up (statusOf().raw); `suppressed` is the
- * acceptance axis (statusOf().suppressed).
+ * `status.raw` is the lossless results verdict; `status.suppressed` is the
+ * acceptance axis. The effective rollup does not replace the raw verdict.
  */
 export function buildHDFBlock(
   req: Obj,
   baseline: Obj,
-  status: string,
-  overridden: boolean,
-  suppressed: boolean,
+  status: Status,
   generator: Obj | undefined,
   tool: Obj | undefined,
   converterVersion: string,
 ): Obj {
-  const hdf: Obj = { status, overridden, suppressed, exporter_version: converterVersion };
+  const hdf: Obj = { status: status.raw, overridden: status.overridden, suppressed: status.suppressed, exporter_version: converterVersion };
   setIf(hdf, 'control_id', getStr(req, 'id'));
   setIf(hdf, 'baseline', getStr(baseline, 'name'));
   if ('effectiveStatus' in req) hdf.effective_status = req.effectiveStatus;
@@ -355,8 +353,8 @@ function stringifyWith(v: unknown, space: number | undefined): string {
     space,
   )
     .replace(RAWNUM_RE, '$1')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
+    .replace(/\u2028/g, String.raw`\u2028`)
+    .replace(/\u2029/g, String.raw`\u2029`);
 }
 
 // --- shared export driver ---

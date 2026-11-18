@@ -67,7 +67,7 @@ function buildHECEvent(
   const category = firstCWE(req);
   const vendorProduct = getStr(tool, 'name');
 
-  const hdfBlock = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
+  const hdfBlock = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
   augmentHdfBlock(hdfBlock, req, baseline, component);
 
   const event: Obj = {

@@ -380,3 +380,26 @@ func TestConvertHDFToECS_DispositionIsResolvedNotRead(t *testing.T) {
 	assert.Equal(t, "riskAdjustment", labels["hdf_disposition"],
 		"the governing override's type, though the document stamps no disposition field")
 }
+
+func TestSourceLocationOptionalMembers(t *testing.T) {
+	tests := []struct {
+		name     string
+		location map[string]interface{}
+		want     map[string]interface{}
+	}{
+		{name: "empty", location: map[string]interface{}{}, want: nil},
+		{name: "file only", location: map[string]interface{}{"ref": "controls/stig.rb"}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"name": "controls/stig.rb"}}}},
+		{name: "zero line", location: map[string]interface{}{"line": float64(0)}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"line": float64(0)}}}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := map[string]interface{}{"id": "X", "sourceLocation": tc.location}
+			event := buildEvent(req, map[string]interface{}{}, "", nil, nil, nil, "0.1.0")
+			if tc.want == nil {
+				require.NotContains(t, event, "log")
+			} else {
+				require.Equal(t, tc.want, event["log"])
+			}
+		})
+	}
+}
