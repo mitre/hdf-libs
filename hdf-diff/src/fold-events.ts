@@ -1,4 +1,4 @@
-import { formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
+import { compareCodePoint, formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
 import { computeSummary } from './summary.js';
 import { computeEffectiveStatus } from './status.js';
 import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS, recordRequirementBaseline } from './diff.js';
@@ -168,7 +168,7 @@ export async function foldChangeEventsIntoComparison(
     });
   }
 
-  diffs.sort((a, b) => a.id.localeCompare(b.id));
+  diffs.sort((a, b) => compareCodePoint(a.id, b.id));
 
   const asOf = asOfFromEvents !== '' ? asOfFromEvents : docTimestamp;
   if (asOf === '') {

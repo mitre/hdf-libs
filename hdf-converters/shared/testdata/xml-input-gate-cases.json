@@ -1,0 +1,134 @@
+{
+  "$comment": "Pins Go (shared.ValidateXMLInput) and TypeScript (validateXmlInput) to one verdict on every XML input a converter is handed. The policy is OWASP's second XXE option: an inert internal DTD is accepted, and the gate refuses inline entity declarations, SYSTEM/PUBLIC external identifiers, and any input naming a DOCTYPE whose prologue cannot be parsed. `error` is the gate's exact message before a converter prefixes its name; an empty string means the input must be accepted. `maxSize`, when present, is passed as the explicit size limit. When leadingCommentBytes > 0 the suite prepends a comment of that many filler bytes before `xml`.",
+  "cases": [
+    {
+      "name": "plain document",
+      "xml": "<root/>",
+      "error": "",
+      "why": "nothing in the prologue"
+    },
+    {
+      "name": "harmless DOCTYPE with no subset",
+      "xml": "<?xml version=\"1.0\"?><!DOCTYPE note><note/>",
+      "error": "",
+      "why": "a DOCTYPE that declares nothing and references nothing can neither expand nor fetch"
+    },
+    {
+      "name": "inert internal subset (real Burp Suite export shape)",
+      "xml": "<?xml version=\"1.0\"?><!DOCTYPE issues [<!ELEMENT issues (issue*)><!ATTLIST issues burpVersion CDATA \"\">]><issues/>",
+      "error": "",
+      "why": "ELEMENT and ATTLIST declare structure only; refusing them refuses a published tool's own output"
+    },
+    {
+      "name": "inline entity declaration",
+      "xml": "<!DOCTYPE foo [<!ENTITY x \"y\">]><foo/>",
+      "error": "XML input contains entity declarations which are not supported (potential entity expansion attack)",
+      "why": "the billion-laughs vector"
+    },
+    {
+      "name": "entity hidden behind a quoted ]> in the subset",
+      "xml": "<!DOCTYPE l [<!ATTLIST l v CDATA \"]>\"><!ENTITY e \"boom\">]><l>&e;</l>",
+      "error": "XML input contains entity declarations which are not supported (potential entity expansion attack)",
+      "why": "a substring search for the first ]> ends the subset inside a literal"
+    },
+    {
+      "name": "entity hidden after a processing instruction carrying a quote",
+      "xml": "<!DOCTYPE x [<?p \"?><!ENTITY e SYSTEM \"file:///etc/passwd\"><?p \"?>]><x>&e;</x>",
+      "error": "XML input contains entity declarations which are not supported (potential entity expansion attack)",
+      "why": "a PI is legal in the internal subset and its quote is not a literal; entity declarations are reported ahead of external identifiers"
+    },
+    {
+      "name": "external DTD reference by SYSTEM identifier",
+      "xml": "<!DOCTYPE l SYSTEM \"http://evil.invalid/e.dtd\"><l/>",
+      "error": "XML input references an external DTD or entity which is not supported (potential external entity attack)",
+      "why": "the XXE and SSRF vector needs no inline entity of its own"
+    },
+    {
+      "name": "external DTD reference by PUBLIC identifier",
+      "xml": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"><html/>",
+      "error": "XML input references an external DTD or entity which is not supported (potential external entity attack)",
+      "why": "a PUBLIC identifier carries a system literal a resolver may fetch"
+    },
+    {
+      "name": "external identifier inside the subset",
+      "xml": "<!DOCTYPE l [<!NOTATION g SYSTEM \"http://evil.invalid/x\">]><l/>",
+      "error": "XML input references an external DTD or entity which is not supported (potential external entity attack)",
+      "why": "any external reference in the subset counts, whichever declaration carries it"
+    },
+    {
+      "name": "entity beyond the old 4 KB window",
+      "leadingCommentBytes": 5000,
+      "xml": "<!DOCTYPE l [<!ENTITY e \"v\">]><l/>",
+      "error": "XML input contains entity declarations which are not supported (potential entity expansion attack)",
+      "why": "the prologue is walked to the root element, not scanned in a fixed window"
+    },
+    {
+      "name": "a DOCTYPE with unparseable declarations is refused, not accepted",
+      "xml": "<!DOCTYPE l [<!ATTLIST l v CDATA \"unterminated",
+      "error": "XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked",
+      "why": "an unparsed prologue gives a lower bound, not an answer"
+    },
+    {
+      "name": "an unterminated processing instruction in the subset is refused",
+      "xml": "<!DOCTYPE x [<?p <!ENTITY e \"v\">]><x/>",
+      "error": "XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked",
+      "why": "the PI runs to the end of input, so the scan fails closed"
+    },
+    {
+      "name": "a non-XML buffer is left to the parser, not refused here",
+      "xml": "not xml at all",
+      "error": "",
+      "why": "an unparseable input that names no DOCTYPE is the parser's to report"
+    },
+    {
+      "name": "UTF-8 BOM before an entity declaration",
+      "xml": "﻿<?xml version=\"1.0\"?><!DOCTYPE l [<!ENTITY e \"v\">]><l>&e;</l>",
+      "error": "XML input contains entity declarations which are not supported (potential entity expansion attack)",
+      "why": "one leading BOM is an encoding signature and must not hide the DTD"
+    },
+    {
+      "name": "UTF-8 BOM before an external DTD reference",
+      "xml": "﻿<!DOCTYPE l SYSTEM \"http://evil.invalid/e.dtd\"><l/>",
+      "error": "XML input references an external DTD or entity which is not supported (potential external entity attack)",
+      "why": "the BOM bypass aimed at the XXE vector"
+    },
+    {
+      "name": "UTF-8 BOM before a benign document",
+      "xml": "﻿<?xml version=\"1.0\" encoding=\"UTF-8\"?><l/>",
+      "error": "",
+      "why": "tools on Windows routinely write a BOM"
+    },
+    {
+      "name": "a second BOM hides the DOCTYPE from the scanner",
+      "xml": "﻿﻿<!DOCTYPE l [<!ENTITY e \"v\">]><l/>",
+      "error": "XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked",
+      "why": "the scanner stops at the second BOM, and the DOCTYPE token anywhere in the input refuses it"
+    },
+    {
+      "name": "leading junk hides the DOCTYPE from the scanner",
+      "xml": "junk<!doctype l [<!ENTITY e \"v\">]><l/>",
+      "error": "XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked",
+      "why": "the DOCTYPE token is matched in any case"
+    },
+    {
+      "name": "an unparseable prologue that names no DOCTYPE is left to the parser",
+      "xml": "junk<l/>",
+      "error": "",
+      "why": "no DOCTYPE token, so nothing for this gate to refuse"
+    },
+    {
+      "name": "over an explicit size limit",
+      "xml": "<root/>",
+      "maxSize": 3,
+      "error": "XML input exceeds maximum allowed size of 3 bytes (7 bytes provided)",
+      "why": "the size check runs first"
+    },
+    {
+      "name": "size is measured in UTF-8 bytes",
+      "xml": "<r>é</r>",
+      "maxSize": 8,
+      "error": "XML input exceeds maximum allowed size of 8 bytes (9 bytes provided)",
+      "why": "Go measures bytes; a string length would count 8 and accept"
+    }
+  ]
+}

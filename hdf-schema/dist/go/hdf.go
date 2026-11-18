@@ -872,8 +872,8 @@ type VerificationMethod struct {
 // A reference to an external document.
 type Reference struct {
 	Ref *Ref    `json:"ref,omitempty"`
-	URL *string `json:"url,omitempty"`
 	URI *string `json:"uri,omitempty"`
+	URL *string `json:"url,omitempty"`
 }
 
 // A test within a requirement and its results and findings such as how long it took to run.

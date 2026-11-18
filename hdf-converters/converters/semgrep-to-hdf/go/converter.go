@@ -35,10 +35,6 @@ var semgrepSeverityAliases = map[string]float64{
 }
 
 const (
-	// defaultImpact treats an unrecognized or absent severity as moderate; the
-	// absent case additionally carries the shared unrated marker so consumers
-	// can tell a defaulted 0.5 from a genuine medium.
-	defaultImpact = 0.5
 	// redactedPlaceholder is what semgrep substitutes for fields it withholds
 	// from unauthenticated scans.
 	redactedPlaceholder = "requires login"
@@ -100,9 +96,9 @@ func nistControlsFor(metadata Metadata) []string {
 
 func impactFor(result Result) float64 {
 	if !isPresent(result.Extra.Severity) {
-		return defaultImpact
+		return hdfutil.UnknownSeverityImpact
 	}
-	return hdfutil.SeverityToImpactWithAliases(string(result.Extra.Severity), semgrepSeverityAliases, defaultImpact)
+	return hdfutil.SeverityToImpactWithAliases(string(result.Extra.Severity), semgrepSeverityAliases, hdfutil.UnknownSeverityImpact)
 }
 
 // severityFor publishes the band the impact already implies, so the two fields
@@ -423,7 +419,7 @@ func buildErrorsRequirement(errors []ScanError, startTime time.Time) hdf.Evaluat
 	return hdf.EvaluatedRequirement{
 		ID:     scanErrorsID,
 		Title:  &title,
-		Impact: defaultImpact,
+		Impact: hdfutil.UnknownSeverityImpact,
 		Tags:   tags,
 		Descriptions: []hdf.Description{{
 			Label: "default",

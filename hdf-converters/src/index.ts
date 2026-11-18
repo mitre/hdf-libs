@@ -10,11 +10,6 @@ export {
   isLegacyHdf,
   type LegacyHDFResults,
   type HDFV2Results,
-  // Deprecated aliases for the pre-3.6 version-baked names. Scheduled for
-  // removal in a future major (breaking change); tracked in the issue tracker.
-  convertLegacyHdf as convertV1ToV2,
-  isLegacyHdf as isHDFV1,
-  type LegacyHDFResults as HDFV1Results,
 } from '../converters/legacyhdf-to-hdf/typescript/index.js';
 
 // ASFF (AWS Security Finding Format) to HDF converter

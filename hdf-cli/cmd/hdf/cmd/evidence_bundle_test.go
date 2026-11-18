@@ -2563,8 +2563,10 @@ func TestEvidenceBundleRejectsUnsafePortableNames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
 			require.NoError(t, os.WriteFile(filepath.Join(dir, tc.sourceName), source, 0o600))
+			uri, encodeErr := evidenceref.Encode(tc.sourceName)
+			require.NoError(t, encodeErr)
 			pkg, marshalErr := json.Marshal(map[string]any{"name": "portable archive", "contents": []map[string]any{{
-				"type": "hdf-results", "uri": evidenceref.Encode(tc.sourceName),
+				"type": "hdf-results", "uri": uri,
 				"checksum": map[string]any{"algorithm": evidenceDigestAlgo, "value": evidenceDigestHex(source)},
 			}}})
 			require.NoError(t, marshalErr)
@@ -2620,14 +2622,19 @@ func TestEvidenceBundleContainsConcurrentSymlinkChanges(t *testing.T) {
 }
 
 func TestEvidenceBundlePortableNamesFailBeforeRead(t *testing.T) {
-	for _, name := range []string{`a\..\outside.json`, "a:b.json", "a\x00b.json"} {
+	for _, tc := range []struct{ name, want string }{
+		{`a\..\outside.json`, "contains a backslash"},
+		{"a:b.json", "portable archive entry"},
+		{"a\x00b.json", "portable archive entry"},
+	} {
+		name := tc.name
 		t.Run(name, func(t *testing.T) {
 			if runtime.GOOS == "windows" && strings.Contains(name, `\`) {
 				t.Skip("Windows normalizes native separators before checking the archive name")
 			}
 			c := bundleCollection{}
 			err := c.collect(t.TempDir(), bundleTarget{uri: evidenceref.Decoded(name), label: "content reference"})
-			require.ErrorContains(t, err, "portable archive entry")
+			require.ErrorContains(t, err, tc.want)
 			require.Empty(t, c.entries)
 		})
 	}
@@ -2666,7 +2673,9 @@ func TestEvidenceBundlePreservesEncodedPortableNames(t *testing.T) {
 	require.NoError(t, err)
 	name := "source 100%25.json"
 	require.NoError(t, os.WriteFile(filepath.Join(dir, name), source, 0o600))
-	_, _, err = executeCommand("evidence", "add-evidence", pkgPath, "--uri", evidenceref.Encode(filepath.Join(dir, name)), "--format", "ecs", "-o", pkgPath)
+	uri, err := evidenceref.Encode(filepath.Join(dir, name))
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-evidence", pkgPath, "--uri", uri, "--format", "ecs", "-o", pkgPath)
 	require.NoError(t, err)
 	archive := filepath.Join(dir, "bundle.zip")
 	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", archive)
@@ -2786,8 +2795,13 @@ func TestEvidenceBundlePackageInputCompatibility(t *testing.T) {
 			data := original
 			expectedError := ""
 			switch name {
-			case "BOM", "stdin":
+			case "BOM":
 				data = append([]byte{0xef, 0xbb, 0xbf}, original...)
+			case "stdin":
+				// A stdin package has no directory, so its package-relative references are
+				// refused rather than resolved against the working directory.
+				data = append([]byte{0xef, 0xbb, 0xbf}, original...)
+				expectedError = "pass the package as a file"
 			case "empty":
 				data = nil
 				expectedError = "file is empty"

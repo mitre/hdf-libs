@@ -21,6 +21,19 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(whitespaceRe.ReplaceAllString(stripped, " "))
 }
 
+// ASCIILower lowercases A-Z and nothing else. strings.ToLower and strings.EqualFold
+// apply Unicode tables that JavaScript's toLowerCase does not share, so this is the
+// one lowering both languages agree on. Parity: asciiLower (TypeScript).
+func ASCIILower(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if c >= 'A' && c <= 'Z' {
+			b[i] = c + ('a' - 'A')
+		}
+	}
+	return string(b)
+}
+
 // SafeString extracts a string from an any value.
 // Returns the zero string if v is nil or not a string.
 func SafeString(v any) string {

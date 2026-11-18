@@ -360,6 +360,19 @@ func escapesPackageRef(uri string) bool {
 	return strings.HasPrefix(uri, "/") || strings.HasPrefix(uri, `\`) || filepath.IsAbs(uri)
 }
 
+// refuseBackslashRef rejects an archive entry name carrying a backslash, which a Windows
+// extractor reads as a separator while POSIX path cleaning leaves it alone.
+func refuseBackslashRef(label, subject, name string) error {
+	if !strings.Contains(name, `\`) {
+		return nil
+	}
+	return fmt.Errorf("%s %q cannot be bundled: its name contains a backslash, which an "+
+		"extractor may read as a path separator and write outside the root", label, subject)
+}
+
+// stdinBundlePackageEntry is the archive name of a stdin package, which has no file name.
+const stdinBundlePackageEntry = "hdf-evidence-package.json"
+
 // isRemoteURI reports whether a URI names something the archive cannot carry.
 func isRemoteURI(uri string) bool { return strings.Contains(uri, "://") }
 
@@ -451,9 +464,13 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
+	if err := refuseStdinPackageRelativeRefs(pkgPath, refs); err != nil {
+		return err
+	}
 	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
 	}
+	c.fromStdin = pkgPath == stdinPackage
 	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
 	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
 	// may be any pre-existing file they pointed at — so this says only what is known: nothing
@@ -472,6 +489,9 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 	}
 
 	packageName := filepath.ToSlash(filepath.Base(pkgPath))
+	if c.fromStdin {
+		packageName = stdinBundlePackageEntry
+	}
 	if !portableArtifactPath(packageName) {
 		return fmt.Errorf("package filename %q cannot name a portable archive entry", packageName)
 	}
@@ -506,6 +526,7 @@ type bundleCollection struct {
 	emptyChecksum, noChecksum, unverifiable, notCarried []string
 	noURI, noExtURI, documentsDropped                   int
 	carried                                             map[refKind]int
+	fromStdin                                           bool
 }
 
 func (c *bundleCollection) collect(pkgDir string, t bundleTarget) error {
@@ -528,6 +549,11 @@ func (c *bundleCollection) collect(pkgDir string, t bundleTarget) error {
 	// a relative ref by here. For a contents[] reference the two are the same string.
 	if err := checkContentRefShape(string(uri), label); err != nil {
 		return fmt.Errorf("cannot bundle: %w", err)
+	}
+	// Before the ".." checks, which cannot see "..\" as traversal on POSIX. Repeated
+	// here for the name an absolute reference resolved to inside the package.
+	if err := refuseBackslashRef(label, subject, string(uri)); err != nil {
+		return err
 	}
 	ref := filepath.ToSlash(filepath.Clean(string(uri)))
 	if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
@@ -629,7 +655,7 @@ func (c *bundleCollection) verifyChecksum(t bundleTarget, data []byte, subject s
 		c.unverifiable = append(c.unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
 		return nil
 	}
-	if got != checksum {
+	if !hdfengine.ChecksumEqual(checksum, got) {
 		return fmt.Errorf("checksum mismatch for %s: the package records %s but the file hashes to %s; "+
 			"no archive written", subject, checksum, got)
 	}
@@ -663,6 +689,13 @@ func (c *bundleCollection) collectReference(pkgDir string, r recordedRef) error 
 		c.recordNotCarried(r, "remote")
 		return nil
 	}
+	// Judged on the DECODED reference before any path cleaning: on Windows Clean would
+	// turn "..\x" into "../x" and the package would be refused on POSIX but not there.
+	if r.decodeErr == nil && !escapesPackageRef(string(r.decoded)) {
+		if err := refuseBackslashRef(r.label, r.uri, string(r.decoded)); err != nil {
+			return err
+		}
+	}
 	ref, ok := c.collectionPath(pkgDir, r)
 	if !ok {
 		return nil
@@ -692,6 +725,10 @@ func (c *bundleCollection) collectionPath(pkgDir string, r recordedRef) (evidenc
 		return "", false
 	}
 	ref, inTree := packageSubtreeRef(pkgDir, r.decoded)
+	if c.fromStdin {
+		c.recordNotCarried(r, stdinNoDirectory)
+		return "", false
+	}
 	if !inTree {
 		c.recordNotCarried(r, "outside the package's directory")
 		return "", false
@@ -738,7 +775,7 @@ func (c *bundleCollection) report(pkgDir, outputPath string, refs []recordedRef)
 		if r.uri == "" || r.kind == refContext || isRemoteURI(r.uri) || !filepath.IsAbs(r.uri) {
 			continue
 		}
-		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok {
+		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok && !c.fromStdin {
 			fmt.Fprintf(os.Stderr,
 				"  %s records %s; it is carried as %s, so the extracted package will not resolve it as recorded\n",
 				r.field, sanitizeOutput(r.uri), resolved)

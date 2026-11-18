@@ -110,8 +110,8 @@ cannot reconstruct scanner metadata omitted during import.
 
 | Conversion | Function |
 |---|---|
-| Legacy HDF (InSpec exec-json format) to current HDF | `convertV1ToV2` |
-| Detect legacy HDF format | `isHDFV1` |
+| Legacy HDF (InSpec exec-json format) to current HDF | `convertLegacyHdf` |
+| Detect legacy HDF format | `isLegacyHdf` |
 
 ### Enrichment
 
@@ -128,7 +128,7 @@ CLI: `hdf enrich <document> <source>` (see the [hdf-cli README](../hdf-cli/READM
 
 ```bash
 npm install @mitre/hdf-converters@stable   # newest v3 stable
-npm install @mitre/hdf-converters@3.7.2  # pin an exact version
+npm install @mitre/hdf-converters@3.8.0  # pin an exact version
 ```
 
 This package's npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), which publishes the v2 line and owns the `latest` dist-tag — a plain `npm install @mitre/hdf-converters` installs v2, not this library. For stable releases, install the v3 line via `@stable` or an exact version (npm does not permit a `v3` dist-tag — tag names may not be valid semver ranges). Use `@next` to follow [development snapshots](../site/docs/contributing/main-snapshots.md) of main.
@@ -165,11 +165,11 @@ const result = detectConverter(rawInput);
 ### Upgrade legacy HDF
 
 ```typescript
-import { convertV1ToV2, isHDFV1 } from '@mitre/hdf-converters';
+import { convertLegacyHdf, isLegacyHdf } from '@mitre/hdf-converters';
 
 const data = JSON.parse(fileContent);
-if (isHDFV1(data)) {
-  const currentHdf = convertV1ToV2(data);
+if (isLegacyHdf(data)) {
+  const currentHdf = convertLegacyHdf(data);
 }
 ```
 

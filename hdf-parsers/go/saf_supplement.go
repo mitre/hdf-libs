@@ -3,6 +3,8 @@ package hdfparsers
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -12,6 +14,7 @@ import (
 const (
 	safTargetDeprecation     = "deprecated: top-level 'target' (saf supplement target write) was normalized into components[]; emit a component directly — this compatibility shim will be removed in a future release"
 	safProvenanceDeprecation = "deprecated: top-level 'passthrough' was normalized into extensions.passthrough; write provenance under extensions — this compatibility shim will be removed in a future release"
+	safPassthroughDropped    = "top-level 'passthrough' was dropped: extensions.passthrough already holds a value"
 )
 
 // validComponentType reports whether s is a v3 component/target type. Kept in
@@ -28,20 +31,36 @@ func validComponentType(s string) bool {
 	return false
 }
 
+// SAFSupplementOption adjusts NormalizeSAFSupplement; none is the plain parse path.
+type SAFSupplementOption func(*safSupplementOptions)
+
+type safSupplementOptions struct {
+	mergePlatformComponent bool
+}
+
+// MergePlatformComponent lets a target absorb the lone component the caller
+// built from an InSpec `platform` (no componentId, OS name standing in as the
+// name). Only that caller knows where the component came from; on a plain parse
+// the same shape is a genuine component and is never renamed.
+func MergePlatformComponent() SAFSupplementOption {
+	return func(o *safSupplementOptions) { o.mergePlatformComponent = true }
+}
+
 // NormalizeSAFSupplement rewrites the legacy SAF-supplement top-level keys into
-// v3-native carriers so a SAF-produced document becomes valid v3 before schema
-// validation: `target` → a components[] entry (type validated; id, or failing
-// that name, → name; id alone → accountId for cloudAccount; labels and boundary
-// → labels, boundary winning; merged into a matching or platform-derived
-// component rather than duplicated); `passthrough` →
-// extensions.passthrough. It returns the (possibly rewritten) document plus a
-// deprecation warning per rewritten key.
-//
-// It is deliberately narrow: input that is not JSON, or carries neither legacy
-// key, is returned BYTE-IDENTICAL with no warnings. A target whose type is not a
-// valid component type is left in place (with a warning) for the schema to
-// reject — never guessed. Mirrors hdf-parsers/typescript normalizeSafSupplement.
-func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
+// v3-native carriers so a SAF-produced document is valid v3 before validation:
+// `target` → a components[] entry (type validated; id, or failing that name, →
+// name; id alone → accountId for cloudAccount; labels and boundary → labels,
+// boundary winning; merged into a same-name component rather than duplicated,
+// and only with MergePlatformComponent into the platform-derived one);
+// `passthrough` → extensions.passthrough. Returns the (possibly rewritten)
+// document plus a warning per rewritten key and per moved sibling. Input that is not JSON
+// or carries neither key is returned BYTE-IDENTICAL with no warnings; a target of
+// unmapped type is left in place, with a warning, for the schema to reject.
+func NormalizeSAFSupplement(input []byte, opts ...SAFSupplementOption) ([]byte, []string) {
+	var o safSupplementOptions
+	for _, opt := range opts {
+		opt(&o)
+	}
 	var doc map[string]any
 	if err := json.Unmarshal(input, &doc); err != nil {
 		return input, nil // not a JSON object — let the validator surface it
@@ -55,7 +74,7 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 	var warnings []string
 
 	if hasTarget {
-		if reason := rewriteTarget(doc); reason == "" {
+		if reason := rewriteTarget(doc, o.mergePlatformComponent); reason == "" {
 			warnings = append(warnings, safTargetDeprecation)
 		} else {
 			warnings = append(warnings, fmt.Sprintf("%s (%s; left for schema validation)", safTargetDeprecation, reason))
@@ -63,9 +82,7 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 	}
 
 	if hasPassthrough {
-		relocations := rewritePassthrough(doc)
-		warnings = append(warnings, safProvenanceDeprecation)
-		warnings = append(warnings, relocations...)
+		warnings = append(warnings, rewritePassthrough(doc)...)
 	}
 
 	out, err := json.Marshal(doc)
@@ -78,8 +95,9 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 // rewriteTarget lifts a legacy top-level `target` object into components[].
 // Returns a non-empty reason, leaving `target` in place, when the target cannot
 // be placed: it is not an object, its type is not a component type, or it has
-// no identity and no platform-derived component to take it.
-func rewriteTarget(doc map[string]any) string {
+// no identity and no component to take it. mergePlatform lets the component the
+// v2 upgrade derived from `platform` take it, renaming that component.
+func rewriteTarget(doc map[string]any, mergePlatform bool) string {
 	const unmappedType = "target.type is not a recognized component type"
 	tgt, ok := doc["target"].(map[string]any)
 	if !ok {
@@ -106,7 +124,7 @@ func rewriteTarget(doc map[string]any) string {
 	comps, _ := doc["components"].([]any)
 
 	c := findComponent(comps, name, typ)
-	if c == nil {
+	if c == nil && mergePlatform {
 		if c = platformComponent(comps, typ); c != nil && name != "" {
 			c["name"] = name
 		}
@@ -206,18 +224,25 @@ func applyLabels(c map[string]any, labels map[string]string) {
 // rewritePassthrough moves the legacy top-level `passthrough` under
 // extensions.passthrough, then relocates any other key the producer left beside
 // it into passthrough as well: `extensions` is a closed object, so a sibling it
-// does not define makes the document invalid.
+// does not define makes the document invalid. The first warning says what became
+// of the legacy carrier: normalized (a deep-equal extensions.passthrough loses
+// nothing), or dropped because extensions.passthrough holds a different value.
 func rewritePassthrough(doc map[string]any) []string {
 	ext, ok := doc["extensions"].(map[string]any)
 	if !ok {
 		ext = map[string]any{}
 	}
-	if _, exists := ext["passthrough"]; !exists {
+	lead := safProvenanceDeprecation
+	if existing, exists := ext["passthrough"]; exists {
+		if !reflect.DeepEqual(existing, doc["passthrough"]) {
+			lead = safPassthroughDropped
+		}
+	} else {
 		ext["passthrough"] = doc["passthrough"]
 	}
 	doc["extensions"] = ext
 	delete(doc, "passthrough")
-	return relocateExtensionSiblings(ext)
+	return append([]string{lead}, relocateExtensionSiblings(ext)...)
 }
 
 // extensionsDefinedMembers are the only keys `extensions` admits. Anything else
@@ -230,26 +255,31 @@ var extensionsDefinedMembers = map[string]bool{
 // relocateExtensionSiblings moves undefined `extensions` keys into
 // extensions.passthrough, returning a warning per key it could not move.
 // Without this, a legacy document carrying something like extensions.audit
-// normalizes into a document the closed `extensions` rejects.
+// normalizes into a document the closed `extensions` rejects. Keys are visited in
+// sorted order: a decoded map has no source order, and TypeScript sorts the same way.
 func relocateExtensionSiblings(ext map[string]any) []string {
+	var siblings []string
+	for k := range ext {
+		if !extensionsDefinedMembers[k] {
+			siblings = append(siblings, k)
+		}
+	}
+	sort.Strings(siblings)
+
 	var warnings []string
 	pt, isObject := ext["passthrough"].(map[string]any)
 	if _, present := ext["passthrough"]; present && !isObject {
 		// passthrough is present but not an object, so nothing can be merged
 		// into it. Leave the document alone and let the schema reject it rather
 		// than reshape data we cannot place.
-		for k := range ext {
-			if !extensionsDefinedMembers[k] {
-				warnings = append(warnings, fmt.Sprintf(
-					"extensions.%s could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate", k))
-			}
+		for _, k := range siblings {
+			warnings = append(warnings, fmt.Sprintf(
+				"extensions.%s could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate", k))
 		}
 		return warnings
 	}
-	for k, v := range ext {
-		if extensionsDefinedMembers[k] {
-			continue
-		}
+	for _, k := range siblings {
+		v := ext[k]
 		if pt == nil {
 			pt = map[string]any{}
 		}

@@ -128,8 +128,9 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # An explicit bash adds pipefail, so a failing find in content_digest
-        # fails the step instead of digesting an incomplete file list.
+        # An explicit bash adds pipefail, and inherit_errexit below keeps
+        # errexit alive inside $(...), so a failing tar or find in
+        # content_digest fails the step instead of digesting an empty tree.
         shell: bash
         # Auth is OIDC Trusted Publishing for every package below; there is
         # no npm token in this workflow, so a package without a trusted
@@ -181,10 +182,11 @@ jobs:
           # between builds (same commit, same pnpm 11.10.0, two dependency
           # keys swapped). So every file is hashed by path, with package.json
           # taken as canonical JSON.
+          shopt -s inherit_errexit
           content_digest() {
             local dir
             dir=$(mktemp -d)
-            tar -xzf "$1" -C "$dir"
+            tar -xzf "$1" -C "$dir" || { echo "::error::$1 is not a readable npm tarball" >&2; return 1; }
             jq -S . "$dir/package/package.json" > "$dir/package/package.json.canonical"
             rm "$dir/package/package.json"
             (cd "$dir" && find . -type f | LC_ALL=C sort | xargs sha256sum | sha512sum | cut -d' ' -f1)
@@ -208,7 +210,21 @@ jobs:
             case "$code" in
               404) ;;
               200)
-                curl -sS -o "$RUNNER_TEMP/$pkg.published.tgz" "$(jq -r .dist.tarball "$meta")"
+                # The version document appears minutes before the registry serves
+                # the tarball (3.8.0-rc.1 saw a five-minute gap), so wait for it
+                # rather than digest an error body.
+                tarball=$(jq -r .dist.tarball "$meta")
+                for attempt in $(seq 1 24); do
+                  if curl -sSf -o "$RUNNER_TEMP/$pkg.published.tgz" "$tarball"; then
+                    break
+                  fi
+                  if [ "$attempt" -eq 24 ]; then
+                    echo "::error::$name@$VERSION is in the registry but its tarball was not served within 12 minutes"
+                    exit 1
+                  fi
+                  echo "Tarball for $name@$VERSION not served yet (attempt $attempt); retrying in 30s"
+                  sleep 30
+                done
                 (cd "$pkg" && pnpm pack --pack-destination "$RUNNER_TEMP/pack-$pkg" >/dev/null)
                 published=$(content_digest "$RUNNER_TEMP/$pkg.published.tgz")
                 fresh=$(content_digest "$RUNNER_TEMP/pack-$pkg/"*.tgz)
@@ -255,7 +271,7 @@ jobs:
           cache: false
 
       # syft + cosign back the goreleaser sboms:/signs: sections.
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
       - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
 
       - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0

@@ -154,6 +154,35 @@ func TestNormalizeSAFSupplement_ReportsASiblingItCannotRelocate(t *testing.T) {
 	}, "the drop is reported: %v", warnings)
 }
 
+// The SHARED table, read rather than restated, so Go and TypeScript emit the same
+// warnings in the same order. Repeated because Go randomizes map order per range.
+func TestNormalizeSAFSupplement_ExtensionSiblingWarningsMatchTheSharedVectors(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "extension-sibling-warning-vectors.json"))
+	require.NoError(t, err, "the shared table is the contract")
+	var table struct {
+		Vectors []struct {
+			Why         string          `json:"why"`
+			Extensions  json.RawMessage `json:"extensions"`
+			Passthrough json.RawMessage `json:"passthrough"`
+			Warnings    []string        `json:"warnings"`
+		} `json:"vectors"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Vectors, "a pass must not mean an empty table")
+
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			for range 20 {
+				in := validV3WithExtra(t, map[string]any{
+					"extensions": v.Extensions, "passthrough": v.Passthrough,
+				})
+				_, warnings := NormalizeSAFSupplement(in)
+				require.Equal(t, v.Warnings, warnings)
+			}
+		})
+	}
+}
+
 // TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical: a doc with no legacy keys
 // passes through byte-identical (idempotent, narrow) and yields no warnings.
 func TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical(t *testing.T) {
@@ -255,9 +284,9 @@ func platformDerived() map[string]any {
 	return map[string]any{"name": "redhat", "osName": "redhat", "osVersion": "9.8", "type": "host"}
 }
 
-func normalizedComponents(t *testing.T, extra map[string]any) []any {
+func normalizedComponents(t *testing.T, extra map[string]any, opts ...SAFSupplementOption) []any {
 	t.Helper()
-	out, _ := NormalizeSAFSupplement(validV3WithExtra(t, extra))
+	out, _ := NormalizeSAFSupplement(validV3WithExtra(t, extra), opts...)
 	require.True(t, validators.ValidateResults(out).Valid, "normalized doc must be schema-valid v3")
 	var doc map[string]any
 	require.NoError(t, json.Unmarshal(out, &doc))
@@ -342,7 +371,7 @@ func TestNormalizeSAFSupplement_MergesTargetIntoPlatformComponent(t *testing.T) 
 	comps := normalizedComponents(t, map[string]any{
 		"components": []any{platformDerived()},
 		"target":     map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{"environment": "prod"}},
-	})
+	}, MergePlatformComponent())
 	require.Len(t, comps, 1, "platform and target describe one host")
 	assert.Equal(t, map[string]any{
 		"name": "my-host-01", "type": "host", "osName": "redhat", "osVersion": "9.8",
@@ -354,7 +383,7 @@ func TestNormalizeSAFSupplement_NamelessTargetKeepsPlatformName(t *testing.T) {
 	comps := normalizedComponents(t, map[string]any{
 		"components": []any{platformDerived()},
 		"target":     map[string]any{"type": "host", "boundary": "sparc"},
-	})
+	}, MergePlatformComponent())
 	require.Len(t, comps, 1)
 	c := comps[0].(map[string]any)
 	assert.Equal(t, "redhat", c["name"])
@@ -415,4 +444,47 @@ func TestNormalizeSAFSupplement_EmptyTargetIdentityNeverMatches(t *testing.T) {
 			assert.Contains(t, warnings[0], "no id or name", "the warning names the reason")
 		})
 	}
+}
+
+// The plain parse path cannot tell a component the v2 upgrade built from an
+// InSpec platform apart from a genuine v3 component named after its OS, so it
+// never renames one: the target is appended beside it.
+func TestParseResults_DoesNotRenameAnOSNamedComponent(t *testing.T) {
+	r := ParseResults(validV3WithExtra(t, map[string]any{
+		"components": []any{map[string]any{"type": "host", "name": "ubuntu", "osName": "ubuntu"}},
+		"target":     map[string]any{"type": "host", "name": "web-01"},
+	}))
+	require.True(t, r.Success, "the document must parse: %s", r.Error)
+	require.Len(t, r.Data.Components, 2, "the target is appended, not merged")
+	assert.Equal(t, "ubuntu", r.Data.Components[0].Name, "an existing component is never renamed")
+	require.NotNil(t, r.Data.Components[0].OSName)
+	assert.Equal(t, "ubuntu", *r.Data.Components[0].OSName)
+	assert.Equal(t, "web-01", r.Data.Components[1].Name)
+}
+
+// Without the option a platform-shaped component is an ordinary component: a
+// named target is appended and a nameless one is left in place with a warning.
+func TestNormalizeSAFSupplement_PlatformMergeIsOptIn(t *testing.T) {
+	t.Run("named target is appended", func(t *testing.T) {
+		comps := normalizedComponents(t, map[string]any{
+			"components": []any{platformDerived()},
+			"target":     map[string]any{"type": "host", "name": "my-host-01"},
+		})
+		require.Len(t, comps, 2)
+		assert.Equal(t, platformDerived(), comps[0], "the platform-shaped component is untouched")
+		assert.Equal(t, map[string]any{"type": "host", "name": "my-host-01"}, comps[1])
+	})
+	t.Run("nameless target is left in place", func(t *testing.T) {
+		out, warnings := NormalizeSAFSupplement(validV3WithExtra(t, map[string]any{
+			"components": []any{platformDerived()},
+			"target":     map[string]any{"type": "host", "boundary": "sparc"},
+		}))
+		var doc map[string]any
+		require.NoError(t, json.Unmarshal(out, &doc))
+		assert.Equal(t, []any{platformDerived()}, doc["components"])
+		_, hasTarget := doc["target"]
+		assert.True(t, hasTarget, "nothing can take the target, so it stays for the schema")
+		require.NotEmpty(t, warnings)
+		assert.Contains(t, warnings[0], "no id or name")
+	})
 }

@@ -1,4 +1,4 @@
-import { impactToSeverity, parseJSON, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { impactToSeverity, parseJSON, severityToImpactWithAliases, UNKNOWN_SEVERITY_IMPACT } from '@mitre/hdf-utilities';
 import { getCweNistControl, nistToCci } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
@@ -120,13 +120,6 @@ const SEMGREP_SEVERITY_ALIASES: Record<string, number> = {
   info: 0.3,
 };
 
-/**
- * An unrecognized or absent severity is treated as moderate; the absent case
- * additionally carries the shared unrated marker so consumers can tell a
- * defaulted 0.5 from a genuine medium.
- */
-const DEFAULT_IMPACT = 0.5;
-
 /** Fields Semgrep redacts in unauthenticated (OSS) scans. */
 const REDACTED_PLACEHOLDER = 'requires login';
 
@@ -186,9 +179,9 @@ function nistControlsFor(metadata: SemgrepMetadata): string[] {
 function impactFor(result: SemgrepResult): number {
   const severity = result.extra?.severity;
   if (!isPresent(severity)) {
-    return DEFAULT_IMPACT;
+    return UNKNOWN_SEVERITY_IMPACT;
   }
-  return severityToImpactWithAliases(severity, SEMGREP_SEVERITY_ALIASES, DEFAULT_IMPACT);
+  return severityToImpactWithAliases(severity, SEMGREP_SEVERITY_ALIASES, UNKNOWN_SEVERITY_IMPACT);
 }
 
 /**
@@ -450,7 +443,7 @@ function buildErrorsRequirement(errors: SemgrepError[], startTime: Date): Evalua
         data: 'Errors reported by Semgrep while scanning. A file that failed to parse was not fully analyzed.',
       },
     ],
-    DEFAULT_IMPACT,
+    UNKNOWN_SEVERITY_IMPACT,
     results,
     { tags },
   ) as EvaluatedRequirement;

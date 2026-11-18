@@ -4,7 +4,7 @@ Project context for Claude Code and human developers working in this repository.
 
 ## Quick Start
 
-Tool versions (Node.js, pnpm, Go, golangci-lint, gosec, govulncheck) come from mise: `mise trust && mise install` once per clone, then run commands with mise activated or through `mise exec --`. See `site/docs/contributing/developer-guide.md`, Toolchain.
+Tool versions (Node.js, pnpm, Go, golangci-lint, gosec, govulncheck, jactionlint, shellcheck, oapi-codegen) come from mise: `mise trust && mise install` once per clone, then run commands with mise activated or through `mise exec --`. See `site/docs/contributing/developer-guide.md`, Toolchain.
 
 ```bash
 pnpm install          # Install all dependencies
@@ -95,6 +95,8 @@ Hosted at: `https://mitre.github.io/hdf-libs/schemas/`
 - `controlType` — *(v3.2.0)* optional enum on `Requirement_Core`: `policy | procedure | technical | management | operational`. Aligns with NIST SP 800-53A categorization.
 - `verificationMethod` — *(v3.2.0)* optional enum on `Requirement_Core`: `automated | manual-by-design | manual-pending-automation | hybrid`. Disambiguates the two cases that null `code` overloads.
 - `applicability` — *(v3.2.0)* optional enum on `Requirement_Core`: `required | optional | advisory`. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto FedRAMP OSCAL `CORE` prop, FedRAMP 20x inline `Optional:` markers, CMMC sublevels.
+- `extensions` — *(closed v3.8.0)* only `passthrough` and `rawSourceArtifacts[]`; a legacy sibling such as `extensions.audit` is relocated into `passthrough` by the SAF-supplement normalizers. `rawSourceArtifacts[]` carries each input artifact as `content` + `encoding` bytes, never a parsed `document`.
+- `results[].rawSourceRecord` — *(v3.8.0)* the source tool's own record for one result (`content`, `encoding`, `mediaType`, optional `pointer`), built through `exportmap.BuildJSONRawSourceRecord` / `buildJsonRawSourceRecord`.
 
 ### Schema examples convention
 When adding or modifying a `$defs` type in the schema source files, always add or update the `examples` array on the definition. Examples should:
@@ -121,7 +123,7 @@ hdf-converters/converters/<name>/
 
 ### Shared helpers
 - **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"` — `BuildHDFResults()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`. `SeverityToImpact()` is not here — it lives in `hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"` alongside `ParseTimestamp()`.
-- **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
+- **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `validateXmlInput()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
 
 ### Timestamps (canonical = trimmed-UTC RFC3339)
 Always parse tool timestamps with `hdfutil.ParseTimestamp` (Go) / `parseTimestamp` from `@mitre/hdf-utilities` (TS) — **never** raw `new Date(value)` or `time.Parse(time.RFC3339, ...)` (zone-less input is read as host-local and diverges across languages). Serialize via `buildHdfResults`/`serializeHdf` (TS) so the fraction is trimmed. Result `startTime` is schema-required → on a missing/unparseable source time, fall back to a valid value (never omit). Enforced by an ESLint rule + `pnpm lint:timestamps`. Full convention: `site/docs/contributing/developer-guide.md` (Timestamp Handling); rationale in beads memory `hdf-timestamp-canonical-utc`.
@@ -139,14 +141,14 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 `.husky/pre-commit` runs `mise exec -- pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit, with every tool at the version in `mise.toml` and `mise.lock` — the releases CI runs. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
 
-`pnpm lint:workflows` runs actionlint (with shellcheck) over `.github/workflows` as part of the hook. Both tools are pinned in `mise.toml` with checksums in `mise.lock`; CI installs those same tools. Run `mise exec -- pnpm lint:workflows` for a focused workflow check.
+`pnpm lint:workflows` runs jactionlint (with shellcheck) over the workflows, composite actions and `dependabot.yml`, at the profile `.github/jactionlint.yaml` selects. It is not part of the hook; run it when you change a workflow. Both tools come from `mise.toml` at `mise.lock`'s versions, the releases CI's `scan-workflows` job runs: run `mise exec -- pnpm lint:workflows` unless mise is activated in your shell, so a shellcheck elsewhere on PATH is not used instead.
 
 **It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader: it lints and runs govulncheck across all 13 modules, runs every Go test, and reaches all 13 with gosec — there is no standalone gosec step, but golangci-lint inherits the root `.golangci.yml` in any module that does not override it (only `hdf-cli` does), and `scripts/check-gosec-coverage.sh` fails the build if a module ever resolves a config without gosec. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `mise exec -- golangci-lint run` in the module you touched.
 
 ## Security Requirements
 
-- All converters must call `ValidateJSONSize` / `ValidateXMLInput` as first operation
-- XML converters must check for entity expansion (`ValidateXMLInput` handles this)
+- All converters must call `ValidateJSONSize` / `ValidateXMLInput` (Go) or `validateInputSize` / `validateXmlInput` (TS) as first operation
+- XML converters must check for entity expansion (`ValidateXMLInput` / `validateXmlInput` handle this)
 - File paths from JSON must be validated with `safePath()` (evidence_verify, generators)
 - No secrets in code; test tokens annotated with `//nolint:gosec`
 

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import * as publicApi from '../src/index.js';
 import {
-  convertV1ToV2,
-  isHDFV1,
+  convertLegacyHdf,
+  isLegacyHdf,
   convertJunitToHdf,
   convertXccdfResultsToHdf,
   convertCklToHdf,
@@ -74,14 +75,18 @@ import {
 } from '../src/index.js';
 
 describe('Main exports', () => {
-  it('should export convertV1ToV2 from main index', () => {
-    expect(convertV1ToV2).toBeDefined();
-    expect(typeof convertV1ToV2).toBe('function');
+  it('should export convertLegacyHdf from main index', () => {
+    expect(typeof convertLegacyHdf).toBe('function');
   });
 
-  it('should export isHDFV1 from main index', () => {
-    expect(isHDFV1).toBeDefined();
-    expect(typeof isHDFV1).toBe('function');
+  it('should export isLegacyHdf from main index', () => {
+    expect(typeof isLegacyHdf).toBe('function');
+  });
+
+  it('no longer exports the removed version-baked legacy HDF names', () => {
+    for (const removed of ['convertV1ToV2', 'isHDFV1']) {
+      expect(Object.keys(publicApi)).not.toContain(removed);
+    }
   });
 
   it('should have working converter from main export', () => {
@@ -92,7 +97,7 @@ describe('Main exports', () => {
       statistics: {},
     };
 
-    const v2 = convertV1ToV2(v1);
+    const v2 = convertLegacyHdf(v1);
     expect(v2.baselines).toEqual([]);
     expect(v2.components).toBeDefined();
   });
@@ -426,14 +431,14 @@ describe('Main exports', () => {
       statistics: {},
     };
 
-    expect(isHDFV1(v1Data)).toBe(true);
+    expect(isLegacyHdf(v1Data)).toBe(true);
 
     const v2Data = {
       baselines: [],
       statistics: {},
     };
 
-    expect(isHDFV1(v2Data)).toBe(false);
+    expect(isLegacyHdf(v2Data)).toBe(false);
   });
 
   it('should export the STIX enrichment helpers from main index', () => {

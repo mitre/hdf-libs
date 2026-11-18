@@ -108,6 +108,33 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     // Only a mismatch carries expected+actual, so a match reports no actual hash.
     expect(got[3]?.actual).toBeUndefined();
   });
+
+  // Hex case carries no meaning, so a digest recorded in uppercase must verify. Read
+  // from the SHARED table go/evidence_parity_test.go also reads, so neither can drift.
+  interface CaseVector {
+    why: string;
+    uri: string;
+    algorithm: string;
+    recorded: string;
+    status: string;
+    expected?: string;
+    actual?: string;
+  }
+  const caseVectors = (
+    JSON.parse(
+      readFileSync(join(evidenceDir, '..', 'checksum-case-vectors.json'), 'utf-8'),
+    ) as { vectors: CaseVector[] }
+  ).vectors;
+  it('the shared hex-case table is not empty', () => {
+    expect(caseVectors.length).toBeGreaterThanOrEqual(4);
+  });
+  it.each(caseVectors)('compares hex case-insensitively: $why', async (v) => {
+    const [got] = await verifyChecksums(
+      [{ uri: v.uri, type: 'hdf-plan', checksum: v.recorded, checksumAlgorithm: v.algorithm, checksumRecorded: true }],
+      fetch,
+    );
+    expect([got?.status, got?.expected, got?.actual]).toEqual([v.status, v.expected, v.actual]);
+  });
 });
 
 describe('evidence-verify engine — unit', () => {
@@ -209,6 +236,50 @@ describe('evidence-verify engine — unit', () => {
     expect(() => parseEvidencePackage(JSON.stringify({ contents: ['x'] }))).toThrow(/parse evidence package/);
     expect(() => plannedBaselineRefs(JSON.stringify({ assessments: 'x' }))).toThrow(/parse plan/);
     expect(() => coveredBaselineNames(JSON.stringify({ baselines: 'x' }))).toThrow(/parse results/);
+    // Leaf fields, the same set go/evidence_test.go pins: a wrong type is an error.
+    const rejected: [string, string][] = [
+      ['{"planRef":1}', 'cannot unmarshal number into planRef'],
+      ['{"contents":[{"uri":1}]}', 'cannot unmarshal number into contents.uri'],
+      ['{"contents":[{"type":true}]}', 'cannot unmarshal boolean into contents.type'],
+      ['{"contents":[{"checksum":"abc"}]}', 'cannot unmarshal string into contents.checksum'],
+      ['{"contents":[{"checksum":[]}]}', 'cannot unmarshal array into contents.checksum'],
+      ['{"contents":[{"checksum":{"value":1}}]}', 'cannot unmarshal number into contents.checksum.value'],
+      ['{"contents":[{"checksum":{"algorithm":{}}}]}', 'cannot unmarshal object into contents.checksum.algorithm'],
+    ];
+    for (const [input, message] of rejected) {
+      expect(() => parseEvidencePackage(input)).toThrow(`parse evidence package: ${message}`);
+    }
+    const externalRejected: [string, string][] = [
+      ['{"externalEvidence":[{"uri":1}]}', 'cannot unmarshal number into externalEvidence.uri'],
+      ['{"externalEvidence":[{"format":[]}]}', 'cannot unmarshal array into externalEvidence.format'],
+      ['{"externalEvidence":[{"checksum":"abc"}]}', 'cannot unmarshal string into externalEvidence.checksum'],
+      [
+        '{"externalEvidence":[{"checksum":{"value":false}}]}',
+        'cannot unmarshal boolean into externalEvidence.checksum.value',
+      ],
+    ];
+    for (const [input, message] of externalRejected) {
+      expect(() => parseExternalEvidence(input)).toThrow(`parse evidence package: ${message}`);
+    }
+    expect(() => plannedBaselineRefs('{"assessments":[{"baselineRef":1}]}')).toThrow(
+      'parse plan: cannot unmarshal number into assessments.baselineRef',
+    );
+    expect(() => coveredBaselineNames('{"baselines":[{"name":[]}]}')).toThrow(
+      'parse results: cannot unmarshal array into baselines.name',
+    );
+    // A JSON null leaf is Go's zero value, not an error; a null checksum records none.
+    const nulls = JSON.stringify({
+      planRef: null,
+      contents: [{ uri: null, type: null, checksum: null }],
+      externalEvidence: [{ uri: null, format: null, checksum: { value: null, algorithm: null } }],
+    });
+    expect(parseEvidencePackage(nulls)).toEqual({
+      planRef: '',
+      contents: [{ uri: '', type: '', checksum: '', checksumAlgorithm: '', checksumRecorded: false }],
+    });
+    expect(parseExternalEvidence(nulls)).toEqual([
+      { uri: '', type: '', format: '', checksum: '', checksumAlgorithm: '', checksumRecorded: true },
+    ]);
   });
 
   it('reports complete when every planned baseline is covered', () => {

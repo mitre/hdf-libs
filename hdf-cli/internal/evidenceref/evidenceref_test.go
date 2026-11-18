@@ -1,6 +1,7 @@
 package evidenceref
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -58,7 +59,10 @@ func TestEncodeDecode_RoundTrip(t *testing.T) {
 		// survives over-escaping. Pinned on the ENCODED form below, not just the trip.
 		"semi;colon.json",
 	} {
-		encoded := Encode(name)
+		encoded, encErr := Encode(name)
+		if encErr != nil {
+			t.Fatalf("Encode(%q): %v", name, encErr)
+		}
 		decoded, err := Decode(encoded)
 		if err != nil {
 			t.Fatalf("Encode(%q) = %q, which Decode rejects: %v", name, encoded, err)
@@ -73,10 +77,10 @@ func TestEncodeDecode_RoundTrip(t *testing.T) {
 // path turned every ordinary "scans/x.json" into "scans%2Fx.json" — a different and wrong
 // reference — and that silently stopped evidence set normalizing anything.
 func TestEncode_LeavesSeparatorsAlone(t *testing.T) {
-	if got := Encode("scans/sub/q4.json"); got != "scans/sub/q4.json" {
+	if got, _ := Encode("scans/sub/q4.json"); got != "scans/sub/q4.json" {
 		t.Errorf("an ordinary path must be unchanged, got %q", got)
 	}
-	if got := Encode("my scans/q4.json"); got != "my%20scans/q4.json" {
+	if got, _ := Encode("my scans/q4.json"); got != "my%20scans/q4.json" {
 		t.Errorf("the space escapes and the separator does not, got %q", got)
 	}
 }
@@ -108,8 +112,45 @@ func TestEncode_MatchesTheStandardSpelling(t *testing.T) {
 		{"eq=sign.json", "eq=sign.json"},
 		{"caf\u00e9/r.json", "caf%C3%A9/r.json"},
 	} {
-		if got := Encode(tc.name); got != tc.want {
+		if got, err := Encode(tc.name); err != nil || got != tc.want {
 			t.Errorf("Encode(%q) = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+// A name that is not valid UTF-8 has no spelling Decode accepts: EscapedPath writes
+// "caf%E9.json", and DecodeReference refuses escapes that do not decode to UTF-8, as
+// TypeScript does. So recording one is refused up front, by the one check both use.
+func TestRecordable_RefusesANameThatIsNotUTF8(t *testing.T) {
+	for _, name := range []string{"caf\xe9.json", "scans/caf\xe9/r.json", "\xff"} {
+		if err := Recordable(name); !errors.Is(err, ErrNameNotUTF8) {
+			t.Errorf("Recordable(%q) = %v, want ErrNameNotUTF8", name, err)
+		}
+		if got, err := Encode(name); !errors.Is(err, ErrNameNotUTF8) || got != "" {
+			t.Errorf("Encode(%q) = %q, %v; want \"\", ErrNameNotUTF8", name, got, err)
+		}
+	}
+	for _, name := range []string{"caf\u00e9.json", "my scans/q4.json", "100%done.json", ""} {
+		if err := Recordable(name); err != nil {
+			t.Errorf("Recordable(%q) = %v, want nil", name, err)
+		}
+	}
+}
+
+// What the check guards, stated as the invariant: every name Recordable admits encodes to
+// a reference Decode accepts and resolves back to the same name.
+func TestRecordable_AdmitsOnlyWhatDecodeAccepts(t *testing.T) {
+	for _, name := range []string{"caf\u00e9.json", "\u65e5\u672c/r.json", "caf\xe9.json", "a\x80b"} {
+		encoded, encErr := Encode(name)
+		if Recordable(name) != nil {
+			if encErr == nil {
+				t.Errorf("Encode(%q) recorded %q for a name Recordable refuses", name, encoded)
+			}
+			continue
+		}
+		decoded, err := Decode(encoded)
+		if err != nil || string(decoded) != name {
+			t.Errorf("Encode(%q) = %q, which Decode gives back as %q, %v", name, encoded, decoded, err)
 		}
 	}
 }

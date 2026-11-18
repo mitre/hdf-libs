@@ -5,6 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
+import { buildJsonRawSourceRecordFromValue } from '../../../shared/typescript/exportmap.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -20,7 +21,6 @@ import {
   TargetType,
   VerificationMethodEnum,
   Ecosystem,
-  ExternalReferenceEncoding,
   createMinimalBaseline,
   createRequirement,
   type Description,
@@ -281,16 +281,13 @@ function formatMessage(vuln: TwistlockVuln): string {
 }
 
 /**
- * Re-serialize the parsed vulnerability into indented JSON for the result's
- * rawSourceRecord, so fields with no structured HDF home (link, riskFactors, publishedDate, fixDate, layerTime)
- * are not lost. The projection is byte-identical to the Go projection: field
- * order and the conditional-omission rules (empty string / 0 / empty array
- * dropped, matching Go's `omitempty`) mirror the TwistlockVuln struct, and
- * JSON.stringify(obj, null, 2) matches Go's json.Encoder with HTML escaping
- * disabled and a two-space indent. Do not reorder without updating
- * go/converter.go.
+ * The parsed vulnerability as the result's rawSourceRecord carries it, so fields
+ * with no structured HDF home (link, riskFactors, publishedDate, fixDate, layerTime)
+ * are not lost. Field order and the conditional-omission rules (empty string / 0 /
+ * empty array dropped, matching Go's `omitempty`) mirror the TwistlockVuln struct
+ * the Go twin encodes. Do not reorder without updating go/converter.go.
  */
-function renderVulnRecord(vuln: TwistlockVuln): string {
+function vulnRecordProjection(vuln: TwistlockVuln): Record<string, unknown> {
   const o: Record<string, unknown> = {};
   if (vuln.id) o.id = vuln.id;
   if (vuln.cve) o.cve = vuln.cve;
@@ -311,7 +308,7 @@ function renderVulnRecord(vuln: TwistlockVuln): string {
   if (vuln.discoveredDate) o.discoveredDate = vuln.discoveredDate;
   if (vuln.fixDate) o.fixDate = vuln.fixDate;
   if (vuln.layerTime) o.layerTime = vuln.layerTime;
-  return JSON.stringify(o, null, 2);
+  return o;
 }
 
 /**
@@ -351,22 +348,13 @@ function buildRequirement(
   // The vulnerability record that produced this result, carried on the RESULT
   // per ADR-0017 §5 — one CVE against two packages is two records, and
   // roll-up's first-wins on `code` would otherwise discard the second.
-  const record = renderVulnRecord(vuln);
+  const record = buildJsonRawSourceRecordFromValue(vulnRecordProjection(vuln), sourcePointer, 'indented');
   const results: RequirementResult[] = [
     createResult(ResultStatus.Failed, formatMessage(vuln), {
       codeDesc: formatCodeDesc(vuln),
       startTime,
       ...(instanceId ? { resource: 'package', resourceId: instanceId } : {}),
-      ...(record
-        ? {
-            rawSourceRecord: {
-              content: record,
-              encoding: ExternalReferenceEncoding.UTF8,
-              mediaType: 'application/json',
-              pointer: sourcePointer,
-            },
-          }
-        : {}),
+      ...(record ? { rawSourceRecord: record } : {}),
     }),
   ];
 

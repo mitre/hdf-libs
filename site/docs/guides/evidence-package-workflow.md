@@ -102,6 +102,8 @@ Evidence package written to evidence-package.json (5 documents)
 
 Five documents: the system, the three converted results, and the SBOM. For this example we left the original unconverted data that we passed to `hdf convert` earlier present in the directory to demonstrate that they're not included in the package, only HDF data is. The four files that are not HDF are each named, with the command that would carry them as external references.
 
+A file the scan cannot read, because it is over `--max-size` or its permissions refuse it, is skipped and named in the same way, and the build still writes the package. Add `--require-readable` when the package must hold the whole directory: the build then fails without writing anything and names each file it could not read.
+
 ### Add native reports in bulk
 
 Use repeatable `--file` selectors to add local files or quoted globs without a shell loop. Local selectors use filesystem paths relative to your working directory, and each selected file is recorded as a package-relative reference; a selection outside the package's directory is refused, since discovery never records a host path — use `--uri` to reference an external artifact deliberately. Existing `--uri` values remain literal URI references relative to the package. For example, with SARIF reports under `reports/` and JUnit reports under `tests/`:

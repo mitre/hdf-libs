@@ -417,7 +417,7 @@ hdf-mappings/go/
   hadolint/   — Hadolint rule→NIST lookups (Lookup, LookupForRevision, Exists, AllRuleIDs)
   checkov/    — Checkov check→CCI+NIST lookups (Lookup, LookupForRevision, Exists, AllCheckIDs, GetProvenance)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
-  awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
+  awsconfig/  — AWS Config→NIST lookups (NISTControls, NISTControlsByIdentifier, GetByRuleName, GetByIdentifier)
   nist/       — revision selection (Revision, SetRevision) + Rev 4↔5 crosswalk (Translate, TranslateControls)
 ```
 
@@ -444,7 +444,9 @@ controls  = cwe.NISTControls("476")      // numeric form — equivalent
 ```go
 import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
 
-controls := awsconfig.NISTControls("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")
+controls := awsconfig.NISTControlsByIdentifier("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")
+controls  = awsconfig.NISTControls("secretsmanager-scheduled-rotation-success-check") // by rule name
+// Both return: []string{"AC-2(1)", "AC-3(15)"}
 mapping  := awsconfig.GetByIdentifier("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")
 mapping   = awsconfig.GetByRuleName("secretsmanager-scheduled-rotation-success-check")
 ```
