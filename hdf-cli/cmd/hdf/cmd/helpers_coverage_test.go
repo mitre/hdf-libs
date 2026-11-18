@@ -232,7 +232,7 @@ func TestParseHDFBaseline_TrailingGarbage(t *testing.T) {
 	copy(withGarbage[len(baseline):], `  "extra"`)
 	_, err := parseHDFBaseline(withGarbage)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected trailing data after end of JSON value")
+	assert.Contains(t, err.Error(), "unexpected data after end of object")
 }
 
 func TestParseHDFBaseline_SchemaInvalid(t *testing.T) {
@@ -254,7 +254,7 @@ func TestParseHDFResults_SchemaValidThenTrailingGarbage(t *testing.T) {
 	copy(withGarbage[len(resultsJSON):], ` null`)
 	_, err := parseHDFResults(withGarbage)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected trailing data after end of JSON value")
+	assert.Contains(t, err.Error(), "unexpected data after end of object")
 }
 
 // ---------------------------------------------------------------------------
