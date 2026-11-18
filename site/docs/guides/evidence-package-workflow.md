@@ -304,7 +304,7 @@ hdf evidence info extracted/evidence-package.json --verify --require-checksums -
 
 Formal releases attach the same ZIP and checksum from a successful **main push** CI run for the tagged commit. The release workflow refuses a different commit's evidence and does not consume pull-request artifacts. If the matching CI run has not passed, or its evidence has expired, the release stops before npm publishing; rerun CI for that commit first.
 
-Until 3.8.0 provides the required commands, CI builds its gate CLI from a fixed, reviewed main commit in an isolated checkout. It does not build that trusted CLI from the pull request being assessed.
+CI builds its gate CLI in an isolated checkout, from the newest `main` snapshot rather than from the pull request being assessed. The job resolves that snapshot itself, so a merge is picked up without anyone editing a pin, and refuses one whose prepared commit does not descend from `main` — only the snapshot workflow may create those tags, so what the gates run reached `main` through review. It also refuses when `main` has run well past the newest snapshot, so a stopped publisher is visible rather than silently freezing the gate CLI.
 
 ## Where to go next
 

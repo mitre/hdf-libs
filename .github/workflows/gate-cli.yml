@@ -7,12 +7,22 @@ permissions:
   contents: read
 
 env:
-  # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
-  HDF_CLI_SOURCE_SHA: '17a4b5df3e3c4eabc011d8409db0826f157e46de'
+  # How far main may run past the snapshot the gate CLI is built from before the
+  # job refuses. Measured over 41 snapshots: 33 gaps of one commit, and a worst
+  # case of five when a batch of merges collapses into one publication. Well past
+  # that means the publisher stopped, which is what this budget makes loud.
+  GATE_CLI_MAX_MAIN_LAG: '10'
 
 jobs:
+  # The source is the newest main snapshot, resolved here rather than pinned by
+  # hand: only the publishing workflow may create a snapshots/v tag, so whatever
+  # the gates run reached main through review. This checkout names main, so the
+  # resolver that picks the commit is main's copy of the script, not the tree
+  # under test; leaving the ref out would default it to the triggering ref,
+  # which on a pull request is that pull request's own merge commit. The
+  # workflow file itself stays reviewable rather than pinned, as it always was.
   gate-cli:
-    name: Build the gate CLI (pinned main commit)
+    name: Build the gate CLI (newest main snapshot)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -21,19 +31,34 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: mitre/hdf-libs
-          ref: ${{ env.HDF_CLI_SOURCE_SHA }}
+          ref: main
+          fetch-depth: 0
           path: gate-source
           persist-credentials: false
+      - name: Resolve the snapshot to build
+        id: snapshot
+        working-directory: gate-source
+        run: |
+          out=$(bash scripts/resolve-gate-cli-snapshot.sh "$GATE_CLI_MAX_MAIN_LAG")
+          echo "$out"
+          echo "$out" >> "$GITHUB_OUTPUT"
+      - name: Check out that snapshot
+        working-directory: gate-source
+        env:
+          SNAPSHOT_COMMIT: ${{ steps.snapshot.outputs.commit }}
+        run: git checkout -q --detach "$SNAPSHOT_COMMIT"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: gate-source/go.work
           cache: false
       - name: Build the reviewed CLI
         working-directory: gate-source/hdf-cli
+        env:
+          SNAPSHOT_COMMIT: ${{ steps.snapshot.outputs.commit }}
+          SNAPSHOT_VERSION: ${{ steps.snapshot.outputs.version }}
         run: |
-          test "$(git rev-parse HEAD)" = "$HDF_CLI_SOURCE_SHA"
           go build -mod=readonly \
-            -ldflags "-X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit=$HDF_CLI_SOURCE_SHA" \
+            -ldflags "-X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit=$SNAPSHOT_COMMIT -X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.version=$SNAPSHOT_VERSION" \
             -o "$RUNNER_TEMP/hdf" ./cmd/hdf
           "$RUNNER_TEMP/hdf" version
           "$RUNNER_TEMP/hdf" evidence --help

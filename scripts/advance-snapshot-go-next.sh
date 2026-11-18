@@ -22,21 +22,9 @@ refuse() {
   exit 1
 }
 
-readonly VERSION_PATTERN='^([0-9]+)\.([0-9]+)\.([0-9]+)-next\.([0-9]+)\.([0-9]+)$'
-
-# Succeeds when snapshot version $1 is strictly newer than $2. Versions order by release,
-# then workflow run ID, then attempt, which is the order the workflow issues them in.
-version_newer() {
-  local -a a b
-  local i
-  [[ "$1" =~ $VERSION_PATTERN ]] && a=("${BASH_REMATCH[@]:1}") || return 1
-  [[ "$2" =~ $VERSION_PATTERN ]] && b=("${BASH_REMATCH[@]:1}") || return 1
-  for i in 0 1 2 3 4; do
-    ((10#${a[i]} > 10#${b[i]})) && return 0
-    ((10#${a[i]} < 10#${b[i]})) && return 1
-  done
-  return 1
-}
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/snapshot-version.sh
+. "$script_dir/snapshot-version.sh"
 
 # Prints the snapshot version tagged on commit $1 on origin, or nothing when it carries no
 # snapshot tag. Fails when the tags cannot be listed or the commit carries more than one.

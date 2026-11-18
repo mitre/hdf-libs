@@ -550,6 +550,7 @@ jobs:
 
   # ── The CLI the gates run ────────────────────────────────────────────────
   # Build reviewed source in isolation so a PR cannot change the CLI judging it.
+  # gate-cli.yml builds the newest main snapshot; siem.yml calls it too.
   gate-cli:
     uses: $/.github/workflows/gate-cli.yml
 
