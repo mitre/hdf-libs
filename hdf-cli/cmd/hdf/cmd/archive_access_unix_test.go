@@ -69,7 +69,7 @@ func TestArchiveAccess_PrivateRefusesAReadbackThatIsNotOwnerOnly(t *testing.T) {
 // A refused private creation leaves nothing behind: the staged file is removed.
 func TestArchiveAccess_RefusedPrivateCreationRemovesTheStagedFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), stagedArchivePrefix+"test")
-	f, err := openStagedArchiveWith(path, archivePrivate, fakeOwnerMode(os.Geteuid(), 0o100755))
+	f, err := openPrivateArchiveWith(path, fakeOwnerMode(os.Geteuid(), 0o100755))
 	require.Error(t, err)
 	assert.Nil(t, f)
 	assert.NoFileExists(t, path, "the staged file is removed")

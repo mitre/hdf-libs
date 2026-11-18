@@ -70,10 +70,10 @@ func TestLinuxPrivate_NotesNetworkStorage(t *testing.T) {
 		"cifs": unix.CIFS_SUPER_MAGIC, "fuse": unix.FUSE_SUPER_MAGIC, "9p": unix.V9FS_MAGIC,
 	} {
 		t.Run(name, func(t *testing.T) {
-			var notes bytes.Buffer
+			var notes, want bytes.Buffer
 			require.NoError(t, checkLinuxPrivate(3, none, statfsOf(magic), &notes))
-			assert.Contains(t, notes.String(), "the server and its mount options also control")
-			assert.Equal(t, 1, bytes.Count(notes.Bytes(), []byte("\n")), "one line")
+			noteNetworkStorage(&want, networkStorage(magic))
+			assert.Equal(t, want.String(), notes.String(), "the shared note, naming the storage kind")
 		})
 	}
 	for name, magic := range map[string]int64{"ext4": unix.EXT4_SUPER_MAGIC, "tmpfs": unix.TMPFS_MAGIC,

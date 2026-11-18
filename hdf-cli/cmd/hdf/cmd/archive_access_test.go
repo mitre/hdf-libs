@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"os"
@@ -130,4 +131,43 @@ func TestCreateStagedArchive_ReturnsOtherFailuresAtOnce(t *testing.T) {
 	})
 	assert.ErrorIs(t, err, fs.ErrPermission)
 	assert.Equal(t, 1, calls)
+}
+
+// The network-storage note is one line, naming the storage kind.
+func TestNoteNetworkStorage_IsOneLineNamingTheStorage(t *testing.T) {
+	var notes bytes.Buffer
+	noteNetworkStorage(&notes, "NFS")
+	assert.Equal(t, "Note: the archive is on NFS storage; "+
+		"the server and its mount options also control who can read it.\n", notes.String())
+}
+
+// Discarding a refused staged file reports the refusal, and any failure to close or
+// remove the file alongside it rather than instead of it.
+func TestDiscardStaged_JoinsEveryFailureToTheCause(t *testing.T) {
+	f, err := os.Create(filepath.Join(t.TempDir(), "staged"))
+	require.NoError(t, err)
+	cause := errors.New("refused")
+
+	err = discardStaged(f, f.Name(), cause)
+	assert.ErrorIs(t, err, cause)
+	assert.Equal(t, cause.Error(), err.Error(), "a clean discard reports the cause alone")
+	assert.NoFileExists(t, f.Name())
+
+	err = discardStaged(f, f.Name(), cause)
+	assert.ErrorIs(t, err, cause)
+	assert.ErrorIs(t, err, os.ErrClosed, "closing twice is reported")
+	assert.ErrorIs(t, err, fs.ErrNotExist, "and so is removing twice")
+}
+
+// inherit is the same exclusive create on every platform; a name already taken is
+// refused as fs.ErrExist and the file at it is left as it was.
+func TestOpenStagedArchive_InheritRefusesAnExistingName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), stagedArchivePrefix+"taken")
+	require.NoError(t, os.WriteFile(path, []byte("kept"), 0o600))
+	f, err := openStagedArchive(path, archiveInherit)
+	require.ErrorIs(t, err, fs.ErrExist)
+	assert.Nil(t, f)
+	got, readErr := os.ReadFile(path)
+	require.NoError(t, readErr)
+	assert.Equal(t, "kept", string(got))
 }

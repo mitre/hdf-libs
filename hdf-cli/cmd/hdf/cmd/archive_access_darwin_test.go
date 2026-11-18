@@ -122,8 +122,9 @@ func TestArchiveAccessDarwinVolume(t *testing.T) {
 	assert.Contains(t, err.Error(), "ignores ownership")
 
 	require.NoError(t, checkDarwinVolume(3, fakeVolume(0, "smbfs"), &notes))
-	assert.Equal(t, "Note: the archive is on network storage (smbfs); "+
-		"the server and its mount options also control who can read it.\n", notes.String())
+	var want bytes.Buffer
+	noteNetworkStorage(&want, "smbfs")
+	assert.Equal(t, want.String(), notes.String(), "the shared note, naming the volume's filesystem")
 
 	failing := func(int, *unix.Statfs_t) error { return unix.EIO }
 	assert.ErrorIs(t, checkDarwinVolume(3, failing, &notes), unix.EIO, "an unreadable volume fails")

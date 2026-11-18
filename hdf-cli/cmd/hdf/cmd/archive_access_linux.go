@@ -36,8 +36,7 @@ func checkLinuxPrivate(fd int, getxattr func(int, string, []byte) (int, error),
 	var st unix.Statfs_t
 	if fstatfs(fd, &st) == nil {
 		if kind := networkStorage(fsMagic(st.Type)); kind != "" {
-			_, _ = fmt.Fprintf(notes, "Note: the archive is on %s storage; "+
-				"the server and its mount options also control who can read it.\n", kind)
+			noteNetworkStorage(notes, kind)
 		}
 	}
 	return nil

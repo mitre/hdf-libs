@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,6 +52,29 @@ func createStagedArchiveWith(dir string, access archiveAccess,
 		return f, err
 	}
 	return nil, fmt.Errorf("cannot allocate a unique staged archive name in %s: %w", dir, os.ErrExist)
+}
+
+// openStagedArchive creates the staged archive under the access policy: inherit is an
+// exclusive create under the umask and the directory's default ACLs; private is the
+// platform's owner-only create, read back before the file is returned.
+func openStagedArchive(path string, access archiveAccess) (*os.File, error) {
+	if access == archiveInherit {
+		return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o666)
+	}
+	return openPrivateArchive(path)
+}
+
+// discardStaged closes and removes a staged archive that failed its private check,
+// returning cause joined with any failure to do so.
+func discardStaged(f *os.File, path string, cause error) error {
+	return errors.Join(cause, f.Close(), os.Remove(path))
+}
+
+// noteNetworkStorage writes the one line told when the archive is on storage whose
+// server also controls access; kind names the filesystem.
+func noteNetworkStorage(w io.Writer, kind string) {
+	_, _ = fmt.Fprintf(w, "Note: the archive is on %s storage; "+
+		"the server and its mount options also control who can read it.\n", kind)
 }
 
 // archiveWindowsName returns the name to give CreateFileW, following Go's own

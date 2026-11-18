@@ -19,10 +19,7 @@ var errNotCreatorOnly = errors.New("cannot create a private archive here: the fi
 	"list grants more than its creator; pass --output-access inherit if this location's " +
 	"access policy is trusted")
 
-func openStagedArchive(path string, access archiveAccess) (*os.File, error) {
-	if access == archiveInherit {
-		return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o666)
-	}
+func openPrivateArchive(path string) (*os.File, error) {
 	return createPrivateWindows(path, volumeACLFlags)
 }
 
@@ -60,7 +57,7 @@ func createPrivateWindows(path string, volumeFlags func(windows.Handle) (uint32,
 	}
 	f := os.NewFile(uintptr(h), path)
 	if err := checkPrivateWindows(h, user, volumeFlags); err != nil {
-		return nil, errors.Join(err, f.Close(), os.Remove(path))
+		return nil, discardStaged(f, path, err)
 	}
 	return f, nil
 }

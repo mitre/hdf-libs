@@ -196,9 +196,7 @@ func checkDarwinVolume(fd int, fstatfs func(int, *unix.Statfs_t) error, notes io
 			"--output-access inherit if this location's access policy is trusted")
 	}
 	if st.Flags&unix.MNT_LOCAL == 0 {
-		_, _ = fmt.Fprintf(notes, "Note: the archive is on network storage (%s); "+
-			"the server and its mount options also control who can read it.\n",
-			unix.ByteSliceToString(st.Fstypename[:]))
+		noteNetworkStorage(notes, unix.ByteSliceToString(st.Fstypename[:]))
 	}
 	return nil
 }

@@ -8,28 +8,23 @@ import (
 	"syscall"
 )
 
-func openStagedArchive(path string, access archiveAccess) (*os.File, error) {
-	return openStagedArchiveWith(path, access, fstatOwnerMode)
+func openPrivateArchive(path string) (*os.File, error) {
+	return openPrivateArchiveWith(path, fstatOwnerMode)
 }
 
-func openStagedArchiveWith(path string, access archiveAccess,
+// openPrivateArchiveWith creates the file owner-only and reads the owner and mode back
+// from it, then applies the platform's own check; a file that fails either is removed.
+func openPrivateArchiveWith(path string,
 	ownerMode func(*os.File) (uid, mode uint32, err error)) (*os.File, error) {
-	if access == archiveInherit {
-		return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o666)
-	}
 	f, err := createPrivateFile(path)
 	if err != nil {
 		return nil, err
 	}
 	if err := verifyOwnerOnly(f, ownerMode); err != nil {
-		_ = f.Close()
-		_ = os.Remove(path)
-		return nil, err
+		return nil, discardStaged(f, path, err)
 	}
 	if err := platformPrivateCheck(f); err != nil {
-		_ = f.Close()
-		_ = os.Remove(path)
-		return nil, err
+		return nil, discardStaged(f, path, err)
 	}
 	return f, nil
 }
