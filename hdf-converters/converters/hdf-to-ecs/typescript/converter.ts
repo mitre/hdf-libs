@@ -10,7 +10,7 @@ import {
   defaultDescription,
   eventID,
   addBaselineMetadata,
-  buildHDFBlock,
+  buildHDFBlockFromStatus,
   runExport,
   governingOverrideOf,
   disposition,
@@ -114,7 +114,7 @@ function buildEvent(
   if (labels) obj.labels = labels;
 
   // hdf.* lossless block, with the baseline's metadata beyond its name.
-  const hdf = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
+  const hdf = buildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion);
   addBaselineMetadata(hdf, baseline);
   obj.hdf = hdf;
 

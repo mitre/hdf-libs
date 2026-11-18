@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`BuildHDFBlockFromStatus` (Go `shared/go/exportmap`) and `buildHDFBlockFromStatus` (TypeScript) build the export `hdf.*` block from the `Status` that `StatusOf`/`statusOf` returns**, so a caller cannot pass the effective rollup where the raw verdict belongs. The ECS, Splunk and SARIF exporters use it in both languages; output is unchanged.
+
 - **SCHEMA — System and Plan documents declare an optional root `createdAt`.** `hdf system create` and `hdf plan create` have written `createdAt` (an RFC 3339 date-time) at the document root since hdf-cli v3.3.0, but neither schema declared it. Both now do, with `format: date-time`, so every system and plan file a released CLI wrote stays valid under the stricter validators below. Additive: the generated Go and TypeScript types gain one optional field.
 
 ### Changed
@@ -13,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - **Go toolchain floor raised to 1.27.4, with the linters that read 1.27 code.** The `go` directive in `go.work`, every module's `go.mod` and the generated `hdf-schema/dist/go` module moved to 1.27.4 (the current 1.27 release), and `mise.lock` installs it on every platform it covers. Changes now in review decode JSON with the standard library's `encoding/json/v2` (exact-key Semgrep decoding, the SIEM export bundle), which Go 1.27 ships. golangci-lint moved from 2.11.3 to 2.15.0 and govulncheck from 1.1.4 to 1.9.0: golangci-lint 2.11.3 is built with Go 1.26 and refuses a 1.27 module ("the Go language version (go1.26) used to build golangci-lint is lower than the targeted Go version (1.27.4)"), and govulncheck 1.1.4's source packages are from Go 1.26. Go 1.27's `govet` inline check replaced the deprecated `reflect.Ptr` in `hdf-diff`, its `gofmt` realigned one fuzz-seed table in `hdf-utilities`, and Go 1.27's `encoding/json` words oapi-codegen's load error differently, re-recorded in the OpenAPI tooling matrix. Go consumers need 1.27.4 or newer: the `go` directive is a minimum, and every published module now carries it.
 - **Local SAST runs the same gosec configuration as CI.** `pnpm --filter hdf-cli run security:sast` now runs gosec through golangci-lint with `hdf-cli/.golangci.yml`, as CI does, instead of a standalone gosec with its own exclusions. Both report no findings in `hdf-cli`, before and after the change.
 - **BEHAVIOR CHANGE — the Go and TypeScript validators enforce JSON Schema 2020-12, the dialect the schemas are written in.** The TypeScript validator used Ajv's draft-07 class and the Go validator used `xeipuuv/gojsonschema`; both ignored `unevaluatedProperties`, so an undeclared property in a closed object was accepted. TypeScript now uses Ajv2020, and Go uses `santhosh-tekuri/jsonschema/v6` for v3 documents (legacy v2 documents keep `gojsonschema` and their own schema). A document carrying a field its schema does not declare now fails validation. Those documents were always invalid by the schema's own text, but a file that passed `hdf validate` before can fail now. To fix one, move producer-specific data under `extensions.passthrough`, namespaced by tool name, or correct the field name. The decision and its evidence are in `dev-docs/adr-0022-validator-dialect.md`.
+
+### Deprecated
+
+- **`exportmap.BuildHDFBlock` (Go) and `buildHDFBlock` (TypeScript), the form taking a raw verdict and two flags.** Use `BuildHDFBlockFromStatus`/`buildHDFBlockFromStatus`. The old form keeps working and delegates to the new one; it is marked deprecated and will be removed in the next major version.
 
 ### Fixed
 

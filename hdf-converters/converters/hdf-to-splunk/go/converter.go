@@ -61,7 +61,7 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	category := firstCWE(req)
 	vendorProduct := exportmap.GetStr(tool, "name")
 
-	hdfBlock := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
+	hdfBlock := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
 	augmentHDFBlock(hdfBlock, req, baseline, component)
 
 	event := map[string]interface{}{

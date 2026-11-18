@@ -179,15 +179,33 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
 // --- lossless hdf.* block ---
 
 /**
- * Build the lossless hdf.* namespace shared by the export converters: promoted
- * snake_case scalars plus the full requirement sub-objects preserved verbatim.
- * `status.raw` is the lossless results verdict; `status.suppressed` is the
- * acceptance axis. The effective rollup does not replace the raw verdict.
+ * Build the hdf.* block from a raw verdict and the two flags.
+ * @deprecated Use buildHDFBlockFromStatus with the Status from statusOf, which keeps the
+ * raw verdict and the effective rollup from being swapped.
  */
 export function buildHDFBlock(
   req: Obj,
   baseline: Obj,
-  status: Status,
+  status: string,
+  overridden: boolean,
+  suppressed: boolean,
+  generator: Obj | undefined,
+  tool: Obj | undefined,
+  converterVersion: string,
+): Obj {
+  return buildHDFBlockFromStatus(req, baseline, { raw: status, overridden, suppressed }, generator, tool, converterVersion);
+}
+
+/**
+ * Build the lossless hdf.* namespace shared by the export converters: promoted
+ * snake_case scalars plus the full requirement sub-objects preserved verbatim.
+ * `status.raw` is the lossless results verdict; `status.suppressed` is the
+ * acceptance axis. The effective rollup is not read: it does not replace the raw verdict.
+ */
+export function buildHDFBlockFromStatus(
+  req: Obj,
+  baseline: Obj,
+  status: Pick<Status, 'raw' | 'overridden' | 'suppressed'>,
   generator: Obj | undefined,
   tool: Obj | undefined,
   converterVersion: string,

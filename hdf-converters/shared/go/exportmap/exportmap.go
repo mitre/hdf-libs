@@ -226,15 +226,24 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 
 // --- lossless hdf.* block ---
 
-// BuildHDFBlock builds the lossless hdf.* namespace shared by the export
-// converters: promoted snake_case scalars plus the full requirement sub-objects
-// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw);
-// suppressed is the acceptance axis (StatusOf().Suppressed).
+// BuildHDFBlock builds the hdf.* block from a raw verdict and the two flags.
+//
+// Deprecated: use BuildHDFBlockFromStatus with the Status from StatusOf, which keeps
+// the raw verdict and the effective rollup from being swapped.
 func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden, suppressed bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
+	return BuildHDFBlockFromStatus(req, baseline, Status{Raw: status, Overridden: overridden, Suppressed: suppressed}, generator, tool, converterVersion)
+}
+
+// BuildHDFBlockFromStatus builds the lossless hdf.* namespace shared by the export
+// converters: promoted snake_case scalars plus the full requirement sub-objects
+// preserved verbatim. status.Raw is the lossless results verdict and
+// status.Suppressed the acceptance axis; status.Rollup is not read, because the
+// effective rollup does not replace the raw verdict.
+func BuildHDFBlockFromStatus(req, baseline map[string]interface{}, status Status, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
 	hdf := map[string]interface{}{
-		"status":           status,
-		"overridden":       overridden,
-		"suppressed":       suppressed,
+		"status":           status.Raw,
+		"overridden":       status.Overridden,
+		"suppressed":       status.Suppressed,
 		"exporter_version": converterVersion,
 	}
 	SetIf(hdf, "control_id", GetStr(req, "id"))

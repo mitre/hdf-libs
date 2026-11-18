@@ -109,7 +109,7 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 		obj["labels"] = labels
 	}
 	// hdf.* lossless block, with the baseline's metadata beyond its name.
-	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
+	hdf := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
 	exportmap.AddBaselineMetadata(hdf, baseline)
 	obj["hdf"] = hdf
 
