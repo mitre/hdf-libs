@@ -156,6 +156,59 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
 describe('enrichStix — opt-in E:H recompute', () => {
   const recResults = () => fixture('results-with-cvss.json');
   const recBundle = () => fixture('poison-ivy-exploited-stix21.json');
+
+  it.each([
+    { type: 'sighting', sighting_of_ref: '' },
+    { type: 'relationship', relationship_type: 'targets', target_ref: '' },
+    { type: 'report', object_refs: [''] },
+  ])('preserves empty-reference exploitation of an id-less vulnerability via $type', (signal) => {
+    const source = JSON.parse(recBundle()) as { objects: Doc[] };
+    const vulnerability = source.objects[0];
+    delete vulnerability.id;
+    source.objects = [vulnerability, signal];
+    const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
+    const overrides = requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[];
+    expect(overrides).toHaveLength(1);
+    const references = overrides[0].externalReferences as Doc[];
+    expect(references).toHaveLength(1);
+    expect(references[0].document).toEqual(signal);
+  });
+
+  it.each([
+    { type: 'sighting', sighting_of_ref: 7 },
+    { type: 'relationship', relationship_type: 'targets', target_ref: null },
+    { type: 'relationship', relationship_type: 'uses', target_ref: 'vulnerability--c7cab3fb-0822-43a5-b1ba-c9bab34361a2' },
+    { type: 'report', object_refs: 'not an array' },
+    { type: 'indicator', object_refs: [null, 7, {}] },
+  ])('does not infer exploitation from malformed or unrelated signal $type', (signal) => {
+    const source = JSON.parse(recBundle()) as { objects: Doc[] };
+    source.objects = [source.objects[0], signal];
+    const doc = JSON.parse(enrichStix(recResults(), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
+    expect(requirementById(doc, 'CVE-2012-0158').statusOverrides ?? []).toEqual([]);
+  });
+
+  it('merges duplicate vulnerability IDs and preserves the first exploitation source', () => {
+    const source = JSON.parse(recBundle()) as { objects: Doc[] };
+    const first = source.objects[0];
+    const second = { ...source.objects[1], id: first.id };
+    const signal = source.objects[3];
+    const laterSignal = { ...signal, id: source.objects[4].id };
+    source.objects = [first, second, signal, laterSignal];
+    const input = JSON.parse(recResults()) as Doc;
+    requirementById(input, 'CVE-2009-4324').cvss = requirementById(input, 'CVE-2012-0158').cvss;
+    const validation = validateResults(input);
+    expect(validation.valid, validation.getErrorMessage()).toBe(true);
+
+    const doc = JSON.parse(enrichStix(JSON.stringify(input), JSON.stringify(source), { recomputeCvss: true, asOf })) as Doc;
+    for (const cve of ['CVE-2012-0158', 'CVE-2009-4324']) {
+      const overrides = requirementById(doc, cve).statusOverrides as Doc[];
+      expect(overrides).toHaveLength(1);
+      const references = overrides[0].externalReferences as Doc[];
+      expect(references).toHaveLength(1);
+      expect(references[0].externalId).toBe('relationship--d70ebcc3-5640-423d-b9b0-7158c532c040');
+      expect(references[0].document).toEqual(signal);
+    }
+  });
   const asOf = new Date('2099-01-01T00:00:00Z');
 
   it('authors an inline riskAdjustment for an exploited 3.1 finding', () => {

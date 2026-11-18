@@ -141,19 +141,26 @@ function exploitedCves(bundle: StixBundle): Map<string, Doc> {
     }
   };
   for (const o of bundle.objects) {
-    if (o.type === 'sighting' && typeof o.sighting_of_ref === 'string') {
-      mark(o.sighting_of_ref, o);
-    } else if (
-      o.type === 'relationship' &&
-      (o.relationship_type === 'targets' || o.relationship_type === 'exploits') &&
-      typeof o.target_ref === 'string'
-    ) {
-      mark(o.target_ref, o);
-    } else if ((o.type === 'indicator' || o.type === 'report') && Array.isArray(o.object_refs)) {
-      for (const r of o.object_refs) if (typeof r === 'string') mark(r, o);
-    }
+    for (const ref of stixExploitationReferences(o)) mark(ref, o);
   }
   return exploited;
+}
+
+function stixExploitationReferences(o: Doc): string[] {
+  switch (o.type) {
+    case 'sighting':
+      return typeof o.sighting_of_ref === 'string' ? [o.sighting_of_ref] : [];
+    case 'relationship':
+      if (o.relationship_type !== 'targets' && o.relationship_type !== 'exploits') return [];
+      return typeof o.target_ref === 'string' ? [o.target_ref] : [];
+    case 'indicator':
+    case 'report':
+      return Array.isArray(o.object_refs)
+        ? o.object_refs.filter((ref: unknown): ref is string => typeof ref === 'string')
+        : [];
+    default:
+      return [];
+  }
 }
 
 /** The finding's cvss[] entry carrying a base vector for the CVE (or a version-agnostic entry). */
