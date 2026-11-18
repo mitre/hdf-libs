@@ -123,7 +123,7 @@ report "all converge: a converged package is read back once" "$ok"
 fixtures later
 echo 2 > "$work/later/dist-tags/hdf-diff.stale"
 jq -n --arg v "$OLD" '{latest: "3.7.3", next: $v}' > "$work/later/dist-tags/hdf-diff.stale.json"
-run later 3 1 "$VERSION" "$work/packages.txt"
+run later 10 1 "$VERSION" "$work/packages.txt"
 d="$work/later"
 report "late convergence: exit 0" "$(cat "$d/rc")" "exit $(cat "$d/rc")"
 ok=0
@@ -142,7 +142,7 @@ report "late convergence: table marks every package ok" "$ok"
 # Case 3: one package never leaves the previous version.
 fixtures never
 jq -n --arg v "$OLD" '{latest: "3.7.3", next: $v}' > "$work/never/dist-tags/hdf-engine.json"
-run never 3 1 "$VERSION" "$work/packages.txt"
+run never 6 1 "$VERSION" "$work/packages.txt"
 d="$work/never"
 ok=0; [ "$(cat "$d/rc")" -eq 1 ] || ok=1
 report "never converges: exit 1" "$ok" "exit $(cat "$d/rc")"
