@@ -90,8 +90,8 @@ Verification additionally checks completeness, which bundle does not, so it can 
 Both honour the checksum algorithm the package records.
 Nothing outside the held package directory is read: the package file and its references
     use the same directory handle, and a symlink that leaves the package is refused at
-    the read boundary. Stdin supplies only the package document; its references use the
-    held working directory.
+    the read boundary. A package read from stdin has no directory: it is refused if it
+    records a package-relative reference, and only the package document travels.
 
 What travels: the package, the documents named by systemRef and planRef, every document
     in contents[], and externalEvidence[] artifacts that live inside the package's
