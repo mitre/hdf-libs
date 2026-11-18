@@ -104,7 +104,8 @@ export async function verifyReadback([input, output, retained, name, target = 'e
   if (name === 'empty') assert.deepEqual(expected.baselines, []);
   const pkg = await readFile(join(output, 'evidence-package.json'), 'utf8');
   const entries = [...parseEvidencePackage(pkg).contents, ...parseExternalEvidence(pkg)];
-  assert.deepEqual(entries.map((e) => e.uri).sort(), ['events.ndjson', 'manifest.json', 'source.json']);
+  const uris = entries.map((e) => e.uri).sort((a, b) => (a < b ? -1 : Number(a > b)));
+  assert.deepEqual(uris, ['events.ndjson', 'manifest.json', 'source.json']);
   assert.equal(entries.find((e) => e.uri === 'source.json').type, 'hdf-results');
   assert.equal(entries.find((e) => e.uri === 'events.ndjson').format, target === 'ecs' ? 'ecs' : 'x-splunk-export');
   assert.equal(entries.find((e) => e.uri === 'manifest.json').format, 'x-hdf-siem-export-profile');

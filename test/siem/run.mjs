@@ -21,23 +21,26 @@ export function verifySourceIdentity(before, after) {
 }
 
 export async function runWithEnvironment({ start, stop, work, signal }) {
+  let failed = false;
   let failure;
+  let result;
   try {
     signal?.throwIfAborted();
     const environment = await start();
     signal?.throwIfAborted();
-    return await work(environment, signal);
+    result = await work(environment, signal);
   } catch (error) {
+    failed = true;
     failure = error;
-    throw error;
-  } finally {
-    try {
-      await stop();
-    } catch (error) {
-      if (failure) throw new AggregateError([failure, error], 'Run and cleanup failed');
-      throw error;
-    }
   }
+  try {
+    await stop();
+  } catch (error) {
+    if (failed) throw new AggregateError([failure, error], 'Run and cleanup failed');
+    throw error;
+  }
+  if (failed) throw failure;
+  return result;
 }
 
 export async function runSuite(options, { start, stop, probe, build, executeTarget, signal }) {
