@@ -8,7 +8,6 @@ package tools
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"math"
 	"os"
@@ -205,7 +204,7 @@ func readFile(confined, relPath, slot string) ([]byte, *mcperr.Error) {
 	return readLimited(confined, relPath, slot, mcpMaxInputSize())
 }
 
-// readLimited applies the pre-read guards and then reads through a LimitReader,
+// readLimited applies the pre-read guards and then reads through the bounded reader,
 // so the ceiling holds on the bytes actually delivered rather than on the size
 // the file claimed when it was stat'd.
 func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr.Error) {
@@ -220,12 +219,12 @@ func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr
 		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
 	}
 	defer func() { _ = f.Close() }()
-	content, err := io.ReadAll(io.LimitReader(f, maxSize+1))
+	content, err := hdfutil.ReadAtMost(f, maxSize, relPath)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, mcperr.New(mcperr.TooLarge, fmt.Sprintf("document exceeds the %d-byte limit", maxSize), map[string]any{"path": relPath})
+	}
 	if err != nil {
 		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
-	}
-	if int64(len(content)) > maxSize {
-		return nil, mcperr.New(mcperr.TooLarge, fmt.Sprintf("document exceeds the %d-byte limit", maxSize), map[string]any{"path": relPath})
 	}
 	return content, nil
 }

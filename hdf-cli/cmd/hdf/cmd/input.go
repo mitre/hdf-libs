@@ -12,6 +12,7 @@ import (
 
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 const (
@@ -199,18 +200,14 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	return readAtMost(f, maxSize, "file")
 }
 
-// readAtMost reads all of r, refusing input longer than limit bytes. It reads one byte
-// past the limit so an over-long input is an error rather than a silently truncated
-// prefix. source names the input in read-failure messages.
+// readAtMost reads all of r through the shared bounded reader and renders an over-long
+// input as the CLI's --max-size error. source names the input in read-failure messages.
 func readAtMost(r io.Reader, limit int64, source string) ([]byte, error) {
-	data, err := io.ReadAll(io.LimitReader(r, limit+1))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", source, err)
-	}
-	if int64(len(data)) > limit {
+	data, err := hdfutil.ReadAtMost(r, limit, source)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
 		return nil, fmt.Errorf("input too large: exceeds %s limit (use --max-size to increase)", describeLimit(limit))
 	}
-	return data, nil
+	return data, err
 }
 
 // describeLimit renders a byte limit for an error message: whole megabytes as "N MB",

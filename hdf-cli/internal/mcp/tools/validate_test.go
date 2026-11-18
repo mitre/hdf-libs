@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -916,5 +917,36 @@ func TestHdfValidate_Completeness_KeepsTheLoadersVerdictOnAnInvalidPackage(t *te
 	}
 	if !schemaNamed {
 		t.Errorf("the loader's schema error must survive the early return, got %+v", out.Errors)
+	}
+}
+
+// The read itself is bounded by the ceiling, independently of the Stat that precedes
+// it, so a referenced file that delivers more bytes than it reported is refused rather
+// than buffered whole. The error names the uri only.
+func TestReadReferenced_RejectsBytesBeyondTheCeiling(t *testing.T) {
+	data, err := readReferenced(strings.NewReader(strings.Repeat("x", 65)), "sub/scan.json", 64)
+	if err == nil {
+		t.Fatalf("65 bytes over a 64-byte ceiling must error, got %d bytes", len(data))
+	}
+	if !strings.Contains(err.Error(), `"sub/scan.json"`) || !strings.Contains(err.Error(), "64") {
+		t.Errorf("error %q should name the uri and the limit", err)
+	}
+	data, err = readReferenced(strings.NewReader(strings.Repeat("x", 64)), "sub/scan.json", 64)
+	if err != nil || len(data) != 64 {
+		t.Fatalf("64 bytes within a 64-byte ceiling must read whole, got %d bytes / %v", len(data), err)
+	}
+}
+
+func TestReadReferenced_ReadFailureNamesOnlyTheURI(t *testing.T) {
+	cause := errors.New("read /srv/evidence/root/sub/scan.json: input/output error")
+	_, err := readReferenced(iotest.ErrReader(cause), "sub/scan.json", 64)
+	if err == nil {
+		t.Fatal("a failing reader must error")
+	}
+	if strings.Contains(err.Error(), "/srv/evidence") {
+		t.Errorf("error %q leaked the cause's absolute path", err)
+	}
+	if !strings.Contains(err.Error(), `"sub/scan.json"`) {
+		t.Errorf("error %q should name the uri", err)
 	}
 }
