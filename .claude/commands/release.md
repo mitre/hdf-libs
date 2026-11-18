@@ -12,11 +12,11 @@ Run this skill whenever the workspace is moving to a new version. The monorepo u
 - **Minor / major** (`3.2.0 → 3.3.0`, `3.x → 4.0`) — the full skill: schema `$id`s bump, the site archive gains a new version, version-claiming docs and the spec are swept, and (for minors that add fields) schema content is propagated into the spec.
 - **Patch** (`3.2.0 → 3.2.1`) — the schema did not change, so its `$id` URLs **stay** at the old version (publishing an identical bumped schema would be dishonest) and the doc/archive/spec phases (Phases 2–4) **do not apply**. A patch bumps only the workspace `package.json` files + `go.mod` requires and finalizes the CHANGELOG.
 
-**Phase 1 (swarm review), Phase 1.5 (pre-release bead reconciliation), and Phase 9 (release-time GitHub-issue reconciliation) run for *every* release, patch included.** Only the mechanical sweep and content phases are tier-gated.
+**Phase 1 (swarm review), Phase 1.5 (pre-release reconciliation of beads and GitHub issues), and Phase 9 (post-publish backstop and CI pin) run for *every* release, patch included.** Only the mechanical sweep and content phases are tier-gated.
 
-**Bead vs. GitHub-issue closing policy (two different clocks):**
-- **Beads close when their fix is *merged* (delivered), not when the release ships** — reconciled in Phase 1.5 as a pre-release step so the board shows only work that still genuinely needs addressing *before* cutting the release.
-- **GitHub issues close when the release *ships*** — reconciled in Phase 9 after publish, so external watchers see "Resolved in vNEW." This is why we use `Refs #N` (never auto-closing `Closes #N`).
+**Closing policy (one clock): beads and GitHub issues close when the fix reaches `main`.**
+- **Beads close at the commit that delivers them.** Phase 1.5 catches the ones that were left open, so the board shows only work that still genuinely needs addressing *before* cutting the release.
+- **A reporter's GitHub issue closes once its fix lands on `main`.** Every push to `main` publishes a snapshot that consumers install from the `next` dist-tag (and the Go `next` branch), so the reporter can verify the fix without waiting for a tag. Prefer `Closes #N` in the PR description, so the merge closes the issue itself; a closing comment points the reporter at `@mitre/<package>@next`. Until 3.8.0, issues waited for the release tag and Phase 9 bulk-closed them; 3.8.0 was the last such batch.
 
 The current ("from") version is whatever the workspace `package.json` files agree on; mismatch between them means a prior release was incomplete and is itself a finding (treat as a separate cleanup before bumping).
 
@@ -133,13 +133,14 @@ return { confirmed: reviewed.flat().filter(Boolean).filter(f => f.confirmed) }
 
 ### Phase 1.5 — Pre-release bead reconciliation (close delivered beads)
 
-Beads close when their fix is **merged**, not when the release ships — do this as a pre-release step so the board reflects only work that still genuinely needs addressing *before* the release. (GitHub issues are the opposite clock — Phase 9, at publish.)
+Beads close when their fix is **merged**, not when the release ships — do this as a pre-release step so the board reflects only work that still genuinely needs addressing *before* the release. GitHub issues share that clock: an open issue whose fix is on `main` is closed here too (step 5a).
 
 1. `bd dolt pull`.
 2. Build the delivered set: `git log BASE..HEAD` (merged since the last tag) plus any fix commits this release's own prep just produced (Phase 1). Note the `#N` / `hdf-libs-xxxx` refs.
 3. Walk every **open / in_progress** bead and check it against the *actual delivered code on this branch* — not the card's status, and not its title. `in_progress` cards are the highest-suspicion for done-but-not-closed (a fix merged but the card was never moved). Verify the deliverable is really present (grep the code / read the diff) before closing — never close on a title match alone.
 4. Close each genuinely-delivered bead citing the delivering PR/commit: `bd close <id> -r "Delivered by #N (<commit>); shipping in vNEW."`.
 5. Leave genuinely-open work open. **Do not close** a bead just because it is adjacent to a shipped PR — a symptom fix does not close the deeper follow-up card (e.g. a converter bug fix does not close its test-strategy hardening card).
+   5a. **GitHub issues (public):** for each `#N` in the delivered set that is still open, confirm the fix is really on `main`, then present the list with a one-sentence closing comment per issue (what changed, the delivering PR, and that `@mitre/<package>@next` already carries it) and close them on the user's OK. One OK covers the batch; never post as the user without it.
 6. `bd dolt push`.
 
 Then present a one-line-per-card summary of what remains open, grouped by whether it is a **release-blocking bug** vs. **patchable / enhancement / future** — this is the "what's left before we can cut the release" view. Only genuine correctness regressions in *this release's* surface should block; pre-existing narrow bugs and hardening/enhancement cards are candidates for a fast-follow patch series, at the user's call.
@@ -220,7 +221,7 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
-**Deliberately NOT swept:** `HDF_CLI_SOURCE_SHA` in `.github/workflows/ci.yml`, the commit the CI gates' CLI is built from. The `gate-cli` job checks out `mitre/hdf-libs` at that SHA and runs `go build` there, so a PR cannot change the CLI that judges it: the gate builds from the pinned commit, not from the PR's tree. The commit the release ships does not exist yet: the prepare PR is squash-merged, so its SHA is only known once it lands on `main`, and a commit cannot name its own SHA. The pin lags by design and moves after publish, in Phase 9.
+**Deliberately NOT swept:** `HDF_CLI_VERSION` and `HDF_CLI_SHA256` in `.github/workflows/ci.yml`, the released CLI the CI gates run. The `gate-cli` job downloads that release's `linux_amd64` archive and verifies it against the pinned sha256, so a PR cannot change the CLI that judges it. The release this skill is cutting does not exist yet, so its checksum cannot be pinned here; the pin lags by design and moves after publish, in Phase 9.
 
 ### Phase 2.5 — Site archive: stage the new version's raw schema files *(minor/major only)*
 
@@ -408,17 +409,15 @@ Once the release PR is merged to `main`, the user runs the release workflow. Con
 
 If anything lags, surface it; don't paper over.
 
-### Phase 9 — Reconcile GitHub issues (after the release is published)
+### Phase 9 — Post-publish backstop (after the release is published)
 
-Beads were already closed at merge time (Phase 1.5); this phase is the **public** half — GitHub issues close when the release *ships*, so external watchers see "Resolved in vNEW." After the release workflow publishes `vNEW`:
+Beads and GitHub issues were closed when their fixes reached `main` (Phase 1.5 and the merges before it); nothing bulk-closes here. After the release workflow publishes `vNEW`:
 
-1. Build the delivered set: cross-reference this release's CHANGELOG entry (its `#N` and `hdf-libs-xxxx` references) plus `git log BASE..HEAD` for `Refs #N` / bead IDs.
-2. **GitHub issues (public — do NOT close or comment as the user without explicit OK):** produce the list of issues fixed and now released, with a suggested resolution comment each (e.g. "Resolved in vNEW"). Present it for the user to action, or close only with explicit per-instance approval. We use `Refs #N` (never auto-closing `Closes #N`) precisely so closing happens here, at release time.
+1. Build the delivered set: cross-reference this release's CHANGELOG entry (its `#N` and `hdf-libs-xxxx` references) plus `git log BASE..HEAD` for `Closes #N` / `Refs #N` / bead IDs.
+2. **GitHub issues backstop:** every issue in that set should already be closed. One still open means a fix merged without closing it: confirm the fix is on `main`, then close it with the user's OK, citing the PR and `vNEW`. Never post as the user without that OK.
 3. **Beads backstop:** `bd dolt pull`; catch any straggler bead that was delivered but missed in Phase 1.5 and close it citing `vNEW`; `bd dolt push`. In the normal flow Phase 1.5 already handled these — this is only a safety net.
-4. Surface any mismatch (a bead with no issue, an issue with no shipped fix, a `Refs #N` whose issue is already closed) rather than papering over it.
-5. **Move the CI gates' CLI pin** (it could not move in the release commit; see the Phase 6 note): in `.github/workflows/ci.yml` env, set `HDF_CLI_SOURCE_SHA` to the full 40-character SHA of the commit the `vNEW` tag points to, `git fetch origin --tags && git rev-parse 'vNEW^{commit}'`. The `gate-cli` job asserts `git rev-parse HEAD` equals the pin, so an abbreviated SHA fails the job. Propose it as its own follow-up commit on a short PR; that PR's CI run proves the pin end-to-end, since `gate-cli` builds from the new commit and every gate runs with that CLI. If a parked branch or card was waiting on gate-relevant CLI behavior shipping in this release (check `bd list --label breaking-change`), this move is what unblocks it.
-
-   The source pin is temporary: the comment above it in `ci.yml` says to restore a checksum-verified release after 3.8.0. If this release is the one that restores it, the follow-up commit instead replaces the `gate-cli` checkout-and-build steps with a download of the released `linux_amd64` archive verified against the release's published `checksums.txt` (`gh release download vNEW -p checksums.txt`), and swaps `HDF_CLI_SOURCE_SHA` for the version and checksum variables that step reads. Update this step, the Phase 6 note and the checklist in the same commit, so the skill and `ci.yml` keep naming the same variables.
+4. Surface any mismatch (a bead with no issue, an issue with no shipped fix, a `#N` whose issue was closed before its fix merged) rather than papering over it.
+5. **Move the CI gates' CLI pin** (it could not move in the release commit; see the Phase 6 note): in `.github/workflows/ci.yml` env, set `HDF_CLI_VERSION` to NEW and `HDF_CLI_SHA256` to the `linux_amd64` archive's line in the release's published checksums, `gh release download vNEW -p checksums.txt && grep linux_amd64.tar.gz checksums.txt`. The `gate-cli` job verifies the download against that sha256 and asserts `hdf version` prints NEW, so a stale value fails the job. Propose it as its own follow-up commit on a short PR; that PR's CI run proves the pin end-to-end, since every gate runs with the new CLI, and a re-measured threshold budget belongs in the same PR if the new CLI changes a count. If a parked branch or card was waiting on gate-relevant CLI behavior shipping in this release (check `bd list --label breaking-change`), this move is what unblocks it.
 
 ## Quick checklist (paste into the response after Phase 0)
 
@@ -447,5 +446,5 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] *(when cutting any prerelease tag)* Phase 7.5 step 0 prepare-release commit: `scripts/set-go-module-versions.sh vNEW-rc.N` run and committed BEFORE the tag, and a consumer `go build` against the published prerelease passes outside the repo
 - [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next` (or `rc`) at NEW, no per-major tag expected; no manual publishes or dist-tag moves to `latest`
-- [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
-- [ ] Phase 9: CI gates' CLI pin moved post-publish (`HDF_CLI_SOURCE_SHA` in ci.yml, set to the full SHA of `vNEW^{commit}`) as its own commit, or the checksum-verified release download restored in its place; parked breaking-change cards waiting on the new CLI unblocked
+- [ ] Phase 1.5 / Phase 9: every GitHub issue the delivered set references is closed, at merge or as a backstop with the user's OK; beads backstop checked for stragglers
+- [ ] Phase 9: CI gates' CLI pin moved post-publish (`HDF_CLI_VERSION` and `HDF_CLI_SHA256` in ci.yml, from the release's `checksums.txt`) as its own commit; parked breaking-change cards waiting on the new CLI unblocked
