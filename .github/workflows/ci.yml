@@ -54,8 +54,10 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # Temporary reviewed-main pin for evidence commands; restore a checksum-verified release after 3.8.0.
-  HDF_CLI_SOURCE_SHA: '17a4b5df3e3c4eabc011d8409db0826f157e46de'
+  # The CLI the HDF gates run: a released build, verified against the sha256
+  # the release workflow published in its checksums.txt. Move both together.
+  HDF_CLI_VERSION: '3.8.0'
+  HDF_CLI_SHA256: 'fa5dadbbd5d4fc92317784752e6d18420a41716caa94155ee8616ba756fac86e'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -81,9 +83,9 @@ env:
 # (zizmor, eslint, golangci-lint, govulncheck, OSV-Scanner, semgrep) run ONCE
 # in findings-tolerant mode — SARIF for all but semgrep, whose native JSON
 # keeps more — and tolerate only their documented findings exit. Findings
-# are gated by gate-hdf-scans, inline in this file: the gate CLI (built from
-# main by gate-cli) converts every scan to HDF (--from is explicit, never
-# auto-detected), applies any committed amendments
+# are gated by gate-hdf-scans, inline in this file: the gate CLI (the
+# released build gate-cli fetches) converts every scan to HDF (--from is
+# explicit, never auto-detected), applies any committed amendments
 # (.github/hdf-amendments/<tool>.json), then applies one committed threshold
 # template per tool (.github/hdf-thresholds/<tool>.yaml). The threshold
 # verdict — not the scanners' exit codes — is what fails CI.
@@ -535,32 +537,24 @@ jobs:
           retention-days: 7
 
   # ── The CLI the gates run ────────────────────────────────────────────────
-  # Build reviewed source in isolation so a PR cannot change the CLI judging it.
+  # A released build, never the PR's tree, so a PR cannot change the CLI
+  # judging it. The checksum check is load-bearing: the step must not reach
+  # an unverified binary.
   gate-cli:
-    name: Build the gate CLI (pinned main commit)
+    name: Fetch the gate CLI (checksum-verified release)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: mitre/hdf-libs
-          ref: ${{ env.HDF_CLI_SOURCE_SHA }}
-          path: gate-source
-          persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: gate-source/go.work
-          cache: false
-      - name: Build the reviewed CLI
-        working-directory: gate-source/hdf-cli
+      - name: Download and verify the released CLI
         run: |
-          test "$(git rev-parse HEAD)" = "$HDF_CLI_SOURCE_SHA"
-          go build -mod=readonly \
-            -ldflags "-X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit=$HDF_CLI_SOURCE_SHA" \
-            -o "$RUNNER_TEMP/hdf" ./cmd/hdf
-          "$RUNNER_TEMP/hdf" version
+          archive="hdf_${HDF_CLI_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/mitre/hdf-libs/releases/download/v$HDF_CLI_VERSION/$archive"
+          echo "$HDF_CLI_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" hdf
+          test "$("$RUNNER_TEMP/hdf" version | head -n 1)" = "hdf version $HDF_CLI_VERSION"
           "$RUNNER_TEMP/hdf" evidence --help
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
