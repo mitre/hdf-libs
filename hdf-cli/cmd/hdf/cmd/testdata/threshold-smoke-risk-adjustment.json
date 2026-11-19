@@ -12,9 +12,20 @@
       "appliedAt": "2025-01-01T00:00:00Z",
       "expiresAt": "2099-12-31T23:59:59Z",
       "impact": {
-        "value": 0.3,
-        "justification": "Not reachable from an entry point in this build."
+        "value": 0.3
       }
     }
-  ]
+  ],
+  "extensions": {
+    "passthrough": {
+      "overrides": [
+        {
+          "requirementId": "Grype/CVE-2022-42919",
+          "impact": {
+            "justification": "Not reachable from an entry point in this build."
+          }
+        }
+      ]
+    }
+  }
 }

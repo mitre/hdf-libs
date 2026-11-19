@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared Go/TypeScript case table for results[].rawSourceRecord (ADR-0017 §5). Both shipped validators read this file, because the closure is written with additionalProperties: the Go validator is a draft-07 engine that silently ignores unevaluatedProperties, so a closure written the house way would hold in TypeScript alone and the bounded field would be bounded in one language only. Each case is injected as the rawSourceRecord of the document's single result.",
+  "$comment": "Shared Go/TypeScript case table for results[].rawSourceRecord (ADR-0017 §5). Both shipped validators read this file so the closure is enforced identically in Go and TypeScript. Each case is injected as the rawSourceRecord of the document's single result.",
   "cases": [
     {
       "name": "a utf-8 JSON record",

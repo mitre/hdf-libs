@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/require"
 )
 
@@ -482,6 +483,17 @@ func RunConverterContractTests(t *testing.T, spec ConverterContractSpec) {
 		require.NoError(t, err, "minimal fixture should convert without error")
 		require.NotNil(t, result, "converter output should not be nil")
 	})
+}
+
+// RefURLs returns the URL of every reference that carries one, in order.
+func RefURLs(refs []hdf.Reference) []string {
+	urls := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		if ref.URL != nil {
+			urls = append(urls, *ref.URL)
+		}
+	}
+	return urls
 }
 
 // LoadJSON loads and unmarshals a JSON file.
