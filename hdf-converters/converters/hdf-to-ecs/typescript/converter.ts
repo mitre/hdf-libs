@@ -9,7 +9,8 @@ import {
   firstResultStartTime,
   defaultDescription,
   eventID,
-  buildHDFBlock,
+  addBaselineMetadata,
+  buildHDFBlockFromStatus,
   runExport,
   governingOverrideOf,
   disposition,
@@ -106,25 +107,29 @@ function buildEvent(
   const threat = buildThreat(req);
   if (threat) obj.threat = threat;
 
+  const log = buildSourceLocation(req);
+  if (log) obj.log = log;
+
+  const labels = buildLabels(req);
+  if (labels) obj.labels = labels;
+
+  // hdf.* lossless block, with the baseline's metadata beyond its name.
+  const hdf = buildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion);
+  addBaselineMetadata(hdf, baseline);
+  obj.hdf = hdf;
+
+  return obj;
+}
+
+function buildSourceLocation(req: Obj): Obj | undefined {
   const sl = asMap(req.sourceLocation);
   if (sl) {
     const file: Obj = {};
     setIf(file, 'name', getStr(sl, 'ref'));
     if ('line' in sl) file.line = sl.line;
-    if (Object.keys(file).length > 0) obj.log = { origin: { file } };
+    if (Object.keys(file).length > 0) return { origin: { file } };
   }
-
-  const labels = buildLabels(req);
-  if (labels) obj.labels = labels;
-
-  // hdf.* lossless block, plus the baseline fields the shared allowlist omits
-  // (title and integrity checksum) so the block stays genuinely lossless.
-  const hdf = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, generator, tool, converterVersion);
-  if ('title' in baseline) hdf.baseline_title = baseline.title;
-  if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
-  obj.hdf = hdf;
-
-  return obj;
+  return undefined;
 }
 
 /**

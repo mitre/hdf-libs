@@ -10,10 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// results[].rawSourceRecord is closed, and the two shipped validators must
-// enforce that identically — the Go one is a draft-07 engine that silently
-// ignores `unevaluatedProperties`, so a closure written that way would hold in
-// TypeScript alone. Both languages read
+// results[].rawSourceRecord is closed, and the Go and TypeScript validators
+// must enforce that identically, so both read
 // testdata/shipped-raw-source-record-cases.json.
 type shippedRawSourceRecordCase struct {
 	Name   string `json:"name"`
@@ -29,7 +27,7 @@ func resultsWithRawSourceRecord(t *testing.T, record any) []byte {
 	return []byte(`{
 		"baselines": [{
 			"name": "Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],
@@ -71,7 +69,7 @@ func TestValidateResults_RawSourceRecordIsOptional(t *testing.T) {
 	doc := []byte(`{
 		"baselines": [{
 			"name": "B",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],

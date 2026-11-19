@@ -16,7 +16,7 @@ describe('HDF Results Parsing', () => {
       const validJson = JSON.stringify({
         baselines: [{
           name: 'Test Baseline',
-          checksum: { algorithm: 'sha256', value: 'abc123' },
+          integrity: { algorithm: 'sha256', checksum: 'abc123' },
           requirements: [{
             id: 'REQ-001',
             descriptions: [{ label: 'default', data: 'Test description' }],
@@ -47,7 +47,7 @@ describe('HDF Results Parsing', () => {
       const validJson = JSON.stringify({
         baselines: [{
           name: 'Test',
-          checksum: { algorithm: 'sha256', value: 'test' },
+          integrity: { algorithm: 'sha256', checksum: 'test' },
           requirements: [minReq]
         }],
         components: [],
@@ -66,7 +66,7 @@ describe('HDF Results Parsing', () => {
         baselines: [
           {
             name: 'Baseline 1',
-            checksum: { algorithm: 'sha256', value: 'hash1' },
+            integrity: { algorithm: 'sha256', checksum: 'hash1' },
             requirements: [{
               id: 'REQ-001',
               descriptions: [{ label: 'default', data: 'Desc 1' }],
@@ -82,7 +82,7 @@ describe('HDF Results Parsing', () => {
           },
           {
             name: 'Baseline 2',
-            checksum: { algorithm: 'sha512', value: 'hash2' },
+            integrity: { algorithm: 'sha512', checksum: 'hash2' },
             requirements: [{
               id: 'REQ-002',
               descriptions: [{ label: 'default', data: 'Desc 2' }],
@@ -138,7 +138,7 @@ describe('HDF Results Parsing', () => {
       const invalidJson = JSON.stringify({
         baselines: [{
           // Missing name
-          checksum: { algorithm: 'sha256', value: 'test' },
+          integrity: { algorithm: 'sha256', checksum: 'test' },
           requirements: []
         }],
         components: [],
@@ -155,7 +155,7 @@ describe('HDF Results Parsing', () => {
       const invalidJson = JSON.stringify({
         baselines: [{
           name: 'Test',
-          checksum: { algorithm: 'sha256', value: 'test' },
+          integrity: { algorithm: 'sha256', checksum: 'test' },
           requirements: [{
             id: 'REQ-001',
             // Missing descriptions
@@ -220,7 +220,7 @@ describe('HDF Baseline Parsing', () => {
         name: 'Security Baseline',
         title: 'Test Baseline',
         version: '1.0.0',
-        checksum: { algorithm: 'sha256', value: 'def456' },
+        integrity: { algorithm: 'sha256', checksum: 'def456' },
         requirements: [{
           id: 'REQ-001',
           title: 'Access Control',
@@ -242,7 +242,7 @@ describe('HDF Baseline Parsing', () => {
       const validJson = JSON.stringify({
         name: 'Multi-Req Baseline',
         version: '2.0.0',
-        checksum: { algorithm: 'sha512', value: 'hash' },
+        integrity: { algorithm: 'sha512', checksum: 'hash' },
         requirements: [
           {
             id: 'REQ-001',
@@ -272,7 +272,7 @@ describe('HDF Baseline Parsing', () => {
     it('should reject baseline missing name', () => {
       const invalidJson = JSON.stringify({
         version: '1.0.0',
-        checksum: { algorithm: 'sha256', value: 'test' },
+        integrity: { algorithm: 'sha256', checksum: 'test' },
         requirements: []
       });
 
@@ -285,7 +285,7 @@ describe('HDF Baseline Parsing', () => {
     it('should reject baseline with empty requirements array', () => {
       const invalidJson = JSON.stringify({
         name: 'Test Baseline',
-        checksum: { algorithm: 'sha256', value: 'test' },
+        integrity: { algorithm: 'sha256', checksum: 'test' },
         requirements: []
       });
 
@@ -303,7 +303,7 @@ describe('Auto-Detection Parsing', () => {
     const resultsJson = JSON.stringify({
       baselines: [{
         name: 'Test',
-        checksum: { algorithm: 'sha256', value: 'test' },
+        integrity: { algorithm: 'sha256', checksum: 'test' },
         requirements: [minReq]
       }],
       components: [],
@@ -321,7 +321,7 @@ describe('Auto-Detection Parsing', () => {
     const baselineJson = JSON.stringify({
       name: 'Test Baseline',
       version: '1.0.0',
-      checksum: { algorithm: 'sha256', value: 'test' },
+      integrity: { algorithm: 'sha256', checksum: 'test' },
       requirements: [{
         id: 'REQ-001',
         title: 'Test',
@@ -363,7 +363,7 @@ describe('Whitespace-equivalent JSON (isWhitespaceEquivalent path)', () => {
   const validResultsData = {
     baselines: [{
       name: 'WS Test Baseline',
-      checksum: { algorithm: 'sha256', value: 'abc123' },
+      integrity: { algorithm: 'sha256', checksum: 'abc123' },
       requirements: [{
         id: 'REQ-001',
         descriptions: [{ label: 'default', data: 'Test' }],
@@ -399,7 +399,7 @@ describe('Whitespace-equivalent JSON (isWhitespaceEquivalent path)', () => {
     const validBaselineData = {
       name: 'WS Baseline',
       version: '1.0.0',
-      checksum: { algorithm: 'sha256', value: 'def456' },
+      integrity: { algorithm: 'sha256', checksum: 'def456' },
       requirements: [{
         id: 'REQ-001',
         title: 'Test',
@@ -419,7 +419,7 @@ describe('Trailing garbage detection (parseBaseline and parse)', () => {
     const validJson = JSON.stringify({
       name: 'Test',
       version: '1.0.0',
-      checksum: { algorithm: 'sha256', value: 'test' },
+      integrity: { algorithm: 'sha256', checksum: 'test' },
       requirements: [{
         id: 'REQ-001',
         title: 'Test',

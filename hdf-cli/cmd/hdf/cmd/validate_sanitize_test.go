@@ -44,7 +44,7 @@ func TestValidate_SanitizesUntrustedFieldPaths(t *testing.T) {
 
 	// Assert the message is actually rendered, so the escape assertion below
 	// cannot pass vacuously on empty output.
-	assert.Contains(t, stderr, "Invalid type. Expected: string, given: integer")
+	assert.Contains(t, stderr, "got number, want string")
 	assert.Contains(t, stderr, "labels.evil", "the offending key must stay visible")
 	assert.Contains(t, stderr, "key:", "the key's visible characters must survive sanitizing")
 	assert.NotContains(t, stderr, "\x1b", "an escape sequence from the document reached the terminal")
