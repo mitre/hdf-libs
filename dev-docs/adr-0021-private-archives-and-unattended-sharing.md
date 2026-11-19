@@ -73,14 +73,14 @@ No mainstream tool refuses to write a private file because of the filesystem typ
 | Source | Disposition | Evidence and relevance |
 |---|---|---|
 | Microsoft Win32 security APIs | Adopt native mechanism | [CreateFile security attributes](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew) establish security at creation; [protected DACLs](https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptors-for-new-objects) prevent inherited grants. |
-| Go `os` and `golang.org/x/sys` v0.49.0 | Adopt | [Go Chmod limitation](https://pkg.go.dev/os#Chmod); existing bindings supply token, security-descriptor, `Fgetxattr` and file APIs. |
+| Go `os` and `golang.org/x/sys` (the version in `hdf-cli/go.mod`) | Adopt | [Go Chmod limitation](https://pkg.go.dev/os#Chmod); existing bindings supply token, security-descriptor, `Fgetxattr` and file APIs. |
 | Apple native ACL/file-security APIs | Adopt native mechanism | [`openx_np`](https://github.com/apple-oss-distributions/Libc/blob/main/sys/openx_np.c), [`acl_get_fd`](https://github.com/apple-oss-distributions/Libc/blob/main/posix1e/acl_file.c) and [`filesec`](https://github.com/apple-oss-distributions/Libc/blob/main/gen/filesec.c); creation-time protection succeeded in the isolated macOS probe. No source copied. |
 | `ebitengine/purego` v0.11.3 | Adopt; owner approved | [Pinned README](https://github.com/ebitengine/purego/blob/v0.11.3/README.md); Apache-2.0, allowed by dependency review; direct dependency +1, transitive +0. Beta API is the maintenance tradeoff. |
 | `naegelejd/go-acl` v0.2.0 | Reject | MIT; uses Cgo and provides no creation-time file opener. |
 | ASD STIG V-222587 / APSC-DV-002330 (SC-28), V-222426 / APSC-DV-000470 | Reference | Protect stored information, citing file permissions; discretionary access control. No STIG, SRG or NIST SP 800-53 control asks an application to check filesystem type or ACLs before writing; the RHEL 9 STIG treats network storage as host configuration. |
 | NIST SP 800-53 AC-6 | Reference | [Least privilege](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=63) informs the choice; it does not mandate one owner-only ZIP policy. |
 
-Dependency check on 2026-11-08: `golang.org/x/sys` v0.49.0 is BSD-3-Clause, permitted by the dependency-review deny list, not archived, and becomes a direct CLI dependency at the same version.
+Dependency check on 2026-11-08: `golang.org/x/sys` is BSD-3-Clause, permitted by the dependency-review deny list, not archived, and becomes a direct CLI dependency at the version `hdf-cli/go.mod` already carries.
 
 ## Alternatives Considered
 
