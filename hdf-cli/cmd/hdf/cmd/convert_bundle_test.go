@@ -501,3 +501,32 @@ func TestConvertBundleOverwriteFailureNotesTheUnchangedOutput(t *testing.T) {
 	require.ErrorContains(t, err, "over the source document")
 	require.NotContains(t, stderr, "was not replaced")
 }
+
+// An unknown --output-access is refused before the source is read, and the flag is
+// refused without --bundle, so neither silently selects a policy.
+func TestConvertBundleOutputAccessIsValidated(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "export.zip")
+	missing := filepath.Join(dir, "missing.json")
+
+	_, _, err := executeCommand("convert", "--bundle", missing, "--to", "ecs", "-o", out, "--output-access", "shared")
+	require.ErrorContains(t, err, `--output-access must be private or inherit, got "shared"`)
+
+	_, _, err = executeCommand("convert", bundleSourceFixture(t), "--to", "ecs", "-o", out, "--output-access", "inherit")
+	require.ErrorContains(t, err, "--output-access requires --bundle")
+	_, statErr := os.Stat(out)
+	require.True(t, os.IsNotExist(statErr), "nothing is written")
+}
+
+// A source that fails to convert leaves no staged archive beside -o.
+func TestConvertBundleBuildFailureRemovesTheStagedArchive(t *testing.T) {
+	dir := t.TempDir()
+	invalid := filepath.Join(dir, "invalid.json")
+	require.NoError(t, os.WriteFile(invalid, []byte("invalid JSON"), 0o600))
+
+	_, _, err := executeCommand("convert", "--bundle", invalid, "--to", "ecs", "-o", filepath.Join(dir, "export.zip"))
+	require.Error(t, err)
+	leftovers, err := filepath.Glob(filepath.Join(dir, stagedArchivePrefix+"*"))
+	require.NoError(t, err)
+	require.Empty(t, leftovers)
+}
