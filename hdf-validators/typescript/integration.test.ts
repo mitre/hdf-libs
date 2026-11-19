@@ -20,7 +20,7 @@ describe('Integration Tests - Real HDF Files', () => {
       baselines: [
         {
           // Missing name
-          checksum: { algorithm: 'sha256', value: 'test' },
+          integrity: { algorithm: 'sha256', checksum: 'test' },
           requirements: 'not an array' // Invalid type
         }
       ]
