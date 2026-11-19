@@ -1276,7 +1276,7 @@ Environment variables:
 |----------|-------------|---------|
 | `HDF_MCP_ROOT` | Path-confinement root; every tool path and write output is resolved under it and anything outside is refused | process working directory |
 | `HDF_MCP_ENABLE_WRITES` | Write gate; `1`, `true`, `yes`, or `on` permits writes to disk, anything else leaves the write tools in preview mode | disabled |
-| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 50 MB |
+| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 256 MB |
 | `HDF_MCP_CACHE_BYTES` | Budget for the parsed-document cache | 256 MB |
 | `HDF_MCP_LOG_LEVEL` | Stderr log level: `error`, `warn`, `info`, or `debug` | `info` |
 | `HDF_MCP_TOOLS` | Same syntax as `--tools`; the flag takes precedence when both are set | all tools |

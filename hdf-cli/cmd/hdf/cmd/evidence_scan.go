@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
@@ -61,7 +62,7 @@ func (out *scanResult) skipUnreadable(path string, _ error) error {
 // skipOversize records a file over --max-size, which the scan never opens.
 func (out *scanResult) skipOversize(path string, size int64) error {
 	out.unreadable = append(out.unreadable, unreadEntry{path: path,
-		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, getMaxFileSize()/(1024*1024))})
+		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, effectiveMaxSizeMB())})
 	return nil
 }
 
@@ -84,11 +85,14 @@ func readScannedFile(fsys fs.FS, rel string, size int64) ([]byte, bool, error) {
 		return nil, true, err
 	}
 	defer func() { _ = f.Close() }()
-	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	data, err := hdfutil.ReadAtMost(f, limit, rel)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, false, nil
+	}
 	if err != nil {
 		return nil, true, err
 	}
-	return data, int64(len(data)) <= limit, nil
+	return data, true, nil
 }
 
 // looksLikeBOM reports whether a document carries a BOM's own discriminator.

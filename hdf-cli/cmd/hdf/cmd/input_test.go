@@ -1,25 +1,14 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 )
-
-func TestReadAtMostRejectsExcessBytes(t *testing.T) {
-	data, err := readAtMost(strings.NewReader("complete input"), 4)
-	if err == nil {
-		t.Fatalf("expected size failure, got truncated bytes %q", data)
-	}
-	if data != nil {
-		t.Fatalf("must not return truncated input on size failure: %q", data)
-	}
-	data, err = readAtMost(strings.NewReader("four"), 4)
-	if err != nil || string(data) != "four" {
-		t.Fatalf("exact boundary should preserve all bytes: %q, %v", data, err)
-	}
-}
 
 func TestReadFromFile_NotFound(t *testing.T) {
 	_, err := readFromFile("/nonexistent/path/to/file.json", false)
@@ -123,19 +112,54 @@ func TestReadInputFile_BOMOnly(t *testing.T) {
 	}
 }
 
-func TestReadFromFile_TooLarge(t *testing.T) {
-	// Create a file that exceeds the size limit
-	// We'll test this by temporarily setting a small limit
-	// Since MaxHDFFileSize is a const, we can't easily test this
-	// without creating a huge file, so we'll skip this test
-	t.Skip("skipping large file test - would require creating 256MB+ file")
+func TestReadFromFileReportsTheLimitInEffect(t *testing.T) {
+	oldMax := maxSizeMB
+	maxSizeMB = 0 // --max-size 0 falls back to the default limit
+	defer func() { maxSizeMB = oldMax }()
+
+	// Truncate extends the file without writing data (sparse on Unix; allocated but
+	// not zero-filled on NTFS), so Stat reports the size with no bytes written.
+	big := filepath.Join(t.TempDir(), "big.json")
+	f, err := os.Create(big)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(getMaxFileSize() + 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = readFromFile(big, false)
+	if err == nil {
+		t.Fatal("expected an error for a file over the default limit")
+	}
+	want := fmt.Sprintf("max %d MB", DefaultMaxSizeMB)
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("error %q should report the limit in effect (%s)", err, want)
+	}
+	if !strings.Contains(err.Error(), big) {
+		t.Errorf("error %q should name the file it refused", err)
+	}
 }
 
-func TestReadInputFile_StdinPath(t *testing.T) {
-	// When path is "-", it should try to read from stdin
-	// This is hard to test without mocking stdin
-	// The function returns "no input provided" for empty stdin
-	t.Skip("skipping stdin test - requires stdin mocking")
+func TestMaxSizeFlag_RejectsAValueWhoseByteCountOverflows(t *testing.T) {
+	oldMax := maxSizeMB
+	defer func() { maxSizeMB = oldMax }()
+
+	_, _, err := executeCommand("--max-size", "17592186044416", "version")
+	if err == nil {
+		t.Fatal("expected --max-size 17592186044416 to be refused: its byte count wraps to 0")
+	}
+	for _, want := range []string{"--max-size 17592186044416", "largest supported value"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+	if maxSizeMB != oldMax {
+		t.Errorf("a refused flag must not reach the global: got %d", maxSizeMB)
+	}
 }
 
 func TestParseHDFResults_InvalidJSON(t *testing.T) {
@@ -181,5 +205,70 @@ func TestGetMaxFileSize(t *testing.T) {
 	actual := getMaxFileSize()
 	if actual != expected {
 		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
+	}
+}
+
+func TestReadStatted_ReturnsTheStattedBytes(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		size  int64
+	}{
+		{"exactly the stat'd size", "abc", 3},
+		{"shrunk since the stat", "ab", 3},
+		{"empty file", "", 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			data, err := readStatted(strings.NewReader(c.input), c.size, "scan.json")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if string(data) != c.input {
+				t.Errorf("got %q, want %q", data, c.input)
+			}
+		})
+	}
+}
+
+// A file appended to between its Stat and its read delivers more bytes than the Stat
+// reported. That is a partial snapshot of a file still being written, so it is refused
+// however far under --max-size it is, instead of being parsed, hashed or archived.
+func TestReadStatted_RefusesAFileThatGrewSinceTheStat(t *testing.T) {
+	data, err := readStatted(strings.NewReader("abcd"), 3, "scan.json")
+	if err == nil {
+		t.Fatalf("a reader yielding more than the stat'd 3 bytes must error, got %q", data)
+	}
+	if data != nil {
+		t.Errorf("got %d bytes alongside the error, want none", len(data))
+	}
+	for _, want := range []string{"input grew while it was read", "scan.json", "(3 bytes at open)"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestReadStatted_ReportsAReadFailureWithThePath(t *testing.T) {
+	cause := errors.New("disk fell over")
+	data, err := readStatted(iotest.ErrReader(cause), 3, "scan.json")
+	if data != nil {
+		t.Errorf("got %d bytes alongside the error, want none", len(data))
+	}
+	if !errors.Is(err, cause) {
+		t.Fatalf("error %v should wrap the read failure %v", err, cause)
+	}
+	if !strings.Contains(err.Error(), "failed to read scan.json") {
+		t.Errorf("error %q should name the path", err)
+	}
+}
+
+func TestGetMaxFileSize_LargestFlagDoesNotOverflow(t *testing.T) {
+	oldMax := maxSizeMB
+	maxSizeMB = maxMaxSizeMB
+	defer func() { maxSizeMB = oldMax }()
+
+	if got := getMaxFileSize(); got <= 0 || got != int64(maxMaxSizeMB)*1024*1024 {
+		t.Errorf("getMaxFileSize() at the largest flag = %d, want %d", got, int64(maxMaxSizeMB)*1024*1024)
 	}
 }

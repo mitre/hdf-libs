@@ -2,7 +2,9 @@ package tools
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -374,13 +376,29 @@ func confinedFetchAt(base string) hdfengine.FetchFunc {
 		if limit := mcpMaxInputSize(); fi.Size() > limit {
 			return nil, fmt.Errorf("referenced file %q is %d bytes, over the %d-byte limit", uri, fi.Size(), limit)
 		}
-		data, err := os.ReadFile(p) //nolint:gosec // confined by SafePath, size-guarded above
+		f, err := os.Open(p) //nolint:gosec // confined by SafePath, size-guarded above
 		if err != nil {
 			slog.Error("evidence fetch failed", "uri", uri, "cause", err)
 			return nil, fmt.Errorf("referenced file %q could not be read", uri)
 		}
-		return data, nil
+		defer func() { _ = f.Close() }()
+		return readReferenced(f, uri, mcpMaxInputSize())
 	}
+}
+
+// readReferenced reads a referenced file through the bounded reader, so the ceiling
+// holds on the bytes delivered and not only on the size Stat reported. Errors name
+// the file by its uri only.
+func readReferenced(r io.Reader, uri string, limit int64) ([]byte, error) {
+	data, err := hdfutil.ReadAtMost(r, limit, uri)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, fmt.Errorf("referenced file %q delivered more than the %d-byte limit", uri, limit)
+	}
+	if err != nil {
+		slog.Error("evidence fetch failed", "uri", uri, "cause", err)
+		return nil, fmt.Errorf("referenced file %q could not be read", uri)
+	}
+	return data, nil
 }
 
 func fromLoaderErrors(errs []loader.ValidationError) []validateError {
