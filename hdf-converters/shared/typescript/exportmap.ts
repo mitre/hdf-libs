@@ -186,15 +186,33 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
 // --- legacy hdf.* projection ---
 
 /**
- * Build the legacy hdf.* projection from selected requirement fields.
- * Complete source preservation belongs to the explicit bundle APIs.
- * `status.raw` is the lossless results verdict; `status.suppressed` is the
- * acceptance axis. The effective rollup does not replace the raw verdict.
+ * Build the hdf.* block from a raw verdict and the two flags.
+ * @deprecated Use buildHDFBlockFromStatus with the Status from statusOf, which keeps the
+ * raw verdict and the effective rollup from being swapped.
  */
 export function buildHDFBlock(
   req: Obj,
   baseline: Obj,
-  status: Status,
+  status: string,
+  overridden: boolean,
+  suppressed: boolean,
+  generator: Obj | undefined,
+  tool: Obj | undefined,
+  converterVersion: string,
+): Obj {
+  return buildHDFBlockFromStatus(req, baseline, { raw: status, overridden, suppressed }, generator, tool, converterVersion);
+}
+
+/**
+ * Build the lossless hdf.* namespace shared by the export converters: promoted
+ * snake_case scalars plus the full requirement sub-objects preserved verbatim.
+ * `status.raw` is the lossless results verdict; `status.suppressed` is the
+ * acceptance axis. The effective rollup is not read: it does not replace the raw verdict.
+ */
+export function buildHDFBlockFromStatus(
+  req: Obj,
+  baseline: Obj,
+  status: Pick<Status, 'raw' | 'overridden' | 'suppressed'>,
   generator: Obj | undefined,
   tool: Obj | undefined,
   converterVersion: string,
@@ -237,6 +255,24 @@ export function buildHDFBlock(
   if (generator) hdf.generator = generator;
   if (tool) hdf.tool = tool;
   return hdf;
+}
+
+/**
+ * The declared baseline fields the exporters carry, mapped to their hdf.* keys.
+ * Integrity is where a profile's hash lives (an InSpec sha256 lands in
+ * integrity.checksum), so it goes whole, algorithm and signature with it.
+ */
+const BASELINE_METADATA: ReadonlyArray<readonly [src: string, dst: string]> = [
+  ['title', 'baseline_title'],
+  ['version', 'baseline_version'],
+  ['integrity', 'baseline_integrity'],
+];
+
+/** Copy the baseline's declared metadata into hdf.* verbatim, only keys it carries. */
+export function addBaselineMetadata(hdf: Obj, baseline: Obj): void {
+  for (const [src, dst] of BASELINE_METADATA) {
+    if (src in baseline) hdf[dst] = baseline[src];
+  }
 }
 
 // --- canonical line serialization ---

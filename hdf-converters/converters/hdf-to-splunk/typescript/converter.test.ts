@@ -186,7 +186,7 @@ describe('hdf-to-splunk converter', () => {
     // baseline metadata beyond name
     expect(hdf.baseline_version).toBe('1.0.0');
     expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
-    expect(hdf.baseline_checksum).toBeUndefined();
+    expect(hdf.baseline_integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
     expect((hdf.groups as unknown[]).length).toBe(1);
     expect(obj((hdf.groups as unknown[])[0]).id).toBe('controls/stig.rb');
 

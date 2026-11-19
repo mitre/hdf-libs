@@ -583,3 +583,36 @@ func TestEnrichStix_IdlessObjectStaysSchemaValid(t *testing.T) {
 	require.NotNil(t, typeless)
 	assert.Equal(t, "STIX object", typeless["description"], "generic fallback when id/name/type all absent")
 }
+
+func TestEnrichStix_IDLessVulnerabilitiesAreNotReferenceTargets(t *testing.T) {
+	bundle, err := ParseStixBundle(enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	first := bundle.Objects[0]
+	delete(first, "id")
+	second := map[string]interface{}{"type": "vulnerability", "name": "second", "external_references": []interface{}{
+		map[string]interface{}{"source_name": "cve", "external_id": "CVE-2009-4324"},
+	}}
+	objects := []map[string]interface{}{
+		first, second,
+		{"type": "sighting", "sighting_of_ref": ""},
+		{"type": "relationship", "relationship_type": "exploits", "target_ref": ""},
+		{"type": "indicator", "object_refs": []interface{}{""}},
+	}
+	assert.Empty(t, exploitedCVEs(&StixBundle{Objects: objects}), "an object without an id cannot be the target of a reference")
+}
+
+func TestEnrichStix_RiskAdjustmentReasonNamesAnIDLessSource(t *testing.T) {
+	var source map[string]interface{}
+	require.NoError(t, json.Unmarshal(enrichFixture(t, "poison-ivy-exploited-stix21.json"), &source))
+	vulnerability := source["objects"].([]interface{})[0].(map[string]interface{})
+	source["objects"] = []interface{}{vulnerability, map[string]interface{}{"type": "sighting", "sighting_of_ref": vulnerability["id"]}}
+	bundle, err := json.Marshal(source)
+	require.NoError(t, err)
+	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
+	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), bundle, EnrichOptions{RecomputeCVSS: true, AsOf: asOf})
+	require.NoError(t, err)
+	overrides := reqRefsUnderKey(requirementByID(t, enrichDoc(t, out), "CVE-2012-0158"), "statusOverrides")
+	require.Len(t, overrides, 1)
+	assert.Equal(t, "CVE-2012-0158 actively exploited per STIX threat intelligence (STIX sighting object); CVSS Threat recomputed with Exploit Maturity E:H.",
+		overrides[0].(map[string]interface{})["reason"])
+}

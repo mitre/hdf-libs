@@ -16,19 +16,19 @@
             {
               "codeDesc": "Path: subprocess-shell-true.py, line 14",
               "message": "Suggested fix -- replace the matched code with:\nFalse",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             },
             {
               "codeDesc": "Path: subprocess-shell-true.py, line 17",
               "message": "Suggested fix -- replace the matched code with:\nFalse",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             },
             {
               "codeDesc": "Path: subprocess-shell-true.py, line 20",
               "message": "Suggested fix -- replace the matched code with:\nFalse",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             }
           ],
@@ -97,19 +97,19 @@
             {
               "codeDesc": "Path: unsafe.go, line 21",
               "message": "",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             },
             {
               "codeDesc": "Path: unsafe.go, line 21",
               "message": "",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             },
             {
               "codeDesc": "Path: unsafe.go, line 23",
               "message": "",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "failed"
             }
           ],
@@ -167,7 +167,7 @@
           "results": [
             {
               "codeDesc": "Semgrep scanned 2 file(s); 2 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
-              "startTime": "2026-11-09T21:36:27.984082Z",
+              "startTime": "2026-11-15T23:27:26.758621Z",
               "status": "notApplicable"
             }
           ],
@@ -193,7 +193,7 @@
     "name": "semgrep-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-11-09T21:36:27.984082Z",
+  "timestamp": "2026-11-15T23:27:26.758621Z",
   "tool": {
     "name": "Semgrep",
     "version": "1.183.0"

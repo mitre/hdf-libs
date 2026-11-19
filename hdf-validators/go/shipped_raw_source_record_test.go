@@ -10,10 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// results[].rawSourceRecord is closed, and the two shipped validators must
-// enforce that identically — the Go one is a draft-07 engine that silently
-// ignores `unevaluatedProperties`, so a closure written that way would hold in
-// TypeScript alone. Both languages read
+// results[].rawSourceRecord is closed, and the Go and TypeScript validators
+// must enforce that identically, so both read
 // testdata/shipped-raw-source-record-cases.json.
 type shippedRawSourceRecordCase struct {
 	Name   string `json:"name"`

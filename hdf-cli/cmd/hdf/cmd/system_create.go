@@ -541,11 +541,7 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 			"name":    "hdf-cli",
 			"version": version,
 		},
-		"extensions": map[string]interface{}{
-			"passthrough": map[string]interface{}{
-				"createdAt": time.Now().UTC().Format(time.RFC3339),
-			},
-		},
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
 	}
 
 	if opts.description != "" {

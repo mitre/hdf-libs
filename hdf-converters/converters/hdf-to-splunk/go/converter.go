@@ -61,7 +61,7 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	category := firstCWE(req)
 	vendorProduct := exportmap.GetStr(tool, "name")
 
-	hdfBlock := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
+	hdfBlock := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
 	augmentHDFBlock(hdfBlock, req, baseline, component)
 
 	event := map[string]interface{}{
@@ -120,15 +120,7 @@ func augmentHDFBlock(hdf, req, baseline, component map[string]interface{}) {
 	if v, ok := req["sourceLocation"]; ok {
 		hdf["source_location"] = v
 	}
-	if v, ok := baseline["version"]; ok {
-		hdf["baseline_version"] = v
-	}
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
+	exportmap.AddBaselineMetadata(hdf, baseline)
 	if v, ok := baseline["groups"]; ok {
 		hdf["groups"] = v
 	}

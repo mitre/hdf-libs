@@ -108,14 +108,9 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	if labels := buildLabels(req); labels != nil {
 		obj["labels"] = labels
 	}
-	// Keep the existing aliases; complete modern integrity lives in the bundle artifact.
-	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
+	// hdf.* lossless block, with the baseline's metadata beyond its name.
+	hdf := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
+	exportmap.AddBaselineMetadata(hdf, baseline)
 	obj["hdf"] = hdf
 
 	return obj

@@ -7,7 +7,8 @@ import {
   setIf,
   statusOf,
   firstResultStartTime,
-  buildHDFBlock,
+  addBaselineMetadata,
+  buildHDFBlockFromStatus,
   runExport,
   firstCVE,
   epochSeconds,
@@ -67,7 +68,7 @@ function buildHECEvent(
   const category = firstCWE(req);
   const vendorProduct = getStr(tool, 'name');
 
-  const hdfBlock = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
+  const hdfBlock = buildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion);
   augmentHdfBlock(hdfBlock, req, baseline, component);
 
   const event: Obj = {
@@ -114,9 +115,7 @@ function buildHECEvent(
  */
 function augmentHdfBlock(hdf: Obj, req: Obj, baseline: Obj, component: Obj | undefined): void {
   if ('sourceLocation' in req) hdf.source_location = req.sourceLocation;
-  if ('version' in baseline) hdf.baseline_version = baseline.version;
-  if ('title' in baseline) hdf.baseline_title = baseline.title;
-  if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
+  addBaselineMetadata(hdf, baseline);
   if ('groups' in baseline) hdf.groups = baseline.groups;
   if (component) hdf.component = component;
 }

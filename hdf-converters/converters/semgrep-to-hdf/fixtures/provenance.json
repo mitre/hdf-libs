@@ -10,7 +10,7 @@
       "file": "semgrep_output_v1-1.183.0.schema.json",
       "source": "https://raw.githubusercontent.com/semgrep/semgrep-interfaces/v1.183.0/semgrep_output_v1.jsonschema",
       "sha256": "2105d76a0c6985f7086cb3e88f4b1bdd8fb13dcdf4231a49f5ce38f4122e1033",
-      "retrieved": "2026-11-09"
+      "retrieved": "2026-11-15"
     }
   ]
 }

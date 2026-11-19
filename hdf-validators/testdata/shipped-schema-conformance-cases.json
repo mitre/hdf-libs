@@ -1,5 +1,5 @@
 {
-  "$comment": "Schema-confirmed HDF examples copied from hdf-schema/src/schemas/hdf-*.schema.json at a9a5901d4cb3473dcdfc2a50efcdcecc098b7955; not captured scanner output. Cases add only the indicated properties. All expected verdicts verified against the source draft-2020-12 schemas using Ajv2020 8.18.0 on 2026-11-07. Negative cases intentionally violate closed scopes. TypeScript and Go consume the identical table.",
+  "$comment": "Schema-confirmed HDF examples copied from hdf-schema/src/schemas/hdf-*.schema.json at a9a5901d4cb3473dcdfc2a50efcdcecc098b7955; not captured scanner output. Cases add only the indicated properties. All expected verdicts verified against the source draft-2020-12 schemas using Ajv2020 8.18.0 on 2026-11-07. Negative cases intentionally violate closed scopes. TypeScript and Go consume the identical table. The createdAt cases were added on 2026-11-15; the timestamp is the RFC 3339 UTC form hdf-cli writes.",
   "documents": {
     "results": {
       "baselines": [
@@ -1399,6 +1399,50 @@
       "valid": false,
       "keyword": "unevaluatedProperties",
       "field": "integrity.undeclaredClosedScopeProbe"
+    },
+    {
+      "name": "system: accepts the creation time hdf-cli writes",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {
+        "createdAt": "2026-11-15T20:35:00Z"
+      },
+      "valid": true
+    },
+    {
+      "name": "system: rejects a creation time that is not a date-time",
+      "type": "system",
+      "document": "system",
+      "path": [],
+      "properties": {
+        "createdAt": "yesterday"
+      },
+      "valid": false,
+      "keyword": "format",
+      "field": "createdAt"
+    },
+    {
+      "name": "plan: accepts the creation time hdf-cli writes",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {
+        "createdAt": "2026-11-15T20:35:00Z"
+      },
+      "valid": true
+    },
+    {
+      "name": "plan: rejects a creation time that is not a date-time",
+      "type": "plan",
+      "document": "plan",
+      "path": [],
+      "properties": {
+        "createdAt": "yesterday"
+      },
+      "valid": false,
+      "keyword": "format",
+      "field": "createdAt"
     }
   ]
 }

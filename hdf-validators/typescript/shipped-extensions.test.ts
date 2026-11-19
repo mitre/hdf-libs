@@ -102,12 +102,14 @@ describe('extensions hint scope', () => {
     const baseline = (doc.baselines as Record<string, unknown>[])[0];
     const requirement = (baseline.requirements as Record<string, unknown>[])[0];
     const resultDoc = (requirement.results as Record<string, unknown>[])[0];
-    resultDoc.rawSourceRecord = {content: '{}', encoding: 'utf-8', mediaType: 'application/json', system_context: {}};
+    resultDoc.rawSourceRecord = {content: '{}', encoding: 'utf-8', mediaType: 'application/json', system_context: {}, alpha: 1};
     const result = validateResults(doc);
     expect(result.valid).toBe(false);
-    expect(result.errors).toEqual([expect.objectContaining({
-      keyword: 'additionalProperties', message: 'is not allowed',
-      field: 'baselines.0.requirements.0.results.0.rawSourceRecord.system_context',
-    })]);
+    const parent = 'baselines.0.requirements.0.results.0.rawSourceRecord.';
+    expect(result.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({keyword: 'additionalProperties', message: 'is not allowed', field: `${parent}system_context`}),
+      expect.objectContaining({keyword: 'additionalProperties', message: 'is not allowed', field: `${parent}alpha`}),
+    ]));
+    expect(result.errors).toHaveLength(2);
   });
 });

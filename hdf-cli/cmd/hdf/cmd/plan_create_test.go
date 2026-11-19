@@ -154,14 +154,12 @@ func TestPlanCreate_NoArgsNoFlags(t *testing.T) {
 	assert.Contains(t, err.Error(), "system file")
 }
 
-func assertCreationTimestamp(t *testing.T, plan map[string]interface{}) {
+// assertCreationTimestamp checks the document's root createdAt, where every
+// released hdf-cli has written it and the System and Plan schemas declare it.
+func assertCreationTimestamp(t *testing.T, doc map[string]interface{}) {
 	t.Helper()
-	extensions, ok := plan["extensions"].(map[string]interface{})
-	require.True(t, ok)
-	metadata, ok := extensions["passthrough"].(map[string]interface{})
-	require.True(t, ok)
-	createdAt, ok := metadata["createdAt"].(string)
-	require.True(t, ok)
+	createdAt, ok := doc["createdAt"].(string)
+	require.True(t, ok, "root createdAt missing")
 	parsed, err := time.Parse(time.RFC3339, createdAt)
 	require.NoError(t, err)
 	assert.WithinDuration(t, time.Now(), parsed, time.Minute)

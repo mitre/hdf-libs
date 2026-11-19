@@ -8,9 +8,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
 
 // Every input fixture must satisfy the semgrep output schema for the release it
-// declares. Pinned here rather than in Go because the schema is JSON Schema
-// 2020-12 with tuple-encoded error types (prefixItems), which gojsonschema does
-// not implement and misreads as a oneOf failure; ajv is the engine of record.
+// declares. The Go suite validates the 1.183.0 capture and the adapted cases through
+// the shared validator; this file covers every file fixture, the 1.174.0 ones included.
 describe('semgrep-to-hdf fixtures validate against the vendored schema', () => {
   const inputs = readdirSync(join(FIXTURES, 'input')).filter((f) => f.endsWith('.json')).sort();
 

@@ -23,6 +23,11 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
+func semgrepSchema(t *testing.T, version string) *shared.SchemaValidator {
+	t.Helper()
+	return shared.NewSchemaValidator(t, filepath.Join("..", "fixtures", "semgrep_output_v1-"+version+".schema.json"))
+}
+
 func convertFixture(t *testing.T, name string) *hdf.HDFResults {
 	t.Helper()
 	out, err := ConvertSemgrepToHDF(loadFixture(t, name), testVersion)
@@ -51,20 +56,13 @@ func contains(haystack, needle string) bool {
 	})()
 }
 
-func referenceURLs(refs []hdf.Reference) []string {
-	urls := make([]string, 0, len(refs))
-	for _, ref := range refs {
-		if ref.URL != nil {
-			urls = append(urls, *ref.URL)
-		}
-	}
-	return urls
-}
-
+// Rule authors publish the ported rule's link under two independent keys:
+// source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
+// Bandit-derived Python rule).
 func TestPublishedSourceRuleReferences(t *testing.T) {
+	semgrepSchema(t, "1.183.0").RequireValid(t, "source-rule-urls.json", loadFixture(t, "source-rule-urls.json"))
 	out := convertFixture(t, "source-rule-urls.json")
 	reqs := out.Baselines[0].Requirements
-	require.Len(t, reqs, 3)
 	goRule := findReq(reqs, "use-of-unsafe-block")
 	pythonRule := findReq(reqs, "subprocess-shell-true")
 	require.NotNil(t, goRule)
@@ -72,60 +70,34 @@ func TestPublishedSourceRuleReferences(t *testing.T) {
 	assert.Equal(t, []string{
 		"https://cwe.mitre.org/data/definitions/242.html",
 		"https://github.com/securego/gosec/blob/master/rules/unsafe.go",
-	}, referenceURLs(goRule.Refs))
+	}, shared.RefURLs(goRule.Refs))
 	assert.Equal(t, []string{
 		"https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
 		"https://docs.python.org/3/library/subprocess.html",
 		"https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
-	}, referenceURLs(pythonRule.Refs))
-	assert.Len(t, goRule.Results, 3)
-	assert.Len(t, pythonRule.Results, 3)
-	assert.InDelta(t, 0.5, goRule.Impact, 0.0001)
-	assert.InDelta(t, 0.7, pythonRule.Impact, 0.0001)
+	}, shared.RefURLs(pythonRule.Refs))
 }
 
+// The case file is shared with the TypeScript suite, so both languages are held
+// to the same refs for every case, and each input is checked against the Semgrep
+// output schema it declares before it is converted.
 func TestSourceRuleReferenceMapping(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "fixtures", "source-rule-url-cases.json"))
-	require.NoError(t, err)
+	validator := semgrepSchema(t, "1.183.0")
 	var cases []struct {
 		Name  string          `json:"name"`
 		Input json.RawMessage `json:"input"`
 		URLs  []string        `json:"urls"`
-		Tags  map[string]any  `json:"tags"`
 	}
-	require.NoError(t, json.Unmarshal(data, &cases))
+	shared.LoadJSON(t, filepath.Join("..", "fixtures", "source-rule-url-cases.json"), &cases)
 	require.NotEmpty(t, cases)
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			validator.RequireValid(t, tc.Name, tc.Input)
 			out, err := ConvertSemgrepToHDF(tc.Input, testVersion)
 			require.NoError(t, err)
 			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
 			require.NotNil(t, req)
-			assert.Equal(t, tc.URLs, referenceURLs(req.Refs))
-			require.Len(t, req.Results, 1)
-			assert.Equal(t, hdf.Failed, req.Results[0].Status)
-			assert.InDelta(t, 0.5, req.Impact, 0.0001)
-			require.NotNil(t, req.Severity)
-			assert.Equal(t, hdf.SeverityMedium, *req.Severity)
-			require.NotNil(t, req.SourceLocation)
-			require.NotNil(t, req.SourceLocation.Line)
-			assert.InDelta(t, 21, *req.SourceLocation.Line, 0.0001)
-			coverage := findReq(out.Baselines[0].Requirements, coverageID)
-			require.NotNil(t, coverage)
-			assert.Equal(t, 2, coverage.Tags["filesScanned"])
-			for key, expected := range tc.Tags {
-				if expected == nil {
-					assert.NotContains(t, req.Tags, key)
-				} else {
-					actual, exists := req.Tags[key]
-					require.True(t, exists, "missing tag %s", key)
-					wantJSON, err := json.Marshal(expected)
-					require.NoError(t, err)
-					actualJSON, err := json.Marshal(actual)
-					require.NoError(t, err)
-					assert.JSONEq(t, string(wantJSON), string(actualJSON), "tag %s", key)
-				}
-			}
+			assert.Equal(t, tc.URLs, shared.RefURLs(req.Refs))
 		})
 	}
 }

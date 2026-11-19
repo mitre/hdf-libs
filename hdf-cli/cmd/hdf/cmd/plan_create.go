@@ -73,6 +73,7 @@ func runPlanCreateStandalone(planName, baseline, planID, outputPath string) erro
 			"name":    "hdf-cli",
 			"version": version,
 		},
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
 	}
 
 	return writePlanOutput(plan, outputPath)
@@ -116,6 +117,7 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 			"name":    "hdf-cli",
 			"version": version,
 		},
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
 	}
 
 	return writePlanOutput(plan, outputPath)
@@ -151,12 +153,6 @@ func assessmentsFromComponents(components []interface{}) []map[string]interface{
 }
 
 func writePlanOutput(plan map[string]interface{}, outputPath string) error {
-	// Creation time is producer metadata; the plan schema has no root timestamp.
-	plan["extensions"] = map[string]interface{}{
-		"passthrough": map[string]interface{}{
-			"createdAt": time.Now().UTC().Format(time.RFC3339),
-		},
-	}
 	output, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize plan: %w", err)

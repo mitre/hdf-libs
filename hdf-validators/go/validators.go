@@ -3,13 +3,16 @@ package hdfvalidators
 
 import (
 	"bytes"
+	"cmp"
 	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -252,17 +255,24 @@ func decodeDocument(data []byte) (any, error) {
 	return document, nil
 }
 
+// modernValidationErrors flattens a tekuri error tree into one entry per
+// violation, deduplicated and sorted so repeated runs report the same list.
 func modernValidationErrors(failure *jsonschema.ValidationError, document any) []ValidationError {
+	result := dedupeErrors(flattenErrors(failure, document))
+	slices.SortFunc(result, compareErrors)
+	return result
+}
+
+func flattenErrors(failure *jsonschema.ValidationError, document any) []ValidationError {
 	var result []ValidationError
 	if len(failure.Causes) != 0 {
-		for _, cause := range failure.Causes {
-			result = append(result, modernValidationErrors(cause, document)...)
-		}
 		switch failure.ErrorKind.(type) {
-		case *kind.AnyOf, *kind.OneOf, *kind.Contains:
-			// Keep the constraint context alongside its causes, as Ajv does.
+		case *kind.AnyOf, *kind.OneOf:
+			result = matchedBranchErrors(failure, document)
+		case *kind.Contains:
+			result = causeErrors(failure, document)
 		default:
-			return result
+			return causeErrors(failure, document)
 		}
 	}
 	return append(result, modernErrorDetails(failure, document)...)
@@ -276,24 +286,23 @@ func modernErrorDetails(failure *jsonschema.ValidationError, document any) []Val
 	}
 	item := ValidationError{
 		Field:       field,
-		Description: failure.ErrorKind.LocalizedString(message.NewPrinter(language.English)),
+		Keyword:     keywordFor(failure.ErrorKind),
+		Description: describe(failure.ErrorKind),
 		Value:       instanceValue(document, failure.InstanceLocation),
-	}
-	path := failure.ErrorKind.KeywordPath()
-	if len(path) != 0 {
-		item.Keyword = path[0]
 	}
 	switch k := failure.ErrorKind.(type) {
 	case *kind.AdditionalProperties:
+		hint := ""
 		if strings.HasSuffix(failure.SchemaURL, "/$defs/Extensions") {
-			for _, property := range k.Properties {
-				extra := item
-				extra.Field += "." + property
-				extra.Description = "is not allowed. Move producer-specific data under extensions.passthrough, namespaced by tool name."
-				result = append(result, extra)
-			}
-			return result
+			hint = ". Move producer-specific data under extensions.passthrough, namespaced by tool name."
 		}
+		for _, property := range k.Properties {
+			extra := item
+			extra.Field = childField(field, property)
+			extra.Description = "is not allowed" + hint
+			result = append(result, extra)
+		}
+		return result
 	case *kind.Required:
 		for _, property := range k.Missing {
 			missing := item
@@ -301,18 +310,190 @@ func modernErrorDetails(failure *jsonschema.ValidationError, document any) []Val
 			result = append(result, missing)
 		}
 		return result
-	case *kind.Type:
-		item.Keyword = "invalid_type"
 	case *kind.Format:
 		item.Format = k.Want
 	case *kind.FalseSchema:
-		item.Keyword = "false"
 		if strings.HasSuffix(failure.SchemaURL, "/unevaluatedProperties") {
 			item.Keyword = "unevaluatedProperties"
 			item.Description = "is not allowed"
 		}
 	}
 	return append(result, item)
+}
+
+func causeErrors(failure *jsonschema.ValidationError, document any) []ValidationError {
+	var result []ValidationError
+	for _, cause := range failure.Causes {
+		result = append(result, flattenErrors(cause, document)...)
+	}
+	return result
+}
+
+// matchedBranchErrors drops the branches of a oneOf/anyOf that failed a const
+// on a direct child of the instance (a discriminator such as components[].type)
+// when another branch got past that check; with no such branch, every one stays.
+func matchedBranchErrors(failure *jsonschema.ValidationError, document any) []ValidationError {
+	var matched, missed []ValidationError
+	for _, cause := range failure.Causes {
+		branch := flattenErrors(cause, document)
+		if missesDiscriminator(cause, len(failure.InstanceLocation)+1) {
+			missed = append(missed, branch...)
+		} else {
+			matched = append(matched, branch...)
+		}
+	}
+	if len(matched) == 0 {
+		return missed
+	}
+	return matched
+}
+
+func missesDiscriminator(failure *jsonschema.ValidationError, depth int) bool {
+	if _, ok := failure.ErrorKind.(*kind.Const); ok && len(failure.InstanceLocation) == depth {
+		return true
+	}
+	for _, cause := range failure.Causes {
+		if missesDiscriminator(cause, depth) {
+			return true
+		}
+	}
+	return false
+}
+
+func childField(parent, property string) string {
+	if parent == "(root)" {
+		return property
+	}
+	return parent + "." + property
+}
+
+func dedupeErrors(errs []ValidationError) []ValidationError {
+	type identity struct{ field, keyword, description string }
+	seen := make(map[identity]bool, len(errs))
+	kept := errs[:0]
+	for _, e := range errs {
+		id := identity{e.Field, e.Keyword, e.Description}
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		kept = append(kept, e)
+	}
+	return kept
+}
+
+// compareErrors orders by instance path (array indexes numerically, a parent
+// before its children), then keyword, then description.
+func compareErrors(a, b ValidationError) int {
+	as, bs := pathSegments(a.Field), pathSegments(b.Field)
+	for i := range min(len(as), len(bs)) {
+		if c := compareSegments(as[i], bs[i]); c != 0 {
+			return c
+		}
+	}
+	if c := cmp.Compare(len(as), len(bs)); c != 0 {
+		return c
+	}
+	if c := strings.Compare(a.Keyword, b.Keyword); c != 0 {
+		return c
+	}
+	return strings.Compare(a.Description, b.Description)
+}
+
+func pathSegments(field string) []string {
+	if field == "(root)" {
+		return nil
+	}
+	return strings.Split(field, ".")
+}
+
+func compareSegments(a, b string) int {
+	ai, aErr := strconv.Atoi(a)
+	bi, bErr := strconv.Atoi(b)
+	if aErr == nil && bErr == nil {
+		return cmp.Compare(ai, bi)
+	}
+	return strings.Compare(a, b)
+}
+
+// describe formats the counting kinds with fmt, so their numbers are not
+// digit-grouped the way the x/text printer renders them ("got 70,000").
+func describe(k jsonschema.ErrorKind) string {
+	switch k := k.(type) {
+	case *kind.MinLength:
+		return limit("minLength", k.Got, k.Want)
+	case *kind.MaxLength:
+		return limit("maxLength", k.Got, k.Want)
+	case *kind.MinItems:
+		return limit("minItems", k.Got, k.Want)
+	case *kind.MaxItems:
+		return limit("maxItems", k.Got, k.Want)
+	case *kind.MinProperties:
+		return limit("minProperties", k.Got, k.Want)
+	case *kind.MaxProperties:
+		return limit("maxProperties", k.Got, k.Want)
+	case *kind.Minimum:
+		return bound("minimum", k.Got, k.Want)
+	case *kind.Maximum:
+		return bound("maximum", k.Got, k.Want)
+	case *kind.ExclusiveMinimum:
+		return bound("exclusiveMinimum", k.Got, k.Want)
+	case *kind.ExclusiveMaximum:
+		return bound("exclusiveMaximum", k.Got, k.Want)
+	case *kind.MultipleOf:
+		return bound("multipleOf", k.Got, k.Want)
+	case *kind.AdditionalItems:
+		return fmt.Sprintf("last %d additionalItem(s) not allowed", k.Count)
+	case *kind.UniqueItems:
+		return fmt.Sprintf("items at %d and %d are equal", k.Duplicates[0], k.Duplicates[1])
+	case *kind.MinContains:
+		if len(k.Got) == 0 {
+			return fmt.Sprintf("min %d items required to match contains schema, but none matched", k.Want)
+		}
+		return fmt.Sprintf("min %d items required to match contains schema, but matched %d items at %s",
+			k.Want, len(k.Got), indexList(k.Got))
+	case *kind.MaxContains:
+		return fmt.Sprintf("max %d items required to match contains schema, but matched %d items at %s",
+			k.Want, len(k.Got), indexList(k.Got))
+	}
+	return k.LocalizedString(message.NewPrinter(language.English))
+}
+
+func limit(name string, got, want int) string {
+	return fmt.Sprintf("%s: got %d, want %d", name, got, want)
+}
+
+func bound(name string, got, want *big.Rat) string {
+	gotFloat, _ := got.Float64()
+	wantFloat, _ := want.Float64()
+	return fmt.Sprintf("%s: got %v, want %v", name, gotFloat, wantFloat)
+}
+
+func indexList(indexes []int) string {
+	return strings.Trim(fmt.Sprint(indexes), "[]")
+}
+
+// keywordFor names the kinds whose KeywordPath is nil, and renames Type to the
+// "invalid_type" the converters already act on.
+func keywordFor(k jsonschema.ErrorKind) string {
+	switch k.(type) {
+	case *kind.Type, *kind.InvalidJsonValue:
+		return "invalid_type"
+	case *kind.FalseSchema:
+		return "false"
+	case *kind.Not:
+		return "not"
+	case *kind.Group:
+		return "group"
+	case *kind.Schema:
+		return "schema"
+	case *kind.RefCycle:
+		return "$ref"
+	}
+	if path := k.KeywordPath(); len(path) != 0 {
+		return path[0]
+	}
+	return ""
 }
 
 func instanceValue(document any, path []string) any {

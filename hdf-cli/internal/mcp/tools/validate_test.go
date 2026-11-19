@@ -308,24 +308,29 @@ func TestHdfValidate_EvidenceErrorLimitNotice(t *testing.T) {
 func TestHdfValidate_SchemaErrorLimitNotice(t *testing.T) {
 	for _, docType := range []string{"", "hdf-results"} {
 		for _, tc := range []struct {
-			name      string
-			invalidID bool
-			wantValid bool
-			wantCount int
+			name       string
+			manyErrors bool
+			wantValid  bool
+			wantCount  int
 		}{
 			{"valid", false, true, 0},
 			{"single error", false, false, 1},
-			{"union errors", true, false, 10},
+			{"many errors", true, false, loader.DefaultMaxErrors},
 		} {
 			t.Run(docType+"/"+tc.name, func(t *testing.T) {
 				var doc map[string]any
 				if err := json.Unmarshal(fixtures.Results.Minimal, &doc); err != nil {
 					t.Fatal(err)
 				}
-				if tc.invalidID {
-					doc["components"] = []any{map[string]any{
-						"type": "host", "name": "probe", "componentId": "not-a-uuid",
-					}}
+				if tc.manyErrors {
+					// Each component fails oneOf and format: six of them exceed the cap.
+					components := make([]any, 6)
+					for i := range components {
+						components[i] = map[string]any{
+							"type": "host", "name": "probe", "componentId": "not-a-uuid",
+						}
+					}
+					doc["components"] = components
 				} else if !tc.wantValid {
 					doc["timestamp"] = "not-a-timestamp"
 				}
@@ -337,7 +342,7 @@ func TestHdfValidate_SchemaErrorLimitNotice(t *testing.T) {
 				if res.IsError || out.Valid != tc.wantValid || len(out.Errors) != tc.wantCount {
 					t.Fatalf("unexpected validation result: %+v / %+v", res, out)
 				}
-				if tc.invalidID {
+				if tc.manyErrors {
 					if !strings.Contains(out.Notice, "truncated") || !strings.Contains(out.Notice, "re-run") {
 						t.Fatalf("omitted errors need a truncation notice and remedy: %+v", out)
 					}

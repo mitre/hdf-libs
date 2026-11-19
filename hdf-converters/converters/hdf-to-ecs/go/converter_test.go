@@ -165,9 +165,9 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
-	// The bundle retains modern integrity without reinterpreting the legacy checksum alias.
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	assert.NotContains(t, hdf, "baseline_checksum")
+	assert.Equal(t, "1.0.0", hdf["baseline_version"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, hdf["baseline_integrity"])
 	overrides, ok := hdf["status_overrides"].([]interface{})
 	require.True(t, ok, "hdf.status_overrides present")
 	require.Len(t, overrides, 1)
@@ -382,21 +382,6 @@ func TestConvertHDFToECS_DispositionIsResolvedNotRead(t *testing.T) {
 		"the governing override's type, though the document stamps no disposition field")
 }
 
-func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
-	input := fixture(t, "input", "override.json")
-	bundle, err := ConvertHDFToECSBundle(input, converterVersion)
-	require.NoError(t, err)
-	event := parseLines(t, bundle.Events)[0]
-	envelope, err := json.Marshal(sub(t, event, "hdf")["source"])
-	require.NoError(t, err)
-	resolved, err := exportmap.ResolveExportSource(envelope, bundle.Manifest, []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
-	require.NoError(t, err)
-	require.Equal(t, input, resolved.Source)
-	var baseline map[string]interface{}
-	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
-	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
-}
-
 func TestSourceLocationOptionalMembers(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -418,4 +403,19 @@ func TestSourceLocationOptionalMembers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
+	input := fixture(t, "input", "override.json")
+	bundle, err := ConvertHDFToECSBundle(input, converterVersion)
+	require.NoError(t, err)
+	event := parseLines(t, bundle.Events)[0]
+	envelope, err := json.Marshal(sub(t, event, "hdf")["source"])
+	require.NoError(t, err)
+	resolved, err := exportmap.ResolveExportSource(envelope, bundle.Manifest, []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
+	require.NoError(t, err)
+	require.Equal(t, input, resolved.Source)
+	var baseline map[string]interface{}
+	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
+	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
 }

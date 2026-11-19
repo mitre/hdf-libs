@@ -127,11 +127,11 @@ func ComputeEffectiveChecksum(req hdf.EvaluatedRequirement, referenceTimestamp s
 	}
 }
 
-// StampEffectiveChecksums sets effectiveChecksum on every requirement of a
-// map-decoded hdf-results document (baselines[].requirements and any
-// top-level requirements array), leaving all other fields untouched. Used by
-// document-rewriting tooling (hdf convert, amendment merge) that operates on
-// maps to preserve unknown/extension fields.
+// StampEffectiveChecksums sets effectiveChecksum on every requirement under
+// baselines[] of a map-decoded hdf-results document, leaving all other fields
+// untouched. A root-level requirements array is baseline-shaped and is not
+// stamped. Used by document-rewriting tooling (hdf convert, amendment merge)
+// that operates on maps to preserve unknown/extension fields.
 func StampEffectiveChecksums(doc map[string]interface{}, referenceTimestamp string) error {
 	stampList := func(reqsRaw interface{}) error {
 		reqs, ok := reqsRaw.([]interface{})
@@ -178,5 +178,5 @@ func StampEffectiveChecksums(doc map[string]interface{}, referenceTimestamp stri
 			}
 		}
 	}
-	return stampList(doc["requirements"])
+	return nil
 }

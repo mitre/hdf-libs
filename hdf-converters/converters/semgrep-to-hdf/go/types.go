@@ -1,14 +1,6 @@
 package semgrep
 
-import (
-	"encoding/json"
-	jsonv2 "encoding/json/v2"
-)
-
-// Match TypeScript's exact field names without changing other v1 decoding semantics.
-func unmarshalSemgrepJSON(data []byte, out any) error {
-	return jsonv2.Unmarshal(data, out, json.DefaultOptionsV1(), jsonv2.MatchCaseInsensitiveNames(false))
-}
+import "encoding/json"
 
 // Report is the top-level `semgrep scan --json` output.
 type Report struct {
@@ -29,7 +21,7 @@ type Paths struct {
 func (p *Paths) UnmarshalJSON(data []byte) error {
 	type alias Paths
 	var v alias
-	if err := unmarshalSemgrepJSON(data, &v); err == nil {
+	if err := json.Unmarshal(data, &v); err == nil {
 		*p = Paths(v)
 		return nil
 	}
@@ -54,7 +46,7 @@ type Result struct {
 func (r *Result) UnmarshalJSON(data []byte) error {
 	type alias Result
 	var v alias
-	if err := unmarshalSemgrepJSON(data, &v); err == nil {
+	if err := json.Unmarshal(data, &v); err == nil {
 		*r = Result(v)
 		return nil
 	}
@@ -72,7 +64,7 @@ type Position struct {
 func (p *Position) UnmarshalJSON(data []byte) error {
 	type alias Position
 	var v alias
-	if err := unmarshalSemgrepJSON(data, &v); err == nil {
+	if err := json.Unmarshal(data, &v); err == nil {
 		*p = Position(v)
 		return nil
 	}
@@ -97,7 +89,7 @@ type Extra struct {
 func (e *Extra) UnmarshalJSON(data []byte) error {
 	type alias Extra
 	var v alias
-	if err := unmarshalSemgrepJSON(data, &v); err == nil {
+	if err := json.Unmarshal(data, &v); err == nil {
 		*e = Extra(v)
 		return nil
 	}
@@ -118,10 +110,12 @@ type Metadata struct {
 	Confidence         LenientString `json:"confidence"`
 	Likelihood         LenientString `json:"likelihood"`
 	// Impact rates the severity of the consequence -- NOT the HDF impact float.
-	Impact                  LenientString `json:"impact"`
-	Category                LenientString `json:"category"`
-	Source                  LenientString `json:"source"`
-	Shortlink               LenientString `json:"shortlink"`
+	Impact    LenientString `json:"impact"`
+	Category  LenientString `json:"category"`
+	Source    LenientString `json:"source"`
+	Shortlink LenientString `json:"shortlink"`
+	// Rule authors publish the ported rule's link under either key; they are
+	// independent fields, not spellings of one another, and both are read.
 	SourceRuleURL           LenientString `json:"source-rule-url"`
 	SourceRuleURLUnderscore LenientString `json:"source_rule_url"`
 	BanditCode              LenientString `json:"bandit-code"`
@@ -132,7 +126,7 @@ type Metadata struct {
 func (m *Metadata) UnmarshalJSON(data []byte) error {
 	type alias Metadata
 	var v alias
-	if err := unmarshalSemgrepJSON(data, &v); err == nil {
+	if err := json.Unmarshal(data, &v); err == nil {
 		*m = Metadata(v)
 		return nil
 	}

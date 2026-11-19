@@ -76,9 +76,10 @@ All other decoded fields and every string value are unchanged.
 Validation: built hdf validate --json, JSON Schema 2020-12 results bundle,
 exit 0 and valid=true on 2026-11-07.
 
-## Bundle integration expectation correction (2026-11-07)
-The override and riskadjust inputs now carry the schema's Integrity object. Their legacy NDJSON
-goldens remove only baseline_checksum, which previously described the obsolete
-checksum input member; every other byte remains unchanged. New TS/Go bundle
-readback tests verify the complete original integrity object through source.json.
-No converter default was changed to reinterpret Integrity as Checksum.
+## Expected output regenerated 2026-11-15
+The exporter reads the baseline's declared integrity, version and title through the shared
+exportmap helper. In expected/override.ndjson and expected/riskadjust.ndjson,
+hdf.baseline_checksum (a copy of the obsolete undeclared checksum member) is replaced by
+hdf.baseline_integrity, the input's integrity object carried whole. Every ECS golden also gains hdf.baseline_version where its input baseline has a version.
+Regenerated with UPDATE_GOLDEN=1 from the Go exporter; the TypeScript exporter is checked
+byte for byte against the same files. No other byte changed.

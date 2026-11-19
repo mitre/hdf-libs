@@ -14,7 +14,7 @@ import {
   type Obj,
   asArr,
   asMap,
-  buildHDFBlock,
+  buildHDFBlockFromStatus,
   canonicalize,
   defaultDescription,
   firstRefURL,
@@ -306,7 +306,7 @@ function requirementBlock(
   converterVersion: string,
 ): Obj {
   const st = statusOf(req);
-  const block = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
+  const block = buildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion);
   delete block.results;
   if ('sourceLocation' in req) block.source_location = req.sourceLocation;
   return block;

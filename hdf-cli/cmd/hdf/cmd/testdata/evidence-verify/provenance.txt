@@ -1,18 +1,19 @@
 # Evidence fixture adaptations — provenance
 
-Recorded 2026-11-07. Scope: plan.json and the named migrations below; other existing files are not covered.
+Recorded 2026-11-07. Scope: the named migrations below; other existing files are not covered.
 
 ## plan.json
-Schema-confirmed adaptation, not a new real tool capture.
+Unchanged from the source; not a migration.
 Source: https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/plan.json
 Source SHA-256: 17748ce73adc8db8e8c96d40f5b9ed9fbb6aab5b1fe56c669fbc99728644e07d
-Moved the undeclared root createdAt timestamp to extensions.passthrough.createdAt without changing its value. Every other field and value is unchanged.
+The root createdAt timestamp is declared by the plan schema and stays at the root,
+the shape hdf plan create writes.
 
 Tool and version read from file: generator.name=hdf-cli; generator.version=dev.
 The original run environment/version beyond dev is not established.
 Schema: hdf-schema/dist/schemas/hdf-plan.schema.json, JSON Schema 2020-12.
-Validation on 2026-11-07: built hdf validate plan.json --json returned type=plan,
-valid=true, exit 0. No fields or timestamp values were discarded.
+Validation: built hdf validate plan.json --json returned type=plan, valid=true,
+exit 0.
 
 ## rhel9-results.json — adapted 2026-11-07
 Schema-confirmed adaptation, not a new tool capture. Original capture provenance

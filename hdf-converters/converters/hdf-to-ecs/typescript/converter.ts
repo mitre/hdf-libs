@@ -10,7 +10,8 @@ import {
   firstResultStartTime,
   defaultDescription,
   eventID,
-  buildHDFBlock,
+  addBaselineMetadata,
+  buildHDFBlockFromStatus,
   runExport,
   governingOverrideOf,
   disposition,
@@ -113,10 +114,9 @@ function buildEvent(
   const labels = buildLabels(req);
   if (labels) obj.labels = labels;
 
-  // Keep the existing aliases; complete modern integrity lives in the bundle artifact.
-  const hdf = buildHDFBlock(req, baseline, st, generator, tool, converterVersion);
-  if ('title' in baseline) hdf.baseline_title = baseline.title;
-  if ('checksum' in baseline) hdf.baseline_checksum = baseline.checksum;
+  // hdf.* lossless block, with the baseline's metadata beyond its name.
+  const hdf = buildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion);
+  addBaselineMetadata(hdf, baseline);
   obj.hdf = hdf;
 
   return obj;

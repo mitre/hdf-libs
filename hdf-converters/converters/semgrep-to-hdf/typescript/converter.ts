@@ -55,6 +55,7 @@ interface SemgrepMetadata {
   category?: string;
   source?: string;
   shortlink?: string;
+  // Rule authors publish the ported rule's link under either key; both are read.
   'source-rule-url'?: string;
   source_rule_url?: string;
   'bandit-code'?: string;

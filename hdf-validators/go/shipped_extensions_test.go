@@ -126,5 +126,6 @@ func TestValidateResults_ExtensionsHintDoesNotLeak(t *testing.T) {
 	require.False(t, result.Valid)
 	require.Len(t, result.Errors, 1)
 	assert.Equal(t, "additionalProperties", result.Errors[0].Keyword)
-	assert.Equal(t, "additional properties 'system_context' not allowed", result.Errors[0].Description)
+	assert.Equal(t, "baselines.0.requirements.0.results.0.rawSourceRecord.system_context", result.Errors[0].Field)
+	assert.Equal(t, "is not allowed", result.Errors[0].Description)
 }
