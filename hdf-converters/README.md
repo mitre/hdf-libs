@@ -56,7 +56,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Prisma Cloud | `convertPrismaToHdf` | JSON |
 | SARIF | `convertSarifToHdf` | JSON |
 | ScoutSuite | `convertScoutsuiteToHdf` | JSON |
-| Semgrep | `convertSemgrepToHdf` | JSON (native; SARIF auto-routed) |
+| Semgrep | `convertSemgrepToHdf` | JSON (native; SARIF auto-routed); rule-author `source-rule-url` / `source_rule_url` links reach `refs`, see [Semgrep rule references](https://mitre.github.io/hdf-libs/guides/conversion-fidelity#semgrep-rule-references) |
 | Snyk | `convertSnykToHdf` | JSON |
 | SonarQube | `convertSonarqubeToHdf` | JSON |
 | SPDX VEX (SPDX 3.0 security profile → HDF Amendments) | `convertSpdxVexToHdf` | JSON |

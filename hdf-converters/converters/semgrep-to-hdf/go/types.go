@@ -110,13 +110,16 @@ type Metadata struct {
 	Confidence         LenientString `json:"confidence"`
 	Likelihood         LenientString `json:"likelihood"`
 	// Impact rates the severity of the consequence -- NOT the HDF impact float.
-	Impact        LenientString `json:"impact"`
-	Category      LenientString `json:"category"`
-	Source        LenientString `json:"source"`
-	Shortlink     LenientString `json:"shortlink"`
-	SourceRuleURL LenientString `json:"source-rule-url"`
-	BanditCode    LenientString `json:"bandit-code"`
-	ASVS          LenientMap    `json:"asvs"`
+	Impact    LenientString `json:"impact"`
+	Category  LenientString `json:"category"`
+	Source    LenientString `json:"source"`
+	Shortlink LenientString `json:"shortlink"`
+	// Rule authors publish the ported rule's link under either key; they are
+	// independent fields, not spellings of one another, and both are read.
+	SourceRuleURL           LenientString `json:"source-rule-url"`
+	SourceRuleURLUnderscore LenientString `json:"source_rule_url"`
+	BanditCode              LenientString `json:"bandit-code"`
+	ASVS                    LenientMap    `json:"asvs"`
 }
 
 // UnmarshalJSON tolerates a non-object metadata value.
