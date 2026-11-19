@@ -27,6 +27,10 @@ All notable changes to this project will be documented in this file.
 - **`hdf convert` no longer stamps `effectiveChecksum` onto baseline definitions.** The stamping is for requirements in results documents; on a baseline it produced a field the baseline schema does not declare.
 - **`hdf-to-ecs` and `hdf-to-splunk` export the baseline's declared `integrity`.** Both read a baseline `checksum` key the schema never declared, so a real document's integrity (where an InSpec profile's sha256 lands) never reached the SIEM. The baseline metadata both exporters carry now comes from one shared table in `exportmap` (Go and TypeScript): `hdf.baseline_title`, `hdf.baseline_version` and `hdf.baseline_integrity`, the integrity object whole. **Output change:** `hdf.baseline_checksum` is gone, and ECS events gain `hdf.baseline_version` when the baseline has a version, as Splunk events already did.
 
+### Fixed
+
+- **`semgrep-to-hdf` now carries the `source_rule_url` rule link into `refs`, in Go and TypeScript.** Published Semgrep rules link the rule they port under one of two independent metadata keys, `source-rule-url` (the Bandit-derived Python rules) or `source_rule_url` (for example the Go `unsafe` rule, which links gosec). Only the hyphenated key was read, so the underscore key's URL never reached `refs`. Both keys are now read with the converter's existing filtering and de-duplication; distinct URLs are kept and identical ones appear once. **Output change:** requirements from rules carrying `source_rule_url` gain that URL in `refs`. A real Semgrep 1.183.0 capture and 20 schema-confirmed cases, validated against the vendored Semgrep 1.183.0 output schema, are shared by both test suites.
+
 ## [3.8.0] - 2026-11-16
 
 ### Highlights

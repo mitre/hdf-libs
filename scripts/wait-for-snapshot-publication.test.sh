@@ -134,7 +134,7 @@ begin served
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "all served: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; grep -qF "served: 3 npm packages and 2 Go modules at $VERSION after " "$out" || ok=1
 report "all served: prints the success line" "$ok" "$(cat "$out")"
@@ -206,7 +206,7 @@ report "second poll: prints the success line" "$ok" "$(cat "$out")"
 begin uppercase
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
-run "$VERSION" packages.txt gomods-upper.txt 2 1
+run "$VERSION" packages.txt gomods-upper.txt 6 1
 report "uppercase module path: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
 ok=0; grep -qF "github.com/mitre/hdf-libs/HdfUpper" "$err" && grep -qiF "case escaping" "$err" || ok=1
 report "uppercase module path: the message names the path" "$ok" "$(cat "$err")"
