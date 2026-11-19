@@ -1,5 +1,6 @@
 import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
+import Ajv2020 from 'ajv/dist/2020.js';
 
 // Pinned HDF v2 (Heimdall/InSpec exec-json) schema — sourced from heimdall2
 // inspecjs (see ../go/legacy/PROVENANCE.md). One copy, which Go embeds from its
@@ -70,8 +71,8 @@ export interface ValidationResult {
 /**
  * Create and configure Ajv instance with all HDF schemas
  */
-function createValidator(): Ajv {
-  const ajv = new Ajv({
+function createValidator(): Ajv2020 {
+  const ajv = new Ajv2020({
     allErrors: true,
     verbose: true,
     strict: false,
@@ -116,7 +117,7 @@ function createValidator(): Ajv {
   // Register top-level schemas so cross-schema $refs resolve.
   // The comparison primitive references hdf-results#/$defs/Evaluated_Requirement,
   // so hdf-results must be registered before compiling comparison.
-  // Schemas are compiled lazily (in getXxxValidator) for performance.
+  // Ajv compiles these schema objects lazily and caches the compiled validators.
   ajv.addSchema(hdfResultsSchema);
   ajv.addSchema(hdfBaselineSchema);
   ajv.addSchema(hdfComparisonSchema);
@@ -132,117 +133,56 @@ function createValidator(): Ajv {
 // Singleton Ajv instance
 const ajv = createValidator();
 
-// Compile schemas once (lazy initialization)
-let resultsValidator: ValidateFunction | null = null;
-let baselineValidator: ValidateFunction | null = null;
-let comparisonValidator: ValidateFunction | null = null;
-let systemValidator: ValidateFunction | null = null;
-let planValidator: ValidateFunction | null = null;
-let amendmentsValidator: ValidateFunction | null = null;
-let evidencePackageValidator: ValidateFunction | null = null;
-let requirementChangeEventValidator: ValidateFunction | null = null;
-
-function getResultsValidator(): ValidateFunction {
-  if (!resultsValidator) {
-    resultsValidator = ajv.compile(hdfResultsSchema);
-  }
-  return resultsValidator;
-}
-
-function getBaselineValidator(): ValidateFunction {
-  if (!baselineValidator) {
-    baselineValidator = ajv.compile(hdfBaselineSchema);
-  }
-  return baselineValidator;
-}
-
-function getComparisonValidator(): ValidateFunction {
-  if (!comparisonValidator) {
-    comparisonValidator = ajv.compile(hdfComparisonSchema);
-  }
-  return comparisonValidator;
-}
-
-function getRequirementChangeEventValidator(): ValidateFunction {
-  if (!requirementChangeEventValidator) {
-    requirementChangeEventValidator = ajv.compile(hdfRequirementChangeEventSchema);
-  }
-  return requirementChangeEventValidator;
-}
-
-function getSystemValidator(): ValidateFunction {
-  if (!systemValidator) {
-    systemValidator = ajv.compile(hdfSystemSchema);
-  }
-  return systemValidator;
-}
-
-function getPlanValidator(): ValidateFunction {
-  if (!planValidator) {
-    planValidator = ajv.compile(hdfPlanSchema);
-  }
-  return planValidator;
-}
-
-function getAmendmentsValidator(): ValidateFunction {
-  if (!amendmentsValidator) {
-    amendmentsValidator = ajv.compile(hdfAmendmentsSchema);
-  }
-  return amendmentsValidator;
-}
-
-function getEvidencePackageValidator(): ValidateFunction {
-  if (!evidencePackageValidator) {
-    evidencePackageValidator = ajv.compile(hdfEvidencePackageSchema);
-  }
-  return evidencePackageValidator;
-}
-
 /**
  * Convert Ajv errors to ValidationError format
  */
 function formatErrors(errors: ErrorObject[] | null | undefined): ValidationError[] {
-  if (!errors || errors.length === 0) {
-    return [];
+  return errors?.map(formatError) ?? [];
+}
+
+function formatError(err: ErrorObject): ValidationError {
+  let field = err.instancePath.replace(/^\//, '').replace(/\//g, '.');
+  if (!field && err.schemaPath && err.keyword !== 'unevaluatedProperties') {
+    const pathParts = err.schemaPath.split('/');
+    field = pathParts[pathParts.length - 1] || '(root)';
   }
+  const diagnostic = errorDiagnostic(err, field);
+  return {
+    field: diagnostic.field || '(root)',
+    keyword: err.keyword,
+    ...(err.keyword === 'format' && err.params && 'format' in err.params
+      ? { format: String((err.params as { format: unknown }).format) }
+      : {}),
+    message: diagnostic.message,
+    value: err.data,
+  };
+}
 
-  return errors.map(err => {
-    // Clean up field path (remove leading slash, use dot notation)
-    let field = err.instancePath
-      .replace(/^\//, '')
-      .replace(/\//g, '.');
-
-    // If field is empty, use the data path from the error
-    if (!field && err.schemaPath) {
-      const pathParts = err.schemaPath.split('/');
-      field = pathParts[pathParts.length - 1] || '(root)';
-    }
-
-    // Build message
-    let message = err.message || 'validation failed';
-    if (err.params) {
-      // Add parameter info for more context
-      if ('missingProperty' in err.params) {
-        field = field ? `${field}.${err.params.missingProperty}` : err.params.missingProperty;
-        message = 'is required';
-      } else if ('additionalProperty' in err.params) {
-        field = field ? `${field}.${err.params.additionalProperty}` : err.params.additionalProperty;
-        message = 'is not allowed';
-      } else if ('limit' in err.params) {
-        message = `${message} (limit: ${err.params.limit})`;
-      }
-    }
-
+function errorDiagnostic(err: ErrorObject, field: string): { field: string; message: string } {
+  const message = err.message || 'validation failed';
+  if (!err.params) return { field, message };
+  if ('missingProperty' in err.params) {
     return {
-      field: field || '(root)',
-      keyword: err.keyword,
-      ...(err.keyword === 'format' && err.params && 'format' in err.params
-        ? { format: String((err.params as { format: unknown }).format) }
-        : {}),
-      message,
-      value: err.data
+      field: field ? `${field}.${err.params.missingProperty}` : err.params.missingProperty,
+      message: 'is required',
     };
-  });
+  }
+  if ('additionalProperty' in err.params) {
+    const hint = err.keyword === 'additionalProperties'
+      && /^\/(?:baselines\/\d+\/)?extensions$/.test(err.instancePath)
+      ? '. Move producer-specific data under extensions.passthrough, namespaced by tool name.' : '';
+    return {
+      field: field ? `${field}.${err.params.additionalProperty}` : err.params.additionalProperty,
+      message: `is not allowed${hint}`,
+    };
+  }
+  if ('unevaluatedProperty' in err.params) {
+    return {
+      field: field ? `${field}.${err.params.unevaluatedProperty}` : err.params.unevaluatedProperty,
+      message: 'is not allowed',
+    };
+  }
+  return { field, message: 'limit' in err.params ? `${message} (limit: ${err.params.limit})` : message };
 }
 
 /**
@@ -276,8 +216,7 @@ function createResult(validator: ValidateFunction, data: unknown): ValidationRes
  * Validate HDF Results document against schema
  */
 export function validateResults(data: unknown): ValidationResult {
-  const validator = getResultsValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfResultsSchema), data);
 }
 
 // Legacy HDF v2 (Heimdall/InSpec exec-json) uses its own Ajv instance: the pinned
@@ -306,111 +245,70 @@ export function validateLegacyV2(data: unknown): ValidationResult {
  * Validate HDF Baseline document against schema
  */
 export function validateBaseline(data: unknown): ValidationResult {
-  const validator = getBaselineValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfBaselineSchema), data);
 }
 
 /**
  * Validate HDF Comparison document against schema
  */
 export function validateComparison(data: unknown): ValidationResult {
-  const validator = getComparisonValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfComparisonSchema), data);
 }
 
 /**
  * Validate an HDF Requirement Change Event (one continuous-monitoring wire event) against schema
  */
 export function validateRequirementChangeEvent(data: unknown): ValidationResult {
-  const validator = getRequirementChangeEventValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfRequirementChangeEventSchema), data);
 }
 
 /**
  * Validate HDF System document against schema
  */
 export function validateSystem(data: unknown): ValidationResult {
-  const validator = getSystemValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfSystemSchema), data);
 }
 
 /**
  * Validate HDF Plan document against schema
  */
 export function validatePlan(data: unknown): ValidationResult {
-  const validator = getPlanValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfPlanSchema), data);
 }
 
 /**
  * Validate HDF Amendments document against schema
  */
 export function validateAmendments(data: unknown): ValidationResult {
-  const validator = getAmendmentsValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfAmendmentsSchema), data);
 }
 
 /**
  * Validate HDF Evidence Package document against schema
  */
 export function validateEvidencePackage(data: unknown): ValidationResult {
-  const validator = getEvidencePackageValidator();
-  return createResult(validator, data);
+  return createResult(ajv.compile(hdfEvidencePackageSchema), data);
 }
+
+const documentValidators: readonly {
+  keys: readonly string[];
+  validate: (data: unknown) => ValidationResult;
+}[] = [
+  { keys: ['baselines'], validate: validateResults },
+  { keys: ['name', 'requirements'], validate: validateBaseline },
+  { keys: ['name', 'components'], validate: validateSystem },
+  { keys: ['name', 'assessments'], validate: validatePlan },
+  { keys: ['name', 'overrides'], validate: validateAmendments },
+  { keys: ['eventId', 'requirementId'], validate: validateRequirementChangeEvent },
+  { keys: ['requirementDiffs'], validate: validateComparison },
+  { keys: ['name', 'contents'], validate: validateEvidencePackage },
+];
 
 /**
  * Validate HDF document (auto-detect type based on structure)
  */
 export function validate(data: unknown): ValidationResult {
-  if (typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>;
-
-    // HDF Results has 'baselines' array at root
-    if ('baselines' in obj) {
-      return validateResults(data);
-    }
-
-    // HDF Baseline has 'name' and 'requirements' at root
-    if ('name' in obj && 'requirements' in obj) {
-      return validateBaseline(data);
-    }
-
-    // HDF System has 'name' and 'components' at root
-    if ('name' in obj && 'components' in obj) {
-      return validateSystem(data);
-    }
-
-    // HDF Plan has 'name' and 'assessments' at root
-    if ('name' in obj && 'assessments' in obj) {
-      return validatePlan(data);
-    }
-
-    // HDF Amendments has 'name' and 'overrides' at root
-    if ('name' in obj && 'overrides' in obj) {
-      return validateAmendments(data);
-    }
-
-    // HDF Comparison has 'requirementDiffs' at root (unique discriminator)
-    if ('requirementDiffs' in obj) {
-      return validateComparison(data);
-    }
-
-    // HDF Evidence Package has 'name' and 'contents' at root
-    if ('name' in obj && 'contents' in obj) {
-      return validateEvidencePackage(data);
-    }
-  }
-
-  // Cannot determine type, try results first (most common)
-  const resultsResult = validateResults(data);
-  if (resultsResult.valid) {
-    return resultsResult;
-  }
-
-  const baselineResult = validateBaseline(data);
-  if (baselineResult.valid) {
-    return baselineResult;
-  }
-
-  return resultsResult;
+  if (typeof data !== 'object' || data === null) return validateResults(data);
+  const match = documentValidators.find(({ keys }) => keys.every(key => key in data));
+  return (match?.validate ?? validateResults)(data);
 }

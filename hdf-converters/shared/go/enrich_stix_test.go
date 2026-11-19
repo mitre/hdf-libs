@@ -391,6 +391,8 @@ func TestEnrichStix_Errors(t *testing.T) {
 
 func TestEnrichStix_Recompute(t *testing.T) {
 	results := enrichFixture(t, "results-with-cvss.json")
+	inputValidation := hdfvalidators.ValidateResults(results)
+	require.True(t, inputValidation.Valid, inputValidation.Error())
 	bundle := enrichFixture(t, "poison-ivy-exploited-stix21.json")
 	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
 
@@ -489,6 +491,76 @@ func TestEnrichStix_RecomputeMultiCVEVulnerability(t *testing.T) {
 		"second cited CVE gets the riskAdjustment")
 }
 
+func TestEnrichStix_DuplicateVulnerabilityFirstSource(t *testing.T) {
+	bundle, err := ParseStixBundle(enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	require.Len(t, bundle.Objects, 8)
+	first, second := bundle.Objects[0], bundle.Objects[1]
+	second["id"] = first["id"]
+	signal, laterSignal := bundle.Objects[3], bundle.Objects[4]
+	laterSignal["target_ref"] = first["id"]
+	bundle.Objects = []map[string]interface{}{first, second, signal, laterSignal}
+	exploited := exploitedCVEs(bundle)
+	require.Len(t, exploited, 2)
+	for _, cve := range []string{"CVE-2012-0158", "CVE-2009-4324"} {
+		source, ok := exploited[cve]
+		require.True(t, ok, cve)
+		assert.Equal(t, "relationship--d70ebcc3-5640-423d-b9b0-7158c532c040", source["id"])
+		assert.Equal(t, signal, source)
+	}
+}
+
+func TestEnrichStix_ExploitationSignalShapes(t *testing.T) {
+	bundle, err := ParseStixBundle(enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	vulnerability := bundle.Objects[0]
+	id := vulnerability["id"]
+	for _, tt := range []struct {
+		name   string
+		signal map[string]interface{}
+		want   bool
+	}{
+		{"sighting", map[string]interface{}{"type": "sighting", "sighting_of_ref": id}, true},
+		{"targets", map[string]interface{}{"type": "relationship", "relationship_type": "targets", "target_ref": id}, true},
+		{"exploits", map[string]interface{}{"type": "relationship", "relationship_type": "exploits", "target_ref": id}, true},
+		{"indicator", map[string]interface{}{"type": "indicator", "object_refs": []interface{}{nil, 7, "", id}}, true},
+		{"report", map[string]interface{}{"type": "report", "object_refs": []interface{}{id}}, true},
+		{"wrong sighting ref", map[string]interface{}{"type": "sighting", "sighting_of_ref": 7}, false},
+		{"empty sighting ref", map[string]interface{}{"type": "sighting", "sighting_of_ref": ""}, false},
+		{"unrelated relationship", map[string]interface{}{"type": "relationship", "relationship_type": "uses", "target_ref": id}, false},
+		{"wrong target ref", map[string]interface{}{"type": "relationship", "relationship_type": "targets", "target_ref": 7}, false},
+		{"wrong object refs", map[string]interface{}{"type": "report", "object_refs": id}, false},
+		{"unsupported", map[string]interface{}{"type": "campaign", "object_refs": []interface{}{id}}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			exploited := exploitedCVEs(&StixBundle{Objects: []map[string]interface{}{vulnerability, tt.signal}})
+			if tt.want {
+				require.Len(t, exploited, 1)
+				assert.Equal(t, tt.signal, exploited["CVE-2012-0158"])
+			} else {
+				assert.Empty(t, exploited)
+			}
+		})
+	}
+}
+
+func TestEnrichStix_EmptyReferencesDoNotMarkIDLessVulnerability(t *testing.T) {
+	bundle, err := ParseStixBundle(enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	vulnerability := bundle.Objects[0]
+	delete(vulnerability, "id")
+	for _, signal := range []map[string]interface{}{
+		{"type": "sighting", "sighting_of_ref": ""},
+		{"type": "relationship", "relationship_type": "targets", "target_ref": ""},
+		{"type": "report", "object_refs": []interface{}{""}},
+	} {
+		t.Run(fmt.Sprint(signal["type"]), func(t *testing.T) {
+			exploited := exploitedCVEs(&StixBundle{Objects: []map[string]interface{}{vulnerability, signal}})
+			assert.Empty(t, exploited)
+		})
+	}
+}
+
 func TestEnrichStix_RecomputeIsOptIn(t *testing.T) {
 	// Default (no opts / RecomputeCVSS false) authors NO overrides even with exploitation present.
 	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), enrichFixture(t, "poison-ivy-exploited-stix21.json"))
@@ -535,4 +607,37 @@ func TestEnrichStix_IdlessObjectStaysSchemaValid(t *testing.T) {
 	typeless := find("marker", "typeless")
 	require.NotNil(t, typeless)
 	assert.Equal(t, "STIX object", typeless["description"], "generic fallback when id/name/type all absent")
+}
+
+func TestEnrichStix_IDLessVulnerabilitiesAreNotReferenceTargets(t *testing.T) {
+	bundle, err := ParseStixBundle(enrichFixture(t, "poison-ivy-exploited-stix21.json"))
+	require.NoError(t, err)
+	first := bundle.Objects[0]
+	delete(first, "id")
+	second := map[string]interface{}{"type": "vulnerability", "name": "second", "external_references": []interface{}{
+		map[string]interface{}{"source_name": "cve", "external_id": "CVE-2009-4324"},
+	}}
+	objects := []map[string]interface{}{
+		first, second,
+		{"type": "sighting", "sighting_of_ref": ""},
+		{"type": "relationship", "relationship_type": "exploits", "target_ref": ""},
+		{"type": "indicator", "object_refs": []interface{}{""}},
+	}
+	assert.Empty(t, exploitedCVEs(&StixBundle{Objects: objects}), "an object without an id cannot be the target of a reference")
+}
+
+func TestEnrichStix_RiskAdjustmentReasonNamesAnIDLessSource(t *testing.T) {
+	var source map[string]interface{}
+	require.NoError(t, json.Unmarshal(enrichFixture(t, "poison-ivy-exploited-stix21.json"), &source))
+	vulnerability := source["objects"].([]interface{})[0].(map[string]interface{})
+	source["objects"] = []interface{}{vulnerability, map[string]interface{}{"type": "sighting", "sighting_of_ref": vulnerability["id"]}}
+	bundle, err := json.Marshal(source)
+	require.NoError(t, err)
+	asOf, _ := time.Parse(time.RFC3339, "2099-01-01T00:00:00Z")
+	out, err := EnrichStix(enrichFixture(t, "results-with-cvss.json"), bundle, EnrichOptions{RecomputeCVSS: true, AsOf: asOf})
+	require.NoError(t, err)
+	overrides := reqRefsUnderKey(requirementByID(t, enrichDoc(t, out), "CVE-2012-0158"), "statusOverrides")
+	require.Len(t, overrides, 1)
+	assert.Equal(t, "CVE-2012-0158 actively exploited per STIX threat intelligence (STIX sighting object); CVSS Threat recomputed with Exploit Maturity E:H.",
+		overrides[0].(map[string]interface{})["reason"])
 }

@@ -14,11 +14,11 @@
     "const": 24,
     "contains": 2,
     "contentEncoding": 1,
-    "description": 772,
+    "description": 774,
     "else": 7,
     "enum": 47,
-    "examples": 61,
-    "format": 75,
+    "examples": 63,
+    "format": 77,
     "if": 16,
     "items": 84,
     "maximum": 18,
@@ -32,7 +32,7 @@
     "required": 130,
     "then": 13,
     "title": 141,
-    "type": 659,
+    "type": 661,
     "unevaluatedProperties": 76
   },
   "lint": {
@@ -61,7 +61,7 @@
       },
       "oapi-codegen": {
         "consumes": false,
-        "error": "error loading swagger spec in <document> : failed to load OpenAPI specification: failed to unmarshal data: json error: json: cannot unmarshal bool into field Schema.properties of type openapi3.Schema, yaml error: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal bool into field Schema.properties of type openapi3.Schema"
+        "error": "error loading swagger spec in <document> : failed to load OpenAPI specification: failed to unmarshal data: json error: json: cannot unmarshal bool into Go value of type openapi3.SchemaBis, yaml error: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal bool into Go value of type openapi3.SchemaBis"
       }
     },
     "keywords": {

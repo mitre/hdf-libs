@@ -563,8 +563,8 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 	oldFixture := map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "baseline-a",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "aaa"},
+				"name":      "baseline-a",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "aaa"},
 				"extensions": map[string]interface{}{
 					"passthrough": map[string]interface{}{
 						"labels": map[string]interface{}{"env": "production"},
@@ -581,8 +581,8 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 	newFixture := map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "baseline-a",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "bbb"},
+				"name":      "baseline-a",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "bbb"},
 				"extensions": map[string]interface{}{
 					"passthrough": map[string]interface{}{
 						"labels": map[string]interface{}{"env": "production"},

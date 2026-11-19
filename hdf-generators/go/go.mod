@@ -1,10 +1,10 @@
 module github.com/mitre/hdf-libs/hdf-generators/go/v3
 
-go 1.26.11
+go 1.27.4
 
 require (
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0-rc.1
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0-rc.1
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0
 	github.com/stretchr/testify v1.12.1
 )
 

@@ -159,7 +159,7 @@ func TestConvert_RiskAdjustStaysActionable(t *testing.T) {
 
 // TestConvert_AugmentedHDFFields pins the exportmap-block keys the shared
 // passthrough omits but splunk-to-hdf round-trips: source_location,
-// verification_method, baseline version/title/checksum/groups, and the full
+// verification_method, baseline version/title/integrity/groups, and the full
 // component. Each must appear only when the source carries it.
 func TestConvert_AugmentedHDFFields(t *testing.T) {
 	out, err := ConvertHDFToSplunk(fixture(t, "input", "override.json"), converterVersion)
@@ -174,9 +174,7 @@ func TestConvert_AugmentedHDFFields(t *testing.T) {
 	// baseline metadata beyond name.
 	assert.Equal(t, "1.0.0", hdf["baseline_version"])
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	ck := hdf["baseline_checksum"].(map[string]interface{})
-	assert.Equal(t, "sha256", ck["algorithm"])
-	assert.Equal(t, "abc123", ck["value"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, hdf["baseline_integrity"])
 	groups := hdf["groups"].([]interface{})
 	require.Len(t, groups, 1)
 	assert.Equal(t, "controls/stig.rb", groups[0].(map[string]interface{})["id"])

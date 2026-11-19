@@ -192,14 +192,14 @@ Examples:
 	cmd.Flags().StringVar(&localQueryKev, "kev", "", "Filter by CISA Known Exploited Vulnerabilities membership: true or false (false includes findings with no KEV data)")
 	cmd.Flags().StringArrayVar(&localQueryCwe, "cwe", nil, "Filter by CWE id (repeatable, OR logic; CWE-79, \"CWE 79\" and cwe79 are one value). Reads cwe[] only — SARIF-derived documents record CWEs in tags and will not match")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
-	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
+	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic). Exact by default, so AC-2 reaches neither AC-2 (1) nor CM-6 b; a * or ? wildcard globs — --nist 'AC-2*' for a control's enhancements and sub-parts, --nist 'AC-*' for the family")
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title. Exact by default; a * or ? wildcard globs (case-insensitive), which is how a CVE reaches a converter's prefixed id — --id '*CVE-2022-27943'")
 	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryDisposition, "disposition", nil,
 		"Filter by what governs the requirement — the most recently applied non-expired override or POA&M (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))
 	cmd.Flags().StringVar(&localQueryPoams, "poams", "",
 		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
-	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
+	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search requirement id, title, and description (case-insensitive substring)")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
 	cmd.Flags().StringArrayVar(&localQueryPoamType, "poam-type", nil,
 		"Filter by the KIND of the governing POA&M (repeatable, OR logic): "+strings.Join(hdfengine.PoamTypeValues, ", ")+

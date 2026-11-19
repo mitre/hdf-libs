@@ -16,7 +16,7 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 		validResults := []byte(`{
 			"baselines": [{
 				"name": "Test Baseline",
-				"checksum": { "algorithm": "sha256", "value": "abc123" },
+				"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 				"requirements": [{
 					"id": "REQ-001",
 					"descriptions": [{ "label": "default", "data": "Test description" }],
@@ -42,7 +42,7 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 		validResults := []byte(`{
 			"baselines": [{
 				"name": "Test Baseline",
-				"checksum": { "algorithm": "sha256", "value": "abc123" },
+				"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 				"requirements": [{
 					"id": "REQ-001",
 					"descriptions": [{ "label": "default", "data": "Test" }],
@@ -96,7 +96,7 @@ func TestValidateResults_InvalidDocuments(t *testing.T) {
 	t.Run("should reject baseline missing required name field", func(t *testing.T) {
 		invalid := []byte(`{
 			"baselines": [{
-				"checksum": { "algorithm": "sha256", "value": "abc123" },
+				"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 				"requirements": []
 			}],
 			"components": [],
@@ -117,16 +117,51 @@ func TestValidateResults_InvalidDocuments(t *testing.T) {
 	})
 }
 
+func TestValidateSystem_TrailingDataDiagnostic(t *testing.T) {
+	valid := []byte(`{"name":"test-system","components":[{"name":"c","type":"application"}]}`)
+	require.True(t, ValidateSystem(valid).Valid)
+	for _, suffix := range []string{" EXTRA", " {}", " null", " ]"} {
+		t.Run(suffix, func(t *testing.T) {
+			result := ValidateSystem(append(append([]byte{}, valid...), suffix...))
+			require.False(t, result.Valid)
+			require.Len(t, result.Errors, 1)
+			assert.Contains(t, result.Error(), "trailing data")
+		})
+	}
+	require.True(t, ValidateSystem(append(valid, []byte(" \n\t")...)).Valid)
+}
+
+func TestValidateSystem_RequiredDiagnostics(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{"one missing property", `{"name":"test-system"}`, []string{"components is required"}},
+		{"multiple missing properties", `{}`, []string{"name is required", "components is required"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ValidateSystem([]byte(tc.input))
+			require.False(t, result.Valid)
+			require.Len(t, result.Errors, len(tc.want))
+			var descriptions []string
+			for _, item := range result.Errors {
+				assert.Equal(t, "(root)", item.Field)
+				assert.Equal(t, "required", item.Keyword)
+				descriptions = append(descriptions, item.Description)
+			}
+			assert.ElementsMatch(t, tc.want, descriptions)
+		})
+	}
+}
+
 func TestValidateBaseline_ValidDocuments(t *testing.T) {
 	t.Run("should validate minimal valid baseline", func(t *testing.T) {
 		validBaseline := []byte(`{
 			"name": "Test Baseline",
 			"title": "Test Baseline Title",
 			"version": "1.0.0",
-			"checksum": {
-				"algorithm": "sha256",
-				"value": "abc123"
-			},
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"title": "Test Requirement",
@@ -146,7 +181,7 @@ func TestValidateBaseline_ValidDocuments(t *testing.T) {
 			"name": "Test Baseline",
 			"title": "Test Title",
 			"version": "1.0.0",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"title": "Test Requirement",
@@ -166,7 +201,7 @@ func TestValidateBaseline_InvalidDocuments(t *testing.T) {
 		invalid := []byte(`{
 			"title": "Test",
 			"version": "1.0.0",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "Test" }],
@@ -233,7 +268,7 @@ func resultsWith(reqFields string) []byte {
 	base := `{
 		"baselines": [{
 			"name": "CVE-Ecosystem Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "CVE-2024-12345",
 				"descriptions": [{ "label": "default", "data": "Test CVE finding" }],
@@ -511,7 +546,7 @@ func TestCveEcosystem_AffectedPackages(t *testing.T) {
 
 func TestCveEcosystem_OverrideCvss(t *testing.T) {
 	t.Run("accepts Status_Override with attached cvss block", func(t *testing.T) {
-		data := resultsWith(`"overrides": [{
+		data := resultsWith(`"statusOverrides": [{
 			"type": "riskAdjustment",
 			"impact": {"value": 0.5},
 			"reason": "Environmental exposure reduced — internal VPN only.",
@@ -721,7 +756,7 @@ func TestSetSchemaDir(t *testing.T) {
 		validResults := []byte(`{
 			"baselines": [{
 				"name": "Test",
-				"checksum": { "algorithm": "sha256", "value": "abc" },
+				"integrity": { "algorithm": "sha256", "checksum": "abc" },
 				"requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]
 			}],
 			"components": [],
