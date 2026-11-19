@@ -31,7 +31,7 @@ mise install   # install the pinned tools, verified against mise.lock
 
 The pre-commit hook runs `mise exec -- pnpm check`, so it uses these versions whether or not mise is activated in your shell. For a single command, prefix it the same way, for example `mise exec -- golangci-lint run` in a module directory.
 
-Workflow lint runs in the hook and CI with the same pinned Actionlint and ShellCheck binaries. Missing tools fail the check; install them with `mise install actionlint shellcheck`.
+Workflow lint runs in the hook and CI with the same pinned jactionlint and ShellCheck binaries. A missing tool fails the check; `mise install` installs both.
 
 Why golangci-lint is pinned to a release binary: its formatters are compiled in from the Go that builds it. A golangci-lint built with a newer Go reports formatting that CI's accepts, so a local build from source (`go install`, Homebrew) can fail the hook on code CI passes. golangci-lint's own [install guide](https://golangci-lint.run/docs/welcome/install/local/) recommends the release binary for the same reason.
 
@@ -394,6 +394,49 @@ Full rationale documented in CHANGELOG.md.
 
 ---
 
+## Security scanner rule regression tests
+
+CI scans Go with a local copy of Semgrep's `use-of-unsafe-block` audit rule,
+`.github/semgrep/unsafe.yaml`. CI copies it over the fetched rule at the same path,
+so the finding's HDF requirement id and the rest of the pinned ruleset are
+unchanged. It is the only check that audits `unsafe`: gosec's G103 is filtered by
+golangci-lint's `common-false-positives` preset, which both `.golangci.yml` files
+enable.
+
+The local rule reports every `unsafe` operation except three:
+
+- `unsafe.Sizeof(...)`: a compile-time constant; its operand is never evaluated.
+- `uintptr(unsafe.Pointer(x))` written directly as an argument of
+  `purego.SyscallN`. Go keeps `x` alive and unmoved for the call when the
+  conversion is in the argument list ([rule 4 of the `unsafe`
+  docs](https://pkg.go.dev/unsafe#Pointer)); `golang.org/x/sys/unix` passes
+  pointers to libSystem on macOS the same way. Each argument is judged alone:
+  storing the `uintptr` first, passing it to any other function, arithmetic on
+  it, an `unsafe` call inside it, any other `unsafe` use in the call's other
+  arguments, and an `unsafe` conversion of the function address are still
+  reported.
+- `(*windows.SID)(unsafe.Pointer(&ace.SidStart))`: an ACE's SID is variable-length
+  and stored from `SidStart` on ([`ACCESS_ALLOWED_ACE`](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace));
+  `golang.org/x/sys/windows` has no accessor for it. The address of any other
+  field, a conversion to any other type, and an `unsafe` call inside the ACE
+  expression are still reported.
+
+Allowing a form in the rule, rather than adding an HDF amendment, keeps every
+other `unsafe` use reported; an amendment would apply to the whole rule and
+expire. The cases live in `.github/semgrep/test/unsafe.go`, annotated for
+[Semgrep's rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+CI runs them before the scan and fails if any case fails. To run them locally,
+install the hash-pinned Semgrep (`.github/requirements/semgrep.txt`) and run from
+the repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+Keep every case passing when changing the rule or the pinned Semgrep version.
+
+---
+
 ## Schema Development Pattern
 
 ### Adding a New Document Type
@@ -462,35 +505,6 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
   workspace dependencies (fixes pnpm junction resolution on Windows)
 - Go tests that load fixtures from sibling packages should skip gracefully if
   fixture files are not found
-
----
-
-## Security scanner rule regression tests
-
-CI tests the local Go unsafe-operation audit rule before scanning the repository.
-The rule exempts only `unsafe.Sizeof(windows.SecurityAttributes{})`: Go evaluates
-that fixed-size empty struct literal as a compile-time constant, including ABI
-padding. Other unsafe calls still produce findings, including `unsafe.Add`,
-pointer conversions and slice/string operations. An HDF override would apply to
-the entire rule, so this correction uses no amendment or threshold change.
-
-The locally authored rule is `.github/semgrep/unsafe.yaml`. CI places it at the
-existing fetched rule path to retain the HDF requirement ID; the rest of the
-pinned upstream ruleset stays intact. This does not depend on gosec G103: the
-current golangci-lint `common-false-positives` preset filters that audit rule.
-
-With the repository's hash-pinned Semgrep environment installed, run from the
-repository root:
-
-```sh
-semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
-```
-
-The annotated Go cases test both permitted and reported expressions using
-[Semgrep's native rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
-Keep those boundaries passing when changing the rule or scanner version. CI also
-scans every Go workspace module for Windows through the existing SARIF/HDF gate;
-Linux scans and threshold policies remain in place.
 
 ---
 

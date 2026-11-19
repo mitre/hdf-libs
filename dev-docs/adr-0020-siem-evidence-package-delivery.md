@@ -59,7 +59,7 @@ Use an explicit conversion option:
 
     hdf convert input.json --to ecs --bundle -o export.zip
 
-Without --bundle, current dispatch/output remains unchanged, including a bare input named bundle. Bundle mode requires one regular local input, a supported explicit target and a file output. Reject directories, multiple inputs, stdin, transformation flags and incompatible options explicitly. Default refuse an existing output; --overwrite is bundle-only explicit consent and never permits overwriting source or aliases; --force remains incompatible with bundle mode. Reuse current archive safety and atomic-write machinery. Archive access policy is superseded by [ADR-0021](adr-0021-private-archives-and-unattended-sharing.md): verified private creation by default, with explicit unattended inherited access.
+Without --bundle, current dispatch/output remains unchanged, including a bare input named bundle. Bundle mode requires one regular local input, a supported explicit target and a file output. Reject directories, multiple inputs, stdin, transformation flags and incompatible options explicitly. Default refuse an existing output; --overwrite is bundle-only explicit consent and never permits overwriting source or aliases; --force remains incompatible with bundle mode. Write the archive with the machinery `hdf evidence bundle` uses: the same staged write and no-clobber publication, and the archive access policy [ADR-0021](adr-0021-private-archives-and-unattended-sharing.md) sets for `hdf evidence bundle` (`--output-access private|inherit`, verified private creation by default), applied unchanged to this archive.
 
 Use a package-owned read operation:
 

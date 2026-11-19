@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -174,6 +175,213 @@ func TestEvidenceBundle_RefusesAnExistingArchiveUnlessOverwrite(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, zipEntries(t, archive), "pkg.json", "a real archive replaced the file")
 	})
+}
+
+// clobberingWriter creates a file at the destination while entries are still being
+// added: another process taking the name after the up-front existence check.
+type clobberingWriter struct {
+	archiveWriter
+	out, content string
+	done         bool
+}
+
+func (c *clobberingWriter) Add(path string, data []byte) error {
+	if !c.done {
+		c.done = true
+		if err := os.WriteFile(c.out, []byte(c.content), 0o600); err != nil {
+			return err
+		}
+	}
+	return c.archiveWriter.Add(path, data)
+}
+
+// The existence check runs once, before the documents are read; publication is what
+// must refuse a name taken after it. A replacing rename lost the other file silently.
+func TestEvidenceBundle_NeverReplacesAFileCreatedDuringTheRun(t *testing.T) {
+	const theirs = "a file another process wrote at -o mid-run"
+	dir, pkgPath := bundleTree(t)
+	archive := filepath.Join(dir, "boe.zip")
+
+	err := runEvidenceBundle(pkgPath, archive, false, archivePrivate, func(f *os.File) archiveWriter {
+		return &clobberingWriter{archiveWriter: newZipWriter(f), out: archive, content: theirs}
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), archive, "the error must name -o")
+	got, readErr := os.ReadFile(archive)
+	require.NoError(t, readErr)
+	assert.Equal(t, theirs, string(got), "the file created mid-run must be byte-identical")
+	staged, globErr := filepath.Glob(filepath.Join(dir, stagedArchivePrefix+"*"))
+	require.NoError(t, globErr)
+	assert.Empty(t, staged, "no staged archive may be left behind")
+}
+
+var errFakeUnsupported = errors.New("operation not supported by this filesystem")
+
+// publishFixture stages a file and returns its path and the destination beside it.
+func publishFixture(t *testing.T) (staged, out string) {
+	t.Helper()
+	dir := t.TempDir()
+	staged = filepath.Join(dir, stagedArchivePrefix+"test")
+	require.NoError(t, os.WriteFile(staged, []byte("archive"), 0o600))
+	return staged, filepath.Join(dir, "boe.zip")
+}
+
+func isFakeUnsupported(err error) bool { return errors.Is(err, errFakeUnsupported) }
+
+func unsupportedRename(string, string) error { return errFakeUnsupported }
+
+// The hard link is the fallback only for a filesystem without an exclusive rename, and
+// it refuses an existing name just as the rename does.
+func TestNoClobberPublish_FallsBackToAHardLinkOnlyWhenTheRenameIsUnsupported(t *testing.T) {
+	ops := noClobberOps{rename: unsupportedRename, renameUnsupported: isFakeUnsupported,
+		link: os.Link, linkUnsupported: isFakeUnsupported, remove: os.Remove,
+		syncDir: func(string) error { return nil }}
+
+	t.Run("publishes through the link", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		require.NoError(t, ops.publish(staged, out))
+		got, err := os.ReadFile(out)
+		require.NoError(t, err)
+		assert.Equal(t, "archive", string(got))
+		assert.NoFileExists(t, staged, "the staged name is removed once the link is made")
+	})
+
+	t.Run("the link refuses an existing name", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		require.NoError(t, os.WriteFile(out, []byte("theirs"), 0o600))
+		err := ops.publish(staged, out)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), out)
+		assert.Contains(t, err.Error(), "--overwrite")
+		got, readErr := os.ReadFile(out)
+		require.NoError(t, readErr)
+		assert.Equal(t, "theirs", string(got))
+	})
+
+	t.Run("another rename error is returned, not retried as a link", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		denied := errors.New("permission denied")
+		linked := false
+		other := ops
+		other.rename = func(oldpath, newpath string) error {
+			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: denied}
+		}
+		other.link = func(string, string) error { linked = true; return nil }
+		err := other.publish(staged, out)
+		require.ErrorIs(t, err, denied)
+		assert.False(t, linked, "only an unsupported rename may fall back to the link")
+		assert.Contains(t, err.Error(), out)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
+	})
+
+	t.Run("another link error names -o, not the staged file", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		full := errors.New("no space left on device")
+		other := ops
+		other.link = func(oldpath, newpath string) error {
+			return &os.LinkError{Op: "link", Old: oldpath, New: newpath, Err: full}
+		}
+		err := other.publish(staged, out)
+		require.ErrorIs(t, err, full)
+		assert.Contains(t, err.Error(), out)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
+	})
+
+	t.Run("a staged copy that cannot be removed is reported after publication", func(t *testing.T) {
+		staged, out := publishFixture(t)
+		stuck := errors.New("operation not permitted")
+		other := ops
+		other.remove = func(name string) error { return &os.PathError{Op: "remove", Path: name, Err: stuck} }
+		err := other.publish(staged, out)
+		require.ErrorIs(t, err, stuck)
+		assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
+		var published *archivePublishedError
+		require.ErrorAs(t, err, &published, "the archive is at -o, so the failure is reported as after publication")
+		assert.Contains(t, err.Error(), "was written to "+out)
+		assert.FileExists(t, out, "the published archive is kept")
+	})
+}
+
+// Under --overwrite a failed replacing rename names -o and not the staged file either.
+func TestNoClobberPublish_OverwriteErrorsNameOutputNotTheStagedFile(t *testing.T) {
+	staged, _ := publishFixture(t)
+	out := filepath.Join(t.TempDir(), "missing-dir", "boe.zip")
+	err := platformNoClobber.replace(staged, out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), out)
+	assert.NotContains(t, err.Error(), filepath.Base(staged), "the staged name is never shown")
+}
+
+// Where neither primitive exists the run refuses rather than replace anything, and says
+// what the operator can do instead.
+func TestNoClobberPublish_RefusesWhereNeitherPrimitiveExists(t *testing.T) {
+	staged, out := publishFixture(t)
+	failing := func(op string) func(string, string) error {
+		return func(oldpath, newpath string) error {
+			return &os.LinkError{Op: op, Old: oldpath, New: newpath, Err: errFakeUnsupported}
+		}
+	}
+	ops := noClobberOps{rename: failing("rename"), renameUnsupported: isFakeUnsupported,
+		link: failing("link"), linkUnsupported: isFakeUnsupported, remove: os.Remove,
+		syncDir: func(string) error { return nil }}
+
+	err := ops.publish(staged, out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), out, "the refusal names -o")
+	assert.NotContains(t, err.Error(), filepath.Base(staged), "but not the staged name the operator never typed")
+	assert.Contains(t, err.Error(), "rename: "+errFakeUnsupported.Error(), "and says which operations failed")
+	assert.Contains(t, err.Error(), "--overwrite", "and the flag that permits replacement")
+	assert.Contains(t, err.Error(), "another directory", "and the other way forward")
+	assert.NoFileExists(t, out, "nothing is published")
+}
+
+// A failure after the archive is published must not read as "nothing changed": the
+// archive is at -o, and the report says so.
+func TestNoClobberPublish_ReportsAFailureAfterPublicationAsPublished(t *testing.T) {
+	staged, out := publishFixture(t)
+	synced := errors.New("input/output error")
+	ops := platformNoClobber
+	ops.syncDir = func(string) error { return synced }
+
+	err := ops.publish(staged, out)
+	require.ErrorIs(t, err, synced)
+	assert.Contains(t, err.Error(), "was written to "+out)
+	assert.FileExists(t, out, "the published archive is kept")
+}
+
+// Under --overwrite the same applies: a failure after the replacing rename must not
+// print the note that the prior file is unchanged.
+func TestEvidenceBundle_OverwriteDoesNotClaimThePriorFileSurvivedAPublishedArchive(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	archive := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.WriteFile(archive, []byte("prior"), 0o600))
+	saved := platformNoClobber
+	t.Cleanup(func() { platformNoClobber = saved })
+	platformNoClobber.syncDir = func(string) error { return errors.New("input/output error") }
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive, "--overwrite")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "was written to "+archive)
+	assert.NotContains(t, stderr, "was not replaced", "the prior file was replaced")
+	assert.Contains(t, zipEntries(t, archive), "pkg.json")
+}
+
+// A symlink at -o is an existing name even when its target is missing; publication
+// would refuse it after every document was read, so the up-front check refuses it first.
+func TestEvidenceBundle_RefusesADanglingSymlinkAtOutputBeforeReadingDocuments(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	archive := filepath.Join(dir, "boe.zip")
+	if err := os.Symlink(filepath.Join(dir, "missing.zip"), archive); err != nil {
+		t.Skipf("cannot create a symlink here: %v", err)
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "rhel9-results.json"),
+		[]byte(`{"baselines":[]}`), 0o600))
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--overwrite")
+	assert.NotContains(t, err.Error(), "rhel9-results.json",
+		"the checksum mismatch must not be reported: the run stopped before reading it")
 }
 
 // Ordering, stated as a test: with both faults present the existence refusal wins,
@@ -1447,7 +1655,7 @@ func TestEvidenceBundle_RefusesAMissingOutputDirectoryByName(t *testing.T) {
 	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", filepath.Join(dir, "nope", "a.zip"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "does not exist")
-	assert.NotContains(t, err.Error(), ".hdf-bundle-",
+	assert.NotContains(t, err.Error(), stagedArchivePrefix,
 		"the error must not name an internal temp file")
 }
 
@@ -1595,7 +1803,7 @@ func TestEvidenceBundle_RequiresAnOutputPath(t *testing.T) {
 	_, _, err := executeCommand("evidence", "bundle", pkgPath)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "-o is required")
-	assert.NotContains(t, err.Error(), ".hdf-bundle-",
+	assert.NotContains(t, err.Error(), stagedArchivePrefix,
 		"the error must not name an internal temp file")
 	assert.NotContains(t, err.Error(), "rename",
 		"nor surface as a filesystem failure after the work is done")
@@ -2843,4 +3051,56 @@ func TestEvidenceBundlePackageInputCompatibility(t *testing.T) {
 			require.Equal(t, source, entries["scans/rhel9-results.json"])
 		})
 	}
+}
+
+func TestEvidenceBundleRefusesUnsafePackageFilenameBeforeReading(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "out.zip")
+	// The package does not exist: an unsafe name must be refused before any read is attempted.
+	_, _, err := executeCommand("evidence", "bundle", filepath.Join(dir, "missing:pkg.json"), "-o", output)
+	require.ErrorContains(t, err, "cannot name a portable archive entry")
+	require.NoFileExists(t, output)
+}
+
+func TestEvidenceBundleAcceptsPackageSymlinkSpelledInAnotherCase(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	resolvedDir, err := resolvedAbs(dir)
+	require.NoError(t, err)
+	respelled := filepath.Join(strings.ToLower(resolvedDir), filepath.Base(pkgPath))
+	if respelled == filepath.Join(resolvedDir, filepath.Base(pkgPath)) {
+		respelled = filepath.Join(strings.ToUpper(resolvedDir), filepath.Base(pkgPath))
+	}
+	original, err := os.Stat(pkgPath)
+	require.NoError(t, err)
+	aliased, err := os.Stat(respelled)
+	if err != nil || !os.SameFile(original, aliased) {
+		t.Skip("the filesystem is case-sensitive, so the other spelling names no file")
+	}
+	link := filepath.Join(dir, "alias.json")
+	require.NoError(t, os.Symlink(respelled, link))
+	output := filepath.Join(dir, "bundle.zip")
+	_, _, err = executeCommand("evidence", "bundle", link, "-o", output)
+	require.NoError(t, err, "a symlink to the package directory spelled in another case is still inside it")
+	data, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+	entries := zipEntries(t, output)
+	require.Equal(t, data, entries["alias.json"])
+	require.Contains(t, entries, "scans/rhel9-results.json")
+}
+
+// The refusal for a taken -o is one function: a directory is named as one, and any
+// other entry (a file, or a symlink whatever it points at) as an existing name.
+func TestDescribeTakenOutput(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.WriteFile(file, []byte("x"), 0o600))
+
+	assert.Contains(t, describeTakenOutput(dir).Error(), "-o "+dir+" is a directory")
+	assert.Contains(t, describeTakenOutput(file).Error(), "-o "+file+" already exists; pass --overwrite")
+	taken, isDir := outputTaken(dir)
+	assert.True(t, taken && isDir)
+	taken, isDir = outputTaken(file)
+	assert.True(t, taken && !isDir)
+	taken, isDir = outputTaken(filepath.Join(dir, "absent.zip"))
+	assert.False(t, taken || isDir)
 }

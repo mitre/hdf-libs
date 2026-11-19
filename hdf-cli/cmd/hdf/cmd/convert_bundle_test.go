@@ -138,10 +138,12 @@ func TestConvertBundlePreservesConcurrentOutput(t *testing.T) {
 	require.NoError(t, os.WriteFile(input, []byte("input"), 0o600))
 	require.NoError(t, refuseArchiveOverInput(output, dir, input, "source", nil, false))
 	sentinel := []byte("concurrent owner data")
-	err := writeArchiveAtomically(output, []bundleEntry{{path: "source.json", data: []byte("input")}}, func(file *os.File) archiveWriter {
+	err := publishArchive(output, false, archivePrivate, func(file *os.File) archiveWriter {
 		require.NoError(t, os.WriteFile(output, sentinel, 0o600))
 		return newArchiveWriter(file)
-	}, false, archivePrivate)
+	}, func() ([]bundleEntry, error) {
+		return []bundleEntry{{path: "source.json", data: []byte("input")}}, nil
+	})
 	require.Error(t, err, "must refuse an output created during archive construction")
 	actual, readErr := os.ReadFile(output)
 	require.NoError(t, readErr)
@@ -479,4 +481,23 @@ func bundleSourceFixture(t *testing.T) string {
 	validation := validators.ValidateResults(source)
 	require.True(t, validation.Valid, "%s", validation.Error())
 	return path
+}
+
+// A run that fails under --overwrite after the pre-flight refusals says the file
+// already at -o is unchanged, so a stale archive is not shipped as this run's. A
+// refused input gets no such note: it is an input, not a prior archive.
+func TestConvertBundleOverwriteFailureNotesTheUnchangedOutput(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "existing.zip")
+	require.NoError(t, os.WriteFile(output, []byte("previous"), 0o600))
+	invalid := filepath.Join(dir, "invalid.json")
+	require.NoError(t, os.WriteFile(invalid, []byte("invalid JSON"), 0o600))
+
+	_, stderr, err := executeCommand("convert", "--bundle", invalid, "--to", "ecs", "-o", output, "--overwrite")
+	require.Error(t, err)
+	require.Contains(t, stderr, output+" was not replaced")
+
+	_, stderr, err = executeCommand("convert", "--bundle", invalid, "--to", "ecs", "-o", invalid, "--overwrite")
+	require.ErrorContains(t, err, "over the source document")
+	require.NotContains(t, stderr, "was not replaced")
 }

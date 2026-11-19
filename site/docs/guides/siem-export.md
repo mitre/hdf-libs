@@ -143,7 +143,7 @@ When repackaging retained evidence with `hdf evidence bundle`, the package file 
 
 Use `hdf convert results.json --to ecs --bundle -o export.zip` to deliver the finding events alongside the original HDF source, its manifest and a standard evidence-package inventory. `splunk` and `ocsf` are also supported targets.
 
-Both this command and `hdf evidence bundle` default to `--output-access private`. Protection is established before archive bytes are written. Linux checks actual owner/mode permissions on ext2/3/4, XFS, Btrfs or tmpfs; macOS requires local APFS/HFS with ownership enabled and prevents inherited ACL grants; Windows requires persistent ACL support and a protected creator-only DACL. Unsupported storage, including OverlayFS, fails without falling back to broader access.
+Both this command and `hdf evidence bundle` default to `--output-access private`, which sets the archive's access when it is created and reads it back before any byte is written: an owner-only (0600) file on Linux and other Unix systems, with its NFSv4 ACL also checked on Linux; an empty, non-inheriting ACL on macOS; a protected access list that grants only your account on Windows. Storage that cannot show that protection, such as a default SMB mount, a FAT or exFAT volume, or a macOS volume that ignores ownership, is refused without falling back to broader access. On network or shared storage one line notes that the server and its mount options also control who can read the file.
 
 For agents running as different accounts, provision a shared directory and select inherited access explicitly:
 

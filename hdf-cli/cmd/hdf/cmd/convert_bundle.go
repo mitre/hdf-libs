@@ -13,7 +13,8 @@ import (
 )
 
 func runConvertBundle(cmd *cobra.Command, args []string, target, output string, overwrite bool) error {
-	access, err := archiveAccessFlag(cmd)
+	outputAccess, _ := cmd.Flags().GetString("output-access")
+	access, err := parseArchiveAccess(outputAccess)
 	if err != nil {
 		return err
 	}
@@ -48,24 +49,26 @@ func runConvertBundle(cmd *cobra.Command, args []string, target, output string, 
 	if err := refuseArchiveOverInput(output, filepath.Dir(args[0]), args[0], "source document", nil, overwrite); err != nil {
 		return err
 	}
-	source, err := readFromFile(args[0], false)
-	if err != nil {
-		return fmt.Errorf("read bundle source: %w", err)
-	}
-	bundle, err := projectSIEMBundle(source, target)
-	if err != nil {
-		return fmt.Errorf("build %s bundle: %w", target, err)
-	}
-	inventory, err := siemEvidencePackage(bundle, target)
-	if err != nil {
-		return err
-	}
-	return writeArchiveAtomically(output, []bundleEntry{
-		{path: "events.ndjson", data: bundle.Events},
-		{path: "evidence-package.json", data: inventory},
-		{path: "manifest.json", data: bundle.Manifest},
-		{path: "source.json", data: bundle.Source},
-	}, newArchiveWriter, overwrite, access)
+	return publishArchive(output, overwrite, access, newArchiveWriter, func() ([]bundleEntry, error) {
+		source, err := readFromFile(args[0], false)
+		if err != nil {
+			return nil, fmt.Errorf("read bundle source: %w", err)
+		}
+		bundle, err := projectSIEMBundle(source, target)
+		if err != nil {
+			return nil, fmt.Errorf("build %s bundle: %w", target, err)
+		}
+		inventory, err := siemEvidencePackage(bundle, target)
+		if err != nil {
+			return nil, err
+		}
+		return []bundleEntry{
+			{path: "events.ndjson", data: bundle.Events},
+			{path: "evidence-package.json", data: inventory},
+			{path: "manifest.json", data: bundle.Manifest},
+			{path: "source.json", data: bundle.Source},
+		}, nil
+	})
 }
 
 func projectSIEMBundle(source []byte, target string) (*exportmap.ExportBundle, error) {

@@ -7,8 +7,8 @@
 # and the gate is the uniform evidence bundle plus the policy point for what
 # an exit code cannot express (see .github/hdf-thresholds/tests.yaml).
 #
-# GO_COVERAGE=1 (the ubuntu leg) also writes per-module coverage profiles,
-# absorbing what used to be a separate coverage job.
+# GO_COVERAGE=1 also writes per-module coverage.out profiles, absorbing what
+# used to be a separate coverage job; only the leg sonar reads sets it.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 OS_TAG="${OS_TAG:?set OS_TAG (e.g. ubuntu-latest)}"

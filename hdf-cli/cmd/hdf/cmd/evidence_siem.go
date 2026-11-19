@@ -72,10 +72,6 @@ func siemArtifactPath(raw string) (string, error) {
 	return filepath.Clean(string(decoded)), nil
 }
 
-func portableArtifactPath(path string) bool {
-	return filepath.IsLocal(path) && !strings.ContainsAny(path, "\\:\x00")
-}
-
 func selectSIEMManifest(entries []hdfengine.EvidenceContent, selector string) (hdfengine.EvidenceContent, error) {
 	selectedPath := ""
 	if selector != "" {

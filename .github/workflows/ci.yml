@@ -67,6 +67,7 @@ env:
 #           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
 #           ├── verify-packages                            (intended required check)
 #           └── site-build
+#   test-archive-macos (junit) ──────────────────────────── gate-hdf-tests
 #
 # This pipeline normalizes and gates its own data through HDF, as an
 # exemplar of how to use HDF in a pipeline. There are TWO HDF gates, split by
@@ -102,7 +103,7 @@ env:
 # and fails on any upstream failure, because a SKIPPED required check
 # satisfies a ruleset and would otherwise be a false green.
 #
-# Test phase: ubuntu+windows matrix; every leg emits JUnit which
+# Test phase: ubuntu+windows matrix plus the macOS archive legs; every leg emits JUnit which
 # gate-hdf-tests normalizes and thresholds the same way (if: always — red
 # runs are exactly the ones whose HDF evidence matters). The test jobs
 # remain the failure authority; the test gate is the uniform evidence
@@ -299,8 +300,16 @@ jobs:
           for d in go/lang/security javascript/lang/security typescript/lang/security typescript/react/security; do
             [ -d ".semgrep-rules/$d" ] || { echo "::error::ruleset dir missing: $d"; exit 1; }
           done
-          # Preserve the rule ID while narrowing only the safe Windows size expression.
+          # The repository's narrowed unsafe rule replaces the fetched one at the same
+          # path, so its finding id is unchanged (see .github/semgrep/unsafe.yaml). It
+          # was derived from the upstream rule whose sha256 is recorded beside it, so an
+          # upstream change fails here until the fork is re-derived.
           test -f .semgrep-rules/go/lang/security/audit/unsafe.yaml
+          echo "$(cat .github/semgrep/unsafe.upstream.sha256)  .semgrep-rules/go/lang/security/audit/unsafe.yaml" \
+            | sha256sum -c --quiet - || {
+              echo "::error::go/lang/security/audit/unsafe.yaml changed upstream at $SEMGREP_RULES_SHA; re-derive .github/semgrep/unsafe.yaml from it and record its sha256 in .github/semgrep/unsafe.upstream.sha256"
+              exit 1
+            }
           cp .github/semgrep/unsafe.yaml .semgrep-rules/go/lang/security/audit/unsafe.yaml
       # Exit codes with --error: 0 clean, 1 findings (the gate judges those),
       # 2 target error, 7 bad config. Only 0 and 1 are tolerated here.
@@ -491,18 +500,34 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
-      - name: Windows lint and security (SARIF; findings gate via HDF)
+      # The same modules again as Windows and macOS build them: files with a windows or
+      # darwin build tag are invisible to the pass above. Only a module with a
+      # build-constrained file can differ by GOOS (go list reports the files a GOOS
+      # leaves out), so the others are not linted twice more. Same gate, same thresholds.
+      - name: golangci-lint for Windows and macOS (SARIF; findings gate via HDF)
         env:
-          GOOS: windows
           GOARCH: amd64
           CGO_ENABLED: '0'
         run: |
-          for dir in $GO_MODULES; do
-            name=$(echo "${dir#./}" | tr '/' '-')
-            rc=0
-            (cd "$dir" && golangci-lint run --output.text.path stdout \
-              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-windows.sarif" ./...) || rc=$?
-            [ "$rc" -le 1 ] || exit "$rc"
+          for goos in windows darwin; do
+            for dir in $GO_MODULES; do
+              constrained=$(cd "$dir" && GOOS=$goos go list -f '{{if .IgnoredGoFiles}}x{{end}}' ./...)
+              case "$constrained" in *x*) ;; *) continue ;; esac
+              name=$(echo "${dir#./}" | tr '/' '-')
+              rc=0
+              (cd "$dir" && GOOS=$goos golangci-lint run --output.text.path stdout \
+                --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-$goos.sarif" ./...) || rc=$?
+              [ "$rc" -le 1 ] || exit "$rc"
+            done
+          done
+      # Statfs_t.Type is int64, int32 or uint32 depending on the Linux
+      # architecture, and the archive access check compares it against filesystem
+      # magics; vet compiles that code at each width the runners above never build.
+      - name: Vet the CLI for every Statfs_t.Type width
+        working-directory: hdf-cli
+        run: |
+          for arch in 386 arm s390x; do
+            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go vet ./cmd/hdf/cmd
           done
       # In SARIF mode govulncheck exits 0 even with findings — by design, so
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
@@ -767,26 +792,51 @@ jobs:
           name: build-artifacts
       # One gotestsum pass per go.work module (replaces the pnpm test:go +
       # separate hdf-cli steps — the module loop covers every module). The
-      # ubuntu leg doubles as the coverage run; JUnit feeds the test gate.
+      # ubuntu leg doubles as the coverage run, the one sonar reads; JUnit feeds
+      # the test gate.
       - name: Test Go (all packages)
         shell: bash
         env:
           OS_TAG: ${{ matrix.os }}
-          GO_COVERAGE: '1'
+          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
         run: .github/scripts/test-go-junit.sh
-      - name: Check Linux archive field representations
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: hdf-cli
-        env:
-          CGO_ENABLED: '0'
-          GOOS: linux
-        run: |
-          GOARCH=386 go vet ./cmd/hdf/cmd
-          GOARCH=arm go vet ./cmd/hdf/cmd
-          GOARCH=s390x go vet ./cmd/hdf/cmd
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
+      # The built CLI, not a test seam: bundle into a folder that passes Everyone read to
+      # new files, under each policy, and show what Windows itself reports with icacls.
+      - name: Archive access on Windows, as icacls reports it
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $hdf = Join-Path $env:RUNNER_TEMP 'hdf.exe'
+          go -C hdf-cli build -o $hdf ./cmd/hdf
+          $work = Join-Path $env:RUNNER_TEMP 'archive-access'
+          $fixtures = 'hdf-cli/cmd/hdf/cmd/testdata/evidence-verify'
+          New-Item -ItemType Directory -Path "$work/scans", "$work/shared" | Out-Null
+          Copy-Item "$fixtures/system.json", "$fixtures/plan.json" $work
+          Copy-Item "$fixtures/rhel9-results.json", "$fixtures/postgres-results.json" "$work/scans"
+          Push-Location $work
+          & $hdf evidence build --system system.json --results scans/rhel9-results.json `
+            --results scans/postgres-results.json --plan plan.json -o pkg.json
+          # Everyone by SID (S-1-1-0), so the grant does not depend on the runner's language.
+          icacls shared /grant '*S-1-1-0:(OI)(CI)R'
+          & $hdf evidence bundle pkg.json -o shared/private.zip
+          & $hdf evidence bundle pkg.json -o shared/inherited.zip --output-access inherit
+          icacls shared/private.zip
+          icacls shared/inherited.zip
+          $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+          $sid = { param($rule) $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value }
+          $private = Get-Acl shared/private.zip
+          if (-not $private.AreAccessRulesProtected) { throw 'the private archive takes grants from its folder' }
+          if ($private.Access.Count -ne 1 -or (& $sid $private.Access[0]) -ne $me.Value) {
+            throw 'the private archive grants access to someone other than the current user'
+          }
+          $everyone = (Get-Acl shared/inherited.zip).Access | Where-Object { $_.IsInherited -and (& $sid $_) -eq 'S-1-1-0' }
+          if (-not $everyone) { throw 'the inherited archive did not keep the folder''s Everyone grant' }
+          Pop-Location
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -801,50 +851,55 @@ jobs:
           path: '**/coverage.out'
           retention-days: 30
 
-      - name: Upload Windows coverage reports
-        if: always() && matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: coverage-reports-go-windows
-          path: '**/coverage.out'
-          if-no-files-found: error
-          retention-days: 30
-
+  # macOS ACL behavior needs a Mac: a private archive is created through libSystem
+  # (purego, cgo off as in release builds), so it runs natively on both architectures.
+  # It needs nothing from build (the Go modules it tests are checked in), so it starts
+  # with the workflow. JUnit feeds the test gate like every other test leg.
   test-archive-macos:
     name: Test archive access (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    needs: build
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, macos-15-intel]
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: amd64
     env:
       CGO_ENABLED: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # Go only: the shared setup action also installs Node and pnpm, which this
+      # job does not use and whose lock has no Intel-Mac entry.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.work
           cache-dependency-path: '**/go.sum'
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: build-artifacts
-      - name: Verify native archive access and recovery
+      # The CLI command package, where the archive code lives, under gotestsum so the
+      # leg leaves a JUnit record named like test-go-junit.sh names its files.
+      - name: Test the CLI command package natively
         working-directory: hdf-cli
+        env:
+          OS_TAG: ${{ matrix.os }}
         run: |
-          go test ./cmd/hdf/cmd -run 'TestArchiveAccess|TestConvertBundle|TestEvidenceBundle' -count=1 -coverprofile=archive-coverage.out
+          go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+          mkdir -p "$GITHUB_WORKSPACE/test-artifacts"
+          junit="$GITHUB_WORKSPACE/test-artifacts/go-hdf-cli-$OS_TAG.xml"
+          rc=0
+          "$(go env GOPATH)/bin/gotestsum" --junitfile "$junit" -- ./cmd/hdf/cmd -count=1 || rc=$?
+          test -s "$junit" || { echo "::error::missing JUnit output for hdf-cli on $OS_TAG"; exit 1; }
+          [ "$rc" -eq 0 ] || exit "$rc"
           go vet ./cmd/hdf/cmd
-      - name: Upload native coverage
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: coverage-reports-go-${{ matrix.os }}
-          path: hdf-cli/archive-coverage.out
-          if-no-files-found: error
-          retention-days: 30
+          name: test-results-go-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 7
 
   # ── Gate: test results, judged as HDF ────────────────────────────────────
   # The other half of the pair (see gate-hdf-scans): the same convert-then-
@@ -866,6 +921,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # A skipped or cancelled upstream leg would otherwise be judged on whatever
+      # it uploaded, and a step that fails after its JUnit upload (the Windows
+      # icacls check) would be judged green.
+      - name: Fail if any upstream test job did not succeed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "::error::an upstream test job failed, was cancelled or was skipped"
+          exit 1
       # merge-multiple is safe: the collectors qualify every JUnit filename
       # with its OS, so the legs cannot collide in one directory.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -885,11 +948,6 @@ jobs:
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
-      - name: Native macOS archive verification must pass
-        if: needs.test-archive-macos.result != 'success'
-        run: |
-          echo "::error::Native macOS archive verification did not succeed on both architectures"
-          exit 1
       - name: Every test leg must have reported
         run: |
           # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and
@@ -900,6 +958,10 @@ jobs:
                 || { echo "::error::$lang on $os produced nothing"; exit 1; }
             done
           done
+          for os in macos-15 macos-15-intel; do
+            compgen -G "test-artifacts-dl/go-*-$os.xml" >/dev/null \
+              || { echo "::error::go on $os produced nothing"; exit 1; }
+          done
       - name: Normalize test results to HDF
         run: hdf convert --from junit test-artifacts-dl/*.xml -o hdf-tests/
       # Failures mirror the test jobs; the skip budget is what this decides,
@@ -907,7 +969,7 @@ jobs:
       - name: Apply the test policy
         run: |
           shopt -s failglob
-          for os in ubuntu windows; do
+          for os in ubuntu windows macos; do
             hdf validate threshold hdf-tests/*-$os-*.hdf.json \
               -T .github/hdf-thresholds/tests.yaml -T ".github/hdf-thresholds/tests-$os.yaml"
           done
@@ -976,6 +1038,8 @@ jobs:
           scan-workflows *.sarif x-sarif
           test-results-go-ubuntu-latest *.xml x-junit
           test-results-go-windows-latest *.xml x-junit
+          test-results-go-macos-15 *.xml x-junit
+          test-results-go-macos-15-intel *.xml x-junit
           test-results-ts-ubuntu-latest *.xml x-junit
           test-results-ts-windows-latest *.xml x-junit
           TABLE
