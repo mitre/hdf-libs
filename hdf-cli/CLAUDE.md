@@ -64,7 +64,7 @@ Commands: `validate`, `list`, `query`, `convert`, `diff`, `events`, `enrich`, `a
 ### Input Handling (`input.go`)
 
 Security-gated pipeline for all file/stdin reading:
-1. File size check (default 50MB, `--max-size`)
+1. File size check (default 256 MB, `--max-size`)
 2. Symlink detection (`--no-follow-symlinks`)
 3. Regular file validation
 4. **Schema validation before JSON parsing** (gatekeeper pattern using `xeipuuv/gojsonschema`)

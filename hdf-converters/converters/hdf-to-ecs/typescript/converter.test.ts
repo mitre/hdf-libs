@@ -100,7 +100,8 @@ describe('hdf-to-ecs converter', () => {
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
     expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
-    expect(hdf.baseline_checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+    expect(hdf.baseline_version).toBe('1.0.0');
+    expect(hdf.baseline_integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
     expect(hdf.status_overrides).toHaveLength(1);
     expect(obj((hdf.status_overrides as unknown[])[0]).type).toBe('waiver');
     // override provenance -> labels.*
@@ -146,6 +147,18 @@ describe('hdf-to-ecs converter', () => {
     expect(line).not.toContain(LS);
     expect(line).not.toContain(PS);
     expect(() => JSON.parse(line)).not.toThrow();
+  });
+
+  it.each([
+    { location: {}, expected: undefined },
+    { location: { ref: 'controls/stig.rb' }, expected: { origin: { file: { name: 'controls/stig.rb' } } } },
+    { location: { line: 0 }, expected: { origin: { file: { line: 0 } } } },
+  ])('preserves optional source-location members: $location', ({ location, expected }) => {
+    const requirement = { ...testhdf.req('X', { status: 'passed' }), sourceLocation: location };
+    const document = JSON.stringify(testhdf.doc(testhdf.baseline('b', requirement)));
+    const output = lines(convertHdfToEcs(document, VERSION));
+    expect(output).toHaveLength(1);
+    expect(output[0].log).toEqual(expected);
   });
 
   it('projects ATT&CK tags to threat.* (array and scalar tag forms)', () => {

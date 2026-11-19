@@ -129,9 +129,10 @@ function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, 
 function exploitedCves(bundle: StixBundle): Map<string, Doc> {
   const vulnCves = new Map<string, string[]>();
   for (const o of bundle.objects) {
+    // An object without an id cannot be a reference target, so it is not indexed.
     if (o.type === 'vulnerability') {
       const id = stixObjectId(o);
-      vulnCves.set(id, [...(vulnCves.get(id) ?? []), ...stixObjectCVEs(o)]);
+      if (id) vulnCves.set(id, [...(vulnCves.get(id) ?? []), ...stixObjectCVEs(o)]);
     }
   }
   const exploited = new Map<string, Doc>();
@@ -141,19 +142,26 @@ function exploitedCves(bundle: StixBundle): Map<string, Doc> {
     }
   };
   for (const o of bundle.objects) {
-    if (o.type === 'sighting' && typeof o.sighting_of_ref === 'string') {
-      mark(o.sighting_of_ref, o);
-    } else if (
-      o.type === 'relationship' &&
-      (o.relationship_type === 'targets' || o.relationship_type === 'exploits') &&
-      typeof o.target_ref === 'string'
-    ) {
-      mark(o.target_ref, o);
-    } else if ((o.type === 'indicator' || o.type === 'report') && Array.isArray(o.object_refs)) {
-      for (const r of o.object_refs) if (typeof r === 'string') mark(r, o);
-    }
+    for (const ref of stixExploitationReferences(o)) mark(ref, o);
   }
   return exploited;
+}
+
+const isStixReference = (ref: unknown): ref is string => typeof ref === 'string' && ref !== '';
+
+function stixExploitationReferences(o: Doc): string[] {
+  switch (o.type) {
+    case 'sighting':
+      return isStixReference(o.sighting_of_ref) ? [o.sighting_of_ref] : [];
+    case 'relationship':
+      if (o.relationship_type !== 'targets' && o.relationship_type !== 'exploits') return [];
+      return isStixReference(o.target_ref) ? [o.target_ref] : [];
+    case 'indicator':
+    case 'report':
+      return Array.isArray(o.object_refs) ? o.object_refs.filter(isStixReference) : [];
+    default:
+      return [];
+  }
 }
 
 /** The finding's cvss[] entry carrying a base vector for the CVE (or a version-agnostic entry). */
@@ -182,14 +190,13 @@ function buildRiskAdjustment(
 ): Doc {
   return {
     type: 'riskAdjustment',
-    reason: `${cve} actively exploited per STIX threat intelligence (${stixObjectId(src)}); CVSS Threat recomputed with Exploit Maturity E:H.`,
+    reason: `${cve} actively exploited per STIX threat intelligence (${stixSourceLabel(src)}); CVSS Threat recomputed with Exploit Maturity E:H.`,
     impact: { value: roundImpact(score.temporalScore / 10) },
     appliedBy: { type: 'other', identifier: 'hdf-enrich' },
     appliedAt: toRfc3339(appliedAt),
     expiresAt: toRfc3339(expiresAt),
     cvss: {
       version: '3.1',
-      id: cve,
       baseVector,
       baseScore: score.baseScore,
       threatVector: 'E:H',
@@ -239,6 +246,11 @@ function buildStixRef(obj: StixObject, rel: string): Doc {
 
 /** Human-readable description for an id-less STIX object: its name, else a
  *  type-derived label, else a generic one — so its reference satisfies anyOf. */
+/** Names a STIX object for a reader: its id, or its fallback description. */
+function stixSourceLabel(obj: StixObject): string {
+  return stixObjectId(obj) || stixFallbackDescription(obj);
+}
+
 function stixFallbackDescription(obj: StixObject): string {
   if (typeof obj.name === 'string' && obj.name) return obj.name;
   if (typeof obj.type === 'string' && obj.type) return `STIX ${obj.type} object`;
