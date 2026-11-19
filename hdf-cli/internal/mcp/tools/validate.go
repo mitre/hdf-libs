@@ -25,6 +25,8 @@ import (
 // validation errors with a notice.
 const ValidateResponseTokenCap = respond.ConciseTokenBudget
 
+const validationErrorLimitNotice = "Validation errors truncated: additional errors were omitted. Fix the reported errors and re-run."
+
 // validateInput is the hdf_validate argument surface: a source (path/handle) or
 // inline content, an optional docType, and one of three modes.
 type validateInput struct {
@@ -176,6 +178,9 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 		out.DocType = load.DocType
 		out.Valid = load.Valid
 		out.Errors = fromLoaderErrors(load.Errors)
+		if load.ErrorsMore {
+			out.Notice = validationErrorLimitNotice
+		}
 		if load.DocType == "" && len(out.Errors) == 0 {
 			// Defensive: the loader already populates a distinguished message for
 			// this case, so this rarely fires — share the same helper so the two
@@ -193,6 +198,9 @@ func validateSchema(out *validateOutput, requestedDocType string, content []byte
 	vr := validators.Validate(content, st)
 	out.Valid = vr.Valid
 	out.Errors = lineNumberedErrors(vr, content)
+	if len(out.Errors) < len(vr.Errors) {
+		out.Notice = validationErrorLimitNotice
+	}
 }
 
 // carryLoaderVerdict seeds the reply from the load rather than from optimism. A
@@ -203,6 +211,9 @@ func carryLoaderVerdict(out *validateOutput, load *loader.Result) {
 	out.Valid = load.Valid
 	if !load.Valid {
 		out.Errors = append(out.Errors, fromLoaderErrors(load.Errors)...)
+		if load.ErrorsMore {
+			out.Notice = appendNotice(out.Notice, validationErrorLimitNotice)
+		}
 	}
 }
 
@@ -430,13 +441,16 @@ func boundValidateResponse(out *validateOutput) {
 	if respond.EstimateTokens(mustJSON(out)) <= ValidateResponseTokenCap {
 		return
 	}
+	out.Notice = fmt.Sprintf(
+		"Response truncated to stay within the %d-token cap: additional diagnostics were omitted. Fix the reported errors and re-run.",
+		ValidateResponseTokenCap,
+	)
 	total := len(out.Errors)
 	lo, hi, best := 0, total, 0
 	for lo <= hi {
 		mid := (lo + hi) / 2
 		trial := *out
 		trial.Errors = out.Errors[:mid]
-		trial.Notice = ""
 		if respond.EstimateTokens(mustJSON(&trial)) <= ValidateResponseTokenCap {
 			best = mid
 			lo = mid + 1
@@ -445,10 +459,6 @@ func boundValidateResponse(out *validateOutput) {
 		}
 	}
 	out.Errors = out.Errors[:best]
-	out.Notice = fmt.Sprintf(
-		"Response truncated to stay within the %d-token cap: showing %d of %d validation errors. Validate a specific docType to narrow, or fix the reported errors and re-run.",
-		ValidateResponseTokenCap, best, total,
-	)
 }
 
 // argError renders a malformed-argument isError result (a caller mistake, not a

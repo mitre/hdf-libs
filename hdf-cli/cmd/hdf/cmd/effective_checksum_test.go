@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
+	"os"
+	"sort"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +45,60 @@ func TestStampConvertOutput_LegacyShapeUntouched(t *testing.T) {
 	assert.JSONEq(t, input, string(out))
 }
 
+func TestStampConvertOutput_BaselineShapeUntouched(t *testing.T) {
+	input := fixtures.Baseline.Win2022Stig
+	out, err := stampConvertOutput(input)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(input), string(out), "baseline definitions must not acquire evaluated-result checksums")
+}
+
 func TestStampConvertOutput_InvalidJSON(t *testing.T) {
 	_, err := stampConvertOutput([]byte("not json"))
 	assert.Error(t, err)
+}
+
+// topLevelKeys returns the root object's keys in document order.
+func topLevelKeys(t *testing.T, data []byte) []string {
+	t.Helper()
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var keys []string
+	depth, expectKey := 0, false
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			return keys
+		}
+		switch tok := token.(type) {
+		case json.Delim:
+			if tok == '{' || tok == '[' {
+				depth++
+			} else {
+				depth--
+			}
+			expectKey = depth == 1
+		default:
+			if depth == 1 && expectKey {
+				keys = append(keys, tok.(string))
+			}
+			expectKey = depth == 1 && !expectKey
+		}
+	}
+}
+
+func TestStampConvertOutput_BaselineKeysComeBackSorted(t *testing.T) {
+	inputData, err := os.ReadFile(
+		converterFixturePath(t, "xccdf-results-to-hdf", "input/benchmark-minimal-1.1.xml"),
+	)
+	require.NoError(t, err)
+	converter, err := GetConverter("xccdf-benchmark", "hdf")
+	require.NoError(t, err)
+	converted, err := converter.Convert(inputData)
+	require.NoError(t, err)
+
+	out, err := stampConvertOutput(converted)
+	require.NoError(t, err)
+	keys := topLevelKeys(t, out)
+	require.Greater(t, len(keys), 1)
+	assert.True(t, sort.StringsAreSorted(keys), "top-level keys must be sorted, got %v", keys)
+	assert.NotContains(t, string(out), "effectiveChecksum")
 }

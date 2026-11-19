@@ -1,5 +1,6 @@
 {
-  "$comment": "Pins the shipped Go and TypeScript HDF validators to one another on the closure of `extensions`. `extensions` is a closed, defined object: its members are `passthrough` (the deliberately permissive catch-all) and `rawSourceArtifacts`. Anything else a producer wants to carry goes inside `passthrough`. Both halves of this repo read this file and validate the same documents at both the sites `extensions` appears — the document root and `baselines[]` — so they cannot disagree about whether a document is valid HDF. Closure is written as `additionalProperties: false` rather than the house `unevaluatedProperties: false` because the Go validator is a draft-07 engine that does not implement the latter; a rule only one validator enforces is not a rule.",
+  "$comment": "Shared Go and TypeScript cases for the closed Extensions definition at document root and evaluated-baseline scope. Its deliberately open passthrough member carries producer-specific data. Invalid cases mutate schema-confirmed documents to exercise the public diagnostic contract.",
+  "migrationMessage": "is not allowed. Move producer-specific data under extensions.passthrough, namespaced by tool name.",
   "cases": [
     {
       "name": "empty extensions",
@@ -106,6 +107,9 @@
       "extensions": { "passthrough": "auxiliary" },
       "valid": false,
       "why": "permissive about keys, not about type"
-    }
+    },
+    {"name": "producer metadata needs migration", "extensions": {"system_context": {}}, "valid": false, "why": "producer metadata belongs in namespaced passthrough", "undeclaredKeys": ["system_context"]},
+    {"name": "every undeclared key gets its own diagnostic", "extensions": {"system_context": {}, "run_context": {}, "passthrough": {"audit": {}}}, "valid": false, "why": "one invalid member must not hide another", "undeclaredKeys": ["system_context", "run_context"]},
+    {"name": "producer metadata migrated without loss", "extensions": {"passthrough": {"nightly-scanner": {"system_context": {}}}}, "valid": true, "why": "tool-namespaced producer metadata remains permitted"}
   ]
 }
