@@ -102,7 +102,7 @@ pnpm run lint:openapi    # Redocly alone
 
 With the binary present, `pnpm test` upgrades itself to the full both-generator comparison; without it, the npm half runs and CI covers the rest.
 
-Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **every component** back to a standalone 2020-12 schema and compiles each one, then validates every root example, every definition example and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. The counts are asserted in that test rather than quoted here, so they cannot rot in two places. This repository's own validators are draft-07 and ignore `unevaluatedProperties`, so they would accept documents the schema text rejects.
+Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **every component** back to a standalone 2020-12 schema and compiles each one, then validates every root example, every definition example and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. The counts are asserted in that test rather than quoted here, so they cannot rot in two places. This repository's own shipped validators enforce the same 2020-12 dialect.
 
 ## Versioning
 

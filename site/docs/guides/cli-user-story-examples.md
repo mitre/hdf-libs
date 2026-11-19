@@ -73,7 +73,11 @@ echo '{
   "statistics": {}
 }' > /tmp/example-hdf-invalid.json
 hdf validate /tmp/example-hdf-invalid.json
-# Expected: "line 2: baselines: Invalid type..."
+# Expected (actual output):
+#   ✗ /tmp/example-hdf-invalid.json — not a valid HDF results document
+#
+#     Errors:
+#       line 2: baselines: got string, want array
 
 # Validate invalid file with JSON output — line numbers in error objects
 hdf validate --json /tmp/example-hdf-invalid.json

@@ -15,8 +15,8 @@ const testBaseline = `{
 	"title": "Test STIG Baseline",
 	"version": "1.0.0",
 	"summary": "A test baseline for CLI testing",
-	"checksum": {"algorithm": "sha256", "value": "abc123"},
-	"supports": [{"platform-name": "ubuntu"}],
+	"integrity": {"algorithm": "sha256", "checksum": "abc123"},
+	"supports": [{"platformName": "ubuntu"}],
 	"groups": [],
 	"requirements": [
 		{

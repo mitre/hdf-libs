@@ -316,7 +316,7 @@ func TestBuildHDFBlock(t *testing.T) {
 	baseline := map[string]interface{}{"name": "b1"}
 	gen := map[string]interface{}{"name": "g"}
 	tool := map[string]interface{}{"name": "t"}
-	hdf := BuildHDFBlock(req, baseline, "failed", true, true, gen, tool, "0.1.0")
+	hdf := BuildHDFBlockFromStatus(req, baseline, Status{Raw: "failed", Overridden: true, Suppressed: true}, gen, tool, "0.1.0")
 
 	assert.Equal(t, "failed", hdf["status"])
 	assert.Equal(t, true, hdf["overridden"])
@@ -339,7 +339,7 @@ func TestBuildHDFBlock(t *testing.T) {
 	assert.Equal(t, tool, hdf["tool"])
 
 	// minimal req: optionals + generator/tool absent, empty id skipped by SetIf
-	minimal := BuildHDFBlock(map[string]interface{}{}, map[string]interface{}{}, "passed", false, false, nil, nil, "0.1.0")
+	minimal := BuildHDFBlockFromStatus(map[string]interface{}{}, map[string]interface{}{}, Status{Raw: "passed"}, nil, nil, "0.1.0")
 	assert.Equal(t, "passed", minimal["status"])
 	assert.Equal(t, false, minimal["suppressed"])
 	assert.NotContains(t, minimal, "effective_status")
@@ -482,7 +482,7 @@ func TestBuildHDFBlock_CarriesTheRequirementFieldsTheBagDropped(t *testing.T) {
 		"verificationMethod": "automated",
 		"applicability":      "required",
 	}
-	hdf := BuildHDFBlock(req, map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+	hdf := BuildHDFBlockFromStatus(req, map[string]interface{}{"name": "b"}, Status{Raw: "passed"}, nil, nil, "0.1.0")
 
 	assert.Equal(t, []interface{}{map[string]interface{}{"type": "log", "data": "bG9n"}}, hdf["evidence"])
 	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc"}, hdf["effective_checksum"])
@@ -494,8 +494,8 @@ func TestBuildHDFBlock_CarriesTheRequirementFieldsTheBagDropped(t *testing.T) {
 // A requirement that omits them must not gain empty keys — the block is read by
 // consumers that distinguish absent from empty.
 func TestBuildHDFBlock_OmitsTheNewFieldsWhenAbsent(t *testing.T) {
-	hdf := BuildHDFBlock(map[string]interface{}{"id": "V-3"},
-		map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+	hdf := BuildHDFBlockFromStatus(map[string]interface{}{"id": "V-3"},
+		map[string]interface{}{"name": "b"}, Status{Raw: "passed"}, nil, nil, "0.1.0")
 
 	for _, k := range []string{"evidence", "effective_checksum", "control_type", "verification_method", "applicability"} {
 		assert.NotContains(t, hdf, k, "absent field %q must not appear", k)
@@ -517,9 +517,48 @@ func TestBuildHDFBlock_CarriesRequirementExternalReferences(t *testing.T) {
 			map[string]interface{}{"sourceName": "NVD", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-1", "kind": "advisory"},
 		},
 	}
-	hdf := BuildHDFBlock(req, map[string]interface{}{"name": "b"}, "passed", false, false, nil, nil, "0.1.0")
+	hdf := BuildHDFBlockFromStatus(req, map[string]interface{}{"name": "b"}, Status{Raw: "passed"}, nil, nil, "0.1.0")
 
 	assert.Equal(t, []interface{}{
 		map[string]interface{}{"sourceName": "NVD", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-1", "kind": "advisory"},
 	}, hdf["external_references"])
+}
+
+// The baseline's declared metadata reaches hdf.* by value, integrity whole: a
+// consumer verifying a profile hash needs the algorithm and any signature with it.
+func TestAddBaselineMetadata_CarriesTheDeclaredBaselineFields(t *testing.T) {
+	integrity := map[string]interface{}{
+		"algorithm": "sha256",
+		"checksum":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		"signature": "MEUCIQ",
+		"signedBy":  "release@example.com",
+	}
+	hdf := map[string]interface{}{}
+	AddBaselineMetadata(hdf, map[string]interface{}{
+		"name": "b", "title": "B Baseline", "version": "2.1.0", "integrity": integrity,
+	})
+
+	assert.Equal(t, map[string]interface{}{
+		"baseline_title":     "B Baseline",
+		"baseline_version":   "2.1.0",
+		"baseline_integrity": integrity,
+	}, hdf)
+}
+
+func TestAddBaselineMetadata_OmitsWhatTheBaselineLacks(t *testing.T) {
+	hdf := map[string]interface{}{}
+	AddBaselineMetadata(hdf, map[string]interface{}{"name": "b"})
+
+	assert.Empty(t, hdf, "absent baseline fields must not appear as empty keys")
+}
+
+// The deprecated three-argument form must produce exactly what the Status form does.
+func TestBuildHDFBlock_DeprecatedFormMatchesStatusForm(t *testing.T) {
+	req := map[string]interface{}{"id": "V-9", "effectiveStatus": "passed", "impact": 0.7, "tags": map[string]interface{}{"nist": []interface{}{"AC-1"}}}
+	baseline := map[string]interface{}{"name": "b"}
+	for _, st := range []Status{{Raw: "failed", Overridden: true, Suppressed: true}, {Raw: "passed"}, {Raw: "error", Overridden: true}} {
+		want := BuildHDFBlockFromStatus(req, baseline, st, map[string]interface{}{"name": "g"}, map[string]interface{}{"name": "t"}, "0.1.0")
+		got := BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, map[string]interface{}{"name": "g"}, map[string]interface{}{"name": "t"}, "0.1.0")
+		assert.Equal(t, want, got)
+	}
 }
