@@ -1,5 +1,7 @@
 # Local copy of semgrep-rules go/lang/security/audit/unsafe.yaml at SEMGREP_RULES_SHA.
-# CI copies it over the fetched rule, so the rule ID and metadata stay the same.
+# CI copies it over the fetched rule, so the rule ID and metadata stay the same, after
+# checking the fetched rule against unsafe.upstream.sha256, the sha256 of the upstream
+# file this copy was derived from; a changed upstream fails the scan until it is re-derived.
 # It reports every unsafe operation except three documented safe forms:
 #   - unsafe.Sizeof(...): a compile-time constant; its operand is not evaluated.
 #   - uintptr(unsafe.Pointer(x)) written directly as a purego.SyscallN argument:
