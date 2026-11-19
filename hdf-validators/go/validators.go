@@ -275,6 +275,11 @@ func flattenErrors(failure *jsonschema.ValidationError, document any) []Validati
 			return causeErrors(failure, document)
 		}
 	}
+	return append(result, modernErrorDetails(failure, document)...)
+}
+
+func modernErrorDetails(failure *jsonschema.ValidationError, document any) []ValidationError {
+	var result []ValidationError
 	field := strings.Join(failure.InstanceLocation, ".")
 	if field == "" {
 		field = "(root)"

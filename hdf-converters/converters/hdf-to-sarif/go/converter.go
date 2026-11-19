@@ -284,7 +284,7 @@ func requirementBlock(
 	converterVersion string,
 ) map[string]interface{} {
 	st := exportmap.StatusOf(req)
-	block := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed,
+	block := exportmap.BuildHDFBlockFromStatus(req, baseline, st,
 		generator, tool, converterVersion)
 	delete(block, "results")
 	if v, ok := req["sourceLocation"]; ok {

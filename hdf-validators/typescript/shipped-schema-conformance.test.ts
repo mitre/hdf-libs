@@ -53,6 +53,58 @@ function documentFor(tc: ConformanceCase): Record<string, unknown> {
 }
 
 describe('shipped schema conformance', () => {
+  it.each(table.cases.filter(tc => !tc.valid && tc.path.length === 0
+    && tc.field === 'undeclaredClosedScopeProbe'))(
+    'isolates repeated validation results: $type', tc => {
+      const input = documentFor(tc);
+      const before = structuredClone(input);
+      const first = validators[tc.type](input);
+      const firstErrors = structuredClone(first.errors);
+      const firstMessage = first.getErrorMessage();
+      expect(first.valid).toBe(false);
+      expect(firstMessage).toBe('undeclaredClosedScopeProbe: is not allowed');
+
+      const valid = validators[tc.type](structuredClone(table.documents[tc.document]));
+      expect(valid.valid).toBe(true);
+      expect(valid.errors).toEqual([]);
+      expect(valid.getErrorMessage()).toBe('');
+
+      const second = validators[tc.type]({
+        ...structuredClone(table.documents[tc.document]), secondUndeclaredProbe: true,
+      });
+      expect(second.valid).toBe(false);
+      expect(second.getErrorMessage()).toBe('secondUndeclaredProbe: is not allowed');
+      expect(first.errors).toEqual(firstErrors);
+      expect(first.getErrorMessage()).toBe(firstMessage);
+      expect(valid.errors).toEqual([]);
+      expect(input).toEqual(before);
+    },
+  );
+
+  it.each([
+    ['baselines', { baselines: 42, name: 'ambiguous', requirements: [] }],
+    ['requirements', { name: 'ambiguous', requirements: 42, components: [] }],
+    ['components', { name: 'ambiguous', components: 42, assessments: [] }],
+    ['assessments', { name: 'ambiguous', assessments: 42, overrides: [] }],
+    ['overrides', { name: 'ambiguous', overrides: 42, eventId: '', requirementId: '' }],
+    ['eventId', { eventId: 42, requirementId: '', requirementDiffs: [] }],
+    ['requirementDiffs', { requirementDiffs: 42, name: 'ambiguous', contents: [] }],
+  ] as const)('preserves discriminator precedence for %s', (field, doc) => {
+    const result = validate(doc);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(expect.objectContaining({ field, keyword: 'type', value: 42 }));
+  });
+
+  it('recognizes inherited discriminator keys', () => {
+    const doc = {};
+    Object.setPrototypeOf(doc, { name: 'inherited baseline', requirements: 42 });
+    const result = validate(doc);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(expect.objectContaining({
+      field: 'requirements', keyword: 'type', value: 42,
+    }));
+  });
+
   it('covers every modern document validator', () => {
     expect(new Set(table.cases.map(tc => tc.type))).toEqual(new Set(Object.keys(validators)));
   });
