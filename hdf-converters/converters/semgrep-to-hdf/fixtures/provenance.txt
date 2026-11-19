@@ -53,11 +53,26 @@ results, errors and paths members unchanged, and replaces only that finding's
 `extra.metadata` to cover: each key alone, both keys with distinct and with
 duplicate URLs, no reference keys, empty, redacted, null, number, boolean, array
 and object values of either key alongside a valid value of the other, and
-unrecognized key punctuation. Fifteen more cases add members that differ from a
+unrecognized key punctuation. Twelve more cases add members that differ from a
 canonical name only by case, alone, before and after the canonical member, at
 every level the converters decode (report RESULTS, finding EXTRA, envelope
-METADATA, metadata keys, position LINE, paths SCANNED); one carries two exact
-`source_rule_url` members in its JSON text, and the last value is expected.
+METADATA, the two reference keys, position LINE, paths SCANNED); one carries two
+exact `source_rule_url` members in its JSON text, and the last value is expected.
+Three cases ("case variants cannot overwrite canonical metadata", "case variants
+before canonical metadata", "case variants alone do not create metadata") go
+further: they replace the unsafe finding's whole `metadata` with an assembled
+object the capture never carried. Its members are `references` (the gosec URL),
+`source` and `asvs.control_url` (the Bandit URL from the capture's Python
+finding), `shortlink` (the gosec URL), `cwe`, `subcategory`, `technology`,
+`category` and `likelihood` (the capture's values), `owasp` (`A01:2017 -
+Injection`, from the Python finding), `vulnerability_class` (`Memory
+Corruption`), `bandit-code` (`B602`), and `confidence` and `impact` set to `HIGH`
+where the capture says `LOW`. The first two cases add an upper-case twin of every
+member with an empty-object value, after and before the canonical members; the
+third carries only the upper-case twins with those values and expects no tag
+from them. These values are assembled: `metadata` is raw JSON in the official
+schema, so the schema pass confirms only that a rule may carry such an object,
+nothing about the values.
 The file is an object: `$comment`, an `expected` block holding the finding and
 coverage values every case must preserve (status, impact, severity, line, files
 scanned), and `cases`. Each case's `input` is the report's JSON text as one string,
