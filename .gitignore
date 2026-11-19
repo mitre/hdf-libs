@@ -39,6 +39,8 @@ test-output/
 # IDEs
 .vscode/
 .idea/
+# Superset/Paradev workspace setup, written when it opens the repo
+.superset/
 *.swp
 *.swo
 *~
