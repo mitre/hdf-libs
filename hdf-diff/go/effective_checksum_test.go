@@ -464,8 +464,11 @@ func TestStampEffectiveChecksums(t *testing.T) {
 	assert.Equal(t, ecVectorFailedHalf, getCS(baselineReqs, 0)["value"])
 	assert.Equal(t, ecVectorWaivedNA, getCS(baselineReqs, 1)["value"])
 
-	topReqs := doc["requirements"].([]interface{})
-	assert.Equal(t, ecVectorPassedHalf, getCS(topReqs, 0)["value"])
+	// A root-level requirements array is baseline-shaped: the baseline schema
+	// declares no effectiveChecksum, so nothing is stamped there.
+	topReq := doc["requirements"].([]interface{})[0].(map[string]interface{})
+	_, stamped := topReq["effectiveChecksum"]
+	assert.False(t, stamped, "root-level requirements must stay unstamped")
 }
 
 func TestStampEffectiveChecksums_SkipsUntypeableRequirement(t *testing.T) {

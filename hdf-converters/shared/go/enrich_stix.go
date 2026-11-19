@@ -184,6 +184,14 @@ func buildStixRef(obj map[string]interface{}, rel string) map[string]interface{}
 // stixFallbackDescription derives a human-readable description for a STIX object
 // that carries no id, so its reference still satisfies External_Reference's
 // anyOf constraint: the object's name when present, else a type-derived label.
+// stixSourceLabel names a STIX object for a reader: its id, or its fallback description.
+func stixSourceLabel(obj map[string]interface{}) string {
+	if id := StixObjectID(obj); id != "" {
+		return id
+	}
+	return stixFallbackDescription(obj)
+}
+
 func stixFallbackDescription(obj map[string]interface{}) string {
 	if name, ok := obj["name"].(string); ok && name != "" {
 		return name
@@ -243,8 +251,11 @@ func recomputeExploitation(bundle *StixBundle, reqByID map[string][]map[string]i
 func exploitedCVEs(bundle *StixBundle) map[string]map[string]interface{} {
 	vulnCVEs := map[string][]string{}
 	for _, o := range bundle.Objects {
+		// An object without an id cannot be a reference target, so it is not indexed.
 		if t, _ := o["type"].(string); t == "vulnerability" {
-			vulnCVEs[StixObjectID(o)] = append(vulnCVEs[StixObjectID(o)], StixObjectCVEs(o)...)
+			if id := StixObjectID(o); id != "" {
+				vulnCVEs[id] = append(vulnCVEs[id], StixObjectCVEs(o)...)
+			}
 		}
 	}
 	exploited := map[string]map[string]interface{}{}
@@ -256,29 +267,37 @@ func exploitedCVEs(bundle *StixBundle) map[string]map[string]interface{} {
 		}
 	}
 	for _, o := range bundle.Objects {
-		switch t, _ := o["type"].(string); t {
-		case "sighting":
-			if ref, _ := o["sighting_of_ref"].(string); ref != "" {
-				mark(ref, o)
-			}
-		case "relationship":
-			rt, _ := o["relationship_type"].(string)
-			if rt == "targets" || rt == "exploits" {
-				if tgt, _ := o["target_ref"].(string); tgt != "" {
-					mark(tgt, o)
-				}
-			}
-		case "indicator", "report":
-			if refs, ok := o["object_refs"].([]interface{}); ok {
-				for _, r := range refs {
-					if id, _ := r.(string); id != "" {
-						mark(id, o)
-					}
-				}
-			}
+		for _, ref := range stixExploitationReferences(o) {
+			mark(ref, o)
 		}
 	}
 	return exploited
+}
+
+func stixExploitationReferences(o map[string]interface{}) []string {
+	switch t, _ := o["type"].(string); t {
+	case "sighting":
+		if ref, _ := o["sighting_of_ref"].(string); ref != "" {
+			return []string{ref}
+		}
+	case "relationship":
+		rt, _ := o["relationship_type"].(string)
+		if rt == "targets" || rt == "exploits" {
+			if ref, _ := o["target_ref"].(string); ref != "" {
+				return []string{ref}
+			}
+		}
+	case "indicator", "report":
+		refs, _ := o["object_refs"].([]interface{})
+		var ids []string
+		for _, ref := range refs {
+			if id, _ := ref.(string); id != "" {
+				ids = append(ids, id)
+			}
+		}
+		return ids
+	}
+	return nil
 }
 
 // findBaseVectorEntry returns the finding's cvss[] entry that carries a base
@@ -307,7 +326,7 @@ func findBaseVectorEntry(req map[string]interface{}, cve string) map[string]inte
 func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src map[string]interface{}, appliedAt, expiresAt time.Time) map[string]interface{} {
 	return map[string]interface{}{
 		"type":   "riskAdjustment",
-		"reason": fmt.Sprintf("%s actively exploited per STIX threat intelligence (%s); CVSS Threat recomputed with Exploit Maturity E:H.", cve, StixObjectID(src)),
+		"reason": fmt.Sprintf("%s actively exploited per STIX threat intelligence (%s); CVSS Threat recomputed with Exploit Maturity E:H.", cve, stixSourceLabel(src)),
 		"impact": map[string]interface{}{"value": hdfutil.RoundImpact(score.TemporalScore / 10.0)},
 		"appliedBy": map[string]interface{}{
 			"type":       "other",
@@ -317,7 +336,6 @@ func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src ma
 		"expiresAt": expiresAt.Format(time.RFC3339),
 		"cvss": map[string]interface{}{
 			"version":       "3.1",
-			"id":            cve,
 			"baseVector":    baseVector,
 			"baseScore":     score.BaseScore,
 			"threatVector":  "E:H",

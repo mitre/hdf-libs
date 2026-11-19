@@ -458,8 +458,29 @@ func TestParseSystem_Invalid(t *testing.T) {
 	t.Run("should reject trailing garbage after object", func(t *testing.T) {
 		result := ParseSystem([]byte(`{"name":"x","components":[{"name":"c","type":"application"}]} EXTRA`))
 		assert.False(t, result.Success)
-		assert.Contains(t, result.Error, "trailing data")
+		assert.Equal(t, "Invalid JSON: unexpected trailing data after end of object", result.Error)
 	})
+}
+
+// Trailing bytes are a syntax error for every document type, reported before
+// the schema is consulted: {} fails every schema, yet the error names the JSON.
+func TestParse_TrailingGarbageIsASyntaxError(t *testing.T) {
+	const want = "Invalid JSON: unexpected trailing data after end of object"
+	input := []byte(`{} EXTRA`)
+	for name, parse := range map[string]func([]byte) (bool, string){
+		"results":          func(b []byte) (bool, string) { r := ParseResults(b); return r.Success, r.Error },
+		"baseline":         func(b []byte) (bool, string) { r := ParseBaseline(b); return r.Success, r.Error },
+		"system":           func(b []byte) (bool, string) { r := ParseSystem(b); return r.Success, r.Error },
+		"plan":             func(b []byte) (bool, string) { r := ParsePlan(b); return r.Success, r.Error },
+		"evidence-package": func(b []byte) (bool, string) { r := ParseEvidencePackage(b); return r.Success, r.Error },
+		"comparison":       func(b []byte) (bool, string) { r := ParseComparison(b); return r.Success, r.Error },
+	} {
+		t.Run(name, func(t *testing.T) {
+			success, err := parse(input)
+			assert.False(t, success)
+			assert.Equal(t, want, err)
+		})
+	}
 }
 
 func TestParsePlan_Valid(t *testing.T) {

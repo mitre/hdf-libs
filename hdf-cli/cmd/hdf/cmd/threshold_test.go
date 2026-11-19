@@ -59,9 +59,9 @@ const testResultsForThreshold = `{
 		"supports": [],
 		"groups": []
 	}],
-	"platform": {"name": "test", "release": "1.0"},
+	"tool": {"name": "test", "version": "1.0"},
 	"statistics": {"duration": 1.0},
-	"version": "2.0.0"
+	"generator": {"name": "test", "version": "2.0.0"}
 }`
 
 // A document with no failed requirement, distinct from testResultsForThreshold
@@ -94,9 +94,9 @@ const testResultsNoFailures = `{
 		"supports": [],
 		"groups": []
 	}],
-	"platform": {"name": "test", "release": "1.0"},
+	"tool": {"name": "test", "version": "1.0"},
 	"statistics": {"duration": 1.0},
-	"version": "2.0.0"
+	"generator": {"name": "test", "version": "2.0.0"}
 }`
 
 // writeResultsAt writes a document into a caller-chosen directory under a
@@ -177,9 +177,9 @@ const testResultsImpactZeroNotReviewed = `{
 		"supports": [],
 		"groups": []
 	}],
-	"platform": {"name": "test", "release": "1.0"},
+	"tool": {"name": "test", "version": "1.0"},
 	"statistics": {"duration": 1.0},
-	"version": "2.0.0"
+	"generator": {"name": "test", "version": "2.0.0"}
 }`
 
 func writeImpactZeroResults(t *testing.T) string {
@@ -283,9 +283,9 @@ const testResultsImpactZeroError = `{
 		"supports": [],
 		"groups": []
 	}],
-	"platform": {"name": "test", "release": "1.0"},
+	"tool": {"name": "test", "version": "1.0"},
 	"statistics": {"duration": 1.0},
-	"version": "2.0.0"
+	"generator": {"name": "test", "version": "2.0.0"}
 }`
 
 // TestCountByStatusSeverity_ImpactZeroErrorIsError pins the impact-0 error escape at the
@@ -1935,11 +1935,12 @@ func TestValidateThreshold_CountAndRuleFindingsReadAlike(t *testing.T) {
 // notReviewed or error requirement, which is what let a subcase pass vacuously.
 const testResultsEveryStatus = `{
 	"generator": {"name": "test", "version": "1.0"},
+	"tool": {"name": "inspec", "version": "5"},
 	"timestamp": "2026-01-01T00:00:00Z",
 	"statistics": {"duration": 1.0},
 	"baselines": [{
-		"name": "b", "checksum": {"algorithm": "sha256", "value": "x"},
-		"depends": [], "groups": [], "inspecVersion": "5", "supports": [],
+		"name": "b", "integrity": {"algorithm": "sha256", "checksum": "x"},
+		"depends": [], "groups": [], "supports": [],
 		"requirements": [
 			{"id": "R-PASS", "title": "Passing one", "descriptions": [{"label": "default", "data": "d"}],
 			 "impact": 0.7, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 1, "ref": "t.rb"},

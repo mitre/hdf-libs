@@ -28,7 +28,7 @@ ADR-0012 §5 records those as open rather than resolving them, and ADR-0008 revi
 
 Two things survive and are tested here, and neither needs the API document.
 
-The **components document** is checked more strictly than any linter manages: every component is extracted back to a standalone 2020-12 schema and compiled, and every example — on the roots and on the definitions — is validated with a 2020-12 engine. This repository's own shipped validators are draft-07 and ignore `unevaluatedProperties`, so they would accept documents the schema text rejects.
+The **components document** is checked more strictly than any linter manages: every component is extracted back to a standalone 2020-12 schema and compiled, and every example — on the roots and on the definitions — is validated with a 2020-12 engine. This repository's own shipped validators enforce the same 2020-12 dialect.
 
 The **MCP surface is still a tracked golden**, now for its own sake rather than as a generator input. Its contract and tool-list goldens live with the MCP and are its own drift gate — that gate is what caught a new error-taxonomy code arriving from an unrelated change.
 
