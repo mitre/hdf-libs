@@ -9,6 +9,9 @@ import (
 // match a field's name exactly, as the TypeScript converter reads it. v1 matches
 // names case-insensitively and the last match wins, so a "SOURCE-RULE-URL",
 // "Extra" or "Results" member would be read as, or overwrite, the canonical one.
+// DefaultOptionsV1 turns case-insensitive matching on, so the option that turns
+// it off must come after it. encoding/json/v2 requires the jsonv2 experiment,
+// which Go 1.27 enables by default.
 func decodeJSON(data []byte, v any) error {
 	return jsonv2.Unmarshal(data, v, json.DefaultOptionsV1(), jsonv2.MatchCaseInsensitiveNames(false))
 }
