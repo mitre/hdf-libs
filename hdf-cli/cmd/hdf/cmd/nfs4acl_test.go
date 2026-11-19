@@ -124,9 +124,13 @@ func TestNFS4ACLOwnerIdentities(t *testing.T) {
 
 // The owner resolves from the uid: the number always, the name when the account exists.
 func TestNFS4OwnerOfResolvesTheCurrentUser(t *testing.T) {
-	uid := os.Geteuid()
-	owner := nfs4OwnerOf(uint32(uid))
-	assert.Equal(t, strconv.Itoa(uid), owner.uid)
+	euid := os.Geteuid()
+	if euid < 0 {
+		t.Skip("this platform reports no POSIX uid, and only the Linux archive check resolves an owner")
+	}
+	uid := uint32(euid)
+	owner := nfs4OwnerOf(uid)
+	assert.Equal(t, strconv.FormatUint(uint64(uid), 10), owner.uid)
 	if u, err := user.LookupId(owner.uid); err == nil {
 		assert.Equal(t, u.Username, owner.name)
 	} else {
