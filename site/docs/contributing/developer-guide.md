@@ -463,6 +463,46 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
 
 ---
 
+## Type-Checking Tests
+
+vitest strips types without checking them, and ESLint lints tests on its untyped
+block, so only tsc catches a type error in a test. Each TypeScript package with
+tests has three configs:
+
+| File | Holds | Used by |
+| --- | --- | --- |
+| `tsconfig.json` | no files; references the two below | editors, which then give each file its own config |
+| `tsconfig.lib.json` | the published sources | `type-check`, tsdown |
+| `tsconfig.test.json` | the sources and tests, extending `tsconfig.lib.json` | `type-check:tests` |
+
+`tsconfig.test.json` differs from the published config in two ways:
+
+- `lib: ["es2024"]`, the value `@tsconfig/node24` uses: tests run only on Node 24,
+  while the published code keeps `ES2020` because it runs in consumers' runtimes,
+  including hdf-engine's browser bundle.
+- `allowJs`: tests that import the repository's `.mjs` scripts get those scripts'
+  types inferred from the scripts themselves, so no declaration can drift.
+
+`pnpm --filter <package> run type-check:tests` checks a package's tests. A package
+whose tests are clean runs it from `type-check` too, so `pnpm check` and CI fail on
+a test type error there. A bare `tsc --noEmit` in a package checks nothing:
+`tsconfig.json` lists no files, so always name the config with `-p`.
+
+`strict` and `noUncheckedIndexedAccess` make an index read or optional field
+possibly `undefined`. Narrow it; do not assert it away:
+
+- `assert.isDefined(x)` or `assert.exists(x)` (`import { assert } from 'vitest'`),
+  which narrow `x` for the lines after them
+- optional chaining inside an expectation, `expect(rows[0]?.id).toBe('a')`, which
+  still fails when the value is missing
+- a fixture typed as the schema type it stands for
+
+Not allowed: the non-null assertion `!`, `as any`, `as unknown as`, a cast to a
+type the value does not have, and `@ts-ignore`, `@ts-expect-error` or
+`@ts-nocheck`.
+
+---
+
 ## Coverage Standards
 
 - **95% minimum** for statements, branches, functions, and lines in all packages

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "lib": [
+      "es2024"
+    ],
+    "allowJs": true
+  },
+  "include": [
+    "typescript/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
