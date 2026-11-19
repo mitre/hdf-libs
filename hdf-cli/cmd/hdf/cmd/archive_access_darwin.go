@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"unsafe"
 
 	"github.com/ebitengine/purego"
@@ -25,7 +26,8 @@ const (
 )
 
 // darwinSecurity binds the libSystem file-security functions Go does not expose. Release
-// builds disable cgo, so they are called through purego.
+// builds disable cgo, so they are called through purego. The binding is made once for
+// the process; libSystem is loaded for its lifetime and never unloaded.
 type darwinSecurity struct {
 	lib            uintptr
 	openx          uintptr // openx_np, called through SyscallN to capture errno
@@ -40,6 +42,8 @@ type darwinSecurity struct {
 	aclGetFd       func(fd int) (acl uintptr, errno unix.Errno)
 	aclGetEntry    func(acl uintptr, entryID int32, entry *uintptr) int32
 }
+
+var darwinSecurityOnce = sync.OnceValues(loadDarwinSecurity)
 
 func loadDarwinSecurity() (*darwinSecurity, error) {
 	return loadDarwinSecurityWith(purego.Dlopen, purego.Dlsym, purego.Dlclose)
@@ -80,19 +84,22 @@ func (s *darwinSecurity) bind(dlsym func(uintptr, string) (uintptr, error)) erro
 	}
 	for _, b := range []struct {
 		name string
-		fn   any
+		fns  []any
 	}{
-		{"acl_init", &s.aclInit}, {"acl_free", &s.aclFree},
-		{"acl_get_flagset_np", &s.aclGetFlagset}, {"acl_add_flag_np", &s.aclAddFlag},
-		{"filesec_init", &s.filesecInit}, {"filesec_free", &s.filesecFree},
-		{"filesec_set_property", &s.filesecSetMode}, {"filesec_set_property", &s.filesecSetACL},
-		{"acl_get_entry", &s.aclGetEntry},
+		{"acl_init", []any{&s.aclInit}}, {"acl_free", []any{&s.aclFree}},
+		{"acl_get_flagset_np", []any{&s.aclGetFlagset}}, {"acl_add_flag_np", []any{&s.aclAddFlag}},
+		{"filesec_init", []any{&s.filesecInit}}, {"filesec_free", []any{&s.filesecFree}},
+		// One symbol, typed once for each property it sets.
+		{"filesec_set_property", []any{&s.filesecSetMode, &s.filesecSetACL}},
+		{"acl_get_entry", []any{&s.aclGetEntry}},
 	} {
 		addr, err := lookup(b.name)
 		if err != nil {
 			return err
 		}
-		purego.RegisterFunc(b.fn, addr)
+		for _, fn := range b.fns {
+			purego.RegisterFunc(fn, addr)
+		}
 	}
 	return nil
 }
@@ -101,11 +108,10 @@ func (s *darwinSecurity) bind(dlsym func(uintptr, string) (uintptr, error)) erro
 // non-inheriting, in the same call, so no entry inherited from the directory ever
 // applies to it; os.OpenFile would let the directory's inheritable entries in.
 func createPrivateFile(path string) (*os.File, error) {
-	s, err := loadDarwinSecurity()
+	s, err := darwinSecurityOnce()
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = purego.Dlclose(s.lib) }()
 	return s.createPrivate(path)
 }
 
@@ -151,21 +157,22 @@ func darwinErrno(errno uintptr) error {
 // platformPrivateCheck reads the ACL from the open file. Any entry is refused: an
 // entry grants or denies access whatever the mode bits say.
 func platformPrivateCheck(f *os.File) error {
-	s, err := loadDarwinSecurity()
+	s, err := darwinSecurityOnce()
 	if err != nil {
 		return err
 	}
-	defer func() { _ = purego.Dlclose(s.lib) }()
 	if err := checkDarwinVolume(int(f.Fd()), unix.Fstatfs, os.Stderr); err != nil {
 		return err
 	}
 	return s.checkACL(f)
 }
 
+// checkACL reads the file's ACL: ENOENT means it has none, ENOTSUP that the volume
+// keeps none, which the mode read-back has already judged; any entry is refused.
 func (s *darwinSecurity) checkACL(f *os.File) error {
 	acl, errno := s.aclGetFd(int(f.Fd()))
 	if acl == 0 {
-		if errno == unix.ENOENT {
+		if errno == unix.ENOENT || errno == unix.ENOTSUP {
 			return nil
 		}
 		return fmt.Errorf("cannot read the staged archive's ACL: %w", errno)

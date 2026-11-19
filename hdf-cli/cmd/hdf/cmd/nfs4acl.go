@@ -4,6 +4,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"os/user"
+	"strconv"
+	"strings"
 )
 
 // nfs4ACE is one access control entry of an NFSv4 ACL (RFC 8881 section 6.2.1).
@@ -64,14 +67,40 @@ func decodeNFS4ACL(b []byte) ([]nfs4ACE, error) {
 	return aces, nil
 }
 
+// nfs4Owner is the file owner's identities as an ACL entry may name them: the numeric
+// uid a server sends when it maps no names, and the account name for user@domain.
+type nfs4Owner struct {
+	uid, name string
+}
+
+// nfs4OwnerOf resolves uid; a uid with no account name matches by number and OWNER@ only.
+func nfs4OwnerOf(uid uint32) nfs4Owner {
+	o := nfs4Owner{uid: strconv.FormatUint(uint64(uid), 10)}
+	if u, err := user.LookupId(o.uid); err == nil {
+		o.name = u.Username
+	}
+	return o
+}
+
+// is reports whether who names the owner: OWNER@, the uid, or the owner's account name
+// with a domain. The special principals have no domain, so an account named like one
+// does not pass as it.
+func (o nfs4Owner) is(who string) bool {
+	if who == nfs4OwnerPrincipal || who == o.uid {
+		return true
+	}
+	name, domain, ok := strings.Cut(who, "@")
+	return ok && domain != "" && o.name != "" && name == o.name
+}
+
 // grantsAccessToOthers reports the first principal other than the file's owner that an
 // ALLOW entry applying to the file gives read, write or append access, or the right to
 // rewrite its ACL or owner. Inherit-only entries apply to children, not the file, and
 // deny entries grant nothing. EXECUTE is not counted: it does not expose the contents.
-func grantsAccessToOthers(aces []nfs4ACE) (string, bool) {
+func grantsAccessToOthers(aces []nfs4ACE, owner nfs4Owner) (string, bool) {
 	for _, a := range aces {
 		if a.aceType != nfs4ACEAllowed || a.flag&nfs4ACEInheritOnly != 0 ||
-			a.mask&(nfs4ACEDataAccess|nfs4ACEControl) == 0 || a.who == nfs4OwnerPrincipal {
+			a.mask&(nfs4ACEDataAccess|nfs4ACEControl) == 0 || owner.is(a.who) {
 			continue
 		}
 		return a.who, true

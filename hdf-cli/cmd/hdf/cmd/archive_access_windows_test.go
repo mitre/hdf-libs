@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -168,4 +169,30 @@ func TestArchiveAccessWindowsPathForms(t *testing.T) {
 	nul := t.TempDir() + `\bad` + "\x00" + "name"
 	_, err = createPrivateWindows(nul, volumeACLFlags)
 	assert.Error(t, err)
+}
+
+// An existing name fails as a path error that callers recognize as fs.ErrExist (the
+// staging retry depends on it), and nothing is overwritten.
+func TestArchiveAccessWindowsCreateRefusesAnExistingName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "taken")
+	require.NoError(t, os.WriteFile(path, []byte("kept"), 0o600))
+
+	_, err := createPrivateWindows(path, volumeACLFlags)
+	var pathErr *os.PathError
+	require.ErrorAs(t, err, &pathErr)
+	assert.ErrorIs(t, err, fs.ErrExist)
+	kept, readErr := os.ReadFile(path)
+	require.NoError(t, readErr)
+	assert.Equal(t, "kept", string(kept))
+}
+
+// A user that cannot be read stops creation before any file exists, naming the step.
+func TestArchiveAccessWindowsUnreadableUserFails(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "staged")
+	denied := func() (*windows.SID, error) { return nil, windows.ERROR_ACCESS_DENIED }
+
+	_, err := createPrivateWindowsWith(path, denied, volumeACLFlags)
+	require.ErrorIs(t, err, windows.ERROR_ACCESS_DENIED)
+	assert.Contains(t, err.Error(), "cannot read the effective user")
+	assert.NoFileExists(t, path)
 }

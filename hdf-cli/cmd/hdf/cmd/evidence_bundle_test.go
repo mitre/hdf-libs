@@ -3087,3 +3087,20 @@ func TestEvidenceBundleAcceptsPackageSymlinkSpelledInAnotherCase(t *testing.T) {
 	require.Equal(t, data, entries["alias.json"])
 	require.Contains(t, entries, "scans/rhel9-results.json")
 }
+
+// The refusal for a taken -o is one function: a directory is named as one, and any
+// other entry (a file, or a symlink whatever it points at) as an existing name.
+func TestDescribeTakenOutput(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.WriteFile(file, []byte("x"), 0o600))
+
+	assert.Contains(t, describeTakenOutput(dir).Error(), "-o "+dir+" is a directory")
+	assert.Contains(t, describeTakenOutput(file).Error(), "-o "+file+" already exists; pass --overwrite")
+	taken, isDir := outputTaken(dir)
+	assert.True(t, taken && isDir)
+	taken, isDir = outputTaken(file)
+	assert.True(t, taken && !isDir)
+	taken, isDir = outputTaken(filepath.Join(dir, "absent.zip"))
+	assert.False(t, taken || isDir)
+}

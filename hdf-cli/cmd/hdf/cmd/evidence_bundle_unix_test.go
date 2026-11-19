@@ -97,3 +97,26 @@ func TestEvidenceBundle_StagesTheArchiveBeforeReadingDocuments(t *testing.T) {
 	assert.Contains(t, err.Error(), "-o "+out, "the destination is refused")
 	assert.NotContains(t, err.Error(), "rhel9-results.json", "before the missing document is read")
 }
+
+// A symlink to a directory at -o is the link, which publication would replace, so it
+// is refused as an existing name the way a dangling symlink is, up front and when
+// publication finds it; the two refusals are one message.
+func TestEvidenceBundle_RefusesASymlinkToADirectoryAtOutputAsAnExistingName(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	link := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "scans"), link))
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", link)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+link+" already exists; pass --overwrite")
+	assert.NotContains(t, err.Error(), "is a directory")
+
+	staged := filepath.Join(dir, stagedArchivePrefix+"test")
+	require.NoError(t, os.WriteFile(staged, []byte("archive"), 0o600))
+	publishErr := platformNoClobber.publish(staged, link)
+	require.Error(t, publishErr)
+	assert.Equal(t, err.Error(), publishErr.Error(), "publication's refusal is the same message")
+	target, readErr := os.Readlink(link)
+	require.NoError(t, readErr)
+	assert.Equal(t, filepath.Join(dir, "scans"), target, "the link is untouched")
+}

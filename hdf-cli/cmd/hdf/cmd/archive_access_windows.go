@@ -29,7 +29,13 @@ func openPrivateArchive(path string) (*os.File, error) {
 // file is returned, the volume must keep ACLs and the DACL must read back as exactly
 // that entry; otherwise the file is closed and removed.
 func createPrivateWindows(path string, volumeFlags func(windows.Handle) (uint32, error)) (*os.File, error) {
-	user, err := effectiveUser()
+	return createPrivateWindowsWith(path, effectiveUser, volumeFlags)
+}
+
+// createPrivateWindowsWith takes the user lookup so a test can drive its failure.
+func createPrivateWindowsWith(path string, currentUser func() (*windows.SID, error),
+	volumeFlags func(windows.Handle) (uint32, error)) (*os.File, error) {
+	user, err := currentUser()
 	if err != nil {
 		return nil, fmt.Errorf("cannot read the effective user: %w", err)
 	}

@@ -94,7 +94,8 @@ func TestArchiveAccessDarwinACLReadFailureFails(t *testing.T) {
 	}
 
 	assert.NoError(t, reading(unix.ENOENT).checkACL(f))
-	for _, errno := range []unix.Errno{unix.EIO, unix.EBADF, unix.ENOTSUP} {
+	assert.NoError(t, reading(unix.ENOTSUP).checkACL(f))
+	for _, errno := range []unix.Errno{unix.EIO, unix.EBADF, unix.EACCES} {
 		err := reading(errno).checkACL(f)
 		require.Error(t, err, errno.Error())
 		assert.ErrorIs(t, err, errno)
@@ -228,4 +229,33 @@ func TestArchiveAccessDarwinCreateNativeFailures(t *testing.T) {
 			assert.Equal(t, allocated, freed, "every native allocation is freed")
 		})
 	}
+}
+
+// The binding is made once for the process and kept: libSystem is opened once, each
+// symbol is looked up once (filesec_set_property serves both properties), and nothing
+// is closed on success.
+func TestArchiveAccessDarwinBindsLibSystemOnce(t *testing.T) {
+	opened, closed := 0, 0
+	lookups := map[string]int{}
+	dlopen := func(string, int) (uintptr, error) { opened++; return 0x1000, nil }
+	dlsym := func(_ uintptr, name string) (uintptr, error) { lookups[name]++; return 0x2000, nil }
+	dlclose := func(uintptr) error { closed++; return nil }
+
+	s, err := loadDarwinSecurityWith(dlopen, dlsym, dlclose)
+	require.NoError(t, err)
+	require.NotNil(t, s)
+	assert.Equal(t, 1, opened)
+	assert.Equal(t, 0, closed, "the library stays loaded")
+	for name, n := range lookups {
+		assert.Equal(t, 1, n, name)
+	}
+	assert.Equal(t, 1, lookups["filesec_set_property"])
+	assert.NotNil(t, s.filesecSetMode)
+	assert.NotNil(t, s.filesecSetACL)
+
+	first, err := darwinSecurityOnce()
+	require.NoError(t, err)
+	second, err := darwinSecurityOnce()
+	require.NoError(t, err)
+	assert.Same(t, first, second, "one binding for the process")
 }

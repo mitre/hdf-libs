@@ -11,12 +11,14 @@ import (
 // renameNoReplace moves oldpath to newpath without MOVEFILE_REPLACE_EXISTING, so it
 // fails with ERROR_ALREADY_EXISTS (fs.ErrExist) if newpath exists. Write-through makes
 // the move durable before it returns, which is what a directory fsync does on unix.
+// Both names get the long-path form creation gave CreateFileW: raw MoveFileExW has no
+// long-path handling either.
 func renameNoReplace(oldpath, newpath string) error {
-	from, err := windows.UTF16PtrFromString(oldpath)
+	from, err := windowsNamePtr(oldpath)
 	if err != nil {
 		return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: err}
 	}
-	to, err := windows.UTF16PtrFromString(newpath)
+	to, err := windowsNamePtr(newpath)
 	if err != nil {
 		return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: err}
 	}
@@ -24,6 +26,16 @@ func renameNoReplace(oldpath, newpath string) error {
 		return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: err}
 	}
 	return nil
+}
+
+// windowsNamePtr is path in the form raw Win32 file calls take: resolved, prefixed
+// from 248 characters on, and UTF-16.
+func windowsNamePtr(path string) (*uint16, error) {
+	full, err := archiveWindowsName(path, windows.FullPath)
+	if err != nil {
+		return nil, err
+	}
+	return windows.UTF16PtrFromString(full)
 }
 
 // renameUnsupported is always false: MoveFileEx refuses an existing name on every

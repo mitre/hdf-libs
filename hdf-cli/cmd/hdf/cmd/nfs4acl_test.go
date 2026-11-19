@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"encoding/binary"
+	"os"
+	"os/user"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,7 +48,7 @@ func TestNFS4ACLGrantsOthers(t *testing.T) {
 		who  string
 	}{
 		{"owner only", []nfs4ACE{owner}, ""},
-		{"inherited named reader", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritedACE, mask: readData, who: "alice@example.org"}}, "alice@example.org"},
+		{"inherited named reader", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritedACE, mask: readData, who: "auditor@example.org"}}, "auditor@example.org"},
 		{"everyone may append", []nfs4ACE{owner, {aceType: aceAllow, mask: appendData, who: "EVERYONE@"}}, "EVERYONE@"},
 		{"inherit-only entry does not apply to the file", []nfs4ACE{owner, {aceType: aceAllow, flag: inheritOnly, mask: readData, who: "bob@example.org"}}, ""},
 		{"a deny entry grants nothing", []nfs4ACE{owner, {aceType: aceDeny, mask: readData, who: "EVERYONE@"}}, ""},
@@ -60,7 +63,7 @@ func TestNFS4ACLGrantsOthers(t *testing.T) {
 			aces, err := decodeNFS4ACL(encodeNFS4ACL(c.aces...))
 			require.NoError(t, err)
 			require.Equal(t, c.aces, aces, "decoded entries match what was encoded")
-			who, grants := grantsAccessToOthers(aces)
+			who, grants := grantsAccessToOthers(aces, nfs4Owner{uid: "1000", name: "alice"})
 			assert.Equal(t, c.who != "", grants)
 			assert.Equal(t, c.who, who)
 		})
@@ -90,7 +93,43 @@ func FuzzNFS4ACL(f *testing.F) {
 	f.Add([]byte{0, 0, 0, 1})
 	f.Fuzz(func(_ *testing.T, b []byte) {
 		if aces, err := decodeNFS4ACL(b); err == nil {
-			_, _ = grantsAccessToOthers(aces)
+			_, _ = grantsAccessToOthers(aces, nfs4Owner{uid: "1000", name: "alice"})
 		}
 	})
+}
+
+// A server names the owner in its own way: OWNER@, the numeric uid when it maps no
+// names, or user@domain. Each is the owner; anyone else, and an account that merely
+// shares the owner's name with a special principal, is not.
+func TestNFS4ACLOwnerIdentities(t *testing.T) {
+	owner := nfs4Owner{uid: "1000", name: "alice"}
+	for who, isOwner := range map[string]bool{
+		"OWNER@": true, "1000": true, "alice@example.org": true, "alice@EXAMPLE": true,
+		"1001": false, "bob@example.org": false, "alice": false, "alice@": false,
+		"EVERYONE@": false, "GROUP@": false, "aliceb@example.org": false, "": false,
+	} {
+		t.Run(who, func(t *testing.T) {
+			aces := []nfs4ACE{{aceType: aceAllow, mask: readData | writeData, who: who}}
+			shared, grants := grantsAccessToOthers(aces, owner)
+			assert.Equal(t, !isOwner, grants)
+			if !isOwner {
+				assert.Equal(t, who, shared)
+			}
+		})
+	}
+	nameless := nfs4Owner{uid: "1000"}
+	assert.True(t, nameless.is("1000"), "a uid with no account name still matches by number")
+	assert.False(t, nameless.is("@example.org"), "and matches no user@domain at all")
+}
+
+// The owner resolves from the uid: the number always, the name when the account exists.
+func TestNFS4OwnerOfResolvesTheCurrentUser(t *testing.T) {
+	uid := os.Geteuid()
+	owner := nfs4OwnerOf(uint32(uid))
+	assert.Equal(t, strconv.Itoa(uid), owner.uid)
+	if u, err := user.LookupId(owner.uid); err == nil {
+		assert.Equal(t, u.Username, owner.name)
+	} else {
+		assert.Empty(t, owner.name)
+	}
 }

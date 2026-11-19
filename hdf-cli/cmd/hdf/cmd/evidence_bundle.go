@@ -868,8 +868,9 @@ func (c *bundleCollection) reportExtent() {
 // quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
 // the comment on the existence check.
 func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
-	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
-		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
+	taken, isDir := outputTaken(outputPath)
+	if isDir {
+		return describeTakenOutput(outputPath)
 	}
 	// Checked here so a missing directory is reported by the name the operator typed,
 	// before any document is read.
@@ -905,18 +906,28 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 	// flag makes that acceptable. A prior archive, by contrast, is the operator's own
 	// deliverable and is replaced on request — still before any document is read, so a run
 	// that will not proceed costs nothing and reports nothing else first.
-	if outputTaken(outputPath) && !overwrite {
-		return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", outputPath)
+	if taken && !overwrite {
+		return describeTakenOutput(outputPath)
 	}
 	return nil
 }
 
-// outputTaken reports whether a non-directory entry is at path, a dangling symlink
-// included: publication refuses every existing name, so this up-front check, which runs
-// before any document is read, must see the same ones.
-func outputTaken(path string) bool {
+// outputTaken reports whether an entry is at path and whether it is a directory, by
+// Lstat: a dangling symlink is taken, and a symlink to a directory is the link, which
+// publication would replace, not the directory. Publication refuses every existing
+// name, so this up-front check, which runs before any document is read, sees the same.
+func outputTaken(path string) (taken, isDir bool) {
 	info, err := os.Lstat(path)
-	return err == nil && !info.IsDir()
+	return err == nil, err == nil && info.IsDir()
+}
+
+// describeTakenOutput is the refusal for a name that is taken, up front and when
+// publication finds one that appeared during the run.
+func describeTakenOutput(path string) error {
+	if _, isDir := outputTaken(path); isDir {
+		return fmt.Errorf("-o %s is a directory; name the archive file to write", path)
+	}
+	return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", path)
 }
 
 // samePath reports whether two paths name the same file. os.SameFile is asked first
@@ -1027,7 +1038,7 @@ func (o noClobberOps) publish(staged, out string) error {
 		return o.durable(out)
 	}
 	if errors.Is(err, fs.ErrExist) {
-		return existingOutputError(out)
+		return describeTakenOutput(out)
 	}
 	return &writeError{out: out, err: err}
 }
@@ -1116,12 +1127,4 @@ func opCause(err error) string {
 		return pe.Op + ": " + pe.Err.Error()
 	}
 	return err.Error()
-}
-
-// existingOutputError is the refusal for a name taken after the up-front check.
-func existingOutputError(out string) error {
-	if info, err := os.Lstat(out); err == nil && info.IsDir() {
-		return fmt.Errorf("-o %s is a directory; name the archive file to write", out)
-	}
-	return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", out)
 }
