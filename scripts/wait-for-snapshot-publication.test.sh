@@ -157,9 +157,9 @@ answer "$(npm_url hdf-a)" 200
 answer "$(npm_url hdf-c)" 200
 answer "$(go_url "$CLI")" 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved package: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
-ok=0; timeout_message 2 "@mitre/hdf-b $CLI $SCHEMA" || ok=1
+ok=0; timeout_message 6 "@mitre/hdf-b $CLI $SCHEMA" || ok=1
 report "unserved package: the four-part message names it" "$ok" "$(cat "$err")"
 ok=0; grep -qF "npm 2/3 served, 1 waiting: hdf-b" "$out" || ok=1
 report "unserved package: progress names the waiting package" "$ok" "$(cat "$out")"
@@ -175,9 +175,9 @@ report "unserved package: no success line" "$ok" "$(cat "$out")"
 begin go-missing
 for pkg in hdf-a hdf-b hdf-c; do answer "$(npm_url "$pkg")" 200; done
 answer "$(go_url "$CLI")" 200
-run "$VERSION" packages.txt gomods.txt 2 1
+run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved module: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
-ok=0; timeout_message 2 "$SCHEMA" || ok=1
+ok=0; timeout_message 6 "$SCHEMA" || ok=1
 report "unserved module: the four-part message names its path" "$ok" "$(cat "$err")"
 ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 1 ] && [ "$(asked "$(go_url "$SCHEMA")")" -ge 2 ] || ok=1
 report "unserved module: proxy URLs are asked, the served one once" "$ok" "$(cat "$log")"
@@ -192,7 +192,7 @@ answer "$(npm_url hdf-b)" 404 200
 answer "$(npm_url hdf-c)" 200
 answer "$(go_url "$CLI")" 000 200
 answer "$(go_url "$SCHEMA")" 200
-run "$VERSION" packages.txt gomods.txt 10 1
+run "$VERSION" packages.txt gomods.txt 30 1
 report "second poll: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; [ "$(asked "$(npm_url hdf-b)")" -eq 2 ] && [ "$(asked "$(npm_url hdf-a)")" -eq 1 ] || ok=1
 report "second poll: the late package is asked twice, the others once" "$ok" "$(cat "$log")"

@@ -29,17 +29,15 @@ func legacyV2Compiled() (*gojsonschema.Schema, error) {
 	return legacyV2Schema, errLegacyV2
 }
 
-// LegacyV2SchemaBytes returns the raw pinned v2 schema JSON. Exported API with no
-// caller in this repo; removing it would break consumers.
+// LegacyV2SchemaBytes returns the raw pinned v2 schema JSON.
 func LegacyV2SchemaBytes() []byte {
 	return legacyV2SchemaBytes
 }
 
 // ValidateLegacyV2 validates a legacy HDF v2 document — the Heimdall/InSpec
 // exec-json shape (profiles[] + platform) that SAF converters emit — against the
-// pinned exec-json schema, using the same gojsonschema engine and error mapping
-// as the v3 validators. Rigor matches v3 (same engine, field-level errors); the
-// schema's own permissiveness is Heimdall's, not tightened here.
+// pinned exec-json schema, retaining gojsonschema and field-level error mapping.
+// The schema's permissiveness is Heimdall's, not tightened here.
 func ValidateLegacyV2(data []byte) ValidationResult {
 	schema, err := legacyV2Compiled()
 	if err != nil {
@@ -65,4 +63,17 @@ func ValidateLegacyV2(data []byte) ValidationResult {
 		})
 	}
 	return ValidationResult{Valid: false, Errors: errors}
+}
+
+// formatName reports the expected format for a failed "format" assertion, and
+// empty for every other violation. gojsonschema carries it in the error details
+// rather than on the error type.
+func formatName(desc gojsonschema.ResultError) string {
+	if desc.Type() != "format" {
+		return ""
+	}
+	if f, ok := desc.Details()["format"]; ok {
+		return fmt.Sprintf("%v", f)
+	}
+	return ""
 }

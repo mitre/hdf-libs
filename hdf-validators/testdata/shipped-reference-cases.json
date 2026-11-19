@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared Go/TypeScript case table for the Reference primitive, the shape of every requirement's refs[] entry. Both shipped validators read this file, because the closure is written with additionalProperties: the Go validator is gojsonschema and the TypeScript one a default Ajv, both draft-07 engines that silently ignore unevaluatedProperties, so a closure written the house way would hold in neither. Each case is injected as the single entry of the document's one requirement's refs.",
+  "$comment": "Shared Go/TypeScript case table for the Reference primitive, the shape of every requirement's refs[] entry. Both shipped validators read this file so the closure is enforced identically in Go and TypeScript. Each case is injected as the single entry of the document's one requirement's refs.",
   "cases": [
     {
       "name": "a plain url",

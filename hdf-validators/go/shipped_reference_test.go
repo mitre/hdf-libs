@@ -26,7 +26,7 @@ func resultsWithReference(t *testing.T, reference any) []byte {
 	return []byte(`{
 		"baselines": [{
 			"name": "Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "abc123" },
+			"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 			"requirements": [{
 				"id": "REQ-001",
 				"descriptions": [{ "label": "default", "data": "d" }],
