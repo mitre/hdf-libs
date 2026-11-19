@@ -58,8 +58,12 @@ canonical name only by case, alone, before and after the canonical member, at
 every level the converters decode (report RESULTS, finding EXTRA, envelope
 METADATA, metadata keys, position LINE, paths SCANNED); one carries two exact
 `source_rule_url` members in its JSON text, and the last value is expected.
-`name`, `urls` and `tags` are test-vector annotations, not Semgrep fields. Both
-languages consume these same inputs.
+The file is an object: `$comment`, an `expected` block holding the finding and
+coverage values every case must preserve (status, impact, severity, line, files
+scanned), and `cases`. Each case's `input` is the report's JSON text as one string,
+handed to the converters unparsed so the duplicate member survives; `name`, `urls`,
+`tags` and `expected` are test annotations, not Semgrep fields. Both languages read
+this one file.
 
 ## `expected/`
 

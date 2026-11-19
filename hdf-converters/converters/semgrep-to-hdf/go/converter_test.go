@@ -2,6 +2,7 @@ package semgrep
 
 import (
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"os"
 	"path/filepath"
 	"testing"
@@ -78,56 +79,81 @@ func TestPublishedSourceRuleReferences(t *testing.T) {
 	}, shared.RefURLs(pythonRule.Refs))
 }
 
+// caseExpectation is the finding and coverage shape every shared case must keep.
+type caseExpectation struct {
+	Status       hdf.ResultStatus `json:"status"`
+	Impact       float64          `json:"impact"`
+	Severity     hdf.Severity     `json:"severity"`
+	Line         float64          `json:"line"`
+	FilesScanned int              `json:"filesScanned"`
+}
+
 // The case file is shared with the TypeScript suite, so both languages are held
-// to the same refs for every case, and each input is checked against the Semgrep
-// output schema it declares before it is converted.
+// to the same refs, tags and preserved finding for every case, and each input is
+// checked against the Semgrep output schema it declares before it is converted.
+// An input is the report text itself, so a duplicate member reaches the converter
+// as written. The envelope is decoded with json/v2's defaults: member names match
+// exactly, and an annotation the loop does not read fails the decode.
 func TestSourceRuleReferenceMapping(t *testing.T) {
 	validator := semgrepSchema(t, "1.183.0")
-	var cases []struct {
-		Name  string          `json:"name"`
-		Input json.RawMessage `json:"input"`
-		URLs  []string        `json:"urls"`
-		Tags  map[string]any  `json:"tags"`
+	raw, err := os.ReadFile(filepath.Join("..", "fixtures", "source-rule-url-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Comment  string          `json:"$comment"`
+		Expected caseExpectation `json:"expected"`
+		Cases    []struct {
+			Name  string         `json:"name"`
+			Input string         `json:"input"`
+			URLs  []string       `json:"urls"`
+			Tags  map[string]any `json:"tags"`
+		} `json:"cases"`
 	}
-	shared.LoadJSON(t, filepath.Join("..", "fixtures", "source-rule-url-cases.json"), &cases)
-	require.NotEmpty(t, cases)
-	for _, tc := range cases {
+	require.NoError(t, jsonv2.Unmarshal(raw, &table, jsonv2.RejectUnknownMembers(true)))
+	require.NotEmpty(t, table.Cases)
+	want := table.Expected
+	for _, tc := range table.Cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			validator.RequireValid(t, tc.Name, tc.Input)
-			out, err := ConvertSemgrepToHDF(tc.Input, testVersion)
+			input := []byte(tc.Input)
+			validator.RequireValid(t, tc.Name, input)
+			out, err := ConvertSemgrepToHDF(input, testVersion)
 			require.NoError(t, err)
 			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
 			require.NotNil(t, req)
 			assert.Equal(t, tc.URLs, shared.RefURLs(req.Refs))
-			// A case-variant key at any level must leave the finding as the
-			// canonical keys describe it.
 			require.Len(t, req.Results, 1)
-			assert.Equal(t, hdf.Failed, req.Results[0].Status)
-			assert.InDelta(t, 0.5, req.Impact, 0.0001)
+			assert.Equal(t, want.Status, req.Results[0].Status)
+			assert.InDelta(t, want.Impact, req.Impact, 0.0001)
 			require.NotNil(t, req.Severity)
-			assert.Equal(t, hdf.SeverityMedium, *req.Severity)
+			assert.Equal(t, want.Severity, *req.Severity)
 			require.NotNil(t, req.SourceLocation)
 			require.NotNil(t, req.SourceLocation.Line)
-			assert.InDelta(t, 21, *req.SourceLocation.Line, 0.0001)
+			assert.InDelta(t, want.Line, *req.SourceLocation.Line, 0.0001)
 			coverage := findReq(out.Baselines[0].Requirements, coverageID)
 			require.NotNil(t, coverage)
-			assert.Equal(t, 2, coverage.Tags["filesScanned"])
+			assert.Equal(t, want.FilesScanned, coverage.Tags["filesScanned"])
 			for key, expected := range tc.Tags {
 				if expected == nil {
 					assert.NotContains(t, req.Tags, key)
 					continue
 				}
-				assert.JSONEq(t, mustJSON(t, expected), mustJSON(t, req.Tags[key]), key)
+				shared.CompareJSON(t, expected, req.Tags[key], key)
 			}
 		})
 	}
 }
 
-func mustJSON(t *testing.T, v any) string {
-	t.Helper()
-	b, err := json.Marshal(v)
+// A container member that differs from its name only by case is not read.
+func TestContainerCaseVariantsAreNotRead(t *testing.T) {
+	resultsOnly := `{"version":"1.183.0","RESULTS":[],"errors":[],"paths":{"scanned":["unsafe.go"]}}`
+	_, err := ConvertSemgrepToHDF([]byte(resultsOnly), testVersion)
+	require.ErrorContains(t, err, "does not look like a Semgrep report")
+
+	scannedOnly := `{"version":"1.183.0","results":[],"errors":[],"paths":{"SCANNED":["unsafe.go"]}}`
+	out, err := ConvertSemgrepToHDF([]byte(scannedOnly), testVersion)
 	require.NoError(t, err)
-	return string(b)
+	coverage := findReq(out.Baselines[0].Requirements, coverageID)
+	require.NotNil(t, coverage)
+	assert.Equal(t, 0, coverage.Tags["filesScanned"])
 }
 
 // ---- Contract ----
