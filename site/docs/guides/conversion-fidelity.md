@@ -51,3 +51,18 @@ prose readback in `hdf-to-xccdf`, and shared text-case files read by both langua
 in `hdf-to-csaf-vex`, `hdf-to-openvex` and `oscal-to-hdf`. There is no single place
 that records which pairs have what, so check a converter's own tests rather than
 assuming the goldens are all there is.
+
+### Semgrep rule references
+
+One of those narrower contracts changes what a document carries, so it is stated here.
+Native Semgrep conversion reads the rule-author metadata keys `source-rule-url` and
+`source_rule_url` independently. Published rules use them to link to the rule they port
+or its documentation (for example gosec or Bandit); neither is a spelling of the other.
+Both contribute to requirement `refs` alongside the other reference fields: distinct URLs
+are kept, identical URLs appear once, and neither key masks the other. The TypeScript
+converter reads these two keys exactly; the Go converter's exact matching lands with its
+json/v2 decoding change. Empty, redacted or non-string values are filtered as the other
+reference fields are. `refs` carries the links, not the metadata keys they came from;
+keep the original scanner output when that provenance is needed. A real Semgrep 1.183.0
+capture and a schema-confirmed case file under
+`hdf-converters/converters/semgrep-to-hdf/fixtures/` are read by both language suites.
