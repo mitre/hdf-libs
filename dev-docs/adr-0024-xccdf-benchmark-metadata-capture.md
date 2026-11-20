@@ -1,4 +1,4 @@
-# ADR-0019: The XCCDF benchmark converter carries every benchmark and rule field, checked against the XSD
+# ADR-0024: The XCCDF benchmark converter carries every benchmark and rule field, checked against the XSD
 
 - **Status:** Proposed
 - **Date:** 2026-10-28
