@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -121,15 +122,24 @@ func findFirstWithAffectedPackages(reqs []cveRequirement) *cveRequirement {
 // cveIDPattern matches CVE-YYYY-N+ for asserting CVSS source fields.
 var cveIDPattern = regexp.MustCompile(`^CVE-\d{4}-\d+$`)
 
-// cvssVectorPattern matches the FIRST.org vector shape for CVSS 3.x/4.0
-// (prefix CVSS:V/...). CVSS 2.0 vectors omit the prefix; this pattern matches
-// the prefix-less form too via the optional non-capturing group. Tests choose
-// the stricter form when the source converter is known to emit it.
-//
-// References:
-//   - CVSS 3.x: https://www.first.org/cvss/v3.1/specification-document#Vector-String
-//   - CVSS 4.0: https://www.first.org/cvss/v4.0/specification-document#Vector-String
-var cvssVectorPrefixed = regexp.MustCompile(`^CVSS:[234]\.[01]/[A-Z]+:[A-Z]+(/[A-Z]+:[A-Z]+)*$`)
+// assertCvssVectorMatchesVersion checks a cvss entry's baseVector against the
+// FIRST grammar of the entry's own version: the required metrics and their
+// values for that version, and a version the vector declares that equals it.
+// A CVSS 2.0 vector carries no prefix (https://www.first.org/cvss/v2/guide);
+// 3.x and 4.0 vectors start with CVSS:<version>/.
+func assertCvssVectorMatchesVersion(t *testing.T, entry cvssEntry, reqID string) {
+	t.Helper()
+	valid, errs := hdfutil.ValidateCvssVector(entry.BaseVector, entry.Version)
+	assert.Truef(t, valid, "cvss baseVector %q on %s is not a valid CVSS %s vector: %v",
+		entry.BaseVector, reqID, entry.Version, errs)
+	declared, _ := hdfutil.ParseCvssVector(entry.BaseVector)
+	assert.Equalf(t, entry.Version, declared,
+		"cvss baseVector %q on %s declares version %s, entry says %s", entry.BaseVector, reqID, declared, entry.Version)
+	if entry.Version == "2.0" {
+		assert.Falsef(t, strings.HasPrefix(entry.BaseVector, "CVSS:"),
+			"CVSS 2.0 baseVector %q on %s must carry no version prefix", entry.BaseVector, reqID)
+	}
+}
 
 // cwePattern matches the CWE-N (no leading zeros) format documented on
 // EvaluatedRequirement.cwe[].
@@ -154,8 +164,7 @@ func TestConvertCLI_Nessus_PopulatesCVEFields(t *testing.T) {
 			"expected cvss[0].baseScore > 0 on %s, got %v", req.ID, first.BaseScore)
 		assert.NotEmptyf(t, first.BaseVector,
 			"cvss[0].baseVector on %s should be present on Nessus (always emits vectors)", req.ID)
-		assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
-			"cvss[0].baseVector on %s must match FIRST vector grammar, got %q", req.ID, first.BaseVector)
+		assertCvssVectorMatchesVersion(t, first, req.ID)
 		assert.Regexpf(t, cveIDPattern, first.Source,
 			"cvss[0].source on %s should be a CVE ID, got %q", req.ID, first.Source)
 		assert.NotEmptyf(t, first.Version, "cvss[0].version on %s must be set", req.ID)
@@ -205,9 +214,7 @@ func TestConvertCLI_Twistlock_PopulatesCVEFields(t *testing.T) {
 		// Twistlock sometimes omits baseVector (PCC scan doesn't always include
 		// the vector string). Schema now allows this; only assert format when present.
 		if first.BaseVector != "" {
-			assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
-				"baseVector on %s must match FIRST grammar when present, got %q",
-				req.ID, first.BaseVector)
+			assertCvssVectorMatchesVersion(t, first, req.ID)
 		}
 	})
 
@@ -252,8 +259,7 @@ func TestConvertCLI_Grype_PopulatesCVEFields(t *testing.T) {
 			"cvss[0].baseScore should be > 0 on %s, got %v", req.ID, first.BaseScore)
 		assert.NotEmptyf(t, first.BaseVector,
 			"cvss[0].baseVector on %s should be present on Grype (always emits vectors)", req.ID)
-		assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
-			"cvss[0].baseVector on %s must match FIRST grammar, got %q", req.ID, first.BaseVector)
+		assertCvssVectorMatchesVersion(t, first, req.ID)
 		assert.Regexpf(t, cveIDPattern, first.Source,
 			"cvss[0].source on %s should be a CVE ID, got %q", req.ID, first.Source)
 		assert.NotEmptyf(t, first.Version, "cvss[0].version must be set on %s", req.ID)

@@ -98,6 +98,11 @@ describe('generate-types', () => {
   });
 
   describe('Go output', () => {
+    it('emits generated Go without trailing horizontal whitespace', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      expect(content).not.toMatch(/[\t ]+$/m);
+    });
+
     it('should create dist/go directory', () => {
       expect(existsSync(join(DIST_DIR, 'go'))).toBe(true);
     });
@@ -310,6 +315,37 @@ describe('Component identity-field reconciler', () => {
       };
       expect(hostIdentityStringFields(schema)).toEqual([
         { name: 'hostname', description: 'short name' },
+      ]);
+    });
+
+    it.each([
+      ['object', { text: 'short name' }],
+      ['number', 42],
+      ['null', null],
+      ['boolean', false],
+      ['array', ['short name']],
+    ])('rejects non-string %s descriptions with the property name', (_kind, description) => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string', description } } }],
+          },
+        },
+      };
+      expect(() => hostIdentityStringFields(schema))
+        .toThrow('Host_Component.hostname description must be a string');
+    });
+
+    it('uses an empty description when none is declared', () => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string' } } }],
+          },
+        },
+      };
+      expect(hostIdentityStringFields(schema)).toEqual([
+        { name: 'hostname', description: '' },
       ]);
     });
 
