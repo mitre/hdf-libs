@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"archive/zip"
+	"bytes"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -55,7 +58,7 @@ type bundleEntry struct {
 }
 
 func newEvidenceBundleCmd() *cobra.Command {
-	var outputPath string
+	var outputPath, outputAccess string
 	var overwrite bool
 
 	cmd := &cobra.Command{
@@ -76,16 +79,20 @@ That is reported here and never repaired by rewriting the package:
 'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
     (externalEvidence) record such a reference relatively at authoring time.
 
-Bundle and 'hdf evidence info --verify' resolve references identically, and neither
-    refuses a package for the shape of one: a reference to something the package does
-    not contain — an absolute path elsewhere, a parent traversal, or a URI on another
-    system — is reported by both.
+A reference to something the package does not contain — an absolute path elsewhere,
+    a parent traversal, or a URI on another system — is reported by both bundle and
+    'hdf evidence info --verify'. Bundle additionally refuses carried entry names,
+    including the package filename, containing backslashes, colons or NUL. Names are
+    checked after native path normalization and are never silently rewritten to remove
+    unsafe characters.
 Verification additionally checks completeness, which bundle does not, so it can still
     fail a package bundle accepts — for instance when a planned baseline's only results
     document is one of those unreachable references.
 Both honour the checksum algorithm the package records.
-Nothing outside the package directory is read: such a reference is never resolved into a
-    path, and a symlink that leaves the package is refused at the read boundary.
+Nothing outside the held package directory is read: the package file and its references
+    use the same directory handle, and a symlink that leaves the package is refused at
+    the read boundary. A package read from stdin has no directory: it is refused if it
+    records a package-relative reference, and only the package document travels.
 
 What travels: the package, the documents named by systemRef and planRef, every document
     in contents[], and externalEvidence[] artifacts that live inside the package's
@@ -135,12 +142,18 @@ Examples:
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")
 			}
-			return runEvidenceBundle(args[0], outputPath, overwrite, newArchiveWriter)
+			access, err := parseArchiveAccess(outputAccess)
+			if err != nil {
+				return err
+			}
+			return runEvidenceBundle(args[0], outputPath, overwrite, access, newArchiveWriter)
 		},
 	}
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Archive to write (required)")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false,
 		"Replace an existing archive at -o (without this, an existing path is refused)")
+	cmd.Flags().StringVar(&outputAccess, "output-access", string(archivePrivate),
+		"Who may read the archive: private (owner only) or inherit (the directory's umask and default ACLs)")
 	return cmd
 }
 
@@ -359,6 +372,12 @@ func refuseBackslashRef(label, subject, name string) error {
 		"extractor may read as a path separator and write outside the root", label, subject)
 }
 
+// portableArtifactPath reports whether path is a relative archive member name that every
+// platform extracts inside the destination: local, and free of backslash, colon and NUL.
+func portableArtifactPath(path string) bool {
+	return filepath.IsLocal(path) && !strings.ContainsAny(path, "\\:\x00")
+}
+
 // stdinBundlePackageEntry is the archive name of a stdin package, which has no file name.
 const stdinBundlePackageEntry = "hdf-evidence-package.json"
 
@@ -414,16 +433,39 @@ func packageSubtreeRef(pkgDir string, uri evidenceref.Decoded) (evidenceref.Deco
 
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
-func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter func(*os.File) archiveWriter) (err error) {
-	pkgData, err := readInputFile(pkgPath)
+func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiveAccess,
+	makeWriter func(*os.File) archiveWriter) (err error) {
+	fromStdin := pkgPath == stdinPackage
+	packageName := filepath.ToSlash(filepath.Base(pkgPath))
+	if fromStdin {
+		packageName = stdinBundlePackageEntry
+	}
+	if !portableArtifactPath(packageName) {
+		return fmt.Errorf("package filename %q cannot name a portable archive entry", packageName)
+	}
+	pkgDir := filepath.Dir(pkgPath)
+	rootDir, err := resolvedAbs(pkgDir)
+	if err != nil {
+		return fmt.Errorf("failed to read evidence package: resolve package directory: %w", err)
+	}
+	root, err := os.OpenRoot(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to read evidence package: open package directory: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+	c := bundleCollection{root: root, fromStdin: fromStdin}
+	pkgRaw, err := c.readPackage(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
+	}
+	pkgData := bytes.TrimPrefix(pkgRaw, utf8BOM)
+	if len(pkgData) == 0 {
+		return fmt.Errorf("failed to read evidence package: no input provided")
 	}
 	if _, err := loadAndValidateHDFDoc(pkgData, "evidence-package"); err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
-	pkgDir := filepath.Dir(pkgPath)
 	_, contents, err := hdfengine.ParseEvidencePackage(pkgData)
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
@@ -445,7 +487,6 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
 	}
-	fromStdin := pkgPath == stdinPackage
 	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
 	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
 	// may be any pre-existing file they pointed at — so this says only what is known: nothing
@@ -454,7 +495,8 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	if overwrite {
 		if info, statErr := os.Stat(outputPath); statErr == nil && !info.IsDir() {
 			defer func() {
-				if err != nil {
+				var published *archivePublishedError
+				if err != nil && !errors.As(err, &published) {
 					fmt.Fprintf(os.Stderr,
 						"Note: %s was not replaced; the file already at that path is unchanged.\n",
 						outputPath)
@@ -463,231 +505,305 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		}
 	}
 
-	// Collect and verify EVERYTHING before opening the output. Nothing is written
-	// until every document is present and every recorded checksum matches.
-	pkgEntry := filepath.ToSlash(filepath.Base(pkgPath))
-	if fromStdin {
-		pkgEntry = stdinBundlePackageEntry
+	// Staged before any referenced document is read, so a destination that cannot take
+	// an archive under the access policy is refused before any input is opened or hashed.
+	staged, err := createStagedArchive(filepath.Dir(outputPath), access)
+	if err != nil {
+		return &stagingError{out: outputPath, err: err}
 	}
-	entries := []bundleEntry{{path: pkgEntry, data: pkgData}}
-	collected := map[string][]byte{entries[0].path: pkgData}
+	stagedName := staged.Name()
+	defer func() {
+		_ = staged.Close()
+		_ = os.Remove(stagedName) // no-op once published
+	}()
 
-	// subject is what the PACKAGE records and is what every message quotes; uri is
-	// what is read and what names the archive entry. They differ for an
-	// externalEvidence entry recorded as an absolute path, where quoting the derived
-	// relative ref would name a string that appears nowhere in the package.
-	type target struct {
-		uri                                 evidenceref.Decoded
-		subject, label, checksum, algorithm string
-		checksumRecorded, canRecordChecksum bool
-	}
-	// Counted inside collect so BOTH contents[] and externalEvidence[] are covered by
-	// one path. Incrementing it in the contents loop alone is what left a tampered
-	// artifact travelling unverified behind an externalEvidence entry whose recorded
-	// checksum value was empty.
-	// Collections, not counters: a count tells an operator how many references to fix
-	// and not which, and these two kinds are the ones they can actually act on. The
-	// kind that cannot travel was already named.
-	var emptyChecksum, noChecksum []string
-	// Recorded checksums this build cannot compute, reported by subject and reason.
-	var unverifiable []string
-	collect := func(t target) error {
-		uri, label, checksum := t.uri, t.label, t.checksum
-		subject := t.subject
-		if subject == "" {
-			subject = string(uri)
-		}
-		// The entry NAME is sanitized here, separately from the read. SafePath gates
-		// what may be read but says nothing about what name is written, so a crafted
-		// package could otherwise put an absolute path or a ".." segment into the
-		// archive — a zip-slip primitive for any consumer that does not normalize
-		// f.Name, in the very artifact handed to a third party. checkContentRefShape
-		// is verify's rule, reused rather than restated.
-		// The shared check names the reference kind itself, so wrapping it with the label
-		// again stuttered ("content reference %q cannot be bundled: content reference %q
-		// is absolute").
-		// Checked on the ENTRY NAME, not the recorded subject: an externalEvidence uri
-		// may legitimately be absolute, and packageSubtreeRef has already resolved it to
-		// a relative ref by here. For a contents[] reference the two are the same string.
-		if err := checkContentRefShape(string(uri), label); err != nil {
-			return fmt.Errorf("cannot bundle: %w", err)
-		}
-		// Before the ".." checks, which cannot see "..\" as traversal on POSIX. Repeated
-		// here for the name an absolute reference resolved to inside the package.
-		if err := refuseBackslashRef(label, subject, string(uri)); err != nil {
+	c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
+	c.collected = map[string][]byte{packageName: pkgRaw}
+	c.carried = map[refKind]int{}
+	for _, r := range refs {
+		if err := c.collectReference(pkgDir, r); err != nil {
 			return err
 		}
-		ref := filepath.ToSlash(filepath.Clean(string(uri)))
-		if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
-			return fmt.Errorf("%s %q cannot be bundled: it would write an archive entry outside the root", label, subject)
+	}
+	sort.Strings(c.notCarried)
+	sort.Slice(c.entries, func(i, j int) bool { return c.entries[i].path < c.entries[j].path })
+	if err := writeArchiveAtomically(outputPath, overwrite, staged, c.entries, makeWriter); err != nil {
+		return err
+	}
+	c.report(pkgDir, outputPath, refs)
+	return nil
+}
+
+type bundleTarget struct {
+	uri                                 evidenceref.Decoded
+	subject, label, checksum, algorithm string
+	checksumRecorded, canRecordChecksum bool
+}
+
+type bundleCollection struct {
+	root                                                *os.Root
+	entries                                             []bundleEntry
+	collected                                           map[string][]byte
+	emptyChecksum, noChecksum, unverifiable, notCarried []string
+	noURI, noExtURI, documentsDropped                   int
+	carried                                             map[refKind]int
+	fromStdin                                           bool
+}
+
+func (c *bundleCollection) collect(pkgDir string, t bundleTarget) error {
+	uri, label := t.uri, t.label
+	subject := t.subject
+	if subject == "" {
+		subject = string(uri)
+	}
+	// The entry NAME is sanitized here, separately from the read. SafePath gates
+	// what may be read but says nothing about what name is written, so a crafted
+	// package could otherwise put an absolute path or a ".." segment into the
+	// archive — a zip-slip primitive for any consumer that does not normalize
+	// f.Name, in the very artifact handed to a third party. checkContentRefShape
+	// is verify's rule, reused rather than restated.
+	// The shared check names the reference kind itself, so wrapping it with the label
+	// again stuttered ("content reference %q cannot be bundled: content reference %q
+	// is absolute").
+	// Checked on the ENTRY NAME, not the recorded subject: an externalEvidence uri
+	// may legitimately be absolute, and packageSubtreeRef has already resolved it to
+	// a relative ref by here. For a contents[] reference the two are the same string.
+	if err := checkContentRefShape(string(uri), label); err != nil {
+		return fmt.Errorf("cannot bundle: %w", err)
+	}
+	// Before the ".." checks, which cannot see "..\" as traversal on POSIX. Repeated
+	// here for the name an absolute reference resolved to inside the package.
+	if err := refuseBackslashRef(label, subject, string(uri)); err != nil {
+		return err
+	}
+	ref := filepath.ToSlash(filepath.Clean(string(uri)))
+	if ref == ".." || strings.HasPrefix(ref, "../") || escapesPackageRef(ref) {
+		return fmt.Errorf("%s %q cannot be bundled: it would write an archive entry outside the root", label, subject)
+	}
+	if !portableArtifactPath(ref) {
+		return fmt.Errorf("%s %q cannot name a portable archive entry", label, subject)
+	}
+	data, already := c.collected[ref]
+	if !already {
+		path, pathErr := evidenceref.Path(pkgDir, uri)
+		if pathErr != nil {
+			return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, pathErr)
 		}
-		data, already := collected[ref]
-		if !already {
-			path, pathErr := evidenceref.Path(pkgDir, uri)
-			if pathErr != nil {
-				return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, pathErr)
-			}
-			var readErr error
-			if data, readErr = readFromFile(path, true); readErr != nil {
-				return fmt.Errorf("%s %q is referenced but could not be read: %w", label, subject, readErr)
-			}
-			collected[ref] = data
-			entries = append(entries, bundleEntry{path: ref, data: data})
+		var readErr error
+		if data, readErr = c.readContained(path, true); readErr != nil {
+			return fmt.Errorf("%s %q is referenced but could not be read: %w", label, subject, readErr)
 		}
-		// The bytes about to travel must be the bytes the package describes, checked
-		// HERE against the very data that enters the archive. It used to be a second
-		// loop matching entry paths against the raw URI, but the path had been
-		// cleaned — so a non-canonical reference ("./x", "a/../x", "a//x") matched no
-		// entry, fell through a loop with no else branch, and its checksum was never
-		// verified while the archive was still written and declared complete.
-		// Computing the reference in two places is what made that possible.
-		// Deliberately OUTSIDE the `already` branch above: a second reference to the
-		// same file carries its own recorded checksum and must be checked too.
-		if strings.TrimSpace(checksum) == "" {
-			// A recorded-but-blank value is unverifiable, not a mismatch. Hashing against
-			// it would report "the package records <blank> but the file hashes to …",
-			// presenting an unverifiable record as a changed file.
-			//
-			// Counted either way. checksumRecorded used to gate this, so an entry
-			// recording NO checksum object fell through silently and its document
-			// travelled under the extent claim with nothing vouching for it, while
-			// verification reported the same entry as skipped — the two commands
-			// disagreed about whether the operator should be told. The two shapes stay
-			// separate because the remedy differs: one has a checksum to fill in, the
-			// other needs one added.
-			switch {
-			case !t.canRecordChecksum:
-				// Travels, and is not counted: a reference field has nowhere to record a
-				// checksum, so its absence is not a gap. The document is normally also a
-				// contents[] entry carrying its own, which is where it is counted.
-			case t.checksumRecorded:
-				emptyChecksum = append(emptyChecksum, subject)
-			default:
-				noChecksum = append(noChecksum, subject)
-			}
-			return nil
+		c.collected[ref] = data
+		c.entries = append(c.entries, bundleEntry{path: ref, data: data})
+	}
+	return c.verifyChecksum(t, data, subject)
+}
+
+func (c *bundleCollection) readPackage(path string) ([]byte, error) {
+	if path == "" || path == "-" {
+		return readFromStdin(false)
+	}
+	return c.readContained(path, false)
+}
+
+// rootRelative names resolved relative to the held root. The spelled path is tried
+// first; failing that, the root is found among resolved's parents by file identity,
+// because a case-insensitive filesystem lets a symlink spell the package directory
+// differently from the name the root was opened with. Only the name is derived here:
+// the open still goes through the root, which confines it.
+func (c *bundleCollection) rootRelative(resolved string) (string, bool) {
+	if relative, err := filepath.Rel(c.root.Name(), resolved); err == nil && filepath.IsLocal(relative) {
+		return relative, true
+	}
+	rootInfo, err := c.root.Stat(".")
+	if err != nil {
+		return "", false
+	}
+	for dir := filepath.Dir(resolved); ; dir = filepath.Dir(dir) {
+		if info, statErr := os.Stat(dir); statErr == nil && os.SameFile(rootInfo, info) {
+			relative, relErr := filepath.Rel(dir, resolved)
+			return relative, relErr == nil && filepath.IsLocal(relative)
 		}
-		got, hashErr := hdfengine.ChecksumHex(t.algorithm, data)
-		if hashErr != nil {
-			// Not a refusal. The bytes may be intact, so the document is carried and the
-			// checksum reported as unverified, exactly as a recorded-but-blank value
-			// already is. This build computes every algorithm Hash_Algorithm admits, so a
-			// schema-valid package no longer reaches here at all; it remains for an
-			// off-schema document, which validation refuses before this point in the CLI
-			// but which a library caller can still hand to the engine.
-			unverifiable = append(unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
-			return nil
+		if filepath.Dir(dir) == dir {
+			return "", false
 		}
-		if !hdfengine.ChecksumEqual(checksum, got) {
-			return fmt.Errorf("checksum mismatch for %s: the package records %s but the file hashes to %s; "+
-				"no archive written", subject, checksum, got)
+	}
+}
+
+func (c *bundleCollection) readContained(path string, allowEmpty bool) ([]byte, error) {
+	if err := refuseSymlinkIfConfigured(path); err != nil {
+		return nil, err
+	}
+	resolved, err := resolvedAbs(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("file not found: %s", path)
+		}
+		return nil, err
+	}
+	// Canonical names preserve in-tree absolute symlinks; Root confines the actual open.
+	relative, ok := c.rootRelative(resolved)
+	if !ok {
+		return nil, fmt.Errorf("path %q resolves outside base directory via symlink", path)
+	}
+	file, err := c.root.Open(relative)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open contained artifact %q: %w", path, err)
+	}
+	defer func() { _ = file.Close() }()
+	return readOpenedFile(file, path, allowEmpty)
+}
+
+func (c *bundleCollection) verifyChecksum(t bundleTarget, data []byte, subject string) error {
+	checksum := t.checksum
+	// The bytes about to travel must be the bytes the package describes, checked
+	// HERE against the very data that enters the archive. It used to be a second
+	// loop matching entry paths against the raw URI, but the path had been
+	// cleaned — so a non-canonical reference ("./x", "a/../x", "a//x") matched no
+	// entry, fell through a loop with no else branch, and its checksum was never
+	// verified while the archive was still written and declared complete.
+	// Computing the reference in two places is what made that possible.
+	// Called even for previously collected bytes: each reference carries its own
+	// recorded checksum and must be checked.
+	if strings.TrimSpace(checksum) == "" {
+		// A recorded-but-blank value is unverifiable, not a mismatch. Hashing against
+		// it would report "the package records <blank> but the file hashes to …",
+		// presenting an unverifiable record as a changed file.
+		//
+		// Counted either way. checksumRecorded used to gate this, so an entry
+		// recording NO checksum object fell through silently and its document
+		// travelled under the extent claim with nothing vouching for it, while
+		// verification reported the same entry as skipped — the two commands
+		// disagreed about whether the operator should be told. The two shapes stay
+		// separate because the remedy differs: one has a checksum to fill in, the
+		// other needs one added.
+		switch {
+		case !t.canRecordChecksum:
+			// Travels, and is not counted: a reference field has nowhere to record a
+			// checksum, so its absence is not a gap. The document is normally also a
+			// contents[] entry carrying its own, which is where it is counted.
+		case t.checksumRecorded:
+			c.emptyChecksum = append(c.emptyChecksum, subject)
+		default:
+			c.noChecksum = append(c.noChecksum, subject)
 		}
 		return nil
 	}
+	got, hashErr := hdfengine.ChecksumHex(t.algorithm, data)
+	if hashErr != nil {
+		// Not a refusal. The bytes may be intact, so the document is carried and the
+		// checksum reported as unverified, exactly as a recorded-but-blank value
+		// already is. This build computes every algorithm Hash_Algorithm admits, so a
+		// schema-valid package no longer reaches here at all; it remains for an
+		// off-schema document, which validation refuses before this point in the CLI
+		// but which a library caller can still hand to the engine.
+		c.unverifiable = append(c.unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
+		return nil
+	}
+	if !hdfengine.ChecksumEqual(checksum, got) {
+		return fmt.Errorf("checksum mismatch for %s: the package records %s but the file hashes to %s; "+
+			"no archive written", subject, checksum, got)
+	}
+	return nil
+}
 
-	// planRef and systemRef are carried because `evidence info --verify` reads the plan for
-	// its completeness check: an archive omitting it would verify in the original tree
-	// and fail on the extracted copy.
-	var noURI, noExtURI, documentsDropped int
-	var notCarried []string
-	carried := map[refKind]int{}
-	for _, r := range refs {
-		if r.uri == "" {
-			// A recorded field left empty names nothing, and is reported rather than
-			// skipped because the extent line claims every document in contents[].
-			// systemRef and planRef are optional, so an absent one is normal.
-			switch {
-			case r.field == "contents":
-				noURI++
-				documentsDropped++
-			case r.kind == refExternal:
-				noExtURI++
-			}
-			continue
+func (c *bundleCollection) collectReference(pkgDir string, r recordedRef) error {
+	if r.uri == "" {
+		// A recorded field left empty names nothing, and is reported rather than
+		// skipped because the extent line claims every document in contents[].
+		// systemRef and planRef are optional, so an absent one is normal.
+		switch {
+		case r.field == "contents":
+			c.noURI++
+			c.documentsDropped++
+		case r.kind == refExternal:
+			c.noExtURI++
 		}
-		// Every report names the field that records the reference. It used to be
-		// hardcoded to externalEvidence, so a remote planRef was reported as "still
-		// recorded in the package's externalEvidence" — where it is not.
-		aside := func(why string) {
-			// Recorded here, not just counted for the empty-uri case: a document is
-			// equally absent whether it named nothing, was remote, or lay outside the
-			// package, and the extent sentence must be qualified for all three. Hooking
-			// the qualifier to one drop reason left the claim false for the other two.
-			if r.kind == refDocument {
-				documentsDropped++
-			}
-			notCarried = append(notCarried,
-				fmt.Sprintf("%s (%s) — recorded in %s", r.uri, why, r.field))
+		return nil
+	}
+	if r.kind == refContext {
+		// Inert context never travels: it is not evidence, and the extent sentence
+		// does not claim it. Said once, for a local href that might look like a
+		// candidate; a remote advisory URL needs no remark.
+		if !isRemoteURI(r.uri) {
+			c.recordNotCarried(r, "context, not evidence")
 		}
-		if r.kind == refContext {
-			// Inert context never travels: it is not evidence, and the extent sentence
-			// does not claim it. Said once, for a local href that might look like a
-			// candidate; a remote advisory URL needs no remark.
-			if !isRemoteURI(r.uri) {
-				aside("context, not evidence")
-			}
-			continue
-		}
-		if isRemoteURI(r.uri) {
-			aside("remote")
-			continue
-		}
-		// EVERY reference is a LOCATION and may legitimately be absolute — `evidence set
-		// --plan-ref /abs/path` and `add-evidence --uri /abs/path` both record one.
-		// Resolved, so an absolute path landing inside the package is carried and one
-		// outside it is reported rather than refused. contents[] used to be special-cased
-		// through the strict shape check and refusing it made bundle reject packages
-		// `evidence info --verify` accepts. The schema now describes the package-relative form as
-		// the one the tooling resolves, and says in the same breath that another shape is
-		// schema-valid and reported — so that description is not a licence to refuse one.
-		if r.decodeErr != nil {
-			aside("not a valid uri-reference")
-			continue
-		}
-		// Judged on the DECODED reference before any path cleaning: on Windows Clean would
-		// turn "..\x" into "../x" and the package would be refused on POSIX but not there.
-		if !escapesPackageRef(string(r.decoded)) {
-			if err := refuseBackslashRef(r.label, r.uri, string(r.decoded)); err != nil {
-				return err
-			}
-		}
-		ref, inTree := packageSubtreeRef(pkgDir, r.decoded)
-		if fromStdin {
-			aside(stdinNoDirectory)
-			continue
-		}
-		if !inTree {
-			aside("outside the package's directory")
-			continue
-		}
-		if err := collect(target{
-			uri: ref, subject: r.uri, label: r.label,
-			checksum: r.checksum, algorithm: r.algorithm, checksumRecorded: r.checksumRecorded,
-			canRecordChecksum: r.canRecordChecksum,
-		}); err != nil {
+		return nil
+	}
+	if isRemoteURI(r.uri) {
+		c.recordNotCarried(r, "remote")
+		return nil
+	}
+	// Judged on the DECODED reference before any path cleaning: on Windows Clean would
+	// turn "..\x" into "../x" and the package would be refused on POSIX but not there.
+	if r.decodeErr == nil && !escapesPackageRef(string(r.decoded)) {
+		if err := refuseBackslashRef(r.label, r.uri, string(r.decoded)); err != nil {
 			return err
 		}
-		carried[r.kind]++
 	}
-	sort.Strings(notCarried)
-
-	// Sorted order plus a fixed timestamp make the archive reproducible.
-	sort.Slice(entries, func(i, j int) bool { return entries[i].path < entries[j].path })
-
-	if err := writeArchiveAtomically(outputPath, entries, makeWriter); err != nil {
+	ref, ok := c.collectionPath(pkgDir, r)
+	if !ok {
+		return nil
+	}
+	if err := c.collect(pkgDir, bundleTarget{
+		uri: ref, subject: r.uri, label: r.label,
+		checksum: r.checksum, algorithm: r.algorithm, checksumRecorded: r.checksumRecorded,
+		canRecordChecksum: r.canRecordChecksum,
+	}); err != nil {
 		return err
 	}
+	c.carried[r.kind]++
+	return nil
+}
 
-	fmt.Fprintf(os.Stderr, "Archive written to %s (%d file(s))\n", outputPath, len(entries))
-	if noURI > 0 {
-		fmt.Fprintf(os.Stderr, "  %d content reference(s) record no uri and name nothing to carry\n", noURI)
+func (c *bundleCollection) collectionPath(pkgDir string, r recordedRef) (evidenceref.Decoded, bool) {
+	// EVERY reference is a LOCATION and may legitimately be absolute — `evidence set
+	// --plan-ref /abs/path` and `add-evidence --uri /abs/path` both record one.
+	// Resolved, so an absolute path landing inside the package is carried and one
+	// outside it is reported rather than refused. contents[] used to be special-cased
+	// through the strict shape check and refusing it made bundle reject packages
+	// `evidence info --verify` accepts. The schema now describes the package-relative form as
+	// the one the tooling resolves, and says in the same breath that another shape is
+	// schema-valid and reported — so that description is not a licence to refuse one.
+	if r.decodeErr != nil {
+		c.recordNotCarried(r, "not a valid uri-reference")
+		return "", false
 	}
-	if noExtURI > 0 {
-		fmt.Fprintf(os.Stderr, "  %d external evidence reference(s) record no uri and name nothing to carry\n", noExtURI)
+	ref, inTree := packageSubtreeRef(pkgDir, r.decoded)
+	if c.fromStdin {
+		c.recordNotCarried(r, stdinNoDirectory)
+		return "", false
 	}
-	reportUnverifiable(noChecksum, false, "record no checksum")
-	reportUnverifiable(emptyChecksum, true, "record an empty checksum value")
-	for _, u := range unverifiable {
+	if !inTree {
+		c.recordNotCarried(r, "outside the package's directory")
+		return "", false
+	}
+	return ref, true
+}
+
+func (c *bundleCollection) recordNotCarried(r recordedRef, why string) {
+	// Recorded here, not just counted for the empty-uri case: a document is
+	// equally absent whether it named nothing, was remote, or lay outside the
+	// package, and the extent sentence must be qualified for all three. Hooking
+	// the qualifier to one drop reason left the claim false for the other two.
+	if r.kind == refDocument {
+		c.documentsDropped++
+	}
+	c.notCarried = append(c.notCarried,
+		fmt.Sprintf("%s (%s) — recorded in %s", r.uri, why, r.field))
+}
+
+func (c *bundleCollection) report(pkgDir, outputPath string, refs []recordedRef) {
+	fmt.Fprintf(os.Stderr, "Archive written to %s (%d file(s))\n", outputPath, len(c.entries))
+	if c.noURI > 0 {
+		fmt.Fprintf(os.Stderr, "  %d content reference(s) record no uri and name nothing to carry\n", c.noURI)
+	}
+	if c.noExtURI > 0 {
+		fmt.Fprintf(os.Stderr, "  %d external evidence reference(s) record no uri and name nothing to carry\n", c.noExtURI)
+	}
+	reportUnverifiable(c.noChecksum, false, "record no checksum")
+	reportUnverifiable(c.emptyChecksum, true, "record an empty checksum value")
+	for _, u := range c.unverifiable {
 		fmt.Fprintf(os.Stderr, "  checksum could not be verified for %s\n", sanitizeOutput(u))
 	}
 	// ANY reference that travels — a document, or in-tree external evidence — recorded as
@@ -704,22 +820,26 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		if r.uri == "" || r.kind == refContext || isRemoteURI(r.uri) || !filepath.IsAbs(r.uri) {
 			continue
 		}
-		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok && !fromStdin {
+		if resolved, ok := packageSubtreeRef(pkgDir, r.decoded); ok && !c.fromStdin {
 			fmt.Fprintf(os.Stderr,
 				"  %s records %s; it is carried as %s, so the extracted package will not resolve it as recorded\n",
 				r.field, sanitizeOutput(r.uri), resolved)
 		}
 	}
 
+	c.reportExtent()
+}
+
+func (c *bundleCollection) reportExtent() {
 	// The satisfiable half of "report what is NOT in here": bundle cannot know what
 	// `build` skipped — that lives only in build's stderr — but it can state the
 	// archive's exact extent. Built from what was actually carried, because a fixed
 	// sentence became false the moment root references started travelling: it said
 	// "nothing else" while a systemRef document sat in the archive.
 	parts := []string{"the package"}
-	if carried[refDocument] > 0 {
+	if c.carried[refDocument] > 0 {
 		scope := "every document it references"
-		if documentsDropped > 0 {
+		if c.documentsDropped > 0 {
 			// One qualifier for every reason a referenced document did not travel — it
 			// named nothing, it is remote, or it lies outside the package. The notice
 			// lines below say which and why; this clause only has to stop claiming them.
@@ -727,7 +847,7 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		}
 		parts = append(parts, scope)
 	}
-	if carried[refExternal] > 0 {
+	if c.carried[refExternal] > 0 {
 		parts = append(parts, "in-tree external evidence")
 	}
 	fmt.Fprintf(os.Stderr, "Contains exactly %s — nothing else.\n", strings.Join(parts, ", "))
@@ -738,11 +858,9 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	// one. Which references travelled is derivable: an entry exists at that path, or
 	// it does not. Each line names the field that records the reference, because a
 	// hardcoded "recorded in externalEvidence" was false for a planRef.
-	for _, r := range notCarried {
+	for _, r := range c.notCarried {
 		fmt.Fprintf(os.Stderr, "  not carried: %s\n", r)
 	}
-
-	return nil
 }
 
 // refuseOutputOverAnInput refuses an -o that names the package or anything it
@@ -750,12 +868,12 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 // quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
 // the comment on the existence check.
 func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
-	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
-		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
+	taken, isDir := outputTaken(outputPath)
+	if isDir {
+		return describeTakenOutput(outputPath)
 	}
-	// Checked here rather than left to os.CreateTemp, which fails after every read and
-	// hash with an "open <dir>/.hdf-bundle-NNN" naming a temp path the operator never
-	// typed.
+	// Checked here so a missing directory is reported by the name the operator typed,
+	// before any document is read.
 	if parent := filepath.Dir(outputPath); parent != "" {
 		if _, err := os.Stat(parent); err != nil {
 			return fmt.Errorf("-o %s: the directory %s does not exist", outputPath, parent)
@@ -788,10 +906,28 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 	// flag makes that acceptable. A prior archive, by contrast, is the operator's own
 	// deliverable and is replaced on request — still before any document is read, so a run
 	// that will not proceed costs nothing and reports nothing else first.
-	if info, err := os.Stat(outputPath); err == nil && !info.IsDir() && !overwrite {
-		return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", outputPath)
+	if taken && !overwrite {
+		return describeTakenOutput(outputPath)
 	}
 	return nil
+}
+
+// outputTaken reports whether an entry is at path and whether it is a directory, by
+// Lstat: a dangling symlink is taken, and a symlink to a directory is the link, which
+// publication would replace, not the directory. Publication refuses every existing
+// name, so this up-front check, which runs before any document is read, sees the same.
+func outputTaken(path string) (taken, isDir bool) {
+	info, err := os.Lstat(path)
+	return err == nil, err == nil && info.IsDir()
+}
+
+// describeTakenOutput is the refusal for a name that is taken, up front and when
+// publication finds one that appeared during the run.
+func describeTakenOutput(path string) error {
+	if _, isDir := outputTaken(path); isDir {
+		return fmt.Errorf("-o %s is a directory; name the archive file to write", path)
+	}
+	return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", path)
 }
 
 // samePath reports whether two paths name the same file. os.SameFile is asked first
@@ -821,22 +957,14 @@ func samePath(a, b string) bool {
 // replaces this one function and nothing else.
 func newArchiveWriter(f *os.File) archiveWriter { return newZipWriter(f) }
 
-// writeArchiveAtomically writes to a temporary file beside the target and renames it
-// into place, so a failure part-way cannot leave a partial archive that looks
-// complete. It takes the writer constructor so the seam is exercised by the command,
-// not merely implemented beside it.
-func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter func(*os.File) archiveWriter) error {
-	dir := filepath.Dir(outputPath)
-	tmp, err := os.CreateTemp(dir, ".hdf-bundle-*")
-	if err != nil {
-		return fmt.Errorf("failed to create the archive: %w", err)
-	}
+// writeArchiveAtomically writes the entries to the staged file beside the target and
+// moves it into place, so a failure part-way cannot leave a partial archive that looks
+// complete. Without overwrite the move refuses a name that already exists. It takes
+// the writer constructor so the seam is exercised by the command, not merely
+// implemented beside it. The caller removes the staged file if it is not published.
+func writeArchiveAtomically(outputPath string, overwrite bool, tmp *os.File, entries []bundleEntry,
+	makeWriter func(*os.File) archiveWriter) error {
 	tmpName := tmp.Name()
-	defer func() {
-		_ = tmp.Close()
-		_ = os.Remove(tmpName) // no-op once renamed
-	}()
-
 	w := makeWriter(tmp)
 	for _, e := range entries {
 		if err := w.Add(e.path, e.data); err != nil {
@@ -855,11 +983,148 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close the archive: %w", err)
 	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		return fmt.Errorf("failed to set archive permissions: %w", err)
+	if overwrite {
+		return platformNoClobber.replace(tmpName, outputPath)
 	}
-	if err := os.Rename(tmpName, outputPath); err != nil {
-		return fmt.Errorf("failed to write %s: %w", outputPath, err)
+	return platformNoClobber.publish(tmpName, outputPath)
+}
+
+// noClobberOps publishes a staged file under a name that must not already exist. The
+// existence check before any document is read cannot stop a file appearing at -o while
+// the archive is built, so publication itself refuses: an exclusive rename where the
+// filesystem has one, else a hard link, which also refuses an existing name. Neither
+// ever falls back to a replacing rename. The functions are fields so the fallback
+// order can be tested without a filesystem that lacks each primitive.
+type noClobberOps struct {
+	rename            func(oldpath, newpath string) error
+	renameUnsupported func(error) bool
+	link              func(oldpath, newpath string) error
+	linkUnsupported   func(error) bool
+	remove            func(name string) error
+	syncDir           func(dir string) error
+}
+
+var platformNoClobber = noClobberOps{
+	rename:            renameNoReplace,
+	renameUnsupported: renameUnsupported,
+	link:              os.Link,
+	linkUnsupported:   linkUnsupported,
+	remove:            os.Remove,
+	syncDir:           syncDir,
+}
+
+func (o noClobberOps) publish(staged, out string) error {
+	err := o.rename(staged, out)
+	if err != nil && o.renameUnsupported(err) {
+		linkErr := o.link(staged, out)
+		if linkErr == nil {
+			// The archive is published under out; the staged name is only a second link
+			// to it, and leaving it would leave a copy of the archive behind.
+			var after []error
+			if rmErr := o.remove(staged); rmErr != nil && !errors.Is(rmErr, fs.ErrNotExist) {
+				after = append(after, &afterPublicationError{step: "removing the staged copy", err: rmErr})
+			}
+			return o.durable(out, after...)
+		}
+		if o.linkUnsupported(linkErr) {
+			return fmt.Errorf("-o %s: this filesystem can neither rename nor link a file into "+
+				"place without the risk of replacing one created during the run (%v; %v); "+
+				"write to another directory, or pass --overwrite to allow replacement",
+				out, opCause(err), opCause(linkErr))
+		}
+		err = linkErr
 	}
-	return nil
+	if err == nil {
+		return o.durable(out)
+	}
+	if errors.Is(err, fs.ErrExist) {
+		return describeTakenOutput(out)
+	}
+	return &writeError{out: out, err: err}
+}
+
+// replace is --overwrite: an ordinary rename, which replaces whatever is at out.
+func (o noClobberOps) replace(staged, out string) error {
+	if err := os.Rename(staged, out); err != nil {
+		return &writeError{out: out, err: err}
+	}
+	return o.durable(out)
+}
+
+// durable flushes the directory entry once out is published. Every failure here, and
+// any passed in, comes after publication, so it is reported as such and the archive is
+// kept.
+func (o noClobberOps) durable(out string, after ...error) error {
+	if err := o.syncDir(filepath.Dir(out)); err != nil {
+		after = append(after, &afterPublicationError{step: "flushing its directory entry to disk", err: err})
+	}
+	if len(after) == 0 {
+		return nil
+	}
+	return &archivePublishedError{out: out, errs: after}
+}
+
+// stagingError is a failure to create the staged archive. It names -o and the
+// operation's cause, never the staged file's name, which the operator never typed.
+type stagingError struct {
+	out string
+	err error
+}
+
+func (e *stagingError) Error() string { return "-o " + e.out + ": " + opCause(e.err) }
+
+func (e *stagingError) Unwrap() error { return e.err }
+
+// writeError is a publication failure before the archive reached -o. It names -o and
+// the operation's cause, never the staged file's name, which the operator never typed.
+type writeError struct {
+	out string
+	err error
+}
+
+func (e *writeError) Error() string {
+	return fmt.Sprintf("failed to write %s: %s", e.out, opCause(e.err))
+}
+
+func (e *writeError) Unwrap() error { return e.err }
+
+// afterPublicationError is one step that failed once the archive was already at -o.
+type afterPublicationError struct {
+	step string
+	err  error
+}
+
+func (e *afterPublicationError) Error() string { return e.step + " failed: " + opCause(e.err) }
+
+func (e *afterPublicationError) Unwrap() error { return e.err }
+
+// archivePublishedError is a failure after the archive reached -o: the archive is
+// there, so nothing may report the path as unchanged.
+type archivePublishedError struct {
+	out  string
+	errs []error
+}
+
+func (e *archivePublishedError) Error() string {
+	parts := make([]string, len(e.errs))
+	for i, err := range e.errs {
+		parts[i] = err.Error()
+	}
+	return fmt.Sprintf("the archive was written to %s, but %s", e.out, strings.Join(parts, "; and "))
+}
+
+func (e *archivePublishedError) Unwrap() []error { return e.errs }
+
+// opCause renders a rename, link or remove failure as its operation and cause, leaving
+// out the staged file's name, which the operator never typed.
+func opCause(err error) string {
+	var le *os.LinkError
+	if errors.As(err, &le) {
+		return le.Op + ": " + le.Err.Error()
+	}
+	var pe *os.PathError
+	if errors.As(err, &pe) {
+		return pe.Op + ": " + pe.Err.Error()
+	}
+	return err.Error()
 }

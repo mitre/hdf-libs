@@ -193,6 +193,8 @@ func TestReadFromStdin_TooLarge(t *testing.T) {
 	_, readErr := readFromStdin(false)
 	require.Error(t, readErr)
 	assert.Contains(t, readErr.Error(), "input too large")
+	assert.Contains(t, readErr.Error(), "stdin exceeds 1 MB limit")
+	assert.Contains(t, readErr.Error(), "--max-size")
 }
 
 func TestReadFromStdin_ValidData(t *testing.T) {
@@ -501,9 +503,9 @@ func buildBaselineFixtureJSON(t *testing.T) []byte {
 	t.Helper()
 	baseline := map[string]any{
 		"name": "test-baseline",
-		"checksum": map[string]any{
+		"integrity": map[string]any{
 			"algorithm": "sha256",
-			"value":     "abc123",
+			"checksum":  "abc123",
 		},
 		"depends":  []any{},
 		"groups":   []any{},
@@ -537,8 +539,8 @@ func buildResultsFixtureJSON(t *testing.T) []byte {
 	results := map[string]any{
 		"baselines": []any{
 			map[string]any{
-				"name":     "test-baseline",
-				"checksum": map[string]any{"algorithm": "sha256", "value": "abc"},
+				"name":      "test-baseline",
+				"integrity": map[string]any{"algorithm": "sha256", "checksum": "abc"},
 				"requirements": []any{
 					map[string]any{
 						"id":           "REQ-001",

@@ -754,3 +754,62 @@ describe('filter by the baseline s labels', () => {
     expect(labelMatchesGlob(undefined, 'environment', '*')).toBe(false);
   });
 });
+
+// Parity with hdf-cli's TestQuerySearchFlagHelpNamesEveryMatchedField and
+// TestQueryNISTBareValueIsExactAndHelpSaysSo. These pin two documented claims
+// that nothing else enforced: that `search` reaches id, title and description but
+// NOT code, and that a bare `nist` value is exact.
+describe('documented search and nist semantics', () => {
+  const needle = 'zqneedleqz';
+
+  // Each case must isolate ONE field. testhdf.req defaults the default
+  // description's data to the id, so `req(needle)` alone would put the needle in
+  // two fields and the id case would pass even with id matching deleted.
+  it('search reaches id, title and description', () => {
+    for (const [field, doc] of [
+      ['id', testhdf.results(testhdf.req(needle, { title: 'ordinary', desc: 'ordinary' }))],
+      ['title', testhdf.results(testhdf.req('R1', { title: needle, desc: 'ordinary' }))],
+      ['description', testhdf.results(testhdf.req('R1', { title: 'ordinary', desc: needle }))],
+    ] as const) {
+      expect(filter(doc, { search: needle }), field).toHaveLength(1);
+    }
+  });
+
+  // A source comment claimed `search` reached "title, description and code".
+  // It never read code — in either language — so this pins the corrected claim.
+  it('search does NOT reach code', () => {
+    const doc = testhdf.results(testhdf.req('R1', { code: needle }));
+    expect(filter(doc, { search: needle })).toHaveLength(0);
+  });
+
+  it('a bare nist value is exact; a glob reaches enhancements and sub-parts', () => {
+    const withNist = (nist: string[]): HDFResults =>
+      testhdf.results(testhdf.req('R1', { tags: { nist } }));
+
+    expect(ids(filter(withNist(['AC-2 (1)']), { nist: 'AC-2' }))).toEqual([]);
+    expect(ids(filter(withNist(['AC-2(1)']), { nist: 'AC-2' }))).toEqual([]);
+    expect(ids(filter(withNist(['CM-6 b']), { nist: 'CM-6' }))).toEqual([]);
+    expect(ids(filter(withNist(['AC-2']), { nist: 'AC-2' }))).toEqual(['R1']);
+    expect(ids(filter(withNist(['AC-2 (1)']), { nist: 'AC-2*' }))).toEqual(['R1']);
+    expect(ids(filter(withNist(['AC-2(1)']), { nist: 'AC-2*' }))).toEqual(['R1']);
+    expect(ids(filter(withNist(['CM-6 b']), { nist: 'CM-6*' }))).toEqual(['R1']);
+    expect(ids(filter(withNist(['AC-2 (1)']), { nist: 'AC-*' }))).toEqual(['R1']);
+  });
+});
+
+// Pins the README's claim that cci is NOT a glob but case-insensitive equality,
+// so the two axes cannot be assumed to behave alike.
+describe('cci is equality, not a glob', () => {
+  const withCci = (cci: string[]): HDFResults =>
+    testhdf.results(testhdf.req('R1', { tags: { cci } }));
+
+  it('matches case-insensitively and exactly', () => {
+    expect(filter(withCci(['CCI-000213']), { cci: 'cci-000213' })).toHaveLength(1);
+    expect(filter(withCci(['CCI-000213']), { cci: 'CCI-000213' })).toHaveLength(1);
+  });
+
+  it('does not glob', () => {
+    expect(filter(withCci(['CCI-000213']), { cci: 'CCI-*' })).toHaveLength(0);
+    expect(filter(withCci(['CCI-000213']), { cci: 'CCI-000' })).toHaveLength(0);
+  });
+});

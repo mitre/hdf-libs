@@ -96,3 +96,9 @@ auditConfig:
     # dev-server path check); 5.4.21 is the last 5.x and fixes start at 6.4.4, so it
     # clears with the same vitepress 2.x bump (tracked: hdf-libs-34nl).
     - "GHSA-587h-7wmj-h5pm"
+    # GHSA-fc5q-39xc-vjpf — picomatch <=4.0.7 ReDoS on crafted extglobs; no
+    # patched release exists (4.0.7 is the latest). It reaches us only through
+    # dev tooling (vite, vitest, tsdown, tinyglobby, fdir, lint-staged) matching
+    # our own config patterns, never untrusted input; clears when a fixed
+    # picomatch ships.
+    - "GHSA-fc5q-39xc-vjpf"

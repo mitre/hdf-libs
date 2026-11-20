@@ -1,0 +1,885 @@
+[
+  {
+    "name": "underscore reference",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "hyphen reference",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "distinct references",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "duplicate references",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "references": [
+                "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+              ],
+              "source-rule-url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go",
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "no source references",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {},
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": []
+  },
+  {
+    "name": "empty underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": "",
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "empty hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": "",
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "redacted underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": "requires login",
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "redacted hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": "requires login",
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "null underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": null,
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "null hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": null,
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "number underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": 12,
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "number hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": 12,
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "boolean underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": true,
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "boolean hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": true,
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "array underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": [
+                "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+              ],
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "array hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": [
+                "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+              ],
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "object underscore does not mask hyphen",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source_rule_url": {
+                "url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+              },
+              "source-rule-url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+    ]
+  },
+  {
+    "name": "object hyphen does not mask underscore",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source-rule-url": {
+                "url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+              },
+              "source_rule_url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": [
+      "https://github.com/securego/gosec/blob/master/rules/unsafe.go"
+    ]
+  },
+  {
+    "name": "unrecognized punctuation is not inferred",
+    "input": {
+      "version": "1.183.0",
+      "results": [
+        {
+          "check_id": "use-of-unsafe-block",
+          "path": "unsafe.go",
+          "start": {
+            "line": 21,
+            "col": 27,
+            "offset": 366
+          },
+          "end": {
+            "line": 21,
+            "col": 52,
+            "offset": 391
+          },
+          "extra": {
+            "message": "Using the unsafe package in Go gives you low-level memory management and many of the strengths of the C language, but also steps around the type safety of Go and can lead to buffer overflows and possible arbitrary code execution by an attacker. Only use this package if you absolutely know what you're doing.",
+            "metadata": {
+              "source.rule.url": "https://github.com/securego/gosec/blob/master/rules/unsafe.go",
+              "sourceRuleUrl": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            },
+            "severity": "WARNING",
+            "fingerprint": "requires login",
+            "lines": "requires login",
+            "validation_state": "NO_VALIDATOR",
+            "engine_kind": "OSS"
+          }
+        }
+      ],
+      "errors": [],
+      "paths": {
+        "scanned": [
+          "subprocess-shell-true.py",
+          "unsafe.go"
+        ]
+      }
+    },
+    "urls": []
+  }
+]

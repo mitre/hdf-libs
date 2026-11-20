@@ -101,7 +101,22 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	if threat := buildThreat(req); threat != nil {
 		obj["threat"] = threat
 	}
-	// log.origin.file.* from the requirement's source location (control file/line).
+	if log := buildSourceLocation(req); log != nil {
+		obj["log"] = log
+	}
+	// labels.* — override provenance (disposition/type/reason/approver/dates).
+	if labels := buildLabels(req); labels != nil {
+		obj["labels"] = labels
+	}
+	// hdf.* lossless block, with the baseline's metadata beyond its name.
+	hdf := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
+	exportmap.AddBaselineMetadata(hdf, baseline)
+	obj["hdf"] = hdf
+
+	return obj
+}
+
+func buildSourceLocation(req map[string]interface{}) map[string]interface{} {
 	if sl, ok := exportmap.AsMap(req["sourceLocation"]); ok {
 		file := map[string]interface{}{}
 		exportmap.SetIf(file, "name", exportmap.GetStr(sl, "ref"))
@@ -109,25 +124,10 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 			file["line"] = line
 		}
 		if len(file) > 0 {
-			obj["log"] = map[string]interface{}{"origin": map[string]interface{}{"file": file}}
+			return map[string]interface{}{"origin": map[string]interface{}{"file": file}}
 		}
 	}
-	// labels.* — override provenance (disposition/type/reason/approver/dates).
-	if labels := buildLabels(req); labels != nil {
-		obj["labels"] = labels
-	}
-	// hdf.* lossless block, plus the baseline fields the shared allowlist omits
-	// (title and integrity checksum) so the block stays genuinely lossless.
-	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
-	obj["hdf"] = hdf
-
-	return obj
+	return nil
 }
 
 // buildLabels surfaces override provenance into ECS labels.* (keyword bag): the

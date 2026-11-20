@@ -145,7 +145,11 @@ Examples:
 For more information: https://github.com/mitre/hdf-libs`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRun: func(_ *cobra.Command, _ []string) {
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+			if gf.MaxSizeMB > maxMaxSizeMB {
+				return fmt.Errorf("--max-size %d is over the largest supported value, %d MB",
+					gf.MaxSizeMB, maxMaxSizeMB)
+			}
 			// Sync local flags to global variables for helper functions
 			jsonOutput = gf.JSONOutput
 			debug = gf.Debug
@@ -156,6 +160,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 			noHeaders = gf.NoHeaders
 
 			initConfig()
+			return nil
 		},
 	}
 

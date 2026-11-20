@@ -478,11 +478,10 @@ func outputSizeWarning(outputLen int) string {
 	if outputLen <= hdfutil.DefaultMaxInputSize {
 		return ""
 	}
-	const mib = 1024 * 1024
-	needMB := (outputLen + mib - 1) / mib
+	needMB := (outputLen + bytesPerMB - 1) / bytesPerMB
 	return fmt.Sprintf(
 		"output is %d bytes, larger than the %d MB default read limit; downstream commands will need --max-size %d to read it.",
-		outputLen, hdfutil.DefaultMaxInputSize/mib, needMB)
+		outputLen, hdfutil.DefaultMaxInputSize/bytesPerMB, needMB)
 }
 
 // applyNistOptions reads the --nist-rev and --nist-strict flags and sets the

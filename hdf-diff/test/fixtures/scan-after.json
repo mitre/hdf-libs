@@ -5,7 +5,7 @@
       "title": "RHEL 9 STIG Baseline",
       "version": "1.1.0",
       "inputs": [],
-      "checksum": { "algorithm": "sha256", "value": "def456" },
+      "integrity": { "algorithm": "sha256", "checksum": "def456" },
       "depends": [],
       "groups": [
         {
@@ -81,5 +81,5 @@
   ],
   "statistics": { "duration": 0.24 },
   "timestamp": "2024-02-01T00:00:00Z",
-  "targets": [{ "type": "host", "name": "rhel9-server-01" }]
+  "components": [{ "type": "host", "name": "rhel9-server-01" }]
 }

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -259,6 +260,98 @@ func TestHdfValidate_TokenBounded(t *testing.T) {
 	}
 	if out.Notice == "" {
 		t.Fatal("truncation must state its remedy")
+	}
+	if len(mustJSON(&out)) > 4*ValidateResponseTokenCap {
+		t.Fatal("the token budget must include the truncation notice")
+	}
+}
+
+func TestHdfValidate_EvidenceErrorLimitNotice(t *testing.T) {
+	for _, mode := range []string{"checksums", "completeness"} {
+		for _, count := range []int{10, 11} {
+			t.Run(fmt.Sprintf("%s/%d", mode, count), func(t *testing.T) {
+				base := evidencePkg("", contentEntry("hdf-results", "results.json", ""))
+				_, valid := callValidate(t, validateInput{Content: string(base), Mode: "schema"})
+				if !valid.Valid {
+					t.Fatalf("the unmodified package must be valid: %+v", valid)
+				}
+				var doc map[string]any
+				if err := json.Unmarshal(base, &doc); err != nil {
+					t.Fatal(err)
+				}
+				for i := range count {
+					doc[fmt.Sprintf("undeclared%d", i)] = true
+				}
+				data, err := json.Marshal(doc)
+				if err != nil {
+					t.Fatal(err)
+				}
+				res, out := callValidate(t, validateInput{Content: string(data), Mode: mode})
+				wantCount := 10
+				if mode == "completeness" {
+					wantCount++ // The missing planRef is an additional completeness error.
+				}
+				if res.IsError || out.Valid || len(out.Errors) != wantCount {
+					t.Fatalf("unexpected validation result: %+v / %+v", res, out)
+				}
+				if count > 10 {
+					if !strings.Contains(out.Notice, "truncated") || !strings.Contains(out.Notice, "re-run") {
+						t.Fatalf("omitted schema errors need a notice and remedy: %+v", out)
+					}
+				} else if out.Notice != "" {
+					t.Fatalf("exactly ten errors must not claim truncation: %q", out.Notice)
+				}
+			})
+		}
+	}
+}
+
+func TestHdfValidate_SchemaErrorLimitNotice(t *testing.T) {
+	for _, docType := range []string{"", "hdf-results"} {
+		for _, tc := range []struct {
+			name       string
+			manyErrors bool
+			wantValid  bool
+			wantCount  int
+		}{
+			{"valid", false, true, 0},
+			{"single error", false, false, 1},
+			{"many errors", true, false, loader.DefaultMaxErrors},
+		} {
+			t.Run(docType+"/"+tc.name, func(t *testing.T) {
+				var doc map[string]any
+				if err := json.Unmarshal(fixtures.Results.Minimal, &doc); err != nil {
+					t.Fatal(err)
+				}
+				if tc.manyErrors {
+					// Each component fails oneOf and format: six of them exceed the cap.
+					components := make([]any, 6)
+					for i := range components {
+						components[i] = map[string]any{
+							"type": "host", "name": "probe", "componentId": "not-a-uuid",
+						}
+					}
+					doc["components"] = components
+				} else if !tc.wantValid {
+					doc["timestamp"] = "not-a-timestamp"
+				}
+				data, err := json.Marshal(doc)
+				if err != nil {
+					t.Fatal(err)
+				}
+				res, out := callValidate(t, validateInput{Content: string(data), DocType: docType, Mode: "schema"})
+				if res.IsError || out.Valid != tc.wantValid || len(out.Errors) != tc.wantCount {
+					t.Fatalf("unexpected validation result: %+v / %+v", res, out)
+				}
+				if tc.manyErrors {
+					if !strings.Contains(out.Notice, "truncated") || !strings.Contains(out.Notice, "re-run") {
+						t.Fatalf("omitted errors need a truncation notice and remedy: %+v", out)
+					}
+				} else if out.Notice != "" {
+					t.Fatalf("complete error list must not claim truncation: %q", out.Notice)
+				}
+			})
+		}
 	}
 }
 
@@ -916,5 +1009,36 @@ func TestHdfValidate_Completeness_KeepsTheLoadersVerdictOnAnInvalidPackage(t *te
 	}
 	if !schemaNamed {
 		t.Errorf("the loader's schema error must survive the early return, got %+v", out.Errors)
+	}
+}
+
+// The read itself is bounded by the ceiling, independently of the Stat that precedes
+// it, so a referenced file that delivers more bytes than it reported is refused rather
+// than buffered whole. The error names the uri only.
+func TestReadReferenced_RejectsBytesBeyondTheCeiling(t *testing.T) {
+	data, err := readReferenced(strings.NewReader(strings.Repeat("x", 65)), "sub/scan.json", 64)
+	if err == nil {
+		t.Fatalf("65 bytes over a 64-byte ceiling must error, got %d bytes", len(data))
+	}
+	if !strings.Contains(err.Error(), `"sub/scan.json"`) || !strings.Contains(err.Error(), "64") {
+		t.Errorf("error %q should name the uri and the limit", err)
+	}
+	data, err = readReferenced(strings.NewReader(strings.Repeat("x", 64)), "sub/scan.json", 64)
+	if err != nil || len(data) != 64 {
+		t.Fatalf("64 bytes within a 64-byte ceiling must read whole, got %d bytes / %v", len(data), err)
+	}
+}
+
+func TestReadReferenced_ReadFailureNamesOnlyTheURI(t *testing.T) {
+	cause := errors.New("read /srv/evidence/root/sub/scan.json: input/output error")
+	_, err := readReferenced(iotest.ErrReader(cause), "sub/scan.json", 64)
+	if err == nil {
+		t.Fatal("a failing reader must error")
+	}
+	if strings.Contains(err.Error(), "/srv/evidence") {
+		t.Errorf("error %q leaked the cause's absolute path", err)
+	}
+	if !strings.Contains(err.Error(), `"sub/scan.json"`) {
+		t.Errorf("error %q should name the uri", err)
 	}
 }
