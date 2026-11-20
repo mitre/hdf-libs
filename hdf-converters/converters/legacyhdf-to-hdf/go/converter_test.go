@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -1768,4 +1770,277 @@ func TestConvertLegacyHDF_AbsentImpactMarksUnrated(t *testing.T) {
 			assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
 		})
 	}
+}
+
+// ── InSpec input types and options.default ────────────────────────────────
+
+// inputTypeCase is one row of the table the TypeScript peer also reads, so the
+// two implementations are asserted against ONE definition rather than two
+// literals that can drift apart. Want is nil when the type has no counterpart
+// in HDF's Input_Type and must therefore be omitted.
+type inputTypeCase struct {
+	Name string  `json:"name"`
+	Type string  `json:"type"`
+	Want *string `json:"want"`
+}
+
+// inputValueCase is the other half of the shared table: how the input value is
+// sourced from options.value / options.default. Present is false when no value
+// key may be emitted at all.
+type inputValueCase struct {
+	Name    string                 `json:"name"`
+	Options map[string]interface{} `json:"options"`
+	Present bool                   `json:"present"`
+	Value   interface{}            `json:"value"`
+}
+
+func loadInputTable(t *testing.T) (types []inputTypeCase, values []inputValueCase) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "inspec-input-type-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		Cases      []inputTypeCase  `json:"cases"`
+		ValueCases []inputValueCase `json:"valueCases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	require.NotEmpty(t, table.ValueCases, "an empty table would pass vacuously")
+	return table.Cases, table.ValueCases
+}
+
+func loadInputTypeCases(t *testing.T) []inputTypeCase {
+	t.Helper()
+	types, _ := loadInputTable(t)
+	return types
+}
+
+// legacyDocWithOptions builds a legacy document whose single attribute carries
+// the given options object, so assertions run through the real conversion path.
+func legacyDocWithOptions(t *testing.T, options map[string]interface{}) *hdf.HDFResults {
+	t.Helper()
+	attr := map[string]interface{}{"name": "max_age", "options": options}
+	doc := map[string]interface{}{
+		"version":    "4.16.0",
+		"platform":   map[string]interface{}{"name": "centos", "release": "7"},
+		"statistics": map[string]interface{}{"duration": 0.1},
+		"profiles": []interface{}{map[string]interface{}{
+			"name": "p", "sha256": "abc", "supports": []interface{}{}, "groups": []interface{}{},
+			"attributes": []interface{}{attr},
+			"controls": []interface{}{map[string]interface{}{
+				"id": "V-1", "title": "t", "impact": 0.5, "tags": map[string]interface{}{},
+				"refs": []interface{}{}, "source_location": map[string]interface{}{"ref": "c.rb", "line": 1},
+				"results": []interface{}{map[string]interface{}{
+					"status": "passed", "code_desc": "c", "start_time": "2026-01-02T03:04:05Z",
+				}},
+			}},
+		}},
+	}
+	raw, err := json.Marshal(doc)
+	require.NoError(t, err)
+	legacy := validators.ValidateLegacyV2(raw)
+	require.Truef(t, legacy.Valid, "the input must be a document the legacy schema accepts: %s", legacy.Error())
+	v1, err := ParseLegacyHDF(raw)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	body, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(body, validators.TypeResults)
+	require.Truef(t, v.Valid, "converted output must validate: %s", v.Error())
+	return out
+}
+
+func firstInput(t *testing.T, out *hdf.HDFResults) hdf.Input {
+	t.Helper()
+	require.Len(t, out.Baselines, 1)
+	require.Len(t, out.Baselines[0].Inputs, 1)
+	return out.Baselines[0].Inputs[0]
+}
+
+func TestConvertAttributes_InputTypeMatchesSharedTable(t *testing.T) {
+	for _, c := range loadInputTypeCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			in := firstInput(t, legacyDocWithOptions(t, map[string]interface{}{"type": c.Type, "value": "v"}))
+			if c.Want == nil {
+				assert.Nil(t, in.Type, "type %q has no Input_Type counterpart, so it must be omitted", c.Type)
+				return
+			}
+			require.NotNil(t, in.Type, "type %q should have mapped to %q", c.Type, *c.Want)
+			assert.Equal(t, *c.Want, string(*in.Type))
+		})
+	}
+}
+
+// The value-sourcing rules are implemented twice, so they are asserted against
+// the same shared table the TypeScript suite reads.
+func TestConvertAttributes_ValueSourcingMatchesSharedTable(t *testing.T) {
+	_, cases := loadInputTable(t)
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			options := map[string]interface{}{"type": "String"}
+			for k, v := range c.Options {
+				options[k] = v
+			}
+			in := firstInput(t, legacyDocWithOptions(t, options))
+			if !c.Present {
+				assert.Nil(t, in.Value, "no value key may be emitted")
+				return
+			}
+			assert.Equal(t, c.Value, in.Value)
+		})
+	}
+}
+
+// ── A legacy null is absence, not a value (TypeScript parity) ─────────────
+
+// Go omits these by construction (*string / *float64 + omitempty) and so is the
+// reference the TypeScript converter was corrected against. This pins the
+// behaviour so Go cannot regress into copying a null through.
+func TestConvertLegacyHDF_LegacyNullsAreOmitted(t *testing.T) {
+	doc := []byte(`{"version":"4.16.0","platform":{"name":"centos","release":"7"},
+"statistics":{"duration":null},
+"profiles":[{"name":"p","sha256":"abc","supports":[],"attributes":[],
+  "version":null,"title":null,"maintainer":null,"summary":null,"license":null,
+  "copyright":null,"copyright_email":null,"status":null,"status_message":null,
+  "skip_message":null,"parent_profile":null,"depends":null,
+  "groups":[{"id":"g-1","title":null,"controls":["V-1"]}],
+  "controls":[{"id":"V-1","title":"t","impact":0.5,"tags":{},"refs":[],
+    "source_location":{"ref":"c.rb","line":1},
+    "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	b := out.Baselines[0]
+	assert.Nil(t, b.Version)
+	assert.Nil(t, b.Title)
+	assert.Nil(t, b.Maintainer)
+	assert.Nil(t, b.Summary)
+	assert.Nil(t, b.License)
+	assert.Nil(t, b.Copyright)
+	assert.Nil(t, b.CopyrightEmail)
+	assert.Nil(t, b.Status)
+	assert.Nil(t, b.StatusMessage)
+	assert.Nil(t, b.ParentBaseline)
+	require.Len(t, b.Groups, 1)
+	assert.Nil(t, b.Groups[0].Title)
+	require.NotNil(t, out.Statistics)
+	assert.Nil(t, out.Statistics.Duration)
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), `:null`, "no null may reach a field the results schema types as non-nullable")
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "all-null legacy input must convert to valid output: %s", v.Error())
+}
+
+// Covers the remaining option branches alongside the skip paths: an attribute
+// with no usable name contributes nothing, and a nil options object yields a
+// bare name.
+func TestConvertAttributes_OptionBranchesAndSkips(t *testing.T) {
+	attrs := []map[string]interface{}{
+		{"name": "", "options": map[string]interface{}{"type": "String"}},
+		{"options": map[string]interface{}{"type": "String"}},
+		{"name": "bare"},
+		{"name": "full", "options": map[string]interface{}{
+			"type": "string", "value": "v",
+			"description": "what it controls", "sensitive": true, "required": true,
+		}},
+		{"name": "wrongly typed options", "options": map[string]interface{}{
+			"description": 1, "sensitive": "yes", "required": "no", "type": 7,
+		}},
+	}
+
+	got := convertAttributes(attrs)
+	require.Len(t, got, 3, "the nameless and name-less attributes are skipped")
+
+	assert.Equal(t, "bare", got[0].Name)
+	assert.Nil(t, got[0].Type)
+	assert.Nil(t, got[0].Value)
+	assert.Nil(t, got[0].Description)
+
+	full := got[1]
+	assert.Equal(t, "full", full.Name)
+	require.NotNil(t, full.Type)
+	assert.Equal(t, "String", string(*full.Type))
+	assert.Equal(t, "v", full.Value)
+	require.NotNil(t, full.Description)
+	assert.Equal(t, "what it controls", *full.Description)
+	require.NotNil(t, full.Sensitive)
+	assert.True(t, *full.Sensitive)
+	require.NotNil(t, full.Required)
+	assert.True(t, *full.Required)
+
+	// A non-string/non-bool option is not coerced; it is left off.
+	mistyped := got[2]
+	assert.Nil(t, mistyped.Description)
+	assert.Nil(t, mistyped.Sensitive)
+	assert.Nil(t, mistyped.Required)
+	assert.Nil(t, mistyped.Type)
+}
+
+// The TypeScript peer derives this surface from the legacy schema; Go gets it
+// free from typed pointers, so this pins that immunity rather than fixing a
+// defect. If someone ever retypes a legacy field as a non-pointer, this fails.
+func TestConvertLegacyHDF_NullsAcrossTheWholeLegacySurface(t *testing.T) {
+	doc := []byte(`{"version":"4.16.0","platform":{"name":"centos","release":"7","target_id":null},
+"statistics":{"duration":null,"controls":null},
+"profiles":[{"name":"p","sha256":"abc","attributes":[],
+  "title":null,"maintainer":null,"copyright":null,"copyright_email":null,
+  "parent_profile":null,"license":null,"summary":null,"description":null,
+  "inspec_version":null,"status":null,"status_message":null,"skip_message":null,"version":null,
+  "supports":[{"platform":null,"platform-family":null,"platform-name":null,"release":null}],
+  "depends":[{"name":null,"url":null,"branch":null,"path":null,"status_message":null,
+              "status":null,"git":null,"supermarket":null,"compliance":null}],
+  "groups":[{"id":"g-1","title":null,"controls":["V-1"]}],
+  "controls":[{"id":"V-1","impact":0.5,"tags":{},"refs":[],
+    "source_location":{"ref":null,"line":null},
+    "title":null,"desc":null,"descriptions":null,"code":null,
+    "waiver_data":null,"attestation_data":null,
+    "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z",
+      "run_time":null,"resource":null,"message":null,"skip_message":null,
+      "exception":null,"resource_id":null,"backtrace":null}]}]}]}`)
+
+	legacy := validators.ValidateLegacyV2(doc)
+	require.Truef(t, legacy.Valid, "the input must be legacy-valid: %s", legacy.Error())
+
+	v1, err := ParseLegacyHDF(doc)
+	require.NoError(t, err)
+	out := ConvertLegacyHDF(v1, "1.0.0")
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), `:null`, "no null may reach a non-nullable results field")
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "an all-null legacy document must convert to valid output: %s", v.Error())
+}
+
+// The generated Go types expose no enumerable Input_Type list, so this map is
+// written out by hand. The shared table carries the enum's membership and the
+// TypeScript peer asserts the generated enum still matches it, so a new member
+// fails there, and updating the table fails here until this map handles it.
+func TestInputTypeMapCoversTheDeclaredEnum(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "inspec-input-type-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		HDFInputTypes []string `json:"hdfInputTypes"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.HDFInputTypes, "an empty list would pass vacuously")
+
+	want := make([]string, 0, len(table.HDFInputTypes))
+	for _, member := range table.HDFInputTypes {
+		want = append(want, strings.ToLower(member))
+	}
+	got := make([]string, 0, len(inputTypeByLowercase))
+	for key, mapped := range inputTypeByLowercase {
+		got = append(got, key)
+		assert.Equal(t, strings.ToLower(string(mapped)), key,
+			"the map key must be its value lowercased, or normalization misses a spelling")
+	}
+	sort.Strings(want)
+	sort.Strings(got)
+	assert.Equal(t, want, got, "every declared Input_Type member needs a lowercase lookup entry")
 }
