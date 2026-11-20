@@ -2,6 +2,7 @@ package nessus
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -982,6 +983,79 @@ func TestCalculateTiming_UnparseableEndFallsBackToStart(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, result.Statistics.Duration)
 			assert.Zero(t, *result.Statistics.Duration, "the end time falls back to the start, not to now")
+		})
+	}
+}
+
+type computedSeverityCase struct {
+	Version          hdf.Version      `json:"version"`
+	Vector           string           `json:"vector"`
+	BaseScore        float64          `json:"baseScore"`
+	ComputedScore    float64          `json:"computedScore"`
+	ComputedSeverity hdf.CVSSSeverity `json:"computedSeverity"`
+	Note             string           `json:"note"`
+}
+
+func loadComputedSeverityCases(t *testing.T) []computedSeverityCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "cvss-computed-severity-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []computedSeverityCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+// syntheticNessusTemporalScan renders one ReportItem carrying the case's base
+// vector and score with its computed score as the temporal score, under the v2
+// or v3 element names the case's version selects.
+func syntheticNessusTemporalScan(c computedSeverityCase) string {
+	vectorEl, scoreEl, temporalEl := "cvss_vector", "cvss_base_score", "cvss_temporal_score"
+	if c.Version != hdf.The20 {
+		vectorEl, scoreEl, temporalEl = "cvss3_vector", "cvss3_base_score", "cvss3_temporal_score"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999997" pluginName="Synthetic Computed Severity Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99997</cvss_score_source>
+        <%[1]s>%[2]s</%[1]s>
+        <%[3]s>%[4]v</%[3]s>
+        <%[5]s>%[6]v</%[5]s>
+        <description>Synthetic finding for the computed-severity scale.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, vectorEl, c.Vector, scoreEl, c.BaseScore, temporalEl, c.ComputedScore)
+}
+
+// Nessus gives the temporal score, which the converter records as the computed
+// score; its severity must come from the entry's own version scale.
+func TestConvertNessusToHDF_ComputedSeverityFollowsTheEntryVersion(t *testing.T) {
+	for _, c := range loadComputedSeverityCases(t) {
+		t.Run(fmt.Sprintf("%s/%v", c.Version, c.ComputedScore), func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusTemporalScan(c)), converterVersion)
+			require.NoError(t, err)
+
+			req := findReqAcrossBaselines(result, "999997")
+			require.NotNil(t, req)
+			require.Len(t, req.Cvss, 1)
+			entry := req.Cvss[0]
+			assert.Equal(t, c.Version, entry.Version)
+			require.NotNil(t, entry.ComputedScore)
+			assert.InDelta(t, c.ComputedScore, *entry.ComputedScore, 1e-9)
+			require.NotNil(t, entry.ComputedSeverity)
+			assert.Equal(t, c.ComputedSeverity, *entry.ComputedSeverity, c.Note)
 		})
 	}
 }
