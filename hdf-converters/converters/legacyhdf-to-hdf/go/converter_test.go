@@ -2044,3 +2044,44 @@ func TestInputTypeMapCoversTheDeclaredEnum(t *testing.T) {
 	sort.Strings(got)
 	assert.Equal(t, want, got, "every declared Input_Type member needs a lowercase lookup entry")
 }
+
+// Twin of the TypeScript 'the legacy profile status explanation folds into one
+// declared slot' block. Legacy carries status_message and skip_message, which
+// overlap, while the closed baseline declares only statusMessage; this read
+// status_message and dropped skip_message outright. The table is shared so the
+// precedence cannot drift between the two languages.
+func TestConvertProfile_StatusExplanationMatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-profile-status-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		Cases []struct {
+			Name    string          `json:"name"`
+			Profile json.RawMessage `json:"profile"`
+			Want    *string         `json:"want"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			// Unmarshalled into the real legacy type, so an explicit null and an
+			// absent key both arrive as a nil pointer, which is what absence is.
+			var v1 LegacyProfile
+			require.NoError(t, json.Unmarshal(tc.Profile, &v1))
+			v1.Name = "p"
+			v1.SHA256 = hdfutil.Ptr("abc")
+			v1.Controls = []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5)}}
+
+			v2 := convertProfile(v1)
+
+			if tc.Want == nil {
+				assert.Nil(t, v2.StatusMessage)
+				return
+			}
+			require.NotNil(t, v2.StatusMessage)
+			assert.Equal(t, *tc.Want, *v2.StatusMessage)
+		})
+	}
+}

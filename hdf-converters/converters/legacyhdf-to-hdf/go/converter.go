@@ -499,7 +499,15 @@ func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
 	v2.Copyright = v1.Copyright
 	v2.CopyrightEmail = v1.CopyrightEmail
 	v2.Status = v1.Status
+
+	// Legacy carries two overlapping explanations and the closed baseline declares
+	// one slot: status_message is documented as covering why a profile was skipped,
+	// so it wins when it carries text, and skip_message is the older narrower field
+	// that was dropped here entirely.
 	v2.StatusMessage = v1.StatusMessage
+	if (v1.StatusMessage == nil || *v1.StatusMessage == "") && v1.SkipMessage != nil {
+		v2.StatusMessage = v1.SkipMessage
+	}
 
 	// Transform sha256 to integrity object
 	if v1.SHA256 != nil {

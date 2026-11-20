@@ -1,0 +1,64 @@
+{
+  "$comment": "Profile-level status explanation, read by one test per language. Legacy exec-json carries two overlapping fields \u2014 status_message, documented as \"the reason for the status, example: why it was skipped or failed to load\", and skip_message, \"the reason for skipping if it was skipped\" \u2014 while the closed Evaluated_Baseline declares only statusMessage. TypeScript used to emit skip_message under a skipMessage key the schema forbids, which passed only because the validator did not yet enforce unevaluatedProperties; Go read status_message and dropped skip_message outright. Both now fold into the one declared slot. `profile` is spliced into a legacy profile verbatim, so an absent key is an absent field and an explicit null is the null the legacy schema permits on both fields. `want: null` means statusMessage is omitted.",
+  "cases": [
+    {
+      "name": "status_message wins when it carries text",
+      "profile": {
+        "status_message": "could not load",
+        "skip_message": "skipped because of X"
+      },
+      "want": "could not load"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is absent",
+      "profile": {
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is empty",
+      "profile": {
+        "status_message": "",
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is null",
+      "profile": {
+        "status_message": null,
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "an empty status_message is kept when nothing else explains the status",
+      "profile": {
+        "status_message": ""
+      },
+      "want": ""
+    },
+    {
+      "name": "a null skip_message is absence, not data",
+      "profile": {
+        "status_message": "loaded fine",
+        "skip_message": null
+      },
+      "want": "loaded fine"
+    },
+    {
+      "name": "both null omits the slot",
+      "profile": {
+        "status_message": null,
+        "skip_message": null
+      },
+      "want": null
+    },
+    {
+      "name": "neither present omits the slot",
+      "profile": {},
+      "want": null
+    }
+  ]
+}

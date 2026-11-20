@@ -768,7 +768,15 @@ function convertProfile(v1Profile: LegacyProfile): V2Baseline {
   if (present(v1Profile.parent_profile)) {
     v2Baseline.parentBaseline = v1Profile.parent_profile;
   }
-  if (present(v1Profile.status_message)) {
+  // Legacy carries two overlapping explanations and the closed baseline declares
+  // one slot: status_message is documented as covering why a profile was skipped,
+  // so it wins when it carries text, and skip_message is the older narrower field
+  // that Go dropped and TypeScript emitted under a name the schema forbids.
+  if (present(v1Profile.status_message) && v1Profile.status_message !== '') {
+    v2Baseline.statusMessage = v1Profile.status_message;
+  } else if (present(v1Profile.skip_message)) {
+    v2Baseline.statusMessage = v1Profile.skip_message;
+  } else if (present(v1Profile.status_message)) {
     v2Baseline.statusMessage = v1Profile.status_message;
   }
 
