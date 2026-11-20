@@ -819,9 +819,8 @@ describe('Nessus to HDF Converter', async () => {
       expect(req!.tags.cvss_base_score).toBe('6.4');
     });
 
-    // Synthetic v2-only ReportItem: tests the legacy CVSS v2 branch +
-    // CVSS:3.1/ version detection + EPSS + multi-CWE pipe-delimited input.
-    // Real Nessus output occasionally lacks v3 fields for older plugins.
+    // Synthetic item with a 3.1 base vector and no base score: the shared
+    // builder scores the vector.
     it('scores a CVE finding that carries a vector but no base score', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
@@ -850,6 +849,9 @@ describe('Nessus to HDF Converter', async () => {
       expect(req!.cvss![0].baseSeverity).toBe('critical');
     });
 
+    // Synthetic v2-only ReportItem: the legacy CVSS v2 branch with the CVSS2#
+    // prefix stripped, EPSS, and pipe-delimited multi-CWE input. Real Nessus
+    // output occasionally lacks v3 fields for older plugins.
     it('handles v2-only CVE finding with EPSS, CVSS:3.1, multi-CWE', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
