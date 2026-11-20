@@ -822,6 +822,34 @@ describe('Nessus to HDF Converter', async () => {
     // Synthetic v2-only ReportItem: tests the legacy CVSS v2 branch +
     // CVSS:3.1/ version detection + EPSS + multi-CWE pipe-delimited input.
     // Real Nessus output occasionally lacks v3 fields for older plugins.
+    it('scores a CVE finding that carries a vector but no base score', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="4" pluginID="999998" pluginName="Synthetic Vector-Only Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99998</cvss_score_source>
+        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</cvss3_vector>
+        <description>Synthetic vector-only finding.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '999998');
+      expect(req!.cvss).toHaveLength(1);
+      expect(req!.cvss![0].version).toBe('3.1');
+      expect(req!.cvss![0].baseScore).toBe(10);
+      expect(req!.cvss![0].baseSeverity).toBe('critical');
+    });
+
     it('handles v2-only CVE finding with EPSS, CVSS:3.1, multi-CWE', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
@@ -859,7 +887,8 @@ describe('Nessus to HDF Converter', async () => {
       expect(c.version).toBe('2.0');
       expect(c.baseVector).toBe('AV:N/AC:L/Au:N/C:C/I:C/A:C'); // CVSS2# stripped
       expect(c.baseScore).toBeCloseTo(9.8, 3);
-      expect(c.baseSeverity).toBe('critical');
+      // CVSS 2.0 has no critical rating: 9.8 is high.
+      expect(c.baseSeverity).toBe('high');
       expect(c.threatVector).toBe('E:F/RL:OF/RC:C');
       expect(c.threatScore).toBeCloseTo(8.5, 3);
       expect(c.computedSeverity).toBe('high');

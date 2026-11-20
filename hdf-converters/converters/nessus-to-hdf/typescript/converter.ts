@@ -15,7 +15,7 @@ import type {
   Epss,
 } from '@mitre/hdf-schema';
 import { ResultStatus, TargetType, createMinimalBaseline, Version as CvssVersion } from '@mitre/hdf-schema';
-import { cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
+import { buildCvss, cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
@@ -376,21 +376,17 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
     threatScore = item.cvss_temporal_score ? parseFloatSafe(item.cvss_temporal_score) : undefined;
   }
 
-  // Only emit base fields that are actually present: an empty baseVector would
-  // fail the schema pattern, and a missing baseScore must not be coerced to 0.
-  const entry: Cvss = {version, source};
-  if (baseVector) entry.baseVector = baseVector;
-  if (baseScore !== undefined) {
-    entry.baseScore = baseScore;
-    entry.baseSeverity = cvssSeverityFromScore(baseScore);
-  }
+  // The shared builder omits an empty baseVector (it would fail the schema
+  // pattern), never coerces a missing baseScore to 0, and scores a vector that
+  // arrives without one.
+  const entry = buildCvss({version, baseScore, baseVector, source});
   if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
   if (threatScore !== undefined) {
     entry.threatScore = threatScore;
     // Per the spec, the temporal score IS the post-threat-enrichment
     // computed score for both v2 and v3.
     entry.computedScore = threatScore;
-    entry.computedSeverity = cvssSeverityFromScore(threatScore);
+    entry.computedSeverity = cvssSeverityFromScore(version, threatScore);
   }
 
   return [entry];

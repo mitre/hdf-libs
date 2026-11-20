@@ -69,7 +69,7 @@ func FuzzParseCvssVector(f *testing.F) {
 		}
 
 		if sc, err := ComputeCvssScore(s); err == nil {
-			assertCvssScoreBounds(t, s, sc, "3.1")
+			assertCvssScoreBounds(t, s, sc, version)
 			if sc.TemporalScore > sc.BaseScore {
 				t.Errorf("ComputeCvssScore(%q) temporal %v exceeds base %v", s, sc.TemporalScore, sc.BaseScore)
 			}
@@ -94,8 +94,8 @@ func assertCvssScoreBounds(t *testing.T, input string, sc CvssScore, wantVersion
 		t.Errorf("score for %q has version %q, want %q", input, sc.Version, wantVersion)
 	}
 	for _, score := range []float64{sc.BaseScore, sc.TemporalScore} {
-		if score < 0 || score > 10 {
-			t.Errorf("score for %q out of range [0,10]: %v", input, score)
+		if score < 0 || score > 10 || math.Signbit(score) {
+			t.Errorf("score for %q out of range [0,10] or negative zero: %v", input, score)
 		}
 		if math.Abs(score*10-math.Round(score*10)) > 1e-9 {
 			t.Errorf("score for %q not rounded to one decimal: %v", input, score)

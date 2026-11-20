@@ -209,6 +209,10 @@ func appendExternalReference(container map[string]interface{}, ref map[string]in
 	container["externalReferences"] = append(existing, ref)
 }
 
+// recomputeCvssVersion is the one CVSS version the exploitation recompute is
+// defined for: E:H is the 3.1 Exploit Maturity value it applies.
+const recomputeCvssVersion = "3.1"
+
 // recomputeExploitation authors an inline riskAdjustment on each CVE-matched
 // finding that (a) has a 3.1 base vector and (b) whose CVE carries a structural
 // exploitation signal in the bundle. Applies CVSS Exploit Maturity E:H (the 3.1
@@ -233,9 +237,12 @@ func recomputeExploitation(bundle *StixBundle, reqByID map[string][]map[string]i
 				continue // no base vector → cannot recompute honestly; skip
 			}
 			baseVector, _ := entry["baseVector"].(string)
+			if version, _ := hdfutil.ParseCvssVector(baseVector); version != recomputeCvssVersion {
+				continue // another CVSS version → skip, never fabricate
+			}
 			score, err := hdfutil.ComputeCvssScore(baseVector + "/E:H")
 			if err != nil {
-				continue // non-3.1 (e.g. 4.0) or unparseable → skip, never fabricate
+				continue // invalid 3.1 vector → skip, never fabricate
 			}
 			ov := buildRiskAdjustment(cve, baseVector, score, src, appliedAt, expiresAt)
 			existing, _ := req["statusOverrides"].([]interface{})
@@ -335,7 +342,7 @@ func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src ma
 		"appliedAt": appliedAt.Format(time.RFC3339),
 		"expiresAt": expiresAt.Format(time.RFC3339),
 		"cvss": map[string]interface{}{
-			"version":       "3.1",
+			"version":       score.Version,
 			"baseVector":    baseVector,
 			"baseScore":     score.BaseScore,
 			"threatVector":  "E:H",

@@ -321,6 +321,21 @@ describe('enrichStix — opt-in E:H recompute', () => {
     expect((requirementById(doc, 'CVE-2013-0422').statusOverrides as Doc[]) ?? []).toHaveLength(0);
   });
 
+  // The E:H recompute is defined for CVSS 3.1 only: an exploited finding whose
+  // base vector is another version gets no riskAdjustment, even though the
+  // scoring engine can score that version.
+  it.each([
+    ['2.0', 'AV:N/AC:M/Au:N/C:C/I:C/A:C'],
+    ['3.0', 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'],
+  ])('skips an exploited finding whose base vector is CVSS %s', (version, vector) => {
+    const results = JSON.parse(recResults()) as Doc;
+    requirementById(results, 'CVE-2012-0158').cvss = [{ version, id: 'CVE-2012-0158', baseVector: vector }];
+    const doc = JSON.parse(
+      enrichStix(JSON.stringify(results), recBundle(), { recomputeCvss: true, asOf }),
+    ) as Doc;
+    expect((requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[]) ?? []).toHaveLength(0);
+  });
+
   it('authors nothing unless recompute is opted in', () => {
     const doc = JSON.parse(enrichStix(recResults(), recBundle())) as Doc;
     for (const id of ['CVE-2012-0158', 'CVE-2009-4324', 'CVE-2013-0422']) {

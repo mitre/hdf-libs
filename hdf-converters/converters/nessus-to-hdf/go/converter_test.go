@@ -644,6 +644,21 @@ func TestBuildCvssEntries_V2OnlyWithCVE(t *testing.T) {
 	assert.InDelta(t, 5.1, *c.ComputedScore, 0.001)
 }
 
+// A CVE finding with a vector but no base score is scored from the vector, as
+// every converter's CVSS entry is.
+func TestBuildCvssEntries_V3VectorWithoutScore(t *testing.T) {
+	got := buildCvssEntries(&ReportItem{
+		CVSSScoreSource: "CVE-2024-99998",
+		CVSS3Vector:     "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+	})
+	require.Len(t, got, 1)
+	assert.Equal(t, hdf.The31, got[0].Version)
+	require.NotNil(t, got[0].BaseScore)
+	assert.InDelta(t, 10.0, *got[0].BaseScore, 0.001)
+	require.NotNil(t, got[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *got[0].BaseSeverity)
+}
+
 func TestBuildCvssEntries_NoCVEScoreSource(t *testing.T) {
 	// Non-CVE score source ("Tenable" or empty) should return nil.
 	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "Tenable", CVSSBaseScore: "5.0"}))
@@ -695,7 +710,7 @@ func TestCvssSeverityMapping(t *testing.T) {
 		{9.5, hdf.CVSSSeverityCritical},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(tt.score))
+		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(hdf.The31, tt.score))
 	}
 }
 

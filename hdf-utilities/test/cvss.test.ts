@@ -8,23 +8,49 @@ import {
   computeCvssScore,
   computeCvss40Score,
   cvss40MacroVector,
+  normalizeCvssMetrics,
 } from '../src/cvss/index.js';
-import { cvssScoreToSeverity } from '../src/severity/index.js';
+import { cvssScoreToSeverity, cvssSeverityForVersion } from '../src/severity/index.js';
 
-interface Cvss31Case {
+interface CvssScoreCase {
   vector: string;
   base: number;
   temporal: number;
   note: string;
 }
-const cvss31Cases: Cvss31Case[] = (
-  JSON.parse(
-    readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'cvss31-vectors.json'),
-      'utf-8',
-    ),
-  ) as { cases: Cvss31Case[] }
-).cases;
+// Shared vector files in testdata; the Go tests read the same files, so both
+// languages assert identical values.
+function loadVectorCases<T>(name: string): T[] {
+  return (
+    JSON.parse(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', name), 'utf-8'),
+    ) as { cases: T[] }
+  ).cases;
+}
+const cvss31Cases = loadVectorCases<CvssScoreCase>('cvss31-vectors.json');
+const cvss30Cases = loadVectorCases<CvssScoreCase>('cvss30-vectors.json');
+const cvss20Cases = loadVectorCases<CvssScoreCase>('cvss20-vectors.json');
+
+interface CvssSeverityCase {
+  version: string;
+  score: number;
+  severity: string;
+}
+
+describe('cvssSeverityForVersion', () => {
+  it.each(loadVectorCases<CvssSeverityCase>('cvss-severity-cases.json'))(
+    'CVSS $version score $score is $severity',
+    (c) => {
+      expect(cvssSeverityForVersion(c.version, c.score)).toBe(c.severity);
+    },
+  );
+
+  it.each(['2.0', '3.1'])('treats a non-finite CVSS %s score as no rating', (version) => {
+    for (const score of [NaN, Infinity, -Infinity]) {
+      expect(cvssSeverityForVersion(version, score)).toBe('none');
+    }
+  });
+});
 
 describe('cvssScoreToSeverity', () => {
   it('returns "none" for 0.0', () => {
@@ -287,13 +313,6 @@ describe('computeCvssScore (CVSS 3.1)', () => {
     });
   }
 
-  it('throws on unsupported versions (2.0 / 3.0 / 4.0)', () => {
-    expect(() =>
-      computeCvssScore('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
-    ).toThrow();
-    expect(() => computeCvssScore('AV:N/AC:L/Au:N/C:C/I:C/A:C')).toThrow();
-    expect(() => computeCvssScore('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toThrow();
-  });
 
   it('throws on a structurally invalid 3.1 vector (missing a required base metric)', () => {
     expect(() => computeCvssScore('CVSS:3.1/AV:N/AC:L')).toThrow();
@@ -315,6 +334,46 @@ describe('computeCvssScore (CVSS 3.1)', () => {
   });
 });
 
+interface CvssInvalidCase {
+  vector: string;
+  mentions: string;
+  note: string;
+}
+
+describe('computeCvssScore refuses invalid vectors', () => {
+  it.each(loadVectorCases<CvssInvalidCase>('cvss-invalid-vectors.json'))(
+    'refuses $vector ($note)',
+    (c) => {
+      expect(() => computeCvssScore(c.vector)).toThrow(c.mentions);
+    },
+  );
+});
+
+describe('computeCvssScore (CVSS 3.0)', () => {
+  for (const c of cvss30Cases) {
+    it(`${c.vector} → base ${c.base}, temporal ${c.temporal} (${c.note})`, () => {
+      const s = computeCvssScore(c.vector);
+      expect(s.version).toBe('3.0');
+      expect(s.baseScore).toBe(c.base);
+      expect(s.temporalScore).toBe(c.temporal);
+    });
+  }
+
+});
+
+describe('computeCvssScore (CVSS 2.0)', () => {
+  for (const c of cvss20Cases) {
+    it(`${c.vector} → base ${c.base}, temporal ${c.temporal} (${c.note})`, () => {
+      const s = computeCvssScore(c.vector);
+      expect(s.version).toBe('2.0');
+      // toBe uses Object.is, so a negative zero fails against an expected 0.
+      expect(s.baseScore).toBe(c.base);
+      expect(s.temporalScore).toBe(c.temporal);
+    });
+  }
+
+});
+
 interface Cvss40Case {
   vector: string;
   macroVector: string;
@@ -322,12 +381,16 @@ interface Cvss40Case {
   temporal: number;
   note: string;
 }
-const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata');
-const cvss40Cases: Cvss40Case[] = (
-  JSON.parse(readFileSync(join(fixtureDir, 'cvss40-vectors.json'), 'utf-8')) as {
-    cases: Cvss40Case[];
-  }
-).cases;
+const cvss40Cases = loadVectorCases<Cvss40Case>('cvss40-vectors.json');
+
+describe('computeCvssScore (CVSS 4.0, through the single entry point)', () => {
+  it.each(cvss40Cases)('scores $vector with the MacroVector engine', (c) => {
+    const s = computeCvssScore(c.vector);
+    expect(s.version).toBe('4.0');
+    expect(s.baseScore).toBe(c.base);
+    expect(s.temporalScore).toBe(c.temporal);
+  });
+});
 
 describe('computeCvss40Score (CVSS 4.0)', () => {
   it.each(cvss40Cases)('scores $vector', (c) => {
@@ -389,3 +452,32 @@ describe('computeCvss40Score (CVSS 4.0)', () => {
     ).toThrow();
   });
 });
+
+interface CvssNormalizeCase {
+  vector: string;
+  version: string;
+  attackVector: string;
+  attackComplexity: string;
+  privilegesRequired: string;
+  userInteraction: string;
+  baseScore: number | null;
+  note: string;
+}
+
+describe('normalizeCvssMetrics', () => {
+  it.each(loadVectorCases<CvssNormalizeCase>('cvss-normalize-cases.json'))(
+    'normalizes "$vector" ($note)',
+    (c) => {
+      const want: Record<string, unknown> = {
+        version: c.version,
+        attackVector: c.attackVector,
+        attackComplexity: c.attackComplexity,
+        privilegesRequired: c.privilegesRequired,
+        userInteraction: c.userInteraction,
+      };
+      if (c.baseScore !== null) want.baseScore = c.baseScore;
+      expect(normalizeCvssMetrics(c.vector)).toStrictEqual(want);
+    },
+  );
+});
+
