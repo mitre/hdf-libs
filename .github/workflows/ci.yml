@@ -397,6 +397,8 @@ jobs:
       # and an ungated baseline is the risk this guard exists to catch.
       - name: CI measures the OpenAPI matrix at the pinned generator version
         run: pnpm run lint:matrix-wiring
+      - name: Every installed tool is checksummed in the lock
+        run: pnpm run lint:toolchain-checksums
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.
@@ -483,6 +485,7 @@ jobs:
       # An empty list would let both scanners pass having scanned nothing.
       - name: Enumerate the go.work modules
         run: |
+          set -o pipefail
           MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
           [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
           echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
@@ -680,8 +683,8 @@ jobs:
       # upload-artifact does not preserve the executable bit.
       - name: Put the gate CLI on PATH
         run: |
-          chmod +x "${{ runner.temp }}/gate-cli/hdf"
-          echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
+          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
+          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
       # --from is explicit: auto-detect against a 60-converter registry could
       # mis-fingerprint and yield a valid document with zero findings.
       # Count fidelity is checked INSIDE convert: a converter declares how many
@@ -1001,8 +1004,8 @@ jobs:
       # upload-artifact does not preserve the executable bit.
       - name: Put the gate CLI on PATH
         run: |
-          chmod +x "${{ runner.temp }}/gate-cli/hdf"
-          echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
+          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
+          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
@@ -1104,6 +1107,7 @@ jobs:
           hdf evidence add-evidence evidence-package.json "${selectors[@]}" --file run.json --format x-github-actions
           # Every native report present is recorded exactly once: a file a selector does
           # not name fails the job instead of vanishing from the package.
+          set -o pipefail
           present=0
           [ "${#present_dirs[@]}" -eq 0 ] || present=$(find "${present_dirs[@]}" -type f | wc -l | tr -d ' ')
           recorded=$(jq '.externalEvidence | length' evidence-package.json)
