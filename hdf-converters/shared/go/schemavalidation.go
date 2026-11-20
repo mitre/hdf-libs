@@ -106,19 +106,28 @@ func NewSchemaValidatorWithResources(t *testing.T, schemaPath string, companions
 		return &SchemaValidator{modern: schema}
 	}
 
-	// Load from bytes rather than file:// reference loaders: a "file://"+path
-	// reference is not a valid URL on Windows (see fileURL), and companions are
-	// resolved by their registered $ref URLs regardless of source.
-	sl := gojsonschema.NewSchemaLoader()
-	for refURL, path := range companions {
-		craw, err := os.ReadFile(path) //nolint:gosec // test-only, reads a vendored schema fixture
-		require.NoError(t, err, "read companion %s", path)
-		require.NoError(t, sl.AddSchema(refURL, gojsonschema.NewBytesLoader(craw)),
-			"register companion %s", refURL)
-	}
-	schema, err := sl.Compile(gojsonschema.NewBytesLoader(raw))
+	schema, err := CompileDraft07(raw, companions)
 	require.NoError(t, err, "compile schema %s", schemaPath)
 	return &SchemaValidator{draft07: schema}
+}
+
+// CompileDraft07 compiles a draft-07 schema with each companion registered under
+// the reference URL that reaches it, so no reference is fetched. Companions load
+// from bytes rather than through file:// reference loaders: a "file://"+path
+// reference is not a valid URL on Windows (see fileURL), and a companion is
+// resolved by its registered $ref URL regardless of where the bytes came from.
+func CompileDraft07(raw []byte, companions map[string]string) (*gojsonschema.Schema, error) {
+	sl := gojsonschema.NewSchemaLoader()
+	for refURL, path := range companions {
+		craw, err := os.ReadFile(path) //nolint:gosec // reads a vendored schema beside the one under test
+		if err != nil {
+			return nil, fmt.Errorf("read companion %s: %w", path, err)
+		}
+		if err := sl.AddSchema(refURL, gojsonschema.NewBytesLoader(craw)); err != nil {
+			return nil, fmt.Errorf("register companion %s: %w", refURL, err)
+		}
+	}
+	return sl.Compile(gojsonschema.NewBytesLoader(raw))
 }
 
 // fileURL renders an absolute filesystem path as a valid file:// URL for use as
