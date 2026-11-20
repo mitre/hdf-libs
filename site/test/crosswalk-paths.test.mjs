@@ -27,7 +27,7 @@ const DOCUMENTS = ['hdf-results', 'hdf-amendments', 'hdf-evidence-package', 'hdf
 
 // Keys are data, not schema: a consumer puts arbitrary names in them, so
 // resolution stops here and anything past it is unverifiable by construction.
-const OPEN_MAPS = new Set(['tags', 'externalIds', 'labels', 'metadata', 'passthrough']);
+const OPEN_MAPS = new Set(['tags', 'externalIds', 'labels', 'passthrough']);
 
 const docs = Object.fromEntries(
   DOCUMENTS.map((name) => [name, JSON.parse(readFileSync(join(schemaDir, `${name}.schema.json`), 'utf-8'))]),
@@ -95,21 +95,44 @@ function resolves(segments, root) {
     };
 
     const candidates = expand(node);
-    const next = candidates.map((n) => n.properties?.[segment]).find(Boolean);
+    const bare = segment.replace(/\[\]$/, '');
+    const next = candidates.map((n) => n.properties?.[bare]).find(Boolean);
     if (!next) return false;
-    if (OPEN_MAPS.has(segment)) return true;
+
+    // A cited array must carry [] and a non-array must not, so the page cannot
+    // quietly drop a marker and still pass.
+    const resolved = deref(next, root);
+    const isArray = resolved?.type === 'array';
+    if (isArray !== segment.endsWith('[]')) return false;
+
+    if (OPEN_MAPS.has(bare)) return true;
     node = next;
   }
   return true;
 }
 
+// The page cites a path in full once, then continues with `.foo` shorthand in
+// the same cell. Those continuations were invisible to an earlier version of
+// this check, which left 17 of the cited paths unverified — in exactly the rows
+// the review's errors lived in. Resolve each against the last full path on its
+// line, so the shorthand is checked as the reader would read it.
 function citedPaths(markdown) {
-  const out = new Set();
-  for (const [, token] of markdown.matchAll(/`([A-Za-z][A-Za-z0-9_.[\]]*)`/g)) {
-    // eMASS schema names are PascalCase; HDF roots are not.
-    if (/^[a-z]/.test(token) && (token.includes('.') || token.includes('[]'))) out.add(token);
+  const out = [];
+  for (const line of markdown.split('\n')) {
+    let parent = null;
+    for (const [, token] of line.matchAll(/`([A-Za-z.][A-Za-z0-9_.[\]]*)`/g)) {
+      // A JSON Schema location inside the eMASS spec (properties/items/required)
+      // is not an HDF path, though it is lowercase and dotted like one.
+      if (/(^|\.)(properties|items|required|allOf)(\.|$)/.test(token)) continue;
+      if (/^[a-z]/.test(token) && (token.includes('.') || token.includes('[]'))) {
+        out.push({ cited: token, path: token });
+        parent = token.replace(/\.[A-Za-z0-9_]+(\[\])?$/, '');
+      } else if (token.startsWith('.') && parent) {
+        out.push({ cited: token, path: parent + token });
+      }
+    }
   }
-  return [...out];
+  return out;
 }
 
 const paths = citedPaths(readFileSync(page, 'utf-8'));
@@ -119,13 +142,14 @@ test('the crosswalk cites enough HDF paths for the check to mean something', () 
 });
 
 test('every HDF path the crosswalk cites resolves through a bundled schema', () => {
-  const unresolved = paths.filter((path) => {
-    const segments = path
-      .replace(/^hdf-(system|results|amendments)\./, '')
-      .split('.')
-      .map((s) => s.replace(/\[\]$/, ''))
-      .filter(Boolean);
-    return !DOCUMENTS.some((name) => resolves(segments, docs[name]));
-  });
+  const unresolved = paths
+    .filter(({ path }) => {
+      const segments = path
+        .replace(/^hdf-(system|results|amendments)\./, '')
+        .split('.')
+        .filter(Boolean);
+      return !DOCUMENTS.some((name) => resolves(segments, docs[name]));
+    })
+    .map(({ cited, path }) => (cited === path ? cited : `${cited} (as ${path})`));
   assert.deepEqual(unresolved, [], `cited paths that resolve in no HDF document: ${unresolved.join(', ')}`);
 });
