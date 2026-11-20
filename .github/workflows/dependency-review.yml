@@ -10,6 +10,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   dependency-review:
     name: Review PR dependency changes
@@ -17,6 +21,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      # comment-summary-in-pr below posts the failure summary, which the action
+      # cannot do read-only; without this the step fails exactly when it has
+      # something to report.
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

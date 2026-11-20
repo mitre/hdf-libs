@@ -117,9 +117,11 @@ Install [mise](https://mise.jdx.dev/) 2026.10.9 or newer. It installs the pinned
 | Node.js | `mise.toml` (the Active LTS line); exact release in `mise.lock` |
 | pnpm | `packageManager` in `package.json` |
 | Go | the `go` line of `go.work` |
-| golangci-lint, gosec, govulncheck | `mise.toml` |
+| golangci-lint, gosec | `mise.toml` |
+| govulncheck, oapi-codegen | `mise.toml`; built from source, so integrity comes from the Go checksum database |
+| jactionlint, shellcheck | `mise.toml` |
 
-Each download is checked against the checksum recorded in `mise.lock`. [gitleaks](https://github.com/gitleaks/gitleaks), used by `pnpm --filter hdf-cli security`, is installed separately.
+Every downloaded release is checked against the checksum `mise.lock` records; the two tools built from source carry no artifact hash and are verified by the Go checksum database instead. `site/docs/contributing/developer-guide.md` (Toolchain) gives the provenance of each one. [gitleaks](https://github.com/gitleaks/gitleaks), used by `pnpm --filter hdf-cli security`, is installed separately.
 
 **macOS and Linux:**
 

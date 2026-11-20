@@ -1,3 +1,4 @@
+import { projectExportBundle, type ExportBundle } from '../../../shared/typescript/exportbundle.js';
 import {
   type Obj,
   asMap,
@@ -20,12 +21,12 @@ import {
  * HDF Results -> Elastic Common Schema (ECS) NDJSON exporter.
  *
  * One ECS event per Evaluated_Requirement, in the hybrid shape from ADR-0002:
- * a core-ECS-native projection plus a lossless hdf.* block, hot filter scalars
+ * a core-ECS-native projection plus a legacy hdf.* projection, hot filter scalars
  * promoted flat. Output is plain NDJSON (LF-delimited, trailing newline), ECS
  * 9.4.0.
  *
  * Status is effective-primary: event.outcome carries the GOVERNING verdict
- * (effectiveStatus when present, else the raw results roll-up), while hdf.status
+ * (derived from results and governing overrides), while hdf.status
  * preserves the RAW verdict and hdf.suppressed is the separate acceptance axis.
  * Override provenance (disposition/type/reason/approver/dates) is surfaced under
  * labels.*. The canonical "still actionable" query is
@@ -281,4 +282,8 @@ function statusToOutcome(status: string): string {
     default:
       return 'unknown';
   }
+}
+
+export async function convertHdfToEcsBundle(input: Uint8Array, converterVersion = '0.1.0'): Promise<ExportBundle> {
+  return projectExportBundle(input, 'ecs', (text) => convertHdfToEcs(text, converterVersion));
 }

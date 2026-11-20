@@ -1,3 +1,4 @@
+import { projectExportBundle, type ExportBundle } from '../../../shared/typescript/exportbundle.js';
 import {
   type Obj,
   asMap,
@@ -23,7 +24,7 @@ import { impactToSeverity } from '@mitre/hdf-utilities';
  * promoted to the top of the event payload; the hot query scalars among them
  * (signature/signature_id/dest/severity/cve/cvss + hdf_status + suppressed) are
  * additionally mirrored into the HEC indexed `fields` (surviving Splunk's
- * ~5000-char cutoff), plus a lossless hdf.* block.
+ * ~5000-char cutoff), plus a legacy hdf.* projection.
  *
  * Status is raw-primary: hdf_status carries the RAW verdict (a waived failure is
  * still failed) and suppressed is the separate acceptance axis. The companion TA
@@ -32,7 +33,7 @@ import { impactToSeverity } from '@mitre/hdf-utilities';
  * risk-adjusted still-failing control stays in. Canonical "still actionable"
  * query: hdf_status=failed suppressed=false.
  *
- * Generic access, the status roll-up, field extraction, the lossless hdf.*
+ * Generic access, the status roll-up, field extraction, the legacy hdf.*
  * block, and the canonical line serialization are shared with the other
  * exporters via exportmap; output is held byte-identical with the Go side.
  */
@@ -109,11 +110,8 @@ function buildHECEvent(
 }
 
 /**
- * Add the Splunk-specific lossless keys the shared exportmap block omits but the
- * splunk-to-hdf importer round-trips: the requirement's source_location, the
- * baseline metadata beyond its name and the baseline's groups, and the full
- * target component. Each is emitted only when the source carries it, so absent
- * fields stay absent.
+ * Add the established Splunk-specific query and context aliases.
+ * This HEC export is not the header/profile/control format accepted by the importer.
  */
 function augmentHdfBlock(hdf: Obj, req: Obj, baseline: Obj, component: Obj | undefined): void {
   if ('sourceLocation' in req) hdf.source_location = req.sourceLocation;
@@ -169,3 +167,7 @@ function firstCWE(req: Obj): string {
   return '';
 }
 
+
+export async function convertHdfToSplunkBundle(input: Uint8Array, converterVersion = '0.1.0'): Promise<ExportBundle> {
+  return projectExportBundle(input, 'splunk', (text) => convertHdfToSplunk(text, converterVersion));
+}

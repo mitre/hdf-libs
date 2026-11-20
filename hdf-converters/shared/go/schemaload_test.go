@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -305,6 +307,86 @@ var goCannotCompile = map[string]string{
 // TypeScript peer asserts the same property over the same tree -- minus the
 // draft-04 family, which ajv 8 cannot load at all and which this side therefore
 // covers alone, and plus goCannotCompile, which ajv covers alone.
+
+// compileVendored compiles one vendored schema with every reference it makes
+// outside its own document registered from the file beside it, through the same
+// draft-07 path the package's schema validator uses. A schema declaring an
+// absolute $id turns even a relative $ref into a URL, so without this a compile
+// fetches it and the test measures the network rather than the vendored bytes.
+// A reference whose companion is not beside it fails here, naming both.
+func compileVendored(t *testing.T, dir string, raw []byte) (*gojsonschema.Schema, error) {
+	t.Helper()
+	companions := map[string]string{}
+	base, refs := schemaBaseAndRefs(raw)
+	for _, ref := range refs {
+		// A compiler registers a companion by document URL, so the fragment comes
+		// off either way. Without an absolute $id there is nothing to resolve
+		// against, and the reference's own path is the key.
+		var key string
+		if base != nil {
+			target, err := base.Parse(ref)
+			require.NoError(t, err, "resolve %s against %s", ref, base)
+			target.Fragment, target.RawFragment = "", ""
+			key = target.String()
+		} else {
+			key = strings.SplitN(ref, "#", 2)[0]
+		}
+		companion := filepath.Join(dir, filepath.Base(key))
+		_, statErr := os.Stat(companion)
+		require.NoErrorf(t, statErr, "a reference to %s is not vendored beside the schema in %s", key, dir)
+		companions[key] = companion
+	}
+	return shared.CompileDraft07(raw, companions)
+}
+
+// schemaBaseAndRefs reports a schema's absolute $id, when it declares one, and
+// every reference it makes outside its own document. A reference is resolved
+// locally whether or not there is a base: an absolute $id makes a relative $ref
+// a network URL, and without one an absolute $ref is a network URL by itself.
+func schemaBaseAndRefs(raw []byte) (*url.URL, []string) {
+	var doc struct {
+		ID string `json:"$id"`
+	}
+	var base *url.URL
+	if json.Unmarshal(raw, &doc) == nil && doc.ID != "" {
+		if parsed, err := url.Parse(doc.ID); err == nil && parsed.IsAbs() {
+			base = parsed
+		}
+	}
+	seen := map[string]bool{}
+	refs := []string{}
+	for _, m := range refPattern.FindAllSubmatch(raw, -1) {
+		ref := string(m[1])
+		if strings.HasPrefix(ref, "#") || seen[ref] {
+			continue
+		}
+		seen[ref] = true
+		refs = append(refs, ref)
+	}
+	return base, refs
+}
+
+var refPattern = regexp.MustCompile(`"\$ref"\s*:\s*"([^"]+)"`)
+
+// A schema with no $id still has its external references resolved locally: an
+// absolute $ref is a network URL on its own, so returning no references here
+// would send the compile to the host it names.
+func TestSchemaBaseAndRefsResolvesWithoutAnID(t *testing.T) {
+	withID := []byte(`{"$id":"http://example.test/a.json","properties":{"x":{"$ref":"b.json#/definitions/y"}}}`)
+	base, refs := schemaBaseAndRefs(withID)
+	require.NotNil(t, base)
+	assert.Equal(t, []string{"b.json#/definitions/y"}, refs)
+
+	noID := []byte(`{"properties":{"x":{"$ref":"https://example.invalid/absent.json"}}}`)
+	base, refs = schemaBaseAndRefs(noID)
+	assert.Nil(t, base, "no absolute $id, so nothing to resolve against")
+	assert.Equal(t, []string{"https://example.invalid/absent.json"}, refs,
+		"the reference must still be reported, or the compile fetches it")
+
+	_, refs = schemaBaseAndRefs([]byte(`{"$id":"http://example.test/a.json","x":{"$ref":"#/definitions/local"}}`))
+	assert.Empty(t, refs, "a fragment reference stays inside the document")
+}
+
 func TestSchemaLoadEveryVendoredSchemaCompiles(t *testing.T) {
 	seen := map[string]bool{}
 	for dir, files := range schemaBearingDirs(t) {
@@ -319,7 +401,7 @@ func TestSchemaLoadEveryVendoredSchemaCompiles(t *testing.T) {
 			}
 			label := filepath.Base(filepath.Dir(dir)) + "/" + f
 			t.Run(label, func(t *testing.T) {
-				_, schemaErr := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(raw))
+				_, schemaErr := compileVendored(t, dir, raw)
 				if why, listed := goCannotCompile[label]; listed {
 					seen[label] = true
 					require.Error(t, schemaErr, "listed as uncompilable in Go (%s) but it compiled — remove it from goCannotCompile", why)

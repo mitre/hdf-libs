@@ -526,6 +526,80 @@ On auto-detection the source format and a confidence score are reported on the `
 
 See [Supported Conversions](#supported-conversions) for the full list.
 
+#### convert --bundle
+
+Deliver one HDF assessment as searchable ECS, Splunk or OCSF findings together
+with its exact original source in a standard evidence-package ZIP:
+
+```bash
+hdf convert results.json --to ecs --bundle -o export.zip
+```
+
+Use `--to splunk` or `--to ocsf` for the other targets. The deterministic archive
+contains `evidence-package.json`, `events.ndjson`, byte-identical `source.json`
+and the existing SIEM `manifest.json`. The package records explicit SHA512
+checksums for all three artifacts. Empty assessments retain all four files,
+including a zero-byte event stream. No timestamp, system identity or completeness
+claim is invented for the package.
+
+Bundle mode requires one local source file and a file output. Directories,
+multiple inputs, stdin and transformation flags such as `--from`, `--force`,
+`--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
+archive but never the input or its filesystem aliases; it requires `--bundle`.
+The archive is staged beside `-o` and published complete, the same way `hdf evidence
+bundle` publishes one: `--output-access private` (the default) or `inherit` sets who
+may read it, an `-o` that already exists or appears during the run is refused unless
+`--overwrite` is passed, and a failed run leaves `-o` untouched. [`evidence`](#evidence)
+describes what each access mode checks on Linux, macOS and Windows, and which
+filesystems cannot publish without `--overwrite`. Archive permissions do not travel
+inside the ZIP; move it between jobs with an authenticated artifact transfer.
+Ordinary conversion is unchanged, including for an input file named `bundle`.
+
+#### evidence resolve
+
+Verify the selected packaged export and recover the complete original source:
+
+```bash
+unzip export.zip -d retained
+head -n 1 retained/events.ndjson > retained/event.json
+hdf evidence resolve retained/evidence-package.json --event retained/event.json > recovered.json
+cmp retained/source.json recovered.json
+```
+
+This example requires at least one finding. Empty assessments have no event to
+resolve; their source remains in the archive and can be verified with
+`hdf evidence info retained/evidence-package.json --verify --require-checksums --require-reachable`.
+
+Recovery validates the package, selects one registered SIEM profile, verifies
+the source/events/manifest checksums and compares the finding's preserved
+requirement with its original occurrence. It writes the exact source bytes to
+stdout only after success. Missing or changed artifacts, unsupported checksums,
+wrong types/formats, ambiguous references and record disagreements fail.
+
+A package with multiple exports requires `--manifest` naming one registered
+package-relative profile URI. Keep each export in its own directory. References
+decode percent escapes exactly once, must agree between package and manifest,
+and remain within the package directory. Size limits and the configured symlink
+policy apply to all reads. Recovery does not fetch URLs or extract archives.
+It verifies the selected export, not unrelated package contents or completeness.
+Use `evidence info --verify` for whole-package verification.
+
+`--event` takes one complete event in the exporter's shape, not a vendor search
+response. For Elasticsearch, retain the raw `_source` JSON. For Splunk, retain
+the decoded `_raw` string and wrap that JSON as `{"event":<raw JSON>}` without
+parsing and reserializing its inner numbers. OCSF uses its complete event. Do not
+round numeric tokens through ordinary JavaScript object parsing before recovery.
+
+Retain the package and its artifacts for the lifetime of the finding events.
+NDJSON alone cannot recover baseline and document context. Checksums establish
+consistency with the supplied inventory, not authenticity of an unsigned
+package. Signatures are retained but not authenticated; source data is not
+automatically redacted. Shell redirection creates or truncates its destination
+before the command runs, so use a new recovery filename, never `source.json`.
+The initial `legacy-additive/1` profile retains native projections and legacy
+repeated fields. Real SIEM ingestion/readback remains separate integration
+verification.
+
 ### system
 
 View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and data flows.
@@ -723,6 +797,7 @@ EXAMPLES
   hdf evidence update q1.hdf-evidence-package.json --results "scans/*.json" --overwrite
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip --overwrite
+  hdf evidence bundle q1.hdf-evidence-package.json -o shared/q3-evidence.zip --output-access inherit
   hdf evidence export q1.hdf-evidence-package.json --format oscal -o oscal/
 ```
 
@@ -754,7 +829,9 @@ To attach context to a **results** document's findings instead of to the package
 
 **`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
 
-Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
+Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. The refusal also covers a file that appears at `-o` while the archive is being built: the archive is published with an exclusive rename, or where the filesystem has none a hard link, and both fail rather than replace a name that already exists. A filesystem with neither — exFAT on macOS, or a FUSE filesystem such as an rclone or sshfs mount that implements no hard links — cannot publish without that risk, so `bundle` refuses there unless you write to another directory or pass `--overwrite`. If the archive is published but flushing its directory entry to disk then fails, the error says the archive was written to `-o`. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
+
+**`bundle` archives are private by default.** `--output-access private` (the default) creates the archive owner-only (mode 0600) at the moment it is created and, before writing anything, reads the owner and mode back from the open file; if the storage cannot show owner-only — a default SMB mount reads back 0755, and a FAT volume reads back whatever its mount mask allows — the run fails, removes its staged file and leaves `-o` untouched, rather than trust a mode the filesystem did not apply. `--output-access inherit` creates the archive with the directory's normal access instead (mode 0666 under your umask, plus any default ACL), for a directory provisioned for sharing between accounts; with umask 077 it is still private. Neither mode changes permissions after writing, and a failed private check never falls back to `inherit`. On Linux, `private` also reads the file's NFSv4 ACL and refuses one that gives anyone but the owner access to the data, or the right to change the file's ACL or owner — on NFSv4 an entry inherited from the directory can survive a 0600 create. On Windows, where a file mode only sets the read-only attribute, `private` creates the archive with a protected access list whose one entry grants your account full access, so the folder's inherited grants do not reach it, then reads it back before writing; a volume that does not keep access lists (FAT, exFAT) is refused, and `inherit` keeps the folder's inherited grants. On macOS, `private` creates the archive with an empty, non-inheriting ACL, so an entry a shared folder passes to new files does not reach it, then reads the ACL back and refuses any entry; a volume that ignores ownership (most external drives) is refused. On network or shared storage one line notes that the server and its mount options also control who can read the file; it is a note, not a refusal, and it is best-effort by filesystem type (on Linux: NFS, SMB, FUSE, 9p, Ceph, OCFS2, AFS, GFS2 and Lustre; on macOS any non-local volume). On other Unix systems `private` is the 0600 create and the owner-and-mode read-back; ACL inheritance is not checked there. Administrators are outside any file-mode guarantee. A container that runs as root writes a root-owned archive that an upload step running as another user cannot read: run the container as the invoking user (`docker run --user "$(id -u):$(id -g)"`) or pass `--output-access inherit`.
 
 `--uri` is repeatable and stays literal. For local discovery, repeat `--file` with filesystem paths or quoted globs relative to the working directory — each selected file is recorded as a package-relative reference, and a selection outside the package's directory is refused (use `--uri` to reference an external artifact deliberately) — or use `--from-dir` (immediate files, with `--recursive` to include nested directories). Give one `--format` for everything or one per selector group in `--uri`, `--file`, `--from-dir` order, preserving repeat order within each flag. Formats are assigned before expansion, so every file matched by a selector gets its group's format. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred.
 
