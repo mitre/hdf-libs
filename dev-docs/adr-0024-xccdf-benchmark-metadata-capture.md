@@ -5,11 +5,20 @@
 - **Revised:** 2026-10-28 — after a code-level review that opened both XSDs, ran both parsers on the CIS fixture and
   read the HDF spec: benchmark-level facts move under `extensions.passthrough` (the closed `extensions` of ADR-0017);
   the XSD walk is described as it really is (no `benchmarkType`, an extension chain plus `element ref`, 347 union
-  paths) and card 3 is split; the CIS shape is corrected (safeguard-level groups, URI→URN rule, level derivation,
+  paths as then estimated; the walker as built pins 628) and card 3 is split; the CIS shape is corrected (safeguard-level groups, URI→URN rule, level derivation,
   `complex-check`); `cis_controls` is a list of URNs with the safeguard catalog at benchmark level, so the InSpec
-  generator's tag rendering keeps parity; the DISA sub-element names are reconciled with the CKL vocabulary;
+  generator's tag rendering keeps parity (the URN list was replaced on 2026-11-20, see decision 6); the DISA sub-element names are reconciled with the CKL vocabulary;
   `rationale`/`warning` are dropped from scope because main already carries them; the fixture plan says which fields
   no real DISA fixture fills.
+- **Revised:** 2026-10-29 — after the corpus card exposed that the benchmark path applies the DISA STIG tag set to
+  every file it reads: decision 6 adds identification of shape, version and benchmark family as the first step, the
+  per-family contract (DISA STIG, CIS, SSG) that every field mapping and both generators follow, and the rule that no
+  tag is ever emitted empty; decision 2's CIS rows are replaced by the family contract (the installed CIS vocabulary,
+  not URNs); decision 4 becomes the generator's profile style per family; inline check content with child elements
+  is carried; SSG is a supported family with its own corpus card; cards 11–14 are added and cards 6 and 8 re-scoped.
+- **Decided:** 2026-11-20 — the owner decided or confirmed all 17 gaps of `adr-0024-gap-register.md`, each against
+  measured evidence recorded there; decision 6 below is written to those decisions. The `hdf-libs` maintainer
+  reviews the set and may change it.
 - **Deciders:** Aaron Lippold
 - **Branch:** `feat/xccdf-benchmark-metadata` (off `origin/main` at `6fbb858c`)
 - **Issue:** hdf-libs #499
@@ -65,8 +74,8 @@ safeguards in `ident` elements whose `system` is the framework URI and whose `cc
 attribute is the control URI, and again in `metadata/controls:cis_controls/framework/safeguard` (title and URN) with
 the implementation groups (as attributes, `ig2="true"`), asset type and security function **inside each safeguard**,
 differing by framework (rule 1.4's security function is Protect under v8 and Detect under v7). Scored-ness is
-`Rule/@role` (`full` / `unscored`); reference links are `ident system="URL"`; and 70 of the 93 rules carry their check
-only inside `complex-check`, which the converter does not read, so CIS rules lose their check today. None of that
+`Rule/@role` (`full` / `unscored`); reference links are `ident system="URL"`; and 33 of the 93 rules carry their check
+only inside `complex-check` (59 have a direct `check` and one has neither; `fixtures/provenance.txt`), which the converter does not read, so CIS rules lose their check today. None of that
 reaches the Baseline.
 
 **Prior art reads the whole file.** `stig-parser` (PyPI, `pkeech/stig_parser`, MIT) keeps the raw release string and
@@ -91,7 +100,8 @@ line 47). Neither schema uses `xs:group` or substitution groups. What a walker m
 global elements (`status`, `Profile`, `model`, `Value`), the extension chain `itemType → selectableItemType →
 ruleType | groupType`, `ref="xml:lang"` attributes, `xs:any` / `xs:anyAttribute`, and the `complex-check` cycle.
 With `TestResult`, `Value` and the Profile subtree cut off there are 248 paths in 1.1.4 and 277 in 1.2; with
-`Profile` included (decision 2 needs it) 303 and 342, 347 in the union. Five paths exist only in 1.1.4 (deprecated
+`Profile` included (decision 2 needs it) 303 and 342, 347 in the union. Those were the 2026-10-28 estimates; the
+walker as built pins 628 union paths (`fixtures/xccdf-coverage.json`). Five paths exist only in 1.1.4 (deprecated
 platform elements and a `dc`/`sccf` metadata wildcard); 34 only in 1.2, among them `Rule/metadata`, `Group/metadata`,
 `Rule/ident/@*` (where `cc7`/`cc8` live), `dc-status`, `check/@negate` and `sub/@use`. NIST's published 1.1.4 XSD
 has CRLF line endings; the copy in `cis-bench` is LF but otherwise identical.
@@ -100,7 +110,9 @@ has CRLF line endings; the copy in `cis-bench` is LF but otherwise identical.
 `rawSourceArtifacts`, so every benchmark-level fact goes under `extensions.passthrough`, flat, as the CKL path does.
 Tags are an open object with no registry; existing keys are snake_case. The InSpec generator emits every tag
 (`control_stub.go:82-91`) and renders a list of objects as `map[…]` in Go and `[object Object]` in TS, so a tag value
-is a string, a boolean, or a list of strings, never a list of objects. Go and TypeScript stay in parity with
+is a string, a boolean, or a list of strings, never a list of objects. One exception was decided on 2026-11-20:
+`cis_controls` is a one-element list holding a map, the form the published CIS baselines write, and both generators
+are taught to render a map as a Ruby hash (decision 6). Go and TypeScript stay in parity with
 byte-identical goldens (ADR-0001 §9). Fixtures are real files trimmed by whole-element drops with provenance, never
 fabricated (`CLAUDE.md`, Fixture Integrity). DISA ships XCCDF 1.1; CIS ships 1.2; both must work. No new runtime
 dependency is justified for XML parsing: `encoding/xml` and `fast-xml-parser` already parse these files; what is
@@ -138,11 +150,12 @@ is located by `id`, never by position (DISA emits `generator` and `conventionsVe
 order); the text is split on `Benchmark Date: ` and `Release: ` is stripped, as `stig-parser` does, which handles
 `Release: 3.5` as well as `Release: 9`. A missing or unparseable element leaves the keys out; it is not an error.
 The safeguard catalog sits at benchmark level because a safeguard's title, groups, asset type and security function
-are properties of the safeguard, repeated in every rule that cites it; rules carry only the URNs.
+are properties of the safeguard, repeated in every rule that cites it; rules carry the control ids per framework
+version in `cis_controls` (decision 6).
 
 **Per-rule single values and identifiers → `tags`** (beside the existing `gid`, `rid`, `stig_id`, `severity`,
 `cci`, `gtitle`, `nist`, `fix_id`, `check_id`). Values are strings, booleans or lists of strings, so the InSpec
-generator renders them identically in both languages:
+generator renders them identically in both languages; `cis_controls` is the one exception (decision 6):
 
 | Source | Tag | Type |
 |---|---|---|
@@ -151,12 +164,12 @@ generator renders them identically in both languages:
 | `Rule/@weight` | `weight` | string |
 | `Rule/@role` | `role` | string |
 | `description/Documentable` | `documentable` | boolean (`true`/`false` parsed; the existing `hdf-fixtures` Baseline already carries it as a boolean) |
-| `description/FalsePositives`, `FalseNegatives`, `Mitigations`, `SeverityOverrideGuidance`, `PotentialImpacts`, `ThirdPartyTools`, `MitigationControl`, `Responsibility`, `IAControls` | `false_positives`, `false_negatives`, `mitigations`, `severity_override_guidance`, `potential_impacts`, `third_party_tools`, `mitigation_control`, `responsibility`, `ia_controls` | string |
-| `Profile` membership | `cis_level` | list: the level label of every profile that selects the rule, from the profile title's `Level N` (`["L1","L2"]` for an L1 rule, since the L2 profile selects everything) |
-| `ident[@system=<cc7 or cc8 framework URI>]/@controlURI` and `metadata/…/safeguard/@urn` | `cis_controls` | list of URNs; a control URI `…/20-cc/v8.0/control/9/subcontrol/3` is converted to `urn:cisecurity.org:controls:8.0:9:3` and the two sources are deduplicated on that URN; framework from `@system`, never from the prefix |
+| `description/FalsePositives`, `FalseNegatives`, `Mitigations`, `SeverityOverrideGuidance`, `PotentialImpacts`, `ThirdPartyTools`, `MitigationControl`, `Responsibility`, `IAControls` | `false_positives`, `false_negatives`, `mitigations`, `severity_override_guidance`, `potential_impacts`, `third_party_tools`, `mitigation_control`, `responsibility`, `ia_controls` | string; `responsibility` is a list, because DISA repeats the element; `SecurityOverrideGuidance`, DISA's 2009 to 2012 spelling, also feeds `severity_override_guidance` |
+| CIS rule id, `Profile` membership, `@role`, the `cc`/`controls` idents and safeguards | `cis_id`, `cis_level`, `cis_profiles`, `assessment_status`, `cis_controls` | the CIS family row of decision 6; these replace the URN list and the `["L1","L2"]` form of the 2026-10-28 revision, which no existing profile uses |
 
 Tags because that is where every per-rule identifier and marker already lives, where the InSpec generator reads,
-and where `hdf query --tag` can filter. An empty sub-element produces no tag. The names are the snake_case of the
+and where `hdf query --tag` can filter. An empty source produces no tag, ever: not an empty string, not an empty
+list (the benchmark path emitted `stig_id: ""` and `nist: []` on every CIS and SSG rule before decision 6). The names are the snake_case of the
 DISA element names (`mitigation_control`, singular, as `MitigationControl` is). The CKL path carries the same facts
 under `tags.cklMetadata` with the CKL field names (`False_Positives`, `Mitigation_Control`, `Potential_Impact`,
 `Security_Override_Guidance`, …) and `legacy_ids` (plural); those are the checklist's own field names, kept for the
@@ -167,7 +180,10 @@ a benchmark-sourced Baseline is wanted.
 `gid` and `rid` are normalised to `V-…` and `SV-…r…_rule` by stripping DISA's `xccdf_mil.disa.stig_group_` and
 `xccdf_mil.disa.stig_rule_` prefixes only; CIS ids (`xccdf_org.cisecurity.benchmarks_rule_…`) are left as they are.
 The benchmark path reads a rule's check from `check` or, when the rule has only a `complex-check`, from the first
-`check` inside it, so `check_id` and the check text arrive for CIS rules.
+`check` inside it. The check text is the descendant text of `check-content` in document order, markup stripped, the
+same way the prose fields read XHTML children: CIS content of 2006–2016 puts the audit command inside
+`ecl:shell-command` children and the element's own text is empty. `check_id` is a DISA fact (DISA puts `C-…_chk`
+in `check/@system`); on other families `@system` is the check language and is not a tag.
 
 **Per-rule prose → `descriptions`.** Already carried on the benchmark path: `default` (from `VulnDiscussion`),
 `check`, `fix`, `rationale`, `warning` (`buildBaselineDescriptions`, `converter.go:931-975`). Nothing is added.
@@ -190,7 +206,7 @@ A test in each language fails when the schemas allow something the converter nei
 3. The walker parses each XSD as XML with the language's own parser (no XSD library; about 110 lines of Go with
    `,any` nodes, about 50 of TypeScript), resolves `xs:element ref=`, the `itemType → selectableItemType →
    ruleType | groupType` extension chain, `xs:any` / `xs:anyAttribute` and the `complex-check` cycle, and emits the
-   **union** of the 1.1.4 and 1.2 path sets (347 paths with `Profile`). It asserts each path is in the allowlist, and
+   **union** of the 1.1.4 and 1.2 path sets (628 paths as built, pinned in `fixtures/xccdf-coverage.json`). It asserts each path is in the allowlist, and
    that each allowlist path outside `vendor` is defined by at least one schema, so the allowlist cannot drift.
 4. For every non-`skip` target, a fixture that carries the source element must produce a non-empty value at the
    target in both languages. This is what turns "we mapped it" into "it arrives". Where no real fixture carries a
@@ -200,12 +216,17 @@ A test in each language fails when the schemas allow something the converter nei
 The test is the decision's enforcement: the next XCCDF field someone forgets fails CI instead of surfacing in a
 consumer a year later.
 
-### 4. The InSpec profile generator uses the release
+### 4. The InSpec profile generator renders a profile style per family
 
-`hdf generate inspec-profile` writes `version: '<version>.<benchmarkRelease>.0'` into `inspec.yml` when
-`extensions.passthrough.benchmarkRelease` is present (SAF CLI's `profileVersion` shape, so a profile generated here
-matches one generated there), and the current `version: '<version>'` otherwise. No other consumer changes in this
-ADR; ADR-0018 reads the new fields.
+`hdf generate inspec-profile` reads `extensions.passthrough.benchmarkFamily` (decision 6) and renders the family's
+row: the control id (`SV-257777` for DISA; `<slug>-cis-1.1.1` for CIS; the rule short name for SSG), the
+`inspec.yml` `name` (the family's slug rule, never the raw benchmark id: the CIS id is 80 characters), the
+`version` (`<version>.<benchmarkRelease>.0` for DISA, SAF CLI's `profileVersion` shape; the benchmark's own version
+string for CIS and SSG), the description labels, and the tags, which it still writes as given because decision 6
+makes them right per family. A Baseline with no family renders the generic style and the generator says so. Before
+this revision one STIG-shaped template rendered every family: a CIS control came out as
+`control 'xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_…'` with `tag stig_id: ''` and `tag nist: []`.
+ADR-0018 reads the same family and row for its playbooks.
 
 ### 5. Fixtures are the real files, and the record says what they do not carry
 
@@ -219,6 +240,13 @@ generators become the second consumer.
 In RHEL 9 V2R5 (and Ubuntu 24.04 V1R1) every DISA sub-element except `Documentable` (always `false`) is empty in
 every rule. Card 2 checks V2R9 and, if it is the same, the nine prose sub-element rows record `fixture: none` with
 that reason rather than a fabricated value; the converter still carries them for the STIGs that fill them.
+
+The corpus is one real file per measured deviation, not per feature (card 11 of the 2026-10-29 revision): the
+2026-10-29 sweeps measured the DISA and CIS libraries (the gap register's finding F2 gives the corrected counts), and
+`fixtures/README.md` is the register that says what every input is there to prove. For SSG the repository holds one
+fixture, whose origin was never established. Three SSG builds turned up in the CIS sweep's downloads, misfiled as
+CIS (finding F2), and on 2026-11-20 six builds were measured, four of them from the published release v0.1.82.
+Card 13 adds real SSG builds as fixtures before the SSG family row is implemented.
 
 ## Prior Art
 
@@ -270,7 +298,9 @@ No dependency is adopted; the footprint change is zero in both `go.mod` and `pac
 - **Pros:** everything about a rule's controls in one place.
 - **Why rejected:** a list of objects in a tag renders as `map[…]` / `[object Object]` in the generated InSpec
   controls, breaking Go/TS parity and the profile; and the safeguard's title, groups and functions are facts about
-  the safeguard, repeated in every rule. Rules carry URNs; the catalog sits once at benchmark level.
+  the safeguard, repeated in every rule. The catalog sits once at benchmark level. (Revised 2026-11-20: rules carry
+  `cis_controls` as the published one-element list holding a version-to-ids map, and the generators learn to render
+  it; the safeguard objects still do not go on the rule, so this alternative stays rejected.)
 
 ### F: Parse `release-info` in the consumers that need it
 
@@ -281,6 +311,67 @@ No dependency is adopted; the footprint change is zero in both `go.mod` and `pac
 
 - **Why rejected:** ADR-0018's release check and disposition hints cannot be built, and the next consumer finds the
   next gap.
+
+### 6. The parser identifies the document first, and every mapping follows the family
+
+An XCCDF file has three facts a consumer cannot guess and the converter decided none of them before this revision:
+its **shape** (benchmark, benchmark with results, ARF; the data stream of a separate card), its **version** (1.1 or
+1.2) and its **family**, the publisher whose conventions it follows. Shape was already decided in code and never
+recorded; version was handled by ignoring namespaces; family was never decided, so the DISA STIG tag set ran on
+every rule of every file (`buildBaselineTags` is commented "STIG-specific tags"): a CIS or SSG rule got
+`stig_id: ""`, `nist: []`, a `check_id` holding the OVAL system URL, and no identity of its own, and the InSpec
+generator wrote all of it into a profile.
+
+**Identification runs first, once, in both parsers, and is recorded.** Under `extensions.passthrough`:
+`documentShape` (`benchmark` | `results` | `arf`), `xccdfVersion` (`1.1` | `1.2`), `benchmarkFamily`
+(`disa-stig` | `cis` | `ssg` | `unknown`). The fingerprint reports the same three in its label once they exist.
+The signals, measured on the 2026-10-29 corpora:
+
+| Family | Signal | Measured |
+|---|---|---|
+| `disa-stig` | `plain-text[@id="release-info"]` present and the description bodies carry `VulnDiscussion` | 2,548 of 2,548 DISA files, 2009–2026; `xccdf_mil.disa.stig_` id prefix on 1.2 content as a third signal |
+| `cis` | Benchmark id starts `xccdf_org.cisecurity.benchmarks_` or `cis_`, or a `cisecurity.org` namespace is used | 433 of 433 real CIS files, 2006–2026 (two further files in that sweep are synthetic test data) |
+| `ssg` | Benchmark id starts `xccdf_org.ssgproject.content_`, or `version/@update` is a `github.com/ComplianceAsCode` URL | 6 of 6 builds measured 2026-11-20: four at v0.1.82 carry both signals; two 0.1.58 builds (ids `UBUNTU-XENIAL`, `UBUNTU_20-04`) carry `@update` alone |
+| `unknown` | none of the above | the hand-made minimal fixtures |
+
+No CIS or SSG file carries a DISA signal; the detector asserts exactly one family or `unknown`, never a guess.
+
+**The family row.** Every per-rule mapping, the generators and ADR-0018's identity read one row. The generic part
+applies to every family: `gid`, `gtitle`, `rid` (the XCCDF ids as published, DISA 1.2 prefixes stripped), `severity`
+(the rule's own `low`, `medium` or `high`; medium, with impact 0.5, when the file gives none or says `unknown`),
+`profiles` (the ids of the profiles that select the rule), `default`/`rationale`/`fix`/`check`/`warning`
+descriptions when the text exists. The family part is:
+
+| | DISA STIG | CIS | SSG |
+|---|---|---|---|
+| Stable key | SV number, revision-free (`SV-257777`) | benchmark slug, `-cis-`, recommendation number (`google-chrome-cis-1.1.11`; the number is parsed from the rule id as SAF CLI's `--idType cis` does); a rule whose id carries no number (all 29 rules of the 2007 ESX 3.5 benchmark) keeps its published id | rule short name (`accounts_password_minlen_login_defs`, after `_rule_`) |
+| InSpec control id | `SV-257777` | `<slug>-cis-1.1.11`, the form MITRE's CIS baselines use (`aws-foundations-cis-1.1`, `microsoft-sql-server-2017-cis-1.1`); `<slug>` is the benchmark title with the leading `CIS ` and trailing ` Benchmark` removed, kebab-cased (`google-chrome`) | the short name |
+| Identity tags | `stig_id`, `cci`, `nist` (from CCIs), `check_id`, `fix_id`, `legacy_id`, `cce`, `weight`, `role` | `cis_id` (`1.1.11`, the name MITRE's CIS baselines use), `cis_level` (`Level 1`, the lowest level whose profile selects the rule; Level 3 exists), `cis_profiles` (every selecting profile's title, keeping the Server/Workstation axis), `assessment_status` (`Automated` for `role="full"`, `Manual` for `unscored`), `cis_controls` (`[{ "8": ["5.4"], "7": ["4.1"] }]`, a one-element list holding the framework version to ids map, the form MITRE's CIS baselines write, from the ident `controlURI`s and the safeguards; the InSpec generators are taught to render a map as a Ruby hash; the catalog stays in `passthrough.cisSafeguards`), `cci` and `nist` from the CIS Controls to CCI mapping (card 15), `cce` when present | `cce`, and from `reference` by framework (cross-references to other publishers' ids, including the `stig_id` of the DISA rule an SSG rule implements): `nist`, `srg`, `stig_id`, `cis_controls` and the CIS benchmark number as tags, every other framework (ISO 27001, ISA 62443, COBIT, CSF, HIPAA, NERC CIP, PCI DSS, ANSSI, BSI, ISM, NIAP, CJIS) under `passthrough.references` grouped by framework; frameworks are matched by a table of URL patterns because the hrefs change between releases |
+| Descriptions | `default` from `VulnDiscussion`, `check`, `fix`; the ten sub-elements as tags | `default`, `rationale`, `fix`; `check` when inline content exists (the six CIS fixtures carry no separate audit, default-value or impact elements) | `default`, `rationale`, `warning`; `fix` is the shell `fix` script, because SSG publishes no `fixtext` (0 of 1,540 RHEL 9 rules), and every `fix` script is kept per system in passthrough for the hardening generator |
+| Severity model | `high`/`medium`/`low` → impact 0.7/0.5/0.3, CAT I/II/III | none in the file: `severity` medium and impact 0.5, the convention MITRE's CIS baselines use | `high`/`medium`/`low` as DISA; `unknown` (3% to 7% of rules in v0.1.82) becomes medium and 0.5, which is DISA's own rating for the four `unknown` rules in RHEL 9's STIG profile |
+| `inspec.yml` | `name` kebab of the benchmark id, `version` `<version>.<release>.0` | `name` the benchmark slug with `-cis` (`google-chrome-cis`), `version` as published (`2.1.0`) | `name` the id after `_benchmark_`, `version` as published |
+| Ansible (ADR-0018) | `cat1`–`cat3`, toggles `<role>_sv_NNNNNN` | `level1`–`level3`, toggles `<role>_rule_1_1_11`; upgrade matching needs the title tier because CIS renumbers sections between versions | the short name as key; decided with card 13 |
+
+**One builder, one table.** The family table is data: `hdf-converters/shared/xccdf-families.json`, loaded by both
+parsers and the InSpec generator, with a schema and a test that every row is exercised by a fixture. One
+rule-identity builder per language, keyed by family, serves the benchmark path and the results path, so a CIS rule
+gets the same tags whether it arrives as a benchmark or inside scan results; this replaces the two builders
+(`buildBaselineTags` and `buildTags`) and changes the results path, which earlier revisions left out of scope.
+Tools that assume a DISA STIG keep accepting any family: the CKL, CKLB and XCCDF exporters already do, and
+`hdf generate upgrade --id-type cis`, which overwrites each id with the raw `rid`, is changed to keep the id the
+converter wrote.
+
+`cci` and `nist` on CIS rules come from `mitre/cis-cci-mappings`, the validated CIS Controls (v7, v8, v8.1)
+safeguard-to-CCI crosswalk (472 mappings, every v8 safeguard covered, each with a primary CCI, supporting CCIs,
+confidence and the NIST control), vendored into `hdf-mappings` as a family beside CCI, CWE and the others (card 15)
+and resolved per safeguard in `cis_controls`, for every Controls version the crosswalk covers, the results merged,
+deduplicated and sorted (the placeholder safeguard `0.0` is skipped): `cci` from the crosswalk's primary CCI, `nist`
+from the crosswalk's own validated `nist_control`, both exposed by `hdf-mappings` as CIS-to-CCI and CIS-to-NIST lookups. The existing
+CCI-to-NIST table is a test cross-check on the crosswalk, not the source. A safeguard the crosswalk does not cover
+(one v7 sentinel) contributes nothing, so the tags are absent, never empty. The DISA family keeps every tag it
+has today, so no DISA golden changes shape. The CIS and SSG
+rows are chosen to match the profiles already in use (MITRE's CIS baselines, SAF CLI's `--idType cis`), so the
+upgrade matcher meets prior work that looks like its own output.
 
 ## Consequences
 
@@ -293,14 +384,17 @@ No dependency is adopted; the footprint change is zero in both `go.mod` and `pac
 
 **What becomes harder:**
 
-- The three existing benchmark-path goldens (`benchmark-minimal-1.1`, `benchmark-minimal-1.2`,
-  `benchmark-ssg-nested-groups`) change, plus the two new ones. Nothing else compares a benchmark Baseline byte for
+- Every benchmark-path golden under `fixtures/expected/` changes: the three that existed when this was first written
+  (`benchmark-minimal-1.1`, `benchmark-minimal-1.2`, `benchmark-ssg-nested-groups`) and the DISA and CIS goldens
+  added since. Nothing else compares a benchmark Baseline byte for
   byte: `hdf-fixtures/baseline/` holds static files, the CLI tests assert by `Contains` and schema, the generator and
   MCP goldens have no XCCDF input.
 - The allowlist is one more file to update when a field is added — which is the point.
 - The passthrough and tag keys become a contract: `benchmarkRelease`, `benchmarkDate`, `cisSafeguards`,
-  `cis_level`, `cis_controls`, the ten sub-element names. They are chosen here; renaming later is a breaking change
-  for consumers.
+  `documentShape`, `xccdfVersion`, `benchmarkFamily`, the CIS family tags of decision 6, the ten sub-element names.
+  They are chosen here; renaming later is a breaking change for consumers.
+- Every CIS and SSG golden changes shape once decision 6 lands (the STIG tags leave, the family tags arrive); the
+  DISA goldens do not. The generated CIS profile changes completely, which is the point.
 - Two vocabularies for the DISA sub-elements exist until the CKL exporter reads both.
 
 **Risks:**
@@ -318,9 +412,19 @@ No dependency is adopted; the footprint change is zero in both `go.mod` and `pac
 
 ## Open Questions
 
-None. The key names in decision 2 are this ADR's choice; no prior convention exists for the CIS and benchmark-level
-keys, the DISA sub-element names follow the snake_case of the element names, and `documentable` is a boolean because
-the existing `hdf-fixtures` Baseline already carries it that way.
+- Settled 2026-11-20: the CIS slug is the benchmark title without the leading `CIS ` and trailing ` Benchmark`,
+  kebab-cased (`google-chrome`); it never includes `-cis` itself. A requirement id is `<slug>-cis-<number>` and the
+  `inspec.yml` name is `<slug>-cis`.
+- Settled 2026-11-20: SSG references become the tags `nist`, `srg`, `stig_id`, `cis_controls` and the CIS benchmark
+  number, and `passthrough.references` for every other framework. Still open: the tag name for the CIS benchmark
+  number on an SSG rule, whether the `SV-` and `V-` references are tags, how SSG's 800-53 revision 4 ids with
+  sub-part letters (`CM-6(a)`) are normalised, and the SSG Ansible key.
+- Settled 2026-11-20, for now: a CIS rule's `cci` tag holds the primary CCI only; the supporting CCIs stay in the
+  vendored data and the `hdf-mappings` lookup.
+
+The key names in decision 2 otherwise remain this ADR's choice; the DISA sub-element names follow the snake_case of
+the element names, and `documentable` is a boolean because the existing `hdf-fixtures` Baseline already carries it
+that way.
 
 ## Implementation Plan
 
@@ -332,19 +436,21 @@ the existing `hdf-fixtures` Baseline already carries it that way.
 - `gid`/`rid` normalisation for DISA XCCDF 1.2 input; `complex-check` on the benchmark path.
 - The completeness test of decision 3, with `xccdf-1.1.4.xsd` vendored and the shared allowlist.
 - The two fixtures of decision 5 with provenance.
-- `inspec.yml` version from the release (decision 4).
+- `inspec.yml` version from the release (decision 4), and the generator's profile style per family (decisions 4 and 6).
+- Identification of shape, version and family, recorded in the Baseline, and the per-family contract (decision 6).
+- The SSG corpus and family row (decision 6, card 13).
+- The CIS Controls to CCI crosswalk as an `hdf-mappings` family, and `cci`/`nist` on CIS rules from it (card 15).
 - The converter's page under `site/docs/`, including the CKL crosswalk, and the spec line that still says a Baseline
-  carries no `extensions` (`hdf-specification.md:245`).
+  carries no `extensions` (`hdf-specification.md:320`).
 
 **OUT of scope:**
 
 - Reading the Manual XCCDF out of a DISA zip (its own issue).
-- CIS Controls as a mapping family in `hdf-mappings` (the catalog carries the URNs and titles; a crosswalk to NIST
-  is later work).
 - Mapping CPE platform names into `supports[]`.
 - Teaching the CKL exporter to read the XCCDF tag names (its own card, when wanted).
 - Filling `verificationMethod` or `applicability` from the new tags (consumers decide; ADR-0018 says why).
-- Any change to the results path beyond fields it was also missing.
+- Any change to the results path beyond fields it was also missing and the shared rule-identity builder of
+  decision 6.
 - Generated parse types (Alternative A).
 
 ### Quality Standards (inherited by every card)
@@ -352,9 +458,10 @@ the existing `hdf-fixtures` Baseline already carries it that way.
 - **Framework-first:** XML parsing only through the existing `encoding/xml` structs and `parseXmlWithArrays`
   (`fast-xml-parser`); no new dependency in either language. Passthrough written through the same `setIfNotEmpty` /
   `setIf` pattern the CKL path uses, under `extensions.passthrough`, flat. CCI → NIST untouched.
-- **Existing patterns:** tag building extends `buildBaselineTags` / the TS `ruleToBaselineRequirement` tag object;
+- **Existing patterns:** tag building moves from `buildBaselineTags` / the TS `ruleToBaselineRequirement` tag object
+  into the shared family-keyed builder of decision 6;
   the fixture procedure is the `/fixtures` skill, including `provenance.txt` and goldens for every new input; tag
-  values are strings, booleans or lists of strings, never objects.
+  values are strings, booleans or lists of strings, never objects, except `cis_controls` (decision 6).
 - **Go/TS parity:** every card lands both languages; goldens byte-identical; the completeness test reads one shared
   allowlist and the walker's path output is identical in both languages.
 - **Tests:** TDD; >90% coverage; the completeness test and the arrival assertions are the spec; no time-dependent
@@ -373,9 +480,10 @@ the existing `hdf-fixtures` Baseline already carries it that way.
 
 ### Cards
 
-Ten cards under one epic. Each is one TDD loop and one review (1–5 story points), inherits the Quality Standards,
+Cards under one epic. Each is one TDD loop and one review (1–5 story points), inherits the Quality Standards,
 and points its `Prior art checked` section at this ADR's Prior Art table. Go and TypeScript land in the same card.
-Total: 27 story points.
+The first ten cards totalled 27 story points; cards 11 to 15 were added on 2026-10-29. The board holds the current
+set and sizes.
 
 | # | Card | sp | Blocked by |
 |---|---|---|---|
@@ -384,11 +492,26 @@ Total: 27 story points.
 | 3 | Add the XSD walker and the allowlist, with every current field mapped and every gap listed as `skip` | 5 | 1 |
 | 4 | Add the arrival assertion over the allowlist | 3 | 2, 3 |
 | 5 | Carry benchmark-level facts into `extensions.passthrough`, including the release parse | 3 | 4 |
-| 6 | Carry `legacy_id`, `cce`, `weight`, `role`; normalise DISA `gid`/`rid`; read `complex-check` | 3 | 4 |
+| 6 | Carry `legacy_id`, `cce`, `weight`, `role`; normalise DISA `gid`/`rid`; read `complex-check` | 3 | 4, 12 |
 | 7 | Carry the ten DISA description sub-elements as tags | 3 | 4 |
-| 8 | Carry the CIS level, control URNs, safeguard catalog and URL refs | 3 | 4 |
+| 8 | Carry the CIS family row: `cis_id`, level, profiles, `cis_controls`, safeguard catalog and URL refs | 3 | 4, 12 |
 | 9 | `inspec.yml` version from the release | 1 | 5 |
 | 10 | Regenerate the goldens, write the docs page with the CKL crosswalk, fix the spec line | 2 | 5–8 |
+| 11 | One real fixture per measured DISA and CIS deviation, with the register (added 2026-10-29; done) | 5 | 2 |
+| 12 | Identify shape, version and family; record them; scope every tag to the family; carry check-content descendants; no empty tags (decision 6) | 5 | 4, 11 |
+| 13 | The SSG corpus: real `ssg-*-xccdf.xml` builds per measured deviation, the SSG family row decided from them | 3 | 11 |
+| 14 | The InSpec generator renders the profile style per family (decision 4) | 3 | 12 |
+| 15 | Vendor `mitre/cis-cci-mappings` (v7, v8, v8.1) into `hdf-mappings` with provenance; `cci` and `nist` on CIS rules from `cis_controls` through it | 3 | 8 |
+
+Cards 6 and 8 are re-scoped by this revision: card 6 emits its DISA tags only on the `disa-stig` family; card 8
+emits the CIS family row of decision 6 (not URNs, not `["L1","L2"]`), and both depend on card 12. Card 10 documents
+the families. Card 12 comes before 6 and 8; the vendor schemas of the later vendor-schema card are derived per family.
+
+On the board (epic `hdf-libs-lrgu7`) the cards above are: 1 `lrgu7.1`, 2 `lrgu7.2`, 3 `lrgu7.11`, 4 `lrgu7.12`,
+5 `lrgu7.13`, 6 `lrgu7.14`, 7 `lrgu7.15`, 8 `lrgu7.16`, 9 `lrgu7.17`, 10 `lrgu7.18`, 11 `lrgu7.21`. Cards 1 to 5, 7,
+9 and 11 are done. The identification part of card 12 is `lrgu7.24`; the rest of card 12 and cards 13 to 15 are
+created by `lrgu7.23` from the decided register. Two board cards have no number here: `lrgu7.19` (prose inside XHTML
+children, done) and `lrgu7.20` (vendor schemas for the DISA and CIS vocabularies).
 
 **Card 1: Vendor `xccdf-1.1.4.xsd`.**
 - Files: `hdf-converters/converters/hdf-to-xccdf/schemas/xccdf-1.1.4.xsd`, that directory's provenance record
@@ -411,7 +534,7 @@ Total: 27 story points.
   `go/coverage_test.go`, `typescript/coverage.test.ts`
 - ACs: the walker reads both XSDs with the built-in parser, resolves `xs:element ref=`, the `itemType →
   selectableItemType → ruleType | groupType` chain, `xs:any` / `xs:anyAttribute` and the `complex-check` cycle, and
-  emits the union path set, identical in Go and TS (347 paths with `Profile`); every path is in the allowlist or the
+  emits the union path set, identical in Go and TS (628 paths as built, pinned in `fixtures/xccdf-coverage.json`); every path is in the allowlist or the
   test names the missing one; every allowlist path outside `vendor` is defined by at least one schema or the test
   names it; subtree rows cover `TestResult` and `Value`; the `vendor` section lists the DISA sub-elements and the
   CIS safeguard tree; at this card every field the converter already carries is mapped and every gap of decision 2 is
@@ -446,14 +569,51 @@ Total: 27 story points.
   from the V2R9 fixture or carries `fixture: none` with the reason from card 2's provenance; goldens and allowlist
   updated.
 
-**Card 8: CIS level, control URNs, safeguard catalog, URL refs.**
+**Card 8: The CIS family row (re-scoped 2026-10-29).**
 - Files: as card 5
-- ACs: `cis_level` from `Profile` membership by title (`["L1","L2"]` for an L1 rule); `cis_controls` as URNs from
-  both the ident attributes (framework from `@system`, URI converted to URN) and the safeguard elements, deduplicated,
-  sorted; `extensions.passthrough.cisSafeguards[]` with title, implementation groups (from the `igN` attributes),
-  asset type and security function per framework, deduplicated on URN, sorted; `ident system="URL"` into `refs`;
-  identical between the two parsers on the Chrome fixture; no CIS key on the DISA fixture; goldens and allowlist
-  updated.
+- ACs: on `cis` Baselines only: `cis_id`, `cis_level` (lowest selecting level, `Level 1`–`Level 3`),
+  `cis_profiles`, `assessment_status` from `@role`, `cis_controls` as a one-element list holding the
+  framework-version-to-ids map from both the
+  ident `controlURI`s and the safeguards, deduplicated, sorted; `extensions.passthrough.cisSafeguards[]` with title,
+  implementation groups (from the `igN` attributes), asset type and security function per framework, deduplicated on
+  urn, sorted; `ident system="URL"` into `refs`; no STIG tag and no empty tag on any CIS rule; identical between the
+  two parsers on every CIS fixture; no CIS key on the DISA fixtures; goldens and allowlist updated.
+
+**Card 12: Identification and the family-scoped tag set.**
+- Files: `go/converter.go`, `typescript/converter.ts` (a `identifyBenchmark` step before the benchmark path's tag
+  builder; the fingerprint label), `go/fingerprint.go`, `typescript/fingerprint.ts`, their tests, goldens, the
+  allowlist (rows keyed by family where a target is family-specific)
+- ACs: every fixture in `fixtures/input` is identified with the family and version its register row states and the
+  three keys are in its Baseline; the DISA tag set appears only on `disa-stig` Baselines and every DISA golden is
+  unchanged apart from the three keys; no CIS or SSG rule carries `check_id`, `fix_id`, an empty `nist`, or a `stig_id` taken from `Rule/version` (an SSG
+  rule's `stig_id` comes only from its DISA `reference`, decision 6);
+  check text arrives for the ESX 3.5 rules from the `ecl:` children; a file with no signal is `unknown` with the
+  generic tags only and a warning; Go and TS identical.
+
+**Card 13: The SSG corpus and family row.**
+- Files: `fixtures/input/<ssg builds>`, goldens, `provenance.txt`, `README.md`, the allowlist
+- ACs: real ComplianceAsCode build products (`ssg-<product>-xccdf.xml`, at least the oldest and newest release the
+  project publishes and one data-stream-derived file), trimmed by whole elements with provenance; the SSG shapes
+  measured (references by framework, profiles, `cce`, severity, nested Groups) and recorded in the register; the SSG
+  row of decision 6 filled in from them, with the owner's yes on the tag names.
+
+**Card 15: CIS Controls to CCI, and NIST on CIS rules.**
+- Files: `hdf-mappings/src/data/cis-cci-mapping-v{7,8,8.1}.json` with their schema and a provenance record (source
+  repository, commit, sha256 as retrieved), `hdf-mappings/src/cis/`, `hdf-mappings/go/cis/`, their tests, the
+  converter's CIS family row, goldens, the allowlist rows for `cci` and `nist` on CIS fixtures
+- ACs: `CISToCCI(version, safeguard)` (primary, supporting available) and `CISToNIST(version, safeguard)` (the
+  crosswalk's `nist_control`) in both languages, byte-identical results from one shared vector table; a test
+  cross-checks every entry's primary CCI against the existing CCI-to-NIST table and records the disagreements; a CIS
+  fixture rule with safeguards 5.4 (v8) and 4.1 (v7) carries `cci` and `nist` in its golden; an unmapped safeguard
+  yields no tag; the `hdf-mappings` README table gains the two rows.
+
+**Card 14: The generator's profile style per family.**
+- Files: `hdf-generators/go/`, `hdf-generators/src/`, their tests, the generator docs
+- ACs: control ids, `inspec.yml` `name` and `version`, and description labels follow the family row; a CIS profile
+  generated from the Chrome fixture has `control 'google-chrome-cis-1.1.1'` with the CIS tags and no STIG tag; a DISA
+  profile is unchanged; an `unknown` Baseline renders the generic style with a notice; a map-valued tag
+  (`cis_controls`) is written as a Ruby hash in both languages; `inspec check` passes on each generated profile; Go
+  and TS byte-identical.
 
 **Card 9: `inspec.yml` version from the release.**
 - Files: `hdf-generators/go/generator.go`, `hdf-generators/src/inspec-yml.ts`, their tests
@@ -462,7 +622,7 @@ Total: 27 story points.
 
 **Card 10: Goldens, docs, spec line.**
 - Files: the three existing benchmark-path goldens, `site/docs/` converter page,
-  `site/docs/specification/hdf-specification.md:245`
+  `site/docs/specification/hdf-specification.md:320`
 - ACs: `pnpm check` and `pnpm test:go` green across the workspace; the docs page lists every passthrough key, tag
   and description label the benchmark path emits with the allowlist as its source, and the crosswalk to the CKL
   path's `cklMetadata` and `legacy_ids` names; the spec no longer says a Baseline carries no `extensions`; no emoji.
