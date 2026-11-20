@@ -296,15 +296,32 @@ function buildCodeDesc(match: GrypeMatch): string {
   return parts.join(' | ');
 }
 
-// buildCvssEntries emits one schema Cvss entry per element of
-// vulnerability.cvss[]. Related-vulnerability CVSS arrays are NOT merged in;
-// the schema contract is "one entry per source-CVE metric set".
-function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
-  if (!vuln.cvss || vuln.cvss.length === 0) {
+// cvssForMatch returns the CVSS metric sets of the match's own CVE: the
+// vulnerability's cvss[] when present, otherwise those of the related entry
+// with the same id (Grype puts NVD's record there for distro-namespace
+// matches), as getDescription does for descriptions. A related entry with a
+// different id is another vulnerability and is never used.
+function cvssForMatch(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVulnerability[]): GrypeCVSS[] {
+  if (vuln.cvss && vuln.cvss.length > 0) {
+    return vuln.cvss;
+  }
+  for (const related of relatedVulns ?? []) {
+    if (related.id === vuln.id && related.cvss && related.cvss.length > 0) {
+      return related.cvss;
+    }
+  }
+  return [];
+}
+
+// buildCvssEntries maps each CVSS metric set of the match's own CVE (see
+// cvssForMatch) to a schema Cvss entry, with the CVE id as its source.
+function buildCvssEntries(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVulnerability[]): Cvss[] | undefined {
+  const metricSets = cvssForMatch(vuln, relatedVulns);
+  if (metricSets.length === 0) {
     return undefined;
   }
   const entries: Cvss[] = [];
-  for (const c of vuln.cvss) {
+  for (const c of metricSets) {
     const entry = buildSharedCvss({
       version: cvssVersionFromString(c.version),
       baseScore: c.metrics?.baseScore,
@@ -479,7 +496,7 @@ function convertMatchToRequirement(match: GrypeMatch, rawMatch: unknown, isIgnor
 
   // Structured CVE-ecosystem fields (omit when empty/absent so output stays
   // tight; the schema treats all five as optional).
-  const cvss = buildCvssEntries(vuln);
+  const cvss = buildCvssEntries(vuln, match.relatedVulnerabilities);
   if (cvss) requirement.cvss = cvss;
   requirement.affectedPackages = buildAffectedPackages(match);
   const cwe = extractCwe(vuln.cwe);
