@@ -3,7 +3,7 @@
  */
 
 import type { NessusNistMappings } from './types.js';
-import rawMappings from '../data/nessus-nist-mappings.json';
+import rawMappings from '../../go/datasets/mappings/nessus-nist-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // The table was authored against NIST 800-53 Rev 4 (heimdall2's mapping; it

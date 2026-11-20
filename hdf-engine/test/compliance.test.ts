@@ -109,8 +109,8 @@ describe('compliance counts + percentage — parity with go/compliance_test.go',
     expect(counts.error.total).toBe(1);
     // Was counts.error.none before 3.7.0 renamed the bucket.
     expect(counts.error.informational).toBe(1);
-    expect(counts.noImpact.total).toBe(1);
-    expect(counts.noImpact.medium).toBe(1);
+    expect(counts.notApplicable.total).toBe(1);
+    expect(counts.notApplicable.medium).toBe(1);
     expect(calculateCompliance(counts)).toBe(25.0);
   });
 
@@ -241,23 +241,28 @@ describe('agent-override detective surface — parity with go/compliance_test.go
   });
 
   it('mapControlIDsByStatus uses the injected resolver, diverging from raw mapControlIDs', () => {
-    // Impact-0 notReviewed: skipped under raw counting, no_impact under the
-    // effective-status resolver. Parity: go/compliance_test.go.
+    // A waived failing control: failed under raw counting, not_applicable under
+    // the effective-status resolver. An override is the only channel that moves
+    // a status, so it is the only way the two can disagree.
+    // Parity: go/compliance_test.go.
     const na: EvaluatedRequirement = {
       id: 'SV-NA',
-      impact: 0.0,
-      results: [{ status: 'notReviewed' } as RequirementResult],
+      impact: 0.5,
+      results: [{ status: 'failed' } as RequirementResult],
+      statusOverrides: [
+        { status: 'notApplicable', appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' },
+      ],
     } as EvaluatedRequirement;
     const results = { baselines: [{ requirements: [na] }] } as HDFResults;
 
     const raw = mapControlIDs(results);
     expect(raw).toHaveLength(1);
-    expect(raw[0]!.status).toBe('skipped');
+    expect(raw[0]!.status).toBe('failed');
 
     const eff = mapControlIDsByStatus(results, (req) => computeEffectiveStatus(statusInput(req)));
     expect(eff).toHaveLength(1);
     expect(eff[0]!.id).toBe('SV-NA');
-    expect(eff[0]!.status).toBe('no_impact');
+    expect(eff[0]!.status).toBe('not_applicable');
 
     // An absent resolver maps everything to skipped.
     expect(mapControlIDsByStatus(results)[0]!.status).toBe('skipped');
@@ -282,7 +287,7 @@ describe('agent-override detective surface — parity with go/compliance_test.go
       computeEffectiveStatus(statusInput(req))
     );
     expect(counts.error.total).toBe(1);
-    expect(counts.noImpact.total).toBe(0);
+    expect(counts.notApplicable.total).toBe(0);
   });
 });
 
@@ -339,7 +344,7 @@ function oneFailedCount(): StatusCounts {
     failed: { ...zero, total: 1 },
     skipped: { ...zero },
     error: { ...zero },
-    noImpact: { ...zero },
+    notApplicable: { ...zero },
   };
 }
 
@@ -616,7 +621,7 @@ const zeroStatusCounts = (): StatusCounts => ({
   failed: zeroSeverityCounts(),
   skipped: zeroSeverityCounts(),
   error: zeroSeverityCounts(),
-  noImpact: zeroSeverityCounts(),
+  notApplicable: zeroSeverityCounts(),
 });
 
 // The same hand-built counts Go's legacy-`none` tests use, so the two languages
@@ -626,7 +631,82 @@ const threeInformationalNoImpact = (): StatusCounts => ({
   failed: zeroSeverityCounts(),
   skipped: zeroSeverityCounts(),
   error: zeroSeverityCounts(),
-  noImpact: { ...zeroSeverityCounts(), informational: 3, total: 3 },
+  notApplicable: { ...zeroSeverityCounts(), informational: 3, total: 3 },
+});
+
+describe('the two notApplicable key spellings — parity with go/compliance_test.go', () => {
+  const twoLowNotApplicable = (): StatusCounts => ({
+    ...zeroStatusCounts(),
+    notApplicable: { ...zeroSeverityCounts(), low: 2, total: 2 },
+  });
+  const controlMap = [
+    { id: 'C-1', title: 'C-1', status: 'not_applicable', severity: 'low' },
+    { id: 'C-2', title: 'C-2', status: 'not_applicable', severity: 'low' },
+  ];
+
+  // Byte-identical to the strings Go's
+  // TestValidateThresholds_BothNotApplicableSpellingsAreAccepted asserts.
+  it('applies either spelling and names the one the author wrote', () => {
+    const counts = twoLowNotApplicable();
+
+    expect(
+      validateThresholds({ notApplicable: { total: { max: 0 } } }, counts, 100, controlMap),
+    ).toEqual(['not_applicable.total: 2 exceeds maximum 0']);
+
+    expect(validateThresholds({ noImpact: { total: { max: 0 } } }, counts, 100, controlMap)).toEqual(
+      ['no_impact.total: 2 exceeds maximum 0'],
+    );
+  });
+
+  // The control map records the canonical status whichever spelling the spec
+  // used, so a named-control bound must still resolve its offenders.
+  it('resolves a named control through either spelling', () => {
+    const counts = twoLowNotApplicable();
+    expect(
+      validateThresholds({ noImpact: { low: { controls: ['C-1'] } } }, counts, 100, controlMap),
+    ).toEqual([]);
+  });
+
+  // Parity: TestValidateThresholds_MismatchNamesTheAuthorsSpelling in go/.
+  // The FOUND bucket is reported in the spelling the author wrote; the control
+  // map always records not_applicable, and a SAF-spelled spec must not be told
+  // about a key absent from its own file.
+  it('names the author spelling on both sides of a mismatch', () => {
+    const counts: StatusCounts = {
+      ...zeroStatusCounts(),
+      notApplicable: { ...zeroSeverityCounts(), low: 1, total: 1 },
+    };
+    const controlMap = [{ id: 'C-1', title: 'C-1', status: 'not_applicable', severity: 'low' }];
+
+    expect(
+      validateThresholds({ noImpact: { high: { controls: ['C-1'] } } }, counts, 100, controlMap),
+    ).toEqual(['no_impact.high: control C-1 expected no_impact/high but found no_impact/low']);
+
+    expect(
+      validateThresholds(
+        { notApplicable: { high: { controls: ['C-1'] } } },
+        counts,
+        100,
+        controlMap,
+      ),
+    ).toEqual([
+      'not_applicable.high: control C-1 expected not_applicable/high but found not_applicable/low',
+    ]);
+  });
+
+  // Byte-identical to the string Go's
+  // TestValidateThresholds_BothNotApplicableSpellingsIsRefused pins.
+  it('refuses a spec setting both spellings', () => {
+    const violations = validateThresholds(
+      { notApplicable: { total: { max: 0 } }, noImpact: { total: { max: 0 } } },
+      zeroStatusCounts(),
+      100,
+      [],
+    );
+    expect(violations[0]).toBe(
+      "both 'no_impact' and 'not_applicable' are set; they name the same bucket",
+    );
+  });
 });
 
 describe('the former `none` name and severity bucketing — parity with go/compliance_test.go', () => {
@@ -854,7 +934,7 @@ describe('named-control assertions over duplicate ids — parity with go/complia
     expect(counts.failed.medium).toBe(246);
     expect(counts.passed.total).toBe(134);
     expect(
-      counts.passed.total + counts.failed.total + counts.skipped.total + counts.error.total + counts.noImpact.total,
+      counts.passed.total + counts.failed.total + counts.skipped.total + counts.error.total + counts.notApplicable.total,
     ).toBe(1603);
   });
 

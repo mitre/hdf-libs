@@ -11,7 +11,7 @@ import {
 import * as mainIndex from '../src/index.js';
 import { setCurrentNistRevision, resetNistRevision } from '../src/nist/index.js';
 
-const GO_DATASET = join(dirname(fileURLToPath(import.meta.url)), '..', 'go', 'checkov', 'checkov-cci-nist-mappings.json');
+const GO_DATASET = join(dirname(fileURLToPath(import.meta.url)), '..', 'go', 'datasets', 'mappings', 'checkov-cci-nist-mappings.json');
 
 describe('Checkov check_id to CCI/NIST mappings', () => {
   afterEach(() => {

@@ -1,0 +1,327 @@
+<?xml version="1.0" ?>
+<testsuites disabled="0" errors="0" failures="17" tests="43" time="0.0">
+	<testsuite disabled="0" errors="0" failures="12" name="terraform scan" skipped="0" tests="18" time="0">
+		<properties>
+			<property name="directory" value="['.']"/>
+			<property name="add_check" value="False"/>
+			<property name="list" value="False"/>
+			<property name="output" value="['junitxml']"/>
+			<property name="output_bc_ids" value="False"/>
+			<property name="include_all_checkov_policies" value="True"/>
+			<property name="quiet" value="True"/>
+			<property name="compact" value="False"/>
+			<property name="framework" value="['all']"/>
+			<property name="skip_framework" value="[]"/>
+			<property name="run_all_external_checks" value="False"/>
+			<property name="soft_fail" value="False"/>
+			<property name="skip_results_upload" value="False"/>
+			<property name="repo_id" value="cli_repo/checkov-scan"/>
+			<property name="branch" value="master"/>
+			<property name="skip_download" value="False"/>
+			<property name="use_enforcement_rules" value="False"/>
+			<property name="external_modules_download_path" value=".external_modules"/>
+			<property name="evaluate_variables" value="True"/>
+			<property name="no_cert_verify" value="False"/>
+			<property name="create_baseline" value="False"/>
+			<property name="output_baseline_as_skipped" value="False"/>
+			<property name="secrets_scan_file_type" value="[]"/>
+			<property name="enable_secret_scan_all_files" value="False"/>
+			<property name="block_list_secret_scan" value="[]"/>
+			<property name="summary_position" value="top"/>
+			<property name="skip_resources_without_violations" value="False"/>
+			<property name="deep_analysis" value="False"/>
+			<property name="no_fail_on_crash" value="False"/>
+			<property name="mask" value="defaultdict(&lt;class 'set'&gt;, {})"/>
+			<property name="scan_secrets_history" value="False"/>
+			<property name="secrets_history_timeout" value="12h"/>
+			<property name="custom_tool_name" value="Checkov"/>
+		</properties>
+		<testcase name="[NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)" classname="/main.tf.aws_s3_bucket.example" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1" classname="/main.tf.aws_security_group.wide_open" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1" classname="/main.tf.aws_security_group.wide_open" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access." classname="/main.tf.aws_s3_bucket.example" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access." classname="/main.tf.aws_s3_bucket.example" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest" classname="/main.tf.aws_s3_bucket.example" file="/main.tf"/>
+		<testcase name="[NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80" classname="/main.tf.aws_security_group.wide_open" file="/main.tf">
+			<failure type="failure" message="Ensure no security groups allow ingress from 0.0.0.0:0 to port 80">
+Resource: aws_security_group.wide_open
+File: /main.tf: 5-15
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-security-groups-do-not-allow-ingress-from-00000-to-port-80
+
+		5  | resource "aws_security_group" "wide_open" {
+		6  |   name        = "wide-open"
+		7  |   description = "Allows everything in"
+		8  | 
+		9  |   ingress {
+		10 |     from_port   = 0
+		11 |     to_port     = 65535
+		12 |     protocol    = "tcp"
+		13 |     cidr_blocks = ["0.0.0.0/0"]
+		14 |   }
+		15 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22" classname="/main.tf.aws_security_group.wide_open" file="/main.tf">
+			<failure type="failure" message="Ensure no security groups allow ingress from 0.0.0.0:0 to port 22">
+Resource: aws_security_group.wide_open
+File: /main.tf: 5-15
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-1-port-security
+
+		5  | resource "aws_security_group" "wide_open" {
+		6  |   name        = "wide-open"
+		7  |   description = "Allows everything in"
+		8  | 
+		9  |   ingress {
+		10 |     from_port   = 0
+		11 |     to_port     = 65535
+		12 |     protocol    = "tcp"
+		13 |     cidr_blocks = ["0.0.0.0/0"]
+		14 |   }
+		15 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_23] Ensure every security group and rule has a description" classname="/main.tf.aws_security_group.wide_open" file="/main.tf">
+			<failure type="failure" message="Ensure every security group and rule has a description">
+Resource: aws_security_group.wide_open
+File: /main.tf: 5-15
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-31
+
+		5  | resource "aws_security_group" "wide_open" {
+		6  |   name        = "wide-open"
+		7  |   description = "Allows everything in"
+		8  | 
+		9  |   ingress {
+		10 |     from_port   = 0
+		11 |     to_port     = 65535
+		12 |     protocol    = "tcp"
+		13 |     cidr_blocks = ["0.0.0.0/0"]
+		14 |   }
+		15 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389" classname="/main.tf.aws_security_group.wide_open" file="/main.tf">
+			<failure type="failure" message="Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389">
+Resource: aws_security_group.wide_open
+File: /main.tf: 5-15
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-2
+
+		5  | resource "aws_security_group" "wide_open" {
+		6  |   name        = "wide-open"
+		7  |   description = "Allows everything in"
+		8  | 
+		9  |   ingress {
+		10 |     from_port   = 0
+		11 |     to_port     = 65535
+		12 |     protocol    = "tcp"
+		13 |     cidr_blocks = ["0.0.0.0/0"]
+		14 |   }
+		15 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource" classname="/main.tf.aws_security_group.wide_open" file="/main.tf">
+			<failure type="failure" message="Ensure that Security Groups are attached to another resource">
+Resource: aws_security_group.wide_open
+File: /main.tf: 5-15
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-that-security-groups-are-attached-to-ec2-instances-or-elastic-network-interfaces-enis
+
+		5  | resource "aws_security_group" "wide_open" {
+		6  |   name        = "wide-open"
+		7  |   description = "Allows everything in"
+		8  | 
+		9  |   ingress {
+		10 |     from_port   = 0
+		11 |     to_port     = 65535
+		12 |     protocol    = "tcp"
+		13 |     cidr_blocks = ["0.0.0.0/0"]
+		14 |   }
+		15 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure S3 buckets should have event notifications enabled">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-62
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure that an S3 bucket has a lifecycle configuration">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-61
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure the S3 bucket has access logging enabled">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-13-enable-logging
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure that S3 bucket has a Public Access block">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/s3-bucket-should-have-public-access-blocks-defaults-to-false-if-the-public-access-block-is-not-attached
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure that S3 buckets are encrypted with KMS by default">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-buckets-are-encrypted-with-kms-by-default
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure that S3 bucket has cross-region replication enabled">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-bucket-has-cross-region-replication-enabled
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled" classname="/main.tf.aws_s3_bucket.example" file="/main.tf">
+			<failure type="failure" message="Ensure all data stored in the S3 bucket have versioning enabled">
+Resource: aws_s3_bucket.example
+File: /main.tf: 1-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-16-enable-versioning
+
+		1 | resource "aws_s3_bucket" "example" {
+		2 |   bucket = "example-fixture-bucket"
+		3 | }
+</failure>
+		</testcase>
+	</testsuite>
+	<testsuite disabled="0" errors="0" failures="5" name="dockerfile scan" skipped="0" tests="25" time="0">
+		<properties>
+			<property name="directory" value="['.']"/>
+			<property name="add_check" value="False"/>
+			<property name="list" value="False"/>
+			<property name="output" value="['junitxml']"/>
+			<property name="output_bc_ids" value="False"/>
+			<property name="include_all_checkov_policies" value="True"/>
+			<property name="quiet" value="True"/>
+			<property name="compact" value="False"/>
+			<property name="framework" value="['all']"/>
+			<property name="skip_framework" value="[]"/>
+			<property name="run_all_external_checks" value="False"/>
+			<property name="soft_fail" value="False"/>
+			<property name="skip_results_upload" value="False"/>
+			<property name="repo_id" value="cli_repo/checkov-scan"/>
+			<property name="branch" value="master"/>
+			<property name="skip_download" value="False"/>
+			<property name="use_enforcement_rules" value="False"/>
+			<property name="external_modules_download_path" value=".external_modules"/>
+			<property name="evaluate_variables" value="True"/>
+			<property name="no_cert_verify" value="False"/>
+			<property name="create_baseline" value="False"/>
+			<property name="output_baseline_as_skipped" value="False"/>
+			<property name="secrets_scan_file_type" value="[]"/>
+			<property name="enable_secret_scan_all_files" value="False"/>
+			<property name="block_list_secret_scan" value="[]"/>
+			<property name="summary_position" value="top"/>
+			<property name="skip_resources_without_violations" value="False"/>
+			<property name="deep_analysis" value="False"/>
+			<property name="no_fail_on_crash" value="False"/>
+			<property name="mask" value="defaultdict(&lt;class 'set'&gt;, {})"/>
+			<property name="scan_secrets_history" value="False"/>
+			<property name="secrets_history_timeout" value="12h"/>
+			<property name="custom_tool_name" value="Checkov"/>
+		</properties>
+		<testcase name="[NONE][CKV_DOCKER_11] Ensure From Alias are unique for multistage builds." classname="/Dockerfile./Dockerfile." file="/Dockerfile"/>
+		<testcase name="[NONE][CKV_DOCKER_5] Ensure update instructions are not use alone in the Dockerfile" classname="/Dockerfile./Dockerfile." file="/Dockerfile"/>
+		<testcase name="[NONE][CKV_DOCKER_9] Ensure that APT isn't used" classname="/Dockerfile./Dockerfile." file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_1] Ensure that sudo isn't used" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_6] Ensure that certificate validation isn't disabled with the NODE_TLS_REJECT_UNAUTHORIZED environment variable" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_12] Ensure that certificate validation isn't disabled for npm via the 'NPM_CONFIG_STRICT_SSL' environment variable" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_5] Ensure that certificate validation isn't disabled with the PYTHONHTTPSVERIFY environment variable" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_13] Ensure that certificate validation isn't disabled for npm or yarn by setting the option strict-ssl to false" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_9] Ensure that packages with untrusted or missing GPG signatures are not used by dnf, tdnf, or yum via the '--nogpgcheck' option" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_8] Ensure that packages with untrusted or missing signatures are not used by apt-get via the '--allow-unauthenticated' option" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_15] Ensure that the yum and dnf package managers are not configured to disable SSL certificate validation via the 'sslverify' configuration option" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_10] Ensure that packages with untrusted or missing signatures are not used by rpm via the '--nodigest', '--nosignature', '--noverify', or '--nofiledigest' options" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_17] Ensure that 'chpasswd' is not used to set or remove passwords" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_3] Ensure that certificate validation isn't disabled with wget" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_16] Ensure that certificate validation isn't disabled with pip via the 'PIP_TRUSTED_HOST' environment variable" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_14] Ensure that certificate validation isn't disabled for git by setting the environment variable 'GIT_SSL_NO_VERIFY' to any value" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_4] Ensure that certificate validation isn't disabled with the pip '--trusted-host' option" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_11] Ensure that the '--force-yes' option is not used, as it disables signature validation and allows packages to be downgraded which can leave the system in a broken or inconsistent state" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_7] Ensure that packages with untrusted or missing signatures are not used by apk via the '--allow-untrusted' option" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV2_DOCKER_2] Ensure that certificate validation isn't disabled with curl" classname="/Dockerfile./Dockerfile.RUN" file="/Dockerfile"/>
+		<testcase name="[NONE][CKV_DOCKER_7] Ensure the base image uses a non latest version tag" classname="/Dockerfile./Dockerfile.FROM" file="/Dockerfile">
+			<failure type="failure" message="Ensure the base image uses a non latest version tag">
+Resource: /Dockerfile.FROM
+File: /Dockerfile: 1-1
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-the-base-image-uses-a-non-latest-version-tag
+
+		1 | FROM ubuntu:latest
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_DOCKER_4] Ensure that COPY is used instead of ADD in Dockerfiles" classname="/Dockerfile./Dockerfile.ADD" file="/Dockerfile">
+			<failure type="failure" message="Ensure that COPY is used instead of ADD in Dockerfiles">
+Resource: /Dockerfile.ADD
+File: /Dockerfile: 3-3
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-copy-is-used-instead-of-add-in-dockerfiles
+
+		3 | ADD app.tar.gz /opt/app
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_DOCKER_1] Ensure port 22 is not exposed" classname="/Dockerfile./Dockerfile.EXPOSE" file="/Dockerfile">
+			<failure type="failure" message="Ensure port 22 is not exposed">
+Resource: /Dockerfile.EXPOSE
+File: /Dockerfile: 4-4
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-port-22-is-not-exposed
+
+		4 | EXPOSE 22
+</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_DOCKER_2] Ensure that HEALTHCHECK instructions have been added to container images" classname="/Dockerfile./Dockerfile." file="/Dockerfile">
+			<failure type="failure" message="Ensure that HEALTHCHECK instructions have been added to container images">
+Resource: /Dockerfile.
+File: /Dockerfile: 1-5
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-healthcheck-instructions-have-been-added-to-container-images
+
+		1 | FROM ubuntu:latest
+		2 | RUN apt-get update &amp;&amp; apt-get install -y curl
+		3 | ADD app.tar.gz /opt/app
+		4 | EXPOSE 22
+		5 | CMD ["/opt/app/run.sh"]</failure>
+		</testcase>
+		<testcase name="[NONE][CKV_DOCKER_3] Ensure that a user for the container has been created" classname="/Dockerfile./Dockerfile." file="/Dockerfile">
+			<failure type="failure" message="Ensure that a user for the container has been created">
+Resource: /Dockerfile.
+File: /Dockerfile: 1-5
+Guideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-a-user-for-the-container-has-been-created
+
+		1 | FROM ubuntu:latest
+		2 | RUN apt-get update &amp;&amp; apt-get install -y curl
+		3 | ADD app.tar.gz /opt/app
+		4 | EXPOSE 22
+		5 | CMD ["/opt/app/run.sh"]</failure>
+		</testcase>
+	</testsuite>
+</testsuites>
+

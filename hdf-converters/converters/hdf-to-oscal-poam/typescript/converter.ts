@@ -11,10 +11,10 @@
  * importer re-chains the overrides it reads.
  */
 
-import { encodeBase64Utf8, formatTimestamp, formatTimestampSeconds, parseTimestamp } from '@mitre/hdf-utilities';
+import { compareCodePoint, encodeBase64Utf8, formatTimestamp, formatTimestampSeconds, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistExists } from '@mitre/hdf-mappings';
 import { requireHdfAmendments, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
-import { byCodePoint, canonicalize, floatNumber, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import { canonicalize, floatNumber, stringifyLine } from '../../../shared/typescript/exportmap.js';
 import type {
   HDFAmendments,
   StandaloneOverride,
@@ -507,7 +507,7 @@ function metadataProps(a: HDFAmendments): Property[] {
   pushFallbackMarker(props, 'systemRef', a.systemRef);
   pushFallbackMarker(props, 'version', a.version);
   Object.keys(a.labels ?? {})
-    .sort(byCodePoint)
+    .sort(compareCodePoint)
     .forEach((key, i) => {
       const group = `label-${i + 1}`;
       props.push(labelProp('label-key', 'key', key, group), labelProp('label-value', 'value', a.labels![key]!, group));

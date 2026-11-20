@@ -10,6 +10,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -927,4 +928,58 @@ func TestConvertZap_SetsResultResourceIdentityToInstanceURI(t *testing.T) {
 		"https://example.com/api/submit",
 		"https://example.com/api/login",
 	}, got)
+}
+
+// A ZAP alert is itself the finding; instances[] are only where it was seen. An
+// alert with none establishes nothing locatable, and results is schema-required
+// with minItems:1 — so the converter emitted a document it rejects itself. Real
+// ZAP output carries no such alert (0 of 30 across the committed scans), so only
+// a constructed input reaches this.
+func TestConvertZapToHDF_AlertWithNoInstancesIsSchemaValid(t *testing.T) {
+	input := []byte(`{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n","riskcode":"2"}]}]}`)
+
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"the alert was raised but nothing locatable was established; failed would place an unlocated claim in the compliance numerator")
+	assert.Contains(t, req.Results[0].CodeDesc, "no instances")
+
+	// descriptions carries minItems:1 as well, and this alert has no desc,
+	// solution or otherinfo -- it reached output as null.
+	require.Len(t, req.Descriptions, 1)
+	assert.Equal(t, "default", req.Descriptions[0].Label)
+
+	raw, err := json.Marshal(result)
+	require.NoError(t, err)
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+}
+
+// descriptions also carries contains:{label:"default"}, so non-empty is not
+// enough: an alert with a solution but no desc produced [{label:"solution"}],
+// which has minItems satisfied and still fails the document. The emptiness
+// check alone missed this.
+func TestConvertZapToHDF_AlertWithSolutionButNoDescIsSchemaValid(t *testing.T) {
+	input := []byte(`{"@version":"2.7.0","site":[{"@host":"h","alerts":[{"pluginid":"1","name":"n","riskcode":"2","solution":"Fix it","instances":[{"uri":"/x"}]}]}]}`)
+
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	req := result.Baselines[0].Requirements[0]
+	labels := make([]string, 0, len(req.Descriptions))
+	for _, d := range req.Descriptions {
+		labels = append(labels, d.Label)
+	}
+	assert.Contains(t, labels, "default", "the schema requires an entry labelled default, not merely a non-empty array")
+	assert.Equal(t, "default", labels[0], "prepended, per the schema's convention and matching the TS peer's assertion")
+	assert.Contains(t, labels, "solution", "the real solution text must survive alongside it")
+
+	raw, err := json.Marshal(result)
+	require.NoError(t, err)
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
 }

@@ -3,7 +3,9 @@ package hdfparsers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
@@ -76,6 +78,20 @@ type ComparisonParseResult struct {
 	Error   string             `json:"error,omitempty"`
 }
 
+// invalidJSON reports a syntax problem in the input, including bytes after the
+// first value, in the "Invalid JSON: ..." form the TypeScript parser produces.
+func invalidJSON(input string) string {
+	decoder := json.NewDecoder(strings.NewReader(input))
+	var value json.RawMessage
+	if err := decoder.Decode(&value); err != nil {
+		return "Invalid JSON: " + err.Error()
+	}
+	if _, err := decoder.Token(); !errors.Is(err, io.EOF) {
+		return "Invalid JSON: unexpected trailing data after end of object"
+	}
+	return ""
+}
+
 // ParseResults parses HDF Results document from JSON bytes
 func ParseResults(input []byte) ResultsParseResult {
 	input = NormalizeTimestamps(input)
@@ -92,7 +108,10 @@ func ParseResults(input []byte) ResultsParseResult {
 		}
 	}
 
-	// Validate against schema first
+	if msg := invalidJSON(trimmed); msg != "" {
+		return ResultsParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidateResults(input)
 	if !validationResult.Valid {
 		return ResultsParseResult{
@@ -108,14 +127,6 @@ func ParseResults(input []byte) ResultsParseResult {
 		return ResultsParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	// Check for trailing garbage
-	if decoder.More() {
-		return ResultsParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 
@@ -137,7 +148,10 @@ func ParseBaseline(input []byte) BaselineParseResult {
 		}
 	}
 
-	// Validate against schema first
+	if msg := invalidJSON(trimmed); msg != "" {
+		return BaselineParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidateBaseline(input)
 	if !validationResult.Valid {
 		return BaselineParseResult{
@@ -153,14 +167,6 @@ func ParseBaseline(input []byte) BaselineParseResult {
 		return BaselineParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	// Check for trailing garbage
-	if decoder.More() {
-		return BaselineParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 
@@ -181,6 +187,10 @@ func ParseSystem(input []byte) SystemParseResult {
 		}
 	}
 
+	if msg := invalidJSON(trimmed); msg != "" {
+		return SystemParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidateSystem(input)
 	if !validationResult.Valid {
 		return SystemParseResult{
@@ -195,13 +205,6 @@ func ParseSystem(input []byte) SystemParseResult {
 		return SystemParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	if decoder.More() {
-		return SystemParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 
@@ -222,6 +225,10 @@ func ParsePlan(input []byte) PlanParseResult {
 		}
 	}
 
+	if msg := invalidJSON(trimmed); msg != "" {
+		return PlanParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidatePlan(input)
 	if !validationResult.Valid {
 		return PlanParseResult{
@@ -236,13 +243,6 @@ func ParsePlan(input []byte) PlanParseResult {
 		return PlanParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	if decoder.More() {
-		return PlanParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 
@@ -263,6 +263,10 @@ func ParseEvidencePackage(input []byte) EvidencePackageParseResult {
 		}
 	}
 
+	if msg := invalidJSON(trimmed); msg != "" {
+		return EvidencePackageParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidateEvidencePackage(input)
 	if !validationResult.Valid {
 		return EvidencePackageParseResult{
@@ -277,13 +281,6 @@ func ParseEvidencePackage(input []byte) EvidencePackageParseResult {
 		return EvidencePackageParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	if decoder.More() {
-		return EvidencePackageParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 
@@ -304,6 +301,10 @@ func ParseComparison(input []byte) ComparisonParseResult {
 		}
 	}
 
+	if msg := invalidJSON(trimmed); msg != "" {
+		return ComparisonParseResult{Success: false, Error: msg}
+	}
+
 	validationResult := validators.ValidateComparison(input)
 	if !validationResult.Valid {
 		return ComparisonParseResult{
@@ -318,13 +319,6 @@ func ParseComparison(input []byte) ComparisonParseResult {
 		return ComparisonParseResult{
 			Success: false,
 			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
-		}
-	}
-
-	if decoder.More() {
-		return ComparisonParseResult{
-			Success: false,
-			Error:   "Invalid JSON: unexpected trailing data after end of object",
 		}
 	}
 

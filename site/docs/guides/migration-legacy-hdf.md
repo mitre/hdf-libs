@@ -132,10 +132,14 @@ v1 `"skipped"` maps to v2 `"notReviewed"`. The complete v2 `Result_Status` enum 
 - `passed` -- requirement met
 - `failed` -- requirement not met
 - `error` -- test execution error
-- `notApplicable` -- requirement does not apply (impact = 0)
+- `notApplicable` -- requirement does not apply to this target
 - `notReviewed` -- requirement was not assessed
 
-v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: governing (non-expired) override, else `error` roll-up, else impact-0 `notApplicable`, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). An errored check reports `error` even at impact 0 — a crashed check never established applicability. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: a governing (non-expired) override, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). Impact is not consulted — an impact of 0 is a severity band, not a statement that the requirement does not apply. See the [status determination reference](../architecture/status-determination.md) for the full contract.
+
+InSpec says "this control does not apply" by scoring the control 0 and then reporting no pass or fail for it. Because the ladder does not read impact, this importer records that verdict where every consumer can see it: a control scored 0 whose results establish nothing gains an explicit `notApplicable` result, alongside the skip the runner recorded. The control's `impact` is left at 0 — that is a fact about the source — and `tags.severity` still carries the original STIG severity where a profile zeroed it.
+
+A document converted before this behaviour landed carries impact 0 with a `notReviewed` roll-up and no translated result, so recomputing its status now reports `notReviewed` where the stored `effectiveStatus` says `notApplicable`. Re-converting from the original source settles both.
 
 ### Severity
 
@@ -186,14 +190,15 @@ cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ### Programmatic (Go)
 
 ```go
-import (
-    "encoding/json"
-    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
-)
+import legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 
-var v1 legacyhdf.HDFV1Results
-json.Unmarshal(input, &v1)
-v2 := legacyhdf.ConvertV1ToV2(&v1)
+// ParseLegacyHDF applies the size guard and format check, then decodes the input.
+v1, err := legacyhdf.ParseLegacyHDF(input)
+if err != nil {
+    return err
+}
+// The second argument is the generator version recorded in the output ("" uses the default).
+current := legacyhdf.ConvertLegacyHDF(v1, "")
 ```
 
 The Go converter performs a comprehensive transformation:
@@ -221,8 +226,11 @@ if (isV1Format(doc)) {
 
 The normalizer detects v1 by checking for `profiles` at the top level (v2 uses `baselines`). It converts:
 - `profiles[].controls[]` to `baselines[].requirements[]`
-- `sha256` to `{ algorithm: "sha256", value: "..." }`
-- `attributes` to `inputs`
+- `groups[].controls` to `groups[].requirements`, keeping the member ID list
+- `sha256` to `integrity: { algorithm: "sha256", checksum: "..." }`
+- `supports` entries from InSpec's hyphenated keys to `platformFamily`, `platformName` and `release`
+- `attributes` to `extensions.passthrough.legacyAttributes`, not `inputs` -- the normalizer preserves them without claiming the typed `Input` shape, which is the converter's job
+- `desc` and `descriptions[]` to a `descriptions` array that always carries a `default` entry
 - `source_location` to `sourceLocation`
 - `code_desc` to `codeDesc`, `start_time` to `startTime`, `run_time` to `runTime`
 - `"skipped"` to `"notReviewed"`
@@ -268,8 +276,31 @@ In v1 groups, `controls` is an array of control ID strings. In v2, the group fie
 
 ### Overlay flattening
 
-v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter automatically flattens these overlays so each requirement appears exactly once in the output. If you are writing your own converter, you may need to handle this deduplication.
+v1 InSpec output often contains overlay/wrapper profiles where a parent profile includes controls from a child profile, resulting in duplicate controls across `profiles[]`. The v1-to-v2 converter flattens these overlays into one requirement per id with a result per layer that evaluated it, so no layer's verdict is dropped. If you are writing your own converter, roll layers up the same way rather than keeping one entry and discarding the rest; a repeated id is legal HDF (see the specification's Requirement identity convention), so a consumer must cope with it either way.
 
 ### Timestamps
 
 v1 uses formats like `"2017-09-22 14:12:15 -0400"` which are not valid ISO 8601. v2 requires ISO 8601 / RFC 3339 format (`"2017-09-22T18:12:15.000Z"`). The converter normalizes timestamps automatically. If you are producing v2 output directly, use ISO 8601.
+
+### Risk adjustments in older amendments and OSCAL exports
+
+Starting with hdf-libs v3.8.0, a `riskAdjustment` changes impact only and cannot carry `status`. This applies to standalone amendments and overrides already embedded in results.
+
+It also affects reimporting older OSCAL POA&M exports. If a risk carries the HDF vocabulary properties `override-type=riskAdjustment` and `override-status`, the importer preserves both values, and the CLI rejects the resulting HDF amendments during output validation. A document exported before this tightening can therefore fail on reimport even though its OSCAL structure is valid.
+
+Review the original decision before migrating it. If it changes compliance status, re-author the source amendment as the appropriate `waiver` or `falsePositive`, with the intended status. If it only changes impact, intentionally remove the status and retain the impact adjustment. Validate the revised amendment and export a new OSCAL POA&M; retain the original artifact for its audit history. Do not silently discard the status during import or bypass output validation to accept the old combination.
+
+For override semantics, see [Amendments](./amendments-workflow.md).
+
+### Status ladder and threshold bucket in v3.8.0
+
+Starting with hdf-libs v3.8.0, an impact of 0 is a severity band and nothing more. The effective-status ladder consults a governing non-expired override, else the worst-wins roll-up of the results, and never `impact`; `computeEffectiveStatus` in `@mitre/hdf-schema/helpers`, both engines, `hdf validate threshold` and the MCP all follow it. The InSpec convention that a control scored 0 with no pass or fail is not applicable is translated at import, as the [Status normalization](#status-normalization) section above describes: `legacyhdf-to-hdf` and `splunk-to-hdf` write an explicit `notApplicable` result for such a control.
+
+What this changes for documents you already have:
+
+- A results document an older binary converted from InSpec output carries impact 0, a `notReviewed` roll-up and no translated result. Recomputed under the new ladder it reports `notReviewed`, while its stored `effectiveStatus` still says `notApplicable`. Re-convert from the original exec JSON; nothing we ship rewrites an existing document.
+- A document from a converter that derives impact through the shared severity map was never saying "not applicable" with impact 0. For those, clean scans now report `passed` where they reported `notApplicable`, and the change is a correction.
+- Effective checksums hash the resolved status, so a requirement-change-event chain anchored on an affected requirement reports `chainGap` afterwards. Re-derive the chain from a fresh rescan.
+- Several converters now state the status their source established instead of leaning on the impact-0 rule: `xccdf-results-to-hdf` maps `notselected` and `informational` to `notApplicable` with impact kept, `grype-to-hdf` maps an ignore-rule match to `notApplicable`, `ionchannel-to-hdf` states `notApplicable` on inventory records, `msft-secure-score-to-hdf` reports `notReviewed` for an unscored control, and `asff-to-hdf` carries a suppression as a `waiver` override. A compliance figure or threshold computed from these inputs moves accordingly; a SCAP threshold that pinned a deselected rule under `skipped.informational` now finds it under `not_applicable.<severity>`.
+
+The threshold and compliance bucket for the `notApplicable` status is written `not_applicable`. `no_impact`, the SAF CLI spelling, is read permanently, in files and inline specs, and a spec that sets both is refused. Three surfaces this tool writes use the new key: templates from `hdf generate threshold`, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP envelopes, and `engine.statusCounts` in the MCP contract. Update any `jq` pipeline or dashboard keyed on `no_impact` there. In Go, `hdfengine.StatusCounts.NoImpact` is renamed `NotApplicable`; in TypeScript, `StatusCounts.noImpact` is `notApplicable`. A threshold file this tool generates is accepted by `saf validate threshold` but its `not_applicable` bounds are silently ignored there; rewrite that section as `no_impact` before handing the file to SAF.

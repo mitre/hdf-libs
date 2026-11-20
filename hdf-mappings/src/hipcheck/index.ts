@@ -2,12 +2,12 @@
  * Query functions for Hipcheck analysis to NIST 800-53 Rev 5 mappings.
  *
  * The mapping is a hand-curated, RMF-reviewed table (Hipcheck publishes no
- * analysis-to-controls crosswalk). The data file is byte-identical to its Go
- * peer at hdf-mappings/go/hipcheck/hipcheck-nist-mappings.json.
+ * analysis-to-controls crosswalk). One copy, which Go embeds and this module
+ * imports.
  */
 
 import type { HipcheckNistMapping, HipcheckNistMappings } from './types.js';
-import rawMappings from '../data/hipcheck-nist-mappings.json';
+import rawMappings from '../../go/datasets/mappings/hipcheck-nist-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // Authored against Rev 5 (declared Rev: 5 in the data; it carries SR-family

@@ -35,10 +35,6 @@ var semgrepSeverityAliases = map[string]float64{
 }
 
 const (
-	// defaultImpact treats an unrecognized or absent severity as moderate; the
-	// absent case additionally carries the shared unrated marker so consumers
-	// can tell a defaulted 0.5 from a genuine medium.
-	defaultImpact = 0.5
 	// redactedPlaceholder is what semgrep substitutes for fields it withholds
 	// from unauthenticated scans.
 	redactedPlaceholder = "requires login"
@@ -100,9 +96,9 @@ func nistControlsFor(metadata Metadata) []string {
 
 func impactFor(result Result) float64 {
 	if !isPresent(result.Extra.Severity) {
-		return defaultImpact
+		return hdfutil.UnknownSeverityImpact
 	}
-	return hdfutil.SeverityToImpactWithAliases(string(result.Extra.Severity), semgrepSeverityAliases, defaultImpact)
+	return hdfutil.SeverityToImpactWithAliases(string(result.Extra.Severity), semgrepSeverityAliases, hdfutil.UnknownSeverityImpact)
 }
 
 // severityFor publishes the band the impact already implies, so the two fields
@@ -179,7 +175,8 @@ func messageFor(result Result) string {
 
 func referencesFor(metadata Metadata) []string {
 	candidates := append([]string(nil), metadata.References...)
-	candidates = append(candidates, string(metadata.Source), string(metadata.Shortlink), string(metadata.SourceRuleURL))
+	candidates = append(candidates, string(metadata.Source), string(metadata.Shortlink),
+		string(metadata.SourceRuleURL), string(metadata.SourceRuleURLUnderscore))
 	if url, ok := metadata.ASVS["control_url"].(string); ok {
 		candidates = append(candidates, url)
 	}
@@ -422,7 +419,7 @@ func buildErrorsRequirement(errors []ScanError, startTime time.Time) hdf.Evaluat
 	return hdf.EvaluatedRequirement{
 		ID:     scanErrorsID,
 		Title:  &title,
-		Impact: defaultImpact,
+		Impact: hdfutil.UnknownSeverityImpact,
 		Tags:   tags,
 		Descriptions: []hdf.Description{{
 			Label: "default",
@@ -436,10 +433,11 @@ func buildErrorsRequirement(errors []ScanError, startTime time.Time) hdf.Evaluat
 // buildCoverageRequirement records the scan's denominator. Semgrep reports
 // violations only, so a converted profile is failures-only by construction and
 // its compliance ratio is not a pass rate; this record carries the scanned
-// count and the caveat. Impact 0 makes ComputeEffectiveStatus derive
-// notApplicable — the only status the compliance rollup excludes — and the raw
-// status matches so raw-status consumers (and CKL export, where Passed would
-// render NotAFinding) agree with the effective view. Mirrors kics-scan-coverage.
+// count and the caveat. It states notApplicable as its RESULT — the one status
+// the compliance rollup excludes — so the record is left out of the ratio by
+// its own disposition rather than by its impact. Passed would render CKL
+// NotAFinding, a compliance claim for a scan that asserted nothing.
+// Mirrors kics-scan-coverage.
 func buildCoverageRequirement(report Report, ruleCount int, startTime time.Time) hdf.EvaluatedRequirement {
 	summary := fmt.Sprintf(
 		"Semgrep scanned %d file(s); %d rule(s) produced findings and %d scan error(s) were reported. "+

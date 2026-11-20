@@ -8,16 +8,13 @@
 package checkov
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed checkov-cci-nist-mappings.json
-var datasetData []byte
 
 // Mapping is the CCI and NIST control lists for one Checkov check.
 type Mapping struct {
@@ -54,7 +51,7 @@ var (
 
 func load() *dataset {
 	loadOnce.Do(func() {
-		if err := json.Unmarshal(datasetData, &loaded); err != nil {
+		if err := json.Unmarshal(datasets.CheckovCCINIST, &loaded); err != nil {
 			return
 		}
 		checkIDs = make([]string, 0, len(loaded.Mappings))

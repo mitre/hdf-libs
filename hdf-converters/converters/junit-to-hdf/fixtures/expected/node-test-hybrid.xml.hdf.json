@@ -13,7 +13,7 @@
             {
               "codeDesc": "test :: wrapped-a",
               "runTime": 0.000059,
-              "startTime": "2026-09-14T01:41:10.38375Z",
+              "startTime": "2026-10-30T00:19:46.471775Z",
               "status": "passed"
             }
           ],
@@ -22,7 +22,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "wrapped"
           },
           "controlType": "management",
           "title": "wrapped-a",
@@ -39,7 +40,7 @@
             {
               "codeDesc": "test :: loose-a",
               "runTime": 0.000357,
-              "startTime": "2026-09-14T01:41:10.38375Z",
+              "startTime": "2026-10-30T00:19:46.471775Z",
               "status": "passed"
             }
           ],
@@ -66,7 +67,7 @@
               "codeDesc": "test :: loose-b",
               "message": "Skipped: true",
               "runTime": 0.000042,
-              "startTime": "2026-09-14T01:41:10.38375Z",
+              "startTime": "2026-10-30T00:19:46.471775Z",
               "status": "notReviewed"
             }
           ],
@@ -104,7 +105,7 @@
     "name": "junit-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-14T01:41:10.38375Z",
+  "timestamp": "2026-10-30T00:19:46.471775Z",
   "tool": {
     "name": "JUnit XML"
   }

@@ -153,13 +153,7 @@ func resultsSummary(r *hdf.HDFResults) map[string]any {
 	return structToMap(resultsOpenSummary{
 		BaselineCount:    len(r.Baselines),
 		RequirementCount: reqCount,
-		StatusBreakdown: resultsStatusBreakdown{
-			Passed:        counts.Passed.Total,
-			Failed:        counts.Failed.Total,
-			NotApplicable: counts.NoImpact.Total,
-			NotReviewed:   counts.Skipped.Total,
-			Error:         counts.Error.Total,
-		},
+		StatusBreakdown:  statusBreakdownFrom(counts),
 	})
 }
 
@@ -192,6 +186,18 @@ type resultsStatusBreakdown struct {
 	NotApplicable int `json:"notApplicable"`
 	NotReviewed   int `json:"notReviewed"`
 	Error         int `json:"error"`
+}
+
+// statusBreakdownFrom projects engine counts onto the wire breakdown; the engine's
+// Skipped bucket is the schema's notReviewed.
+func statusBreakdownFrom(counts *hdfengine.StatusCounts) resultsStatusBreakdown {
+	return resultsStatusBreakdown{
+		Passed:        counts.Passed.Total,
+		Failed:        counts.Failed.Total,
+		NotApplicable: counts.NotApplicable.Total,
+		NotReviewed:   counts.Skipped.Total,
+		Error:         counts.Error.Total,
+	}
 }
 
 // baselineOpenSummary is the hdf-baseline summary.

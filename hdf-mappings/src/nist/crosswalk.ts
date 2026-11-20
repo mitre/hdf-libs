@@ -6,7 +6,7 @@
  * pointers, and controls new in Rev 5).
  */
 
-import rawCrosswalk from '../data/nist-revision-crosswalk.json';
+import rawCrosswalk from '../../go/datasets/mappings/nist-revision-crosswalk.json';
 
 /**
  * Relations a translation can carry. `identity` means the control exists at

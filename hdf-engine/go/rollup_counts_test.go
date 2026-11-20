@@ -29,20 +29,20 @@ func (s severityTable) counts() SeverityCounts {
 }
 
 type countsTable struct {
-	Passed   severityTable `json:"passed"`
-	Failed   severityTable `json:"failed"`
-	Skipped  severityTable `json:"skipped"`
-	Error    severityTable `json:"error"`
-	NoImpact severityTable `json:"noImpact"`
+	Passed        severityTable `json:"passed"`
+	Failed        severityTable `json:"failed"`
+	Skipped       severityTable `json:"skipped"`
+	Error         severityTable `json:"error"`
+	NotApplicable severityTable `json:"notApplicable"`
 }
 
 func (c countsTable) counts() *StatusCounts {
 	return &StatusCounts{
-		Passed:   c.Passed.counts(),
-		Failed:   c.Failed.counts(),
-		Skipped:  c.Skipped.counts(),
-		Error:    c.Error.counts(),
-		NoImpact: c.NoImpact.counts(),
+		Passed:        c.Passed.counts(),
+		Failed:        c.Failed.counts(),
+		Skipped:       c.Skipped.counts(),
+		Error:         c.Error.counts(),
+		NotApplicable: c.NotApplicable.counts(),
 	}
 }
 

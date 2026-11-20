@@ -182,7 +182,7 @@ func TestSeverityToImpact(t *testing.T) {
 		{"Medium", 0.5},
 		{"low", 0.3},
 		{"Low", 0.3},
-		{"best_practice", 0.0},
+		{"best_practice", 0.3},
 		{"information", 0.0},
 		{"", 0.5},
 		{"unknown", 0.5},
@@ -841,4 +841,30 @@ func TestConvertNetsparker_VulnerabilityAnchor(t *testing.T) {
 	want := shared.CountXMLElements(t, input, "vulnerability")
 	shared.AssertRequirementCount(t, result, want,
 		"sample-netsparker-invicti.xml: one requirement per <vulnerability>")
+}
+
+// TestGetImpact_BestPracticeIsALowBand pins the Netsparker-specific alias. No
+// fixture carries a Best Practice finding — the one real export has only Low and
+// Medium, Invicti publishes no schema to confirm an authored document against,
+// and trimming the real sample would mean editing a severity string inside a
+// kept element, which the fixture policy forbids. getImpact is a pure function,
+// so the band is pinned directly; see fixtures/provenance.txt.
+func TestGetImpact_BestPracticeIsALowBand(t *testing.T) {
+	// 0.3 is the low band and matches semgrep-to-hdf's INFO, the sibling that
+	// did not take the 0.0 shortcut. 0.0 is the informational band: it described
+	// no weight and relied on the removed ladder rung to read as notApplicable.
+	assert.InDelta(t, 0.3, getImpact("best_practice"), 0.0001)
+	assert.Greater(t, getImpact("best_practice"), 0.0,
+		"an advisory finding still carries weight; zero made it weightless")
+
+	// The standard bands are untouched by the alias.
+	assert.InDelta(t, 0.7, getImpact("high"), 0.0001)
+	assert.InDelta(t, 0.5, getImpact("medium"), 0.0001)
+	assert.InDelta(t, 0.3, getImpact("low"), 0.0001)
+
+	// netsparker emits no severity field, so consumers derive the label. Pin the
+	// band's label too: the ruling is "the low band", not just "the number 0.3".
+	assert.Equal(t, "low", hdfutil.ImpactToSeverity(getImpact("best_practice")))
+	assert.Equal(t, "informational", hdfutil.ImpactToSeverity(0.0),
+		"0.0 is the informational band — what the alias used to claim")
 }

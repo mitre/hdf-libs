@@ -2,7 +2,6 @@ package nessus
 
 import (
 	"encoding/json"
-	"sync"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
@@ -127,28 +126,16 @@ func TestNISTControls_WebServers(t *testing.T) {
 	}
 }
 
-func TestLoadData_InvalidJSON(t *testing.T) {
-	origData := mappingsData
-	origExact := exactMap
-	origWild := wildcardMap
-	defer func() {
-		mappingsData = origData
-		exactMap = origExact
-		wildcardMap = origWild
-		dataOnce = sync.Once{} //nolint:govet // resetting Once for test
-	}()
-
-	mappingsData = []byte("not valid json")
-	exactMap = nil
-	wildcardMap = nil
-	dataOnce = sync.Once{} //nolint:govet // resetting Once for test
-
-	loadData()
-	if exactMap == nil {
-		t.Error("expected non-nil exactMap after invalid JSON")
+func TestParseData_InvalidJSON(t *testing.T) {
+	exact, wildcard := parseData([]byte("not valid json"))
+	if exact == nil {
+		t.Error("expected non-nil exact map after invalid JSON")
 	}
-	if wildcardMap == nil {
-		t.Error("expected non-nil wildcardMap after invalid JSON")
+	if wildcard == nil {
+		t.Error("expected non-nil wildcard map after invalid JSON")
+	}
+	if len(exact) != 0 || len(wildcard) != 0 {
+		t.Errorf("expected empty maps on JSON error, got %d exact and %d wildcard", len(exact), len(wildcard))
 	}
 }
 

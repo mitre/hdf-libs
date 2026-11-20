@@ -302,7 +302,6 @@ func TestConvertHDFToOSCALPOAM_FieldCoverage(t *testing.T) {
 			Type:          hdf.RiskAdjustment,
 			RequirementID: "AC-1",
 			Reason:        "residual risk accepted",
-			Status:        resultStatusPtr(hdf.Failed),
 			Impact:        &hdf.ImpactOverride{Value: 0.3},
 			AppliedBy:     hdf.Identity{Type: hdf.Simple, Identifier: "admin"},
 			AppliedAt:     time.Now(),
@@ -331,7 +330,8 @@ func TestConvertHDFToOSCALPOAM_FieldCoverage(t *testing.T) {
 		return ""
 	}
 	assert.Equal(t, "riskAdjustment", prop(risk.Props, "override-type"))
-	assert.Equal(t, "failed", prop(risk.Props, "override-status"))
+	// A riskAdjustment carries no status, so no override-status prop is emitted.
+	assert.Equal(t, "", prop(risk.Props, "override-status"))
 	assert.Equal(t, "0.3", prop(risk.Props, "impact-override"))
 	require.NotEmpty(t, risk.Remediations)
 	rem := risk.Remediations[0]

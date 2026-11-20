@@ -1,12 +1,13 @@
 package nist
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 )
 
 // Relations a Translation can carry. Identity means the control exists at both
@@ -36,9 +37,6 @@ type Translation struct {
 	Detail string
 }
 
-//go:embed nist-revision-crosswalk.json
-var crosswalkData []byte
-
 type crosswalkEdge struct {
 	From     int      `json:"from"`
 	Control  string   `json:"control"`
@@ -46,6 +44,18 @@ type crosswalkEdge struct {
 	Relation string   `json:"relation"`
 	Family   string   `json:"family,omitempty"`
 	Detail   string   `json:"detail"`
+}
+
+// Set by TestCrosswalkParseFailure in a child process to drive the parse-failure
+// path; nil means the embedded dataset. Declared without an initialiser so the
+// linker can still drop the dataset from a consumer that never translates.
+var crosswalkData []byte
+
+func crosswalkBytes() []byte {
+	if crosswalkData != nil {
+		return crosswalkData
+	}
+	return datasets.NISTRevisionCrosswalk
 }
 
 var (
@@ -61,7 +71,7 @@ func loadCrosswalk() {
 			Rosters map[string][]string `json:"rosters"`
 			Edges   []crosswalkEdge     `json:"edges"`
 		}
-		if err := json.Unmarshal(crosswalkData, &file); err != nil {
+		if err := json.Unmarshal(crosswalkBytes(), &file); err != nil {
 			errCrosswalk = fmt.Errorf("parse embedded nist-revision-crosswalk.json: %w", err)
 			return
 		}

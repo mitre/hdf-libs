@@ -28,9 +28,7 @@ var failingStatuses = map[string]bool{
 // implementation in hdf-utilities (see status-determination.md):
 //
 //  1. the governing (most recent non-expired) status override's status
-//  2. else result roll-up "error" -> "error"
-//  3. else impact == 0 -> "notApplicable"
-//  4. else worst-wins roll-up of the results (empty -> "notReviewed")
+//  2. else worst-wins roll-up of the results (empty -> "notReviewed")
 //
 // The stored effectiveStatus field is an output cache and is never read.
 func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp string) string {
@@ -38,6 +36,7 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 	// convention); a zero result means "now" to the shared helper.
 	ref := hdfutil.ParseTimestamp(referenceTimestamp)
 
+	// The ladder ignores impact; it is carried only by the shared input shape.
 	input := hdfutil.EffectiveStatusInput{Impact: req.Impact}
 	for _, result := range req.Results {
 		input.ResultStatuses = append(input.ResultStatuses, string(result.Status))

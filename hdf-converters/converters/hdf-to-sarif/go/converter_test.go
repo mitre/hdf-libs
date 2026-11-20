@@ -8,6 +8,7 @@ import (
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -193,19 +194,25 @@ func TestConvertHDFToSARIF_LevelDerivesFromImpactBands(t *testing.T) {
 }
 
 // Impact 0.0 means no impact, not ungraded, so it cannot produce level "none" by
-// itself — but a severity tag written by sarif-to-hdf holds the source level
+// itself — but the sarif-level tag sarif-to-hdf writes holds the source level
 // verbatim and is the one thing that can restore it.
-func TestConvertHDFToSARIF_CarriedSeverityTagRestoresTheSourceLevel(t *testing.T) {
-	log := convertDoc(t, testhdf.Results(testhdf.Req("V-1",
-		testhdf.Impact(0.9), testhdf.Tag("severity", "none"))))
-	config, _ := rule0(t, log)["defaultConfiguration"].(map[string]interface{})
-	assert.Equal(t, "none", config["level"])
-
-	// An HDF severity word is not a SARIF level and must not be mistaken for one.
-	log = convertDoc(t, testhdf.Results(testhdf.Req("V-1",
-		testhdf.Impact(0.9), testhdf.Tag("severity", "critical"))))
-	config, _ = rule0(t, log)["defaultConfiguration"].(map[string]interface{})
-	assert.Equal(t, "error", config["level"])
+func TestConvertHDFToSARIF_CarriedSarifLevelTagRestoresTheSourceLevel(t *testing.T) {
+	for _, c := range []struct {
+		key, value, want string
+	}{
+		{"sarif-level", "none", "none"},
+		{"sarif-level", "warning", "warning"},
+		// Not a SARIF level, so impact decides.
+		{"sarif-level", "critical", "error"},
+		// tags.severity is an InSpec severity word in HDF, never a SARIF level.
+		{"severity", "none", "error"},
+		{"severity", "note", "error"},
+	} {
+		log := convertDoc(t, testhdf.Results(testhdf.Req("V-1",
+			testhdf.Impact(0.9), testhdf.Tag(c.key, c.value))))
+		config, _ := rule0(t, log)["defaultConfiguration"].(map[string]interface{})
+		assert.Equal(t, c.want, config["level"], "tags[%q]=%q", c.key, c.value)
+	}
 }
 
 // Two SARIF kinds collapse onto one HDF status in each of two cases; the carried
@@ -264,6 +271,15 @@ func TestConvertHDFToSARIF_TagsAndHelpURI(t *testing.T) {
 	assert.Equal(t, []interface{}{
 		"cci/CCI-000366", "external/cwe/cwe-120", "external/cwe/cwe-20", "nist/SI-10",
 	}, props["tags"])
+}
+
+// Only A-Z is lowered, so a non-ASCII capital comes out the same in both languages;
+// typescript/converter.test.ts pins the same value.
+func TestConvertHDFToSARIF_CWETagLowersASCIIOnly(t *testing.T) {
+	rule := rule0(t, convertDoc(t, testhdf.Results(testhdf.Req("V-1",
+		testhdf.Tag("cwe", []string{"CWE-\u0130"})))))
+	props, _ := rule["properties"].(map[string]interface{})
+	assert.Contains(t, props["tags"], "external/cwe/cwe-\u0130")
 }
 
 // security-severity is SARIF's CVSS convention, so it appears only where the
@@ -341,18 +357,21 @@ func TestConvertHDFToSARIF_SuppressionFromAGoverningOverride(t *testing.T) {
 // A riskAdjustment that leaves the requirement failing is still actionable; a
 // suppression would tell a dashboard to hide it.
 func TestConvertHDFToSARIF_NonSuppressingOverrideIsNotFaked(t *testing.T) {
-	failed := hdf.Failed
 	doc := withOverride(
 		testhdf.Results(testhdf.Req("V-1", testhdf.Status(hdf.Failed), testhdf.Impact(0.7))),
 		hdf.StatusOverride{
 			Type:      hdf.RiskAdjustment,
-			Status:    &failed,
+			Impact:    &hdf.ImpactOverride{Value: 0.4},
 			Reason:    "compensating control in place",
 			AppliedAt: longPast,
 			ExpiresAt: farFuture,
 			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "isso@example.gov"},
 		},
 	)
+	body, err := json.Marshal(doc)
+	require.NoError(t, err)
+	validation := validators.ValidateResults(body)
+	require.True(t, validation.Valid, "%v", validation.Errors)
 	res := result0(t, convertDoc(t, doc))
 	assert.NotContains(t, res, "suppressions")
 	assert.Equal(t, kindFail, res["kind"])

@@ -6,8 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	hdftoasff "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-asff/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -222,12 +225,14 @@ func TestParseFindings_NullFindingsEnvelope(t *testing.T) {
 	assert.Empty(t, fs)
 }
 
-func TestSuppressedWorkflowForcesZeroImpact(t *testing.T) {
+// Suppression no longer touches impact: it travels as a statusOverride, so a
+// suppressed CRITICAL finding keeps the severity it actually has.
+func TestSuppressedWorkflowKeepsRealImpact(t *testing.T) {
 	f := asffFinding{
 		Severity: asffSeverity{Label: "CRITICAL"},
 		Workflow: asffWorkflow{Status: "SUPPRESSED"},
 	}
-	assert.InDelta(t, 0.0, findingImpact(f, nil), 0.0001)
+	assert.InDelta(t, 0.9, findingImpact(f, nil), 0.0001)
 }
 
 // --- branch coverage for helpers and non-Security-Hub / default paths ---
@@ -653,4 +658,183 @@ func TestAsffFinding_UnmarshalJSON_TypeMismatchErrors(t *testing.T) {
 	var f asffFinding
 	err := json.Unmarshal([]byte(`{"Severity": 123}`), &f)
 	require.Error(t, err)
+}
+
+// suppressedFinding is an AUTHORED input, not captured output: no published ASFF
+// sample carries Workflow.Status SUPPRESSED, and AWS publishes a syntax outline
+// rather than a schema to confirm one against. It sets one of the four documented
+// Workflow.Status values on an otherwise ordinary Security Hub finding; the owner
+// ruled that acceptable for this case rather than fabricate a fixture file.
+//
+// UpdatedAt is deliberately far-future: it becomes the override's appliedAt, and
+// expiresAt is a year after that. A realistic date would make the override lapse
+// on a known day and the effective-status assertions below would start failing on
+// it, which is the wall-clock trap CLAUDE.md forbids.
+const suppressedFinding = `{"Findings":[{
+	"Id": "arn:aws:securityhub:us-east-1:111111111111:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/suppressed-1",
+	"ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+	"GeneratorId": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.1",
+	"AwsAccountId": "111111111111",
+	"Title": "1.1 Avoid the use of the root account",
+	"Description": "The root account has unrestricted access to all resources.",
+	"CreatedAt": "2026-03-01T00:00:00.000Z",
+	"UpdatedAt": "2099-12-31T00:00:00.000Z",
+	"LastObservedAt": "2026-03-03T00:00:00.000Z",
+	"Severity": {"Label": "HIGH"},
+	"Compliance": {"Status": "FAILED"},
+	"Workflow": {"Status": "SUPPRESSED"},
+	"Resources": [{"Type": "AwsAccount", "Id": "AWS::::Account:111111111111"}]
+}]}`
+
+// TestConvertAsff_SuppressedCarriesOverrideNotImpactZero pins the ruled shape: the
+// failing verdict survives in results[], the acceptance travels as a statusOverride,
+// and impact is the finding's real severity rather than a flag.
+func TestConvertAsff_SuppressedCarriesOverrideNotImpactZero(t *testing.T) {
+	out, err := ConvertAsffToHDF([]byte(suppressedFinding), converterVersion)
+	require.NoError(t, err)
+
+	req := out.Baselines[0].Requirements[0]
+
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status, "the verdict is evidence and must survive")
+	assert.InDelta(t, 0.7, req.Impact, 1e-9, "impact is the real HIGH severity, not a suppression flag")
+
+	require.Len(t, req.StatusOverrides, 1, "the suppression must travel as an override")
+	ov := req.StatusOverrides[0]
+	assert.Equal(t, hdf.OverrideTypeWaiver, ov.Type)
+	require.NotNil(t, ov.Status)
+	assert.Equal(t, hdf.Passed, *ov.Status)
+	assert.Equal(t, "Suppressed in AWS Security Hub (Workflow.Status: SUPPRESSED). "+
+		"Security Hub records the suppression but not its justification.", ov.Reason,
+		"the reason string is not covered by any golden, so parity rests on this assertion")
+	assert.Equal(t, "aws security hub suppression", ov.AppliedBy.Identifier)
+	assert.Equal(t, hdf.IdentityTypeOther, ov.AppliedBy.Type)
+	// appliedAt is the finding's own UpdatedAt, the tightest proxy ASFF offers.
+	assert.Equal(t, "2099-12-31T00:00:00Z", ov.AppliedAt.UTC().Format(time.RFC3339))
+	assert.Equal(t, shared.DefaultOverrideExpiry(ov.AppliedAt), ov.ExpiresAt)
+
+	// The override is new output shape, so pin that it validates.
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.ValidateResults(raw)
+	assert.Truef(t, v.Valid, "suppressed output must pass HDF schema validation: %s", v.Error())
+}
+
+// TestConvertAsff_SuppressedNonFailureGetsNoOverride: a suppression over a
+// finding that never failed adjudicates no adverse verdict. Overriding there
+// would drive the requirement to passed and move it into the compliance
+// numerator on the strength of a decision about nothing.
+func TestConvertAsff_SuppressedNonFailureGetsNoOverride(t *testing.T) {
+	// UNKNOWN_FUTURE_VALUE maps to an error result. That is the case the first
+	// three rows cannot see: error is indeterminate, not a failure
+	// (exportmap.IsFailing), so there is no verdict to accept — and exportmap
+	// would refuse to export it as suppressed anyway, so an override here would
+	// score the requirement passed and then lose the suppression on re-export.
+	for _, complianceStatus := range []string{"PASSED", "WARNING", "NOT_AVAILABLE", "UNKNOWN_FUTURE_VALUE"} {
+		t.Run(complianceStatus, func(t *testing.T) {
+			doc := strings.Replace(suppressedFinding,
+				`"Compliance": {"Status": "FAILED"}`,
+				`"Compliance": {"Status": "`+complianceStatus+`"}`, 1)
+			require.NotEqual(t, suppressedFinding, doc, "the document must actually differ")
+
+			out, err := ConvertAsffToHDF([]byte(doc), converterVersion)
+			require.NoError(t, err)
+
+			req := out.Baselines[0].Requirements[0]
+			assert.NotEqual(t, hdf.Failed, req.Results[0].Status, "precondition: not a failure")
+			assert.Empty(t, req.StatusOverrides, "nothing adverse was adjudicated, so nothing is waived")
+		})
+	}
+}
+
+// TestConvertAsff_SuppressedSurvivesTheComposedRoundTrip composes the two
+// converters. Each side is asserted separately above, but nothing crossed the
+// seam: this feeds the importer's own output straight back out through the
+// exporter, which is what a consumer round-tripping a Security Hub export does.
+func TestConvertAsff_SuppressedSurvivesTheComposedRoundTrip(t *testing.T) {
+	out, err := ConvertAsffToHDF([]byte(suppressedFinding), converterVersion)
+	require.NoError(t, err)
+	hdfDoc, err := json.Marshal(out)
+	require.NoError(t, err)
+
+	back, err := hdftoasff.ConvertHDFToASFF(hdfDoc, converterVersion)
+	require.NoError(t, err)
+	var doc struct {
+		Findings []map[string]interface{} `json:"Findings"`
+	}
+	require.NoError(t, json.Unmarshal(back, &doc))
+	require.Len(t, doc.Findings, 1)
+
+	f := doc.Findings[0]
+	// The verdict and the acceptance both survive; reporting the roll-up here
+	// would hand back PASSED and drop Workflow entirely.
+	assert.Equal(t, "FAILED", f["Compliance"].(map[string]interface{})["Status"])
+	assert.Equal(t, map[string]interface{}{"Status": "SUPPRESSED"}, f["Workflow"])
+}
+
+// TestConvertAsff_SuppressedWithoutUpdatedAtFallsBackToResultTime covers the
+// appliedAt fallback: with no parseable UpdatedAt the override still needs a real
+// timestamp, since a zero one would read as "never applied".
+func TestConvertAsff_SuppressedWithoutUpdatedAtFallsBackToResultTime(t *testing.T) {
+	doc := strings.Replace(suppressedFinding, `"UpdatedAt": "2099-12-31T00:00:00.000Z",`, "", 1)
+	require.NotEqual(t, suppressedFinding, doc, "the document must actually differ")
+
+	out, err := ConvertAsffToHDF([]byte(doc), converterVersion)
+	require.NoError(t, err)
+
+	req := out.Baselines[0].Requirements[0]
+	require.Len(t, req.StatusOverrides, 1)
+	ov := req.StatusOverrides[0]
+	assert.False(t, ov.AppliedAt.IsZero(), "a zero appliedAt would read as never applied")
+	assert.Equal(t, req.Results[0].StartTime, ov.AppliedAt, "falls back to the result time")
+	assert.Equal(t, shared.DefaultOverrideExpiry(ov.AppliedAt), ov.ExpiresAt)
+}
+
+// TestConvertAsff_SuppressedIsExportedAsSuppressed is the export-side contract:
+// exportmap drives Workflow.Status on re-export, so the round trip restores itself.
+func TestConvertAsff_SuppressedIsExportedAsSuppressed(t *testing.T) {
+	out, err := ConvertAsffToHDF([]byte(suppressedFinding), converterVersion)
+	require.NoError(t, err)
+
+	raw, err := json.Marshal(out.Baselines[0].Requirements[0])
+	require.NoError(t, err)
+	var req map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &req))
+
+	st := exportmap.StatusOf(req)
+	assert.True(t, st.Suppressed, "a waived failing verdict is the suppression shape")
+	assert.Equal(t, "failed", st.Raw)
+	assert.Equal(t, "passed", st.Rollup)
+}
+
+// TestConvertAsff_MixedGroupGetsNoOverride guards the aggregation hazard: ASFF folds
+// findings sharing a control id into one requirement, and an override is
+// requirement-level. One unsuppressed failure beside a suppressed one must keep the
+// requirement failing — an override here would clear a live finding.
+func TestConvertAsff_MixedGroupGetsNoOverride(t *testing.T) {
+	mixed := strings.Replace(suppressedFinding,
+		`"Resources": [{"Type": "AwsAccount", "Id": "AWS::::Account:111111111111"}]
+}]}`,
+		`"Resources": [{"Type": "AwsAccount", "Id": "AWS::::Account:111111111111"}]
+},{
+	"Id": "arn:aws:securityhub:us-east-1:111111111111:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/live-1",
+	"ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+	"GeneratorId": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.1",
+	"AwsAccountId": "111111111111",
+	"Title": "1.1 Avoid the use of the root account",
+	"CreatedAt": "2026-03-01T00:00:00.000Z",
+	"UpdatedAt": "2099-12-31T00:00:00.000Z",
+	"Severity": {"Label": "HIGH"},
+	"Compliance": {"Status": "FAILED"},
+	"Workflow": {"Status": "NEW"},
+	"Resources": [{"Type": "AwsAccount", "Id": "AWS::::Account:111111111111"}]
+}]}`, 1)
+	require.NotEqual(t, suppressedFinding, mixed, "the mixed document must actually differ")
+
+	out, err := ConvertAsffToHDF([]byte(mixed), converterVersion)
+	require.NoError(t, err)
+
+	req := out.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 2, "both findings share the control id and fold into one requirement")
+	assert.Empty(t, req.StatusOverrides, "an unsuppressed failure must not be waived by its neighbour")
 }

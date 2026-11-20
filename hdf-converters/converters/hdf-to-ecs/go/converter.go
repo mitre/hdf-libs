@@ -2,12 +2,12 @@
 //
 // One ECS event is emitted per Evaluated_Requirement, in the hybrid shape from
 // ADR-0002: a core-ECS-native projection (event/rule/vulnerability/threat/
-// observer/host/related.*) plus a lossless hdf.* block, with hot filter scalars
+// observer/host/related.*) plus a legacy hdf.* projection, with hot filter scalars
 // promoted flat. Output is plain NDJSON (one object per line, LF-delimited,
 // trailing newline), ECS 9.4.0.
 //
 // Status is effective-primary: event.outcome carries the GOVERNING verdict
-// (effectiveStatus when present, else the raw results roll-up), while hdf.status
+// (derived from results and governing overrides), while hdf.status
 // preserves the RAW verdict and hdf.suppressed is the separate acceptance axis.
 // Override provenance (disposition, override type, reason, approver, dates) is
 // surfaced under labels.*. The canonical "still actionable" consumer query is
@@ -101,7 +101,22 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 	if threat := buildThreat(req); threat != nil {
 		obj["threat"] = threat
 	}
-	// log.origin.file.* from the requirement's source location (control file/line).
+	if log := buildSourceLocation(req); log != nil {
+		obj["log"] = log
+	}
+	// labels.* — override provenance (disposition/type/reason/approver/dates).
+	if labels := buildLabels(req); labels != nil {
+		obj["labels"] = labels
+	}
+	// hdf.* lossless block, with the baseline's metadata beyond its name.
+	hdf := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
+	exportmap.AddBaselineMetadata(hdf, baseline)
+	obj["hdf"] = hdf
+
+	return obj
+}
+
+func buildSourceLocation(req map[string]interface{}) map[string]interface{} {
 	if sl, ok := exportmap.AsMap(req["sourceLocation"]); ok {
 		file := map[string]interface{}{}
 		exportmap.SetIf(file, "name", exportmap.GetStr(sl, "ref"))
@@ -109,25 +124,10 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 			file["line"] = line
 		}
 		if len(file) > 0 {
-			obj["log"] = map[string]interface{}{"origin": map[string]interface{}{"file": file}}
+			return map[string]interface{}{"origin": map[string]interface{}{"file": file}}
 		}
 	}
-	// labels.* — override provenance (disposition/type/reason/approver/dates).
-	if labels := buildLabels(req); labels != nil {
-		obj["labels"] = labels
-	}
-	// hdf.* lossless block, plus the baseline fields the shared allowlist omits
-	// (title and integrity checksum) so the block stays genuinely lossless.
-	hdf := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
-	obj["hdf"] = hdf
-
-	return obj
+	return nil
 }
 
 // buildLabels surfaces override provenance into ECS labels.* (keyword bag): the
@@ -349,4 +349,11 @@ func statusToOutcome(status string) string {
 	default: // notApplicable, notReviewed, error
 		return "unknown"
 	}
+}
+
+// ConvertHDFToECSBundle exports finding events with their original source artifact.
+func ConvertHDFToECSBundle(input []byte, converterVersion string) (*exportmap.ExportBundle, error) {
+	return exportmap.ProjectExportBundle(input, "ecs", func(source []byte) ([]byte, error) {
+		return ConvertHDFToECS(source, converterVersion)
+	})
 }

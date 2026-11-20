@@ -8,7 +8,6 @@ package tools
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"math"
 	"os"
@@ -44,7 +43,7 @@ func mcpRoot() string {
 }
 
 // mcpMaxInputSize is the per-document read ceiling in bytes: HDF_MCP_MAX_SIZE if
-// set to a positive integer, else hdfutil.DefaultMaxInputSize (50 MB). It gates a
+// set to a positive integer, else hdfutil.DefaultMaxInputSize (256 MB). It gates a
 // file BEFORE it is read into memory and is the same ceiling the loader applies
 // after the read (register.go builds the loader with it), so the two never
 // diverge.
@@ -169,7 +168,7 @@ func resolveHandle(encoded string, ldr *loader.Loader, slot string) (*Resolved, 
 	}
 	if verr := handle.Verify(h, content); verr != nil {
 		return nil, mcperr.New(mcperr.HandleStale, "the file changed since the handle was minted", map[string]any{"path": h.Path}).
-			WithNextCall(fmt.Sprintf("the content changed — re-open the `%s` with hdf_open to mint a fresh handle", slot))
+			WithNextCall(fmt.Sprintf("the content changed — re-open the %#q with hdf_open to mint a fresh handle", slot))
 	}
 	res, lerr := ldr.Load(content)
 	if lerr != nil {
@@ -205,7 +204,7 @@ func readFile(confined, relPath, slot string) ([]byte, *mcperr.Error) {
 	return readLimited(confined, relPath, slot, mcpMaxInputSize())
 }
 
-// readLimited applies the pre-read guards and then reads through a LimitReader,
+// readLimited applies the pre-read guards and then reads through the bounded reader,
 // so the ceiling holds on the bytes actually delivered rather than on the size
 // the file claimed when it was stat'd.
 func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr.Error) {
@@ -220,12 +219,12 @@ func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr
 		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
 	}
 	defer func() { _ = f.Close() }()
-	content, err := io.ReadAll(io.LimitReader(f, maxSize+1))
+	content, err := hdfutil.ReadAtMost(f, maxSize, relPath)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, mcperr.New(mcperr.TooLarge, fmt.Sprintf("document exceeds the %d-byte limit", maxSize), map[string]any{"path": relPath})
+	}
 	if err != nil {
 		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
-	}
-	if int64(len(content)) > maxSize {
-		return nil, mcperr.New(mcperr.TooLarge, fmt.Sprintf("document exceeds the %d-byte limit", maxSize), map[string]any{"path": relPath})
 	}
 	return content, nil
 }
@@ -254,7 +253,7 @@ func registerProduced(ldr *loader.Loader, doc []byte, writtenPath string) string
 // the caller actually passed (source / results / amendments / from / to) so the
 // advice never references a parameter the emitting tool lacks (jobi.4 / D3).
 func notFoundNextCall(slot string) string {
-	return fmt.Sprintf("verify the path exists, then retry with a valid `%s` (or call hdf_open)", slot)
+	return fmt.Sprintf("verify the path exists, then retry with a valid %#q (or call hdf_open)", slot)
 }
 
 // sizeOrLoadError maps a loader hard error (only the size guard today) to a

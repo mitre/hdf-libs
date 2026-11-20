@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -319,4 +321,55 @@ func TestFoldChangeEvents_TimestampLessSeedAnchorsToEventOccurrence(t *testing.T
 		assert.Equal(t, "passed", result.Comparison.RequirementDiffs[0].OldEffectiveStatus,
 			"seed-side expiry must anchor to the event occurrence, never the wall clock")
 	})
+}
+
+func TestFoldChangeEvents_MultipleRealBaselines(t *testing.T) {
+	seed := fixtures.Results.InspecMultilayered
+	var err error
+	// Use the existing ingestion normalizer; never rewrite the source fixture.
+	seed = hdfutil.NormalizeHDFTimestamps(seed)
+	var doc hdf.HDFResults
+	require.NoError(t, json.Unmarshal(seed, &doc))
+	req := doc.Baselines[0].Requirements[0]
+	refTs := "2026-03-25T22:56:27.736808Z"
+	cs := ComputeEffectiveChecksum(req, refTs)
+	require.NotNil(t, cs)
+	prev := &KeyState{EffectiveStatus: ComputeEffectiveStatus(req, refTs), EffectiveImpact: ComputeEffectiveImpact(req, refTs), Checksum: *cs}
+	in := ceInputs()
+	in.RequirementID = req.ID
+	in.Timestamp, err = time.Parse(time.RFC3339Nano, refTs)
+	require.NoError(t, err)
+	in.ReferenceTimestamp = refTs
+	in.PrevReferenceTimestamp = refTs
+	event := ChangeEventFromPrevious(prev, nil, &req, in)
+	require.NotNil(t, event)
+	result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{event})
+	require.NoError(t, err)
+	require.Empty(t, result.Warnings)
+	require.Len(t, result.Comparison.RequirementDiffs, 1)
+	assert.Equal(t, "(multiple)", result.Comparison.RequirementDiffs[0].Baseline)
+	batch, err := DiffHdf(context.Background(), doc, []hdf.HDFResults{doc}, Options{ComparisonMode: ModeSystemDrift})
+	require.NoError(t, err)
+	found := false
+	for _, d := range batch.RequirementDiffs {
+		if d.ID == req.ID {
+			found = true
+			assert.Equal(t, d.Baseline, result.Comparison.RequirementDiffs[0].Baseline)
+		}
+	}
+	require.True(t, found)
+	events := aeDeriveStream(t, aeLoadFixture(t, "scan-before.json"), aeLoadFixture(t, "scan-after.json"))
+	var newEvent *hdf.HDFRequirementChangeEvent
+	for _, e := range events {
+		if e.State == hdf.EventRequirementStateNew {
+			newEvent = e
+			break
+		}
+	}
+	require.NotNil(t, newEvent)
+	added, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{newEvent})
+	require.NoError(t, err)
+	require.Empty(t, added.Warnings)
+	require.Len(t, added.Comparison.RequirementDiffs, 1)
+	assert.Equal(t, "metawrapper", added.Comparison.RequirementDiffs[0].Baseline)
 }

@@ -23,7 +23,7 @@ One ASFF finding is emitted **per HDF requirement** (`Evaluated_Requirement`), m
 
 ## Status mapping
 
-`Compliance.Status` is the rolled-up requirement verdict (`effectiveStatus` when present, else the worst of `results[].status`):
+`Compliance.Status` is the rolled-up requirement verdict — the governing status override when one applies, else the worst of `results[].status`. The one exception is suppression, described below:
 
 | HDF status | ASFF `Compliance.Status` |
 |---|---|
@@ -32,6 +32,22 @@ One ASFF finding is emitted **per HDF requirement** (`Evaluated_Requirement`), m
 | `notApplicable` | `NOT_AVAILABLE` |
 | `notReviewed` | `WARNING` |
 | `error` | `WARNING` |
+
+### Suppression is the exception
+
+Security Hub keeps two axes orthogonal: `Compliance.Status` is the check result and `Workflow.Status` is the triage state. Suppressing a finding there records a decision about the finding; it does not rewrite the check.
+
+So when a governing override drives a **failing** verdict non-failing — the acceptance shape — the export reports the **raw** verdict in `Compliance.Status` and puts the acceptance in `Workflow.Status: SUPPRESSED`. Reporting the roll-up instead would turn a failed check into `PASSED` and discard the verdict an importer needs to read back.
+
+| HDF shape | `Compliance.Status` | `Workflow.Status` |
+|---|---|---|
+| `failed` result, governing waiver to `passed` | `FAILED` (raw) | `SUPPRESSED` |
+| `passed` result, governing escalation to `failed` | `FAILED` (roll-up) | absent |
+| `notApplicable` result, no override | `NOT_AVAILABLE` (roll-up) | absent |
+
+The second and third rows are the narrow cases: an escalation and a scope claim are not acceptance decisions, so they report the roll-up like everything else.
+
+Going the other way, `asff-to-hdf` reconstructs that shape: a finding with `Workflow.Status: SUPPRESSED` over a failing `Compliance.Status` keeps its `failed` result and gains a `waiver` status override, so the acceptance travels in `statusOverrides[]` rather than as an impact of 0. Two cases produce no override. A suppression over a finding that did not fail adjudicates nothing adverse — and `error`, which an unrecognized `Compliance.Status` maps to, is indeterminate rather than failing, so there is no verdict to accept. And because ASFF folds findings sharing a control id into one requirement, where an override governs the whole requirement, a suppressed finding sharing its id with an unsuppressed failing one yields no override either: waiving it would clear a live finding.
 
 The acceptance axis is orthogonal: a raw-failing result an override drove non-failing (waiver / falsePositive / attestation) sets `Workflow.Status = SUPPRESSED`. A riskAdjustment / operationalRequirement / poam that leaves the requirement failing is **not** suppressed — it stays actionable.
 

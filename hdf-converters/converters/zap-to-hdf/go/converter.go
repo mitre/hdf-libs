@@ -336,7 +336,20 @@ func buildSiteRequirements(site *ZapSite, startTime time.Time) []hdf.EvaluatedRe
 			})
 		}
 
+		// An alert with only a solution still needs the schema's default entry.
+		descriptions = shared.EnsureDefaultDescription(descriptions, "")
+
 		impact := riskCodeToImpact(alert.RiskCode)
+
+		// An alert is the finding; instances[] are only where it was seen. One
+		// with none establishes nothing locatable, and results is schema-required
+		// with minItems:1, so it cannot stay empty.
+		if len(results) == 0 {
+			results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(
+				startTime,
+				"the alert was raised with no instances, so nothing locatable was established",
+			)}
+		}
 
 		req := hdf.EvaluatedRequirement{
 			ID:                 reqID,

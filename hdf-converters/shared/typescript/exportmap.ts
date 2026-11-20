@@ -11,6 +11,7 @@
  */
 
 import {
+  compareCodePoint,
   computeEffectiveStatus,
   formatJsonNumber,
   governingOverrideIndex,
@@ -19,8 +20,16 @@ import {
   worstStatus,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
+import { ExternalReferenceEncoding, type RawSourceRecord } from '@mitre/hdf-schema';
 import { requireHdfResults } from './converterutil.js';
 import { absentIfGoZeroTime } from './status.js';
+
+// Node 24 provides rawJSON; the pinned TypeScript library lacks its declaration.
+declare global {
+  interface JSON {
+    rawJSON(text: string): unknown;
+  }
+}
 
 export type Obj = Record<string, unknown>;
 
@@ -71,14 +80,15 @@ export function isFailing(status: string): boolean {
 
 export interface Status {
   raw: string; // worstOf(results[].status) — the RAW verdict
-  rollup: string; // canonical effective status (ladder: override → error → impact-0 → roll-up)
+  rollup: string; // canonical effective status (ladder: override → worst-wins roll-up)
   overridden: boolean; // statusOverride records present
   // Acceptance axis, orthogonal to the raw verdict: a GOVERNING override drove
   // a failing raw verdict non-failing (waiver / falsePositive / attestation).
-  // The ladder's own impact-0 rule also yields a non-failing status, but that
-  // is structural Not Applicable, not an acceptance decision. A riskAdjustment
-  // / operationalRequirement / poam that leaves the effective status failing is
-  // NOT suppressed — it stays actionable, only its impact is re-scored.
+  // A notApplicable result reaching the roll-up also yields a non-failing
+  // status, but that is a scope claim, not an acceptance decision. A
+  // riskAdjustment / operationalRequirement / poam that leaves the effective
+  // status failing is NOT suppressed — it stays actionable, only its impact is
+  // re-scored.
   suppressed: boolean;
 }
 
@@ -102,10 +112,8 @@ export function statusOf(req: Obj): Status {
     ];
   });
 
-  // impact is schema-required; when a malformed map lacks it, do not read the
-  // absence as 0 (which would force notApplicable) — skip the impact-0 rung
-  // instead, matching hdf-diff's wrapper.
-  const impact = typeof req.impact === 'number' ? req.impact : 1;
+  // The ladder ignores impact; it is carried only by the shared input shape.
+  const impact = typeof req.impact === 'number' ? req.impact : 0;
 
   const rollup = computeEffectiveStatus({
     impact,
@@ -175,13 +183,12 @@ export function eventID(component: Obj | undefined, baselineName: string, contro
   return [comp, baselineName, controlID].join('|');
 }
 
-// --- lossless hdf.* block ---
+// --- legacy hdf.* projection ---
 
 /**
- * Build the lossless hdf.* namespace shared by the export converters: promoted
- * snake_case scalars plus the full requirement sub-objects preserved verbatim.
- * `status` is the lossless results roll-up (statusOf().raw); `suppressed` is the
- * acceptance axis (statusOf().suppressed).
+ * Build the hdf.* block from a raw verdict and the two flags.
+ * @deprecated Use buildHDFBlockFromStatus with the Status from statusOf, which keeps the
+ * raw verdict and the effective rollup from being swapped.
  */
 export function buildHDFBlock(
   req: Obj,
@@ -193,7 +200,24 @@ export function buildHDFBlock(
   tool: Obj | undefined,
   converterVersion: string,
 ): Obj {
-  const hdf: Obj = { status, overridden, suppressed, exporter_version: converterVersion };
+  return buildHDFBlockFromStatus(req, baseline, { raw: status, overridden, suppressed }, generator, tool, converterVersion);
+}
+
+/**
+ * Build the lossless hdf.* namespace shared by the export converters: promoted
+ * snake_case scalars plus the full requirement sub-objects preserved verbatim.
+ * `status.raw` is the lossless results verdict; `status.suppressed` is the
+ * acceptance axis. The effective rollup is not read: it does not replace the raw verdict.
+ */
+export function buildHDFBlockFromStatus(
+  req: Obj,
+  baseline: Obj,
+  status: Pick<Status, 'raw' | 'overridden' | 'suppressed'>,
+  generator: Obj | undefined,
+  tool: Obj | undefined,
+  converterVersion: string,
+): Obj {
+  const hdf: Obj = { status: status.raw, overridden: status.overridden, suppressed: status.suppressed, exporter_version: converterVersion };
   setIf(hdf, 'control_id', getStr(req, 'id'));
   setIf(hdf, 'baseline', getStr(baseline, 'name'));
   if ('effectiveStatus' in req) hdf.effective_status = req.effectiveStatus;
@@ -231,6 +255,24 @@ export function buildHDFBlock(
   if (generator) hdf.generator = generator;
   if (tool) hdf.tool = tool;
   return hdf;
+}
+
+/**
+ * The declared baseline fields the exporters carry, mapped to their hdf.* keys.
+ * Integrity is where a profile's hash lives (an InSpec sha256 lands in
+ * integrity.checksum), so it goes whole, algorithm and signature with it.
+ */
+const BASELINE_METADATA: ReadonlyArray<readonly [src: string, dst: string]> = [
+  ['title', 'baseline_title'],
+  ['version', 'baseline_version'],
+  ['integrity', 'baseline_integrity'],
+];
+
+/** Copy the baseline's declared metadata into hdf.* verbatim, only keys it carries. */
+export function addBaselineMetadata(hdf: Obj, baseline: Obj): void {
+  for (const [src, dst] of BASELINE_METADATA) {
+    if (src in baseline) hdf[dst] = baseline[src];
+  }
 }
 
 // --- canonical line serialization ---
@@ -284,36 +326,6 @@ export function parseJSONPreservingNumbers(text: string): unknown {
   });
 }
 
-// SOH (U+0001) delimits a raw numeric token inside stringifyLine's intermediate
-// JSON. SOH is a control character that does not occur in HDF text, so in
-// practice it never collides. The only theoretical collision is a string whose
-// ENTIRE value is exactly SOH + <bare number> + SOH — unreachable from real HDF,
-// which carries no raw control characters.
-const RAWNUM_MARK = String.fromCharCode(1);
-const RAWNUM_RE = /"\\u0001(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\\u0001"/g;
-
-/**
- * Compare two strings by Unicode code point. This matches Go's `encoding/json`
- * key ordering, which is a bytewise comparison of the UTF-8 encoding \u2014 and UTF-8
- * byte order is identical to code-point order. JS's default Array.sort() instead
- * compares UTF-16 code units, which diverges for supplementary-plane (non-BMP)
- * characters: a lead surrogate (0xD800\u20130xDBFF) sorts before a BMP char in
- * [0xE000,0xFFFF] under UTF-16, but a non-BMP code point (\u22650x10000) sorts after
- * it under UTF-8. Iterating the string yields whole code points (surrogate pairs
- * combined), so this comparator is correct for the full Unicode range.
- */
-export function byCodePoint(a: string, b: string): number {
-  const ai = [...a];
-  const bi = [...b];
-  const n = Math.min(ai.length, bi.length);
-  for (let i = 0; i < n; i++) {
-    const ca = ai[i]?.codePointAt(0) ?? 0;
-    const cb = bi[i]?.codePointAt(0) ?? 0;
-    if (ca !== cb) return ca - cb;
-  }
-  return ai.length - bi.length;
-}
-
 /**
  * Recursively sort object keys in Go's map-key order (bytewise UTF-8 / code
  * point) so the emitted JSON is byte-identical to Go's encoder.
@@ -323,17 +335,20 @@ export function canonicalize(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(canonicalize);
   const m = asMap(v);
   if (m) {
-    const out: Obj = {};
-    for (const k of Object.keys(m).sort(byCodePoint)) out[k] = canonicalize(m[k]);
-    return out;
+    const object = Object.fromEntries(Object.entries(m).map(([k, value]) => [k, canonicalize(value)]));
+    // Ordinary objects reorder integer-like keys. The Proxy lets native JSON
+    // encoding honor code-point order.
+    return new Proxy(object, {
+      ownKeys: (target) => Reflect.ownKeys(target).sort((a, b) => compareCodePoint(String(a), String(b))),
+    });
   }
   return v;
 }
 
 /**
  * Emit compact JSON matching Go's encoder byte-for-byte. A RawNumber is rendered
- * as a bare numeric token (Go's json.Number) via an SOH-delimited placeholder
- * that is stripped back to the token afterward. Go's encoding/json escapes
+ * as a bare numeric token (Go's json.Number) through native JSON.rawJSON,
+ * without interpreting user strings as numeric placeholders. Go's encoding/json escapes
  * U+2028/U+2029 (JSONP safety) while JSON.stringify emits them raw, so we escape
  * them here. Key ordering is handled upstream by canonicalize (code point order).
  */
@@ -354,12 +369,11 @@ export function stringifyDocument(v: unknown): string {
 function stringifyWith(v: unknown, space: number | undefined): string {
   return JSON.stringify(
     v,
-    (_key, val) => (val instanceof RawNumber ? RAWNUM_MARK + val.token + RAWNUM_MARK : val),
+    (_key, val) => (val instanceof RawNumber ? JSON.rawJSON(val.token) : val),
     space,
   )
-    .replace(RAWNUM_RE, '$1')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
+    .replace(/\u2028/g, String.raw`\u2028`)
+    .replace(/\u2029/g, String.raw`\u2029`);
 }
 
 // --- shared export driver ---
@@ -485,4 +499,42 @@ export function disposition(req: Obj, now?: string): string {
   if (gov) return getStr(gov, 'type');
   if (overrides.length === 0) return getStr(req, 'disposition');
   return '';
+}
+
+// --- rawSourceRecord carriage ---
+
+/** A rawSourceRecord's JSON layout: stringifyLine or stringifyDocument. */
+export type RecordLayout = 'compact' | 'indented';
+
+/**
+ * Carries a source tool's JSON record on an HDF result. `parsed` is the record as
+ * parseJSONPreservingNumbers gave it, so every number token survives as written;
+ * keys are sorted, < > & stay raw and U+2028/U+2029 are escaped, byte-identical
+ * with Go's exportmap.BuildJSONRawSourceRecord. Undefined when there is nothing
+ * to carry.
+ */
+export function buildJsonRawSourceRecord(
+  parsed: unknown,
+  pointer: string,
+  layout: RecordLayout,
+): RawSourceRecord | undefined {
+  return buildJsonRawSourceRecordFromValue(canonicalize(parsed), pointer, layout);
+}
+
+/**
+ * buildJsonRawSourceRecord for a value already in hand, encoded in its own key
+ * order, as Go's BuildJSONRawSourceRecordFromValue keeps a struct's declaration order.
+ */
+export function buildJsonRawSourceRecordFromValue(
+  value: unknown,
+  pointer: string,
+  layout: RecordLayout,
+): RawSourceRecord | undefined {
+  if (value === undefined) return undefined;
+  return {
+    content: layout === 'indented' ? stringifyDocument(value) : stringifyLine(value),
+    encoding: ExternalReferenceEncoding.UTF8,
+    mediaType: 'application/json',
+    pointer,
+  };
 }

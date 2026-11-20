@@ -145,10 +145,7 @@ func resultsStructure(r *hdf.HDFResults) map[string]any {
 		entry := map[string]any{
 			"name":             b.Name,
 			"requirementCount": len(b.Requirements),
-			"statusBreakdown": map[string]int{
-				"passed": counts.Passed.Total, "failed": counts.Failed.Total,
-				"notApplicable": counts.NoImpact.Total, "notReviewed": counts.Skipped.Total, "error": counts.Error.Total,
-			},
+			"statusBreakdown":  structToMap(statusBreakdownFrom(counts)),
 		}
 		// Labels are the per-baseline provenance carrier (ADR-0016 §3: a merged
 		// document names each baseline's scanner here) and the grouping key

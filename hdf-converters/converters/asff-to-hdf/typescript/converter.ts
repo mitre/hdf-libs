@@ -15,6 +15,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   DEFAULT_CONFIG_MANAGEMENT_NIST_TAGS,
 } from '@mitre/hdf-mappings';
+import { isFailing } from '../../../shared/typescript/exportmap.js';
 import {
   buildNoFindingsRequirement,
   deriveControlTypeFromTags,
@@ -22,6 +23,7 @@ import {
   buildNistCciTags,
   serializeHdf,
   validateInputSize,
+  defaultOverrideExpiry,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
@@ -33,9 +35,12 @@ import type {
   Description,
   Component,
   Cvss,
+  StatusOverride,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  OverrideType,
+  IdentityType,
   TargetType,
   createMinimalBaseline,
   createRequirement,
@@ -164,17 +169,73 @@ export function severityLabelToImpact(label: string | undefined): number {
   }
 }
 
+const WORKFLOW_SUPPRESSED = 'SUPPRESSED';
+
 /**
- * findingImpact derives a 0.0–1.0 impact. Suppressed findings are forced to 0.
- * Security Hub's INFORMATIONAL is up-graded to MEDIUM (Security Hub over-marks
+ * Builds the acceptance override for a group with at least one suppressed
+ * FAILING finding and no unsuppressed failing one. ASFF folds findings sharing a
+ * control id into one requirement and an override governs all of it, so a live
+ * failure beside a suppressed one must yield nothing; and a suppression over a
+ * passing finding adjudicates nothing adverse. Security Hub says a finding was
+ * suppressed but never why, hence the generic waiver and a tool identity.
+ * Parity: suppressionOverride in go/converter.go.
+ */
+function suppressionOverride(
+  group: AsffFinding[],
+  results: RequirementResult[],
+): StatusOverride | undefined {
+  let appliedAt: Date | undefined;
+  let anySuppressedFailure = false;
+
+  for (const [i, f] of group.entries()) {
+    const suppressed = f.Workflow?.Status === WORKFLOW_SUPPRESSED;
+    const st = results[i]?.status;
+    if (!suppressed) {
+      // An unsuppressed failure keeps governing the requirement, and so does an
+      // indeterminate one: a verdict we cannot read is not one we may waive.
+      if (isFailing(st ?? '') || st === ResultStatus.Error) return undefined;
+      continue;
+    }
+    if (!isFailing(st ?? '')) {
+      // Only a failing verdict can be accepted — suppressing a passed, warning
+      // or indeterminate finding adjudicates nothing adverse.
+      continue;
+    }
+    anySuppressedFailure = true;
+    // Recency decides which override governs, so take the latest.
+    const t = parseTimestamp(f.UpdatedAt ?? '');
+    if (t && (appliedAt === undefined || t > appliedAt)) appliedAt = t;
+  }
+  if (!anySuppressedFailure) return undefined;
+
+  // UpdatedAt is the suppression's tightest proxy; with none parseable, fall
+  // back to the result time rather than emit a zero timestamp. startTime is
+  // already a Date here, so it needs no parse.
+  const at = appliedAt ?? results[0]!.startTime;
+
+  // Annotated rather than asserted: `as StatusOverride` would let a required
+  // field go missing without the checker noticing.
+  const override: StatusOverride = {
+    type: OverrideType.Waiver,
+    status: ResultStatus.Passed,
+    reason:
+      'Suppressed in AWS Security Hub (Workflow.Status: SUPPRESSED). Security Hub records the suppression but not its justification.',
+    appliedBy: { type: IdentityType.Other, identifier: 'aws security hub suppression' },
+    appliedAt: at,
+    expiresAt: defaultOverrideExpiry(at),
+  };
+  return override;
+}
+
+/**
+ * findingImpact derives a 0.0–1.0 impact. Suppression is carried by a
+ * statusOverride, not by zeroing impact, so a suppressed finding keeps its real
+ * severity. Security Hub's INFORMATIONAL is up-graded to MEDIUM (Security Hub over-marks
  * findings INFORMATIONAL without context). FindingProviderFields.Severity — the
  * provider's own rating — is preferred over the top-level Severity, which
  * Security Hub may overwrite on ingest.
  */
 export function findingImpact(f: AsffFinding): number {
-  if (f.Workflow?.Status === 'SUPPRESSED') {
-    return 0.0;
-  }
   const sev = f.FindingProviderFields?.Severity?.Label ? f.FindingProviderFields.Severity : f.Severity;
   let label = sev?.Label;
   if (isSecurityHub(f) && (label ?? '').toUpperCase() === 'INFORMATIONAL') {
@@ -529,6 +590,8 @@ function buildRequirement(id: string, group: AsffFinding[]): EvaluatedRequiremen
   }
   const cvss = vulnCvss(primary);
   if (cvss.length > 0) req.cvss = cvss;
+  const suppression = suppressionOverride(group, results);
+  if (suppression) req.statusOverrides = [suppression];
   // ASFF carries no literal source snippet, so code holds the whole finding
   // serialized as indented JSON (byte-identical to the Go twin's json.Indent of
   // the source bytes).

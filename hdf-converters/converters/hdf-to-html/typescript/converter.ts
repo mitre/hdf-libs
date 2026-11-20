@@ -5,7 +5,7 @@
  * and is pinned by the shared goldens.
  */
 
-import { canonicalJson, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
+import { canonicalJson, compareCodePoint, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
 import {
   addCounts,
   calculateCompliance,
@@ -17,7 +17,6 @@ import {
 } from '@mitre/hdf-engine';
 import type { EvaluatedBaseline, EvaluatedRequirement, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
-import { byCodePoint } from '../../../shared/typescript/exportmap.js';
 import { requirementEffectiveImpact, requirementDisposition } from '../../../shared/typescript/status.js';
 import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 
@@ -630,7 +629,7 @@ class Renderer {
   /** A map as key/value chips in key order. An empty value is kept: the key itself is the information. */
   private chips(heading: string, value: unknown): void {
     const m = obj(value);
-    const keys = Object.keys(m).sort(byCodePoint);
+    const keys = Object.keys(m).sort(compareCodePoint);
     if (keys.length === 0) return;
 
     this.line(`<h4>${heading}</h4>`);
@@ -644,9 +643,9 @@ class Renderer {
   private effectiveStatus(req: Json): string {
     return computeEffectiveStatus(
       {
-        // Go's typed decode gives an absent impact the zero value, so the ladder
-        // there reads it as notApplicable; the same defaulting keeps the two
-        // languages agreeing on a document that omits impact.
+        // The ladder ignores impact; it is carried only by the shared input
+        // shape, and defaulted to Go's zero value so the two languages hand it
+        // the same input for a document that omits it.
         impact: numeric(req.impact),
         resultStatuses: list(req.results).map(obj).map((res) => text(res.status)),
         overrides: overrideInputs(list(req.statusOverrides).map(obj)),
@@ -720,7 +719,7 @@ class Renderer {
           `${checks.failedUnderFailed} failed out of ${plural(checks.total, 'total check')}`,
       ),
     );
-    this.line(stat('not-applicable', all.noImpact.total, 'Not Applicable', ''));
+    this.line(stat('not-applicable', all.notApplicable.total, 'Not Applicable', ''));
     this.line(stat('not-reviewed', all.skipped.total, 'Not Reviewed', ''));
     this.line(stat('error', all.error.total, 'Error', ''));
     this.line(`<li class="stat stat-total"><span class="num">${severities.total}</span><span class="lbl">Total</span></li>`);
@@ -729,7 +728,7 @@ class Renderer {
       bar('Requirements by status', [
         ['passed', 'passed', all.passed.total],
         ['failed', 'failed', all.failed.total],
-        ['not-applicable', 'not applicable', all.noImpact.total],
+        ['not-applicable', 'not applicable', all.notApplicable.total],
         ['not-reviewed', 'not reviewed', all.skipped.total],
         ['error', 'error', all.error.total],
       ]),
@@ -1137,7 +1136,7 @@ class Renderer {
    */
   private tagChips(tags: Json): void {
     const entries: Array<readonly [string, string]> = [];
-    for (const key of Object.keys(tags).sort(byCodePoint)) {
+    for (const key of Object.keys(tags).sort(compareCodePoint)) {
       if (key === 'nist' || key === 'cci') continue;
       const value = tagText(tags[key]);
       if (value !== null) entries.push([key, value]);
@@ -1178,7 +1177,7 @@ function referenceCensus(doc: Json): string {
     }
   }
   if (total === 0) return '';
-  const parts = [...kinds.keys()].sort(byCodePoint).map((kind) => `${kind} ${kinds.get(kind)}`);
+  const parts = [...kinds.keys()].sort(compareCodePoint).map((kind) => `${kind} ${kinds.get(kind)}`);
   return parts.length === 0 ? String(total) : `${total} (${parts.join(', ')})`;
 }
 
@@ -1341,7 +1340,7 @@ function referenceLines(refs: Json[]): string[] {
     } else if (Array.isArray(ref.ref)) {
       const urls = new Set<string>();
       collectUrls(ref.ref, urls);
-      lines.push(...[...urls].sort(byCodePoint));
+      lines.push(...[...urls].sort(compareCodePoint));
     }
     for (const s of [text(ref.url), text(ref.uri)]) {
       if (s !== '') lines.push(s);
@@ -1415,7 +1414,7 @@ function identity(value: unknown): string {
 
 /** A summary table row; `name` is already HTML. */
 function summaryRow(name: string, c: StatusCounts): string {
-  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.noImpact.total, c.error.total, severityTotals(c).total]
+  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.notApplicable.total, c.error.total, severityTotals(c).total]
     .map((n) => `<td>${n}</td>`)
     .join('');
   return `<tr><th scope="row">${name}</th>${cells}<td>${compliance(c)}</td></tr>`;

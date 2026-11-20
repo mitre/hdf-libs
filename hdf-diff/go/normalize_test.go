@@ -2,10 +2,15 @@ package diff
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -230,7 +235,11 @@ func TestToV2_HandlesControlsWithNoResults(t *testing.T) {
 	assert.Len(t, req.Results, 0)
 }
 
-func TestToV2_HandlesControlsWithNoDesc(t *testing.T) {
+// Was `assert.Len(t, req.Descriptions, 0)`, which pinned output the results
+// schema rejects: descriptions has minItems 1 and must contain a 'default'.
+// An empty array also made the differ blind to description changes, since
+// descriptions is one of the fields it tracks.
+func TestToV2_SynthesizesDefaultDescriptionWithNoDesc(t *testing.T) {
 	data := v1SingleControlDoc(map[string]any{
 		"results": []any{},
 	})
@@ -239,7 +248,7 @@ func TestToV2_HandlesControlsWithNoDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	req := firstReq(t, result)
-	assert.Len(t, req.Descriptions, 0)
+	assert.Equal(t, []hdf.Description{{Label: "default", Data: ""}}, req.Descriptions)
 }
 
 func TestToV2_PreservesTimestamp(t *testing.T) {
@@ -561,10 +570,14 @@ func TestNormalizeGroups_NonMapEntry(t *testing.T) {
 // Coverage: normalizeSupports — with valid entries, non-map items, empty
 // ---------------------------------------------------------------------------
 
+// Was fed camelCase `platformName`, which InSpec never emits — every real
+// fixture in hdf-fixtures/inspec uses the hyphenated spellings below, so the
+// old input exercised a shape no legacy document has and the implementation
+// read every key but `platform` as absent.
 func TestNormalizeSupports_WithValidSupports(t *testing.T) {
 	profile := map[string]any{
 		"supports": []any{
-			map[string]any{"platform": "linux", "platformName": "ubuntu"},
+			map[string]any{"platform": "linux", "platform-name": "ubuntu"},
 			map[string]any{"platform": "windows"},
 		},
 	}
@@ -572,7 +585,7 @@ func TestNormalizeSupports_WithValidSupports(t *testing.T) {
 	require.Len(t, supports, 2)
 	assert.NotNil(t, supports[0].Platform)
 	assert.Equal(t, "linux", *supports[0].Platform)
-	assert.NotNil(t, supports[0].PlatformName)
+	require.NotNil(t, supports[0].PlatformName)
 	assert.Equal(t, "ubuntu", *supports[0].PlatformName)
 	assert.NotNil(t, supports[1].Platform)
 	assert.Equal(t, "windows", *supports[1].Platform)
@@ -966,10 +979,8 @@ func TestToV2_WithRefs_URLFormat(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNormalizeSourceLocation_NoKey(t *testing.T) {
-	control := map[string]any{}
-	sl := normalizeSourceLocation(control)
-	assert.Nil(t, sl.Ref)
-	assert.Nil(t, sl.Line)
+	// Nil, not an empty object: the key is omitted exactly as TypeScript omits it.
+	assert.Nil(t, normalizeSourceLocation(map[string]any{}))
 }
 
 // ---------------------------------------------------------------------------
@@ -1036,4 +1047,323 @@ func TestToV2_RunTimeCamelCaseFallback(t *testing.T) {
 	r := firstResult(t, result)
 	require.NotNil(t, r.RunTime)
 	assert.InDelta(t, 0.25, *r.RunTime, 0.001)
+}
+
+// ── The normalized baseline must be the shape the results schema declares ──
+
+func legacyProfileDoc(t *testing.T) []byte {
+	t.Helper()
+	return []byte(`{"statistics":{"duration":1.5,"controls":{"passed":{"total":2}}},
+"profiles":[{"name":"nginx-baseline","title":"NGINX Baseline","version":"2.0.0","sha256":"abc123",
+ "supports":[{"platform-family":"linux","platform-name":"ubuntu","release":"22.04","platform":"unix"}],
+ "attributes":[{"name":"max_age","options":{"type":"numeric","default":90}}],
+ "groups":[{"id":"controls/V-1.rb","title":"Group One","controls":["V-1","V-2"]}],
+ "controls":[
+   {"id":"V-1","title":"t1","impact":0.5,"tags":{},"desc":"d1",
+    "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]},
+   {"id":"V-2","title":"t2","impact":0.5,"tags":{},"desc":"d2",
+    "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+}
+
+func TestNormalizeGroupsCarryMembership(t *testing.T) {
+	out, _, err := ToV2(legacyProfileDoc(t))
+	require.NoError(t, err)
+	require.Len(t, out.Baselines, 1)
+	require.Len(t, out.Baselines[0].Groups, 1)
+
+	g := out.Baselines[0].Groups[0]
+	assert.Equal(t, "controls/V-1.rb", g.ID)
+	require.NotNil(t, g.Title)
+	assert.Equal(t, "Group One", *g.Title)
+	assert.Equal(t, []string{"V-1", "V-2"}, g.Requirements,
+		"a legacy group's controls list is its membership and must not be dropped")
+
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), `"requirements":null`,
+		"an unpopulated group marshals as null, which the schema rejects")
+}
+
+func TestNormalizeSupportsReadsLegacyHyphenatedKeys(t *testing.T) {
+	out, _, err := ToV2(legacyProfileDoc(t))
+	require.NoError(t, err)
+	require.Len(t, out.Baselines[0].Supports, 1)
+
+	sp := out.Baselines[0].Supports[0]
+	require.NotNil(t, sp.Platform)
+	assert.Equal(t, "unix", *sp.Platform)
+	require.NotNil(t, sp.PlatformFamily, "InSpec writes platform-family, not platformFamily")
+	assert.Equal(t, "linux", *sp.PlatformFamily)
+	require.NotNil(t, sp.PlatformName)
+	assert.Equal(t, "ubuntu", *sp.PlatformName)
+	require.NotNil(t, sp.Release)
+	assert.Equal(t, "22.04", *sp.Release)
+}
+
+func TestNormalizeDescriptionsCarryLegacyEntries(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		control string
+		want    []hdf.Description
+	}{
+		{"no desc yields a default with empty data", `{"id":"V-1","impact":0.5,"tags":{}}`,
+			[]hdf.Description{{Label: "default", Data: ""}}},
+		{"null desc yields a default with empty data", `{"id":"V-1","impact":0.5,"tags":{},"desc":null}`,
+			[]hdf.Description{{Label: "default", Data: ""}}},
+		{"legacy entries ride alongside the default",
+			`{"id":"V-1","impact":0.5,"tags":{},"desc":"the requirement",
+			  "descriptions":[{"label":"check","data":"run this"},{"label":"fix","data":"do that"}]}`,
+			[]hdf.Description{
+				{Label: "default", Data: "the requirement"},
+				{Label: "check", Data: "run this"},
+				{Label: "fix", Data: "do that"},
+			}},
+		{"legacy entries survive an absent desc",
+			`{"id":"V-1","impact":0.5,"tags":{},"descriptions":[{"label":"check","data":"run this"}]}`,
+			[]hdf.Description{{Label: "default", Data: ""}, {Label: "check", Data: "run this"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := []byte(`{"statistics":{},"profiles":[{"name":"p","controls":[` + tc.control + `]}]}`)
+			out, _, err := ToV2(doc)
+			require.NoError(t, err)
+			require.Len(t, out.Baselines[0].Requirements, 1)
+			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Descriptions)
+		})
+	}
+}
+
+// ── Cross-language parity, pinned by one shared vector ────────────────────
+// The two normalizers had diverged badly — Go emitted requirements: null and
+// lost group membership entirely while TypeScript emitted groups[].controls.
+// Single-language tests could not catch that, so the expectations live in one
+// file test/normalize.test.ts reads too.
+func TestNormalizeMatchesSharedCrossLanguageVector(t *testing.T) {
+	var table struct {
+		Legacy   json.RawMessage `json:"legacy"`
+		Expected struct {
+			Statistics         map[string]any              `json:"statistics"`
+			Groups             []map[string]any            `json:"groups"`
+			Supports           []map[string]any            `json:"supports"`
+			Integrity          map[string]any              `json:"integrity"`
+			LegacyAttributes   []map[string]any            `json:"legacyAttributes"`
+			DescriptionsByID   map[string][]map[string]any `json:"descriptionsById"`
+			RefsByID           map[string][]map[string]any `json:"refsById"`
+			SourceLocationByID map[string]map[string]any   `json:"sourceLocationById"`
+		} `json:"expected"`
+	}
+	require.NoError(t, json.Unmarshal(readSharedVector(t), &table))
+	require.NotEmpty(t, table.Expected.Groups, "an empty vector would pass vacuously")
+
+	out, _, err := ToV2(table.Legacy)
+	require.NoError(t, err)
+	require.Len(t, out.Baselines, 1)
+
+	b := out.Baselines[0]
+	assertJSONEqual(t, table.Expected.Statistics, out.Statistics, "statistics")
+	assertJSONEqual(t, table.Expected.Groups, b.Groups, "groups")
+	assertJSONEqual(t, table.Expected.Supports, b.Supports, "supports")
+	assertJSONEqual(t, table.Expected.Integrity, b.Integrity, "integrity")
+
+	require.NotNil(t, b.Extensions)
+	require.NotNil(t, b.Extensions.Passthrough)
+	assertJSONEqual(t, table.Expected.LegacyAttributes,
+		b.Extensions.Passthrough["legacyAttributes"], "legacyAttributes")
+
+	for _, req := range b.Requirements {
+		want, ok := table.Expected.DescriptionsByID[req.ID]
+		require.Truef(t, ok, "vector has no descriptions for requirement %q", req.ID)
+		assertJSONEqual(t, want, req.Descriptions, "descriptions for "+req.ID)
+
+		wantRefs, ok := table.Expected.RefsByID[req.ID]
+		require.Truef(t, ok, "vector has no refs for requirement %q", req.ID)
+		assertJSONEqual(t, wantRefs, req.Refs, "refs for "+req.ID)
+
+		wantLoc, ok := table.Expected.SourceLocationByID[req.ID]
+		require.Truef(t, ok, "vector has no sourceLocation for requirement %q", req.ID)
+		assertJSONEqual(t, wantLoc, req.SourceLocation, "sourceLocation for "+req.ID)
+	}
+}
+
+// ── Conformance: the normalizer's output must be valid HDF ─────────────────
+// ToV2 is exported publicly and the README advertises it as format conversion,
+// so its output is a contract. A single-profile legacy document must normalize
+// to a schema-valid document. Overlay documents (multi-profile wrappers) still
+// carry requirements with no results, because this normalizer does not flatten
+// overlays; that is a separate, carded decision because every fix for it changes
+// what the differ reports. This pins the achieved state AND fails if any error
+// class OTHER than the resultless one appears for an overlay document. Twin of
+// the TypeScript 'normalizeToV2 output conforms to the results schema' block.
+func TestToV2OutputConformsToResultsSchema(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		data []byte
+	}{
+		{"ubi9Scan", fixtures.Inspec.Ubi9Scan},
+		{"containerScan", fixtures.Inspec.ContainerScan},
+		{"threeLayerOverlay", fixtures.Inspec.ThreeLayerOverlay},
+		{"wrapper", fixtures.Inspec.Wrapper},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var probe struct {
+				Profiles []json.RawMessage `json:"profiles"`
+			}
+			require.NoError(t, json.Unmarshal(tc.data, &probe))
+			isOverlay := len(probe.Profiles) > 1
+
+			out, _, err := ToV2(tc.data)
+			require.NoError(t, err)
+			raw, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+
+			if !isOverlay {
+				require.Truef(t, v.Valid, "a single-profile legacy document must normalize to valid HDF: %s", v.Error())
+				return
+			}
+
+			require.False(t, v.Valid, "overlay documents still carry resultless requirements")
+			// The two carded classes, both consequences of not flattening overlays:
+			// a requirement with no results, and a stub profile with no controls
+			// at all becoming a baseline with no requirements.
+			for _, e := range v.Errors {
+				carded := strings.HasSuffix(e.Field, "results") || strings.HasSuffix(e.Field, "requirements")
+				assert.Truef(t, carded,
+					"an overlay document gained an error class beyond the carded ones: %s %s", e.Field, e.Description)
+			}
+		})
+	}
+}
+
+// Reference normalization, pinned by the same shared vector. Real InSpec emits
+// `{"ref": []}`, which carries nothing, and the declared Reference requires one
+// of ref/url/uri — so every such entry made the whole document invalid. These
+// cases were inline here and asserted only a count, with no TypeScript twin,
+// which is how the defect came to be fixed in one language and not the other.
+func TestNormalizeRefsMatchesSharedReferenceCases(t *testing.T) {
+	var table struct {
+		RefCases struct {
+			Cases []struct {
+				Name string           `json:"name"`
+				Refs json.RawMessage  `json:"refs"`
+				Want []map[string]any `json:"want"`
+			} `json:"cases"`
+		} `json:"refCases"`
+	}
+	require.NoError(t, json.Unmarshal(readSharedVector(t), &table))
+	require.NotEmpty(t, table.RefCases.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.RefCases.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			doc := []byte(`{"statistics":{},"profiles":[{"name":"p","controls":[
+  {"id":"V-1","impact":0.5,"tags":{},"refs":` + string(tc.Refs) + `,
+   "results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]}]}`)
+
+			out, _, err := ToV2(doc)
+			require.NoError(t, err)
+			require.Len(t, out.Baselines[0].Requirements, 1)
+			assertJSONEqual(t, tc.Want, out.Baselines[0].Requirements[0].Refs, "refs")
+
+			full, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(full, validators.TypeResults)
+			assert.Truef(t, v.Valid, "refs %s must not make the document invalid: %s", tc.Refs, v.Error())
+		})
+	}
+}
+
+// Malformed input, pinned by the same shared vector. ToV2 takes arbitrary JSON
+// and nothing schema-validates the input first, so every guard below is
+// reachable; a guard that silently keeps garbage in one language is the same
+// class of divergence as the group and supports defects. Twin of the TypeScript
+// 'normalizeToV2 drops what the shared malformed vector declares' block.
+func TestToV2MatchesSharedMalformedVector(t *testing.T) {
+	var table struct {
+		Malformed struct {
+			Legacy   json.RawMessage `json:"legacy"`
+			Expected struct {
+				Statistics         map[string]any              `json:"statistics"`
+				Groups             []map[string]any            `json:"groups"`
+				Supports           []map[string]any            `json:"supports"`
+				DescriptionsByID   map[string][]map[string]any `json:"descriptionsById"`
+				SourceLocationByID map[string]map[string]any   `json:"sourceLocationById"`
+			} `json:"expected"`
+		} `json:"malformed"`
+	}
+	require.NoError(t, json.Unmarshal(readSharedVector(t), &table))
+	m := table.Malformed
+	require.NotEmpty(t, m.Expected.Groups, "an empty vector would pass vacuously")
+
+	out, _, err := ToV2(m.Legacy)
+	require.NoError(t, err)
+	require.Len(t, out.Baselines, 1)
+	b := out.Baselines[0]
+
+	assertJSONEqual(t, m.Expected.Statistics, out.Statistics, "statistics")
+	assertJSONEqual(t, m.Expected.Groups, b.Groups, "groups")
+	assertJSONEqual(t, m.Expected.Supports, b.Supports, "supports")
+
+	require.NotEmpty(t, b.Requirements)
+	for _, req := range b.Requirements {
+		want, ok := m.Expected.DescriptionsByID[req.ID]
+		require.Truef(t, ok, "vector has no descriptions for requirement %q", req.ID)
+		assertJSONEqual(t, want, req.Descriptions, "descriptions for "+req.ID)
+
+		// A null in the vector means the key is omitted entirely, which a nil
+		// *SourceLocation marshals to and TypeScript matches with undefined.
+		wantLoc, ok := m.Expected.SourceLocationByID[req.ID]
+		require.Truef(t, ok, "vector has no sourceLocation for requirement %q", req.ID)
+		assertJSONEqual(t, wantLoc, req.SourceLocation, "sourceLocation for "+req.ID)
+	}
+}
+
+// Twin of the TypeScript 'a legacy default description wins over desc' block.
+// A legacy default entry is the source's own prose; overwriting it from desc
+// lost that prose whenever the two differed.
+func TestNormalizeDescriptionsLegacyDefaultWins(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		control string
+		want    []hdf.Description
+	}{
+		{"legacy default survives a null desc",
+			`{"id":"V-1","impact":0.5,"tags":{},"desc":null,
+			  "descriptions":[{"label":"default","data":"the real prose"},{"label":"check","data":"chk"}]}`,
+			[]hdf.Description{{Label: "default", Data: "the real prose"}, {Label: "check", Data: "chk"}}},
+		{"legacy default wins over a disagreeing desc",
+			`{"id":"V-1","impact":0.5,"tags":{},"desc":"the stale desc",
+			  "descriptions":[{"label":"default","data":"the real prose"}]}`,
+			[]hdf.Description{{Label: "default", Data: "the real prose"}}},
+		{"source order of legacy entries is preserved",
+			`{"id":"V-1","impact":0.5,"tags":{},
+			  "descriptions":[{"label":"check","data":"chk"},{"label":"default","data":"d"},{"label":"fix","data":"f"}]}`,
+			[]hdf.Description{{Label: "check", Data: "chk"}, {Label: "default", Data: "d"}, {Label: "fix", Data: "f"}}},
+		{"a default is synthesized only when the legacy array has none",
+			`{"id":"V-1","impact":0.5,"tags":{},"desc":"from desc","descriptions":[{"label":"check","data":"chk"}]}`,
+			[]hdf.Description{{Label: "default", Data: "from desc"}, {Label: "check", Data: "chk"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := []byte(`{"statistics":{},"profiles":[{"name":"p","controls":[` + tc.control + `]}]}`)
+			out, _, err := ToV2(doc)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Descriptions)
+		})
+	}
+}
+
+func readSharedVector(t *testing.T) []byte {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "legacy-normalize-vectors.json"))
+	require.NoError(t, err)
+	return raw
+}
+
+// Compare through JSON so both languages are asserted against one serialized
+// shape rather than against each language's own struct tags.
+func assertJSONEqual(t *testing.T, want, got any, what string) {
+	t.Helper()
+	w, err := json.Marshal(want)
+	require.NoError(t, err)
+	g, err := json.Marshal(got)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(w), string(g), what)
 }

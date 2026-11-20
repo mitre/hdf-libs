@@ -10,7 +10,7 @@ A threshold is the third option: a committed, reviewable policy file, applied to
 
 A threshold sets bounds on counts. Counts of what, sliced two ways:
 
-- **by status** — `passed`, `failed`, `skipped`, `error`, `no_impact`
+- **by status** — `passed`, `failed`, `skipped`, `error`, `not_applicable` (`no_impact` is an accepted alias; see "Running a SAF CLI threshold file")
 - **by severity within that status** — `critical`, `high`, `medium`, `low`, `informational`, and `total` for all severities at once
 
 Each bound takes a `min`, a `max`, or both. There is also a top-level `compliance` bound on the overall percentage.
@@ -332,10 +332,10 @@ The **Form** column says how a field accepts values. *List* fields take the thre
 | `kev` | exact | `true`, `false` | CISA Known Exploited Vulnerabilities membership. `false` includes findings with no KEV data. |
 | `cwe` | list | a CWE id | `CWE-79`, `CWE 79` and `cwe79` are one value. Reads `cwe[]` only — see the caveat above. |
 | `cci` | list | a CCI identifier | |
-| `nist` | list | a NIST control | Globs allowed. |
+| `nist` | list | a NIST control | Globs allowed, and a value without a wildcard is therefore exact — `AC-2` reaches neither `AC-2 (1)` nor `CM-6 b`. Use `AC-2*` for one control's enhancements and sub-parts, `AC-*` for the family. |
 | `id` | exact or glob | an identifier | Matches requirement ID, STIG ID, GID, or group title. Exact and case-sensitive by default; a `*` or `?` wildcard globs case-insensitively. See below for gating on a CVE. |
 | `tag` | list | `key:value` | The colon is required. |
-| `search` | exact | free text | Substring match over title and description. A short string matches longer ids, so confirm with `hdf query` before relying on it. |
+| `search` | exact | free text | Case-insensitive substring over a requirement's id, title and descriptions — not its code. Because it reads the id, a short string matches longer ids, so confirm with `hdf query` before relying on it. |
 | `baseline` | exact | a profile name | How a rule narrows to one baseline. |
 | `baselineLabel` | list | `key:value` | The labels of the baseline a requirement sits in. Globs allowed on the value (`environment:prod*`). |
 | `disposition` | list | `waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment`, `operationalRequirement` | What governs the requirement: the most recently applied non-expired override **or** POA&M. `false_positive` also accepted. |
@@ -359,12 +359,15 @@ An empty `where` is **not** refused — it matches every requirement in the docu
 
 ### Gating on a specific CVE
 
-"Nothing failing for CVE-X" is the most-asked-for vulnerability gate, and the obvious spelling of it is a trap. `search` reads title, description and code, so it matches a CVE that another finding merely *mentions*:
+"Nothing failing for CVE-X" is the most-asked-for vulnerability gate, and the obvious spelling of it is a trap. `search` reads id, title and description, so it matches a CVE that another finding merely *mentions*:
 
 ```console
 $ hdf query grype.json --search CVE-2018-12698
 Found 1 matching requirement(s):
-Grype/CVE-2018-20657  not_applicable  INFO  Grype found a vulnerability to CVE-2018-20657 in ten...
+
+ID                    Status  Severity  Title
+--------------------  ------  --------  -------------------------------------------------------
+Grype/CVE-2018-20657  failed  INFO      Grype found a vulnerability to CVE-2018-20657 in ten...
 ```
 
 That is one false positive and **zero** true positives — `CVE-2018-12698` is not a requirement in this document at all; the string sits in another finding's prose. A gate written that way fires on an unrelated vulnerability.
@@ -731,7 +734,7 @@ That rule is the one most teams want: a failure may stay failing as long as a PO
       max: 0
 ```
 
-Stacking the two is stricter than either and almost certainly not what you want: a finding waived or risk-adjusted — decided, but not *planned* — satisfies the broad rule and still fails the plan rule, so in practice every finding would need a POA&M. Choose the plan rule if a plan is the bar, the disposition rule if a waiver is enough. This repository's own gates use the second; see `.github/hdf-thresholds/README.md`.
+Stacking the two is stricter than either and almost certainly not what you want: a finding waived or risk-adjusted — decided, but not *planned* — satisfies the broad rule and still fails the plan rule, so in practice every finding would need a POA&M. Choose the plan rule if a plan is the bar, the disposition rule if a waiver is enough. This repository's own gates use the second without `riskAdjustment`, because that override re-rates impact and carries no status, so a risk-adjusted failure is still a failure nobody has accepted; see `.github/hdf-thresholds/README.md`.
 
 Two things make this hold rather than rot. `expiresAt` is required on every override, so an adjudication cannot be permanent — when it lapses the finding returns to the gate by itself. And the `not` list is the full override vocabulary, so a new override type added to the schema does not silently satisfy the rule.
 
@@ -739,7 +742,12 @@ Worth knowing before you adopt it: the two rules are not interchangeable. `poams
 
 ## Running a SAF CLI threshold file
 
-A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured:
+A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured.
+
+This tool spells SAF's `no_impact` section `not_applicable`, because the bucket counts the `notApplicable` **status** and has nothing to do with an impact score. Both spellings are accepted on input and `no_impact` always will be — it is SAF's wire key, not a deprecation — and a violation names whichever one your file uses. A spec setting both is refused rather than resolved, since they name one bucket. What this tool **writes** uses `not_applicable`: the templates `hdf generate threshold` produces, the `counts` object in the `hdf_compliance` and `hdf_aggregate` MCP envelopes, and `engine.statusCounts` in the MCP contract. The violation text is not in that list — as above, it echoes your file's own spelling.
+
+So the interoperability runs one way. A SAF threshold file works here unchanged. A file written by `hdf generate threshold` is **silently degraded** by `saf validate threshold` rather than rejected — SAF checks a fixed list of bound paths and has no unknown-key check, so its `compliance`, `passed`, `failed`, `skipped` and `error` bounds are honoured while every `not_applicable` bound is dropped with no diagnostic and the command exits 0. Rewrite the section as `no_impact` before handing a generated file to SAF.
+
 
 ```yaml
 failed:
@@ -756,7 +764,7 @@ A bare number is an exact bound, not a minimum. That is SAF's own rule — thoug
 The five severity categories are `critical`, `high`, `medium`, `low` and `informational`. `none` is an accepted alias that resolves onto `informational`, so a bound written with it is honoured — but there is no `none` bucket in the output, and a run using the key says so:
 
 ```console
-warning: 'none' is not a severity category; no_impact.none is read as no_impact.informational
+warning: 'none' is not a severity category; not_applicable.none is read as not_applicable.informational
 ```
 
 That is about the spec, not the document, so it does not depend on what the file being checked contains. A bulk run marks the per-file line — `<file>: ok (1 non-category severity key)` — since it prints one short line per file.

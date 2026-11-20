@@ -2,17 +2,14 @@
 package nessus
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed nessus-nist-mappings.json
-var mappingsData []byte
 
 // nessusMapping represents a single entry in the Nessus-NIST mapping data.
 // pluginID may be a number or "*" (wildcard) in the JSON, so we unmarshal it as json.RawMessage.
@@ -34,25 +31,31 @@ var (
 	dataOnce    sync.Once
 )
 
+// parseData keeps the JSON shape testable without a mutable package var: the
+// dataset is read inside the loader so the linker can drop it from a consumer
+// that never looks a Nessus plugin up.
+func parseData(data []byte) (exact map[lookupKey]string, wildcard map[string]string) {
+	exact = make(map[lookupKey]string)
+	wildcard = make(map[string]string)
+
+	var mappings []nessusMapping
+	if err := json.Unmarshal(data, &mappings); err != nil {
+		return exact, wildcard
+	}
+
+	for _, m := range mappings {
+		pluginID := normalizePluginID(m.PluginIDRaw)
+		if pluginID == "*" {
+			wildcard[m.PluginFamily] = m.NISTID
+		} else {
+			exact[lookupKey{family: m.PluginFamily, pluginID: pluginID}] = m.NISTID
+		}
+	}
+	return exact, wildcard
+}
+
 func loadData() {
-	dataOnce.Do(func() {
-		exactMap = make(map[lookupKey]string)
-		wildcardMap = make(map[string]string)
-
-		var mappings []nessusMapping
-		if err := json.Unmarshal(mappingsData, &mappings); err != nil {
-			return
-		}
-
-		for _, m := range mappings {
-			pluginID := normalizePluginID(m.PluginIDRaw)
-			if pluginID == "*" {
-				wildcardMap[m.PluginFamily] = m.NISTID
-			} else {
-				exactMap[lookupKey{family: m.PluginFamily, pluginID: pluginID}] = m.NISTID
-			}
-		}
-	})
+	dataOnce.Do(func() { exactMap, wildcardMap = parseData(datasets.NessusNIST) })
 }
 
 // normalizePluginID extracts the plugin ID as a string from the raw JSON value.

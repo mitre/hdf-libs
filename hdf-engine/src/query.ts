@@ -313,7 +313,7 @@ function buildFilters(options: NormalizedOptions): FilterFunc[] {
     // A wildcard opts into glob matching; without one this stays the exact,
     // case-sensitive lookup it has always been. Parity: go/filter.go. The id a user
     // knows is often not the id the document carries — converters mint prefixed ids
-    // (Grype/CVE-...) — while `search` reaches title, description and code and so
+    // (Grype/CVE-...) — while `search` reaches id, title and description and so
     // also matches a CVE merely cross-referenced in another finding's prose. A glob
     // reads only the identifier, so it can be precise about which one it names.
     if (/[*?]/.test(id)) {

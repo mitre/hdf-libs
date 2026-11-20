@@ -239,8 +239,9 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 }
 
 func TestIgnoredMatches(t *testing.T) {
-	// Use inline fixture with ignoredMatches since the real amazon.json
-	// scan has no ignored matches. Structure mirrors real Grype output.
+	// amazon.json has no ignored matches; tensorflow.json does, and the real
+	// data is asserted in TestIgnoredMatchesInRealScan below. This inline case
+	// isolates one ignored match with no competing unignored one.
 	ignoredReport := `{
 		"descriptor": {"name": "grype", "version": "0.79.3"},
 		"source": {"target": {"userInput": "test-image"}},
@@ -265,12 +266,45 @@ func TestIgnoredMatches(t *testing.T) {
 	requirements := hdfResults.Baselines[0].Requirements
 	ignored := shared.MustFindRequirement(t, requirements, "Grype-Ignored-Match/CVE-2024-0001")
 
-	if ignored.Results[0].Status != hdf.NotReviewed {
-		t.Errorf("Expected status 'notReviewed', got '%s'", ignored.Results[0].Status)
+	// An ignore rule suppresses evaluation itself, so no verdict exists to
+	// adjudicate: the honest status is notApplicable stated as a result, not
+	// notReviewed (which claims the scan still owes us an answer).
+	if ignored.Results[0].Status != hdf.NotApplicable {
+		t.Errorf("Expected status 'notApplicable', got '%s'", ignored.Results[0].Status)
 	}
 
 	if ignored.Results[0].Message == nil || !strings.Contains(*ignored.Results[0].Message, "ignored by configured rules") {
 		t.Errorf("Expected message to contain 'ignored by configured rules'")
+	}
+
+	// Impact stays the finding's real severity — it was never a status flag here.
+	if ignored.Impact != getImpact("Low") {
+		t.Errorf("Expected impact to carry the real Low severity, got %v", ignored.Impact)
+	}
+}
+
+// TestIgnoredMatchesInRealScan asserts the same rule against real grype output
+// rather than an inline document: tensorflow.json carries 14 ignoredMatches.
+func TestIgnoredMatchesInRealScan(t *testing.T) {
+	hdfResults, err := ConvertGrypeToHDF(loadFixture(t, "input/tensorflow.json"), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	seen := 0
+	for _, req := range hdfResults.Baselines[0].Requirements {
+		if !strings.HasPrefix(req.ID, "Grype-Ignored-Match/") {
+			continue
+		}
+		seen++
+		for _, res := range req.Results {
+			if res.Status != hdf.NotApplicable {
+				t.Errorf("%s: expected notApplicable, got %s", req.ID, res.Status)
+			}
+		}
+	}
+	if seen != 14 {
+		t.Errorf("expected 14 ignored requirements from the real scan, got %d", seen)
 	}
 }
 
@@ -689,7 +723,7 @@ func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
 			{Version: "3.1", Vector: "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:L/A:L", Metrics: &CVSSMetrics{BaseScore: 3.4}},
 		},
 	}
-	got := buildCvssEntries(vuln)
+	got := buildCvssEntries(vuln, nil)
 	if len(got) != 2 {
 		t.Fatalf("expected 2 cvss entries (neither-score-nor-vector dropped), got %d", len(got))
 	}
@@ -963,7 +997,7 @@ func TestConvertGrype_RollsUpOneRequirementPerCVE(t *testing.T) {
 // The relocation is what makes roll-up non-lossy. Before it, §6's `code`
 // first-wins discarded 42 of anchore_grype's 89 distinct match records; the
 // record now rides on the RESULT, so every one survives the merge. Each is the
-// bytes Grype emitted, locatable in the input by its pointer.
+// match Grype emitted, locatable in the input by its pointer.
 func TestConvertGrype_CarriesEveryMatchRecordThroughRollUp(t *testing.T) {
 	input := loadFixture(t, "input/anchore_grype.json")
 	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
@@ -1004,7 +1038,7 @@ func TestConvertGrype_CarriesEveryMatchRecordThroughRollUp(t *testing.T) {
 			len(records), len(source.Matches))
 	}
 
-	// Each record must be the bytes Grype emitted, parseable back to the match
+	// Each record must be the match Grype emitted, parseable back to the match
 	// at the pointer it names.
 	for _, b := range hdfResults.Baselines {
 		for _, r := range b.Requirements {
@@ -1062,8 +1096,8 @@ func TestConvertGrype_RollUpKeepsIgnoredMatchesDistinct(t *testing.T) {
 	if active.Results[0].Status != hdf.Failed {
 		t.Errorf("active status = %q, want failed", active.Results[0].Status)
 	}
-	if ignored.Results[0].Status != hdf.NotReviewed {
-		t.Errorf("ignored status = %q, want notReviewed", ignored.Results[0].Status)
+	if ignored.Results[0].Status != hdf.NotApplicable {
+		t.Errorf("ignored status = %q, want notApplicable", ignored.Results[0].Status)
 	}
 	// Each keeps its own record, pointing into the array it came from.
 	for _, tc := range []struct {
@@ -1079,5 +1113,148 @@ func TestConvertGrype_RollUpKeepsIgnoredMatchesDistinct(t *testing.T) {
 		if *rec.Pointer != tc.want {
 			t.Errorf("%s: pointer = %q, want %q", tc.req.ID, *rec.Pointer, tc.want)
 		}
+	}
+}
+
+// The TypeScript twin reads the same case table, so both languages are held to one
+// rendering of each record: neither side may keep or drop escapes and number tokens
+// on its own.
+func TestRawSourceRecord_SharedCases(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "raw-source-record-cases.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var table struct {
+		Cases []struct {
+			Why     string `json:"why"`
+			Input   string `json:"input"`
+			Pointer string `json:"pointer"`
+			Content string `json:"content"`
+		} `json:"cases"`
+	}
+	if err := json.Unmarshal(raw, &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Cases) == 0 {
+		t.Fatal("no cases")
+	}
+	for _, tc := range table.Cases {
+		t.Run(tc.Why, func(t *testing.T) {
+			res, err := ConvertGrypeToHDF([]byte(tc.Input), testConverterVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rec := res.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+			if rec == nil || rec.Pointer == nil {
+				t.Fatal("no rawSourceRecord")
+			}
+			if *rec.Pointer != tc.Pointer {
+				t.Errorf("pointer = %q, want %q", *rec.Pointer, tc.Pointer)
+			}
+			if rec.Content != tc.Content {
+				t.Errorf("content mismatch\n got: %q\nwant: %q", rec.Content, tc.Content)
+			}
+		})
+	}
+}
+
+// A distro-namespace match often carries no CVSS of its own while the NVD
+// record for the same CVE id sits in relatedVulnerabilities. The values below
+// are taken from a real Grype 0.121.3 scan of debian:12.
+const relatedCvssReport = `{
+	"descriptor": {"name": "grype", "version": "0.121.3"},
+	"source": {"target": {"userInput": "debian:12"}},
+	"matches": [
+		{
+			"vulnerability": {"id": "CVE-2018-20796", "namespace": "debian:distro:debian:12", "severity": "Negligible", "cvss": []},
+			"relatedVulnerabilities": [
+				{"id": "CVE-2011-3389", "namespace": "nvd:cpe", "cvss": [
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "2.0", "vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N", "metrics": {"baseScore": 4.3}}
+				]},
+				{"id": "CVE-2018-20796", "namespace": "nvd:cpe", "cvss": [
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "3.0", "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}},
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "2.0", "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P", "metrics": {"baseScore": 5}}
+				]}
+			],
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "dpkg-matcher"}],
+			"artifact": {"name": "libc6", "version": "2.36-9+deb12u13", "type": "deb"}
+		},
+		{
+			"vulnerability": {"id": "CVE-2025-13151", "namespace": "debian:distro:debian:12", "severity": "High", "cvss": [
+				{"source": "134c704f-9b21-4f2e-91b3-4a467353bcc0", "type": "Secondary", "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}}
+			]},
+			"relatedVulnerabilities": [
+				{"id": "CVE-2025-13151", "namespace": "nvd:cpe", "cvss": [
+					{"source": "134c704f-9b21-4f2e-91b3-4a467353bcc0", "type": "Secondary", "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}}
+				]}
+			],
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "dpkg-matcher"}],
+			"artifact": {"name": "libtasn1-6", "version": "4.19.0-2+deb12u1", "type": "deb"}
+		}
+	]
+}`
+
+func TestConvertGrype_CvssFallsBackToSameIDRelatedVulnerability(t *testing.T) {
+	results, err := ConvertGrypeToHDF([]byte(relatedCvssReport), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range results.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	type want struct {
+		version hdf.Version
+		vector  string
+		score   float64
+	}
+	cases := []struct {
+		name string
+		id   string
+		want []want
+	}{
+		{
+			name: "empty primary CVSS takes every entry of the same-id related vulnerability, never an alias",
+			id:   "Grype/CVE-2018-20796",
+			want: []want{
+				{hdf.The30, "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", 7.5},
+				{hdf.The20, "AV:N/AC:L/Au:N/C:N/I:N/A:P", 5},
+			},
+		},
+		{
+			name: "non-empty primary CVSS is used alone",
+			id:   "Grype/CVE-2025-13151",
+			want: []want{
+				{hdf.The31, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", 7.5},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req, ok := byID[tc.id]
+			if !ok {
+				t.Fatalf("requirement %s missing", tc.id)
+			}
+			if len(req.Cvss) != len(tc.want) {
+				t.Fatalf("cvss entries = %d, want %d: %+v", len(req.Cvss), len(tc.want), req.Cvss)
+			}
+			cveID := strings.TrimPrefix(tc.id, "Grype/")
+			for i, w := range tc.want {
+				got := req.Cvss[i]
+				if got.Version != w.version {
+					t.Errorf("entry %d version = %q, want %q", i, got.Version, w.version)
+				}
+				if got.BaseVector == nil || *got.BaseVector != w.vector {
+					t.Errorf("entry %d vector = %v, want %q", i, got.BaseVector, w.vector)
+				}
+				if got.BaseScore == nil || *got.BaseScore != w.score {
+					t.Errorf("entry %d score = %v, want %v", i, got.BaseScore, w.score)
+				}
+				if got.Source == nil || *got.Source != cveID {
+					t.Errorf("entry %d source = %v, want %q", i, got.Source, cveID)
+				}
+			}
+		})
 	}
 }

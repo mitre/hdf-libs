@@ -10,6 +10,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -2771,8 +2772,8 @@ func TestConvertSarifToHDF_RuleDefaultBeatsNoneOnAPassingResult(t *testing.T) {
 
 // §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
 // "none" on a failing result contradicts the definition and must not be honoured.
-// Honouring it would put a reported failure at impact 0, which the effective-status
-// ladder reads as notApplicable — dropping a real finding out of the denominator.
+// Honouring it would put a reported failure in the informational band,
+// understating a real finding's severity everywhere a consumer reads it.
 func TestConvertSarifToHDF_NoneOnAFailingResultIsNotHonoured(t *testing.T) {
 	input := []byte(`{"version":"2.1.0","runs":[{
 		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
@@ -3432,6 +3433,69 @@ func TestConvertSarifToHDF_AddressLocationsKeepOnlyWhatIsRepresentable(t *testin
 			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Results[0].CodeDesc)
 		})
 	}
+}
+
+// A JSON null element of locations decodes to an empty SarifLocation, which carries
+// nothing representable; the TypeScript peer is held to the same rows.
+func TestConvertSarifToHDF_NullLocationElementsAreSkipped(t *testing.T) {
+	doc := func(locations string) []byte {
+		return []byte(`{"version":"2.1.0","runs":[{
+			"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+			"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},"locations":` + locations + `}]}]}`)
+	}
+	for _, tc := range []struct {
+		name      string
+		locations string
+		want      string
+	}{
+		{"null then a real location", `[null,{"physicalLocation":{"artifactLocation":{"uri":"src/a.c"},"region":{"startLine":3,"startColumn":5}}}]`, "URL : src/a.c LINE : 3 COLUMN : 5"},
+		{"only null", `[null]`, "No source location"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertSarifToHDF(doc(tc.locations), testConverterVersion, "")
+			require.NoError(t, err)
+			results := out.Baselines[0].Requirements[0].Results
+			require.Len(t, results, 1)
+			assert.Equal(t, tc.want, results[0].CodeDesc)
+			encoded, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.ValidateResults(encoded)
+			require.True(t, v.Valid, "%v", v.Errors)
+		})
+	}
+}
+
+// A rule with neither description and a message with no colon leaves nothing to put in
+// the default description, which must still be present (the schema's contains) and empty.
+func TestConvertSarifToHDF_RuleWithoutDescriptionsKeepsEmptyDefault(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"}}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	assert.Equal(t, []hdf.Description{{Label: "default", Data: ""}},
+		out.Baselines[0].Requirements[0].Descriptions)
+	encoded, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.ValidateResults(encoded)
+	require.True(t, v.Valid, "%v", v.Errors)
+}
+
+// A JSON null where a location object belongs carries nothing representable. Go decodes
+// it to a nil pointer and skips it; the TypeScript peer is held to the same rows.
+func TestConvertSarifToHDF_NullLocationPartsAreSkipped(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},"locations":[
+			{"physicalLocation":null},
+			{"physicalLocation":{"artifactLocation":null,"region":null}},
+			{"physicalLocation":{"artifactLocation":{"uri":"src/a.c"},"region":{"startLine":3,"startColumn":5}}}
+		]}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	results := out.Baselines[0].Requirements[0].Results
+	require.Len(t, results, 1)
+	assert.Equal(t, "URL : src/a.c LINE : 3 COLUMN : 5", results[0].CodeDesc)
 }
 
 // Decoding into interface{} makes every number a float64, which rounds any integer

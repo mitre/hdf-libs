@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { normalizeSafSupplement, parseResults } from './index.js';
+import type { SafNormalizeOptions } from './saf-supplement.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'testdata', 'saf-supplement');
@@ -78,6 +79,27 @@ describe('normalizeSafSupplement', () => {
     expect(warnings.some((w: string) => w.includes('extensions.audit was dropped'))).toBe(true);
   });
 
+  // The SHARED table, read rather than restated: Go reads the same file, so the two
+  // emit the same warnings in the same order or one side fails.
+  describe('extension-sibling warning order (shared vectors)', () => {
+    const table = JSON.parse(
+      readFileSync(join(__dirname, '..', 'testdata', 'extension-sibling-warning-vectors.json'), 'utf-8'),
+    ) as { vectors: { why: string; extensions: object; passthrough: object; warnings: string[] }[] };
+
+    it('has vectors to check, so a pass cannot mean an empty table', () => {
+      expect(table.vectors.length).toBeGreaterThan(0);
+    });
+
+    for (const v of table.vectors) {
+      it(v.why, () => {
+        const { warnings } = normalizeSafSupplement(
+          validV3WithExtra({ extensions: v.extensions, passthrough: v.passthrough }),
+        );
+        expect(warnings).toEqual(v.warnings);
+      });
+    }
+  });
+
   it('passes a doc with no legacy keys through byte-identical with no warnings', () => {
     const input = validV3WithExtra({});
     const { output, warnings } = normalizeSafSupplement(input);
@@ -97,6 +119,90 @@ describe('normalizeSafSupplement', () => {
     expect(doc.components[0].labels.boundary).toBe('sparc');
   });
 
+  // The component the v2→v3 upgrade derives from an InSpec `platform` object.
+  const platformDerived = () => ({ name: 'redhat', osName: 'redhat', osVersion: '9.8', type: 'host' });
+  const componentsOf = (extra: Record<string, unknown>, options: SafNormalizeOptions = {}) => {
+    const { output } = normalizeSafSupplement(validV3WithExtra(extra), options);
+    expect(parseResults(output).success).toBe(true);
+    return JSON.parse(output).components as Array<Record<string, unknown>>;
+  };
+
+  it('uses a legacy target name as the component identity', () => {
+    const comps = componentsOf({ target: { type: 'host', name: 'my-host-01', labels: {} } });
+    expect(comps).toHaveLength(1);
+    expect(comps[0].name).toBe('my-host-01');
+  });
+
+  it('prefers target.id over target.name', () => {
+    const comps = componentsOf({ target: { id: 'prod-account', name: 'Production', type: 'cloudAccount' } });
+    expect(comps[0]).toMatchObject({ name: 'prod-account', accountId: 'prod-account' });
+  });
+
+  // accountId is the provider's account identifier, so only target.id may fill it.
+  it('does not stamp a display name into accountId', () => {
+    const comps = componentsOf({ target: { name: 'Production', type: 'cloudAccount' } });
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toEqual({ type: 'cloudAccount', name: 'Production' });
+  });
+
+  // The first-class target.boundary is the SAF carrier; a labels.boundary entry does not
+  // displace it.
+  it('lets the boundary field win over a boundary label', () => {
+    const comps = componentsOf({
+      target: { type: 'host', name: 'my-host-01', boundary: 'sparc', labels: { boundary: 'legacy-zone', environment: 'prod' } },
+    });
+    expect(comps[0].labels).toEqual({ boundary: 'sparc', environment: 'prod' });
+  });
+
+  // Component labels are string-valued, so a non-string target label is skipped.
+  it('carries string target labels alongside the boundary label', () => {
+    const comps = componentsOf({
+      target: { type: 'host', name: 'my-host-01', boundary: 'sparc', labels: { environment: 'prod', rack: 7 } },
+    });
+    expect(comps[0].labels).toEqual({ environment: 'prod', boundary: 'sparc' });
+  });
+
+  it('does not override labels the component already carries', () => {
+    const comps = componentsOf({
+      components: [{ name: 'my-host-01', type: 'host', labels: { environment: 'stage' } }],
+      target: { type: 'host', name: 'my-host-01', labels: { environment: 'prod', team: 'ops' } },
+    });
+    expect(comps).toHaveLength(1);
+    expect(comps[0].labels).toEqual({ environment: 'stage', team: 'ops' });
+  });
+
+  it('merges a target into the platform-derived component (one assessed host)', () => {
+    const comps = componentsOf({
+      components: [platformDerived()],
+      target: { type: 'host', name: 'my-host-01', labels: { environment: 'prod' } },
+    }, { mergePlatformComponent: true });
+    expect(comps).toEqual([{
+      name: 'my-host-01', type: 'host', osName: 'redhat', osVersion: '9.8', labels: { environment: 'prod' },
+    }]);
+  });
+
+  it('keeps the platform name when the target carries no identity', () => {
+    const comps = componentsOf(
+      { components: [platformDerived()], target: { type: 'host', boundary: 'sparc' } },
+      { mergePlatformComponent: true },
+    );
+    expect(comps).toHaveLength(1);
+    expect(comps[0]).toMatchObject({ name: 'redhat', labels: { boundary: 'sparc' } });
+  });
+
+  // A component that carries its own identity is a distinct thing, never renamed.
+  it.each([
+    ['has componentId', [{ ...platformDerived(), componentId: '6f1c1c3e-8f43-4d2a-9a57-0d5a3c2b7e11' }]],
+    ['name is not the OS', [{ ...platformDerived(), name: 'web-01' }]],
+    ['different type', [{ name: 'redhat', osName: 'redhat', type: 'containerImage' }]],
+    ['more than one exists', [platformDerived(), { name: 'db-01', type: 'database' }]],
+  ])('does not merge into a distinct component (%s)', (_label, existing) => {
+    const comps = componentsOf({ components: existing, target: { type: 'host', name: 'my-host-01' } });
+    expect(comps).toHaveLength(existing.length + 1);
+    expect(comps.slice(0, existing.length)).toEqual(existing);
+    expect(comps[existing.length].name).toBe('my-host-01');
+  });
+
   it('leaves an unmapped target type in place for the schema to reject', () => {
     const { output, warnings } = normalizeSafSupplement(
       validV3WithExtra({ target: { id: 'x', type: 'not-a-real-type' } }),
@@ -109,6 +215,55 @@ describe('normalizeSafSupplement', () => {
   // camfd wiring: parseResults runs the normalizer before ajv validation, so a
   // SAF-supplemented doc (which ajv would otherwise reject on unevaluatedProperties)
   // parses, with target as a component and the deprecation warning surfaced.
+  // Label keys are unconstrained strings, so a key that happens to name an
+  // Object.prototype member must survive exactly as Go keeps it.
+  it('keeps labels whose keys are Object.prototype member names', () => {
+    const out = JSON.parse(normalizeSafSupplement(validV3WithExtra({
+      target: { id: 'acct', type: 'cloudAccount', labels: { constructor: 'c', toString: 't', team: 'x' } },
+    })).output) as { components: Array<{ labels: Record<string, string> }> };
+    expect(out.components[0].labels).toEqual({ constructor: 'c', toString: 't', team: 'x' });
+  });
+
+  it('relocates an extensions sibling named like a prototype member instead of dropping it', () => {
+    const r = normalizeSafSupplement(validV3WithExtra({
+      passthrough: { audit: 1 },
+      extensions: { constructor: { a: 1 } },
+    }));
+    const out = JSON.parse(r.output) as { extensions: { passthrough: Record<string, unknown> } };
+    expect(out.extensions.passthrough).toEqual({ audit: 1, constructor: { a: 1 } });
+    expect(r.warnings.join(' ')).not.toContain('was dropped');
+  });
+
+  it('never lets a __proto__ key reassign a prototype', () => {
+    // Built from JSON text: an object literal's __proto__ key sets the prototype
+    // instead of creating a key, so it would never reach the normalizer.
+    const r = normalizeSafSupplement(validV3WithExtra(JSON.parse(
+      '{"target":{"id":"acct","type":"cloudAccount","labels":{"__proto__":"p"}},' +
+      '"passthrough":{},"extensions":{"__proto__":{"polluted":true}}}',
+    ) as Record<string, unknown>));
+    const out = JSON.parse(r.output) as { components: Array<{ labels: Record<string, string> }>; extensions: { passthrough: Record<string, unknown> } };
+    expect(Object.getPrototypeOf(out.components[0].labels)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(out.extensions.passthrough)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Object.hasOwn(out.components[0].labels, '__proto__')).toBe(true);
+    expect(Object.hasOwn(out.extensions.passthrough, '__proto__')).toBe(true);
+  });
+
+  it.each([
+    ['missing name', { type: 'host', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f', osName: 'redhat' }],
+    ['empty name', { type: 'host', name: '', componentId: '6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f' }],
+  ])('never joins a target with no identity to a component with a %s', (_label, comp) => {
+    const { output, warnings } = normalizeSafSupplement(validV3WithExtra({
+      components: [comp],
+      target: { type: 'host', boundary: 'dmz' },
+    }));
+    const doc = JSON.parse(output) as { components: Array<Record<string, unknown>>; target?: unknown };
+    expect(doc.components).toHaveLength(1);
+    expect(doc.components[0].labels).toBeUndefined();
+    expect('target' in doc).toBe(true);
+    expect(warnings[0]).toContain('no id or name');
+  });
+
   it('parseResults accepts a SAF-supplemented doc and surfaces the warning', () => {
     const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
     const r = parseResults(input);
@@ -120,10 +275,43 @@ describe('normalizeSafSupplement', () => {
 
   // Cross-language parity: TS normalizes the shared legacy-in fixture to the same
   // v3 document the Go suite asserts (deep-equal; key order differs across langs).
-  it('matches the shared legacy-in / v3-out fixture pair (Go parity)', () => {
-    const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
-    const expected = JSON.parse(readFileSync(join(fixturesDir, 'v3-out.json'), 'utf-8'));
+  it.each([
+    ['legacy-in.json', 'v3-out.json'],
+    ['prototype-keys-in.json', 'prototype-keys-out.json'],
+    ['empty-identity-in.json', 'empty-identity-out.json'],
+  ])('matches the shared %s / %s fixture pair (Go parity)', (inName, outName) => {
+    const input = readFileSync(join(fixturesDir, inName), 'utf-8');
+    const expected = JSON.parse(readFileSync(join(fixturesDir, outName), 'utf-8'));
     const { output } = normalizeSafSupplement(input);
     expect(JSON.parse(output)).toEqual(expected);
+  });
+
+  // The plain parse path cannot tell a platform-built component from a genuine
+  // v3 component named after its OS, so it never renames one.
+  it('parseResults never renames an OS-named component', () => {
+    const r = parseResults(validV3WithExtra({
+      components: [{ type: 'host', name: 'ubuntu', osName: 'ubuntu' }],
+      target: { type: 'host', name: 'web-01' },
+    }));
+    expect(r.success).toBe(true);
+    const comps = (r.data?.components ?? []) as Array<Record<string, unknown>>;
+    expect(comps).toHaveLength(2);
+    expect(comps[0]).toEqual({ type: 'host', name: 'ubuntu', osName: 'ubuntu' });
+    expect(comps[1].name).toBe('web-01');
+  });
+
+  it('appends a named target beside a platform-shaped component by default', () => {
+    const comps = componentsOf({ components: [platformDerived()], target: { type: 'host', name: 'my-host-01' } });
+    expect(comps).toEqual([platformDerived(), { type: 'host', name: 'my-host-01' }]);
+  });
+
+  it('leaves a nameless target in place beside a platform-shaped component by default', () => {
+    const { output, warnings } = normalizeSafSupplement(validV3WithExtra({
+      components: [platformDerived()], target: { type: 'host', boundary: 'sparc' },
+    }));
+    const doc = JSON.parse(output) as { components: unknown[]; target?: unknown };
+    expect(doc.components).toEqual([platformDerived()]);
+    expect('target' in doc).toBe(true);
+    expect(warnings[0]).toContain('no id or name');
   });
 });

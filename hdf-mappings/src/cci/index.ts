@@ -3,8 +3,8 @@
  */
 
 import type { CCIMappings, NistCCIMappings } from './types.js';
-import rawCCIData from '../data/cci-mappings.json';
-import rawNistCCIData from '../data/nist-cci-mappings.json';
+import rawCCIData from '../../go/datasets/mappings/cci-mappings.json';
+import rawNistCCIData from '../../go/datasets/mappings/nist-cci-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // The DISA CCI list's NIST references are Rev 4-era (they include Appendix J

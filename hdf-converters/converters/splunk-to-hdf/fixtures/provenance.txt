@@ -32,3 +32,58 @@ A version below is what the fixture *says about itself*; where a format carries 
 ## Schema
 
 The inputs are HDF events exported to Splunk; the schema is this repository's own.
+
+### `splunk-impact-zero-skips.json`
+
+**Real, from a published upstream sample.** Trimmed 2026-11-06 from heimdall2
+`libs/hdf-converters/sample_jsons/splunk_reverse_mapper/splunk-query.json`,
+sha256 of the source as retrieved
+`f068798d1844aafecb54b65b0bb816447c9d41aab84ed8b30ef1a1b345510e65`.
+
+The trim dropped whole events only, no string value edited: 245 events reduced
+to 7 — the `header` event, the `profile` event, three `control` events carrying
+the impact-0 skip-only shape (`V-72317`, `V-72313`, `V-72305`), one passing
+control (`V-77825`) and one failing control (`V-78997`) as controls.
+
+Two mechanical differences from the source, neither touching a value: the file is
+re-indented from 4 spaces to 2, and the kept events appear in the order listed
+above rather than at their source positions (140, 71, 14, 15, 19, 1, 0) — the
+event array is unordered and the converter keys off `meta.subtype`. Every retained
+event was asserted structurally identical to its source element, keys and values
+and key order, before writing.
+
+Field map: each control event's `impact` and `results[].status` are what this
+fixture exists for — `impact: 0` with only `skipped` results is the InSpec
+score-0-and-skip convention, which `splunk-to-hdf` now translates into an
+explicit `notApplicable` result exactly as `legacyhdf-to-hdf` does. The two
+pre-existing inputs in this directory carry no impact-0 control at all, which is
+why the divergence between the two readers was invisible.
+
+## Recorded coverage gap: a control with no `impact`, no `tags`, or no `results`
+
+No fixture here carries any of the three shapes, and none was manufactured to
+fill the hole. Checked 2026-11-09 across **2,728 InSpec source controls in 10
+real files** — every `profiles[].controls[]` entry in the 7 InSpec-shaped inputs
+(this importer's 3, plus the 4 in `hdf-fixtures/inspec`) and the 12
+`meta.subtype == "control"` events across the 3 Splunk inputs.
+`baselines[].requirements[]` in `hdf-fixtures/results` (1,752 more) are
+deliberately excluded: they are converter OUTPUT and cannot omit a
+schema-required field, so they say nothing about what a source carries. Of the
+2,728: **zero** omit `impact`, **zero** omit `tags`, and **zero** omit `results`
+or carry it as null — though **1,027 carry `results: []`**, which the same fill
+covers, since `minItems: 1` makes an empty array as invalid as a missing one.
+That last figure is the one an earlier version of this record missed, by
+checking only for absence and null. All 1,396 impact-0 controls carry an explicit
+`"impact": 0`, which is InSpec writing the profile author's `impact 0.0`
+declaration deliberately — a different claim from an absent field.
+
+Both shapes are therefore exercised by **authored inline documents in the test
+files**, not by anything under `input/`. They are not captured tool output and
+must not be cited as such. The owner ruled this acceptable where a shape cannot
+be sourced; the behaviour itself is pinned in both languages, and a
+cross-language test asserts the two readers of an InSpec control payload treat
+absence identically.
+
+This is also why the defects were invisible: the golden parity harness does not
+mask `impact` or `tags`, so a Go/TS divergence on either WOULD fail the snapshot
+— the branch simply never executed, because no fixture reaches it.

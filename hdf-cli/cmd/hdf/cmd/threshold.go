@@ -21,11 +21,13 @@ type (
 )
 
 const (
-	thresholdPassed   = hdfengine.ThresholdPassed
-	thresholdFailed   = hdfengine.ThresholdFailed
-	thresholdSkipped  = hdfengine.ThresholdSkipped
-	thresholdError    = hdfengine.ThresholdError
-	thresholdNoImpact = hdfengine.ThresholdNoImpact
+	thresholdPassed        = hdfengine.ThresholdPassed
+	thresholdFailed        = hdfengine.ThresholdFailed
+	thresholdSkipped       = hdfengine.ThresholdSkipped
+	thresholdError         = hdfengine.ThresholdError
+	thresholdNotApplicable = hdfengine.ThresholdNotApplicable
+	// thresholdNoImpact is SAF CLI's spelling, accepted on input.
+	thresholdNoImpact = hdfengine.SAFNotApplicableKey
 )
 
 // thresholdInputFor parses a document once and builds everything an evaluation
@@ -43,8 +45,8 @@ func thresholdInputFor(data []byte) (hdfengine.ThresholdInput, error) {
 // countControlsByStatusSeverity parses HDF results JSON and counts requirements
 // by their effective status and severity, delegating to the shared hdf-engine
 // library via the shared effective-status resolver so a CLI gate agrees with
-// hdf_compliance and never keeps Not Applicable controls (impact==0) in the
-// compliance denominator. Input parsing stays here (the CLI's gated pipeline).
+// hdf_compliance and never keeps a Not Applicable control in the compliance
+// denominator. Input parsing stays here (the CLI's gated pipeline).
 func countControlsByStatusSeverity(data []byte) (*hdfengine.StatusCounts, error) {
 	results, err := parseHDFResults(data)
 	if err != nil {

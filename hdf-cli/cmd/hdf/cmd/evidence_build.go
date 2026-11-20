@@ -39,15 +39,27 @@ and every reference is a bare filename — so two documents sharing a filename c
 be recorded and are refused rather than collapsed into one reference. Pass -o <file> to
 keep the directories that tell them apart.
 
+--from-dir reports a file it could not read — one over --max-size, which it never
+opens, or one it was refused permission to — and builds without it at exit 0.
+--require-readable makes that a failure instead: the build exits 1 naming every
+such file, and nothing is written.
+
 Examples:
   hdf evidence build --system portal.json --results scan.json
   hdf evidence build --system portal.json --results rhel9.json --results postgres.json
   hdf evidence build --system portal.json --results "/tmp/scans/*.json"
   hdf evidence build --system portal.json /tmp/scans/*.json
   hdf evidence build --system portal.json --results scan.json --amendments waivers.json -o package.json
-  hdf evidence build --results scan.json -o package.json`,
+  hdf evidence build --results scan.json -o package.json
+  hdf evidence build --from-dir artifacts -o artifacts/package.json --require-readable`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
+			// Refused rather than ignored: a gate that silently does nothing reads as passed.
+			if opts.requireReadable && opts.fromDir == "" {
+				return fmt.Errorf("--require-readable only means something with --from-dir, " +
+					"which is what can skip a file; an explicitly named file that cannot be " +
+					"read already fails the build")
+			}
 			// Combine --results flags and positional args as results files
 			allResults := make([]string, 0, len(opts.resultsPaths)+len(args))
 			allResults = append(allResults, opts.resultsPaths...)
@@ -90,6 +102,9 @@ Examples:
 	cmd.Flags().StringArrayVar(&opts.comparisonPaths, "comparison", nil, "Comparison document(s) (repeatable, supports globs)")
 	cmd.Flags().StringVar(&opts.fromDir, "from-dir", "",
 		"Scan a directory and route every document by its content; recurses, and reports what it cannot place")
+	cmd.Flags().BoolVar(&opts.requireReadable, "require-readable", false,
+		"With --from-dir: fail if the scan skipped any file it could not read — over "+
+			"--max-size, or refused by permissions — naming each; nothing is written")
 	cmd.Flags().StringVarP(&opts.outputPath, "output", "o", "", "Output file (default: stdout)")
 
 	return cmd
@@ -163,7 +178,26 @@ func mergeScannedDir(opts *evidenceBuildOpts) error {
 	}
 
 	reportScan(found, opts.fromDir, opts.outputPath)
+	if opts.requireReadable && len(found.unreadable) > 0 {
+		return unreadableScanError(opts.fromDir, found.unreadable)
+	}
 	return nil
+}
+
+// unreadableScanError is the --require-readable failure, naming every skipped file and
+// the remedy each one has, so the operator can fix them all from one run.
+func unreadableScanError(baseDir string, skipped []unreadEntry) error {
+	named := make([]string, 0, len(skipped))
+	for _, u := range skipped {
+		entry := displayUnderBase(baseDir, u.path)
+		if u.hint != "" {
+			entry += " (" + u.hint + ")"
+		}
+		named = append(named, entry)
+	}
+	return fmt.Errorf("--from-dir %s: %d %s could not be read (--require-readable): %s; "+
+		"no package was written", baseDir, len(skipped), plural("file", len(skipped)),
+		strings.Join(named, ", "))
 }
 
 // dropEmpty removes empty path elements. An unset shell variable (--amendments
@@ -240,7 +274,17 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 	// schema declares a uri-reference. Returning the raw path wrote a reference the
 	// schema calls malformed as soon as a filename contained a space or a percent — and
 	// it is also what made such a file look inexpressible when it is merely unescaped.
-	return evidenceref.Encode(filepath.ToSlash(rel)), nil
+	return encodeRef(docPath, filepath.ToSlash(rel))
+}
+
+// encodeRef is evidenceref.Encode, naming the file when its path cannot be recorded.
+// Quoted, so the bytes that are not UTF-8 show as escapes rather than mojibake.
+func encodeRef(path, rel string) (string, error) {
+	ref, err := evidenceref.Encode(rel)
+	if err != nil {
+		return "", fmt.Errorf("%q cannot be recorded as a reference: %w", path, err)
+	}
+	return ref, nil
 }
 
 // documentRef is the one definition of what a content reference is. With a
@@ -249,7 +293,7 @@ func packageRelativeRef(baseDir, docPath string) (string, error) {
 // survive a subdirectory.
 func documentRef(baseDir, path string) (string, error) {
 	if baseDir == "" {
-		return evidenceref.Encode(filepath.Base(path)), nil
+		return encodeRef(path, filepath.Base(path))
 	}
 	return packageRelativeRef(baseDir, path)
 }
@@ -323,6 +367,7 @@ type evidenceBuildOpts struct {
 	comparisonPaths []string
 	outputPath      string
 	fromDir         string
+	requireReadable bool
 	// extraPlanPaths are plans a scan found that are NOT the planRef. They are
 	// still listed in contents[]: planRef names which plan the package was
 	// assessed against, while contents[] is the manifest of documents carried —

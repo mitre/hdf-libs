@@ -13,13 +13,14 @@ import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
 import {
   impactToSeverity,
+  UNKNOWN_SEVERITY_IMPACT,
   parseTimestamp,
   formatTimestamp,
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
   canonicalJson,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, earliestResultStartTime, ensureDefaultDescription, GO_ZERO_TIME, inSpecEstablishedNothing, markUnratedSeverity, parseSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult as sharedSynthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -46,7 +47,10 @@ export interface LegacyControl {
   title?: string;
   desc?: string;
   descriptions?: Array<{label: string; data: string}>;
-  impact: number;
+  // Optional because an absent impact and an explicit 0 are different
+  // claims: 0 is the author declaring the control inapplicable, undefined
+  // is a source that never carried the field. Parity: *float64 in go/types.go.
+  impact?: number;
   refs?: unknown[];
   tags?: Record<string, unknown>;
   code?: string;
@@ -319,10 +323,10 @@ function normalizeStatus(status: string): string {
 }
 
 /**
- * Compute effectiveStatus from impact and v2 results via the canonical
- * worst-wins ordering in @mitre/hdf-utilities (impact=0 → notApplicable
- * unless the roll-up is error; error > failed > passed > notApplicable >
- * notReviewed).
+ * Compute effectiveStatus from the v2 results via the canonical worst-wins
+ * ordering in @mitre/hdf-utilities (error > failed > passed > notApplicable >
+ * notReviewed). Impact is passed for the shared input shape but no longer
+ * influences the status.
  */
 function computeEffectiveStatus(impact: number, results: V2Result[]): string {
   return canonicalEffectiveStatus({
@@ -333,22 +337,31 @@ function computeEffectiveStatus(impact: number, results: V2Result[]): string {
 
 /**
  * Encodes a control-level execution error the source tool reported but did not
- * record as a result, reusing the earliest recorded result time (matching the
- * Go converter).
+ * record as a result (matching the Go converter).
  */
 function synthesizedErrorResult(results: V2Result[]): V2Result {
-  const times = results
-    .map((r) => r.startTime)
-    .filter((t): t is string => typeof t === 'string' && t !== '' && t !== '0001-01-01T00:00:00Z')
-    .sort();
-  // startTime is schema-required; the Go converter's zero time serializes as
-  // 0001-01-01T00:00:00Z, so mirror that when no result carries a time.
   return {
     status: 'error',
     codeDesc:
       'Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result',
-    startTime: times[0] ?? '0001-01-01T00:00:00Z',
+    startTime: (earliestResultStartTime(results) ?? GO_ZERO_TIME),
   };
+}
+
+/**
+ * Encodes the scope declaration InSpec states as an impact of 0 rather than as a
+ * result (matching the Go converter).
+ */
+function synthesizedNotApplicableResult(results: V2Result[]): V2Result {
+  return sharedSynthesizedNotApplicableResult(results, GO_ZERO_TIME);
+}
+
+/**
+ * Whether the results leave the requirement with no verdict at all — empty, or
+ * only skipped/notReviewed entries.
+ */
+function establishedNothing(results: V2Result[]): boolean {
+  return inSpecEstablishedNothing(results.map((r) => r.status));
 }
 
 /**
@@ -468,9 +481,14 @@ function convertRefs(refs: unknown[]): Record<string, unknown>[] | undefined {
  * Transforms field names and structure.
  */
 function convertControl(v1Control: LegacyControl): V2Requirement {
+  // An absent impact is unknown severity, not zero severity. Resolve once so
+  // every use below agrees, and keep the source's own undefined-ness for the
+  // score-0 translation, which only an explicit 0 may trigger.
+  const impact = v1Control.impact ?? UNKNOWN_SEVERITY_IMPACT;
+
   const v2Req: V2Requirement = {
     id: v1Control.id,
-    impact: v1Control.impact,
+    impact,
   };
 
   // Copy simple fields. `waiver_data` is intentionally dropped (expressed via
@@ -480,12 +498,17 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
   // descriptions is required in v3 with minItems:1 and must contain a 'default',
   // so both null and [] are invalid. Guarantee a 'default', synthesized from the
   // control desc when absent — symmetric with the downgrade's default→desc map.
-  const descriptions = [...(v1Control.descriptions ?? [])];
-  if (!descriptions.some((d) => d.label === 'default')) {
-    descriptions.unshift({label: 'default', data: v1Control.desc ?? ''});
+  v2Req.descriptions = ensureDefaultDescription([...(v1Control.descriptions ?? [])], v1Control.desc ?? '');
+  // tags is schema-required, so an absent source map becomes an empty object
+  // rather than being omitted — omission is as invalid as null.
+  v2Req.tags = v1Control.tags ?? {};
+  // A defaulted impact is unrated unless the source's own tags.severity rated it.
+  // Copied so marking does not write into the caller's control. Parity: go/converter.go.
+  if (v1Control.impact == null) {
+    v2Req.tags = {...v2Req.tags};
+    const severity = v2Req.tags.severity;
+    markUnratedSeverity(v2Req.tags, typeof severity === 'string' ? severity : '');
   }
-  v2Req.descriptions = descriptions;
-  if (v1Control.tags !== undefined) v2Req.tags = v1Control.tags;
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
     const refs = convertRefs(v1Control.refs);
@@ -518,14 +541,26 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
     v2Req.results = [...(v2Req.results ?? []), synthesizedErrorResult(v2Req.results ?? [])];
   }
 
+  // InSpec says "this control does not apply to the target" by scoring it 0 and
+  // reporting no pass or fail. That is a verdict, not absent data, and the
+  // canonical ladder does not read impact — so the claim only survives if it is
+  // in results[]. Anything the results did establish, an execution error
+  // included, outranks notApplicable in worst-wins and is left alone.
+  if (v1Control.impact === 0 && establishedNothing(v2Req.results ?? [])) {
+    v2Req.results = [
+      ...(v2Req.results ?? []),
+      synthesizedNotApplicableResult(v2Req.results ?? []),
+    ];
+  }
+
   // Always compute effectiveStatus from the emitted results via the canonical
   // ladder (write-path guarantee).
-  v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
+  v2Req.effectiveStatus = computeEffectiveStatus(impact, v2Req.results ?? []);
 
   // Populate severity: prefer tags.severity (preserves original STIG severity),
   // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
   // the original severity — tags.severity preserves it.
-  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(v1Control.impact);
+  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(impact);
 
   // Derive controlType from v1 tags.nist if present.
   const rawNist = v1Control.tags?.nist;
@@ -776,13 +811,14 @@ function denormalizeStatus(status: string): string {
 
 /**
  * Effective (post-amendment) status as a legacy status string, computed by the
- * canonical ladder (governing override, error roll-up, impact-0, worst-wins —
- * see status-determination.md).
+ * canonical ladder (governing override, then worst-wins — see
+ * status-determination.md).
  */
 function effectiveOrRollupV1(req: V2Requirement): string {
   return denormalizeStatus(
     canonicalEffectiveStatus({
-      impact: req.impact ?? Number.NaN,
+      // The ladder ignores impact; it is carried only by the shared input shape.
+      impact: req.impact ?? 0,
       resultStatuses: (req.results ?? []).map((r) => r.status),
       overrides: (req.statusOverrides ?? []).map((o) => ({
         status: o.status,
@@ -948,7 +984,7 @@ function convertBaselineToV1Profile(b: V2Baseline): {profile: LegacyProfile; war
   return {profile: p, warnings};
 }
 
-/** Project modern statistics down to the v1 shape (duration only), matching Go V1Statistics. */
+/** Project modern statistics down to the v1 shape (duration only), matching Go LegacyStatistics. */
 function projectV1Statistics(stats: unknown): {duration?: number} {
   const duration = (stats as {duration?: unknown} | undefined)?.duration;
   return typeof duration === 'number' ? {duration} : {};
@@ -992,7 +1028,7 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     version: downgradeV1Version(v2Data),
     platform,
     profiles,
-    // Mirror the Go V1Statistics: only the duration field survives to v1.
+    // Mirror the Go LegacyStatistics: only the duration field survives to v1.
     statistics: projectV1Statistics(v2Data.statistics),
   };
 
@@ -1160,7 +1196,26 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
   // Flatten overlays: merge overlay/wrapper baselines so every requirement
   // has results and consumers don't see duplicated controls (741→247 fix).
   const flat = flattenOverlays(v2 as unknown as HDFResults);
-  return flat.results as unknown as HDFV2Results;
+
+  // results is schema-required with minItems:1, so anything the flatten could
+  // not resolve would otherwise leave null or []. This must run AFTER
+  // flattening: the flatten decides which layer's results win by checking which
+  // side is non-empty, so filling beforehand makes every layer look non-empty
+  // and the real results get discarded.
+  // Typed as the legacy shape this function returns, not the v3 schema type the
+  // flatten is cast through: startTime is a string here, so the synthesized
+  // result must carry GO_ZERO_TIME like every sibling. Passing a Date compiles
+  // against the schema type but stringifies with fractional seconds.
+  const flatV2 = flat.results as unknown as HDFV2Results;
+  for (const baseline of flatV2.baselines ?? []) {
+    for (const req of baseline.requirements ?? []) {
+      if ((req.results ?? []).length === 0) {
+        req.results = [synthesizedNoResultsResult(GO_ZERO_TIME, 'the source carried no results for this control, so nothing was established about it')];
+      }
+    }
+  }
+
+  return flatV2;
 }
 
 /**

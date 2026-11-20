@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import crosswalkAsset from '../src/data/nist-revision-crosswalk.json';
+import crosswalkAsset from '../go/datasets/mappings/nist-revision-crosswalk.json';
 import {
   translateNistControl,
   translateNistControls,
@@ -8,7 +8,7 @@ import {
 
 describe('crosswalk asset validation', () => {
   afterEach(() => {
-    vi.doUnmock('../src/data/nist-revision-crosswalk.json');
+    vi.doUnmock('../go/datasets/mappings/nist-revision-crosswalk.json');
     vi.resetModules();
   });
 
@@ -60,7 +60,7 @@ describe('crosswalk asset validation', () => {
 
   it.each(cases)('refuses $name with an asset-naming error', async ({ asset }) => {
     vi.resetModules();
-    vi.doMock('../src/data/nist-revision-crosswalk.json', () => ({ default: asset }));
+    vi.doMock('../go/datasets/mappings/nist-revision-crosswalk.json', () => ({ default: asset }));
     await expect(import('../src/nist/crosswalk.js')).rejects.toThrow('nist-revision-crosswalk.json');
   });
 });

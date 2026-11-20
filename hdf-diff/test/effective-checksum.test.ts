@@ -12,7 +12,8 @@ const REF_TIME = '2026-07-01T00:00:00Z';
 // The Go suite (effective_checksum_test.go) pins the same hex values.
 const VECTOR_FAILED_HALF = '704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021';
 const VECTOR_WAIVED_NA = '40f165574efcca5a6bf5ff2c113e6d1bc2aea56e4251b70b68bdb2e05d1fef3b';
-const VECTOR_ZERO_IMPACT = 'de78ada7d86293d722efc2c30b0bac553303183ec9e784839c3c9a7745472ffc';
+const VECTOR_PASSED_ZERO = 'b14c991ae304e83d40daae9f9a70988e8e069b11343f17ab2da4a0587bad4d37';
+const VECTOR_NA_ZERO = 'de78ada7d86293d722efc2c30b0bac553303183ec9e784839c3c9a7745472ffc';
 const VECTOR_PASSED_HALF = '73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217';
 
 function makeResult(status: string, codeDesc = 'test', startTime = '2025-01-01T00:00:00Z') {
@@ -64,10 +65,20 @@ describe('computeEffectiveChecksum', () => {
     expect(cs.value).toBe(VECTOR_WAIVED_NA);
   });
 
-  it('matches the pinned vector when impact zero forces notApplicable', async () => {
+  it('hashes the result roll-up at impact zero, not notApplicable', async () => {
+    // Impact is hashed but does not resolve the status, so a passing
+    // requirement at impact 0 hashes as passed.
     const req = { ...failingReq(), impact: 0, results: [makeResult('passed')] };
     const cs = await computeEffectiveChecksum(req, REF_TIME);
-    expect(cs.value).toBe(VECTOR_ZERO_IMPACT);
+    expect(cs.value).toBe(VECTOR_PASSED_ZERO);
+  });
+
+  it('matches the pinned vector for an explicit notApplicable result at impact zero', async () => {
+    // The shape legacyhdf-to-hdf emits for an InSpec control scored 0: the
+    // scope claim is a result, so it reaches the roll-up on its own.
+    const req = { ...failingReq(), impact: 0, results: [makeResult('notApplicable')] };
+    const cs = await computeEffectiveChecksum(req, REF_TIME);
+    expect(cs.value).toBe(VECTOR_NA_ZERO);
   });
 
   it('is deterministic', async () => {

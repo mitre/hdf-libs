@@ -7,8 +7,8 @@
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus, governingOverride, requirementDisposition } from '../../../shared/typescript/status.js';
-import { emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
-import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
+import { earliestResultStartTime, emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
   DocumentMetadata,
@@ -197,29 +197,14 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
 // which HDF carries on each requirement result — not the document timestamp,
 // which is merely when the file was written.
 
-/** Earliest startTime across the results, or undefined if none carry one. */
-function earliestResultTime(results: RequirementResult[] | undefined): Date | undefined {
-  let earliest: Date | undefined;
-
-  for (const result of results ?? []) {
-    const parsed = hdfTime(result.startTime);
-    if (!parsed) continue;
-
-    if (earliest === undefined || parsed < earliest) {
-      earliest = parsed;
-    }
-  }
-
-  return earliest;
-}
 
 /**
  * Render an assessment time. OSCAL requires result.start and
  * observation.collected, so a fallback is needed when HDF carries no result time
  * — but it must never win over a real one.
  */
-function formatAssessmentTime(time: Date | undefined, fallback: string): string {
-  return time === undefined ? fallback : formatTimestampSeconds(time);
+function formatAssessmentTime(time: Date | null | undefined, fallback: string): string {
+  return time ? formatTimestampSeconds(time) : fallback;
 }
 
 /** When the assessment ran: the earliest result time anywhere in the baseline. */
@@ -227,8 +212,8 @@ function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string 
   let earliest: Date | undefined;
 
   for (const req of baseline.requirements) {
-    const reqEarliest = earliestResultTime(req.results);
-    if (reqEarliest === undefined) continue;
+    const reqEarliest = hdfTime(earliestResultStartTime(req.results));
+    if (!reqEarliest) continue;
 
     if (earliest === undefined || reqEarliest < earliest) {
       earliest = reqEarliest;
@@ -610,7 +595,7 @@ function requirementToFindingSet(
       methods: ['TEST'],
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
-      collected: formatAssessmentTime(earliestResultTime(results), timestamp),
+      collected: formatAssessmentTime(hdfTime(earliestResultStartTime(results)), timestamp),
       // Assessed-asset identity (top-level components) and the requirement's
       // refs / evidence / source location, in the homes the reverse importer
       // reads back. Match Go's omitempty: empty arrays are omitted.

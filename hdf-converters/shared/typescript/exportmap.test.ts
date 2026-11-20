@@ -6,7 +6,9 @@ import { describe, it, expect } from 'vitest';
 import {
   asMap,
   asArr,
+  addBaselineMetadata,
   buildHDFBlock,
+  buildHDFBlockFromStatus,
   getStr,
   setIf,
   stringSlice,
@@ -86,9 +88,12 @@ describe('exportmap status roll-up', () => {
     });
     expect(ra.overridden).toBe(true);
     expect(ra.suppressed).toBe(false);
-    // structural impact-0 notApplicable is NOT acceptance-suppression
+    // A notApplicable RESULT is a scope claim, not an acceptance decision, so it
+    // is not suppression either — and an impact of 0 alone changes nothing.
+    expect(statusOf({ ...mkResults('notApplicable'), impact: 0 }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('notApplicable'), impact: 0 }).rollup).toBe('notApplicable');
     expect(statusOf({ ...mkResults('failed'), impact: 0 }).suppressed).toBe(false);
-    expect(statusOf({ ...mkResults('failed'), impact: 0 }).rollup).toBe('notApplicable');
+    expect(statusOf({ ...mkResults('failed'), impact: 0 }).rollup).toBe('failed');
     // passing / errored findings are never suppressed
     expect(statusOf({ ...mkResults('passed'), statusOverrides: governing('passed') }).suppressed).toBe(false);
     expect(statusOf({ ...mkResults('error'), statusOverrides: governing('passed') }).suppressed).toBe(false);
@@ -215,6 +220,13 @@ describe('exportmap shared driver + helpers', () => {
 });
 
 describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () => {
+  it('preserves prototype-named JSON members as ordinary source data', () => {
+    const value: unknown = JSON.parse('{"__proto__":{"source":"kept"},"constructor":null}');
+    expect(stringifyLine(canonicalize(value))).toBe(
+      '{"__proto__":{"source":"kept"},"constructor":null}',
+    );
+  });
+
   // Go's encoding/json sorts object keys bytewise (UTF-8), which equals
   // code-point order. A supplementary-plane key (U+1F600) has a UTF-16 lead
   // surrogate (0xD83D) that sorts BEFORE a BMP key in [0xE000,0xFFFF] under
@@ -249,6 +261,14 @@ describe('exportmap stringifyDocument (indented JSON documents)', () => {
 });
 
 describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
+  it('preserves strings that resemble numeric placeholders', () => {
+    const text = '\u00019007199254740993\u0001';
+    const value = { text, score: floatNumber(8) };
+    expect(JSON.parse(stringifyLine(value))).toEqual({ text, score: 8 });
+    expect(JSON.parse(stringifyDocument(value))).toEqual({ text, score: 8 });
+    expect(stringifyLine(value)).toContain('"score":8.0');
+  });
+
   it('floatNumber renders a bare decimal token, byte-identical to Go json.Number', () => {
     expect(stringifyLine({ base_score: floatNumber(0) })).toBe('{"base_score":0.0}');
     expect(stringifyLine({ base_score: floatNumber(7.5) })).toBe('{"base_score":7.5}');
@@ -361,6 +381,18 @@ describe('statusOf: shared Go/TypeScript case table', () => {
 });
 
 describe('buildHDFBlock — requirement fields the bag used to drop', () => {
+  it('keeps the raw verdict distinct from the effective rollup', () => {
+    const fixture = JSON.parse(readFileSync(join(__dirname, '../../converters/hdf-to-ecs/fixtures/input/override.json'), 'utf8'));
+    const req = fixture.baselines[0].requirements[0];
+    const status = statusOf(req);
+    expect(status).toEqual({ raw: 'failed', rollup: 'passed', overridden: true, suppressed: true });
+    const hdf = buildHDFBlockFromStatus(req, fixture.baselines[0], status, undefined, undefined, '0.1.0');
+    expect(hdf.status).toBe('failed');
+    expect(hdf.effective_status).toBe('passed');
+    expect(hdf.overridden).toBe(true);
+    expect(hdf.suppressed).toBe(true);
+  });
+
   // Schema-valid on Evaluated_Requirement but absent from the passthrough map, so
   // every exporter using this block dropped them. Asserted by value: a presence-only
   // check passes when the wrong value is carried.
@@ -373,7 +405,7 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
       verificationMethod: 'automated',
       applicability: 'required',
     };
-    const hdf = buildHDFBlock(req, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus(req, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
 
     expect(hdf.evidence).toEqual([{ type: 'log', data: 'bG9n' }]);
     expect(hdf.effective_checksum).toEqual({ algorithm: 'sha256', value: 'abc' });
@@ -386,14 +418,57 @@ describe('buildHDFBlock — requirement fields the bag used to drop', () => {
   // composes, so it is a requirement field as well as a document-root one.
   it('carries requirement-level externalReferences', () => {
     const refs = [{ sourceName: 'NVD', href: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1', kind: 'advisory' }];
-    const hdf = buildHDFBlock({ id: 'V-4', externalReferences: refs }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus({ id: 'V-4', externalReferences: refs }, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     expect(hdf.external_references).toEqual(refs);
   });
 
   it('adds no empty keys when the requirement omits them', () => {
-    const hdf = buildHDFBlock({ id: 'V-3' }, { name: 'b' }, 'passed', false, false, undefined, undefined, '0.1.0');
+    const hdf = buildHDFBlockFromStatus({ id: 'V-3' }, { name: 'b' }, { raw: 'passed', overridden: false, suppressed: false }, undefined, undefined, '0.1.0');
     for (const k of ['evidence', 'effective_checksum', 'control_type', 'verification_method', 'applicability']) {
       expect(k in hdf, `absent field ${k} must not appear`).toBe(false);
     }
   });
+});
+
+describe('addBaselineMetadata', () => {
+  // Integrity goes whole: a consumer verifying a profile hash needs the
+  // algorithm and any signature with it.
+  it('carries the declared baseline fields by value', () => {
+    const integrity = {
+      algorithm: 'sha256',
+      checksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      signature: 'MEUCIQ',
+      signedBy: 'release@example.com',
+    };
+    const hdf: Record<string, unknown> = {};
+    addBaselineMetadata(hdf, { name: 'b', title: 'B Baseline', version: '2.1.0', integrity });
+    expect(hdf).toEqual({ baseline_title: 'B Baseline', baseline_version: '2.1.0', baseline_integrity: integrity });
+  });
+
+  it('omits what the baseline lacks', () => {
+    const hdf: Record<string, unknown> = {};
+    addBaselineMetadata(hdf, { name: 'b' });
+    expect(hdf).toEqual({});
+  });
+});
+
+describe('buildHDFBlock — deprecated three-argument form', () => {
+  it('produces exactly what the Status form does', () => {
+    const req = { id: 'V-9', effectiveStatus: 'passed', impact: 0.7, tags: { nist: ['AC-1'] } };
+    const baseline = { name: 'b' };
+    for (const st of [
+      { raw: 'failed', rollup: 'passed', overridden: true, suppressed: true },
+      { raw: 'passed', rollup: 'passed', overridden: false, suppressed: false },
+      { raw: 'error', rollup: 'error', overridden: true, suppressed: false },
+    ]) {
+      const want = buildHDFBlockFromStatus(req, baseline, st, { name: 'g' }, { name: 't' }, '0.1.0');
+      const got = buildHDFBlock(req, baseline, st.raw, st.overridden, st.suppressed, { name: 'g' }, { name: 't' }, '0.1.0');
+      expect(got).toEqual(want);
+    }
+  });
+});
+
+it('sorts numeric-looking member names by code point, matching Go map encoding', () => {
+  const value = JSON.parse('{"2":"two","10":"ten","nested":{"3":true,"20":null}}');
+  expect(stringifyLine(canonicalize(value))).toBe('{"10":"ten","2":"two","nested":{"20":null,"3":true}}');
 });

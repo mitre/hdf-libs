@@ -7,6 +7,7 @@ import (
 
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -104,7 +105,7 @@ func TestExport_Cvss(t *testing.T) {
 		Name: "cvss-test",
 		Overrides: []hdf.StandaloneOverride{{
 			Type: hdf.RiskAdjustment, RequirementID: "CVE-2021-44228", Reason: "adjusted",
-			Status:    resultStatusPtr(hdf.Failed),
+			Impact:    &hdf.ImpactOverride{Value: 0.98},
 			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "analyst"},
 			AppliedAt: time.Date(2022, 3, 3, 11, 0, 0, 0, time.UTC),
 			ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
@@ -116,6 +117,10 @@ func TestExport_Cvss(t *testing.T) {
 			},
 		}},
 	}
+	body, err := json.Marshal(amendments)
+	require.NoError(t, err)
+	validation := validators.ValidateAmendments(body)
+	require.True(t, validation.Valid, "%v", validation.Errors)
 	poam := convertToPOAM(t, amendments)
 	require.Len(t, poam.Risks, 1)
 	require.Len(t, poam.Risks[0].Characterizations, 1)

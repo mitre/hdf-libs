@@ -57,6 +57,51 @@ describe('hdf-to-asff converter', () => {
     expect(convert('cve.json')[0].AwsAccountId).toBe('000000000000');
   });
 
+  // The narrowness guard, twin of TestConvert_UnsuppressedExportsTheRollup. The
+  // document must be one where raw and roll-up DIFFER — an escalating override,
+  // passed raw driven failing — because a requirement whose two statuses agree
+  // cannot tell the two sources apart and would pass even if the exporter
+  // reported raw for every finding.
+  it('exports the roll-up, not the raw verdict, when there is no suppression', () => {
+    const doc = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'C-1',
+          title: 't',
+          impact: 0.7,
+          results: [{status: 'passed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z'}],
+          statusOverrides: [{
+            type: 'riskAdjustment', status: 'failed', reason: 'escalated on review',
+            appliedBy: {type: 'simple', identifier: 'jdoe'},
+            appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+          }],
+        }],
+      }],
+    });
+    const f = findings(convertHdfToAsff(doc, VERSION))[0];
+    expect(f.Workflow).toBeUndefined();
+    expect((f.Compliance as Record<string, unknown>).Status).toBe('FAILED');
+  });
+
+  // A notApplicable result with no override is a scope claim, not an acceptance.
+  it('treats a scope claim as unsuppressed', () => {
+    const doc = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'C-1',
+          title: 't',
+          impact: 0.7,
+          results: [{status: 'notApplicable', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z'}],
+        }],
+      }],
+    });
+    const f = findings(convertHdfToAsff(doc, VERSION))[0];
+    expect(f.Workflow).toBeUndefined();
+    expect((f.Compliance as Record<string, unknown>).Status).toBe('NOT_AVAILABLE');
+  });
+
   it('marks override-suppressed requirements as SUPPRESSED', () => {
     const doc = JSON.stringify({
       baselines: [{
@@ -76,7 +121,12 @@ describe('hdf-to-asff converter', () => {
     });
     const f = findings(convertHdfToAsff(doc, VERSION))[0];
     expect(f.Workflow).toEqual({Status: 'SUPPRESSED'});
-    expect((f.Compliance as Record<string, unknown>).Status).toBe('PASSED');
+    // Security Hub treats the two axes as orthogonal: Compliance.Status is the
+    // check result, Workflow.Status the triage state, and suppressing a finding
+    // there never rewrites its verdict. So a suppressed finding exports the RAW
+    // status — PASSED here would rewrite a failed check on the strength of a
+    // triage decision, and lose the verdict asff-to-hdf needs to read back.
+    expect((f.Compliance as Record<string, unknown>).Status).toBe('FAILED');
   });
 
   it('recovers AwsAccountId from a cloudAccount component accountId field', () => {

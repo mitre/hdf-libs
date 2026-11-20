@@ -3,6 +3,7 @@ package legacyhdf
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -12,10 +13,10 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// computeEffectiveStatus derives effectiveStatus from impact and v2 results,
-// via the canonical worst-wins ordering in hdf-utilities (impact=0 →
-// notApplicable unless the roll-up is error; error > failed > passed >
-// notApplicable > notReviewed).
+// computeEffectiveStatus derives effectiveStatus from the v2 results via the
+// canonical worst-wins ordering in hdf-utilities (error > failed > passed >
+// notApplicable > notReviewed). Impact is passed for the shared input shape but
+// no longer influences the status.
 func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
 	statuses := make([]string, len(results))
 	for i, r := range results {
@@ -38,23 +39,12 @@ func hasErroredResult(results []hdf.RequirementResult) bool {
 }
 
 // synthesizedErrorResult encodes a control-level execution error the source
-// tool reported but did not record as a result, reusing the earliest recorded
-// result time (results carry no time when the source had none).
+// tool reported but did not record as a result.
 func synthesizedErrorResult(results []hdf.RequirementResult) hdf.RequirementResult {
-	var earliest time.Time
-	for i := range results {
-		st := results[i].StartTime
-		if st.IsZero() {
-			continue
-		}
-		if earliest.IsZero() || st.Before(earliest) {
-			earliest = st
-		}
-	}
 	return hdf.RequirementResult{
 		Status:    hdf.Error,
 		CodeDesc:  "Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result",
-		StartTime: earliest,
+		StartTime: shared.EarliestResultTime(results),
 	}
 }
 
@@ -222,10 +212,30 @@ func convertRefs(refs []interface{}) []hdf.Reference {
 
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
+	// An absent impact is unknown severity, not zero severity. Resolve it once
+	// here so every use below agrees, and keep the source's own nil-ness for the
+	// score-0 translation, which only an explicit 0 may trigger.
+	impact := hdfutil.UnknownSeverityImpact
+	if v1.Impact != nil {
+		impact = *v1.Impact
+	}
+
 	v2 := hdf.EvaluatedRequirement{
 		ID:     v1.ID,
-		Impact: v1.Impact,
-		Tags:   v1.Tags,
+		Impact: impact,
+		// tags is schema-required, so a nil source map becomes an empty object
+		// rather than reaching output as null.
+		Tags: v1.Tags,
+	}
+	if v2.Tags == nil {
+		v2.Tags = map[string]interface{}{}
+	}
+	// A defaulted impact is unrated unless the source's own tags.severity rated it.
+	// Cloned so marking does not write into the caller's parsed control.
+	if v1.Impact == nil {
+		v2.Tags = maps.Clone(v2.Tags)
+		severity, _ := v2.Tags["severity"].(string)
+		shared.MarkUnratedSeverity(v2.Tags, severity)
 	}
 
 	if v1.Title != nil {
@@ -243,22 +253,15 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	// SAF-produced HDF carries no descriptions[] and hit this on every requirement.
 	// Guarantee a 'default', synthesized from the control desc when absent,
 	// symmetric with the downgrade's default→desc mapping.
-	v2.Descriptions = make([]hdf.Description, 0, len(v1.Descriptions)+1)
-	hasDefault := false
+	descriptions := make([]hdf.Description, 0, len(v1.Descriptions))
 	for _, d := range v1.Descriptions {
-		if d.Label == "default" {
-			hasDefault = true
-		}
-		v2.Descriptions = append(v2.Descriptions, hdf.Description{Label: d.Label, Data: d.Data})
+		descriptions = append(descriptions, hdf.Description{Label: d.Label, Data: d.Data})
 	}
-	if !hasDefault {
-		data := ""
-		if v1.Desc != nil {
-			data = *v1.Desc
-		}
-		// Convention: the default description comes first.
-		v2.Descriptions = append([]hdf.Description{{Label: "default", Data: data}}, v2.Descriptions...)
+	desc := ""
+	if v1.Desc != nil {
+		desc = *v1.Desc
 	}
+	v2.Descriptions = shared.EnsureDefaultDescription(descriptions, desc)
 
 	// Convert source location
 	if v1.SourceLocation != nil {
@@ -316,9 +319,18 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		v2.Results = append(v2.Results, synthesizedErrorResult(v2.Results))
 	}
 
+	// InSpec says "this control does not apply to the target" by scoring it 0
+	// and reporting no pass or fail. That is a verdict, not absent data, and the
+	// canonical ladder does not read impact — so the claim only survives if it
+	// is in results[]. Anything the results did establish, an execution error
+	// included, outranks notApplicable in worst-wins and is left alone.
+	if v1.Impact != nil && *v1.Impact == 0 && shared.InSpecEstablishedNothing(v2.Results) {
+		v2.Results = append(v2.Results, shared.SynthesizedNotApplicableResult(v2.Results))
+	}
+
 	// Always compute effectiveStatus from the emitted results via the
 	// canonical ladder (write-path guarantee).
-	es := computeEffectiveStatus(v1.Impact, v2.Results)
+	es := computeEffectiveStatus(impact, v2.Results)
 	v2.EffectiveStatus = &es
 
 	// Populate severity: prefer tags.severity (preserves original STIG severity),
@@ -330,7 +342,7 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		}
 	}
 	if v2.Severity == nil {
-		sev := impactToSeverity(v1.Impact)
+		sev := impactToSeverity(impact)
 		v2.Severity = &sev
 	}
 
@@ -682,5 +694,19 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).
 	flat := hdfparsers.FlattenOverlays(*v2)
+
+	// Fills what the flatten could not resolve, since results is schema-required
+	// with minItems:1. Must run after flattening: the flatten picks a layer's
+	// results by which side is non-empty, so filling earlier makes every layer
+	// look non-empty and the real results lose.
+	for bi := range flat.Results.Baselines {
+		reqs := flat.Results.Baselines[bi].Requirements
+		for ri := range reqs {
+			if len(reqs[ri].Results) == 0 {
+				reqs[ri].Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{}, "the source carried no results for this control, so nothing was established about it")}
+			}
+		}
+	}
+
 	return &flat.Results
 }

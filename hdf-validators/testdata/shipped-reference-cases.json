@@ -1,0 +1,84 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the Reference primitive, the shape of every requirement's refs[] entry. Both shipped validators read this file so the closure is enforced identically in Go and TypeScript. Each case is injected as the single entry of the document's one requirement's refs.",
+  "cases": [
+    {
+      "name": "a plain url",
+      "reference": { "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228" },
+      "valid": true,
+      "why": "by-locator, the commonest form in practice"
+    },
+    {
+      "name": "a by-name ref string",
+      "reference": { "ref": "NIST SP 800-53 Rev 5, AC-6" },
+      "valid": true,
+      "why": "InSpec's ref 'title' form, a citation with no locator"
+    },
+    {
+      "name": "ref and url together",
+      "reference": {
+        "ref": "CIS Benchmark for RHEL 9, 1.1.1",
+        "url": "https://www.cisecurity.org/benchmark/red_hat_linux"
+      },
+      "valid": true,
+      "why": "the branches are an anyOf, not a oneOf"
+    },
+    {
+      "name": "a ref array of DPMS target identifiers",
+      "reference": {
+        "ref": [{ "identifier": "2921", "publisher": "DISA", "type": "DPMS Target" }]
+      },
+      "valid": true,
+      "why": "the ref-as-array form XCCDF's DPMS target identifiers reach HDF through"
+    },
+    {
+      "name": "a uri",
+      "reference": { "uri": "https://attack.mitre.org/techniques/T1059/" },
+      "valid": true,
+      "why": "uri is accepted as a synonym of url"
+    },
+    {
+      "name": "a ref array item with arbitrary members",
+      "reference": {
+        "ref": [{ "anything": 1, "nested": { "deeper": [true, null] }, "publisher": "DISA" }]
+      },
+      "valid": true,
+      "why": "the items of the ref array are deliberately open, so a source format's own reference record carries verbatim; closing the Reference must not close them"
+    },
+    {
+      "name": "a url with an undeclared member",
+      "reference": { "url": "https://example.com/a", "bogus": 1 },
+      "valid": false,
+      "why": "the Reference is CLOSED: this is the case both shipped validators accepted while the closure was written with unevaluatedProperties"
+    },
+    {
+      "name": "a ref with an undeclared member",
+      "reference": { "ref": "NIST SP 800-53 Rev 5, AC-6", "title": "Least Privilege" },
+      "valid": false,
+      "why": "the closure holds on every branch, not only the url one"
+    },
+    {
+      "name": "no declared member at all",
+      "reference": { "bogus": 1 },
+      "valid": false,
+      "why": "each branch requires its own member, so an entry with none of ref, url or uri matches no branch"
+    },
+    {
+      "name": "an empty object",
+      "reference": {},
+      "valid": false,
+      "why": "a reference that names and locates nothing is not a reference"
+    },
+    {
+      "name": "a non-string url",
+      "reference": { "url": 42 },
+      "valid": false,
+      "why": "hoisting the members must keep each one's type"
+    },
+    {
+      "name": "a ref array of non-objects",
+      "reference": { "ref": ["NIST SP 800-53"] },
+      "valid": false,
+      "why": "the array form's items are open, but they are objects"
+    }
+  ]
+}

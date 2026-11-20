@@ -1,0 +1,198 @@
+//go:build windows
+
+package cmd
+
+import (
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"unsafe"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/windows"
+)
+
+func effectiveUserSID(t *testing.T) *windows.SID {
+	t.Helper()
+	user, err := windows.GetCurrentThreadEffectiveToken().GetTokenUser()
+	require.NoError(t, err)
+	return user.User.Sid
+}
+
+// shareWithEveryone gives dir a protected DACL that grants the current user full
+// access and Everyone read access, both inherited by every file created in it.
+func shareWithEveryone(t *testing.T, dir string) {
+	t.Helper()
+	sd, err := windows.SecurityDescriptorFromString(
+		"D:P(A;OICI;FA;;;" + effectiveUserSID(t).String() + ")(A;OICI;GR;;;WD)")
+	require.NoError(t, err)
+	dacl, _, err := sd.DACL()
+	require.NoError(t, err)
+	require.NoError(t, windows.SetNamedSecurityInfo(dir, windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION,
+		nil, nil, dacl, nil))
+}
+
+type aceView struct {
+	sid   *windows.SID
+	typ   byte
+	flags byte
+	mask  windows.ACCESS_MASK
+}
+
+func daclOf(t *testing.T, sd *windows.SECURITY_DESCRIPTOR) (protected bool, aces []aceView) {
+	t.Helper()
+	require.NotNil(t, sd)
+	control, _, err := sd.Control()
+	require.NoError(t, err)
+	acl, _, err := sd.DACL()
+	require.NoError(t, err)
+	require.NotNil(t, acl)
+	for i := range uint32(acl.AceCount) {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		require.NoError(t, windows.GetAce(acl, i, &ace))
+		aces = append(aces, aceView{
+			sid:   (*windows.SID)(unsafe.Pointer(&ace.SidStart)),
+			typ:   ace.Header.AceType,
+			flags: ace.Header.AceFlags,
+			mask:  ace.Mask,
+		})
+	}
+	return control&windows.SE_DACL_PROTECTED != 0, aces
+}
+
+// assertCreatorOnly checks the DACL by SID and access mask, not by SDDL text.
+func assertCreatorOnly(t *testing.T, sd *windows.SECURITY_DESCRIPTOR) {
+	t.Helper()
+	protected, aces := daclOf(t, sd)
+	assert.True(t, protected, "the DACL takes nothing from the directory")
+	require.Len(t, aces, 1, "one grant only")
+	assert.Equal(t, byte(windows.ACCESS_ALLOWED_ACE_TYPE), aces[0].typ)
+	assert.Zero(t, aces[0].flags, "neither inherited nor inheritable")
+	assert.Equal(t, windows.ACCESS_MASK(fileAllAccess), aces[0].mask)
+	assert.True(t, aces[0].sid.Equals(effectiveUserSID(t)), "the grant is to the effective user")
+}
+
+// On Windows a 0600 mode is only the read-only bit, so an archive takes the
+// directory's inheritable grants unless it is created with its own DACL.
+func TestArchiveAccessWindowsPrivateBeforeWrite(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	shareWithEveryone(t, dir)
+	everyone, err := windows.CreateWellKnownSid(windows.WinWorldSid)
+	require.NoError(t, err)
+
+	private := filepath.Join(dir, "private.zip")
+	err = runEvidenceBundle(pkgPath, private, false, archivePrivate, func(f *os.File) archiveWriter {
+		info, statErr := f.Stat()
+		require.NoError(t, statErr)
+		require.Zero(t, info.Size(), "checked before any byte is written")
+		staged, sdErr := windows.GetSecurityInfo(windows.Handle(f.Fd()), windows.SE_FILE_OBJECT,
+			windows.DACL_SECURITY_INFORMATION)
+		require.NoError(t, sdErr)
+		assertCreatorOnly(t, staged)
+		return newArchiveWriter(f)
+	})
+	require.NoError(t, err)
+	published, err := windows.GetNamedSecurityInfo(private, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	require.NoError(t, err)
+	assertCreatorOnly(t, published)
+
+	inherited := filepath.Join(dir, "inherited.zip")
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", inherited, "--output-access", "inherit")
+	require.NoError(t, err)
+	shared, err := windows.GetNamedSecurityInfo(inherited, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	require.NoError(t, err)
+	_, aces := daclOf(t, shared)
+	found := false
+	for _, a := range aces {
+		if a.sid.Equals(everyone) && a.flags&windows.INHERITED_ACE != 0 {
+			found = true
+		}
+	}
+	assert.True(t, found, "inherit takes the directory's Everyone grant")
+}
+
+// The readback refuses any DACL but the creator-only one: a file that inherited the
+// directory's grants fails it, and one created private passes.
+func TestArchiveAccessWindowsReadbackRefusesOtherGrants(t *testing.T) {
+	dir := t.TempDir()
+	shareWithEveryone(t, dir)
+	me := effectiveUserSID(t)
+
+	plain, err := os.CreateTemp(dir, "inherited")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = plain.Close() })
+	assert.Error(t, verifyPrivateDACL(windows.Handle(plain.Fd()), me))
+
+	created, err := createPrivateWindows(filepath.Join(dir, "private"), volumeACLFlags)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = created.Close() })
+	assert.NoError(t, verifyPrivateDACL(windows.Handle(created.Fd()), me))
+}
+
+// A volume without persistent ACLs (FAT, exFAT) cannot keep a DACL, so private fails
+// there and leaves nothing behind; so does a volume whose flags cannot be read.
+func TestArchiveAccessWindowsRequiresPersistentACLs(t *testing.T) {
+	for name, flags := range map[string]func(windows.Handle) (uint32, error){
+		"no persistent ACLs": func(windows.Handle) (uint32, error) { return 0, nil },
+		"unreadable volume":  func(windows.Handle) (uint32, error) { return 0, windows.ERROR_ACCESS_DENIED },
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "staged")
+			_, err := createPrivateWindows(path, flags)
+			require.Error(t, err)
+			if name == "no persistent ACLs" {
+				assert.Contains(t, err.Error(), "NTFS")
+			}
+			assert.NoFileExists(t, path)
+		})
+	}
+}
+
+// Raw CreateFileW gets no long-path handling from Go, so a path past MAX_PATH is
+// created through its \\?\ form; a NUL inside a path is refused.
+func TestArchiveAccessWindowsPathForms(t *testing.T) {
+	deep := filepath.Join(t.TempDir(), strings.Repeat("d", 120), strings.Repeat("e", 120))
+	require.NoError(t, os.MkdirAll(deep, 0o700))
+	long := filepath.Join(deep, "staged")
+	require.GreaterOrEqual(t, len(long), 260)
+	f, err := createPrivateWindows(long, volumeACLFlags)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = f.Close() })
+	sd, err := windows.GetSecurityInfo(windows.Handle(f.Fd()), windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	require.NoError(t, err)
+	assertCreatorOnly(t, sd)
+
+	nul := t.TempDir() + `\bad` + "\x00" + "name"
+	_, err = createPrivateWindows(nul, volumeACLFlags)
+	assert.Error(t, err)
+}
+
+// An existing name fails as a path error that callers recognize as fs.ErrExist (the
+// staging retry depends on it), and nothing is overwritten.
+func TestArchiveAccessWindowsCreateRefusesAnExistingName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "taken")
+	require.NoError(t, os.WriteFile(path, []byte("kept"), 0o600))
+
+	_, err := createPrivateWindows(path, volumeACLFlags)
+	var pathErr *os.PathError
+	require.ErrorAs(t, err, &pathErr)
+	assert.ErrorIs(t, err, fs.ErrExist)
+	kept, readErr := os.ReadFile(path)
+	require.NoError(t, readErr)
+	assert.Equal(t, "kept", string(kept))
+}
+
+// A user that cannot be read stops creation before any file exists, naming the step.
+func TestArchiveAccessWindowsUnreadableUserFails(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "staged")
+	denied := func() (*windows.SID, error) { return nil, windows.ERROR_ACCESS_DENIED }
+
+	_, err := createPrivateWindowsWith(path, denied, volumeACLFlags)
+	require.ErrorIs(t, err, windows.ERROR_ACCESS_DENIED)
+	assert.Contains(t, err.Error(), "cannot read the effective user")
+	assert.NoFileExists(t, path)
+}

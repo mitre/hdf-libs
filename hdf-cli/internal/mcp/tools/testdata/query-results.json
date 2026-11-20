@@ -76,7 +76,7 @@
             "nist": ["AU-3"]
           },
           "results": [
-            {"status": "passed", "codeDesc": "n/a", "startTime": "2025-01-15T10:00:00Z"}
+            {"status": "notApplicable", "codeDesc": "n/a", "startTime": "2025-01-15T10:00:00Z"}
           ]
         },
         {

@@ -139,18 +139,18 @@ func TestHdfCompliance_AgentOverrideCount(t *testing.T) {
 	}
 }
 
-// TestComplianceCountsImpactZeroAsNoImpact is the lj0g.4 first-failing test: an
-// impact-0 requirement (InSpec skip: result status notReviewed, explicit STIG
-// severity) is Not Applicable by HDF's canonical rule and must land in no_impact,
-// not skipped — and must be excluded from the compliance denominator.
-func TestComplianceCountsImpactZeroAsNoImpact(t *testing.T) {
+// A control the InSpec importer translated — a skip it recorded plus the explicit
+// notApplicable result stating the scope claim — must land in not_applicable, not
+// skipped, and must be excluded from the compliance denominator. The impact of 0
+// plays no part: the notApplicable result is what decides it.
+func TestComplianceCountsTranslatedNotApplicable(t *testing.T) {
 	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	// 3 impact-0 (severity medium, notReviewed) → notApplicable/no_impact.
-	if got := countTotal(out.Counts, "no_impact"); got != 3 {
-		t.Errorf("no_impact.total = %d, want 3 (the impact-0 requirements)", got)
+	// 3 translated controls (notReviewed + an explicit notApplicable result).
+	if got := countTotal(out.Counts, "not_applicable"); got != 3 {
+		t.Errorf("not_applicable.total = %d, want 3 (the translated controls)", got)
 	}
-	// 1 impact-0.5 notReviewed → genuinely skipped.
+	// 1 notReviewed with no scope claim → genuinely skipped.
 	if got := countTotal(out.Counts, "skipped"); got != 1 {
 		t.Errorf("skipped.total = %d, want 1 (only the impact>0 notReviewed control)", got)
 	}
@@ -188,19 +188,26 @@ func TestSeverityAgreesAcrossQueryAndCompliance(t *testing.T) {
 	}
 
 	// hdf_compliance counts must place each requirement in the matching severity
-	// bucket of its status: notApplicable (no_impact) high+informational; failed low+medium.
+	// bucket of its status. The two impact-0 requirements are notReviewed — an
+	// impact of 0 is a severity band, not a scope claim — so they are counted
+	// under skipped while keeping the severity the query reports for them.
 	_, c := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	na := c.Counts["no_impact"]
+	skipped := c.Counts["skipped"]
 	failed := c.Counts["failed"]
 	checkBucket := func(bucket map[string]int, sev string) {
 		if bucket[sev] != 1 {
 			t.Errorf("compliance bucket missing severity %q=1; got %v", sev, bucket)
 		}
 	}
-	checkBucket(na, "high")          // S-0-TAG-HIGH → notApplicable/high
-	checkBucket(na, "informational") // S-0-NOTAG → notApplicable/informational
-	checkBucket(failed, "low")       // S-P-TAG-LOW → failed/low
-	checkBucket(failed, "medium")    // S-P-NOTAG-MED → failed/medium
+	checkBucket(skipped, "high")          // S-0-TAG-HIGH → skipped/high
+	checkBucket(skipped, "informational") // S-0-NOTAG → skipped/informational
+	checkBucket(failed, "low")            // S-P-TAG-LOW → failed/low
+	checkBucket(failed, "medium")         // S-P-NOTAG-MED → failed/medium
+
+	// Nothing declared itself inapplicable, so that bucket is empty.
+	if c.Counts["not_applicable"]["total"] != 0 {
+		t.Errorf("not_applicable = %v, want empty: no requirement here carries a scope claim", c.Counts["not_applicable"])
+	}
 }
 
 // TestCountsOutputSchemaIsTyped is lj0g.3's first-failing test: the counts output
@@ -277,21 +284,22 @@ func TestComplianceDescriptionStatesStatusConvention(t *testing.T) {
 func TestComplianceCountsVocabularyIsDocumented(t *testing.T) {
 	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	for _, saf := range []string{"passed", "failed", "skipped", "error", "no_impact"} {
-		if _, ok := out.Counts[saf]; !ok {
-			t.Errorf("counts must use SAF key %q", saf)
+	for _, key := range []string{"passed", "failed", "skipped", "error", "not_applicable"} {
+		if _, ok := out.Counts[key]; !ok {
+			t.Errorf("counts must use threshold-file key %q", key)
 		}
 	}
-	for _, schema := range []string{"notReviewed", "notApplicable"} {
+	// Neither the schema vocabulary nor SAF's spelling may leak in.
+	for _, schema := range []string{"notReviewed", "notApplicable", "no_impact"} {
 		if _, ok := out.Counts[schema]; ok {
-			t.Errorf("counts must NOT carry schema key %q — counts is SAF-vocabulary only", schema)
+			t.Errorf("counts must NOT carry key %q — counts uses threshold-file keys only", schema)
 		}
 	}
 	// The description must state the mapping (the reachable place an agent reads).
 	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "v"}, nil)
 	RegisterCompliance(s, loader.New(0, 0, 0))
 	raw := driveToolsListJSON(t, s)
-	for _, frag := range []string{"skipped = notReviewed", "no_impact = notApplicable"} {
+	for _, frag := range []string{"skipped = notReviewed", "not_applicable = notApplicable"} {
 		if !strings.Contains(raw, frag) {
 			t.Errorf("hdf_compliance description must document the vocabulary mapping %q", frag)
 		}
@@ -309,8 +317,8 @@ func TestHdfCompliance_ComplianceAndCounts(t *testing.T) {
 	if countTotal(out.Counts, "passed") != 3 || countTotal(out.Counts, "failed") != 1 {
 		t.Errorf("counts passed/failed = %+v, want passed.total=3 failed.total=1", out.Counts)
 	}
-	if countTotal(out.Counts, "no_impact") != 1 {
-		t.Errorf("no_impact.total = %d, want 1 (the impact-0 requirement)", countTotal(out.Counts, "no_impact"))
+	if countTotal(out.Counts, "not_applicable") != 1 {
+		t.Errorf("not_applicable.total = %d, want 1 (the notApplicable requirement)", countTotal(out.Counts, "not_applicable"))
 	}
 	if out.DocType != "results" || out.Handle == "" {
 		t.Errorf("envelope must carry docType+handle, got docType=%q handle=%q", out.DocType, out.Handle)
@@ -333,7 +341,7 @@ func TestHdfCompliance_GroupByBaseline(t *testing.T) {
 		t.Fatalf("missing expected baseline groups: %+v", out.Groups)
 	}
 	// Effective: RHEL9-STIG {A,B,C all pass (overrides)} = 3/3 = 100; K8S {D fail,
-	// E impact-0 → notApplicable, excluded} = 0/1 = 0.
+	// E notApplicable, excluded} = 0/1 = 0.
 	if rhel.Compliance != 100.0 {
 		t.Errorf("RHEL9-STIG compliance = %v, want 100", rhel.Compliance)
 	}
@@ -364,7 +372,8 @@ func TestHdfCompliance_GroupByNistFamily(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "nistFamily"})
 	// Effective: AC{A passed}=100, CM{B passed}=100, IA{C passed}=100, AU{D failed}=0,
-	// SC{E impact-0 → notApplicable, relevant 0}=0.
+	// SC{E notApplicable, relevant 0}=0. E carries an explicit notApplicable
+	// result; its informational severity does not cause that status.
 	want := map[string]float64{"AC": 100.0, "CM": 100.0, "IA": 100.0, "AU": 0.0, "SC": 0.0}
 	if len(out.Groups) != len(want) {
 		t.Errorf("expected %d nistFamily groups, got %d (%v)", len(want), len(out.Groups), out.Groups)
@@ -427,25 +436,24 @@ func TestHdfCompliance_ThresholdAmbiguous(t *testing.T) {
 	assertArgError(t, res, "threshold sets both path and inline")
 }
 
-// TestHdfCompliance_PerControlThresholdUsesEffectiveStatus is the lj0g.11
-// regression guard: a per-control controls: list is validated against EFFECTIVE
-// status, matching the aggregate counts and the CLI threshold path. An impact-0
-// notReviewed control listed under no_impact must satisfy the check (effective
-// notApplicable → no_impact), not fail as skipped. Fails on pre-fix code, which
+// A per-control `controls:` list is validated against EFFECTIVE status, matching
+// the aggregate counts and the CLI threshold path. A control whose results carry
+// an explicit notApplicable, listed under not_applicable, must satisfy the
+// check and not fail as skipped. Fails on pre-fix code, which
 // passed the raw MapControlIDs to ValidateThresholds while counting effectively.
 func TestHdfCompliance_PerControlThresholdUsesEffectiveStatus(t *testing.T) {
 	path := writeRoot(t, "iz.json", readToolsFixture(t, "impact-zero.json"))
 	_, out := callCompliance(t, complianceInput{
 		Source: handle.Source{Path: path},
 		Threshold: &thresholdInput{Inline: map[string]any{
-			"no_impact": map[string]any{"medium": map[string]any{"controls": []any{"V-NA-1"}}},
+			"not_applicable": map[string]any{"medium": map[string]any{"controls": []any{"V-NA-1"}}},
 		}},
 	})
 	if out.ThresholdVerdict == nil {
 		t.Fatal("expected a threshold verdict")
 	}
 	if !out.ThresholdVerdict.Pass {
-		t.Errorf("V-NA-1 (impact 0, medium, notReviewed) must satisfy no_impact.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
+		t.Errorf("V-NA-1 (medium, explicit notApplicable result) must satisfy not_applicable.medium.controls under effective status; got failures %v", out.ThresholdVerdict.Failures)
 	}
 }
 

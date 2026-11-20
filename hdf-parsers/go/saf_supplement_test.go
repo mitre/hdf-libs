@@ -154,6 +154,35 @@ func TestNormalizeSAFSupplement_ReportsASiblingItCannotRelocate(t *testing.T) {
 	}, "the drop is reported: %v", warnings)
 }
 
+// The SHARED table, read rather than restated, so Go and TypeScript emit the same
+// warnings in the same order. Repeated because Go randomizes map order per range.
+func TestNormalizeSAFSupplement_ExtensionSiblingWarningsMatchTheSharedVectors(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "extension-sibling-warning-vectors.json"))
+	require.NoError(t, err, "the shared table is the contract")
+	var table struct {
+		Vectors []struct {
+			Why         string          `json:"why"`
+			Extensions  json.RawMessage `json:"extensions"`
+			Passthrough json.RawMessage `json:"passthrough"`
+			Warnings    []string        `json:"warnings"`
+		} `json:"vectors"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Vectors, "a pass must not mean an empty table")
+
+	for _, v := range table.Vectors {
+		t.Run(v.Why, func(t *testing.T) {
+			for range 20 {
+				in := validV3WithExtra(t, map[string]any{
+					"extensions": v.Extensions, "passthrough": v.Passthrough,
+				})
+				_, warnings := NormalizeSAFSupplement(in)
+				require.Equal(t, v.Warnings, warnings)
+			}
+		})
+	}
+}
+
 // TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical: a doc with no legacy keys
 // passes through byte-identical (idempotent, narrow) and yields no warnings.
 func TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical(t *testing.T) {
@@ -224,16 +253,238 @@ func TestParseResults_AcceptsSAFSupplementedDoc(t *testing.T) {
 // differs across languages so this compares parsed structure, not bytes).
 func TestNormalizeSAFSupplement_SharedFixtureParity(t *testing.T) {
 	dir := filepath.Join("..", "testdata", "saf-supplement")
-	in, err := os.ReadFile(filepath.Join(dir, "legacy-in.json"))
-	require.NoError(t, err)
-	expected, err := os.ReadFile(filepath.Join(dir, "v3-out.json"))
-	require.NoError(t, err)
+	for _, pair := range []struct {
+		in, out string
+		valid   bool // false when the pair pins output the normalizer leaves schema-invalid
+	}{
+		{"legacy-in.json", "v3-out.json", true},
+		{"prototype-keys-in.json", "prototype-keys-out.json", true},
+		{"empty-identity-in.json", "empty-identity-out.json", false},
+	} {
+		t.Run(pair.in, func(t *testing.T) {
+			in, err := os.ReadFile(filepath.Join(dir, pair.in))
+			require.NoError(t, err)
+			expected, err := os.ReadFile(filepath.Join(dir, pair.out))
+			require.NoError(t, err)
 
-	out, _ := NormalizeSAFSupplement(in)
+			out, _ := NormalizeSAFSupplement(in)
 
-	var got, want any
-	require.NoError(t, json.Unmarshal(out, &got))
-	require.NoError(t, json.Unmarshal(expected, &want))
-	assert.Equal(t, want, got, "normalized output must match the shared v3-out fixture")
-	assert.True(t, validators.ValidateResults(out).Valid, "shared fixture normalizes to schema-valid v3")
+			var got, want any
+			require.NoError(t, json.Unmarshal(out, &got))
+			require.NoError(t, json.Unmarshal(expected, &want))
+			assert.Equal(t, want, got, "normalized output must match the shared fixture")
+			assert.Equal(t, pair.valid, validators.ValidateResults(out).Valid, "schema validity of the normalized fixture")
+		})
+	}
+}
+
+// platformDerived is the component the v2→v3 upgrade derives from an InSpec
+// `platform` object: the OS name doubles as the component name.
+func platformDerived() map[string]any {
+	return map[string]any{"name": "redhat", "osName": "redhat", "osVersion": "9.8", "type": "host"}
+}
+
+func normalizedComponents(t *testing.T, extra map[string]any, opts ...SAFSupplementOption) []any {
+	t.Helper()
+	out, _ := NormalizeSAFSupplement(validV3WithExtra(t, extra), opts...)
+	require.True(t, validators.ValidateResults(out).Valid, "normalized doc must be schema-valid v3")
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(out, &doc))
+	comps, ok := doc["components"].([]any)
+	require.True(t, ok, "components[] must be present")
+	return comps
+}
+
+func TestNormalizeSAFSupplement_LegacyTargetNameIsTheIdentity(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{}},
+	})
+	require.Len(t, comps, 1)
+	assert.Equal(t, "my-host-01", comps[0].(map[string]any)["name"])
+}
+
+func TestNormalizeSAFSupplement_TargetIDWinsOverName(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"id": "prod-account", "name": "Production", "type": "cloudAccount"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "prod-account", c["name"])
+	assert.Equal(t, "prod-account", c["accountId"])
+}
+
+// accountId is the provider's account identifier, so only target.id may fill it;
+// a classic target's display name becomes the component name and nothing else.
+func TestNormalizeSAFSupplement_DisplayNameIsNotAnAccountID(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{"name": "Production", "type": "cloudAccount"},
+	})
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "Production", c["name"])
+	_, hasAccountID := c["accountId"]
+	assert.False(t, hasAccountID, "a display name must not be stamped into accountId")
+}
+
+// The first-class target.boundary is the SAF carrier; a labels.boundary entry on
+// the same target does not displace it.
+func TestNormalizeSAFSupplement_BoundaryFieldWinsOverBoundaryLabel(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{
+			"type": "host", "name": "my-host-01", "boundary": "sparc",
+			"labels": map[string]any{"boundary": "legacy-zone", "environment": "prod"},
+		},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"boundary": "sparc", "environment": "prod"}, labels)
+}
+
+// Component labels are string-valued, so a non-string target label is skipped
+// rather than producing a document the schema rejects.
+func TestNormalizeSAFSupplement_CarriesTargetLabels(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"target": map[string]any{
+			"type": "host", "name": "my-host-01", "boundary": "sparc",
+			"labels": map[string]any{"environment": "prod", "rack": 7},
+		},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"environment": "prod", "boundary": "sparc"}, labels)
+}
+
+func TestNormalizeSAFSupplement_ExistingComponentLabelsWin(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{map[string]any{"name": "my-host-01", "type": "host", "labels": map[string]any{"environment": "stage"}}},
+		"target":     map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{"environment": "prod", "team": "ops"}},
+	})
+	require.Len(t, comps, 1)
+	labels := comps[0].(map[string]any)["labels"].(map[string]any)
+	assert.Equal(t, map[string]any{"environment": "stage", "team": "ops"}, labels)
+}
+
+// The platform-derived component and the SAF target describe the same assessed
+// host, so they fold into one component carrying the target's name and the
+// platform's OS facts.
+func TestNormalizeSAFSupplement_MergesTargetIntoPlatformComponent(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{platformDerived()},
+		"target":     map[string]any{"type": "host", "name": "my-host-01", "labels": map[string]any{"environment": "prod"}},
+	}, MergePlatformComponent())
+	require.Len(t, comps, 1, "platform and target describe one host")
+	assert.Equal(t, map[string]any{
+		"name": "my-host-01", "type": "host", "osName": "redhat", "osVersion": "9.8",
+		"labels": map[string]any{"environment": "prod"},
+	}, comps[0])
+}
+
+func TestNormalizeSAFSupplement_NamelessTargetKeepsPlatformName(t *testing.T) {
+	comps := normalizedComponents(t, map[string]any{
+		"components": []any{platformDerived()},
+		"target":     map[string]any{"type": "host", "boundary": "sparc"},
+	}, MergePlatformComponent())
+	require.Len(t, comps, 1)
+	c := comps[0].(map[string]any)
+	assert.Equal(t, "redhat", c["name"])
+	assert.Equal(t, "sparc", c["labels"].(map[string]any)["boundary"])
+}
+
+// A component that carries its own identity is a distinct thing, never renamed.
+func TestNormalizeSAFSupplement_DoesNotMergeIntoADistinctComponent(t *testing.T) {
+	withID := platformDerived()
+	withID["componentId"] = "6f1c1c3e-8f43-4d2a-9a57-0d5a3c2b7e11"
+	named := platformDerived()
+	named["name"] = "web-01"
+	cases := map[string][]any{
+		"has componentId":      {withID},
+		"name is not the OS":   {named},
+		"different type":       {map[string]any{"name": "redhat", "osName": "redhat", "type": "containerImage"}},
+		"more than one exists": {platformDerived(), map[string]any{"name": "db-01", "type": "database"}},
+	}
+	for name, existing := range cases {
+		t.Run(name, func(t *testing.T) {
+			comps := normalizedComponents(t, map[string]any{
+				"components": existing,
+				"target":     map[string]any{"type": "host", "name": "my-host-01"},
+			})
+			require.Len(t, comps, len(existing)+1)
+			assert.Equal(t, "my-host-01", comps[len(comps)-1].(map[string]any)["name"])
+			for i := range existing {
+				assert.Equal(t, existing[i], comps[i], "existing component left untouched")
+			}
+		})
+	}
+}
+
+// A target with neither id nor name has no identity to match on, so it must not
+// be joined to a component that merely lacks a name of its own, whether that
+// name is absent or the literal empty string.
+func TestNormalizeSAFSupplement_EmptyTargetIdentityNeverMatches(t *testing.T) {
+	for name, comp := range map[string]map[string]any{
+		"missing name": {"type": "host", "componentId": "6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f", "osName": "redhat"},
+		"empty name":   {"type": "host", "name": "", "componentId": "6f1c0d2e-1b2a-4c3d-8e9f-0a1b2c3d4e5f"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			in := validV3WithExtra(t, map[string]any{
+				"components": []any{comp},
+				"target":     map[string]any{"type": "host", "boundary": "dmz"},
+			})
+			out, warnings := NormalizeSAFSupplement(in)
+			var doc map[string]any
+			require.NoError(t, json.Unmarshal(out, &doc))
+			comps, _ := doc["components"].([]any)
+			require.Len(t, comps, 1, "nothing is appended for a target with no identity")
+			c, _ := comps[0].(map[string]any)
+			_, hasLabels := c["labels"]
+			assert.False(t, hasLabels, "the componentId-bearing component must not receive the target's boundary")
+			_, hasTarget := doc["target"]
+			assert.True(t, hasTarget, "the target is left in place with a warning, as an unmapped type is")
+			require.NotEmpty(t, warnings)
+			assert.Contains(t, warnings[0], "no id or name", "the warning names the reason")
+		})
+	}
+}
+
+// The plain parse path cannot tell a component the v2 upgrade built from an
+// InSpec platform apart from a genuine v3 component named after its OS, so it
+// never renames one: the target is appended beside it.
+func TestParseResults_DoesNotRenameAnOSNamedComponent(t *testing.T) {
+	r := ParseResults(validV3WithExtra(t, map[string]any{
+		"components": []any{map[string]any{"type": "host", "name": "ubuntu", "osName": "ubuntu"}},
+		"target":     map[string]any{"type": "host", "name": "web-01"},
+	}))
+	require.True(t, r.Success, "the document must parse: %s", r.Error)
+	require.Len(t, r.Data.Components, 2, "the target is appended, not merged")
+	assert.Equal(t, "ubuntu", r.Data.Components[0].Name, "an existing component is never renamed")
+	require.NotNil(t, r.Data.Components[0].OSName)
+	assert.Equal(t, "ubuntu", *r.Data.Components[0].OSName)
+	assert.Equal(t, "web-01", r.Data.Components[1].Name)
+}
+
+// Without the option a platform-shaped component is an ordinary component: a
+// named target is appended and a nameless one is left in place with a warning.
+func TestNormalizeSAFSupplement_PlatformMergeIsOptIn(t *testing.T) {
+	t.Run("named target is appended", func(t *testing.T) {
+		comps := normalizedComponents(t, map[string]any{
+			"components": []any{platformDerived()},
+			"target":     map[string]any{"type": "host", "name": "my-host-01"},
+		})
+		require.Len(t, comps, 2)
+		assert.Equal(t, platformDerived(), comps[0], "the platform-shaped component is untouched")
+		assert.Equal(t, map[string]any{"type": "host", "name": "my-host-01"}, comps[1])
+	})
+	t.Run("nameless target is left in place", func(t *testing.T) {
+		out, warnings := NormalizeSAFSupplement(validV3WithExtra(t, map[string]any{
+			"components": []any{platformDerived()},
+			"target":     map[string]any{"type": "host", "boundary": "sparc"},
+		}))
+		var doc map[string]any
+		require.NoError(t, json.Unmarshal(out, &doc))
+		assert.Equal(t, []any{platformDerived()}, doc["components"])
+		_, hasTarget := doc["target"]
+		assert.True(t, hasTarget, "nothing can take the target, so it stays for the schema")
+		require.NotEmpty(t, warnings)
+		assert.Contains(t, warnings[0], "no id or name")
+	})
 }

@@ -6,7 +6,6 @@ import {
   createMinimalBaseline,
   type Cvss,
   Ecosystem,
-  ExternalReferenceEncoding,
   type Epss,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -19,6 +18,7 @@ import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings'
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
 import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, rollUpRequirements, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
+import {buildJsonRawSourceRecord, parseJSONPreservingNumbers} from '../../../shared/typescript/exportmap.js';
 
 // Input types for Grype JSON
 
@@ -296,15 +296,32 @@ function buildCodeDesc(match: GrypeMatch): string {
   return parts.join(' | ');
 }
 
-// buildCvssEntries emits one schema Cvss entry per element of
-// vulnerability.cvss[]. Related-vulnerability CVSS arrays are NOT merged in;
-// the schema contract is "one entry per source-CVE metric set".
-function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
-  if (!vuln.cvss || vuln.cvss.length === 0) {
+// cvssForMatch returns the CVSS metric sets of the match's own CVE: the
+// vulnerability's cvss[] when present, otherwise those of the related entry
+// with the same id (Grype puts NVD's record there for distro-namespace
+// matches), as getDescription does for descriptions. A related entry with a
+// different id is another vulnerability and is never used.
+function cvssForMatch(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVulnerability[]): GrypeCVSS[] {
+  if (vuln.cvss && vuln.cvss.length > 0) {
+    return vuln.cvss;
+  }
+  for (const related of relatedVulns ?? []) {
+    if (related.id === vuln.id && related.cvss && related.cvss.length > 0) {
+      return related.cvss;
+    }
+  }
+  return [];
+}
+
+// buildCvssEntries maps each CVSS metric set of the match's own CVE (see
+// cvssForMatch) to a schema Cvss entry, with the CVE id as its source.
+function buildCvssEntries(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVulnerability[]): Cvss[] | undefined {
+  const metricSets = cvssForMatch(vuln, relatedVulns);
+  if (metricSets.length === 0) {
     return undefined;
   }
   const entries: Cvss[] = [];
-  for (const c of vuln.cvss) {
+  for (const c of metricSets) {
     const entry = buildSharedCvss({
       version: cvssVersionFromString(c.version),
       baseScore: c.metrics?.baseScore,
@@ -390,7 +407,7 @@ function buildKev(k?: GrypeKev): Kev | undefined {
   return out;
 }
 
-function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, targetName: string, startTime: Date, sourcePointer: string): EvaluatedRequirement {
+function convertMatchToRequirement(match: GrypeMatch, rawMatch: unknown, isIgnored: boolean, targetName: string, startTime: Date, sourcePointer: string): EvaluatedRequirement {
   const vuln = match.vulnerability;
   const cveId = vuln.id;
   const severity = vuln.severity;
@@ -402,10 +419,12 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // Determine status. Severity never changes it (unknown-severity
   // convention): a detected vulnerability is failed regardless of rating
-  // confidence; only the ignore-rules triage axis differs.
+  // confidence; only the ignore-rules triage axis differs. An ignore rule
+  // suppresses evaluation rather than adjudicating a verdict, so there is no
+  // verdict to override — the claim belongs in results[] as notApplicable.
   let status: ResultStatus;
   if (isIgnored) {
-    status = ResultStatus.NotReviewed; // Ignored by configured rules
+    status = ResultStatus.NotApplicable;
   } else {
     status = ResultStatus.Failed;
   }
@@ -442,14 +461,9 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // The match that produced this result, carried on the RESULT per ADR-0017 §5
   // — one CVE against two packages is two matches, and roll-up's first-wins on
-  // `code` would otherwise discard the second. The rendering matches the Go
-  // twin's json.Indent byte for byte; the twins share goldens.
-  result.rawSourceRecord = {
-    content: JSON.stringify(match, null, 2),
-    encoding: ExternalReferenceEncoding.UTF8,
-    mediaType: 'application/json',
-    pointer: sourcePointer,
-  };
+  // `code` would otherwise discard the second.
+  const record = buildJsonRawSourceRecord(rawMatch, sourcePointer, 'indented');
+  if (record) result.rawSourceRecord = record;
 
   // Get CCI mappings for NIST controls using curated mapping table
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
@@ -482,7 +496,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 
   // Structured CVE-ecosystem fields (omit when empty/absent so output stays
   // tight; the schema treats all five as optional).
-  const cvss = buildCvssEntries(vuln);
+  const cvss = buildCvssEntries(vuln, match.relatedVulnerabilities);
   if (cvss) requirement.cvss = cvss;
   requirement.affectedPackages = buildAffectedPackages(match);
   const cwe = extractCwe(vuln.cwe);
@@ -540,6 +554,9 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
 
   // Parse Grype JSON
   const grypeData = parseJSON<GrypeReport>(input);
+  // A second parse for the records only: it keeps each number token as written,
+  // where the typed parse above holds doubles (9.80 would come back 9.8).
+  const preserved = parseJSONPreservingNumbers(input) as {matches?: unknown[]; ignoredMatches?: unknown[]} | null;
 
   // Build requirements from matches
   let requirements: EvaluatedRequirement[] = [];
@@ -561,7 +578,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
     }
     for (const [i, match] of limitedMatches.entries()) {
-      requirements.push(convertMatchToRequirement(match, false, targetName, resultStart, `/matches/${i}`));
+      requirements.push(convertMatchToRequirement(match, preserved?.matches?.[i] ?? match, false, targetName, resultStart, `/matches/${i}`));
     }
   }
 
@@ -574,7 +591,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
       console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);
     }
     for (const [i, match] of limitedIgnored.entries()) {
-      requirements.push(convertMatchToRequirement(match, true, targetName, resultStart, `/ignoredMatches/${i}`));
+      requirements.push(convertMatchToRequirement(match, preserved?.ignoredMatches?.[i] ?? match, true, targetName, resultStart, `/ignoredMatches/${i}`));
     }
   }
 

@@ -3,7 +3,7 @@
  */
 
 import type { NiktoNistMappings } from './types.js';
-import rawMappings from '../data/nikto-nist-mappings.json';
+import rawMappings from '../../go/datasets/mappings/nikto-nist-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // Authored against Rev 4 (heimdall2's mapping; every control it carries is

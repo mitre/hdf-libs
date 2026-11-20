@@ -15,7 +15,7 @@ const minimalResultsJSON = `{
   "baselines": [
     {
       "name": "RHEL9-STIG",
-      "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "integrity": {"algorithm": "sha256", "checksum": "0000000000000000000000000000000000000000000000000000000000000000"},
       "supports": [],
       "requirements": [],
       "groups": [],
@@ -24,7 +24,7 @@ const minimalResultsJSON = `{
     },
     {
       "name": "Container-STIG",
-      "checksum": {"algorithm": "sha256", "value": "1111111111111111111111111111111111111111111111111111111111111111"},
+      "integrity": {"algorithm": "sha256", "checksum": "1111111111111111111111111111111111111111111111111111111111111111"},
       "supports": [],
       "requirements": [],
       "groups": [],
@@ -56,6 +56,7 @@ func TestSystemCreate_Basic(t *testing.T) {
 
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
+	assertCreationTimestamp(t, sys)
 
 	// System name derived from first target
 	assert.Equal(t, "web-server-01", sys["name"])
@@ -256,7 +257,7 @@ func TestSystemCreate_InvalidJSON(t *testing.T) {
 
 func TestSystemCreate_NoTargets(t *testing.T) {
 	noTargets := `{
-		"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
+		"baselines": [{"name": "B1", "integrity": {"algorithm": "sha256", "checksum": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
 		"components": [],
 		"statistics": {"duration": 1},
 		"generator": {"name": "test", "version": "1.0"}
@@ -274,7 +275,7 @@ func TestSystemCreate_NoTargets(t *testing.T) {
 
 func TestSystemCreate_TargetLabelsAsSelector(t *testing.T) {
 	withLabels := `{
-		"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
+		"baselines": [{"name": "B1", "integrity": {"algorithm": "sha256", "checksum": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
 		"components": [
 			{"name": "labeled-host", "type": "host", "labels": {"env": "prod", "tier": "web"}}
 		],
@@ -327,6 +328,7 @@ func TestSystemCreate_FromCycloneDXSBOM(t *testing.T) {
 
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "juice-shop-system", sys["name"])
 
 	// Component name auto-detected from metadata.component.name
 	components := sys["components"].([]interface{})
@@ -398,6 +400,7 @@ func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
 
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "WebTier-system", sys["name"])
 	components := sys["components"].([]interface{})
 	c0 := components[0].(map[string]interface{})
 	assert.Equal(t, "WebTier", c0["name"])
@@ -504,6 +507,7 @@ func TestSystemCreate_FromAIModelBOM(t *testing.T) {
 
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "stable-diffusion-system", sys["name"])
 
 	components := sys["components"].([]interface{})
 	require.Len(t, components, 1)
@@ -607,6 +611,7 @@ func TestSystemCreate_FromSPDX3AIBOM(t *testing.T) {
 	require.NoError(t, err)
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "word-model-system", sys["name"])
 
 	byType := componentsByType(t, sys)
 	require.Len(t, byType["aiModel"], 2)
@@ -649,6 +654,31 @@ func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
 	assert.Empty(t, byType["aiModel"])
 	require.Len(t, byType["dataset"], 1)
 	require.NoError(t, validateHDFDocument(data))
+}
+
+func TestSystemCreate_BOMNameOverride(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		args []string
+	}{
+		{"sbom", []string{converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")}},
+		{"reference", []string{"https://artifacts.example.com/sbom/webtier.cdx.json", "--component-name", "WebTier"}},
+		{"ml-bom", []string{bomFixturePath(t, "cyclonedx-mlbom.json")}},
+		{"spdx-ai", []string{bomFixturePath(t, "spdx-ai-model-1.json")}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			outFile := filepath.Join(t.TempDir(), "system.json")
+			args := append([]string{"system", "create"}, tt.args...)
+			args = append(args, "--name", "Production Boundary", "-o", outFile)
+			_, _, err := executeCommand(args...)
+			require.NoError(t, err)
+			data, err := os.ReadFile(outFile)
+			require.NoError(t, err)
+			var sys map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &sys))
+			assert.Equal(t, "Production Boundary", sys["name"])
+		})
+	}
 }
 
 // ---- --from format-assertion tests (system create) ----
@@ -1086,7 +1116,7 @@ func TestSystemCreate_TypeMapping(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.targetType, func(t *testing.T) {
 			resultsJSON := `{
-				"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
+				"baselines": [{"name": "B1", "integrity": {"algorithm": "sha256", "checksum": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
 				"components": [{"name": "target1", "type": "` + tt.targetType + `"}],
 				"statistics": {"duration": 1},
 				"generator": {"name": "test", "version": "1.0"}

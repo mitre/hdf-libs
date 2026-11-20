@@ -13,6 +13,14 @@ import {
   createCvss,
 } from '../src/helpers.js';
 import { createAjvWithPrimitives, loadSchema, createMinimalResultsDoc } from './setup';
+import { schemaRef } from './schema-ref';
+import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import Ajv2020Ctor from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import { EMBED_DIR } from '../src/sync-validator-schemas';
+import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 
 /**
  * Minimal requirement stub with only the fields computeEffectiveStatus inspects.
@@ -146,7 +154,7 @@ describe('computeEffectiveStatus', () => {
   // --- effectiveStatus already set ---
 
   it('tolerates null result elements (out-of-contract input from untyped consumers)', () => {
-    expect(computeEffectiveStatus(req(0, [null]))).toBe('notApplicable');
+    expect(computeEffectiveStatus(req(0, [null]))).toBe('notReviewed');
   });
 
   it('ignores a stored effectiveStatus (output cache — canonical ladder governs)', () => {
@@ -158,7 +166,7 @@ describe('computeEffectiveStatus', () => {
   it('ignores a stored effectiveStatus at impact 0 too', () => {
     expect(
       computeEffectiveStatus(req(0, [{ status: 'passed' }], 'failed'))
-    ).toBe('notApplicable');
+    ).toBe('passed');
   });
 
   it('honors a governing override (the sanctioned divergence channel)', () => {
@@ -171,22 +179,26 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(r)).toBe('passed');
   });
 
-  // --- impact === 0 ---
+  // --- impact is not consulted ---
 
-  it('should return notApplicable when impact is 0 and no effectiveStatus', () => {
-    expect(computeEffectiveStatus(req(0, [{ status: 'passed' }]))).toBe(
+  it('rolls the results up normally at impact 0', () => {
+    expect(computeEffectiveStatus(req(0, [{ status: 'passed' }]))).toBe('passed');
+  });
+
+  it('reports notApplicable at impact 0 only when a result says so', () => {
+    expect(computeEffectiveStatus(req(0, [{ status: 'notApplicable' }]))).toBe(
       'notApplicable'
     );
   });
 
-  it('should return notApplicable when impact is 0 with no results', () => {
-    expect(computeEffectiveStatus(req(0, []))).toBe('notApplicable');
+  it('should return notReviewed when impact is 0 with no results', () => {
+    expect(computeEffectiveStatus(req(0, []))).toBe('notReviewed');
   });
 
   it('should return error when impact is 0 but a result errored', () => {
-    // An execution error means the check never ran, so nothing was established
-    // about applicability — error ranks above the impact-0 short-circuit,
-    // aligned with the canonical @mitre/hdf-utilities computeEffectiveStatus.
+    // error outranks every other status in the worst-wins order, so this holds
+    // without a dedicated rung, aligned with the canonical
+    // @mitre/hdf-utilities computeEffectiveStatus.
     expect(computeEffectiveStatus(req(0, [{ status: 'error' }]))).toBe('error');
     expect(
       computeEffectiveStatus(req(0, [{ status: 'passed' }, { status: 'error' }]))
@@ -294,9 +306,7 @@ describe('computeEffectiveStatus', () => {
   });
 
   it('should handle impact exactly at boundary (0.0)', () => {
-    expect(computeEffectiveStatus(req(0.0, [{ status: 'failed' }]))).toBe(
-      'notApplicable'
-    );
+    expect(computeEffectiveStatus(req(0.0, [{ status: 'failed' }]))).toBe('failed');
   });
 
   it('should handle very small positive impact', () => {
@@ -458,5 +468,99 @@ describe('helper-built docs validate against hdf-results.schema.json', () => {
 
     const ok = validate(doc);
     expect(ok, JSON.stringify(validate.errors)).toBe(true);
+  });
+});
+
+// Read from the schema so a new Override_Type is covered without editing this file.
+const OVERRIDE_TYPES: string[] = amendmentsSchema.$defs.Override_Type.enum;
+
+describe('createStatusOverride is schema-valid for every Override_Type', () => {
+  let validate: ReturnType<Ajv2020['compile']>;
+  beforeAll(() => {
+    validate = createAjvWithPrimitives().compile(schemaRef(extensionsSchema, 'Status_Override'));
+  });
+
+  const minimalOptions = (type: string) =>
+    type === 'riskAdjustment' ? { impact: { value: 0.4 } } : {};
+
+  it.each(OVERRIDE_TYPES)('%s with minimal options validates', (type) => {
+    const o = createStatusOverride(type, minimalOptions(type));
+    expect(validate(o), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  const inputs: Record<string, { status?: 'passed'; impact?: { value: number } }> = {
+    none: {},
+    status: { status: 'passed' },
+    impact: { impact: { value: 0.4 } },
+    both: { status: 'passed', impact: { value: 0.4 } },
+  };
+  const cases = OVERRIDE_TYPES.flatMap((type) =>
+    Object.entries(inputs).map(([label, opts]) => [type, label, opts] as const));
+
+  it.each(cases)('%s given %s either throws or returns a valid override', (type, _label, opts) => {
+    let o: unknown;
+    try {
+      o = createStatusOverride(type, opts);
+    } catch (err) {
+      expect(err).toBeInstanceOf(TypeError);
+      expect(['riskAdjustment', 'operationalRequirement'], `${type} must not refuse ${_label}`)
+        .toContain(type);
+      return;
+    }
+    expect(validate(o), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('operationalRequirement carries neither status nor impact by default', () => {
+    const o = createStatusOverride('operationalRequirement');
+    expect('status' in o).toBe(false);
+    expect('impact' in o).toBe(false);
+  });
+
+  it('operationalRequirement rejects a caller-supplied status or impact', () => {
+    expect(() => createStatusOverride('operationalRequirement', { status: 'passed' }))
+      .toThrow(/operationalRequirement override cannot carry a status or impact/);
+    expect(() => createStatusOverride('operationalRequirement', { impact: { value: 0.2 } }))
+      .toThrow(/operationalRequirement override cannot carry a status or impact/);
+  });
+
+  it('riskAdjustment carries the given impact and no status', () => {
+    const o = createStatusOverride('riskAdjustment', { impact: { value: 0.4 } });
+    expect(o.impact).toEqual({ value: 0.4 });
+    expect('status' in o).toBe(false);
+  });
+
+  it('riskAdjustment rejects a caller-supplied status', () => {
+    expect(() => createStatusOverride('riskAdjustment', { status: 'passed', impact: { value: 0.4 } }))
+      .toThrow(/riskAdjustment override cannot carry a status/);
+  });
+
+  it('riskAdjustment requires an impact rather than inventing one', () => {
+    expect(() => createStatusOverride('riskAdjustment'))
+      .toThrow(/riskAdjustment override requires an impact/);
+  });
+
+  it.each(OVERRIDE_TYPES.filter((t) => t !== 'riskAdjustment' && t !== 'operationalRequirement'))(
+    '%s keeps the notApplicable default when given neither status nor impact', (type) => {
+      expect(createStatusOverride(type).status).toBe('notApplicable');
+    });
+
+  it('a results document carrying one override of every type validates', () => {
+    const bundled = new Ajv2020Ctor({ strict: false, allErrors: true });
+    addFormats(bundled);
+    // The bundled schema the shipped validators embed, alongside the modular source.
+    const embedded = JSON.parse(readFileSync(join(EMBED_DIR, 'hdf-results.schema.json'), 'utf-8'));
+    const validators = [
+      createAjvWithPrimitives().compile(loadSchema('hdf-results.schema.json')),
+      bundled.compile(embedded),
+    ];
+    const reqs = OVERRIDE_TYPES.map((type) => createRequirement(
+      `V-${type}`, undefined, [createDescription('default', 'd')], 0.5,
+      [createResult('failed', 'found', { startTime: '2026-01-01T00:00:00Z' })],
+      { statusOverrides: [createStatusOverride(type, minimalOptions(type))] },
+    ));
+    const doc = createMinimalResultsDoc({ baselines: [createMinimalBaseline('b', reqs)], components: [] });
+    for (const validateDoc of validators) {
+      expect(validateDoc(doc), JSON.stringify(validateDoc.errors)).toBe(true);
+    }
   });
 });

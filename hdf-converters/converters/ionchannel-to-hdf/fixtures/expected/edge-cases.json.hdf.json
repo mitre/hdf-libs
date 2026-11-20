@@ -33,9 +33,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-n/a/-e",
@@ -80,9 +80,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-n/a/requests",
@@ -127,9 +127,9 @@
           ],
           "results": [
             {
-              "codeDesc": "Dependency inventory item",
+              "codeDesc": "Dependency inventory item. This record states that the dependency was found, not that any requirement was evaluated against it, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "dependency-example-corp/internal-lib",
@@ -193,9 +193,9 @@
           ],
           "results": [
             {
-              "codeDesc": "community scan summary",
+              "codeDesc": "community scan summary. This record reports what the analysis observed; it is not an evaluation of a requirement, so it asserts nothing about compliance and is excluded from the ratio.",
               "startTime": "2024-02-20T14:00:00Z",
-              "status": "notReviewed"
+              "status": "notApplicable"
             }
           ],
           "id": "scan-community",

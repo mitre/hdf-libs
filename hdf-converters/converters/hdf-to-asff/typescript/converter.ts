@@ -146,7 +146,7 @@ function buildFinding(req: Obj, ctx: FindingContext): Obj {
     Severity: severity(req),
     Resources: resources(ctx.component, id),
     RecordState: 'ACTIVE',
-    Compliance: complianceBlock(req, st.rollup),
+    Compliance: complianceBlock(req, complianceSource(st)),
   };
   if (st.suppressed) {
     finding.Workflow = {Status: 'SUPPRESSED'};
@@ -177,11 +177,23 @@ function buildFinding(req: Obj, ctx: FindingContext): Obj {
   return finding;
 }
 
-// complianceBlock builds the ASFF Compliance object: the rolled-up status, the
+// complianceSource picks the status ASFF's Compliance block reports. Security
+// Hub keeps the two axes orthogonal — Compliance.Status is the check result,
+// Workflow.Status the triage state — and suppressing a finding there never
+// rewrites its verdict. So a suppressed finding reports its RAW status: the
+// rolled-up one would rewrite a failed check as PASSED on the strength of a
+// triage decision, and lose the verdict asff-to-hdf reads back. Everything else
+// reports the roll-up, which is what the effective status is for.
+// Parity: complianceSource in go/converter.go.
+function complianceSource(st: {raw: string; rollup: string; suppressed: boolean}): string {
+  return st.suppressed ? st.raw : st.rollup;
+}
+
+// complianceBlock builds the ASFF Compliance object: the reported status, the
 // NIST/CCI control ids as RelatedRequirements, and the parsed status-reason
 // message as StatusReasons (the reverse of asff-to-hdf's statusReason flatten).
-function complianceBlock(req: Obj, rollup: string): Obj {
-  const comp: Obj = {Status: complianceStatus(rollup)};
+function complianceBlock(req: Obj, status: string): Obj {
+  const comp: Obj = {Status: complianceStatus(status)};
   const rr = relatedRequirements(req);
   if (rr.length > 0) comp.RelatedRequirements = rr;
   const sr = statusReasons(req);

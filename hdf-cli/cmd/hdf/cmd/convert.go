@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const convertComponentIDFlag = "component-id"
+
 // NewConvertCmd creates the convert command.
 func NewConvertCmd() *cobra.Command {
 	var (
@@ -39,6 +41,17 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			bundle, _ := cmd.Flags().GetBool("bundle")
+			if bundle {
+				overwrite, _ := cmd.Flags().GetBool("overwrite")
+				return runConvertBundle(cmd, args, toFormat, outputPath, overwrite)
+			}
+			if cmd.Flags().Changed("output-access") {
+				return fmt.Errorf("--output-access requires --bundle")
+			}
+			if cmd.Flags().Changed("overwrite") {
+				return fmt.Errorf("--overwrite requires --bundle")
+			}
 			return dispatchConvert(cmd, args, fromFormat, toFormat, outputPath)
 		},
 	}
@@ -46,9 +59,12 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Source format (auto-detected if omitted)")
 	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().String("output-access", string(archivePrivate), "Archive access: private (creator only) or inherit (destination permissions); requires --bundle")
+	cmd.Flags().Bool("bundle", false, "Deliver one ECS, Splunk or OCSF export with its source in an evidence-package ZIP")
+	cmd.Flags().Bool("overwrite", false, "Replace an existing bundle archive; requires --bundle and never overwrites the source")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets, --to hdf only (key=value pairs, e.g., --labels system=Portal,environment=production)")
-	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output, --to hdf only")
+	cmd.Flags().String(convertComponentIDFlag, "", "Set componentId (a UUID) on all components in the output, --to hdf only")
 	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 5)")
 	cmd.Flags().String("report-type", "", "Detail level for --to html: executive, manager or administrator (default administrator)")
 	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
@@ -65,7 +81,7 @@ func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, ou
 	if err := checkHDFOnlyFlags(cmd, toFormat); err != nil {
 		return err
 	}
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if err := checkComponentIDFlag(componentID); err != nil {
 		return err
 	}
@@ -107,7 +123,7 @@ func checkHDFOnlyFlags(cmd *cobra.Command, toFormat string) error {
 	if strings.EqualFold(format, "hdf") {
 		return nil
 	}
-	for _, name := range []string{"labels", "component-id"} {
+	for _, name := range []string{"labels", convertComponentIDFlag} {
 		if cmd.Flags().Changed(name) {
 			return fmt.Errorf("--%s applies to --to hdf only, not --to %s", name, format)
 		}
@@ -281,13 +297,13 @@ func detectConvertSource(cmd *cobra.Command, data []byte, inputPath, fromFormat,
 // helper upgrades legacy→v3 itself, dropping the top-level target before we could
 // capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
 // for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
-// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
+// Gated to HDF/legacy/InSpec input so a scanner format that happens to carry a top-level
 // "target" key is untouched.
 func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byte, format, version string, err error) {
-	isHDF := strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")
-	if !isHDF || !hasSAFSupplement(data) {
+	if !isLegacyCapableSource(fromFormat) || !hasSAFSupplement(data) {
 		return data, fromFormat, fromVersion, nil
 	}
+	var opts []hdfparsers.SAFSupplementOption
 	if legacyhdf.IsLegacyHDF(data) {
 		supp := captureSAFSupplement(data)
 		upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
@@ -299,9 +315,14 @@ func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byt
 		}
 		fromFormat = "hdf"
 		fromVersion = ""
+		// Only when the upgrade had no carried components to restore did it build
+		// the lone component from `platform`, which is the one a target may take.
+		if !carriesRestoredComponents(supp["passthrough"]) {
+			opts = append(opts, hdfparsers.MergePlatformComponent())
+		}
 	}
 	var safWarnings []string
-	data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
+	data, safWarnings = hdfparsers.NormalizeSAFSupplement(data, opts...)
 	for _, w := range safWarnings {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
 	}
@@ -445,7 +466,7 @@ func applyConvertFlags(cmd *cobra.Command, output []byte) ([]byte, error) {
 		printDebug("Applied %d labels to output", len(labels))
 	}
 
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if componentID != "" {
 		stamped, err := hdfdoc.ApplyComponentID(output, componentID, false)
 		switch {
@@ -473,11 +494,10 @@ func outputSizeWarning(outputLen int) string {
 	if outputLen <= hdfutil.DefaultMaxInputSize {
 		return ""
 	}
-	const mib = 1024 * 1024
-	needMB := (outputLen + mib - 1) / mib
+	needMB := (outputLen + bytesPerMB - 1) / bytesPerMB
 	return fmt.Sprintf(
 		"output is %d bytes, larger than the %d MB default read limit; downstream commands will need --max-size %d to read it.",
-		outputLen, hdfutil.DefaultMaxInputSize/mib, needMB)
+		outputLen, hdfutil.DefaultMaxInputSize/bytesPerMB, needMB)
 }
 
 // applyNistOptions reads the --nist-rev and --nist-strict flags and sets the
@@ -519,6 +539,23 @@ func hasSAFSupplement(data []byte) bool {
 	return hasTarget || hasPassthrough
 }
 
+// carriesRestoredComponents reports whether a legacy passthrough holds the
+// components[] carrier a downgrade writes, which the upgrade restores verbatim.
+func carriesRestoredComponents(passthrough json.RawMessage) bool {
+	if len(passthrough) == 0 {
+		return false
+	}
+	var bag map[string]json.RawMessage
+	if err := json.Unmarshal(passthrough, &bag); err != nil {
+		return false
+	}
+	var comps []json.RawMessage
+	if err := json.Unmarshal(bag[legacyhdf.HDFComponentsKey], &comps); err != nil {
+		return false
+	}
+	return len(comps) > 0
+}
+
 // captureSAFSupplement extracts the top-level target/passthrough keys so they can
 // be re-attached after a legacy→v3 upgrade drops them (the legacy struct has no
 // field for target, so a plain unmarshal/marshal loses it).
@@ -552,6 +589,17 @@ func reattachSAFSupplement(data []byte, supp map[string]json.RawMessage) ([]byte
 	return json.Marshal(doc)
 }
 
+// isLegacyCapableSource reports whether a --from format (or auto-detected
+// fingerprint) names HDF input that may be the legacy v2 exec-json shape:
+// explicit hdf (with or without an @version), the legacyhdf fingerprint, or
+// inspec, which is registered to the same legacy converter. Both legacy gates
+// in the convert path consult this so an input route never works only when the
+// document happens to carry a SAF supplement.
+func isLegacyCapableSource(fromFormat string) bool {
+	return strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf") ||
+		strings.EqualFold(fromFormat, "inspec")
+}
+
 // normalizeLegacyHDFInput upgrades legacy HDF (v2, the InSpec exec-json
 // profiles/platform shape, which has no `baselines`) to modern HDF (v3) before a
 // non-hdf export converter consumes it. Conversions to hdf are left untouched —
@@ -562,10 +610,9 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 	if strings.EqualFold(toFormat, "hdf") {
 		return data, fromFormat, fromVersion, nil
 	}
-	// Only HDF-source conversions are candidates: explicit --from hdf (with or
-	// without an @version) or the auto-detected legacyhdf fingerprint. Whether
-	// the bytes are actually v1 is decided by content below, not by the version.
-	if !strings.EqualFold(fromFormat, "hdf") && !strings.EqualFold(fromFormat, "legacyhdf") {
+	// Only HDF-source conversions are candidates. Whether the bytes are actually
+	// legacy is decided by content below, not by the format name or version.
+	if !isLegacyCapableSource(fromFormat) {
 		return data, fromFormat, fromVersion, nil
 	}
 	// Skip when there is no hdf→target export converter to feed — let the normal

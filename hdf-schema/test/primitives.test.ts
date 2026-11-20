@@ -272,6 +272,19 @@ describe('Primitive Schema Validation', () => {
         const invalid = { other: 'something' };
         expect(validate(invalid)).toBe(false);
       });
+
+      // The shipped validators are draft-07 and skip unevaluatedProperties, so the
+      // closure has to be additionalProperties over members declared at the top level.
+      it('is closed with additionalProperties over top-level ref, url and uri', () => {
+        const def = commonSchema.$defs.Reference as Record<string, unknown>;
+        expect(def.additionalProperties).toBe(false);
+        expect(def).not.toHaveProperty('unevaluatedProperties');
+        expect(Object.keys(def.properties as object).sort()).toEqual(['ref', 'uri', 'url']);
+      });
+
+      it('should reject Reference with an undeclared member beside a declared one', () => {
+        expect(validate({ url: 'https://example.com/a', bogus: 1 })).toBe(false);
+      });
     });
 
     describe('External_Reference', () => {
@@ -4427,5 +4440,21 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
     });
+  });
+});
+
+// The strong-hash set is closed on purpose; the why lives on the definition itself.
+describe('Hash_Algorithm (common.schema.json)', () => {
+  const def = (commonSchema as unknown as {
+    $defs: Record<string, { enum?: string[]; description: string }>;
+  }).$defs['Hash_Algorithm']!;
+
+  it('names exactly the four strong algorithms the tooling verifies', () => {
+    expect(def.enum).toEqual(['sha256', 'sha384', 'sha512', 'blake3']);
+  });
+
+  it('records on the definition that md5 and sha1 are excluded on purpose', () => {
+    expect(def.description).toMatch(/md5 and sha1 are excluded deliberately/);
+    expect(def.description).not.toMatch(/admitted/i);
   });
 });

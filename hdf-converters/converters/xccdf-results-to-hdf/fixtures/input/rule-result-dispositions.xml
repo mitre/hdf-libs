@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="xccdf_org.mitre.hdf_benchmark_dispositions" resolved="1">
+  <status>incomplete</status>
+  <title>Rule-result disposition coverage</title>
+  <version>1.0</version>
+  <model system="urn:xccdf:scoring:default"/>
+  <Rule id="xccdf_org.mitre.hdf_rule_pass" selected="true" severity="medium">
+    <title>A rule that passes</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:1" href="oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_fail" selected="true" severity="high">
+    <title>A rule that fails</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:2" href="oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_notselected" selected="false" severity="high">
+    <title>A high-severity rule this profile did not select</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:3" href="oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_notapplicable" selected="true" severity="medium">
+    <title>A rule that does not apply to this target</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:4" href="oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_notchecked" selected="true" severity="low">
+    <title>A rule with no automated check</title>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_informational" selected="true" severity="info">
+    <title>A rule that reports information rather than a verdict</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:5" href="oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_org.mitre.hdf_rule_info_severity_fail" selected="true" severity="info">
+    <title>An info-severity rule that fails</title>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:x:def:6" href="oval.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_org.mitre.hdf_testresult_dispositions" start-time="2026-01-02T03:04:05" end-time="2026-01-02T03:05:06">
+    <title>Disposition coverage scan</title>
+    <target>test-target</target>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_pass" time="2026-01-02T03:04:05" severity="medium" weight="1.000000">
+      <result>pass</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_fail" time="2026-01-02T03:04:05" severity="high" weight="1.000000">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_notselected" time="2026-01-02T03:04:05" severity="high" weight="1.000000">
+      <result>notselected</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_notapplicable" time="2026-01-02T03:04:05" severity="medium" weight="1.000000">
+      <result>notapplicable</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_notchecked" time="2026-01-02T03:04:05" severity="low" weight="1.000000">
+      <result>notchecked</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_informational" time="2026-01-02T03:04:05" severity="info" weight="1.000000">
+      <result>informational</result>
+    </rule-result>
+    <rule-result idref="xccdf_org.mitre.hdf_rule_info_severity_fail" time="2026-01-02T03:04:05" severity="info" weight="1.000000">
+      <result>fail</result>
+    </rule-result>
+    <score system="urn:xccdf:scoring:default" maximum="100.000000">33.333333</score>
+  </TestResult>
+</Benchmark>

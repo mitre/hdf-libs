@@ -1,6 +1,6 @@
 import { parseXmlWithArrays, parseTimestamp, replaceHtmlTags, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { DEFAULT_REMEDIATION_NIST_TAGS, buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { DEFAULT_REMEDIATION_NIST_TAGS, buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateXmlInput } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -22,17 +22,18 @@ const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
 
 interface NessusXml {
   NessusClientData_v2: {
-    Policy: {
-      policyName: string;
+    // Optional throughout: Go decodes a missing element as an empty struct.
+    Policy?: {
+      policyName?: string;
       Preferences?: {
         ServerPreferences?: {
           preference?: Array<{ name: string; value: string }>;
         };
       };
     };
-    Report: {
+    Report?: {
       '@name'?: string;
-      ReportHost: ReportHost[];
+      ReportHost?: ReportHost[];
     };
   };
 }
@@ -157,7 +158,7 @@ function decodeEntitiesDeep(value: unknown): unknown {
  * Convert Nessus XML scan results to HDF format
  */
 export async function convertNessusToHdf(nessusXml: string, converterVersion = '1.0.0'): Promise<HDFResults> {
-  validateInputSize(nessusXml, 'nessus');
+  validateXmlInput(nessusXml, 'nessus');
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 
@@ -165,10 +166,11 @@ export async function convertNessusToHdf(nessusXml: string, converterVersion = '
     parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost', 'cwe', 'cve']),
   ) as NessusXml;
 
-  const policyName = parsed.NessusClientData_v2.Policy.policyName;
+  const policyName = parsed.NessusClientData_v2.Policy?.policyName ?? '';
   const version = extractVersion(parsed);
-  // parseXmlWithArrays ensures ReportHost is always an array
-  const reportHosts = parsed.NessusClientData_v2.Report.ReportHost as ReportHost[];
+  // parseXmlWithArrays makes ReportHost an array when present; a report with no
+  // hosts has none, which Go reads as an empty slice.
+  const reportHosts = parsed.NessusClientData_v2.Report?.ReportHost ?? [];
 
   const { items: limitedHosts, truncated: truncatedHosts } = limitArray(reportHosts);
   /* v8 ignore next -- truncation only triggers with >100K items */
@@ -212,7 +214,7 @@ export async function convertNessusToHdf(nessusXml: string, converterVersion = '
 }
 
 function extractVersion(parsed: NessusXml): string {
-  const prefs = parsed.NessusClientData_v2.Policy.Preferences?.ServerPreferences?.preference;
+  const prefs = parsed.NessusClientData_v2.Policy?.Preferences?.ServerPreferences?.preference;
   if (!prefs) return '';
 
   // parseXmlWithArrays ensures preference is always an array

@@ -940,43 +940,98 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
   });
 
-  describe('impact=0 → effectiveStatus notApplicable', () => {
-    it('should set effectiveStatus to notApplicable when impact is 0 and no explicit status', () => {
-      const v1: LegacyHDFResults = {
-        version: '1.0.0',
-        platform: { name: 'test' },
-        profiles: [{
-          name: 'test',
-          controls: [
-            { id: 'V-1', impact: 0, results: [{ status: 'skipped' }] },
-            { id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] },
-          ],
-        }],
-        statistics: {},
-      };
-      const v2 = convertLegacyHdf(v1);
-      const reqs = v2.baselines[0].requirements!;
-      expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
-      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
+  // InSpec scores a control it considers inapplicable 0 and reports no pass or
+  // fail for it. That is a verdict, not missing data, and the canonical ladder
+  // no longer reads impact — so this importer states it as an explicit
+  // notApplicable result, where the claim survives.
+  // Parity: TestConvertV1ToV2_TranslatesInSpecImpactZeroToNotApplicableResult.
+  describe('impact=0 → a synthesized notApplicable result', () => {
+    const oneControl = (control: Record<string, unknown>): LegacyHDFResults => ({
+      version: '1.0.0',
+      platform: { name: 'test' },
+      profiles: [{ name: 'test', controls: [control as never] }],
+      statistics: {},
     });
 
-    it('control-level status does not bypass the impact-0 rule', () => {
-      // Write-path guarantee: the emitted effectiveStatus equals the ladder's
-      // answer — a non-errored impact-0 control is notApplicable regardless of
-      // the v1 control-level claim.
-      const v1: LegacyHDFResults = {
-        version: '1.0.0',
-        platform: { name: 'test' },
-        profiles: [{
-          name: 'test',
-          controls: [
-            { id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] },
-          ],
-        }],
-        statistics: {},
-      };
-      const v2 = convertLegacyHdf(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notApplicable');
+    it('appends an explicit notApplicable result to a skipped impact-0 control', () => {
+      const v1 = oneControl({
+        id: 'V-1',
+        impact: 0,
+        results: [{ status: 'skipped', start_time: '2026-01-01T00:00:00Z' }],
+      });
+      const req = convertLegacyHdf(v1).baselines[0].requirements![0];
+
+      expect(req.results).toHaveLength(2);
+      expect(req.results![1].status).toBe('notApplicable');
+      expect(req.results![1].codeDesc).toBeTruthy();
+      expect(req.results![1].startTime).toBe(req.results![0].startTime);
+      expect(req.effectiveStatus).toBe('notApplicable');
+      expect(req.impact).toBe(0);
+    });
+
+    it('appends one to an impact-0 control with no results at all', () => {
+      const req = convertLegacyHdf(oneControl({ id: 'V-1', impact: 0 })).baselines[0]
+        .requirements![0];
+
+      expect(req.results).toHaveLength(1);
+      expect(req.results![0].status).toBe('notApplicable');
+      expect(req.effectiveStatus).toBe('notApplicable');
+    });
+
+    it('does not translate above impact 0', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0.7, results: [{ status: 'skipped' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.results).toHaveLength(1);
+      expect(req.effectiveStatus).toBe('notReviewed');
+    });
+
+    it('does not translate when the results establish something', () => {
+      // failed, passed and error all outrank notApplicable in worst-wins, so
+      // appending would be inert; not appending keeps results[] honest about
+      // what the tool actually reported.
+      for (const [result, want] of [
+        ['failed', 'failed'],
+        ['passed', 'passed'],
+        ['error', 'error'],
+        ['not_applicable', 'notApplicable'],
+      ]) {
+        const req = convertLegacyHdf(
+          oneControl({ id: 'V-1', impact: 0, results: [{ status: result }] })
+        ).baselines[0].requirements![0];
+
+        expect(req.results, `result ${result}`).toHaveLength(1);
+        expect(req.effectiveStatus, `result ${result}`).toBe(want);
+      }
+    });
+
+    it('leaves a scored control alone', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('passed');
+    });
+
+    it('a passing result at impact 0 reports passed, not notApplicable', () => {
+      // A passing result outranks the synthesized notApplicable in worst-wins,
+      // so the scope translation cannot bury evidence that the check ran. No
+      // InSpec source in hdf-fixtures/inspec/ carries this shape — every
+      // impact-0 control there reports no pass or fail at all.
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('passed');
+    });
+
+    it('the error synthesis still wins at impact 0', () => {
+      const req = convertLegacyHdf(
+        oneControl({ id: 'V-1', impact: 0, status: 'error', results: [{ status: 'skipped' }] })
+      ).baselines[0].requirements![0];
+
+      expect(req.effectiveStatus).toBe('error');
     });
 
     it('recomputes effectiveStatus from results when the control-level status is stale', () => {
@@ -1962,5 +2017,136 @@ describe('convertLegacyHdf upgrade edge cases', () => {
     const req = v2.baselines[0]!.requirements![0]!;
     expect(req.effectiveStatus).toBe('notApplicable');
     expect(req.refs ?? []).toHaveLength(0);
+  });
+});
+
+// AUTHORED inputs, not captured: no published InSpec exec JSON omits `impact` or
+// `tags`, so neither shape can be sourced; see fixtures/provenance.txt. Twins of
+// the Go TestConvertLegacyHDF_* tests for the same three cases.
+describe('absence in the source is not a value', () => {
+  const base = (control: Record<string, unknown>): LegacyHDFResults =>
+    ({
+      platform: {name: 'centos', release: '7'},
+      version: '4.16.0',
+      statistics: {},
+      profiles: [{name: 'p', sha256: 'abc', controls: [control]}],
+    }) as unknown as LegacyHDFResults;
+
+  // tags is in Evaluated_Requirement.required, so omitting it is as invalid as
+  // emitting null. This side used to omit it.
+  it('gives a tagless control an empty tags object', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'tagless', impact: 0.5,
+      results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]! as unknown as Record<string, unknown>;
+    expect(Object.hasOwn(req, 'tags')).toBe(true);
+    expect(req.tags).toEqual({});
+    expectValidResults(out);
+  });
+
+  // results is required with minItems:1, so a source that recorded none cannot
+  // pass through: this side emitted results: null and the converter rejected its
+  // own output. The fill runs after overlay flattening, which decides which
+  // layer's results win by checking which side is non-empty.
+  it('synthesizes a result for a control with no results', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no results key', impact: 0.5, tags: {},
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe('notReviewed');
+    expect(req.results[0]!.codeDesc).toContain('no results for this control');
+    expect(JSON.stringify(out)).not.toContain('"results":null');
+    expectValidResults(out);
+  });
+
+  // This converter's results carry startTime as a STRING. The fill loop is cast
+  // through the v3 schema type, where it is a Date, so a Date compiles here and
+  // stringifies with fractional seconds -- diverging from Go for any consumer
+  // that JSON.stringifies the returned object rather than using serializeHdf.
+  it('synthesizes a startTime string matching its siblings, not a Date', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no results key', impact: 0.7, tags: {},
+    })) as unknown as HDFV2Results;
+
+    const st = out.baselines[0]!.requirements[0]!.results[0]!.startTime;
+    expect(typeof st).toBe('string');
+    expect(JSON.stringify(st)).toBe('"0001-01-01T00:00:00Z"');
+  });
+
+  // An absent impact is unknown severity, not zero, and must not take the
+  // score-0 translation — nothing declared the control inapplicable.
+  it('treats an absent impact as unknown severity and does not translate', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'no impact key', tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(0.5, 5);
+    expect((req.results ?? []).map((r) => r.status)).not.toContain('notApplicable');
+    expectValidResults(out);
+  });
+
+  // The score-0 translation reads the SOURCE field, not the resolved impact, so
+  // it can never fire for an absent one. Those two formulations agree today only
+  // because the unknown default is non-zero; pin that, so setting it to 0 fails
+  // here loudly instead of silently re-coupling absence to the translation.
+  it('keeps the unknown default distinct from an explicit 0', () => {
+    const absent = convertLegacyHdf(base({
+      id: 'V-1', tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+    expect(absent.baselines[0]!.requirements[0]!.impact).not.toBe(0);
+  });
+
+  // The counterpart: an explicit 0 is the author's declaration and still
+  // translates. This is what the absent case must stay distinct from.
+  it('still translates an explicit impact of 0', () => {
+    const out = convertLegacyHdf(base({
+      id: 'V-1', title: 'declared inapplicable', impact: 0, tags: {},
+      results: [{status: 'skipped', code_desc: 'c', skip_message: 's', start_time: '2026-01-02T03:04:05Z'}],
+    })) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBe(0);
+    expect((req.results ?? []).map((r) => r.status)).toContain('notApplicable');
+  });
+});
+
+// Twin of the Go TestConvertLegacyHDF_AbsentImpactMarksUnrated. A defaulted impact
+// carries the unrated marker unless the source's tags.severity rated it; an
+// explicit impact, 0 included, is never marked.
+describe('absent impact marks the requirement unrated', () => {
+  const cases: Array<[string, Record<string, unknown>, number, boolean]> = [
+    ['absent impact, empty tags', {tags: {}}, 0.5, true],
+    ['absent impact, no tags key', {title: 't'}, 0.5, true],
+    ['absent impact, unrated token', {tags: {severity: 'unknown'}}, 0.5, true],
+    ['absent impact, non-string severity', {tags: {severity: 3}}, 0.5, true],
+    ['absent impact, rated severity', {tags: {severity: 'high'}}, 0.5, false],
+    ['explicit 0', {impact: 0, tags: {}}, 0, false],
+    ['explicit 0.5', {impact: 0.5, tags: {}}, 0.5, false],
+    ['explicit 0.5, unrated token', {impact: 0.5, tags: {severity: 'unknown'}}, 0.5, false],
+  ];
+  it.each(cases)('%s', (_name, fields, impact, unrated) => {
+    const out = convertLegacyHdf({
+      platform: {name: 'centos', release: '7'},
+      version: '4.16.0',
+      statistics: {},
+      profiles: [{name: 'p', sha256: 'abc', controls: [{
+        id: 'V-1',
+        ...fields,
+        results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+      }]}],
+    } as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+
+    const req = out.baselines[0]!.requirements[0]!;
+    expect(req.impact).toBeCloseTo(impact, 5);
+    if (unrated) expect(req.tags?.severity_rating).toBe('unrated');
+    else expect(req.tags).not.toHaveProperty('severity_rating');
+    expectValidResults(out);
   });
 });

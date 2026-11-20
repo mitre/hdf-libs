@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -194,7 +195,7 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		// deterministic order rather than silently dropping the loose ones.
 		parsed := flattenSuites(suites.TestSuites)
 		if len(suites.TestCases) > 0 {
-			parsed = append(parsed, junitTestSuite{Name: name, TestCases: suites.TestCases})
+			parsed = append(parsed, junitTestSuite{Name: suites.Name, TestCases: suites.TestCases})
 		}
 		return parsed, name, nil
 	}
@@ -246,15 +247,48 @@ func buildRequirements(suites []junitTestSuite, scanTime time.Time) []hdf.Evalua
 	for _, suite := range limitedSuites {
 		limitedTestCases := shared.LimitSliceWithWarning(suite.TestCases, 0, "test case")
 		for _, tc := range limitedTestCases {
-			requirements = append(requirements, testCaseToRequirement(tc, scanTime))
+			requirements = append(requirements, testCaseToRequirement(tc, suite, scanTime))
 		}
 	}
 
 	return requirements
 }
 
+// checkovSuiteName matches the "<framework> scan" name Checkov gives each
+// framework's suite in its JUnit output.
+var checkovSuiteName = regexp.MustCompile(`^([a-z0-9_]+) scan$`)
+
+// checkovFramework reports the framework a Checkov-emitted suite scanned. The
+// suite name alone is not enough — a human can name a suite "terraform scan" —
+// so the testcases must also carry Checkov's bracketed prefix. The value is
+// what checkov-to-hdf records under check_type, so the two Checkov paths agree.
+func checkovFramework(suite junitTestSuite) (string, bool) {
+	m := checkovSuiteName.FindStringSubmatch(suite.Name)
+	if m == nil {
+		return "", false
+	}
+	for _, tc := range suite.TestCases {
+		if isCheckovTestCaseName(tc.Name) {
+			return m[1], true
+		}
+	}
+	return "", false
+}
+
+// suiteTags records the owning suite on a requirement: its name verbatim under
+// test_suite, and for a Checkov suite the framework under check_type. A suite
+// is a grouping, so this is the only place it reaches the output.
+func suiteTags(suite junitTestSuite, tags map[string]interface{}) {
+	if name := strings.TrimSpace(suite.Name); name != "" {
+		tags["test_suite"] = name
+	}
+	if framework, ok := checkovFramework(suite); ok {
+		tags["check_type"] = []string{framework}
+	}
+}
+
 // testCaseToRequirement converts a single JUnit test case to an HDF requirement.
-func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRequirement {
+func testCaseToRequirement(tc junitTestCase, suite junitTestSuite, scanTime time.Time) hdf.EvaluatedRequirement {
 	id := buildID(tc)
 	status, message := resolveStatus(tc)
 	codeDesc := buildCodeDesc(tc)
@@ -275,6 +309,7 @@ func testCaseToRequirement(tc junitTestCase, scanTime time.Time) hdf.EvaluatedRe
 	tags := map[string]interface{}{
 		"nist": defaultNIST,
 	}
+	suiteTags(suite, tags)
 
 	className := tc.ClassName
 	if className == "" {

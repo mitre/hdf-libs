@@ -314,9 +314,10 @@ func convertDependencyToV2(d hdf.Dependency) legacyhdf.LegacyDependency {
 // and returning warnings for amendments with no v2 equivalent.
 func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.LegacyControl, []string) {
 	c := legacyhdf.LegacyControl{
-		ID:     r.ID,
-		Title:  r.Title,
-		Impact: r.Impact,
+		ID:    r.ID,
+		Title: r.Title,
+		// v3 requires impact, so the downgrade always has a real value to write.
+		Impact: &r.Impact,
 		Code:   r.Code,
 	}
 
@@ -340,7 +341,11 @@ func convertRequirementToV2Control(r hdf.EvaluatedRequirement) (legacyhdf.Legacy
 
 	// riskAdjustment (and any impact override) re-scores the displayed impact.
 	if r.EffectiveImpact != nil {
-		c.Impact = *r.EffectiveImpact
+		// Copy so the legacy control owns its impact, matching the &r.Impact
+		// branch above; sharing the parsed document's pointer is unobservable
+		// today only because that document is function-local.
+		imp := *r.EffectiveImpact
+		c.Impact = &imp
 	}
 
 	// Extract default description as desc
@@ -436,8 +441,8 @@ func firstCVSSSeverity(cvss []hdf.Cvss) string {
 
 // effectiveOrRollup returns the v1 status string for a requirement's
 // effective status, computed by the canonical shared helper in hdf-utilities
-// (impact==0, governing override, stored effectiveStatus, worst-wins rollup —
-// see status-determination.md).
+// (a governing override, else the worst-wins roll-up — see
+// status-determination.md).
 func effectiveOrRollup(r hdf.EvaluatedRequirement) string {
 	input := shared.RequirementStatusInput(r)
 	return v2StatusString(hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(input, time.Time{})))

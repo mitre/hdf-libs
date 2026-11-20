@@ -90,7 +90,7 @@ Install only the packages you need. Each package is published independently to n
 | Package | npm | Go |
 |---------|-----|----|
 | **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go/v3` |
-| **Converters** — 40+ security tool format converters | `npm install @mitre/hdf-converters@next` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
+| **Converters** — 40+ security tool format converters | `npm install @mitre/hdf-converters@stable` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
 | **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go/v3` |
 | **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go/v3` |
 | **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go/v3` |
@@ -100,7 +100,7 @@ Install only the packages you need. Each package is published independently to n
 | **Engine** — schema-typed read-side engines (detect, query, compliance) | `npm install @mitre/hdf-engine` | `go get github.com/mitre/hdf-libs/hdf-engine/go/v3` |
 | **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | `go get github.com/mitre/hdf-libs/hdf-extension-graph/go/v3` |
 
-The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@next` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@next`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@next` or an exact version.
+The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@stable` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@stable`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@stable` or an exact version. The `@next` channel follows automatically published snapshots of main; see [main snapshots](site/docs/contributing/main-snapshots.md).
 
 The **CLI** is distributed as pre-built binaries — see [hdf-cli](./hdf-cli/README.md) for installation.
 
@@ -110,78 +110,33 @@ This monorepo uses pnpm workspaces. Build order matters because some packages de
 
 ### Prerequisites
 
-The following tools must be installed before running `pnpm lint` or `pnpm test`:
+Install [mise](https://mise.jdx.dev/) 2026.10.9 or newer. It installs the pinned toolchain from `mise.toml` and `mise.lock`, the same releases CI and the pre-commit hook use:
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
-| [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
-| [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
-| [golangci-lint](https://golangci-lint.run/) | 2.11.3 | Go linter (required for `pnpm lint`) |
-| [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
-| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | 1.1.4 | Go vulnerability scanner (required for `pnpm check`) |
-| [gitleaks](https://github.com/gitleaks/gitleaks) | latest | Secret detection (required for `pnpm check`) |
+| Tool | Pinned in |
+|------|-----------|
+| Node.js | `mise.toml` (the Active LTS line); exact release in `mise.lock` |
+| pnpm | `packageManager` in `package.json` |
+| Go | the `go` line of `go.work` |
+| golangci-lint, gosec, govulncheck | `mise.toml` |
+| actionlint, shellcheck | `mise.toml` |
 
-golangci-lint and govulncheck are pinned to the versions CI runs (`GOLANGCI_LINT_VERSION` and `GOVULNCHECK_VERSION` in `.github/workflows/ci.yml`), so local lint reports what CI reports; update both places together. Newer golangci-lint releases add checks that fail lint on code CI accepts. Run them under the Go version in `go.work`: golangci-lint 2.11.3 is built with Go 1.26 and panics on a Go 1.27 toolchain.
+Each download is checked against the checksum recorded in `mise.lock`. [gitleaks](https://github.com/gitleaks/gitleaks), used by `pnpm --filter hdf-cli security`, is installed separately.
 
-**macOS (Homebrew):**
+**macOS and Linux:**
 
 ```bash
-brew install node go gitleaks
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+curl -fsSL https://mise.run | sh   # or: brew install mise
+mise trust && mise install
 ```
 
-**Ubuntu / WSL:**
-
-```bash
-# Node.js 24.x
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-# Go 1.26 — check https://go.dev/dl/ for the latest 1.26.x tarball
-wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
-echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
-
-# golangci-lint, gosec, govulncheck
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-
-# gitleaks
-brew install gitleaks  # or download from GitHub releases
-```
-
-**Windows (native):**
+**Windows (PowerShell):**
 
 ```powershell
-# Node.js and Go — use winget or download installers from nodejs.org / go.dev
-winget install OpenJS.NodeJS.LTS
-winget install GoLang.Go
-
-# pnpm
-corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-# Go tools (restart your terminal after installing Go)
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3
-go install github.com/securego/gosec/v2/cmd/gosec@latest
-go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-
-# gitleaks
-winget install Gitleaks.Gitleaks
+irm https://mise.run/powershell | iex   # or: winget install jdx.mise
+mise trust; mise install
 ```
 
-Ensure `%USERPROFILE%\go\bin` is on your PATH (the Go installer usually adds this, but `go install` binaries land here).
-
-After installing golangci-lint, ensure `$HOME/go/bin` is on your PATH. Add the following to your shell profile (`.zshrc`, `.bashrc`, etc.):
-
-```bash
-export PATH="$PATH:$HOME/go/bin"
-```
+Corepack is not needed: mise installs pnpm itself, and Node.js no longer ships Corepack from version 25. The pre-commit hook runs `mise exec -- pnpm check`, so it uses the pinned tools whether or not mise is activated in your shell; activate mise (`mise activate`, see its [shell setup](https://mise.jdx.dev/installing-mise.html)) to get the same versions in your own commands. The [developer guide](site/docs/contributing/developer-guide.md#toolchain) explains how the pins are verified and moved.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the PR process, coverage requirements, and how to add a converter.
 
@@ -202,7 +157,7 @@ pnpm build
 # Build TypeScript packages only (no Go required)
 pnpm build:ts
 
-# Build Go CLI only (requires Go 1.26+)
+# Build Go CLI only (requires Go 1.27.4+)
 pnpm build:go
 ```
 

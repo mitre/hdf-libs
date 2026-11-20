@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { stringify as stringifyYaml } from 'yaml';
 import { buildComponentsDocument } from './components.js';
 import { EMBED_DIR, loadBundles } from './embed.js';
-import { loadProblemDocs } from './problems.js';
+import { loadProblemDocs, PROBLEM_BASE } from './problems.js';
 import { writeArtifact } from './write-artifact.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -19,6 +19,9 @@ export function main(): void {
   // RFC 9457 §3.1.1 wants a type URI to dereference to documentation, so the table that
   // documents them ships with the documents that declare them.
   writeArtifact(join(outDir, 'problems.json'), `${JSON.stringify(loadProblemDocs(), null, 2)}\n`);
+  // The type-URI base beside the table, so the site renders the URIs the API sends from
+  // what this script alone builds, without the bundled index.js.
+  writeArtifact(join(outDir, 'problem-base.json'), `${JSON.stringify({ base: PROBLEM_BASE }, null, 2)}\n`);
   // The authored YAML ships too: loadProblemDocs() defaults to its own directory, which is
   // dist/ in the published package, so without this the exported loader throws for a consumer.
   writeArtifact(join(outDir, 'problems.yaml'), readFileSync(join(HERE, 'problems.yaml'), 'utf-8'));

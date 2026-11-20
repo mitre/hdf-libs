@@ -147,6 +147,9 @@ func loadComponentBOM(fromFile, fromFormat string) (data []byte, doc map[string]
 }
 
 func runSystemAddComponent(systemFile string, files []string, fromFormat, componentName, componentNamePrefix, outputPath string, embed, generateComponentID bool) error {
+	if err := requireOutputForStdin(systemFile, outputPath, "document"); err != nil {
+		return err
+	}
 	if componentName != "" && componentNamePrefix != "" {
 		return fmt.Errorf("--component-name and --component-name-prefix are mutually exclusive")
 	}
@@ -272,6 +275,9 @@ func buildAddComponentsMultiFile(files []string, fromFormat, componentName, comp
 }
 
 func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, outputPath string, embed, addNew bool) error {
+	if err := requireOutputForStdin(systemFile, outputPath, "document"); err != nil {
+		return err
+	}
 	sysDoc, err := loadSystemDoc(systemFile)
 	if err != nil {
 		return err

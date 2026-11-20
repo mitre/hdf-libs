@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { expandCollapsed, stripTags } from '../scripts/generate-awsconfig-mappings.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA = join(__dirname, '..', 'src', 'data');
+const DATASETS = join(__dirname, '..', 'go', 'datasets', 'mappings');
 
 interface MappingRow {
   AwsConfigRuleName: string;
@@ -16,8 +16,8 @@ interface MappingRow {
   Source: string;
 }
 
-const mappings = JSON.parse(readFileSync(join(DATA, 'awsconfig-mappings.json'), 'utf-8')) as MappingRow[];
-const crosswalk = JSON.parse(readFileSync(join(DATA, 'nist-revision-crosswalk.json'), 'utf-8')) as {
+const mappings = JSON.parse(readFileSync(join(DATASETS, 'awsconfig-mappings.json'), 'utf-8')) as MappingRow[];
+const crosswalk = JSON.parse(readFileSync(join(DATASETS, 'nist-revision-crosswalk.json'), 'utf-8')) as {
   rosters: Record<string, string[]>;
 };
 

@@ -2017,8 +2017,8 @@ describe('severity resolution (§3.27.9, §3.27.10, §3.50.3)', () => {
 
   // §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
   // "none" on a failing result contradicts the definition and must not be honoured.
-  // Honouring it would put a reported failure at impact 0, which the effective-status
-  // ladder reads as notApplicable — dropping a real finding out of the denominator.
+  // Honouring it would put a reported failure in the informational band,
+  // understating a real finding's severity everywhere a consumer reads it.
   it('does not honour a none carried by a failing result', async () => {
     const r = await req('{"id":"R1","defaultConfiguration":{"level":"error"}}', '"level":"none","kind":"fail"');
     expect(r.impact).toBe(0.7);
@@ -2344,6 +2344,63 @@ describe('address locations keep only what is representable', () => {
   it('reports no location when an address carries no region', async () => {
     const out = JSON.parse(await convertSarifToHdf(doc({address: {absoluteAddress: 4198400}})));
     expect(out.baselines[0].requirements[0].results[0].codeDesc).toBe('No source location');
+  });
+});
+
+describe('null location elements', () => {
+  // Go decodes a null element of locations to an empty location; the rows match.
+  const doc = (locations: unknown[]) => JSON.stringify({
+    version: '2.1.0',
+    runs: [{
+      tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+      results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}, locations}],
+    }],
+  });
+
+  it.each([
+    ['null then a real location', [null, {physicalLocation: {artifactLocation: {uri: 'src/a.c'}, region: {startLine: 3, startColumn: 5}}}], 'URL : src/a.c LINE : 3 COLUMN : 5'],
+    ['only null', [null], 'No source location'],
+  ] as const)('%s', async (_name, locations, want) => {
+    const out = JSON.parse(await convertSarifToHdf(doc([...locations])));
+    const results = out.baselines[0].requirements[0].results;
+    expect(results).toHaveLength(1);
+    expect(results[0].codeDesc).toBe(want);
+    expectValidResults(out);
+  });
+});
+
+describe('a rule with neither description', () => {
+  // Nothing to put in the default description; it must still be present and empty.
+  it('keeps a schema-valid empty default description', async () => {
+    const out = JSON.parse(await convertSarifToHdf(JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}}],
+      }],
+    })));
+    expect(out.baselines[0].requirements[0].descriptions).toEqual([{label: 'default', data: ''}]);
+    expectValidResults(out);
+  });
+});
+
+describe('null location parts', () => {
+  // Go decodes a JSON null location part to a nil pointer and skips it; the rows match.
+  it('skips a null physicalLocation and a physicalLocation of nulls', async () => {
+    const out = JSON.parse(await convertSarifToHdf(JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', level: 'error', message: {text: 'm'}, locations: [
+          {physicalLocation: null},
+          {physicalLocation: {artifactLocation: null, region: null}},
+          {physicalLocation: {artifactLocation: {uri: 'src/a.c'}, region: {startLine: 3, startColumn: 5}}},
+        ]}],
+      }],
+    })));
+    const results = out.baselines[0].requirements[0].results;
+    expect(results).toHaveLength(1);
+    expect(results[0].codeDesc).toBe('URL : src/a.c LINE : 3 COLUMN : 5');
   });
 });
 

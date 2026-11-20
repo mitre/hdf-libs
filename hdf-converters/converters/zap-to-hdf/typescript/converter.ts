@@ -21,7 +21,7 @@ import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
 import {detectConverter} from '../../../shared/typescript/fingerprint.js';
 import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, deriveControlTypeFromTags, ensureDefaultDescription, inputChecksum, buildNistCciTags, limitArray, stripHTML, synthesizedNoResultsResult, validateInputSize, serializeHdf} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -301,6 +301,15 @@ function buildSiteRequirements(site: ZapSite, startTime: Date): EvaluatedRequire
       descriptions.push({label: 'check', data: otherInfo});
     }
 
+    // An alert is the finding and instances[] are only where it was seen, so one
+    // with none establishes nothing locatable.
+    if (results.length === 0) {
+      results.push(synthesizedNoResultsResult(
+        startTime,
+        'the alert was raised with no instances, so nothing locatable was established',
+      ));
+    }
+
     const impact = riskCodeToImpact(alert.riskcode ?? '');
 
     const req: EvaluatedRequirement = {
@@ -309,7 +318,8 @@ function buildSiteRequirements(site: ZapSite, startTime: Date): EvaluatedRequire
       impact,
       results,
       tags,
-      descriptions,
+      // An alert with only a solution still needs the schema's default entry.
+      descriptions: ensureDefaultDescription(descriptions),
       verificationMethod: VerificationMethodEnum.Automated,
     };
 

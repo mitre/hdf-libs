@@ -1,0 +1,1778 @@
+{
+  "baselines": [
+    {
+      "groups": [
+        {
+          "id": "controls/V-71849.rb",
+          "requirements": [
+            "V-71849"
+          ]
+        },
+        {
+          "id": "controls/V-71855.rb",
+          "requirements": [
+            "V-71855"
+          ]
+        },
+        {
+          "id": "controls/V-71859.rb",
+          "requirements": [
+            "V-71859"
+          ]
+        },
+        {
+          "id": "controls/V-71861.rb",
+          "requirements": [
+            "V-71861"
+          ]
+        },
+        {
+          "id": "controls/V-71863.rb",
+          "requirements": [
+            "V-71863"
+          ]
+        },
+        {
+          "id": "controls/V-71891.rb",
+          "requirements": [
+            "V-71891"
+          ]
+        },
+        {
+          "id": "controls/V-71893.rb",
+          "requirements": [
+            "V-71893"
+          ]
+        },
+        {
+          "id": "controls/V-71895.rb",
+          "requirements": [
+            "V-71895"
+          ]
+        },
+        {
+          "id": "controls/V-71897.rb",
+          "requirements": [
+            "V-71897"
+          ]
+        },
+        {
+          "id": "controls/V-71899.rb",
+          "requirements": [
+            "V-71899"
+          ]
+        },
+        {
+          "id": "controls/V-71901.rb",
+          "requirements": [
+            "V-71901"
+          ]
+        },
+        {
+          "id": "controls/V-71903.rb",
+          "requirements": [
+            "V-71903"
+          ]
+        },
+        {
+          "id": "controls/V-71905.rb",
+          "requirements": [
+            "V-71905"
+          ]
+        },
+        {
+          "id": "controls/V-71907.rb",
+          "requirements": [
+            "V-71907"
+          ]
+        },
+        {
+          "id": "controls/V-71909.rb",
+          "requirements": [
+            "V-71909"
+          ]
+        },
+        {
+          "id": "controls/V-71911.rb",
+          "requirements": [
+            "V-71911"
+          ]
+        },
+        {
+          "id": "controls/V-71913.rb",
+          "requirements": [
+            "V-71913"
+          ]
+        },
+        {
+          "id": "controls/V-71915.rb",
+          "requirements": [
+            "V-71915"
+          ]
+        },
+        {
+          "id": "controls/V-71917.rb",
+          "requirements": [
+            "V-71917"
+          ]
+        },
+        {
+          "id": "controls/V-71919.rb",
+          "requirements": [
+            "V-71919"
+          ]
+        },
+        {
+          "id": "controls/V-71921.rb",
+          "requirements": [
+            "V-71921"
+          ]
+        },
+        {
+          "id": "controls/V-71923.rb",
+          "requirements": [
+            "V-71923"
+          ]
+        },
+        {
+          "id": "controls/V-71925.rb",
+          "requirements": [
+            "V-71925"
+          ]
+        },
+        {
+          "id": "controls/V-71927.rb",
+          "requirements": [
+            "V-71927"
+          ]
+        },
+        {
+          "id": "controls/V-71929.rb",
+          "requirements": [
+            "V-71929"
+          ]
+        },
+        {
+          "id": "controls/V-71931.rb",
+          "requirements": [
+            "V-71931"
+          ]
+        },
+        {
+          "id": "controls/V-71933.rb",
+          "requirements": [
+            "V-71933"
+          ]
+        },
+        {
+          "id": "controls/V-71935.rb",
+          "requirements": [
+            "V-71935"
+          ]
+        },
+        {
+          "id": "controls/V-71937.rb",
+          "requirements": [
+            "V-71937"
+          ]
+        },
+        {
+          "id": "controls/V-71939.rb",
+          "requirements": [
+            "V-71939"
+          ]
+        },
+        {
+          "id": "controls/V-71941.rb",
+          "requirements": [
+            "V-71941"
+          ]
+        },
+        {
+          "id": "controls/V-71943.rb",
+          "requirements": [
+            "V-71943"
+          ]
+        },
+        {
+          "id": "controls/V-71945.rb",
+          "requirements": [
+            "V-71945"
+          ]
+        },
+        {
+          "id": "controls/V-71947.rb",
+          "requirements": [
+            "V-71947"
+          ]
+        },
+        {
+          "id": "controls/V-71949.rb",
+          "requirements": [
+            "V-71949"
+          ]
+        },
+        {
+          "id": "controls/V-71951.rb",
+          "requirements": [
+            "V-71951"
+          ]
+        },
+        {
+          "id": "controls/V-71953.rb",
+          "requirements": [
+            "V-71953"
+          ]
+        },
+        {
+          "id": "controls/V-71955.rb",
+          "requirements": [
+            "V-71955"
+          ]
+        },
+        {
+          "id": "controls/V-71957.rb",
+          "requirements": [
+            "V-71957"
+          ]
+        },
+        {
+          "id": "controls/V-71959.rb",
+          "requirements": [
+            "V-71959"
+          ]
+        },
+        {
+          "id": "controls/V-71961.rb",
+          "requirements": [
+            "V-71961"
+          ]
+        },
+        {
+          "id": "controls/V-71963.rb",
+          "requirements": [
+            "V-71963"
+          ]
+        },
+        {
+          "id": "controls/V-71965.rb",
+          "requirements": [
+            "V-71965"
+          ]
+        },
+        {
+          "id": "controls/V-71967.rb",
+          "requirements": [
+            "V-71967"
+          ]
+        },
+        {
+          "id": "controls/V-71969.rb",
+          "requirements": [
+            "V-71969"
+          ]
+        },
+        {
+          "id": "controls/V-71971.rb",
+          "requirements": [
+            "V-71971"
+          ]
+        },
+        {
+          "id": "controls/V-71973.rb",
+          "requirements": [
+            "V-71973"
+          ]
+        },
+        {
+          "id": "controls/V-71975.rb",
+          "requirements": [
+            "V-71975"
+          ]
+        },
+        {
+          "id": "controls/V-71977.rb",
+          "requirements": [
+            "V-71977"
+          ]
+        },
+        {
+          "id": "controls/V-71979.rb",
+          "requirements": [
+            "V-71979"
+          ]
+        },
+        {
+          "id": "controls/V-71981.rb",
+          "requirements": [
+            "V-71981"
+          ]
+        },
+        {
+          "id": "controls/V-71983.rb",
+          "requirements": [
+            "V-71983"
+          ]
+        },
+        {
+          "id": "controls/V-71985.rb",
+          "requirements": [
+            "V-71985"
+          ]
+        },
+        {
+          "id": "controls/V-71987.rb",
+          "requirements": [
+            "V-71987"
+          ]
+        },
+        {
+          "id": "controls/V-71989.rb",
+          "requirements": [
+            "V-71989"
+          ]
+        },
+        {
+          "id": "controls/V-71991.rb",
+          "requirements": [
+            "V-71991"
+          ]
+        },
+        {
+          "id": "controls/V-71993.rb",
+          "requirements": [
+            "V-71993"
+          ]
+        },
+        {
+          "id": "controls/V-71995.rb",
+          "requirements": [
+            "V-71995"
+          ]
+        },
+        {
+          "id": "controls/V-71997.rb",
+          "requirements": [
+            "V-71997"
+          ]
+        },
+        {
+          "id": "controls/V-71999.rb",
+          "requirements": [
+            "V-71999"
+          ]
+        },
+        {
+          "id": "controls/V-72001.rb",
+          "requirements": [
+            "V-72001"
+          ]
+        },
+        {
+          "id": "controls/V-72003.rb",
+          "requirements": [
+            "V-72003"
+          ]
+        },
+        {
+          "id": "controls/V-72005.rb",
+          "requirements": [
+            "V-72005"
+          ]
+        },
+        {
+          "id": "controls/V-72007.rb",
+          "requirements": [
+            "V-72007"
+          ]
+        },
+        {
+          "id": "controls/V-72009.rb",
+          "requirements": [
+            "V-72009"
+          ]
+        },
+        {
+          "id": "controls/V-72011.rb",
+          "requirements": [
+            "V-72011"
+          ]
+        },
+        {
+          "id": "controls/V-72013.rb",
+          "requirements": [
+            "V-72013"
+          ]
+        },
+        {
+          "id": "controls/V-72015.rb",
+          "requirements": [
+            "V-72015"
+          ]
+        },
+        {
+          "id": "controls/V-72017.rb",
+          "requirements": [
+            "V-72017"
+          ]
+        },
+        {
+          "id": "controls/V-72019.rb",
+          "requirements": [
+            "V-72019"
+          ]
+        },
+        {
+          "id": "controls/V-72021.rb",
+          "requirements": [
+            "V-72021"
+          ]
+        },
+        {
+          "id": "controls/V-72023.rb",
+          "requirements": [
+            "V-72023"
+          ]
+        },
+        {
+          "id": "controls/V-72025.rb",
+          "requirements": [
+            "V-72025"
+          ]
+        },
+        {
+          "id": "controls/V-72027.rb",
+          "requirements": [
+            "V-72027"
+          ]
+        },
+        {
+          "id": "controls/V-72029.rb",
+          "requirements": [
+            "V-72029"
+          ]
+        },
+        {
+          "id": "controls/V-72031.rb",
+          "requirements": [
+            "V-72031"
+          ]
+        },
+        {
+          "id": "controls/V-72033.rb",
+          "requirements": [
+            "V-72033"
+          ]
+        },
+        {
+          "id": "controls/V-72035.rb",
+          "requirements": [
+            "V-72035"
+          ]
+        },
+        {
+          "id": "controls/V-72037.rb",
+          "requirements": [
+            "V-72037"
+          ]
+        },
+        {
+          "id": "controls/V-72039.rb",
+          "requirements": [
+            "V-72039"
+          ]
+        },
+        {
+          "id": "controls/V-72041.rb",
+          "requirements": [
+            "V-72041"
+          ]
+        },
+        {
+          "id": "controls/V-72043.rb",
+          "requirements": [
+            "V-72043"
+          ]
+        },
+        {
+          "id": "controls/V-72045.rb",
+          "requirements": [
+            "V-72045"
+          ]
+        },
+        {
+          "id": "controls/V-72047.rb",
+          "requirements": [
+            "V-72047"
+          ]
+        },
+        {
+          "id": "controls/V-72049.rb",
+          "requirements": [
+            "V-72049"
+          ]
+        },
+        {
+          "id": "controls/V-72051.rb",
+          "requirements": [
+            "V-72051"
+          ]
+        },
+        {
+          "id": "controls/V-72053.rb",
+          "requirements": [
+            "V-72053"
+          ]
+        },
+        {
+          "id": "controls/V-72055.rb",
+          "requirements": [
+            "V-72055"
+          ]
+        },
+        {
+          "id": "controls/V-72057.rb",
+          "requirements": [
+            "V-72057"
+          ]
+        },
+        {
+          "id": "controls/V-72059.rb",
+          "requirements": [
+            "V-72059"
+          ]
+        },
+        {
+          "id": "controls/V-72061.rb",
+          "requirements": [
+            "V-72061"
+          ]
+        },
+        {
+          "id": "controls/V-72063.rb",
+          "requirements": [
+            "V-72063"
+          ]
+        },
+        {
+          "id": "controls/V-72065.rb",
+          "requirements": [
+            "V-72065"
+          ]
+        },
+        {
+          "id": "controls/V-72067.rb",
+          "requirements": [
+            "V-72067"
+          ]
+        },
+        {
+          "id": "controls/V-72069.rb",
+          "requirements": [
+            "V-72069"
+          ]
+        },
+        {
+          "id": "controls/V-72071.rb",
+          "requirements": [
+            "V-72071"
+          ]
+        },
+        {
+          "id": "controls/V-72073.rb",
+          "requirements": [
+            "V-72073"
+          ]
+        },
+        {
+          "id": "controls/V-72075.rb",
+          "requirements": [
+            "V-72075"
+          ]
+        },
+        {
+          "id": "controls/V-72077.rb",
+          "requirements": [
+            "V-72077"
+          ]
+        },
+        {
+          "id": "controls/V-72079.rb",
+          "requirements": [
+            "V-72079"
+          ]
+        },
+        {
+          "id": "controls/V-72081.rb",
+          "requirements": [
+            "V-72081"
+          ]
+        },
+        {
+          "id": "controls/V-72083.rb",
+          "requirements": [
+            "V-72083"
+          ]
+        },
+        {
+          "id": "controls/V-72085.rb",
+          "requirements": [
+            "V-72085"
+          ]
+        },
+        {
+          "id": "controls/V-72087.rb",
+          "requirements": [
+            "V-72087"
+          ]
+        },
+        {
+          "id": "controls/V-72089.rb",
+          "requirements": [
+            "V-72089"
+          ]
+        },
+        {
+          "id": "controls/V-72091.rb",
+          "requirements": [
+            "V-72091"
+          ]
+        },
+        {
+          "id": "controls/V-72093.rb",
+          "requirements": [
+            "V-72093"
+          ]
+        },
+        {
+          "id": "controls/V-72095.rb",
+          "requirements": [
+            "V-72095"
+          ]
+        },
+        {
+          "id": "controls/V-72097.rb",
+          "requirements": [
+            "V-72097"
+          ]
+        },
+        {
+          "id": "controls/V-72099.rb",
+          "requirements": [
+            "V-72099"
+          ]
+        },
+        {
+          "id": "controls/V-72101.rb",
+          "requirements": [
+            "V-72101"
+          ]
+        },
+        {
+          "id": "controls/V-72103.rb",
+          "requirements": [
+            "V-72103"
+          ]
+        },
+        {
+          "id": "controls/V-72105.rb",
+          "requirements": [
+            "V-72105"
+          ]
+        },
+        {
+          "id": "controls/V-72107.rb",
+          "requirements": [
+            "V-72107"
+          ]
+        },
+        {
+          "id": "controls/V-72109.rb",
+          "requirements": [
+            "V-72109"
+          ]
+        },
+        {
+          "id": "controls/V-72111.rb",
+          "requirements": [
+            "V-72111"
+          ]
+        },
+        {
+          "id": "controls/V-72113.rb",
+          "requirements": [
+            "V-72113"
+          ]
+        },
+        {
+          "id": "controls/V-72115.rb",
+          "requirements": [
+            "V-72115"
+          ]
+        },
+        {
+          "id": "controls/V-72117.rb",
+          "requirements": [
+            "V-72117"
+          ]
+        },
+        {
+          "id": "controls/V-72119.rb",
+          "requirements": [
+            "V-72119"
+          ]
+        },
+        {
+          "id": "controls/V-72121.rb",
+          "requirements": [
+            "V-72121"
+          ]
+        },
+        {
+          "id": "controls/V-72123.rb",
+          "requirements": [
+            "V-72123"
+          ]
+        },
+        {
+          "id": "controls/V-72125.rb",
+          "requirements": [
+            "V-72125"
+          ]
+        },
+        {
+          "id": "controls/V-72127.rb",
+          "requirements": [
+            "V-72127"
+          ]
+        },
+        {
+          "id": "controls/V-72129.rb",
+          "requirements": [
+            "V-72129"
+          ]
+        },
+        {
+          "id": "controls/V-72131.rb",
+          "requirements": [
+            "V-72131"
+          ]
+        },
+        {
+          "id": "controls/V-72133.rb",
+          "requirements": [
+            "V-72133"
+          ]
+        },
+        {
+          "id": "controls/V-72135.rb",
+          "requirements": [
+            "V-72135"
+          ]
+        },
+        {
+          "id": "controls/V-72137.rb",
+          "requirements": [
+            "V-72137"
+          ]
+        },
+        {
+          "id": "controls/V-72139.rb",
+          "requirements": [
+            "V-72139"
+          ]
+        },
+        {
+          "id": "controls/V-72141.rb",
+          "requirements": [
+            "V-72141"
+          ]
+        },
+        {
+          "id": "controls/V-72143.rb",
+          "requirements": [
+            "V-72143"
+          ]
+        },
+        {
+          "id": "controls/V-72145.rb",
+          "requirements": [
+            "V-72145"
+          ]
+        },
+        {
+          "id": "controls/V-72147.rb",
+          "requirements": [
+            "V-72147"
+          ]
+        },
+        {
+          "id": "controls/V-72149.rb",
+          "requirements": [
+            "V-72149"
+          ]
+        },
+        {
+          "id": "controls/V-72151.rb",
+          "requirements": [
+            "V-72151"
+          ]
+        },
+        {
+          "id": "controls/V-72153.rb",
+          "requirements": [
+            "V-72153"
+          ]
+        },
+        {
+          "id": "controls/V-72155.rb",
+          "requirements": [
+            "V-72155"
+          ]
+        },
+        {
+          "id": "controls/V-72157.rb",
+          "requirements": [
+            "V-72157"
+          ]
+        },
+        {
+          "id": "controls/V-72159.rb",
+          "requirements": [
+            "V-72159"
+          ]
+        },
+        {
+          "id": "controls/V-72161.rb",
+          "requirements": [
+            "V-72161"
+          ]
+        },
+        {
+          "id": "controls/V-72163.rb",
+          "requirements": [
+            "V-72163"
+          ]
+        },
+        {
+          "id": "controls/V-72165.rb",
+          "requirements": [
+            "V-72165"
+          ]
+        },
+        {
+          "id": "controls/V-72167.rb",
+          "requirements": [
+            "V-72167"
+          ]
+        },
+        {
+          "id": "controls/V-72169.rb",
+          "requirements": [
+            "V-72169"
+          ]
+        },
+        {
+          "id": "controls/V-72171.rb",
+          "requirements": [
+            "V-72171"
+          ]
+        },
+        {
+          "id": "controls/V-72173.rb",
+          "requirements": [
+            "V-72173"
+          ]
+        },
+        {
+          "id": "controls/V-72175.rb",
+          "requirements": [
+            "V-72175"
+          ]
+        },
+        {
+          "id": "controls/V-72177.rb",
+          "requirements": [
+            "V-72177"
+          ]
+        },
+        {
+          "id": "controls/V-72179.rb",
+          "requirements": [
+            "V-72179"
+          ]
+        },
+        {
+          "id": "controls/V-72181.rb",
+          "requirements": [
+            "V-72181"
+          ]
+        },
+        {
+          "id": "controls/V-72183.rb",
+          "requirements": [
+            "V-72183"
+          ]
+        },
+        {
+          "id": "controls/V-72185.rb",
+          "requirements": [
+            "V-72185"
+          ]
+        },
+        {
+          "id": "controls/V-72187.rb",
+          "requirements": [
+            "V-72187"
+          ]
+        },
+        {
+          "id": "controls/V-72189.rb",
+          "requirements": [
+            "V-72189"
+          ]
+        },
+        {
+          "id": "controls/V-72191.rb",
+          "requirements": [
+            "V-72191"
+          ]
+        },
+        {
+          "id": "controls/V-72193.rb",
+          "requirements": [
+            "V-72193"
+          ]
+        },
+        {
+          "id": "controls/V-72195.rb",
+          "requirements": [
+            "V-72195"
+          ]
+        },
+        {
+          "id": "controls/V-72197.rb",
+          "requirements": [
+            "V-72197"
+          ]
+        },
+        {
+          "id": "controls/V-72199.rb",
+          "requirements": [
+            "V-72199"
+          ]
+        },
+        {
+          "id": "controls/V-72201.rb",
+          "requirements": [
+            "V-72201"
+          ]
+        },
+        {
+          "id": "controls/V-72203.rb",
+          "requirements": [
+            "V-72203"
+          ]
+        },
+        {
+          "id": "controls/V-72205.rb",
+          "requirements": [
+            "V-72205"
+          ]
+        },
+        {
+          "id": "controls/V-72207.rb",
+          "requirements": [
+            "V-72207"
+          ]
+        },
+        {
+          "id": "controls/V-72209.rb",
+          "requirements": [
+            "V-72209"
+          ]
+        },
+        {
+          "id": "controls/V-72211.rb",
+          "requirements": [
+            "V-72211"
+          ]
+        },
+        {
+          "id": "controls/V-72213.rb",
+          "requirements": [
+            "V-72213"
+          ]
+        },
+        {
+          "id": "controls/V-72215.rb",
+          "requirements": [
+            "V-72215"
+          ]
+        },
+        {
+          "id": "controls/V-72217.rb",
+          "requirements": [
+            "V-72217"
+          ]
+        },
+        {
+          "id": "controls/V-72219.rb",
+          "requirements": [
+            "V-72219"
+          ]
+        },
+        {
+          "id": "controls/V-72221.rb",
+          "requirements": [
+            "V-72221"
+          ]
+        },
+        {
+          "id": "controls/V-72223.rb",
+          "requirements": [
+            "V-72223"
+          ]
+        },
+        {
+          "id": "controls/V-72225.rb",
+          "requirements": [
+            "V-72225"
+          ]
+        },
+        {
+          "id": "controls/V-72227.rb",
+          "requirements": [
+            "V-72227"
+          ]
+        },
+        {
+          "id": "controls/V-72229.rb",
+          "requirements": [
+            "V-72229"
+          ]
+        },
+        {
+          "id": "controls/V-72231.rb",
+          "requirements": [
+            "V-72231"
+          ]
+        },
+        {
+          "id": "controls/V-72233.rb",
+          "requirements": [
+            "V-72233"
+          ]
+        },
+        {
+          "id": "controls/V-72235.rb",
+          "requirements": [
+            "V-72235"
+          ]
+        },
+        {
+          "id": "controls/V-72237.rb",
+          "requirements": [
+            "V-72237"
+          ]
+        },
+        {
+          "id": "controls/V-72239.rb",
+          "requirements": [
+            "V-72239"
+          ]
+        },
+        {
+          "id": "controls/V-72241.rb",
+          "requirements": [
+            "V-72241"
+          ]
+        },
+        {
+          "id": "controls/V-72243.rb",
+          "requirements": [
+            "V-72243"
+          ]
+        },
+        {
+          "id": "controls/V-72245.rb",
+          "requirements": [
+            "V-72245"
+          ]
+        },
+        {
+          "id": "controls/V-72247.rb",
+          "requirements": [
+            "V-72247"
+          ]
+        },
+        {
+          "id": "controls/V-72249.rb",
+          "requirements": [
+            "V-72249"
+          ]
+        },
+        {
+          "id": "controls/V-72251.rb",
+          "requirements": [
+            "V-72251"
+          ]
+        },
+        {
+          "id": "controls/V-72253.rb",
+          "requirements": [
+            "V-72253"
+          ]
+        },
+        {
+          "id": "controls/V-72255.rb",
+          "requirements": [
+            "V-72255"
+          ]
+        },
+        {
+          "id": "controls/V-72257.rb",
+          "requirements": [
+            "V-72257"
+          ]
+        },
+        {
+          "id": "controls/V-72259.rb",
+          "requirements": [
+            "V-72259"
+          ]
+        },
+        {
+          "id": "controls/V-72261.rb",
+          "requirements": [
+            "V-72261"
+          ]
+        },
+        {
+          "id": "controls/V-72263.rb",
+          "requirements": [
+            "V-72263"
+          ]
+        },
+        {
+          "id": "controls/V-72265.rb",
+          "requirements": [
+            "V-72265"
+          ]
+        },
+        {
+          "id": "controls/V-72267.rb",
+          "requirements": [
+            "V-72267"
+          ]
+        },
+        {
+          "id": "controls/V-72269.rb",
+          "requirements": [
+            "V-72269"
+          ]
+        },
+        {
+          "id": "controls/V-72271.rb",
+          "requirements": [
+            "V-72271"
+          ]
+        },
+        {
+          "id": "controls/V-72273.rb",
+          "requirements": [
+            "V-72273"
+          ]
+        },
+        {
+          "id": "controls/V-72275.rb",
+          "requirements": [
+            "V-72275"
+          ]
+        },
+        {
+          "id": "controls/V-72277.rb",
+          "requirements": [
+            "V-72277"
+          ]
+        },
+        {
+          "id": "controls/V-72279.rb",
+          "requirements": [
+            "V-72279"
+          ]
+        },
+        {
+          "id": "controls/V-72281.rb",
+          "requirements": [
+            "V-72281"
+          ]
+        },
+        {
+          "id": "controls/V-72283.rb",
+          "requirements": [
+            "V-72283"
+          ]
+        },
+        {
+          "id": "controls/V-72285.rb",
+          "requirements": [
+            "V-72285"
+          ]
+        },
+        {
+          "id": "controls/V-72287.rb",
+          "requirements": [
+            "V-72287"
+          ]
+        },
+        {
+          "id": "controls/V-72289.rb",
+          "requirements": [
+            "V-72289"
+          ]
+        },
+        {
+          "id": "controls/V-72291.rb",
+          "requirements": [
+            "V-72291"
+          ]
+        },
+        {
+          "id": "controls/V-72293.rb",
+          "requirements": [
+            "V-72293"
+          ]
+        },
+        {
+          "id": "controls/V-72295.rb",
+          "requirements": [
+            "V-72295"
+          ]
+        },
+        {
+          "id": "controls/V-72297.rb",
+          "requirements": [
+            "V-72297"
+          ]
+        },
+        {
+          "id": "controls/V-72299.rb",
+          "requirements": [
+            "V-72299"
+          ]
+        },
+        {
+          "id": "controls/V-72301.rb",
+          "requirements": [
+            "V-72301"
+          ]
+        },
+        {
+          "id": "controls/V-72303.rb",
+          "requirements": [
+            "V-72303"
+          ]
+        },
+        {
+          "id": "controls/V-72305.rb",
+          "requirements": [
+            "V-72305"
+          ]
+        },
+        {
+          "id": "controls/V-72307.rb",
+          "requirements": [
+            "V-72307"
+          ]
+        },
+        {
+          "id": "controls/V-72309.rb",
+          "requirements": [
+            "V-72309"
+          ]
+        },
+        {
+          "id": "controls/V-72311.rb",
+          "requirements": [
+            "V-72311"
+          ]
+        },
+        {
+          "id": "controls/V-72313.rb",
+          "requirements": [
+            "V-72313"
+          ]
+        },
+        {
+          "id": "controls/V-72315.rb",
+          "requirements": [
+            "V-72315"
+          ]
+        },
+        {
+          "id": "controls/V-72317.rb",
+          "requirements": [
+            "V-72317"
+          ]
+        },
+        {
+          "id": "controls/V-72319.rb",
+          "requirements": [
+            "V-72319"
+          ]
+        },
+        {
+          "id": "controls/V-72417.rb",
+          "requirements": [
+            "V-72417"
+          ]
+        },
+        {
+          "id": "controls/V-72427.rb",
+          "requirements": [
+            "V-72427"
+          ]
+        },
+        {
+          "id": "controls/V-72433.rb",
+          "requirements": [
+            "V-72433"
+          ]
+        },
+        {
+          "id": "controls/V-72435.rb",
+          "requirements": [
+            "V-72435"
+          ]
+        },
+        {
+          "id": "controls/V-73155.rb",
+          "requirements": [
+            "V-73155"
+          ]
+        },
+        {
+          "id": "controls/V-73157.rb",
+          "requirements": [
+            "V-73157"
+          ]
+        },
+        {
+          "id": "controls/V-73159.rb",
+          "requirements": [
+            "V-73159"
+          ]
+        },
+        {
+          "id": "controls/V-73161.rb",
+          "requirements": [
+            "V-73161"
+          ]
+        },
+        {
+          "id": "controls/V-73163.rb",
+          "requirements": [
+            "V-73163"
+          ]
+        },
+        {
+          "id": "controls/V-73165.rb",
+          "requirements": [
+            "V-73165"
+          ]
+        },
+        {
+          "id": "controls/V-73167.rb",
+          "requirements": [
+            "V-73167"
+          ]
+        },
+        {
+          "id": "controls/V-73171.rb",
+          "requirements": [
+            "V-73171"
+          ]
+        },
+        {
+          "id": "controls/V-73173.rb",
+          "requirements": [
+            "V-73173"
+          ]
+        },
+        {
+          "id": "controls/V-73175.rb",
+          "requirements": [
+            "V-73175"
+          ]
+        },
+        {
+          "id": "controls/V-73177.rb",
+          "requirements": [
+            "V-73177"
+          ]
+        },
+        {
+          "id": "controls/V-77819.rb",
+          "requirements": [
+            "V-77819"
+          ]
+        },
+        {
+          "id": "controls/V-77821.rb",
+          "requirements": [
+            "V-77821"
+          ]
+        },
+        {
+          "id": "controls/V-77823.rb",
+          "requirements": [
+            "V-77823"
+          ]
+        },
+        {
+          "id": "controls/V-77825.rb",
+          "requirements": [
+            "V-77825"
+          ]
+        },
+        {
+          "id": "controls/V-78995.rb",
+          "requirements": [
+            "V-78995"
+          ]
+        },
+        {
+          "id": "controls/V-78997.rb",
+          "requirements": [
+            "V-78997"
+          ]
+        },
+        {
+          "id": "controls/V-78999.rb",
+          "requirements": [
+            "V-78999"
+          ]
+        },
+        {
+          "id": "controls/V-79001.rb",
+          "requirements": [
+            "V-79001"
+          ]
+        }
+      ],
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Verify the system does not have unauthorized IP tunnels\nconfigured.\n\nCheck to see if \"libreswan\" is installed with the following command:\n\n# yum list installed libreswan\nopenswan-2.6.32-27.el6.x86_64\n\nIf \"libreswan\" is installed, check to see if the \"IPsec\" service is active\nwith the following command:\n\n# systemctl status ipsec\nipsec.service - Internet Key Exchange (IKE) Protocol Daemon for IPsec\n   Loaded: loaded (/usr/lib/systemd/system/ipsec.service; disabled)\n   Active: inactive (dead)\n\nIf the \"IPsec\" service is active, check to see if any tunnels are configured\nin \"/etc/ipsec.conf\" and \"/etc/ipsec.d/\" with the following commands:\n\n# grep -i conn /etc/ipsec.conf\nconn mytunnel\n\n# grep -i conn /etc/ipsec.d/*.conf\nconn mytunnel\n\nIf there are indications that a \"conn\" parameter is configured for a tunnel,\nask the System Administrator if the tunnel is documented with the ISSO. If\n\"libreswan\" is installed, \"IPsec\" is active, and an undocumented tunnel is\nactive, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "IP tunneling mechanisms can be used to bypass network filtering. If\ntunneling is required, it must be documented with the Information System\nSecurity Officer (ISSO).",
+              "label": "default"
+            },
+            {
+              "data": "Remove all unapproved tunnels from the system, or document them\nwith the ISSO.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "The system does not have libreswan installed or the ipsec.service isn't running",
+              "message": "The system does not have libreswan installed or the ipsec.service isn't running, this requirement is Not Applicable.",
+              "runTime": 0.000092584,
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notApplicable"
+            }
+          ],
+          "sourceLocation": {
+            "line": 13,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-72317.rb"
+          },
+          "id": "V-72317",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "documentable": false,
+            "fix_id": "F-78671r1_fix",
+            "gid": "V-72317",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": [
+              "CM-6 b",
+              "Rev_4"
+            ],
+            "rid": "SV-86941r1_rule",
+            "stig_id": "RHEL-07-040820",
+            "subsystems": [
+              "libreswan",
+              "ipsec"
+            ]
+          },
+          "code": "control \"V-72317\" do\n  title \"The system must not have unauthorized IP tunnels configured.\"\n  desc  \"IP tunneling mechanisms can be used to bypass network filtering. If\ntunneling is required, it must be documented with the Information System\nSecurity Officer (ISSO).\"\nif !package('libreswan').installed? || !service('ipsec.service').running?\n  impact 0.0\nelse\n  impact 0.5\nend\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-72317\"\n  tag \"rid\": \"SV-86941r1_rule\"\n  tag \"stig_id\": \"RHEL-07-040820\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['libreswan', 'ipsec']\n  desc \"check\", \"Verify the system does not have unauthorized IP tunnels\nconfigured.\n\nCheck to see if \\\"libreswan\\\" is installed with the following command:\n\n# yum list installed libreswan\nopenswan-2.6.32-27.el6.x86_64\n\nIf \\\"libreswan\\\" is installed, check to see if the \\\"IPsec\\\" service is active\nwith the following command:\n\n# systemctl status ipsec\nipsec.service - Internet Key Exchange (IKE) Protocol Daemon for IPsec\n   Loaded: loaded (/usr/lib/systemd/system/ipsec.service; disabled)\n   Active: inactive (dead)\n\nIf the \\\"IPsec\\\" service is active, check to see if any tunnels are configured\nin \\\"/etc/ipsec.conf\\\" and \\\"/etc/ipsec.d/\\\" with the following commands:\n\n# grep -i conn /etc/ipsec.conf\nconn mytunnel\n\n# grep -i conn /etc/ipsec.d/*.conf\nconn mytunnel\n\nIf there are indications that a \\\"conn\\\" parameter is configured for a tunnel,\nask the System Administrator if the tunnel is documented with the ISSO. If\n\\\"libreswan\\\" is installed, \\\"IPsec\\\" is active, and an undocumented tunnel is\nactive, this is a finding.\"\n  desc \"fix\", \"Remove all unapproved tunnels from the system, or document them\nwith the ISSO.\"\n  tag \"fix_id\": \"F-78671r1_fix\"\n\n  if package('libreswan').installed? \u0026\u0026 service('ipsec.service').running?\n    processed = []\n    to_process = ['/etc/ipsec.conf']\n\n    while !to_process.empty?\n      in_process = to_process.pop\n      next if processed.include? in_process\n      processed.push in_process\n\n      to_process.concat(\n        command(\"grep -E '^\\\\s*include\\\\s+' #{in_process} | sed 's/^[[:space:]]*include[[:space:]]*//g'\").\n          stdout.strip.split(%r{\\s*\\n+\\s*}).\n          map { |f| f.start_with?('/') ? f : File.join(File.dirname(in_process), f) }.\n          map { |f|\n            dir = f.sub(%r{[^/]*[\\*\\?\\[].*$}, '') # gets the longest ancestor path which doesn't contain wildcards\n            command(\"find #{dir} -wholename '#{f}'\").stdout.strip.split(\"\\n\")\n          }.\n          flatten.\n          select { |f| file(f).file? }\n      )\n    end\n\n    conn_grep = processed.map do |conf|\n      command(\"grep -E '^\\\\s*conn\\\\s+' #{conf}\").\n        stdout.strip.split(%r{\\s*\\n\\s*})\n    end.flatten\n\n    describe conn_grep do\n      it { should all(be_in approved_tunnels) }\n    end\n  else\n    describe \"The system does not have libreswan installed or the ipsec.service isn't running\" do\n      skip \"The system does not have libreswan installed or the ipsec.service isn't running, this requirement is Not Applicable.\"\n    end\n  end\nend\n",
+          "controlType": "operational",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Verify that a system using SNMP is not using default community\nstrings.\n\nCheck to see if the \"/etc/snmp/snmpd.conf\" file exists with the following\ncommand:\n\n# ls -al /etc/snmp/snmpd.conf\n -rw-------   1 root root      52640 Mar 12 11:08 snmpd.conf\n\nIf the file does not exist, this is Not Applicable.\n\nIf the file does exist, check for the default community strings with the\nfollowing commands:\n\n# grep public /etc/snmp/snmpd.conf\n# grep private /etc/snmp/snmpd.conf\n\nIf either of these commands returns any output, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "Whether active or not, default Simple Network Management Protocol\n(SNMP) community strings must be changed to maintain security. If the service\nis running with the default authenticators, anyone can gather data about the\nsystem and the network and use the information to potentially compromise the\nintegrity of the system or network(s). It is highly recommended that SNMP\nversion 3 user authentication and message encryption be used in place of the\nversion 2 community strings.",
+              "label": "default"
+            },
+            {
+              "data": "If the \"/etc/snmp/snmpd.conf\" file exists, modify any lines\nthat contain a community string value of \"public\" or \"private\" to another\nstring value.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "The `snmpd.conf` does not exist",
+              "message": "The snmpd.conf file does not exist, this control is Not Applicable",
+              "runTime": 0.000031842,
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notApplicable"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-72313.rb"
+          },
+          "id": "V-72313",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "documentable": false,
+            "fix_id": "F-78667r1_fix",
+            "gid": "V-72313",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": [
+              "CM-6 b",
+              "Rev_4"
+            ],
+            "rid": "SV-86937r1_rule",
+            "stig_id": "RHEL-07-040800",
+            "subsystems": [
+              "snmp"
+            ]
+          },
+          "code": "control \"V-72313\" do\n  title \"SNMP community strings must be changed from the default.\"\n  desc  \"Whether active or not, default Simple Network Management Protocol\n(SNMP) community strings must be changed to maintain security. If the service\nis running with the default authenticators, anyone can gather data about the\nsystem and the network and use the information to potentially compromise the\nintegrity of the system or network(s). It is highly recommended that SNMP\nversion 3 user authentication and message encryption be used in place of the\nversion 2 community strings.\"\n  if file('/etc/snmp/snmpd.conf').exist?\n    impact 0.7\n  else\n    impact 0.0\n  end\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-72313\"\n  tag \"rid\": \"SV-86937r1_rule\"\n  tag \"stig_id\": \"RHEL-07-040800\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['snmp']\n  desc \"check\", \"Verify that a system using SNMP is not using default community\nstrings.\n\nCheck to see if the \\\"/etc/snmp/snmpd.conf\\\" file exists with the following\ncommand:\n\n# ls -al /etc/snmp/snmpd.conf\n -rw-------   1 root root      52640 Mar 12 11:08 snmpd.conf\n\nIf the file does not exist, this is Not Applicable.\n\nIf the file does exist, check for the default community strings with the\nfollowing commands:\n\n# grep public /etc/snmp/snmpd.conf\n# grep private /etc/snmp/snmpd.conf\n\nIf either of these commands returns any output, this is a finding.\"\n  desc \"fix\", \"If the \\\"/etc/snmp/snmpd.conf\\\" file exists, modify any lines\nthat contain a community string value of \\\"public\\\" or \\\"private\\\" to another\nstring value.\"\n  tag \"fix_id\": \"F-78667r1_fix\"\n\n  if file('/etc/snmp/snmpd.conf').exist?\n    processed = []\n    to_process = ['/etc/snmp/snmpd.conf']\n\n    while !to_process.empty?\n      in_process = to_process.pop\n      next if processed.include? in_process\n      processed.push in_process\n\n      if file(in_process).directory?\n        to_process.concat(\n          command(\"find #{in_process} -maxdepth 1 -mindepth 1 -name '*.conf'\").\n            stdout.strip.split(\"\\n\").\n            select { |f| file(f).file? }\n        )\n      elsif file(in_process).file?\n        to_process.concat(\n          command(\"grep -E '^\\\\s*includeFile\\\\s+' #{in_process} | sed 's/^[[:space:]]*includeFile[[:space:]]*//g'\").\n            stdout.strip.split(%r{\\n+}).\n            map { |f| f.start_with?('/') ? f : File.join(File.dirname(in_process), f) }.\n            select { |f| file(f).file? }\n        )\n        to_process.concat(\n          command(\"grep -E '^\\\\s*includeDir\\\\s+' #{in_process} | sed 's/^[[:space:]]*includeDir[[:space:]]*//g'\").\n            stdout.strip.split(%r{\\n+}).\n            map { |f| f.start_with?('/') ? f : File.join('/', f) }. # relative dirs are treated as absolute\n            select { |f| file(f).directory? }\n        )\n      end\n    end\n\n    config_files = processed.select { |f| file(f).file? }\n\n    config_files.each do |config|\n      describe file(config) do\n        its('content') { should_not match %r{^[^#]*(public|private)} }\n      end\n    end\n  else\n    describe \"The `snmpd.conf` does not exist\" do\n      skip \"The snmpd.conf file does not exist, this control is Not Applicable\"\n    end\n  end\nend\n",
+          "controlType": "operational",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Verify the TFTP daemon is configured to operate in secure mode.\n\nCheck to see if a TFTP server has been installed with the following commands:\n\n# yum list installed | grep tftp-server\ntftp-server.x86_64    x.x-x.el7    rhel-7-server-rpms\n\nIf a TFTP server is not installed, this is Not Applicable.\n\nIf a TFTP server is installed, check for the server arguments with the\nfollowing command:\n\n# grep server_args /etc/xinetd.d/tftp\nserver_args = -s /var/lib/tftpboot\n\nIf the \"server_args\" line does not have a \"-s\" option and a subdirectory is\nnot assigned, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "Restricting TFTP to a specific directory prevents remote users from\ncopying, transferring, or overwriting system files.",
+              "label": "default"
+            },
+            {
+              "data": "Configure the TFTP daemon to operate in secure mode by adding the\nfollowing line to \"/etc/xinetd.d/tftp\" (or modify the line to have the\nrequired value):\n\nserver_args = -s /var/lib/tftpboot",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "The TFTP package is not installed",
+              "message": "If a TFTP server is not installed, this is Not Applicable.",
+              "runTime": 0.000005677,
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Synthesized from the source impact of 0: InSpec scores a control it considers inapplicable 0 and reports no pass or fail for it",
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "notApplicable"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-72305.rb"
+          },
+          "id": "V-72305",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "documentable": false,
+            "fix_id": "F-78659r1_fix",
+            "gid": "V-72305",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": [
+              "CM-6 b",
+              "Rev_4"
+            ],
+            "rid": "SV-86929r2_rule",
+            "stig_id": "RHEL-07-040720",
+            "subsystems": [
+              "tftp"
+            ]
+          },
+          "code": "control \"V-72305\" do\n  title \"If the Trivial File Transfer Protocol (TFTP) server is required, the\nTFTP daemon must be configured to operate in secure mode.\"\n  desc  \"Restricting TFTP to a specific directory prevents remote users from\ncopying, transferring, or overwriting system files.\"\n  if package('tftp-server').installed?\n    impact 0.5\n  else\n    impact 0.0\n  end\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-72305\"\n  tag \"rid\": \"SV-86929r2_rule\"\n  tag \"stig_id\": \"RHEL-07-040720\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['tftp']\n  desc \"check\", \"Verify the TFTP daemon is configured to operate in secure mode.\n\nCheck to see if a TFTP server has been installed with the following commands:\n\n# yum list installed | grep tftp-server\ntftp-server.x86_64    x.x-x.el7    rhel-7-server-rpms\n\nIf a TFTP server is not installed, this is Not Applicable.\n\nIf a TFTP server is installed, check for the server arguments with the\nfollowing command:\n\n# grep server_args /etc/xinetd.d/tftp\nserver_args = -s /var/lib/tftpboot\n\nIf the \\\"server_args\\\" line does not have a \\\"-s\\\" option and a subdirectory is\nnot assigned, this is a finding.\"\n  desc \"fix\", \"Configure the TFTP daemon to operate in secure mode by adding the\nfollowing line to \\\"/etc/xinetd.d/tftp\\\" (or modify the line to have the\nrequired value):\n\nserver_args = -s /var/lib/tftpboot\"\n  tag \"fix_id\": \"F-78659r1_fix\"\n\n  if package('tftp-server').installed?\n    describe command('grep server_args /etc/xinetd.d/tftp') do\n      its('stdout.strip') { should match %r{^\\s*server_args\\s+=\\s+(-s|--secure)\\s(\\/\\S+)$} }\n    end\n  else\n    describe \"The TFTP package is not installed\" do\n      skip \"If a TFTP server is not installed, this is Not Applicable.\"\n    end\n  end\nend\n",
+          "controlType": "operational",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \"kernel.randomize_va_space\" does not have a value of \"2\", this is a\nfinding.",
+              "label": "check"
+            },
+            {
+              "data": "Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\"/etc/sysctl.conf\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Kernel Parameter kernel.randomize_va_space value should eq 2",
+              "runTime": 0.015331197,
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "passed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 7,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-77825.rb"
+          },
+          "id": "V-77825",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "documentable": false,
+            "fix_id": "F-84531r1_fix",
+            "gid": "V-77825",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": [
+              "CM-6 b",
+              "Rev_4"
+            ],
+            "rid": "SV-92521r1_rule",
+            "stig_id": "RHEL-07-040201",
+            "subsystems": [
+              "ASLR",
+              "kernel_parameter"
+            ]
+          },
+          "code": "control \"V-77825\" do\n  title \"The operating system must implement virtual address space\nrandomization.\"\n  desc  \"Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.\"\n  impact 0.5\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-77825\"\n  tag \"rid\": \"SV-92521r1_rule\"\n  tag \"stig_id\": \"RHEL-07-040201\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['ASLR', 'kernel_parameter']\n  desc \"check\", \"Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \\\"kernel.randomize_va_space\\\" does not have a value of \\\"2\\\", this is a\nfinding.\"\n  desc \"fix\", \"Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\\\"/etc/sysctl.conf\\\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2\"\n  tag \"fix_id\": \"F-84531r1_fix\"\n\ndescribe kernel_parameter('kernel.randomize_va_space') do\n  its('value') { should eq randomize_va_space }\nend\n\nend\n",
+          "controlType": "operational",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Verify the operating system prevents a user from overriding the\nscreensaver idle-activation-enabled setting for the graphical user interface.\n\nNote: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\nDetermine which profile the system database is using with the following command:\n# grep system-db /etc/dconf/profile/user\n\nsystem-db:local\n\nCheck for the idle-activation-enabled setting with the following command:\n\nNote: The example below is using the database \"local\" for the system, so the\npath is \"/etc/dconf/db/local.d\". This path must be modified if a database\nother than \"local\" is being used.\n\n# grep -i idle-activation-enabled /etc/dconf/db/local.d/locks/*\n\n/org/gnome/desktop/screensaver/idle-activation-enabled\n\nIf the command does not return a result, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "A session lock is a temporary action taken when a user stops work and moves\naway from the immediate physical vicinity of the information system but does\nnot want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system to prevent a user from overriding\na screensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\nCreate a database to contain the system-wide screensaver settings (if it does\nnot already exist) with the following command:\n\nNote: The example below is using the database \"local\" for the system, so if\nthe system is using another database in \"/etc/dconf/profile/user\", the file\nshould be created under the appropriate subdirectory.\n\n# touch /etc/dconf/db/local.d/locks/session\n\nAdd the setting to lock the screensaver idle-activation-enabled setting:\n\n/org/gnome/desktop/screensaver/idle-activation-enabled",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Command: `gsettings writable org.gnome.desktop.screensaver idle-activation-enabled` stdout.strip should cmp == \"false\"",
+              "message": "\nexpected: \"false\"\n     got: \"true\"\n\n(compared using `cmp` matcher)\n",
+              "runTime": 0.016275313,
+              "startTime": "2019-11-04T21:17:17Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-78997.rb"
+          },
+          "id": "V-78997",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000057"
+            ],
+            "documentable": false,
+            "fix_id": "F-85747r1_fix",
+            "gid": "V-78997",
+            "gtitle": "SRG-OS-000029-GPOS-00010",
+            "nist": [
+              "AC-11 a",
+              "Rev_4"
+            ],
+            "rid": "SV-93703r1_rule",
+            "stig_id": "RHEL-07-010101",
+            "subsystems": [
+              "gnome3"
+            ]
+          },
+          "code": "control \"V-78997\" do\n  title \"The operating system must prevent a user from overriding the\nscreensaver idle-activation-enabled setting for the graphical user interface.\"\n  desc  \"\n    A session lock is a temporary action taken when a user stops work and moves\naway from the immediate physical vicinity of the information system but does\nnot want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.\n  \"\n  if package('gnome-desktop3').installed?\n    impact 0.5\n  else\n    impact 0.0\n  end\n  tag \"gtitle\": \"SRG-OS-000029-GPOS-00010\"\n  tag \"gid\": \"V-78997\"\n  tag \"rid\": \"SV-93703r1_rule\"\n  tag \"stig_id\": \"RHEL-07-010101\"\n  tag \"cci\": [\"CCI-000057\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"AC-11 a\", \"Rev_4\"]\n  tag \"subsystems\": [\"gnome3\"]\n  desc \"check\", \"Verify the operating system prevents a user from overriding the\nscreensaver idle-activation-enabled setting for the graphical user interface.\n\nNote: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\nDetermine which profile the system database is using with the following command:\n# grep system-db /etc/dconf/profile/user\n\nsystem-db:local\n\nCheck for the idle-activation-enabled setting with the following command:\n\nNote: The example below is using the database \\\"local\\\" for the system, so the\npath is \\\"/etc/dconf/db/local.d\\\". This path must be modified if a database\nother than \\\"local\\\" is being used.\n\n# grep -i idle-activation-enabled /etc/dconf/db/local.d/locks/*\n\n/org/gnome/desktop/screensaver/idle-activation-enabled\n\nIf the command does not return a result, this is a finding.\"\n  desc \"fix\", \"Configure the operating system to prevent a user from overriding\na screensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\nCreate a database to contain the system-wide screensaver settings (if it does\nnot already exist) with the following command:\n\nNote: The example below is using the database \\\"local\\\" for the system, so if\nthe system is using another database in \\\"/etc/dconf/profile/user\\\", the file\nshould be created under the appropriate subdirectory.\n\n# touch /etc/dconf/db/local.d/locks/session\n\nAdd the setting to lock the screensaver idle-activation-enabled setting:\n\n/org/gnome/desktop/screensaver/idle-activation-enabled\"\n  tag \"fix_id\": \"F-85747r1_fix\"\n\n  describe command(\"gsettings writable org.gnome.desktop.screensaver idle-activation-enabled\") do\n    its('stdout.strip') { should cmp 'false' }\n  end if package('gnome-desktop3').installed?\n\n  describe \"The GNOME desktop is not installed\" do\n    skip \"The GNOME desktop is not installed, this control is Not Applicable.\"\n  end if !package('gnome-desktop3').installed?\nend\n",
+          "controlType": "technical",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "92df9e3dfe299c0ed2d99497e6a02c6cf07e1698c8ba57f57977375898d8ceee"
+      },
+      "name": "disa_stig-el7",
+      "copyright": "SIMP Team",
+      "license": "Apache-2.0",
+      "maintainer": "SIMP Team",
+      "summary": "The `disa_stig-el7` inspec profile helps scan your system aginst the DISA RHEL7 STIG",
+      "title": "DISA RedHat Enterprise Linux 7 STIG - v1r4",
+      "version": "0.2.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "centos",
+      "type": "host",
+      "osVersion": "7.6.1810"
+    }
+  ],
+  "generator": {
+    "name": "splunk-to-hdf",
+    "version": "1.0.0"
+  },
+  "statistics": {
+    "duration": 10.681128104
+  },
+  "timestamp": "2026-11-06T21:11:41.640621Z",
+  "tool": {
+    "name": "Splunk",
+    "version": "4.16.0"
+  }
+}

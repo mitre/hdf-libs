@@ -3,6 +3,7 @@ package splunk
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -71,12 +72,16 @@ type SplunkGroup struct {
 
 // SplunkControl represents a control event.
 type SplunkControl struct {
-	Meta           SplunkMeta             `json:"meta"`
-	ID             string                 `json:"id"`
-	Title          string                 `json:"title"`
-	Desc           string                 `json:"desc"`
-	Descriptions   map[string]string      `json:"descriptions"`
-	Impact         float64                `json:"impact"`
+	Meta         SplunkMeta        `json:"meta"`
+	ID           string            `json:"id"`
+	Title        string            `json:"title"`
+	Desc         string            `json:"desc"`
+	Descriptions map[string]string `json:"descriptions"`
+	// Impact is a POINTER for the same reason legacyhdf-to-hdf's is: an absent
+	// impact and an explicit 0 are different claims, and a non-pointer
+	// float64 collapses both to 0 at unmarshal. These are the same InSpec
+	// controls read from a store, so the two readers must agree.
+	Impact         *float64               `json:"impact"`
 	Code           string                 `json:"code"`
 	Tags           map[string]interface{} `json:"tags"`
 	Results        []SplunkResult         `json:"results"`
@@ -249,7 +254,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	var allBaselines []hdf.EvaluatedBaseline
 	var allTargets []hdf.Component
 	var lastHeader *SplunkHeader
-	timestamp := time.Now()
+	timestamp := hdfutil.NormalizeTimestamp(time.Now())
 
 	for _, guid := range guids {
 		g := groups[guid]
@@ -379,13 +384,7 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 		})
 	}
 
-	// If no descriptions exist, add a default one from Desc.
-	if len(descriptions) == 0 {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "default",
-			Data:  ctrl.Desc,
-		})
-	}
+	descriptions = shared.EnsureDefaultDescription(descriptions, ctrl.Desc)
 
 	// Convert results.
 	results := make([]hdf.RequirementResult, 0, len(ctrl.Results))
@@ -405,17 +404,53 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 		}
 	}
 
+	// An absent impact is unknown severity, not zero severity — the same rule
+	// the file importer applies, since these are the same InSpec controls.
+	impact := hdfutil.UnknownSeverityImpact
+	if ctrl.Impact != nil {
+		impact = *ctrl.Impact
+	}
+
+	tags := ctrl.Tags
+	if tags == nil {
+		tags = map[string]interface{}{}
+	}
+	// A defaulted impact is unrated unless the source's own tags.severity rated it,
+	// matching the file importer. Cloned so marking does not write into ctrl.
+	if ctrl.Impact == nil {
+		tags = maps.Clone(tags)
+		severity, _ := tags["severity"].(string)
+		shared.MarkUnratedSeverity(tags, severity)
+	}
+
 	req := hdf.EvaluatedRequirement{
-		ID:                 ctrl.ID,
-		Title:              ptrIfNotEmpty(ctrl.Title),
-		Impact:             ctrl.Impact,
-		Code:               ptrIfNotEmpty(ctrl.Code),
-		Tags:               ctrl.Tags,
+		ID:     ctrl.ID,
+		Title:  ptrIfNotEmpty(ctrl.Title),
+		Impact: impact,
+		Code:   ptrIfNotEmpty(ctrl.Code),
+		// tags is schema-required, so a nil source map becomes an empty object
+		// rather than reaching output as null. Same defect the file importer had.
+		Tags:               tags,
 		ControlType:        shared.DeriveControlTypeFromTags(nistTagsFromJSONMap(ctrl.Tags)),
 		Descriptions:       descriptions,
 		Results:            results,
 		SourceLocation:     sourceLocation,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+
+	// These are InSpec controls read from a store rather than a file, so the
+	// same score-0-and-skip convention applies and must produce the same
+	// document the file importer does.
+	if ctrl.Impact != nil && *ctrl.Impact == 0 && shared.InSpecEstablishedNothing(req.Results) {
+		req.Results = append(req.Results, shared.SynthesizedNotApplicableResult(req.Results))
+	}
+
+	// results is schema-required with minItems:1, so a control event that
+	// recorded none would otherwise leave []. This runs AFTER the translation
+	// above so the two never both fire: an impact-0 resultless control states
+	// its scope claim and nothing else, matching the file importer.
+	if len(req.Results) == 0 {
+		req.Results = []hdf.RequirementResult{shared.SynthesizedNoResultsResult(time.Time{}, "the source carried no results for this control, so nothing was established about it")}
 	}
 
 	return req

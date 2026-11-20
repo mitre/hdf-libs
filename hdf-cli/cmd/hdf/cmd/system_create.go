@@ -243,11 +243,8 @@ func runSystemCreateFromSPDX3AIBOM(data []byte, doc map[string]interface{}, opts
 		return err
 	}
 
-	systemName := opts.systemName
-	if systemName == "" {
-		firstName, _ := components[0]["name"].(string)
-		systemName = firstName + "-system"
-	}
+	firstName, _ := components[0]["name"].(string)
+	systemName := systemNameOrDefault(opts.systemName, firstName)
 
 	models, datasets := countComponentKinds(components)
 	fmt.Fprintf(os.Stderr, "Imported SPDX-3 AI/Dataset document (%d aiModel, %d dataset components)\n", models, datasets)
@@ -264,10 +261,7 @@ func runSystemCreateFromSBOMRef(opts systemCreateOpts, sbomURI string) error {
 			"(the remote document can't be read to derive component metadata)")
 	}
 
-	systemName := opts.systemName
-	if systemName == "" {
-		systemName = opts.componentName + "-system"
-	}
+	systemName := systemNameOrDefault(opts.systemName, opts.componentName)
 
 	// Guess format from URL extension; format is schema-required on the BOM entry.
 	// A hint-less URL can't be verified (the document is not fetched), so warn
@@ -377,9 +371,7 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	}
 
 	name, _ := comp["name"].(string)
-	if systemName == "" {
-		systemName = name + "-system"
-	}
+	systemName = systemNameOrDefault(systemName, name)
 
 	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", bomFormat, name, comp["type"])
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, opts)
@@ -398,10 +390,7 @@ func runSystemCreateFromAIModelBOM(data []byte, doc map[string]interface{}, opts
 	}
 
 	name, _ := comp["name"].(string)
-	systemName := opts.systemName
-	if systemName == "" {
-		systemName = name + "-system"
-	}
+	systemName := systemNameOrDefault(opts.systemName, name)
 
 	fmt.Fprintf(os.Stderr, "Imported CycloneDX ML-BOM as aiModel component %q\n", name)
 	return writeSystemDoc(systemName, []map[string]interface{}{comp}, opts.outputPath, opts)
@@ -658,4 +647,11 @@ func buildComponentFromTarget(target map[string]interface{}, baselineNames []str
 	}
 
 	return comp
+}
+
+func systemNameOrDefault(systemName, componentName string) string {
+	if systemName != "" {
+		return systemName
+	}
+	return componentName + "-system"
 }

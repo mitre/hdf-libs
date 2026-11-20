@@ -1,6 +1,7 @@
 package fortify
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -715,4 +717,46 @@ func TestConvertFortifyToHDF_UnratedSeverityMarker(t *testing.T) {
 	rated := ratedResult.Baselines[0].Requirements[0]
 	_, present := rated.Tags[shared.UnratedSeverityTag]
 	assert.False(t, present, "a rated InstanceSeverity must not carry the marker")
+}
+
+// An FVDL <Description> is rule-catalog metadata; the finding is <Vulnerability>.
+// A description whose classID matches no vulnerability therefore has nothing to
+// report, and results is schema-required with minItems:1 — so the converter
+// emitted a document it rejects itself. Real Fortify output carries no such
+// description (5 of 5 match in the committed scan), so only a constructed input
+// reaches this.
+func TestConvertFortifyToHDF_DescriptionWithNoMatchingVulnIsSchemaValid(t *testing.T) {
+	input := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C1</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I1</InstanceID><InstanceSeverity>3.0</InstanceSeverity></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="NOMATCH">
+  <Abstract>Rule metadata with no finding</Abstract>
+  <Explanation>Explanation text</Explanation>
+</Description>
+</FVDL>`)
+
+	result, err := ConvertFortifyToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	var orphan *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "NOMATCH" {
+			orphan = &result.Baselines[0].Requirements[i]
+		}
+	}
+	require.NotNil(t, orphan, "the description must still become a requirement: dropping it would lose its CWE, NIST tags and prose")
+	require.Len(t, orphan.Results, 1, "exactly one synthesized result, since minItems is 1")
+	assert.Equal(t, hdf.NotReviewed, orphan.Results[0].Status,
+		"the rule ran but reported nothing at it; passed would claim an assessment Fortify never reports")
+	assert.Contains(t, orphan.Results[0].CodeDesc, "matched no vulnerability")
+
+	raw, err := json.Marshal(result)
+	require.NoError(t, err)
+	v := validators.Validate(raw, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
 }

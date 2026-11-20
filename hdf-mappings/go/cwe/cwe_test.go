@@ -1,7 +1,6 @@
 package cwe
 
 import (
-	"sync"
 	"testing"
 )
 
@@ -90,23 +89,8 @@ func TestNISTControls_CasePrefixHandling(t *testing.T) {
 	}
 }
 
-func TestLoadCWEData_InvalidJSON(t *testing.T) {
-	// Exercise the json.Unmarshal error path in loadCWEData.
-	// sync.Once is not copy-safe; reset in defer rather than save/restore
-	// (loadCWEData is idempotent).
-	origData := cweMappingsData
-	origMap := cweData
-	defer func() {
-		cweMappingsData = origData
-		cweData = origMap
-		cweDataOnce = sync.Once{}
-	}()
-
-	cweMappingsData = []byte("not valid json")
-	cweData = nil
-	cweDataOnce = sync.Once{}
-
-	result := loadCWEData()
+func TestParseCWEData_InvalidJSON(t *testing.T) {
+	result := parseCWEData([]byte("not valid json"))
 	if result == nil {
 		t.Error("expected non-nil empty map on JSON error, got nil")
 	}

@@ -85,7 +85,7 @@ translateNistControl('IR-10', 4, 5);
 
 ## The AWS Config data contract
 
-`awsconfig-mappings.json` (shipped in both the Go embed and `src/data/`) is the AWS Config rule → NIST bridge. Its per-revision completeness contract:
+`awsconfig-mappings.json` (one copy, at `hdf-mappings/go/datasets/mappings/`, embedded by Go and imported by TypeScript) is the AWS Config rule → NIST bridge. Its per-revision completeness contract:
 
 **Every rule in the table has a defined outcome at both supported revisions** — one of:
 
@@ -112,14 +112,16 @@ NIST tags produced by these mappings are *candidate control associations for tri
 
 ## Regenerating the data
 
-Both data sets are generated, drift-gated, and byte-identical across the Go and TypeScript copies:
+Both data sets are generated, and each generator writes the single copy both languages read:
 
 ```bash
 cd hdf-mappings
 pnpm mappings:crosswalk          # regenerate the r4<->r5 crosswalk from NIST's workbooks
-pnpm mappings:crosswalk:check    # drift gate
+pnpm mappings:crosswalk:check    # compare the committed tables against upstream
 pnpm mappings:awsconfig          # regenerate the AWS Config table (includes the crosswalk tier)
-pnpm mappings:awsconfig:check    # drift gate
+pnpm mappings:awsconfig:check    # compare the committed tables against upstream
 ```
+
+Neither `:check` is enforced. Both fetch their sources live — NIST's comparison workbooks and AWS's Config and Security Hub documentation — so they report whether upstream has moved since the tables were generated, which is not a question about the commit being made. Run them when refreshing a table, and read a failure as "upstream moved". The one that is enforced is `mappings:hipcheck:check`, whose generator reads repo files alone: it runs in the pre-commit hook and in CI's TypeScript job. So a pull request cannot merge with a table that no longer matches its generator, a fork's pull request included — the hook never runs there — short of an organization admin bypassing the `main` ruleset, and a `--no-verify` commit pushed straight to `main` turns CI red there rather than being refused. No check compares copies of a table, because each table exists only once. `hdf-mappings/README.md` records which checks are enforced, why the rest are not, and what that enforcement does and does not buy.
 
 Provenance (source URLs, tier precedence, derivation rules) is documented in the generator headers and the `hdf-mappings` README.

@@ -389,7 +389,7 @@
         "total": {
           "type": "integer",
           "minimum": 0,
-          "description": "Total number of unique requirements across all sources."
+          "description": "Total number of distinct requirement ids across all sources; an id carried by several entries counts once."
         },
         "matchedCount": {
           "type": "integer",
@@ -474,6 +474,21 @@
       "description": "Summary statistics for the overall comparison.",
       "title": "Comparison Summary"
     },
+    "Baseline_Diff_State": {
+      "type": "string",
+      "enum": [
+        "new",
+        "absent",
+        "unchanged",
+        "updated"
+      ],
+      "description": "How a baseline or component fared across the compared documents: new (only in the newer), absent (only in the older), unchanged, or updated (present in both with a changed version).",
+      "title": "Baseline Diff State",
+      "examples": [
+        "updated"
+      ],
+      "$comment": "Examples, in order: 1) a baseline present in both documents whose version moved."
+    },
     "Baseline_Diff": {
       "type": "object",
       "unevaluatedProperties": false,
@@ -487,14 +502,7 @@
           "description": "Name of the baseline being compared."
         },
         "state": {
-          "type": "string",
-          "title": "Baseline Diff State",
-          "enum": [
-            "new",
-            "absent",
-            "unchanged",
-            "updated"
-          ],
+          "$ref": "#/$defs/Baseline_Diff_State",
           "description": "The state of this baseline in the comparison."
         },
         "oldVersion": {
@@ -526,14 +534,7 @@
           "description": "Component name used for matching across system versions."
         },
         "state": {
-          "type": "string",
-          "title": "Baseline Diff State",
-          "enum": [
-            "new",
-            "absent",
-            "unchanged",
-            "updated"
-          ],
+          "$ref": "#/$defs/Baseline_Diff_State",
           "description": "The state of this component in the comparison."
         },
         "before": {
@@ -775,6 +776,10 @@
           "type": "string",
           "description": "The requirement title for human readability."
         },
+        "baseline": {
+          "type": "string",
+          "description": "Name of the baseline the requirement belongs to, so a consumer can group diffs the way hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one baseline of the same document."
+        },
         "oldEffectiveStatus": {
           "type": "string",
           "description": "The effective status of the requirement in the old source."
@@ -840,7 +845,79 @@
         }
       },
       "description": "A comparison of a single requirement between sources, including state, changes, and full before/after snapshots.",
-      "title": "Requirement Diff"
+      "title": "Requirement Diff",
+      "examples": [
+        {
+          "id": "SV-257777",
+          "baseline": "rhel9-stig-baseline",
+          "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+          "state": "fixed",
+          "changeReasons": [
+            "resultChanged"
+          ],
+          "before": {
+            "id": "SV-257777",
+            "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+            "impact": 0.5,
+            "tags": {
+              "nist": [
+                "CM-7"
+              ]
+            },
+            "sourceLocation": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "USB mass storage must be disabled unless an operational need is documented."
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "Kernel module usb-storage is loadable",
+                "startTime": "2026-03-01T10:00:00Z"
+              }
+            ]
+          },
+          "after": {
+            "id": "SV-257777",
+            "title": "RHEL 9 must prevent the loading of the USB storage kernel module.",
+            "impact": 0.5,
+            "tags": {
+              "nist": [
+                "CM-7"
+              ]
+            },
+            "sourceLocation": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "USB mass storage must be disabled unless an operational need is documented."
+              }
+            ],
+            "results": [
+              {
+                "status": "passed",
+                "codeDesc": "Kernel module usb-storage is blacklisted",
+                "startTime": "2026-03-30T10:00:00Z"
+              }
+            ]
+          },
+          "oldEffectiveStatus": "failed",
+          "newEffectiveStatus": "passed",
+          "fieldChanges": [
+            {
+              "op": "replace",
+              "path": "/results/0/status",
+              "oldValue": "failed",
+              "newValue": "passed"
+            }
+          ],
+          "matchStrategy": "exactId",
+          "matchConfidence": 1.0
+        }
+      ],
+      "$comment": "Examples, in order: 1) a requirement fixed between two scans of the same baseline, carrying the owning baseline name and the exact-id match that paired it."
     }
   }
 }

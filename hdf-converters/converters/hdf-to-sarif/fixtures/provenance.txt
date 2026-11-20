@@ -137,6 +137,41 @@ published in `@mitre/hdf-fixtures` and read by hdf-engine, hdf-cli's MCP tests
 and hdf-to-html's tests. If that fixture is ever redacted, these rows must be
 re-quoted from the redacted form in the same change.
 
+## `mistyped-bag-cases.json`
+
+A shared Go/TypeScript case table, not a fixture: values that do not decode into
+the HDF field their `hdf` bag key addresses, each of which sarif-to-hdf must drop.
+`go/mistyped_bag_test.go` and `typescript/mistyped-bag.test.ts` both read it.
+The values are test inputs, not tool output; no tool emits them. Each one is
+written into a bag of the SARIF this exporter produces from `input/grype-cve.hdf.json`
+(with a waiver added in the test), so the surrounding document is real exporter output.
+
+## `roundtrip-cases.json`
+
+A shared Go/TypeScript case table, not a fixture: `go/roundtrip_cases_test.go`
+and `typescript/roundtrip-cases.test.ts` both read it. Recorded 2026-11-14.
+
+- `multiLocation` names a committed document rather than copying it:
+  `msft-defender-devops-to-hdf/fixtures/input/sda.sarif` (sha256
+  dfed1977694904318039b12bf4309a133a1178bcfe3cc8646d3dd528cd43d0b2), whose own
+  provenance records it as schema-validated SARIF 2.1.0 of unestablished origin.
+  The tests trim it at run time to `runs[5]` (Template Analyzer 0.8.0), its
+  first two rules and its results 2 and 3, both of rule TA-000003; whole
+  elements dropped, no string edited. Result 2 is reported at three locations.
+  It is the only committed SARIF holding a result with more than one location.
+- `multiLocation.resultBags` is a test input, not tool output: the bag the tests
+  write onto the second kept result. No committed or published SARIF puts a
+  result property bag in the same rule as a multi-location result, which is the
+  shape that exposes a bag addressed to the wrong expanded row.
+- `levelAgainstSecuritySeverity.sarif` is a constructed test input, not tool
+  output: a rule whose `defaultConfiguration.level` (warning) and GitHub
+  `security-severity` (9.8) disagree, with a result that states no level. No
+  committed SARIF combines the two with a level-less result.
+
+Both documents are checked against the vendored OASIS 2.1.0 schema every time
+the Go test runs (`requireValidSARIF` on the input and on the exported output),
+so a case cannot drift into a shape SARIF does not admit.
+
 ## Recorded coverage gaps
 
 - **Deliberate nested drops.** Three, all because the exporter carries no bytes it was

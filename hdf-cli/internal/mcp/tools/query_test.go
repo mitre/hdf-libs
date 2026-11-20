@@ -207,8 +207,8 @@ func TestHdfQuery_FullShape_Richer(t *testing.T) {
 }
 
 // Baseline documents are the second requirement-bearing type: their requirements
-// filter through the same engine (an un-run baseline requirement is notReviewed,
-// or notApplicable at impact 0).
+// filter through the same engine (an un-run baseline requirement is notReviewed
+// at any impact).
 func TestHdfQuery_BaselineDocument(t *testing.T) {
 	path := writeRoot(t, "baseline.json", fixtures.Baseline.Win2022Stig)
 	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}})

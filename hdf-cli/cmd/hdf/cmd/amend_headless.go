@@ -528,6 +528,8 @@ func draftStub(r requirementInfo, amendType, expiry string, now time.Time) map[s
 	case "poam":
 		stub["status"] = ""
 		stub["milestones"] = []interface{}{}
+	case "operationalRequirement":
+		// Documentation-only: the schema forbids status and impact on this type.
 	default:
 		stub["status"] = ""
 	}

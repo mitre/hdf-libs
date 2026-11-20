@@ -119,48 +119,40 @@ func TestValidateXMLInput_WithEntities(t *testing.T) {
 	assert.Contains(t, err.Error(), "entity declarations")
 }
 
-// The gate follows OWASP's second sanctioned option — allow an internal DTD, refuse
-// external entities and expansion — because the primary control already holds at the
-// parser: Go's encoding/xml does not process DTDs and fast-xml-parser refuses external
-// entities. OWASP's own summary is to do this "rather than attempting to validate DTD
-// contents", which is why an inert subset is accepted rather than proven inert.
+// xmlGateCase is one row of ../testdata/xml-input-gate-cases.json. The TypeScript
+// validateXmlInput suite reads the same file, so the two gates cannot drift apart.
+type xmlGateCase struct {
+	Name                string `json:"name"`
+	XML                 string `json:"xml"`
+	LeadingCommentBytes int    `json:"leadingCommentBytes"`
+	MaxSize             int    `json:"maxSize"`
+	Error               string `json:"error"`
+	Why                 string `json:"why"`
+}
+
+// The gate follows OWASP's second sanctioned option: allow an internal DTD, refuse
+// external entities and expansion, because the primary control holds at the parser.
 func TestValidateXMLInput_DTDPolicy(t *testing.T) {
-	cases := []struct {
-		name    string
-		xml     string
-		wantErr string // "" means the input must be accepted
-	}{
-		{"plain document", `<root/>`, ""},
-		{
-			"inert internal subset (real Burp Suite export shape)",
-			`<?xml version="1.0"?><!DOCTYPE issues [<!ELEMENT issues (issue*)><!ATTLIST issues burpVersion CDATA "">]><issues/>`,
-			"",
-		},
-		{"inline entity declaration", `<!DOCTYPE foo [<!ENTITY x "y">]><foo/>`, "entity declarations"},
-		{
-			"entity hidden behind a quoted ]> in the subset",
-			`<!DOCTYPE l [<!ATTLIST l v CDATA "]>"><!ENTITY e "boom">]><l>&e;</l>`,
-			"entity declarations",
-		},
-		{"external DTD reference", `<!DOCTYPE l SYSTEM "http://evil.invalid/e.dtd"><l/>`, "external"},
-		{"external identifier inside the subset", `<!DOCTYPE l [<!NOTATION g SYSTEM "http://evil.invalid/x">]><l/>`, "external"},
-		{"entity beyond the old 4 KB window", `<!--` + strings.Repeat("x", 5000) + `--><!DOCTYPE l [<!ENTITY e "v">]><l/>`, "entity declarations"},
-		{
-			"a DOCTYPE with unparseable declarations is refused, not accepted",
-			`<!DOCTYPE l [<!ATTLIST l v CDATA "unterminated`,
-			"could not be fully parsed",
-		},
-		{"a non-XML buffer is left to the parser, not refused here", "not xml at all", ""},
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "xml-input-gate-cases.json"))
+	require.NoError(t, err, "read the shared XML gate table")
+	var table struct {
+		Cases []xmlGateCase `json:"cases"`
 	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			err := ValidateXMLInput([]byte(c.xml), 0)
-			if c.wantErr == "" {
-				assert.NoError(t, err, "must be accepted: the parser, not this gate, is the control")
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+	for _, c := range table.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			input := c.XML
+			if c.LeadingCommentBytes > 0 {
+				input = "<!--" + strings.Repeat("x", c.LeadingCommentBytes) + "-->" + input
+			}
+			err := ValidateXMLInput([]byte(input), c.MaxSize)
+			if c.Error == "" {
+				assert.NoError(t, err, c.Why)
 				return
 			}
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), c.wantErr)
+			require.Error(t, err, c.Why)
+			assert.Equal(t, c.Error, err.Error(), c.Why)
 		})
 	}
 }
@@ -932,4 +924,14 @@ func TestPackageInstanceID(t *testing.T) {
 	assert.Equal(t, "lodash@4.17.21", PackageInstanceID("", "lodash", "4.17.21"))
 	assert.Equal(t, "lodash", PackageInstanceID("", "lodash", ""))
 	assert.Equal(t, "", PackageInstanceID("", "", "4.17.21"), "a version without a name identifies nothing")
+}
+
+func TestSynthesizedNoResultsResult(t *testing.T) {
+	when := time.Date(2026, 3, 4, 5, 6, 7, 0, time.UTC)
+	r := SynthesizedNoResultsResult(when, "the source said nothing")
+
+	assert.Equal(t, hdf.NotReviewed, r.Status)
+	assert.Equal(t, "Synthesized because the source said nothing", r.CodeDesc,
+		"the prefix and the caller's reason are both part of the claim")
+	assert.Equal(t, when, r.StartTime, "the caller's time must survive, not be replaced by a zero value")
 }

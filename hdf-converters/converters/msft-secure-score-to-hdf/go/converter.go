@@ -111,18 +111,32 @@ func getTitle(profiles []SecureScoreControlProfile, cs ControlScore) string {
 	return cs.ControlCategory
 }
 
-// getImpact computes impact from the profile maxScore (maxScore / 10.0).
-// Falls back to 0.5 when no matching profile exists.
-func getImpact(profiles []SecureScoreControlProfile, cs ControlScore) float64 {
-	matched := getProfiles(profiles, cs.ControlName)
-	if len(matched) == 0 {
-		return 0.5
-	}
+// maxProfileScore returns the highest maxScore among matched profiles. Zero
+// means unscored: the Graph schema types maxScore optional and an absent JSON
+// number decodes to 0, so an unscored profile and an explicit zero are
+// indistinguishable here (the tag emitter at buildTags assumes the same).
+func maxProfileScore(matched []SecureScoreControlProfile) float64 {
 	maxScore := 0.0
 	for _, p := range matched {
 		if p.MaxScore > maxScore {
 			maxScore = p.MaxScore
 		}
+	}
+	return maxScore
+}
+
+// getImpact computes impact from the profile maxScore (maxScore / 10.0). Falls
+// back to 0.5 when no matching profile exists, and for the same reason when the
+// matched profile is unscored: with no maxScore there is no basis for a severity,
+// and 0 would assert that the control carries none.
+func getImpact(profiles []SecureScoreControlProfile, cs ControlScore) float64 {
+	matched := getProfiles(profiles, cs.ControlName)
+	if len(matched) == 0 {
+		return 0.5
+	}
+	maxScore := maxProfileScore(matched)
+	if maxScore == 0 {
+		return 0.5
 	}
 	impact := hdfutil.RoundImpact(maxScore / 10.0)
 	// Cap at 1.0
@@ -132,7 +146,10 @@ func getImpact(profiles []SecureScoreControlProfile, cs ControlScore) float64 {
 	return impact
 }
 
-// getStatus determines the result status based on scoreInPercentage and profile maxScore.
+// getStatus determines the result status based on scoreInPercentage and profile
+// maxScore. An unscored profile yields notReviewed: comparing the control's
+// score to a maxScore of 0 would pass every unscored control on 0 == 0, which
+// claims compliance for something Graph never assessed.
 func getStatus(profiles []SecureScoreControlProfile, cs ControlScore) hdf.ResultStatus {
 	if cs.ScoreInPercentage == 100 {
 		return hdf.Passed
@@ -141,11 +158,9 @@ func getStatus(profiles []SecureScoreControlProfile, cs ControlScore) hdf.Result
 	if len(matched) == 0 {
 		return hdf.Failed
 	}
-	maxScore := 0.0
-	for _, p := range matched {
-		if p.MaxScore > maxScore {
-			maxScore = p.MaxScore
-		}
+	maxScore := maxProfileScore(matched)
+	if maxScore == 0 {
+		return hdf.NotReviewed
 	}
 	if cs.Score == maxScore {
 		return hdf.Passed

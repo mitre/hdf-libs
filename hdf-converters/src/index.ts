@@ -10,11 +10,6 @@ export {
   isLegacyHdf,
   type LegacyHDFResults,
   type HDFV2Results,
-  // Deprecated aliases for the pre-3.6 version-baked names. Scheduled for
-  // removal in a future major (breaking change); tracked in the issue tracker.
-  convertLegacyHdf as convertV1ToV2,
-  isLegacyHdf as isHDFV1,
-  type LegacyHDFResults as HDFV1Results,
 } from '../converters/legacyhdf-to-hdf/typescript/index.js';
 
 // ASFF (AWS Security Finding Format) to HDF converter
@@ -95,13 +90,13 @@ export type {
 } from '../converters/hdf-to-html/typescript/index.js';
 
 // HDF to ECS converter
-export { convertHdfToEcs } from '../converters/hdf-to-ecs/typescript/index.js';
+export { convertHdfToEcs, convertHdfToEcsBundle } from '../converters/hdf-to-ecs/typescript/index.js';
 
 // HDF to Splunk (CIM/HEC) converter
-export { convertHdfToSplunk } from '../converters/hdf-to-splunk/typescript/index.js';
+export { convertHdfToSplunk, convertHdfToSplunkBundle } from '../converters/hdf-to-splunk/typescript/index.js';
 
 // HDF to OCSF (Findings) converter
-export { convertHdfToOcsf } from '../converters/hdf-to-ocsf/typescript/index.js';
+export { convertHdfToOcsf, convertHdfToOcsfBundle } from '../converters/hdf-to-ocsf/typescript/index.js';
 
 // HDF to ASFF (AWS Security Finding Format) converter
 export { convertHdfToAsff } from '../converters/hdf-to-asff/typescript/index.js';
@@ -224,3 +219,6 @@ export { detectOscalDocumentType } from '../converters/oscal-to-hdf/typescript/i
 // STIX enrichment: overlay a STIX 2.1 bundle onto a results doc as externalReferences[]
 export { enrichStix, type EnrichOptions } from '../shared/typescript/enrichStix.js';
 export { detectStixBundle, parseStixBundle } from '../shared/typescript/stix.js';
+
+export { resolveExportEvent, resolveExportSource, type ExportBundle, type BundleArtifact, type ResolvedExportSource } from '../shared/typescript/exportbundle.js';
+export { default as exportBundleSchema } from '../shared/export-bundle.schema.json';

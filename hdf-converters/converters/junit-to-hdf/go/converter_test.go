@@ -869,3 +869,128 @@ func TestResolveScanTime_UsesNestedSuiteTimestamp(t *testing.T) {
 	require.Len(t, result.Baselines[0].Requirements, 1)
 	assert.Equal(t, want, result.Baselines[0].Requirements[0].Results[0].StartTime.UTC())
 }
+
+type checkovSuiteCase struct {
+	Name         string `json:"name"`
+	SuiteName    string `json:"suiteName"`
+	TestCaseName string `json:"testCaseName"`
+	Want         string `json:"want"`
+}
+
+func loadCheckovSuiteCases(t *testing.T) []checkovSuiteCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "..", "shared", "junit-checkov-suite-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []checkovSuiteCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+func TestCheckovFramework_MatchesSharedTable(t *testing.T) {
+	for _, c := range loadCheckovSuiteCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			suite := junitTestSuite{Name: c.SuiteName, TestCases: []junitTestCase{{Name: c.TestCaseName}}}
+			got, ok := checkovFramework(suite)
+			require.Equal(t, c.Want != "", ok)
+			require.Equal(t, c.Want, got)
+		})
+	}
+}
+
+func suiteTag(t *testing.T, r hdf.EvaluatedRequirement) (string, bool) {
+	t.Helper()
+	v, ok := r.Tags["test_suite"]
+	if !ok {
+		return "", false
+	}
+	s, isString := v.(string)
+	require.True(t, isString, "%s: test_suite must be a string", r.ID)
+	return s, true
+}
+
+// Every testcase from every framework's suite converts, and each requirement
+// records the framework of its OWNING suite the way checkov-to-hdf records it,
+// with the suite name kept verbatim beside it.
+func TestConvertJUnitToHDF_RecordsFrameworkPerTestsuite(t *testing.T) {
+	data := loadFixture(t, "checkov-junit-multi-framework.xml")
+	result, err := ConvertJUnitToHDF(data, converterVersion)
+	require.NoError(t, err)
+	suites, _, err := parseInput(data)
+	require.NoError(t, err)
+
+	wantTotal := 0
+	wantByFramework := map[string]int{}
+	for _, s := range suites {
+		wantTotal += s.Tests
+		wantByFramework[strings.TrimSuffix(s.Name, " scan")] += s.Tests
+	}
+	require.Len(t, wantByFramework, 2, "fixture must carry two frameworks")
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, wantTotal, "every testcase from every suite converts")
+	gotByFramework := map[string]int{}
+	for _, r := range reqs {
+		types, ok := r.Tags["check_type"].([]string)
+		require.True(t, ok, "%s: check_type missing", r.ID)
+		require.Len(t, types, 1, "%s: exactly one owning framework", r.ID)
+		gotByFramework[types[0]]++
+		suite, has := suiteTag(t, r)
+		require.True(t, has)
+		require.Equal(t, types[0]+" scan", suite, "%s: the suite name stays verbatim", r.ID)
+	}
+	require.Equal(t, wantByFramework, gotByFramework)
+}
+
+// A generic JUnit suite is a test class, not a scan framework: its name is
+// recorded verbatim and no check_type is invented.
+func TestTestSuiteTag_GenericSuiteKeptVerbatimWithoutFramework(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+	for _, r := range result.Baselines[0].Requirements {
+		want := "StringTest"
+		if strings.Contains(r.ID, ".math.") {
+			want = "MathTest"
+		}
+		suite, has := suiteTag(t, r)
+		require.True(t, has, "%s: suite name missing", r.ID)
+		require.Equal(t, want, suite)
+		_, hasType := r.Tags["check_type"]
+		require.False(t, hasType, "%s: a test class is not a framework", r.ID)
+	}
+}
+
+// Nested suites attribute each testcase to the suite that directly owns it,
+// not to the outermost ancestor.
+func TestTestSuiteTag_NestedSuitesAttributeToOwner(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-nested.xml"), converterVersion)
+	require.NoError(t, err)
+	got := map[string]string{}
+	for _, r := range result.Baselines[0].Requirements {
+		suite, has := suiteTag(t, r)
+		require.True(t, has, "%s: suite name missing", r.ID)
+		got[*r.Title] = suite
+	}
+	require.Equal(t, map[string]string{
+		"outer direct case":  "outer suite",
+		"inner passing case": "inner suite",
+		"inner failing case": "inner suite",
+		"deep case":          "deepest suite",
+	}, got)
+}
+
+// Testcases sitting directly under a nameless <testsuites> have no suite name
+// to record, so the field is absent rather than empty or a placeholder.
+func TestTestSuiteTag_AbsentWhenNoSuiteIsNamed(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines[0].Requirements)
+	for _, r := range result.Baselines[0].Requirements {
+		_, has := r.Tags["test_suite"]
+		require.False(t, has, "%s: no suite name to record", r.ID)
+		_, hasType := r.Tags["check_type"]
+		require.False(t, hasType, "%s: no framework to record", r.ID)
+	}
+}

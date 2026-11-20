@@ -30,6 +30,16 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Lowercase A-Z and nothing else. `toLowerCase` applies Unicode lowercase
+ * mapping (U+0130 becomes two code points) and Go's `strings.ToLower` and
+ * `strings.EqualFold` apply their own Unicode tables, so this is the one
+ * lowering both languages agree on. Parity: hdfutil.ASCIILower.
+ */
+export function asciiLower(s: string): string {
+  return s.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
+}
+
+/**
  * Replace every `<...>` tag span with `replacement`, in a single linear scan.
  *
  * Matches the historical `replace(/<[^>]*>/g, replacement)` span semantics: a
@@ -236,4 +246,22 @@ export function normalizeHdfTimestamps(json: string): string {
     if (!parsed) return match;
     return `"${trimUtcFraction(parsed.toISOString())}"`;
   });
+}
+
+/**
+ * Sort comparator ordering strings by Unicode code point, which is Go's byte
+ * order over UTF-8 (`<`, sort.Strings). Use it wherever a TypeScript twin must
+ * emit the same order as Go: localeCompare folds case and punctuation and varies
+ * with the host's ICU, and the default sort compares UTF-16 units, which puts
+ * U+10000 before U+E000.
+ */
+export function compareCodePoint(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length) {
+    const ca = a.codePointAt(i) ?? 0;
+    const cb = b.codePointAt(i) ?? 0;
+    if (ca !== cb) return ca - cb;
+    i += ca > 0xffff ? 2 : 1;
+  }
+  return a.length - b.length;
 }

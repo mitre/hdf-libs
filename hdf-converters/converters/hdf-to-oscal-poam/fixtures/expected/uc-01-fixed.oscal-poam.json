@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "a05fc497-adf0-4c47-b724-91a77d486f4c",
+    "uuid": "7f9da9a4-5431-4da0-addf-68aa6a38652b",
     "metadata": {
       "title": "CSAF VEX statements from Example Company ProductCERT",
       "last-modified": "2022-03-03T11:00:00Z",
@@ -14,7 +14,7 @@
       ],
       "parties": [
         {
-          "uuid": "0bee3c16-9b10-42f1-85ac-a8632807ec95",
+          "uuid": "2e58bdc4-913a-48b6-9435-06c2c1c80530",
           "type": "person",
           "name": "Example Company ProductCERT",
           "props": [
@@ -36,7 +36,7 @@
         {
           "role-id": "prepared-by",
           "party-uuids": [
-            "0bee3c16-9b10-42f1-85ac-a8632807ec95"
+            "2e58bdc4-913a-48b6-9435-06c2c1c80530"
           ]
         }
       ],
@@ -59,7 +59,7 @@
     },
     "observations": [
       {
-        "uuid": "79e25bad-4fd5-4dee-aa48-dc35d6c5a911",
+        "uuid": "188a3d56-24eb-48a6-b6f9-9f75187f200c",
         "description": "CSAF VEX advisory",
         "props": [
           {
@@ -85,7 +85,7 @@
     ],
     "risks": [
       {
-        "uuid": "b1d16205-cf20-4410-b5b5-15ed768399e5",
+        "uuid": "5a8341ee-1c6c-4273-b3f3-d2a2cecf6426",
         "title": "CVE-2021-44228",
         "description": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
         "statement": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
@@ -128,7 +128,7 @@
         "deadline": "2023-03-03T11:00:00Z",
         "remediations": [
           {
-            "uuid": "2699f7da-7604-4f83-9906-92528e49711c",
+            "uuid": "a431e841-3ba4-4eb1-9804-9cc0f3c1145c",
             "lifecycle": "planned",
             "title": "Milestone 1",
             "description": "vendor reports fix; apply and re-scan to verify",
@@ -141,7 +141,7 @@
             ],
             "tasks": [
               {
-                "uuid": "df7accdc-391f-456b-9541-ba39269cbf22",
+                "uuid": "0fe4d76e-88a7-4de4-8959-3139a24bd7b7",
                 "type": "milestone",
                 "title": "Milestone 1",
                 "props": [
@@ -169,17 +169,17 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "e2c683b3-471b-433b-b265-566577f2d114",
+              "uuid": "d9cf0f6f-5fa0-4b29-a601-4b1e458d7b94",
               "title": "Override applied",
               "start": "2022-03-03T11:00:00Z",
               "logged-by": [
                 {
-                  "party-uuid": "0bee3c16-9b10-42f1-85ac-a8632807ec95"
+                  "party-uuid": "2e58bdc4-913a-48b6-9435-06c2c1c80530"
                 }
               ]
             },
             {
-              "uuid": "2d79dd02-a639-4d65-b9db-d5211587749f",
+              "uuid": "f8637a30-da44-4711-b2a5-3180417fce79",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2023-03-03T11:00:00Z",
@@ -191,17 +191,17 @@
     ],
     "poam-items": [
       {
-        "uuid": "511c25da-0756-41d8-9b38-cf2b913232f8",
+        "uuid": "63808987-81ac-4dd3-a439-f78e5eeb4c0b",
         "title": "CVE-2021-44228",
         "description": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
         "related-observations": [
           {
-            "observation-uuid": "79e25bad-4fd5-4dee-aa48-dc35d6c5a911"
+            "observation-uuid": "188a3d56-24eb-48a6-b6f9-9f75187f200c"
           }
         ],
         "related-risks": [
           {
-            "risk-uuid": "b1d16205-cf20-4410-b5b5-15ed768399e5"
+            "risk-uuid": "5a8341ee-1c6c-4273-b3f3-d2a2cecf6426"
           }
         ]
       }

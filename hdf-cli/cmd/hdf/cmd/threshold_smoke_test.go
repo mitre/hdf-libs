@@ -296,17 +296,12 @@ func TestSmoke_EveryApplicableAmendmentTypeIsCovered(t *testing.T) {
 	doc := smokeDoc(t, dir, "scan.json", fixtures.Results.MergeGrype)
 	amended := applySmokeAmendments(t, dir, doc)
 
-	// operationalRequirement is deliberately ABSENT and that is not an oversight:
-	// it is valid to author and invalid once merged, because Standalone_Override
-	// forbids it carrying a status while Status_Override requires one. Tracked as
-	// hdf-libs-r42je.
-	//
-	// riskAdjustment is absent from THIS corpus for a different and measured
-	// reason: merge-grype has ten failing requirements, six are amended here, and
+	// operationalRequirement and riskAdjustment are absent from THIS corpus for a
+	// measured reason: merge-grype has ten failing requirements, six are amended here, and
 	// the remainder is needed unadjudicated so the composite policy's rule has
 	// something to fire on. Adding a seventh override consumed the last one and
-	// turned TestSmoke_CompositePolicyGridAndRuleTogether red. It is covered
-	// instead by the test below, against its own corpus.
+	// turned TestSmoke_CompositePolicyGridAndRuleTogether red. Each is covered
+	// instead by a test below, against its own corpus.
 	for _, kind := range []string{"waiver", "attestation", "falsePositive", "inherited", "poam"} {
 		t.Run(kind, func(t *testing.T) {
 			assert.NotEmpty(t, queryIDs(t, amended, "--disposition", kind),
@@ -347,6 +342,28 @@ func TestSmoke_InForceRiskAdjustmentRescoresWithoutSuppressing(t *testing.T) {
 	// A risk adjustment re-scores; it does not suppress. The finding still fails.
 	assert.NotEmpty(t, queryIDs(t, out, "--id", id, "--status", "failed"),
 		"a re-scored finding still fails — riskAdjustment is not a waiver")
+}
+
+// operationalRequirement adjudicates nothing: it records an accepted deviation
+// and must leave the finding's status alone. Applied alone, against its own
+// corpus, and checked for what it does not change.
+func TestSmoke_OperationalRequirementRecordsWithoutAdjudicating(t *testing.T) {
+	dir := t.TempDir()
+	doc := smokeDoc(t, dir, "scan.json", fixtures.Results.MergeGrype)
+	corpus := filepath.Join("testdata", "threshold-smoke-operational-requirement.json")
+
+	_, _, err := executeCommand("amend", "verify", corpus)
+	require.NoError(t, err, "an operationalRequirement carrying no status must verify")
+
+	out := filepath.Join(dir, "deviated.json")
+	_, _, err = executeCommand("amend", "apply", "--results", doc, "--amendments", corpus, "-o", out)
+	require.NoError(t, err, "apply validates the merged document, so success is schema validity")
+
+	const id = "Grype/CVE-2022-42919"
+	assert.Contains(t, queryIDs(t, out, "--disposition", "operationalRequirement"), id,
+		"the deviation governs disposition")
+	assert.Contains(t, queryIDs(t, out, "--status", "failed", "--id", id), id,
+		"the finding stays failed: the type sets no status")
 }
 
 // An amendment that has already lapsed cannot be applied at all, which is the

@@ -17,7 +17,7 @@ func TestAttribution_AuthorStampsAgent(t *testing.T) {
 	driveCalls(t, []call{{"hdf_author", map[string]any{
 		"docType": "amendments", "name": "A",
 		"content": []any{map[string]any{
-			"type": "riskAdjustment", "requirementId": "V-1", "status": "notApplicable",
+			"type": "riskAdjustment", "requirementId": "V-1", "impact": map[string]any{"value": 0.3},
 			"reason": "compensating control", "expiresAt": "2099-12-31T00:00:00Z",
 			"appliedBy": map[string]any{"identifier": "jdoe", "type": "username"},
 		}},
@@ -97,7 +97,7 @@ func TestAttribution_EndToEndAgentCount(t *testing.T) {
 	driveCalls(t, []call{{"hdf_author", map[string]any{
 		"docType": "amendments", "name": "A",
 		"content": []any{map[string]any{
-			"type": "riskAdjustment", "requirementId": "CVE-2024-1000", "status": "notApplicable",
+			"type": "riskAdjustment", "requirementId": "CVE-2024-1000", "impact": map[string]any{"value": 0.3},
 			"reason": "compensating control in place", "expiresAt": "2099-12-31T00:00:00Z",
 		}},
 		"output": "amendments.json",

@@ -6,8 +6,8 @@
 // dest/vendor_product/category) are promoted to the top of the event payload,
 // the hot query scalars among them (signature/signature_id/dest/severity/cve/
 // cvss + hdf_status + suppressed) are additionally mirrored into the HEC indexed
-// `fields` so they survive Splunk's ~5000-char extraction cutoff, and a lossless
-// hdf.* block preserves the full requirement. Output is plain NDJSON (one HEC
+// `fields` so they survive Splunk's ~5000-char extraction cutoff, and a legacy
+// hdf.* projection carries selected requirement fields. Output is plain NDJSON (one HEC
 // object per line, LF-delimited, trailing newline).
 //
 // Status is raw-primary: hdf_status carries the RAW verdict (a waived failure is
@@ -18,7 +18,7 @@
 // risk-adjusted still-failing control stays in. The canonical "still actionable"
 // query is hdf_status=failed suppressed=false.
 //
-// Generic JSON access, the status roll-up, field extraction, the lossless hdf.*
+// Generic JSON access, the status roll-up, field extraction, the legacy hdf.*
 // block, and the canonical byte-identical line encoder are shared with the
 // other exporters via the exportmap package; only Splunk/CIM-specific shaping
 // lives here.
@@ -61,7 +61,7 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	category := firstCWE(req)
 	vendorProduct := exportmap.GetStr(tool, "name")
 
-	hdfBlock := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed, generator, tool, converterVersion)
+	hdfBlock := exportmap.BuildHDFBlockFromStatus(req, baseline, st, generator, tool, converterVersion)
 	augmentHDFBlock(hdfBlock, req, baseline, component)
 
 	event := map[string]interface{}{
@@ -114,24 +114,13 @@ func buildHECEvent(req, baseline map[string]interface{}, docTimestamp string, to
 	return hec
 }
 
-// augmentHDFBlock adds the Splunk-specific lossless keys the shared exportmap
-// block omits but the splunk-to-hdf importer round-trips: the requirement's
-// source_location, the baseline metadata beyond its name
-// (version/title/checksum/groups), and the full target component. Each is
-// emitted only when the source carries it, so absent fields stay absent.
+// augmentHDFBlock adds the established Splunk query and context aliases.
+// This HEC export differs from the header/profile/control format the importer accepts.
 func augmentHDFBlock(hdf, req, baseline, component map[string]interface{}) {
 	if v, ok := req["sourceLocation"]; ok {
 		hdf["source_location"] = v
 	}
-	if v, ok := baseline["version"]; ok {
-		hdf["baseline_version"] = v
-	}
-	if v, ok := baseline["title"]; ok {
-		hdf["baseline_title"] = v
-	}
-	if v, ok := baseline["checksum"]; ok {
-		hdf["baseline_checksum"] = v
-	}
+	exportmap.AddBaselineMetadata(hdf, baseline)
 	if v, ok := baseline["groups"]; ok {
 		hdf["groups"] = v
 	}
@@ -203,4 +192,11 @@ func firstCWE(req map[string]interface{}) string {
 		}
 	}
 	return ""
+}
+
+// ConvertHDFToSplunkBundle exports finding events with their original source artifact.
+func ConvertHDFToSplunkBundle(input []byte, converterVersion string) (*exportmap.ExportBundle, error) {
+	return exportmap.ProjectExportBundle(input, "splunk", func(source []byte) ([]byte, error) {
+		return ConvertHDFToSplunk(source, converterVersion)
+	})
 }

@@ -10,6 +10,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -132,14 +133,13 @@ func TestSeverityMappingKeepsFiveLevels(t *testing.T) {
 	assert.Equal(t, 0.7, impactFor("HIGH"))
 	assert.Equal(t, 0.5, impactFor("MEDIUM"))
 	assert.Equal(t, 0.3, impactFor("LOW"))
-	// canonical info tier: 0.0, like every other converter in the repo. The
-	// effective-status layer treats impact-0 requirements as notApplicable, so
-	// info-tier findings stay visible without entering the compliance ratio.
+	// canonical info tier: 0.0, like every other converter in the repo. The band
+	// says how much a finding matters, not whether the requirement applies.
 	assert.Equal(t, 0.0, impactFor("INFO"))
 	assert.Equal(t, 0.0, impactFor("TRACE"))
 	// unknown and absent both fall to moderate
-	assert.Equal(t, defaultImpact, impactFor("NOVEL"))
-	assert.Equal(t, defaultImpact, impactFor(""))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor("NOVEL"))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor(""))
 }
 
 func TestAbsentSeverityGetsUnratedMarker(t *testing.T) {
@@ -158,7 +158,7 @@ func TestAbsentSeverityGetsUnratedMarker(t *testing.T) {
 // Parity twin of the TS prototype-named-token test: both languages must treat
 // "constructor" as an ordinary unknown token (default impact, fallback tier).
 func TestPrototypeNamedTokensAreOrdinaryUnknowns(t *testing.T) {
-	assert.Equal(t, defaultImpact, impactFor("constructor"))
+	assert.Equal(t, hdfutil.UnknownSeverityImpact, impactFor("constructor"))
 	_, _, source := ResolveControls(Query{QueryID: "constructor"}, KicsMappingData)
 	assert.Equal(t, nistMappingFallback, source)
 }
@@ -358,10 +358,9 @@ func TestCoverageRequirementRecordsTheDenominator(t *testing.T) {
 	require.NotNil(t, cov)
 	assert.Greater(t, cov.Tags["queriesExecuted"], cov.Tags["queriesWithFindings"])
 	assert.Equal(t, 0.0, cov.Impact)
-	// notApplicable matches what the effective-status layer derives for an
-	// impact-0 requirement, and it is the one status the compliance rollup
-	// excludes. Passed would export to CKL as NotAFinding and count as a free
-	// pass in raw status rollups.
+	// notApplicable is the one status the compliance rollup excludes, and it has
+	// to be stated as a result — impact 0 no longer implies it. Passed would
+	// export to CKL as NotAFinding and count as a free pass.
 	assert.Equal(t, hdf.NotApplicable, cov.Results[0].Status)
 	assert.Contains(t, cov.Results[0].CodeDesc, "violations only")
 	assert.Contains(t, cov.Results[0].CodeDesc, "should not be read as a pass rate")

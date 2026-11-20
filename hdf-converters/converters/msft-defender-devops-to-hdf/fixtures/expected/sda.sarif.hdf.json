@@ -735,7 +735,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 215
                   }
                 }
               },
@@ -749,7 +749,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 280
                   }
                 }
               }
@@ -863,7 +863,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 165
+                    "startLine": 179
                   }
                 }
               },
@@ -877,7 +877,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 165
+                    "startLine": 215
                   }
                 }
               },
@@ -1109,7 +1109,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 165
+                    "startLine": 179
                   }
                 }
               },
@@ -1123,7 +1123,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 165
+                    "startLine": 215
                   }
                 }
               },
@@ -1448,7 +1448,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 215
                   }
                 }
               },
@@ -1462,7 +1462,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 325
                   }
                 }
               }
@@ -1694,7 +1694,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 215
                   }
                 }
               },
@@ -1708,7 +1708,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 325
                   }
                 }
               }
@@ -2019,7 +2019,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 215
                   }
                 }
               },
@@ -2033,7 +2033,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 280
                   }
                 }
               }
@@ -2265,7 +2265,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 215
                   }
                 }
               },
@@ -2279,7 +2279,7 @@
                 "location": {
                   "ref": "samples/insecure_arm.json",
                   "region": {
-                    "startLine": 179
+                    "startLine": 280
                   }
                 }
               }

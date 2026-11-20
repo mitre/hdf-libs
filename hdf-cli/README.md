@@ -56,7 +56,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.7.2
+VERSION=3.8.0
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -71,7 +71,7 @@ Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm6
 
 ### Build from source
 
-**Requirements:** Go 1.26+, pnpm
+**Requirements:** Go 1.27.4+, pnpm
 
 ```bash
 # From the hdf-libs monorepo root
@@ -193,7 +193,8 @@ FLAGS
                          error (not_applicable and not_reviewed also accepted). A value outside the
                          vocabulary is rejected, not matched against nothing. The listed forms are
                          rendered from the engine's vocabulary, so help and refusal cannot disagree.
-  -a, --all              Show all details (expand every section)
+  -a, --all              With --detail requirements, print a flat ID/Status/Title table instead of
+                         grouping by status. No effect on the summary or on any other section.
 
 EXAMPLES
   hdf list results.json                              # summary (counts + status breakdown)
@@ -204,27 +205,27 @@ EXAMPLES
   hdf list results.json --json
 ```
 
-Example output:
+Example output, from the shared fixture `hdf-fixtures/results/inspec-multilayered.json` (the detail listing is cut to its first rows):
 
 ```console
-$ hdf list results.json
+$ hdf list hdf-fixtures/results/inspec-multilayered.json
 Baselines:    5
 Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          271
-  ○ not_applicable  233
-  ? not_reviewed    965
+  ✗ failed          273
+  ? not_reviewed    1196
 
-$ hdf list results.json --detail requirements -s failed
-Requirements: 271
+$ hdf list hdf-fixtures/results/inspec-multilayered.json --detail requirements -s failed
+Requirements: 273
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
+SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
-V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
 ```
 
 ### query
@@ -256,7 +257,9 @@ FLAGS
                                never tags.cwe, so a SARIF-derived document matches nothing
                                until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
-      --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
+      --nist stringArray       Filter by NIST control (repeatable, OR logic). Exact by default, so
+                               AC-2 reaches neither AC-2 (1) nor CM-6 b; a * or ? wildcard globs —
+                               AC-2* for one control's enhancements and sub-parts, AC-* for the family
       --id string              Filter by requirement ID, STIG ID, GID, or group title (exact; * or ? globs)
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
       --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
@@ -273,7 +276,8 @@ FLAGS
                                which kind it is, and reads the GOVERNING plan only
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
-      --search string          Search in control title and description
+      --search string          Search requirement id, title, and description (case-insensitive
+                               substring). It does not read code.
   -p, --baseline string        Filter by profile name
       --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
                                glob allowed on the value, e.g. environment:prod*). Labels say which
@@ -311,20 +315,22 @@ EXAMPLES
 
 Example output:
 
+Run on `hdf-fixtures/results/inspec-multilayered.json`, the same document as the `list` example:
+
 ```console
-$ hdf query results.json --status failed --limit 5
+$ hdf query inspec-multilayered.json --status failed --limit 5
 Found 5 matching requirement(s):
 
-ID        Status  Severity  Title
---------  ------  --------  -------------------------------------------------------
-V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
-V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
-V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
+ID         Status  Severity  Title
+---------  ------  --------  -------------------------------------------------------
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
 
-$ hdf query results.json --status failed --count
-271
+$ hdf query inspec-multilayered.json --status failed --count
+273
 ```
 
 ### diff
@@ -343,8 +349,8 @@ FLAGS
       --name-only          List only changed requirement IDs
       --group-by string    Group results by label key (e.g., baseline)
       --regressed          Show only regressions (also --fixed, --new, --absent)
-  -q, --quiet              Suppress output, return exit code only (implies --exit-code)
-      --exit-code          POSIX diff exit codes: 0=identical, 1=differences
+  -q, --quiet              Suppress output, return exit code only
+      --exit-code          Accepted for compatibility; changes nothing (0/1 is always on)
       --detailed-exitcode  Nuanced codes: 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift
       --system string      System document for component-aware comparison
       --sbom               Treat inputs as CycloneDX/SPDX SBOM documents
@@ -371,6 +377,24 @@ REQ-001  Test Requirement               passed      failed      regressed
 REQ-002  Audit logging must be enabled  -           passed      new
 
 Summary: 0 fixed, 1 regressed, 1 new, 0 absent, 0 unchanged, 0 updated (2 total)
+```
+
+**Exit codes.** `hdf diff` exits 0 when the documents are identical and 1 when they differ, as GNU diff does, whatever flags are passed; `--exit-code` is accepted and changes nothing. A script running under `set -e` that only wants the report must therefore allow for 1. A diff that cannot run at all (a missing file, a document it cannot parse) also exits 1, so in this mode 1 does not tell a failure from a difference. `--detailed-exitcode` replaces the 0/1 verdict and keeps 1 for failure alone:
+
+| Code | `--detailed-exitcode` meaning |
+|------|---------|
+| `0` | Identical |
+| `1` | The diff could not read its inputs (a missing file, a document it cannot parse) |
+| `10` | Fixes only |
+| `11` | Regressions only |
+| `12` | Both fixes and regressions |
+| `13` | Baseline changed: only new or absent requirements |
+| `14` | Metadata drift only: no status changed |
+
+```bash
+# Produce a report whatever changed, but fail the job if the diff itself fails.
+hdf diff old-scan.json new-scan.json --detailed-exitcode > report.txt; rc=$?
+[ "$rc" -eq 0 ] || [ "$rc" -ge 10 ]
 ```
 
 ### events
@@ -501,6 +525,80 @@ Agent-attributed overrides: 0
 On auto-detection the source format and a confidence score are reported on the `Detected:` line; an explicit `--from` skips only that line. Both forms write to `-o` (or stdout) and print the per-file `<file>: N requirements, ...` summary on stderr whenever the converter declares how many requirements its input must yield; if the produced count differs, the conversion is refused and no output is written.
 
 See [Supported Conversions](#supported-conversions) for the full list.
+
+#### convert --bundle
+
+Deliver one HDF assessment as searchable ECS, Splunk or OCSF findings together
+with its exact original source in a standard evidence-package ZIP:
+
+```bash
+hdf convert results.json --to ecs --bundle -o export.zip
+```
+
+Use `--to splunk` or `--to ocsf` for the other targets. The deterministic archive
+contains `evidence-package.json`, `events.ndjson`, byte-identical `source.json`
+and the existing SIEM `manifest.json`. The package records explicit SHA512
+checksums for all three artifacts. Empty assessments retain all four files,
+including a zero-byte event stream. No timestamp, system identity or completeness
+claim is invented for the package.
+
+Bundle mode requires one local source file and a file output. Directories,
+multiple inputs, stdin and transformation flags such as `--from`, `--force`,
+`--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
+archive but never the input or its filesystem aliases; it requires `--bundle`.
+The archive is staged beside `-o` and published complete, the same way `hdf evidence
+bundle` publishes one: `--output-access private` (the default) or `inherit` sets who
+may read it, an `-o` that already exists or appears during the run is refused unless
+`--overwrite` is passed, and a failed run leaves `-o` untouched. [`evidence`](#evidence)
+describes what each access mode checks on Linux, macOS and Windows, and which
+filesystems cannot publish without `--overwrite`. Archive permissions do not travel
+inside the ZIP; move it between jobs with an authenticated artifact transfer.
+Ordinary conversion is unchanged, including for an input file named `bundle`.
+
+#### evidence resolve
+
+Verify the selected packaged export and recover the complete original source:
+
+```bash
+unzip export.zip -d retained
+head -n 1 retained/events.ndjson > retained/event.json
+hdf evidence resolve retained/evidence-package.json --event retained/event.json > recovered.json
+cmp retained/source.json recovered.json
+```
+
+This example requires at least one finding. Empty assessments have no event to
+resolve; their source remains in the archive and can be verified with
+`hdf evidence info retained/evidence-package.json --verify --require-checksums --require-reachable`.
+
+Recovery validates the package, selects one registered SIEM profile, verifies
+the source/events/manifest checksums and compares the finding's preserved
+requirement with its original occurrence. It writes the exact source bytes to
+stdout only after success. Missing or changed artifacts, unsupported checksums,
+wrong types/formats, ambiguous references and record disagreements fail.
+
+A package with multiple exports requires `--manifest` naming one registered
+package-relative profile URI. Keep each export in its own directory. References
+decode percent escapes exactly once, must agree between package and manifest,
+and remain within the package directory. Size limits and the configured symlink
+policy apply to all reads. Recovery does not fetch URLs or extract archives.
+It verifies the selected export, not unrelated package contents or completeness.
+Use `evidence info --verify` for whole-package verification.
+
+`--event` takes one complete event in the exporter's shape, not a vendor search
+response. For Elasticsearch, retain the raw `_source` JSON. For Splunk, retain
+the decoded `_raw` string and wrap that JSON as `{"event":<raw JSON>}` without
+parsing and reserializing its inner numbers. OCSF uses its complete event. Do not
+round numeric tokens through ordinary JavaScript object parsing before recovery.
+
+Retain the package and its artifacts for the lifetime of the finding events.
+NDJSON alone cannot recover baseline and document context. Checksums establish
+consistency with the supplied inventory, not authenticity of an unsigned
+package. Signatures are retained but not authenticated; source data is not
+automatically redacted. Shell redirection creates or truncates its destination
+before the command runs, so use a new recovery filename, never `source.json`.
+The initial `legacy-additive/1` profile retains native projections and legacy
+repeated fields. Real SIEM ingestion/readback remains separate integration
+verification.
 
 ### system
 
@@ -681,6 +779,7 @@ EXAMPLES
   hdf evidence build --system system.json --results r1.json --results r2.json -o q1.hdf-evidence-package.json
   hdf evidence build --system system.json --results "scans/*.json" --plan q3-plan.json --baseline rhel9.json -o q1.hdf-evidence-package.json
   hdf evidence build --results "scans/*.json" -o lib.hdf-evidence-package.json
+  hdf evidence build --from-dir artifacts -o artifacts/q1.hdf-evidence-package.json --require-readable
   hdf evidence info q1.hdf-evidence-package.json
   hdf evidence info q1.hdf-evidence-package.json --verify
   hdf evidence info q1.hdf-evidence-package.json --verify --require-reachable
@@ -689,15 +788,26 @@ EXAMPLES
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri sbom.cdx.json --infer
+  hdf evidence add-evidence q1.hdf-evidence-package.json --file 'reports/*.sarif' --format x-sarif
+  hdf evidence add-evidence q1.hdf-evidence-package.json --file 'reports/*.sarif' --file 'tests/*.xml' --format x-sarif --format x-junit
+  hdf evidence add-evidence q1.hdf-evidence-package.json --from-dir logs --recursive --format raw-log
   hdf evidence add-reference q1.hdf-evidence-package.json --source-name stix --kind threat-intel --href cti/bundle.json
   hdf evidence add-ref q1.hdf-evidence-package.json --source-name cve --external-id CVE-2021-44228 --rel reference
   hdf evidence update q1.hdf-evidence-package.json --results scans/q4.json -o q4.hdf-evidence-package.json
   hdf evidence update q1.hdf-evidence-package.json --results "scans/*.json" --overwrite
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip --overwrite
+  hdf evidence bundle q1.hdf-evidence-package.json -o shared/q3-evidence.zip --output-access inherit
+  hdf evidence export q1.hdf-evidence-package.json --format oscal -o oscal/
 ```
 
+**A package read from stdin needs `-o`.** Passing `-` as the package reads it from stdin, and the commands that write a package (`add-evidence`, `add-reference`, `set` and `update`) then require `-o <file>` and resolve its package-relative references beside that file, because a stdin package has no file to write back to; `update` refuses `--overwrite` with one for the same reason. Of the commands that only read a package, `info --verify` and `bundle` refuse a stdin package that records any package-relative reference, since there is no directory for it to be relative to, and `export` requires an explicit `-o` for one.
+
+**`export` writes one file per document, named for its source.** Each `hdf-results` entry becomes `<name>.oscal-sar.json` and each `hdf-amendments` entry `<name>.oscal-poam.json` in the `-o` directory, where `<name>` is the referenced file's name without its extension — `scans/rhel9-results.json` exports to `rhel9-results.oscal-sar.json`. Every entry used to go to one fixed `oscal-sar.json` or `oscal-poam.json`, so a package with two results documents kept only the last while counting both as exported. Two entries that would share an output name, such as `rhel9/results.json` and `postgres/results.json`, are refused before anything is written, naming both; names are compared case-insensitively, because on a case-insensitive volume `Results.json` and `results.json` are one file. An entry that cannot be read or converted is a warning and the rest still export, and the closing count says how many failed. When the package lists results or amendments and none of them exports, the command exits 1, and when only some export it exits 3, the CLI's code for a partial run; a package with neither is not a failure, and says so.
+
 **`--system` is optional, and a package that records no `systemRef` asserts no system.** The schema requires `name` and `contents` only, and a package without a system reference stands for the documents it lists and nothing more — which is what an assessment of a library, or any other lone component, actually claims: there is no authorization boundary, no categorization and no authorizing official to point at. `build` says so on stderr when the flag is omitted, names the package `evidence-package`, and leaves `systemRef` absent rather than empty, since an empty `uri-reference` would claim a reference to nothing. The completeness check then claims neither full baseline coverage nor component coverage, because both are claims about system components and there is no system document to check against; `hdf evidence update` reports the same thing for a package whose `systemRef` stops resolving. `--from-dir` behaves the same way — a CI artifacts directory for a software package has no system document in it — while a directory holding more than one is still refused. `hdf evidence set --system-ref` records a system later, and `--name` names the package. `info --verify` reads completeness from the plan, never from the system document, so a system-less package verifies normally.
+
+**`build --from-dir` routes every file by its content, and reports what it cannot read.** The scan recurses through the directory and files each document under the `Content_Type` its content detects, never its filename. A file over `--max-size` is never opened, and one the scan has no permission to read cannot be; each is named on stderr as `present but could not be read`, with the `--max-size` remedy when that is the cause, and by default the package is built without it at exit 0, because an artifacts directory routinely holds a capture or log nobody meant to package. Pass `--require-readable` when the tree is meant to be packaged whole: any such skip then fails the build at exit 1, the error names every skipped file with its remedy, and nothing is written. The flag only means something with `--from-dir` and is refused without it, since an explicitly named file that cannot be read already fails the build. A file or directory whose name is not valid UTF-8 is a different case: it is readable, but no reference can record its name, so the scan skips it with a notice saying so whether or not `--require-readable` is set, and naming such a file explicitly fails the build.
 
 **`hdf evidence verify` has been REMOVED; it is now `hdf evidence info --verify`.** A breaking change, and a deliberate one: the two commands read one document and described it, and five separate fixes in this release were places where they described it differently. `info` without the flag stays a single-document read that opens nothing it references, so it reports what the package **records** — an entry recording a checksum, an empty one, or none — and hashes nothing, so it ticks nothing. `--verify` opens every reference and reaches a verdict, and every flag the old command took still works there: `--checksums-only`, `--require-reachable`, `--require-checksums-match`. The old name exits non-zero and names the replacement rather than silently doing nothing, because a removed gate that exits 0 is worse than one that fails.
 
@@ -707,7 +817,7 @@ EXAMPLES
 
 **Two sibling commands, two arrays.** `add-evidence` writes `externalEvidence[]` — native-format material that IS evidence, such as a log or telemetry corpus, indexed by uri + hash + format. `add-reference` (alias `add-ref`) writes `externalReferences[]` — inert context that overrides nothing, which the schema names as CTI/STIX, BOMs and advisories. The test: if the artifact would support or contradict a finding it is evidence; if it only explains one it is a reference. Neither array is ever fetched over the network.
 
-`add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href`, `--description`, `--content-file` or `--document-file` — one per branch of `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. The command reads that rule from the schema rather than restating it, so a branch added there cannot quietly become unauthorable. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time; a URL is left unhashed.
+`add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href`, `--description`, `--content-file` or `--document-file` — one per branch of `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. The command reads that rule from the schema rather than restating it, so a branch added there cannot quietly become unauthorable. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time and recorded as an escaped uri-reference; a URL is recorded exactly as typed, query string and fragment included, and left unhashed.
 
 **Embedding an artifact rather than pointing at one.** `--document-file` reads a JSON **object** and stores it verbatim in `document`. It is deliberately **not hashed**: `document` holds a parsed object, which cannot preserve the source file's whitespace, key order or trailing bytes, so a digest of those bytes would not verify against what is stored — pass `--checksum` to record the source artifact's digest as a claim about it. `--content-file` reads a non-empty file's bytes into `content`, the branch for artifacts `document` cannot hold (XML, CSV, NDJSON, text, or bytes that are not text at all); carriage is byte-exact, so those bytes **are** hashed. `--encoding` is derived from the bytes — `utf-8` when they are valid UTF-8, `base64` otherwise — because an embedded copy whose encoding a consumer has to guess is not lossless; `base64` is the only valid override for bytes that are not valid UTF-8, and the vocabulary is read from the schema's own enum. An explicit `--checksum` always wins over either derivation, and when bytes are embedded alongside `--href` it is the **embedded** bytes that are hashed, since those are the copy a consumer can verify. Note the two kinds of path differ: `--href` names an artifact relative to the **package's** own directory, because it is recorded and read by whoever opens the package, while `--content-file` and `--document-file` name a file relative to the **directory the command runs in**, like `--results` or `--system`, because they are inputs consumed here and nothing about them is recorded.
 
@@ -719,22 +829,26 @@ To attach context to a **results** document's findings instead of to the package
 
 **`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
 
-Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
+Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. The refusal also covers a file that appears at `-o` while the archive is being built: the archive is published with an exclusive rename, or where the filesystem has none a hard link, and both fail rather than replace a name that already exists. A filesystem with neither — exFAT on macOS, or a FUSE filesystem such as an rclone or sshfs mount that implements no hard links — cannot publish without that risk, so `bundle` refuses there unless you write to another directory or pass `--overwrite`. If the archive is published but flushing its directory entry to disk then fails, the error says the archive was written to `-o`. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
 
-`--uri` is repeatable. `--format` takes one value for every artifact, or one per `--uri` in the order given; any other count is refused rather than guessed. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred. The same URI twice is refused rather than ignored, because a repeat add usually means the artifact changed and its new checksum must be recorded deliberately.
+**`bundle` archives are private by default.** `--output-access private` (the default) creates the archive owner-only (mode 0600) at the moment it is created and, before writing anything, reads the owner and mode back from the open file; if the storage cannot show owner-only — a default SMB mount reads back 0755, and a FAT volume reads back whatever its mount mask allows — the run fails, removes its staged file and leaves `-o` untouched, rather than trust a mode the filesystem did not apply. `--output-access inherit` creates the archive with the directory's normal access instead (mode 0666 under your umask, plus any default ACL), for a directory provisioned for sharing between accounts; with umask 077 it is still private. Neither mode changes permissions after writing, and a failed private check never falls back to `inherit`. On Linux, `private` also reads the file's NFSv4 ACL and refuses one that gives anyone but the owner access to the data, or the right to change the file's ACL or owner — on NFSv4 an entry inherited from the directory can survive a 0600 create. On Windows, where a file mode only sets the read-only attribute, `private` creates the archive with a protected access list whose one entry grants your account full access, so the folder's inherited grants do not reach it, then reads it back before writing; a volume that does not keep access lists (FAT, exFAT) is refused, and `inherit` keeps the folder's inherited grants. On macOS, `private` creates the archive with an empty, non-inheriting ACL, so an entry a shared folder passes to new files does not reach it, then reads the ACL back and refuses any entry; a volume that ignores ownership (most external drives) is refused. On network or shared storage one line notes that the server and its mount options also control who can read the file; it is a note, not a refusal, and it is best-effort by filesystem type (on Linux: NFS, SMB, FUSE, 9p, Ceph, OCFS2, AFS, GFS2 and Lustre; on macOS any non-local volume). On other Unix systems `private` is the 0600 create and the owner-and-mode read-back; ACL inheritance is not checked there. Administrators are outside any file-mode guarantee. A container that runs as root writes a root-owned archive that an upload step running as another user cannot read: run the container as the invoking user (`docker run --user "$(id -u):$(id -g)"`) or pass `--output-access inherit`.
 
-Example output:
+`--uri` is repeatable and stays literal. For local discovery, repeat `--file` with filesystem paths or quoted globs relative to the working directory — each selected file is recorded as a package-relative reference, and a selection outside the package's directory is refused (use `--uri` to reference an external artifact deliberately) — or use `--from-dir` (immediate files, with `--recursive` to include nested directories). Give one `--format` for everything or one per selector group in `--uri`, `--file`, `--from-dir` order, preserving repeat order within each flag. Formats are assigned before expansion, so every file matched by a selector gets its group's format. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred.
+
+Discovery excludes the package and output file, and skips hidden entries and hidden subtrees such as `.git/` with a count on stderr (a dotfile named literally by `--file` is selected); a discovered symlink or other non-regular entry is skipped with a notice naming it, while one named by `--file` is refused, and `--no-follow-symlinks` refuses a symlinked file on every selector including `--uri`. Same-format discovery overlaps are deduplicated; literal duplicates, conflicting formats, and already-recorded references are refused. Selected local files are independently hashed with SHA-512, so `--checksum` is unavailable with local selectors. A selection/read/validation failure writes nothing; an empty selection exits 4. See [bulk native report examples](../site/docs/guides/evidence-package-workflow.md#add-native-reports-in-bulk) for mixed formats and recursion.
+
+Example output, from the CLI test package `hdf-cli/cmd/hdf/cmd/testdata/evidence-verify/evidence.json`. Without `--verify` nothing is hashed, so each row says only whether the package records a checksum:
 
 ```console
-$ hdf evidence info q1-2026.hdf-evidence-package.json
+$ hdf evidence info cmd/hdf/cmd/testdata/evidence-verify/evidence.json
 Evidence Package: Portal Prod Q1 Evidence
 System: system.json
 
 Contents (4):
-  hdf-system       system.json  ✓ checksum
-  hdf-plan         plan.json  ✓ checksum
-  hdf-results      rhel9-results.json  ✓ checksum
-  hdf-results      postgres-results.json  ✓ checksum
+  hdf-system       system.json  checksum recorded
+  hdf-plan         plan.json  checksum recorded
+  hdf-results      rhel9-results.json  checksum recorded
+  hdf-results      postgres-results.json  checksum recorded
 ```
 
 ### label
@@ -852,9 +966,15 @@ Fetch AWS Config compliance evaluation results and convert to HDF.
 
 Credentials are resolved via the standard AWS credential chain: environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), shared credentials file (`~/.aws/credentials`), or IAM instance role.
 
-**Service-linked rules are excluded.** Config rules owned by an AWS service (`CreatedBy` set — Security Hub, conformance packs, Organizations) can't be read via the Config API by a customer principal, so they're skipped (a `WARNING: skipped N service-linked rule(s)` is printed to stderr). Fetch their findings through the owning service instead — e.g. `hdf fetch aws-securityhub` for Security Hub controls.
+**Rules whose evaluations the Config API will not return are skipped.** AWS marks each rule's evaluations as readable or not through `RuleEvaluationVisibility`; a rule reporting `INTERNAL` (Security Hub standards rules, for example) is skipped with a `WARNING: aws-config: skipped N rule(s) ...` on stderr that names each rule and the service that provisioned it. Fetch those findings through the owning service instead, such as `hdf fetch aws-securityhub`. Rules deployed by a conformance pack are service-linked and read-only, but their evaluations and remediation configurations are readable, so they are fetched like any other rule.
 
-**Remediation surfaces as a `fix` description.** A customer-managed rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation.
+**Remediation surfaces as a `fix` description.** A rule with an attached remediation configuration (SSM Automation document) gains a `fix` description in its HDF requirement describing the remediation. Remediation is looked up in batches; a batch the API refuses is retried one rule at a time, so one rule without a readable remediation never costs the others theirs.
+
+**A Region with nothing readable is an empty export.** `--format raw` writes `{"ConfigRules":[]}`. HDF output refuses it with `no Config rules to convert in <region>`, because a results document needs at least one requirement; the warnings name every rule that was skipped or could not be read. A permission refusal before any rule has read fails the fetch at once, naming `config:GetComplianceDetailsByConfigRule`.
+
+**A rule the API refuses costs that rule.** A rule that vanished between listing and reading, or that this principal may not read, is dropped and named in one warning on stderr, grouped by cause so a reason shared by many rules is given once; a run that still read something exits `0` and writes it, because the exit-code vocabulary has no code for a run that completed with warnings; a run left with nothing readable is the empty export above. A refusal before any rule has read is a principal without `config:GetComplianceDetailsByConfigRule` and fails the run instead, naming that permission. A read the service rejects as invalid is treated the same way: that rule is dropped once another has read, and the run fails if nothing has, because a rejected request is usually rejected for every rule. Throttling and network errors always fail the run.
+
+**Deadline.** With no deadline on the command's context, listing is bounded to five minutes and reading grows with the number of rules listed (three seconds per rule on top of the listing budget), since each rule's evaluations are read in turn.
 
 ```
 USAGE
@@ -1158,7 +1278,7 @@ Environment variables:
 |----------|-------------|---------|
 | `HDF_MCP_ROOT` | Path-confinement root; every tool path and write output is resolved under it and anything outside is refused | process working directory |
 | `HDF_MCP_ENABLE_WRITES` | Write gate; `1`, `true`, `yes`, or `on` permits writes to disk, anything else leaves the write tools in preview mode | disabled |
-| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 50 MB |
+| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 256 MB |
 | `HDF_MCP_CACHE_BYTES` | Budget for the parsed-document cache | 256 MB |
 | `HDF_MCP_LOG_LEVEL` | Stderr log level: `error`, `warn`, `info`, or `debug` | `info` |
 | `HDF_MCP_TOOLS` | Same syntax as `--tools`; the flag takes precedence when both are set | all tools |
@@ -1199,14 +1319,14 @@ One vocabulary for every command, so a pipeline can test the code rather than pa
 | Code | Meaning |
 |------|---------|
 | `0` | Success. In a bulk run, every file succeeded. |
-| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written; `query` with no matching requirements. |
+| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; a command that builds one output from several inputs (`system add-component`, `events fold` and `apply`, `evidence build`) where an input could not be read, in which case nothing is written — for `evidence build --from-dir` that means a named input, while a file the scan could not read is skipped and reported at exit 0 unless `--require-readable` is passed; `query` with no matching requirements. |
 | `2` | Usage. The invocation itself was wrong: an unknown flag, a missing required flag, the wrong number of arguments, or a command name that does not exist — at the root (`hdf bogus`) or under a group (`hdf evidence bogus`). A group invoked with no subcommand at all prints its help and exits 0. |
 | `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
 | `4` | Nothing to do. A glob matched no files in a command that expands them (`convert`, `evidence build`, `list`, `query`, `validate`, `validate threshold`), and the message names the pattern; or `evidence build` was given no results files at all. An `amend apply` whose register matched no requirement is not this: it exits 0 unless `--require-match` is passed. |
 
-`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff --exit-code` and `--detailed-exitcode` keep their own verdict codes, documented under [diff](#diff); a diff that fails to run uses the codes above.
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff` is the one command whose successful run can exit non-zero: it exits 1 when the documents differ, as GNU diff does, with or without `--exit-code`, and `--detailed-exitcode` replaces that verdict with codes 10 to 14. Both are documented under [diff](#diff); a diff that cannot read its inputs exits 1, as above, and a usage error such as an unknown flag exits 2 like any other command.
 
-One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run.
+One behaviour to know about: `evidence build` hashes the inputs it is handed without validating their contents, because `hdf validate` is the gate for that, so a results file that is not valid HDF is packaged rather than refused; only a file it cannot read fails the run (under `--from-dir`, only with `--require-readable`).
 
 ## Supported Conversions
 
@@ -1330,7 +1450,8 @@ From the monorepo root:
 ```bash
 pnpm build           # build everything (schema types + hdf binary)
 pnpm test            # run all tests (Go + TypeScript)
-pnpm lint            # run golangci-lint
+pnpm lint            # ESLint (TypeScript)
+pnpm lint:go         # golangci-lint (hdf-cli, hdf-converters, hdf-utilities)
 ```
 
 From within `hdf-cli/` directly:

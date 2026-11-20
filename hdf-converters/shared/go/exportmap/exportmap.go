@@ -20,6 +20,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
@@ -90,7 +91,7 @@ func IsFailing(status string) bool { return status == "failed" }
 // Status carries the resolved status context for one requirement.
 type Status struct {
 	Raw        string // worstOf(results[].status) — the RAW verdict
-	Rollup     string // canonical effective status (ladder: override → error → impact-0 → roll-up)
+	Rollup     string // canonical effective status (ladder: override → worst-wins roll-up)
 	Overridden bool   // statusOverride records present
 	// Suppressed is the acceptance axis, orthogonal to the raw verdict: the raw
 	// result is failing but an override drove the effective status non-failing
@@ -108,13 +109,8 @@ func StatusOf(req map[string]interface{}) Status {
 	raw := WorstOfResults(req)
 	overrides, _ := AsSlice(req["statusOverrides"])
 
-	// impact is schema-required; when a malformed map lacks it, do not read
-	// the absence as 0 (which would force notApplicable) — skip the impact-0
-	// rung instead, matching hdf-diff's wrapper.
-	impact := 1.0
-	if v, ok := req["impact"].(float64); ok {
-		impact = v
-	}
+	// The ladder ignores impact; it is carried only by the shared input shape.
+	impact, _ := req["impact"].(float64)
 
 	overrideIns := overrideInputs(overrides)
 	rollup := hdfutil.ComputeEffectiveStatus(hdfutil.EffectiveStatusInput{
@@ -124,10 +120,9 @@ func StatusOf(req map[string]interface{}) Status {
 	}, time.Time{})
 
 	// Suppression is the ACCEPTANCE axis: a governing override drove a failing
-	// raw verdict non-failing. The ladder's own impact-0 rule also yields a
-	// non-failing status, but that is structural Not Applicable, not an
-	// acceptance decision — so suppression additionally requires a governing
-	// override.
+	// raw verdict non-failing. A notApplicable result reaching the roll-up also
+	// yields a non-failing status, but that is a scope claim, not an acceptance
+	// decision — so suppression additionally requires a governing override.
 	governed := hdfutil.GoverningStatusOverride(overrideIns, time.Time{}) != nil
 
 	return Status{
@@ -229,17 +224,26 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 	return strings.Join([]string{comp, baselineName, controlID}, "|")
 }
 
-// --- lossless hdf.* block ---
+// --- legacy hdf.* projection ---
 
-// BuildHDFBlock builds the lossless hdf.* namespace shared by the export
-// converters: promoted snake_case scalars plus the full requirement sub-objects
-// preserved verbatim. status is the lossless results roll-up (StatusOf().Raw);
-// suppressed is the acceptance axis (StatusOf().Suppressed).
+// BuildHDFBlock builds the hdf.* block from a raw verdict and the two flags.
+//
+// Deprecated: use BuildHDFBlockFromStatus with the Status from StatusOf, which keeps
+// the raw verdict and the effective rollup from being swapped.
 func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridden, suppressed bool, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
+	return BuildHDFBlockFromStatus(req, baseline, Status{Raw: status, Overridden: overridden, Suppressed: suppressed}, generator, tool, converterVersion)
+}
+
+// BuildHDFBlockFromStatus builds the lossless hdf.* namespace shared by the export
+// converters: promoted snake_case scalars plus the full requirement sub-objects
+// preserved verbatim. status.Raw is the lossless results verdict and
+// status.Suppressed the acceptance axis; status.Rollup is not read, because the
+// effective rollup does not replace the raw verdict.
+func BuildHDFBlockFromStatus(req, baseline map[string]interface{}, status Status, generator, tool map[string]interface{}, converterVersion string) map[string]interface{} {
 	hdf := map[string]interface{}{
-		"status":           status,
-		"overridden":       overridden,
-		"suppressed":       suppressed,
+		"status":           status.Raw,
+		"overridden":       status.Overridden,
+		"suppressed":       status.Suppressed,
 		"exporter_version": converterVersion,
 	}
 	SetIf(hdf, "control_id", GetStr(req, "id"))
@@ -298,6 +302,25 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 		hdf["tool"] = tool
 	}
 	return hdf
+}
+
+// baselineMetadata maps the declared baseline fields the exporters carry to
+// their hdf.* keys. Integrity is where a profile's hash lives (an InSpec sha256
+// lands in integrity.checksum), so it goes whole, algorithm and signature with it.
+var baselineMetadata = [...]struct{ src, dst string }{
+	{"title", "baseline_title"},
+	{"version", "baseline_version"},
+	{"integrity", "baseline_integrity"},
+}
+
+// AddBaselineMetadata copies the baseline's declared metadata into an hdf.*
+// block, verbatim, adding only the keys the baseline carries.
+func AddBaselineMetadata(hdf, baseline map[string]interface{}) {
+	for _, f := range baselineMetadata {
+		if v, ok := baseline[f.src]; ok {
+			hdf[f.dst] = v
+		}
+	}
 }
 
 // --- canonical line encoding ---
@@ -534,4 +557,54 @@ func Disposition(req map[string]interface{}, ref time.Time) string {
 		return GetStr(req, "disposition")
 	}
 	return ""
+}
+
+// --- rawSourceRecord carriage ---
+
+// RecordLayout selects how a rawSourceRecord's JSON content is laid out.
+type RecordLayout int
+
+const (
+	// RecordCompact is EncodeLine's single-line form.
+	RecordCompact RecordLayout = iota
+	// RecordIndented is EncodeDocument's two-space-indented form.
+	RecordIndented
+)
+
+// BuildJSONRawSourceRecord carries a source tool's JSON record on an HDF result: the
+// bytes are decoded with UseNumber, so every number token survives as written, then
+// re-encoded canonically (keys sorted, < > & raw, U+2028/U+2029 escaped) so the
+// TypeScript peer, buildJsonRawSourceRecord, is byte-identical. Returns nil when
+// there is nothing to carry or the bytes do not decode.
+func BuildJSONRawSourceRecord(raw json.RawMessage, pointer string, layout RecordLayout) *hdf.RawSourceRecord {
+	if len(raw) == 0 {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var untyped interface{}
+	if err := dec.Decode(&untyped); err != nil {
+		return nil
+	}
+	return BuildJSONRawSourceRecordFromValue(untyped, pointer, layout)
+}
+
+// BuildJSONRawSourceRecordFromValue is BuildJSONRawSourceRecord for a value already
+// in hand, encoded as it stands: a struct keeps its declaration order. Returns nil
+// when v does not encode.
+func BuildJSONRawSourceRecordFromValue(v interface{}, pointer string, layout RecordLayout) *hdf.RawSourceRecord {
+	encode := EncodeLine
+	if layout == RecordIndented {
+		encode = EncodeDocument
+	}
+	encoded, err := encode(v)
+	if err != nil {
+		return nil
+	}
+	return &hdf.RawSourceRecord{
+		Content:   string(bytes.TrimRight(encoded, "\n")),
+		Encoding:  hdf.UTF8,
+		MediaType: "application/json",
+		Pointer:   &pointer,
+	}
 }

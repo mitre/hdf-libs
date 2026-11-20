@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -164,9 +165,9 @@ func TestConvertHDFToECS_Override(t *testing.T) {
 	assert.Equal(t, "passed", hdf["effective_status"], "hdf.effective_status is the override outcome")
 	assert.Equal(t, "waiver", hdf["disposition"], "hdf.disposition promoted flat")
 	assert.Equal(t, true, hdf["overridden"])
-	// baseline title + integrity checksum, previously dropped by the fixed allowlist.
 	assert.Equal(t, "RHEL 9 STIG Baseline", hdf["baseline_title"])
-	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "value": "abc123"}, hdf["baseline_checksum"])
+	assert.Equal(t, "1.0.0", hdf["baseline_version"])
+	assert.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, hdf["baseline_integrity"])
 	overrides, ok := hdf["status_overrides"].([]interface{})
 	require.True(t, ok, "hdf.status_overrides present")
 	require.Len(t, overrides, 1)
@@ -379,4 +380,42 @@ func TestConvertHDFToECS_DispositionIsResolvedNotRead(t *testing.T) {
 	labels := sub(t, objs[0], "labels")
 	assert.Equal(t, "riskAdjustment", labels["hdf_disposition"],
 		"the governing override's type, though the document stamps no disposition field")
+}
+
+func TestSourceLocationOptionalMembers(t *testing.T) {
+	tests := []struct {
+		name     string
+		location map[string]interface{}
+		want     map[string]interface{}
+	}{
+		{name: "empty", location: map[string]interface{}{}, want: nil},
+		{name: "file only", location: map[string]interface{}{"ref": "controls/stig.rb"}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"name": "controls/stig.rb"}}}},
+		{name: "zero line", location: map[string]interface{}{"line": float64(0)}, want: map[string]interface{}{"origin": map[string]interface{}{"file": map[string]interface{}{"line": float64(0)}}}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := map[string]interface{}{"id": "X", "sourceLocation": tc.location}
+			event := buildEvent(req, map[string]interface{}{}, "", nil, nil, nil, "0.1.0")
+			if tc.want == nil {
+				require.NotContains(t, event, "log")
+			} else {
+				require.Equal(t, tc.want, event["log"])
+			}
+		})
+	}
+}
+
+func TestConvertBundleRetainsModernBaselineIntegrity(t *testing.T) {
+	input := fixture(t, "input", "override.json")
+	bundle, err := ConvertHDFToECSBundle(input, converterVersion)
+	require.NoError(t, err)
+	event := parseLines(t, bundle.Events)[0]
+	envelope, err := json.Marshal(sub(t, event, "hdf")["source"])
+	require.NoError(t, err)
+	resolved, err := exportmap.ResolveExportSource(envelope, bundle.Manifest, []exportmap.BundleArtifact{{Href: "source.json", Bytes: bundle.Source}})
+	require.NoError(t, err)
+	require.Equal(t, input, resolved.Source)
+	var baseline map[string]interface{}
+	require.NoError(t, json.Unmarshal(resolved.Baseline, &baseline))
+	require.Equal(t, map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"}, baseline["integrity"])
 }

@@ -811,14 +811,14 @@ func (r *renderer) dashboard(t *statusTally) {
 	r.line(stat(statusPassed, all.Passed.Total, labelPassed, plural(checks.underPassed, "individual check")+" passed"))
 	r.line(stat(statusFailed, all.Failed.Total, labelFailed, plural(checks.passedUnderFailed, "individual check")+" passed, "+
 		strconv.Itoa(checks.failedUnderFailed)+" failed out of "+plural(checks.total, "total check")))
-	r.line(stat(classNotApplicable, all.NoImpact.Total, labelNotApplicable, ""))
+	r.line(stat(classNotApplicable, all.NotApplicable.Total, labelNotApplicable, ""))
 	r.line(stat(classNotReviewed, all.Skipped.Total, labelNotReviewed, ""))
 	r.line(stat(statusError, all.Error.Total, labelError, ""))
 	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(severities.Total) + `</span><span class="lbl">Total</span></li>`)
 	r.line(closeList)
 	r.line(bar("Requirements by status", []segment{
 		{statusPassed, statusPassed, all.Passed.Total}, {statusFailed, statusFailed, all.Failed.Total},
-		{classNotApplicable, "not applicable", all.NoImpact.Total},
+		{classNotApplicable, "not applicable", all.NotApplicable.Total},
 		{classNotReviewed, "not reviewed", all.Skipped.Total}, {statusError, statusError, all.Error.Total},
 	}))
 	r.line(closeDiv)
@@ -966,7 +966,7 @@ func bar(label string, segments []segment) string {
 func summaryRow(name string, c *hdfengine.StatusCounts) string {
 	var b strings.Builder
 	b.WriteString(`<tr><th scope="row">` + name + "</th>")
-	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, hdfengine.SeverityTotals(c).Total} {
+	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NotApplicable.Total, c.Error.Total, hdfengine.SeverityTotals(c).Total} {
 		b.WriteString("<td>" + strconv.Itoa(n) + "</td>")
 	}
 	b.WriteString("<td>" + complianceText(c) + rowClose)

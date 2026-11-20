@@ -1,5 +1,5 @@
-import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildHdfResults, deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { parseJSON, parseTimestamp, UNKNOWN_SEVERITY_IMPACT } from '@mitre/hdf-utilities';
+import { buildHdfResults, deriveControlTypeFromTags, ensureDefaultDescription, goZeroDate, inputChecksum, inSpecEstablishedNothing, markUnratedSeverity, synthesizedNoResultsResult, synthesizedNotApplicableResult, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Component,
   EvaluatedBaseline,
@@ -71,7 +71,9 @@ interface SplunkControl extends SplunkEvent {
   title: string;
   desc: string;
   descriptions: Record<string, string>;
-  impact: number;
+  // Optional because an absent impact and an explicit 0 are different claims.
+  // Parity: *float64 in go/converter.go.
+  impact?: number;
   code: string;
   tags: Record<string, unknown>;
   results: SplunkResult[];
@@ -233,10 +235,7 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
 
       const requirements: EvaluatedRequirement[] = profileControls.map(
         (control) => {
-          const descriptions = convertDescriptions(control.descriptions);
-          if (descriptions.length === 0) {
-            descriptions.push(createDescription('default', control.desc ?? ''));
-          }
+          const descriptions = ensureDefaultDescription(convertDescriptions(control.descriptions), control.desc ?? '');
 
           const results: RequirementResult[] = Array.isArray(control.results)
             ? control.results.map((result) => {
@@ -263,6 +262,13 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
           } = {
             tags: control.tags ?? {},
           };
+          // A defaulted impact is unrated unless the source's tags.severity rated it,
+          // as in the file importer. Copied so marking does not write into control.
+          if (control.impact == null) {
+            options.tags = {...options.tags};
+            const severity = options.tags.severity;
+            markUnratedSeverity(options.tags, typeof severity === 'string' ? severity : '');
+          }
 
           if (control.source_location) {
             options.sourceLocation = control.source_location;
@@ -272,9 +278,11 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
             control.id,
             control.title,
             descriptions,
-            // Absent stored impact matches the Go zero value (0.0) rather than
-            // dropping the schema-required field.
-            control.impact ?? 0,
+            // An absent stored impact is unknown severity, not zero severity —
+            // the same rule the file importer applies, since these are the same
+            // InSpec controls. Dropping the field is not an option either: it is
+            // schema-required.
+            control.impact ?? UNKNOWN_SEVERITY_IMPACT,
             results,
             options,
           ) as EvaluatedRequirement;
@@ -291,6 +299,26 @@ export async function convertSplunkToHdf(input: string, converterVersion = '1.0.
             req.controlType = controlType;
           }
           req.verificationMethod = VerificationMethodEnum.Automated;
+
+          // These are InSpec controls read from a store rather than a file, so
+          // the same score-0-and-skip convention applies and must produce the
+          // same document the file importer does.
+          if (
+            control.impact === 0 &&
+            inSpecEstablishedNothing(req.results.map((r) => r.status))
+          ) {
+            req.results.push(
+              synthesizedNotApplicableResult(req.results, goZeroDate()),
+            );
+          }
+
+          // results is schema-required with minItems:1, so a control event that
+          // recorded none would otherwise leave []. After the translation above,
+          // so the two never both fire: an impact-0 resultless control states
+          // its scope claim and nothing else, matching the file importer.
+          if (req.results.length === 0) {
+            req.results = [synthesizedNoResultsResult(goZeroDate(), 'the source carried no results for this control, so nothing was established about it')];
+          }
 
           return req;
         },

@@ -222,58 +222,7 @@ func comparePair(
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
-	// Build baseline maps by name
-	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
-	for _, b := range oldDoc.Baselines {
-		oldBaselineMap[b.Name] = b
-	}
-	newBaselineMap := make(map[string]hdf.EvaluatedBaseline)
-	for _, b := range newDoc.Baselines {
-		newBaselineMap[b.Name] = b
-	}
-
-	// Compute baseline diffs
-	allBaselineNames := make(map[string]bool)
-	for name := range oldBaselineMap {
-		allBaselineNames[name] = true
-	}
-	for name := range newBaselineMap {
-		allBaselineNames[name] = true
-	}
-
-	var baselineDiffs []BaselineDiff
-	for name := range allBaselineNames {
-		oldB, oldExists := oldBaselineMap[name]
-		newB, newExists := newBaselineMap[name]
-
-		switch {
-		case oldExists && newExists:
-			oldVer := derefStr(oldB.Version)
-			newVer := derefStr(newB.Version)
-			state := StateUnchanged
-			if oldVer != newVer {
-				state = StateUpdated
-			}
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				OldVersion: oldVer,
-				NewVersion: newVer,
-				State:      state,
-			})
-		case oldExists:
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				OldVersion: derefStr(oldB.Version),
-				State:      StateAbsent,
-			})
-		case newExists:
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				NewVersion: derefStr(newB.Version),
-				State:      StateNew,
-			})
-		}
-	}
+	baselineDiffs := compareBaselineVersions(oldDoc.Baselines, newDoc.Baselines)
 
 	// Build requirement ID → baseline name maps for populating RequirementDiff.Baseline
 	oldReqBaselineMap := requirementBaselineMap(oldDoc)
@@ -388,6 +337,63 @@ func comparePair(
 	return baselineDiffs, requirementDiffs, nil
 }
 
+func compareBaselineVersions(oldBaselines, newBaselines []hdf.EvaluatedBaseline) []BaselineDiff {
+	// Build baseline maps by name
+	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
+	for _, b := range oldBaselines {
+		oldBaselineMap[b.Name] = b
+	}
+	newBaselineMap := make(map[string]hdf.EvaluatedBaseline)
+	for _, b := range newBaselines {
+		newBaselineMap[b.Name] = b
+	}
+
+	// Compute baseline diffs
+	allBaselineNames := make(map[string]bool)
+	for name := range oldBaselineMap {
+		allBaselineNames[name] = true
+	}
+	for name := range newBaselineMap {
+		allBaselineNames[name] = true
+	}
+
+	var baselineDiffs []BaselineDiff
+	for name := range allBaselineNames {
+		oldB, oldExists := oldBaselineMap[name]
+		newB, newExists := newBaselineMap[name]
+
+		switch {
+		case oldExists && newExists:
+			oldVer := derefStr(oldB.Version)
+			newVer := derefStr(newB.Version)
+			state := StateUnchanged
+			if oldVer != newVer {
+				state = StateUpdated
+			}
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				OldVersion: oldVer,
+				NewVersion: newVer,
+				State:      state,
+			})
+		case oldExists:
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				OldVersion: derefStr(oldB.Version),
+				State:      StateAbsent,
+			})
+		case newExists:
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				NewVersion: derefStr(newB.Version),
+				State:      StateNew,
+			})
+		}
+	}
+
+	return baselineDiffs
+}
+
 // extractDrift returns requirements whose effective status is unchanged but whose
 // metadata changed (non-empty changeReasons). These are "silent" changes.
 func extractDrift(requirementDiffs []RequirementDiff) []RequirementDiff {
@@ -484,7 +490,7 @@ func isZeroValue(v any) bool {
 	}
 	//nolint:exhaustive // Only nilable kinds need special handling; scalars return false.
 	switch rv.Kind() {
-	case reflect.Ptr, reflect.Interface:
+	case reflect.Pointer, reflect.Interface:
 		return rv.IsNil()
 	case reflect.Map, reflect.Slice:
 		return rv.IsNil()
@@ -563,43 +569,7 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 
 	// Matched pairs
 	for _, pair := range matchResult.Matched {
-		id := pair.NewReq.ID
-		if id == "" {
-			id = pair.OldReq.ID
-		}
-
-		fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
-
-		// For baseline evolution, state is determined by metadata changes only
-		state := StateUnchanged
-		if len(fieldChanges) > 0 {
-			state = StateUpdated
-		}
-
-		// Determine change reasons
-		changeReasons := classifyBaselineChangeReasons(pair.OldReq, pair.NewReq)
-
-		title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
-		oldImpact := pair.OldReq.Impact
-		newImpact := pair.NewReq.Impact
-		confidence := roundConfidence(pair.Confidence)
-
-		oldReqCopy := pair.OldReq
-		newReqCopy := pair.NewReq
-
-		requirementDiffs = append(requirementDiffs, RequirementDiff{
-			ID:              id,
-			Title:           title,
-			State:           state,
-			ChangeReasons:   changeReasons,
-			OldImpact:       &oldImpact,
-			NewImpact:       &newImpact,
-			FieldChanges:    fieldChanges,
-			Before:          &oldReqCopy,
-			After:           &newReqCopy,
-			MatchStrategy:   pair.Strategy,
-			MatchConfidence: &confidence,
-		})
+		requirementDiffs = append(requirementDiffs, matchedBaselineRequirement(pair, trackedFields))
 	}
 
 	// Unmatched old requirements (absent)
@@ -699,6 +669,46 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 	}, nil
 }
 
+func matchedBaselineRequirement(pair matching.MatchPair, trackedFields []string) RequirementDiff {
+	id := pair.NewReq.ID
+	if id == "" {
+		id = pair.OldReq.ID
+	}
+
+	fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
+
+	// For baseline evolution, state is determined by metadata changes only
+	state := StateUnchanged
+	if len(fieldChanges) > 0 {
+		state = StateUpdated
+	}
+
+	// Determine change reasons
+	changeReasons := classifyBaselineChangeReasons(pair.OldReq, pair.NewReq)
+
+	title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
+	oldImpact := pair.OldReq.Impact
+	newImpact := pair.NewReq.Impact
+	confidence := roundConfidence(pair.Confidence)
+
+	oldReqCopy := pair.OldReq
+	newReqCopy := pair.NewReq
+
+	return RequirementDiff{
+		ID:              id,
+		Title:           title,
+		State:           state,
+		ChangeReasons:   changeReasons,
+		OldImpact:       &oldImpact,
+		NewImpact:       &newImpact,
+		FieldChanges:    fieldChanges,
+		Before:          &oldReqCopy,
+		After:           &newReqCopy,
+		MatchStrategy:   pair.Strategy,
+		MatchConfidence: &confidence,
+	}
+}
+
 // baselineReqsToEvaluated converts BaselineRequirement slices to EvaluatedRequirement slices
 // for compatibility with the matching system. Baseline requirements are a subset of
 // evaluated requirements — they have metadata but no results.
@@ -751,6 +761,17 @@ func classifyBaselineChangeReasons(oldReq, newReq hdf.EvaluatedRequirement) []Ch
 // in more than one baseline, to avoid implying a single correct baseline.
 const baselineMultiple = "(multiple)"
 
+// recordRequirementBaseline shares the batch/fold baseline ambiguity rule.
+func recordRequirementBaseline(m map[string]string, id, name string) {
+	if existing, exists := m[id]; exists {
+		if existing != name && existing != baselineMultiple {
+			m[id] = baselineMultiple
+		}
+	} else {
+		m[id] = name
+	}
+}
+
 // requirementBaselineMap returns a map from requirement ID to the name of the
 // baseline that contains it. If the same ID appears in multiple baselines,
 // the value is set to "(multiple)" to avoid implying a single correct baseline.
@@ -758,13 +779,7 @@ func requirementBaselineMap(doc hdf.HDFResults) map[string]string {
 	m := make(map[string]string)
 	for _, baseline := range doc.Baselines {
 		for _, req := range baseline.Requirements {
-			if existing, exists := m[req.ID]; exists {
-				if existing != baseline.Name && existing != baselineMultiple {
-					m[req.ID] = baselineMultiple
-				}
-			} else {
-				m[req.ID] = baseline.Name
-			}
+			recordRequirementBaseline(m, req.ID, baseline.Name)
 		}
 	}
 	return m

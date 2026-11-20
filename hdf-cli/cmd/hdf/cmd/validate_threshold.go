@@ -253,7 +253,8 @@ func legacySeverityNotes(specs []threshold.Spec) []string {
 			{hdfengine.ThresholdFailed, c.Failed},
 			{hdfengine.ThresholdSkipped, c.Skipped},
 			{hdfengine.ThresholdError, c.Error},
-			{hdfengine.ThresholdNoImpact, c.NoImpact},
+			{hdfengine.ThresholdNotApplicable, c.NotApplicable},
+			{hdfengine.SAFNotApplicableKey, c.NoImpact},
 		}
 	}
 
@@ -543,7 +544,7 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 		}
 		return nil
 
-	case thresholdPassed, thresholdFailed, thresholdSkipped, thresholdError, thresholdNoImpact:
+	case thresholdPassed, thresholdFailed, thresholdSkipped, thresholdError, thresholdNotApplicable, thresholdNoImpact:
 		ts := getOrCreateStatusSeverity(config, segments[0])
 		if len(segments) < 3 {
 			return fmt.Errorf("threshold path %q needs three segments (e.g. 'passed.high.min')", strings.Join(segments, "."))
@@ -616,6 +617,11 @@ func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *Threshol
 			config.Error = &ThresholdSeverity{}
 		}
 		return config.Error
+	case thresholdNotApplicable:
+		if config.NotApplicable == nil {
+			config.NotApplicable = &ThresholdSeverity{}
+		}
+		return config.NotApplicable
 	case thresholdNoImpact:
 		if config.NoImpact == nil {
 			config.NoImpact = &ThresholdSeverity{}

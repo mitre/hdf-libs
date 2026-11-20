@@ -18,11 +18,11 @@ import (
 const testResults = `{
   "baselines": [{
     "name": "test-baseline",
-    "checksum": {"algorithm": "sha256", "value": "abc123"},
+    "integrity": {"algorithm": "sha256", "checksum": "abc123"},
     "depends": [],
     "description": "Test baseline",
     "groups": [],
-    "inspecVersion": "5.0.0",
+    "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
     "requirements": [{
       "id": "AC-1",
       "impact": 0.5,
@@ -129,6 +129,26 @@ func TestAmendApplyCommand(t *testing.T) {
 		_, _, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", "/nonexistent/amendments.json")
 		require.Error(t, err)
 	})
+}
+
+// A riskAdjustment re-rates impact and may not carry a status; the schema
+// enforces it, so verify refuses the combination and accepts the impact-only form.
+func TestAmendVerifyRejectsRiskAdjustmentCarryingStatus(t *testing.T) {
+	write := func(t *testing.T, override string) string {
+		t.Helper()
+		path := filepath.Join(t.TempDir(), "amendments.json")
+		doc := `{"name":"risk","overrides":[{"type":"riskAdjustment","requirementId":"V-1",` +
+			`"reason":"not reachable here","appliedBy":{"type":"simple","identifier":"t"},` +
+			`"appliedAt":"2026-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` + override + `}]}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+		return path
+	}
+
+	_, _, err := executeCommand("amend", "verify", write(t, `"status":"notApplicable","impact":{"value":0.2}`))
+	require.Error(t, err, "a riskAdjustment carrying status must not verify")
+
+	_, _, err = executeCommand("amend", "verify", write(t, `"impact":{"value":0.2}`))
+	require.NoError(t, err, "the impact-only form is the valid one")
 }
 
 func TestAmendListCommand(t *testing.T) {
@@ -940,7 +960,7 @@ func TestAmendVerifyIgnoresAmendmentsSideResultsLink(t *testing.T) {
 	// be applied to many results files, so it cannot carry a single results
 	// hash, and nothing ever wrote the field. Verify must not report a verdict
 	// on it either way.
-	t.Run("no results-link verdict is reported, even when the field is present", func(t *testing.T) {
+	t.Run("no results-link verdict is reported for passthrough metadata", func(t *testing.T) {
 		dir := t.TempDir()
 		resultsPath := writeResults(t, dir)
 		sum := sha256.Sum256([]byte(testResults))
@@ -948,7 +968,7 @@ func TestAmendVerifyIgnoresAmendmentsSideResultsLink(t *testing.T) {
 		amendPath := filepath.Join(dir, "amend.json")
 		doc := fmt.Sprintf(`{
 			"name": "linked",
-			"previousChecksum": {"algorithm": "sha256", "value": %q},
+			"extensions": {"passthrough": {"previousChecksum": {"algorithm": "sha256", "value": %q}}},
 			"overrides": [{
 				"type": "waiver",
 				"requirementId": "AC-1",
@@ -1047,7 +1067,7 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 
 		stdout, _, err := executeCommand("amend", "verify", path)
 		require.Error(t, err)
-		assert.Contains(t, stdout, "Invalid type", "the schema error must still be reported")
+		assert.Contains(t, stdout, "got number, want string", "the schema error must still be reported")
 		assert.Contains(t, stdout, "RED", "the offending key is still named, just defanged")
 		assert.NotContains(t, stdout, "\x1b")
 	})

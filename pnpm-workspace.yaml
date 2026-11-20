@@ -6,6 +6,11 @@ allowBuilds:
   # tool must not phone home from a dev install.
   '@scarf/scarf': false
   esbuild: true
+  # Optional SSH native acceleration is unnecessary for local Docker tests.
+  cpu-features: false
+  ssh2: false
+  # This hook only warns about dependency version-range style.
+  protobufjs: false
 # Supply-chain cooldown: refuse dependency versions published within the last
 # 7 days (10080 min) AT RESOLUTION TIME, so a freshly-published compromised
 # version (the npm credential-harvester worm pattern) has time to be detected
@@ -23,6 +28,10 @@ minimumReleaseAgeExclude:
   - source-map-js@1.2.2
   # Fixes both fast-uri URI-parsing advisories; remove after this patch ages past the cooldown.
   - fast-uri@3.1.9
+  # GHSA-mrwp-f3q8-3g9p's only patched follow-redirects (1.16.2) is a day short of
+  # the cooldown and the pre-commit audit blocks every commit until it is taken;
+  # goes when 1.16.2 ages past the window.
+  - follow-redirects@1.16.2
 # Forced patched versions for transitive advisories (see the security gate).
 # Every target is a RANGE, never an exact version: an exact pin names the floor
 # itself, so when the advisory's patched floor rises the pin becomes the new
@@ -42,8 +51,11 @@ overrides:
   # esbuild 0.21.5 via vite 5.4.x under vitepress 1.x; goes with the vitepress
   # 2.x bump that also clears the vite suppressions below.
   "esbuild@<0.25.0": "^0.25.0"
-  # minimatch 10.1.3 via @stryker-mutator/core (dev); goes when stryker declares ^10.2.3.
-  "minimatch@>=10.0.0 <10.2.3": "^10.2.3"
+  # GHSA-g3hv-75wg-m249 — minimatch 7.0.0 through 11.0.0, via
+  # @stryker-mutator/core (~10.2.4) and @typescript-eslint/typescript-estree
+  # (^10.2.2), both dev. Supersedes the <10.2.3 hold, which pinned into this
+  # range; goes when both declare ^11.0.1.
+  "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
   # GHSA-pqg4-j6r4-53mv — shell-quote quote() command injection, every release
   # from 1.8.4 through 1.10.0, via concurrently (dev; its latest still declares
   # 1.9.0). Supersedes the earlier <1.8.5 hold, which pinned into this range.
@@ -65,10 +77,16 @@ overrides:
   # 7.29.1 but that release was skipped, so 7.29.7 is the real 7.x fix; goes when
   # stryker's babel plugins declare ^7.29.7 themselves.
   "@babel/core@<7.29.1": "^7.29.7"
-  # GHSA-q3jh-wrc6-jgq8 / GHSA-8r9p-f939-6h3c — follow-redirects 1.16.0 credential
-  # headers survive a cross-origin redirect, via http-server → http-proxy under
-  # hdf-schema (dev); goes when http-proxy resolves ^1.16.1 itself.
-  "follow-redirects@>=1.16.0 <1.16.1": "^1.16.1"
+  # GHSA-q3jh-wrc6-jgq8 / GHSA-8r9p-f939-6h3c / GHSA-mrwp-f3q8-3g9p — follow-redirects
+  # 1.16.0 and 1.16.1 let credential headers survive a cross-origin redirect
+  # (1.16.1 fixed the first pair, then missed cross-realm sensitiveHeaders
+  # arrays), via http-server → http-proxy under hdf-schema (dev). Supersedes the
+  # <1.16.1 hold, which pinned into the range; goes when http-proxy resolves
+  # ^1.16.2 itself.
+  "follow-redirects@>=1.16.0 <1.16.2": "^1.16.2"
+  # GHSA-6pq8-jhm2-2vcw — qs 6.16.0 stringify TypeError on uncoercible array
+  # elements, via http-server and stryker (dev); goes when they declare ^6.16.1.
+  "qs@>=6.7.0 <6.16.1": "^6.16.1"
 auditConfig:
   ignoreGhsas:
     # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when
@@ -83,3 +101,9 @@ auditConfig:
     # dev-server path check); 5.4.21 is the last 5.x and fixes start at 6.4.4, so it
     # clears with the same vitepress 2.x bump (tracked: hdf-libs-34nl).
     - "GHSA-587h-7wmj-h5pm"
+    # GHSA-fc5q-39xc-vjpf — picomatch <=4.0.7 ReDoS on crafted extglobs; no
+    # patched release exists (4.0.7 is the latest). It reaches us only through
+    # dev tooling (vite, vitest, tsdown, tinyglobby, fdir, lint-staged) matching
+    # our own config patterns, never untrusted input; clears when a fixed
+    # picomatch ships.
+    - "GHSA-fc5q-39xc-vjpf"

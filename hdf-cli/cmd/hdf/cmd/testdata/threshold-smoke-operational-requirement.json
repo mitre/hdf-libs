@@ -1,0 +1,16 @@
+{
+  "name": "threshold smoke — an operational requirement, applied alone",
+  "overrides": [
+    {
+      "requirementId": "Grype/CVE-2022-42919",
+      "type": "operationalRequirement",
+      "reason": "The affected component is required for the mission workload; the finding is accepted as an open deviation and tracked for the next platform refresh.",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "appliedAt": "2025-01-01T00:00:00Z",
+      "expiresAt": "2099-12-31T23:59:59Z"
+    }
+  ]
+}

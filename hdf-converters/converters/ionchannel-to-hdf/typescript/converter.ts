@@ -285,8 +285,11 @@ function buildScanRequirement(
   const descriptions = [createDescription('default', desc)];
   const results: RequirementResult[] = [
     {
-      status: ResultStatus.NotReviewed,
-      codeDesc: `${scan.name} scan summary`,
+      status: ResultStatus.NotApplicable,
+      codeDesc:
+        `${scan.name} scan summary. This record reports what the analysis ` +
+        'observed; it is not an evaluation of a requirement, so it asserts ' +
+        'nothing about compliance and is excluded from the ratio.',
       startTime: scanStartTime(scan),
     },
   ];
@@ -389,8 +392,11 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
     ];
     const results: RequirementResult[] = [
       {
-        status: ResultStatus.NotReviewed,
-        codeDesc: 'Dependency inventory item',
+        status: ResultStatus.NotApplicable,
+        codeDesc:
+          'Dependency inventory item. This record states that the dependency ' +
+          'was found, not that any requirement was evaluated against it, so it ' +
+          'asserts nothing about compliance and is excluded from the ratio.',
         startTime: new Date('0001-01-01T00:00:00Z'),
       },
     ];

@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateInputSize, serializeHdf } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -330,9 +330,17 @@ const STATUS_MAP: Record<string, ResultStatus> = {
   error: ResultStatus.Error,
   unknown: ResultStatus.Error,
   notapplicable: ResultStatus.NotApplicable,
+  // No automated check is outstanding work, so it stays in the denominator.
   notchecked: ResultStatus.NotReviewed,
-  notselected: ResultStatus.NotReviewed,
-  informational: ResultStatus.NotReviewed,
+  // XCCDF 1.2 on @selected: an unselected Rule "does not contribute to
+  // scoring". A benchmark's unselected tail runs to thousands of rules against
+  // a few hundred selected, so scoring it would drag the published figure
+  // toward zero for a posture that has not changed.
+  notselected: ResultStatus.NotApplicable,
+  // XCCDF 1.2: informational "is not a compliance category". HDF has no such
+  // status, so this is the nearest one that keeps a non-verdict out of the
+  // ratio, not a faithful model of the concept.
+  informational: ResultStatus.NotApplicable,
   fixed: ResultStatus.Passed,
 };
 
@@ -390,7 +398,7 @@ export async function convertXccdfResultsToHdf(input: string, converterVersion =
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf-results');
+  validateXmlInput(input, 'xccdf');
 
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
@@ -428,7 +436,7 @@ export async function convertXccdfBenchmarkToHdf(input: string, converterVersion
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf-benchmark');
+  validateXmlInput(input, 'xccdf');
 
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
   const xccdfParsed = parsed as XccdfBenchmark;
@@ -460,7 +468,7 @@ export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
-  validateInputSize(input, 'xccdf');
+  validateXmlInput(input, 'xccdf');
 
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
@@ -1162,14 +1170,11 @@ function ruleResultToRequirement(
 
   const severity = (rr.severity || ruleDef?.severity || '').toLowerCase();
   const xccdfResult = (rr.result ?? '').trim().toLowerCase();
-  // A rule-result that was not applicable, not selected, or purely informational
-  // carries no risk weight, so its impact is zeroed regardless of severity
-  // (matching heimdall2); status still records the disposition.
-  const impactZeroed =
-    xccdfResult === 'notselected' ||
-    xccdfResult === 'notapplicable' ||
-    xccdfResult === 'informational';
-  const impact = impactZeroed ? 0 : severity ? severityToImpact(severity) : 0.5;
+  // The disposition of a rule that was not applicable, not selected or purely
+  // informational is carried by its result STATUS; impact stays the severity the
+  // benchmark assigned, because a deselected high-severity rule is still a
+  // high-severity rule that simply was not evaluated.
+  const impact = severity ? severityToImpact(severity) : 0.5;
 
   const descriptions: Description[] = [{
     label: 'default',

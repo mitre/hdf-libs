@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,7 +10,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
@@ -23,6 +26,10 @@ type skippedKind struct {
 	mode os.FileMode
 }
 
+// unrecordableNameKind is why discovery skips an entry evidenceref.Recordable refuses.
+const unrecordableNameKind = "its name is not valid UTF-8, so no reference can record it; " +
+	"rename it to include it"
+
 // scanResult is what a directory scan found, already routed. Paths are absolute.
 type scanResult struct {
 	systems     []string // >1 is an error; the caller names them all
@@ -34,16 +41,58 @@ type scanResult struct {
 	boms        []string
 	unsupported []string      // detected HDF, but no Content_Type exists for it
 	foreign     []string      // not an HDF document at all
-	unreadable  []string      // present but could not be read — reported, never dropped silently
-	irregular   []skippedKind // skipped by type; reported, because "nothing is dropped in silence"
+	unreadable  []unreadEntry // present but could not be read — reported, never dropped silently
+	irregular   []skippedKind // skipped by type or unrecordable name; reported, never silent
+}
+
+// unreadEntry is a path the scan could not read, with the remedy when there is one.
+type unreadEntry struct {
+	path string
+	hint string
 }
 
 // skipUnreadable records an entry the scan could not read and continues the walk.
 // A per-entry failure must not abort the scan, but it must not vanish either — the
 // error is consumed here deliberately, and the path is reported at the end.
 func (out *scanResult) skipUnreadable(path string, _ error) error {
-	out.unreadable = append(out.unreadable, path)
+	out.unreadable = append(out.unreadable, unreadEntry{path: path})
 	return nil
+}
+
+// skipOversize records a file over --max-size, which the scan never opens.
+func (out *scanResult) skipOversize(path string, size int64) error {
+	out.unreadable = append(out.unreadable, unreadEntry{path: path,
+		hint: fmt.Sprintf("%d bytes is over the %d MB limit; use --max-size to increase", size, effectiveMaxSizeMB())})
+	return nil
+}
+
+// skipUnrecordable records an entry whose name no reference can carry, alongside the
+// entries skipped by type, and continues the walk; the reason is unrecordableNameKind.
+func (out *scanResult) skipUnrecordable(path string, mode os.FileMode, _ error) error {
+	out.irregular = append(out.irregular, skippedKind{path: path, kind: unrecordableNameKind, mode: mode})
+	return nil
+}
+
+// readScannedFile reads one file of the tree, capped at --max-size so a file that grew
+// after its size was checked is still not loaded whole.
+func readScannedFile(fsys fs.FS, rel string, size int64) ([]byte, bool, error) {
+	limit := getMaxFileSize()
+	if size > limit {
+		return nil, false, nil
+	}
+	f, err := fsys.Open(rel)
+	if err != nil {
+		return nil, true, err
+	}
+	defer func() { _ = f.Close() }()
+	data, err := hdfutil.ReadAtMost(f, limit, rel)
+	if errors.Is(err, hdfutil.ErrInputTooLarge) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, true, err
+	}
+	return data, true, nil
 }
 
 // looksLikeBOM reports whether a document carries a BOM's own discriminator.
@@ -150,6 +199,11 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 			return out.skipUnreadable(filepath.Join(realBase, rel), walkErr)
 		}
 		if d.IsDir() {
+			// Nothing beneath a directory so named can be recorded either.
+			if nameErr := evidenceref.Recordable(rel); nameErr != nil {
+				_ = out.skipUnrecordable(filepath.Join(realBase, rel), d.Type(), nameErr)
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if !d.Type().IsRegular() {
@@ -176,9 +230,15 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 		if skip.has(info) {
 			return nil
 		}
-		data, readErr := fs.ReadFile(root.FS(), rel)
+		if nameErr := evidenceref.Recordable(rel); nameErr != nil {
+			return out.skipUnrecordable(abs, d.Type(), nameErr)
+		}
+		data, withinLimit, readErr := readScannedFile(root.FS(), rel, info.Size())
 		if readErr != nil {
 			return out.skipUnreadable(abs, readErr)
+		}
+		if !withinLimit {
+			return out.skipOversize(abs, max(info.Size(), int64(len(data))))
 		}
 		if looksLikeBOM(data) {
 			out.boms = append(out.boms, abs)
@@ -197,10 +257,10 @@ func scanEvidenceDir(baseDir string, skip *explicitSkips) (*scanResult, error) {
 
 	// Stable order, so a package built twice from one directory is identical.
 	for _, s := range [][]string{out.systems, out.results, out.baselines, out.plans,
-		out.amendments, out.comparisons, out.boms, out.unsupported, out.foreign,
-		out.unreadable} {
+		out.amendments, out.comparisons, out.boms, out.unsupported, out.foreign} {
 		sort.Strings(s)
 	}
+	sort.Slice(out.unreadable, func(i, j int) bool { return out.unreadable[i].path < out.unreadable[j].path })
 	sort.Slice(out.irregular, func(i, j int) bool { return out.irregular[i].path < out.irregular[j].path })
 	return out, nil
 }
@@ -257,7 +317,11 @@ func reportScan(out *scanResult, baseDir, pkgPath string) {
 			show(path), suffix)
 	}
 	for _, u := range out.unreadable {
-		fmt.Fprintf(os.Stderr, "Skipped %s: present but could not be read.\n", show(u))
+		hint := ""
+		if u.hint != "" {
+			hint = " " + u.hint + "."
+		}
+		fmt.Fprintf(os.Stderr, "Skipped %s: present but could not be read.%s\n", show(u.path), hint)
 	}
 	for _, l := range out.irregular {
 		advice := ""

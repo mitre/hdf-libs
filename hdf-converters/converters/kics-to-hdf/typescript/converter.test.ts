@@ -67,9 +67,8 @@ describe('kics to HDF converter', () => {
     });
 
     it('maps INFO findings to the canonical 0.0 info-tier impact', async () => {
-      // the effective-status layer treats impact-0 requirements as
-      // notApplicable, so info-tier findings stay visible without entering
-      // the compliance ratio, like every other converter's info tier
+      // the canonical info tier, like every other converter's. The band says
+      // how much a finding matters, not whether the requirement applies
       const hdf = await convert('findings.json');
       const infoReqs = findings(hdf).filter((r) => r.tags?.severity === 'INFO');
       expect(infoReqs.length).toBeGreaterThan(0);
@@ -318,9 +317,9 @@ describe('scan coverage requirement', () => {
     const hdf = JSON.parse(await convertKicsToHdf(load('findings.json'))) as HDFResults;
     const cov = hdf.baselines[0]!.requirements.find((r) => r.id === 'kics-scan-coverage')!;
     expect(cov.impact).toBe(0);
-    // notApplicable matches what the effective-status layer derives for an
-    // impact-0 requirement, and it is the one status the compliance rollup
-    // excludes. Passed would export to CKL as NotAFinding and count as a free
+    // notApplicable is the one status the compliance rollup excludes, and it
+    // has to be stated as a result — impact 0 no longer implies it. Passed
+    // would export to CKL as NotAFinding and count as a free
     // pass in raw status rollups.
     expect(cov.results[0]!.status).toBe(ResultStatus.NotApplicable);
   });

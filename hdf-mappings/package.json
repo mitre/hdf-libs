@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-mappings",
-  "version": "3.7.2",
+  "version": "3.8.0",
   "description": "CCI/NIST/CIS/CMMC security framework mappings for HDF",
   "publishConfig": {
     "access": "public"
@@ -14,6 +14,7 @@
       "import": "./dist/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -26,6 +27,8 @@
     "mappings:crosswalk:check": "node scripts/generate-nist-crosswalk.mjs --check",
     "mappings:descriptions": "node scripts/generate-nist-descriptions.mjs",
     "mappings:descriptions:check": "node scripts/generate-nist-descriptions.mjs --check",
+    "mappings:hipcheck": "node scripts/generate-hipcheck-mappings.mjs",
+    "mappings:hipcheck:check": "node scripts/generate-hipcheck-mappings.mjs --check",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",

@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,6 +60,27 @@ func TestConvertSplunkToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "disa_stig-el7", baseline.Name)
 	require.Len(t, baseline.Requirements, 1, "Minimal fixture has 1 control")
 	require.Len(t, baseline.Requirements[0].Results, 1, "Minimal control has 1 result")
+}
+
+// Canonical HDF time is trimmed UTC at millisecond precision, whatever the host zone.
+// Local is pinned off UTC so the assertion cannot pass vacuously under TZ=UTC.
+func TestConvertSplunkToHDF_TimestampIsCanonicalUTC(t *testing.T) {
+	saved := time.Local
+	time.Local = time.FixedZone("TEST-06", -6*60*60)
+	t.Cleanup(func() { time.Local = saved })
+
+	result, err := ConvertSplunkToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Regexp(t, regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$`), doc.Timestamp,
+		"the document timestamp must be trimmed UTC with at most millisecond precision")
 }
 
 // ---- Error tests ----
@@ -403,9 +428,13 @@ func TestMapStatus_CaseInsensitive(t *testing.T) {
 	assert.Equal(t, hdf.NotReviewed, mapStatus("wibble"))
 }
 
-func TestAbsentImpact_DefaultsToZero(t *testing.T) {
-	// A stored control with no impact field yields 0.0 (float zero value);
-	// the TS peer must emit the same rather than dropping the required field.
+// A stored control with no impact field is UNKNOWN severity, not zero severity,
+// so it resolves to the unknown-severity default. This replaces a test that
+// pinned 0.0 as "the float zero value" — Go's non-pointer field made absent and
+// explicit-0 the same value, so that test recorded an artifact rather than a
+// decision. Its one real insight is kept: the TS peer must agree, and it used to
+// drop the schema-required field entirely.
+func TestAbsentImpact_IsUnknownSeverity(t *testing.T) {
 	var events []map[string]interface{}
 	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
 	for _, e := range events {
@@ -417,7 +446,364 @@ func TestAbsentImpact_DefaultsToZero(t *testing.T) {
 	require.NoError(t, err)
 	result, err := ConvertSplunkToHDF(raw, testConverterVersion)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Baselines[0].Requirements)
 	for _, req := range result.Baselines[0].Requirements {
-		assert.Equal(t, 0.0, req.Impact)
+		assert.InDelta(t, 0.5, req.Impact, 0.0001,
+			"absent impact means we do not know the severity, not that there is none")
+		statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+		for _, r := range req.Results {
+			statuses = append(statuses, r.Status)
+		}
+		assert.NotContains(t, statuses, hdf.NotApplicable,
+			"nothing declared this control inapplicable, so no notApplicable is synthesized")
+	}
+
+	// The schema-required field must still be present and valid.
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	v := validators.Validate(out, validators.TypeResults)
+	assert.Truef(t, v.Valid, "absent-impact output must validate: %s", v.Error())
+}
+
+// TestConvertSplunk_ImpactZeroSkipsTranslate is the divergence this fixes: the
+// same InSpec run read from Splunk must produce the same statuses as the same run
+// read from a file. legacyhdf-to-hdf translates InSpec's score-0-and-skip
+// convention into an explicit notApplicable result; this reader of the same
+// control payload did not, so one scan reported notApplicable through one path
+// and notReviewed through the other — and notReviewed is in the compliance
+// denominator while notApplicable is not.
+func TestConvertSplunk_ImpactZeroSkipsTranslate(t *testing.T) {
+	path := filepath.Join(shared.GetConvertersDir(), "splunk-to-hdf", "fixtures", "input", "splunk-impact-zero-skips.json")
+	input, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	byID := map[string]*hdf.EvaluatedRequirement{}
+	for i := range out.Baselines[0].Requirements {
+		r := &out.Baselines[0].Requirements[i]
+		byID[r.ID] = r
+	}
+
+	// The three impact-0 skip-only controls from the real export.
+	for _, id := range []string{"V-72317", "V-72313", "V-72305"} {
+		t.Run(id, func(t *testing.T) {
+			req := byID[id]
+			require.NotNil(t, req, "requirement %s missing", id)
+			assert.Zero(t, req.Impact, "precondition: the source scored this 0")
+
+			statuses := make([]hdf.ResultStatus, 0, len(req.Results))
+			for _, r := range req.Results {
+				statuses = append(statuses, r.Status)
+			}
+			assert.Contains(t, statuses, hdf.NotApplicable,
+				"the scope declaration must be stated as a result, as the file importer does")
+		})
+	}
+
+	// The controls that did establish a verdict are untouched.
+	require.NotNil(t, byID["V-77825"])
+	assert.Equal(t, hdf.Passed, byID["V-77825"].Results[0].Status)
+	require.NotNil(t, byID["V-78997"])
+	assert.Equal(t, hdf.Failed, byID["V-78997"].Results[0].Status)
+}
+
+// loadImpactZeroFixture returns the real trimmed Splunk export carrying the
+// impact-0 skip-only shape.
+func loadImpactZeroFixture(t *testing.T) []byte {
+	t.Helper()
+	path := filepath.Join(shared.GetConvertersDir(), "splunk-to-hdf", "fixtures", "input", "splunk-impact-zero-skips.json")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return data
+}
+
+// TestConvertSplunk_ImpactZeroNoResultsTranslates covers the case the predicate
+// admits but a caller can forget: InSpecEstablishedNothing is true for an EMPTY
+// result set, so the synthesized result must not assume a result already exists.
+// legacyhdf-to-hdf has the same test; splunk did not, and the TS twin crashed
+// here before the shared builder was hoisted. Derived from the real fixture by
+// emptying one control's results, so only that one field differs from real data.
+func TestConvertSplunk_ImpactZeroNoResultsTranslates(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadImpactZeroFixture(t), &events))
+	for _, e := range events {
+		if e["id"] == "V-72317" {
+			e["results"] = []interface{}{}
+		}
+	}
+	doc, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(doc, testConverterVersion)
+	require.NoError(t, err)
+
+	var req *hdf.EvaluatedRequirement
+	for i := range out.Baselines[0].Requirements {
+		if out.Baselines[0].Requirements[i].ID == "V-72317" {
+			req = &out.Baselines[0].Requirements[i]
+		}
+	}
+	require.NotNil(t, req, "V-72317 must still be emitted")
+	require.Len(t, req.Results, 1, "the synthesized result is the only one")
+	assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
+	assert.NotEmpty(t, req.Results[0].CodeDesc, "the synthesized result must be fully populated")
+	// With no result to take a time from, the fallback is Go's zero time, which
+	// is what the TS twin asserts too — the two must not drift.
+	assert.True(t, req.Results[0].StartTime.IsZero(),
+		"an empty result set leaves no time to inherit, so the zero time is the convention")
+}
+
+// TestConvertSplunk_AgreesWithLegacyhdfOnTheSameControl is the contract this card
+// exists for: one InSpec run must produce one document whichever reader sees it.
+// The legacy document is built from the SAME control payload the Splunk export
+// carries, so a future divergence in either reader fails here rather than
+// surfacing as drift in a consumer's diff.
+func TestConvertSplunk_AgreesWithLegacyhdfOnTheSameControl(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadImpactZeroFixture(t), &events))
+
+	var control map[string]interface{}
+	for _, e := range events {
+		if e["id"] == "V-72317" {
+			control = e
+		}
+	}
+	require.NotNil(t, control, "fixture must carry V-72317")
+
+	// The same control, expressed as InSpec exec JSON rather than a Splunk event.
+	v1Control := map[string]interface{}{
+		"id":      control["id"],
+		"title":   control["title"],
+		"impact":  control["impact"],
+		"results": control["results"],
+	}
+	legacyDoc, err := json.Marshal(map[string]interface{}{
+		"platform":   map[string]interface{}{"name": "centos", "release": "7"},
+		"version":    "4.16.0",
+		"statistics": map[string]interface{}{},
+		"profiles": []interface{}{map[string]interface{}{
+			"name":     "p",
+			"sha256":   "abc",
+			"controls": []interface{}{v1Control},
+		}},
+	})
+	require.NoError(t, err)
+
+	fromSplunk, err := ConvertSplunkToHDF(loadImpactZeroFixture(t), testConverterVersion)
+	require.NoError(t, err)
+	v1, err := legacyhdf.ParseLegacyHDF(legacyDoc)
+	require.NoError(t, err)
+	fromFile := legacyhdf.ConvertLegacyHDF(v1, testConverterVersion)
+
+	synthesized := func(out *hdf.HDFResults, id string) hdf.RequirementResult {
+		t.Helper()
+		for _, b := range out.Baselines {
+			for _, r := range b.Requirements {
+				if r.ID != id {
+					continue
+				}
+				for _, res := range r.Results {
+					if res.Status == hdf.NotApplicable {
+						return res
+					}
+				}
+			}
+		}
+		t.Fatalf("no synthesized notApplicable result for %s", id)
+		return hdf.RequirementResult{}
+	}
+
+	a := synthesized(fromSplunk, "V-72317")
+	b := synthesized(fromFile, "V-72317")
+	assert.Equal(t, b.Status, a.Status, "status must match the file importer")
+	assert.Equal(t, b.CodeDesc, a.CodeDesc, "codeDesc must match byte for byte")
+	assert.Equal(t, b.StartTime, a.StartTime, "the startTime convention must match")
+}
+
+// A control event with no tags must still carry a tags object — tags is in
+// Evaluated_Requirement.required, so null is invalid. The file importer had the
+// same defect; these are the same InSpec controls, so both readers are fixed.
+func TestConvertSplunk_TaglessControlIsSchemaValid(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			delete(e, "tags")
+		}
+	}
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, out.Baselines[0].Requirements)
+	for _, req := range out.Baselines[0].Requirements {
+		require.NotNil(t, req.Tags, "tags is schema-required, so it cannot be nil")
+		assert.Empty(t, req.Tags)
+	}
+
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(serialized), `"tags":null`)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "tagless output must validate: %s", v.Error())
+}
+
+// A control whose descriptions lack a default (others present) still needs one.
+func TestConvertSplunk_DescriptionsWithoutDefaultGetOneFromDesc(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	descs := map[string]string{}
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			d, ok := e["descriptions"].(map[string]interface{})
+			require.True(t, ok)
+			delete(d, "default")
+			require.NotEmpty(t, d, "the case needs non-default descriptions left over")
+			descs[e["id"].(string)] = e["desc"].(string)
+		}
+	}
+	require.NotEmpty(t, descs)
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	for _, req := range out.Baselines[0].Requirements {
+		require.NotEmpty(t, req.Descriptions)
+		assert.Equal(t, hdf.Description{Label: "default", Data: descs[req.ID]}, req.Descriptions[0])
+	}
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+}
+
+// TestConvertSplunk_AgreesWithLegacyhdfOnAbsence is the contract that matters
+// here: the two readers of an InSpec control payload must treat an ABSENT field
+// identically. They diverged before — Go read absent impact as 0 while TS
+// dropped the field entirely — and nothing in the suite would have caught it,
+// because no fixture omits the field.
+func TestConvertSplunk_AgreesWithLegacyhdfOnAbsence(t *testing.T) {
+	const id = "V-1"
+	splunkDoc := `[{"meta":{"subtype":"header","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json"},"profiles":[],"platform":{"name":"centos","release":"7"},"statistics":{},"version":"4.16.0"},
+{"meta":{"subtype":"profile","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json","profile_sha256":"abc"},"name":"p","sha256":"abc","controls":[]},
+{"meta":{"subtype":"control","filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json","profile_sha256":"abc"},"id":"` + id + `","title":"t",` +
+		`"results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]`
+
+	legacyDoc := `{"platform":{"name":"centos","release":"7"},"version":"4.16.0","statistics":{},
+"profiles":[{"name":"p","sha256":"abc","controls":[{"id":"` + id + `","title":"t",
+"results":[{"status":"skipped","code_desc":"c","skip_message":"s","start_time":"2026-01-02T03:04:05Z"}]}]}]}`
+
+	fromSplunk, err := ConvertSplunkToHDF([]byte(splunkDoc), testConverterVersion)
+	require.NoError(t, err)
+	v1, err := legacyhdf.ParseLegacyHDF([]byte(legacyDoc))
+	require.NoError(t, err)
+	fromFile := legacyhdf.ConvertLegacyHDF(v1, testConverterVersion)
+
+	pick := func(out *hdf.HDFResults) hdf.EvaluatedRequirement {
+		t.Helper()
+		for _, b := range out.Baselines {
+			for _, r := range b.Requirements {
+				if r.ID == id {
+					return r
+				}
+			}
+		}
+		t.Fatalf("requirement %s missing", id)
+		return hdf.EvaluatedRequirement{}
+	}
+
+	a, b := pick(fromSplunk), pick(fromFile)
+	assert.InDelta(t, b.Impact, a.Impact, 0.0001, "an absent impact must resolve the same in both readers")
+	assert.NotNil(t, a.Tags, "neither reader may emit a nil tags map")
+	assert.NotNil(t, b.Tags)
+
+	statuses := func(r hdf.EvaluatedRequirement) []hdf.ResultStatus {
+		out := make([]hdf.ResultStatus, 0, len(r.Results))
+		for _, x := range r.Results {
+			out = append(out, x.Status)
+		}
+		return out
+	}
+	assert.Equal(t, statuses(b), statuses(a), "and neither may synthesize a result the other does not")
+}
+
+// The splunk twin: its resultless control produced results: [], which fails
+// minItems:1 rather than the type check, but is the same source-absence defect
+// and needs the same synthesized result.
+func TestConvertSplunk_ResultlessControlIsSchemaValid(t *testing.T) {
+	var events []map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadMinimalFixture(t), &events))
+	for _, e := range events {
+		if meta, ok := e["meta"].(map[string]interface{}); ok && meta["subtype"] == "control" {
+			delete(e, "results")
+		}
+	}
+	raw, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	out, err := ConvertSplunkToHDF(raw, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, out.Baselines[0].Requirements)
+	for _, req := range out.Baselines[0].Requirements {
+		require.Len(t, req.Results, 1, "exactly one synthesized result, since minItems is 1")
+		assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+		assert.Contains(t, req.Results[0].CodeDesc, "no results for this control",
+			"must match the TS peer's assertion, so a wording change cannot pass one side only")
+	}
+
+	serialized, err := json.Marshal(out)
+	require.NoError(t, err)
+	v := validators.Validate(serialized, validators.TypeResults)
+	assert.Truef(t, v.Valid, "resultless output must validate: %s", v.Error())
+}
+
+// Twin of legacyhdf's TestConvertLegacyHDF_AbsentImpactMarksUnrated: the same
+// InSpec control read from a store must be marked exactly as the file reader marks it.
+func TestConvertSplunk_AbsentImpactMarksUnrated(t *testing.T) {
+	cases := []struct {
+		name    string
+		control string
+		impact  float64
+		unrated bool
+	}{
+		{"absent impact, empty tags", `"tags":{}`, 0.5, true},
+		{"absent impact, no tags key", `"title":"t"`, 0.5, true},
+		{"absent impact, unrated token", `"tags":{"severity":"unknown"}`, 0.5, true},
+		{"absent impact, non-string severity", `"tags":{"severity":3}`, 0.5, true},
+		{"absent impact, rated severity", `"tags":{"severity":"high"}`, 0.5, false},
+		{"explicit 0", `"impact":0,"tags":{}`, 0, false},
+		{"explicit 0.5", `"impact":0.5,"tags":{}`, 0.5, false},
+		{"explicit 0.5, unrated token", `"impact":0.5,"tags":{"severity":"unknown"}`, 0.5, false},
+	}
+	const meta = `"filetype":"evaluation","hdf_splunk_schema":"1.0","guid":"g1","filename":"f.json"`
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := `[{"meta":{"subtype":"header",` + meta + `},"profiles":[],
+"platform":{"name":"centos","release":"7"},"statistics":{},"version":"4.16.0"},
+{"meta":{"subtype":"profile",` + meta + `,"profile_sha256":"abc"},"name":"p","sha256":"abc",
+"controls":[]},
+{"meta":{"subtype":"control",` + meta + `,"profile_sha256":"abc"},"id":"V-1",` + tc.control + `,
+"results":[{"status":"passed","code_desc":"c","start_time":"2026-01-02T03:04:05Z"}]}]`
+			out, err := ConvertSplunkToHDF([]byte(doc), testConverterVersion)
+			require.NoError(t, err)
+
+			req := out.Baselines[0].Requirements[0]
+			assert.InDelta(t, tc.impact, req.Impact, 0.0001)
+			if tc.unrated {
+				assert.Equal(t, "unrated", req.Tags["severity_rating"])
+			} else {
+				assert.NotContains(t, req.Tags, "severity_rating")
+			}
+
+			raw, err := json.Marshal(out)
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "output must validate: %s", v.Error())
+		})
 	}
 }

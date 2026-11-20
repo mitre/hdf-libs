@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -59,9 +60,16 @@ var externalReferenceIdentityFlags = map[string]string{
 // $defs["…/primitives/common/vX.Y.Z"].$defs.External_Reference — a path that moves every
 // minor release. Resolving the ref the schema itself declares survives that.
 func externalReferenceDefinition() (json.RawMessage, error) {
+	target, _, err := resolveExternalReference()
+	return target, err
+}
+
+// resolveExternalReference also returns the $defs the definition sits in, so a local
+// ref inside it ("#/$defs/X") can be followed the same way.
+func resolveExternalReference() (json.RawMessage, map[string]json.RawMessage, error) {
 	raw, err := validators.SchemaBytes(validators.TypeEvidencePackage)
 	if err != nil {
-		return nil, fmt.Errorf("load evidence-package schema: %w", err)
+		return nil, nil, fmt.Errorf("load evidence-package schema: %w", err)
 	}
 	var schema struct {
 		Properties struct {
@@ -74,12 +82,12 @@ func externalReferenceDefinition() (json.RawMessage, error) {
 		Defs map[string]json.RawMessage `json:"$defs"`
 	}
 	if err := json.Unmarshal(raw, &schema); err != nil {
-		return nil, fmt.Errorf("parse evidence-package schema: %w", err)
+		return nil, nil, fmt.Errorf("parse evidence-package schema: %w", err)
 	}
 	ref := schema.Properties.ExternalReferences.Items.Ref
 	base, name, found := strings.Cut(ref, "#/$defs/")
 	if !found {
-		return nil, fmt.Errorf("evidence-package schema: externalReferences items $ref %q is not a $defs reference", ref)
+		return nil, nil, fmt.Errorf("evidence-package schema: externalReferences items $ref %q is not a $defs reference", ref)
 	}
 
 	// An in-document ref ("#/$defs/X") has an empty base and resolves against this
@@ -88,21 +96,21 @@ func externalReferenceDefinition() (json.RawMessage, error) {
 	if base != "" {
 		nested, ok := schema.Defs[base]
 		if !ok {
-			return nil, fmt.Errorf("evidence-package schema: no bundled primitive %q to resolve %q", base, ref)
+			return nil, nil, fmt.Errorf("evidence-package schema: no bundled primitive %q to resolve %q", base, ref)
 		}
 		var doc struct {
 			Defs map[string]json.RawMessage `json:"$defs"`
 		}
 		if err := json.Unmarshal(nested, &doc); err != nil {
-			return nil, fmt.Errorf("parse bundled primitive %q: %w", base, err)
+			return nil, nil, fmt.Errorf("parse bundled primitive %q: %w", base, err)
 		}
 		defs = doc.Defs
 	}
 	target, ok := defs[name]
 	if !ok {
-		return nil, fmt.Errorf("evidence-package schema: %q resolves to no definition named %q", ref, name)
+		return nil, nil, fmt.Errorf("evidence-package schema: %q resolves to no definition named %q", ref, name)
 	}
-	return target, nil
+	return target, defs, nil
 }
 
 // externalReferenceIdentityFields derives the at-least-one rule from the schema:
@@ -138,7 +146,7 @@ func externalReferenceIdentityFields() ([]string, error) {
 // enum, so an override is checked at the boundary against what the schema will accept
 // rather than against a list copied into this file.
 func externalReferenceEncodings() ([]string, error) {
-	target, err := externalReferenceDefinition()
+	target, defs, err := resolveExternalReference()
 	if err != nil {
 		return nil, err
 	}
@@ -146,16 +154,32 @@ func externalReferenceEncodings() ([]string, error) {
 		Properties struct {
 			Encoding struct {
 				Enum []string `json:"enum"`
+				Ref  string   `json:"$ref"`
 			} `json:"encoding"`
 		} `json:"properties"`
 	}
 	if err := json.Unmarshal(target, &def); err != nil {
 		return nil, fmt.Errorf("parse External_Reference: %w", err)
 	}
-	if len(def.Properties.Encoding.Enum) == 0 {
+	enum := def.Properties.Encoding.Enum
+	// The enum lives on a shared definition beside External_Reference; follow the local ref.
+	if name, local := strings.CutPrefix(def.Properties.Encoding.Ref, "#/$defs/"); local {
+		shared, ok := defs[name]
+		if !ok {
+			return nil, fmt.Errorf("evidence-package schema: External_Reference.encoding $ref resolves to no definition named %q", name)
+		}
+		var named struct {
+			Enum []string `json:"enum"`
+		}
+		if err := json.Unmarshal(shared, &named); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", name, err)
+		}
+		enum = named.Enum
+	}
+	if len(enum) == 0 {
 		return nil, fmt.Errorf("evidence-package schema: External_Reference.encoding declares no enum")
 	}
-	return def.Properties.Encoding.Enum, nil
+	return enum, nil
 }
 
 func newEvidenceAddReferenceCmd() *cobra.Command {
@@ -334,6 +358,9 @@ func embedReferenceDocument(path string) (map[string]interface{}, error) {
 }
 
 func runEvidenceAddReference(file string, opts addReferenceOpts) error {
+	if err := requireOutputForStdinPackage(file, opts.outputPath); err != nil {
+		return err
+	}
 	// sourceName is the schema's only required field on External_Reference, and it
 	// carries minLength 1 — so a whitespace-only value is refused here rather than
 	// left for the validator to reject after the work is done.
@@ -464,12 +491,17 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	}
 
 	if opts.href != "" {
-		// ENCODED, like every other command that records a reference.
-		// externalReferences[].href is the same uri-reference primitive as
-		// contents[].uri, so an unescaped name here is the same contract violation —
-		// and this was the one write path that still wrote the raw value while build,
-		// set, add-evidence and update all encoded.
-		ref["href"] = evidenceref.Encode(filepath.ToSlash(opts.href))
+		// A remote URI is recorded verbatim, as add-evidence --uri and set record one:
+		// Encode is a path encoder and would escape its "?" and "#". A local path is
+		// encoded into a uri-reference. Neither may carry bytes that are not UTF-8.
+		href, hrefErr := opts.href, evidenceref.Recordable(opts.href)
+		if !isRemoteURI(opts.href) {
+			href, hrefErr = evidenceref.Encode(filepath.ToSlash(opts.href))
+		}
+		if hrefErr != nil {
+			return fmt.Errorf("--href %q cannot be recorded as a reference: %w", opts.href, hrefErr)
+		}
+		ref["href"] = href
 	}
 
 	// checksum describes ONE artifact, so the precedence is stated here rather than left
@@ -494,7 +526,8 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 		// unhashed by exactly the same rule, rather than a second implementation of it —
 		// which means it also shares the package-relative resolution: an href is read from
 		// beside the PACKAGE, not from the process CWD.
-		resolved, algorithm, csErr := resolveEvidenceChecksum(filepath.Dir(file), opts.href, "")
+		resolved, algorithm, csErr := resolveEvidenceChecksum(
+			evidencePackageDir(file, opts.outputPath), opts.href, "")
 		if csErr != nil {
 			return csErr
 		}
@@ -530,7 +563,7 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	if opts.outputPath != "" {
 		target = opts.outputPath
 	}
-	if err := os.WriteFile(target, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
 

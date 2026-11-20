@@ -123,20 +123,30 @@ describe('governingStatusOverride', () => {
 });
 
 describe('computeEffectiveStatus', () => {
-  it('forces notApplicable at impact zero for non-error results', () => {
-    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['failed'] }, REF)).toBe(
-      'notApplicable'
-    );
-    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['passed'] }, REF)).toBe(
-      'notApplicable'
-    );
-    expect(computeEffectiveStatus({ impact: 0 }, REF)).toBe('notApplicable');
+  it('never lets impact reach the status', () => {
+    // Not-applicable is a claim about scope, which belongs in results[] or in
+    // an override. Impact is a severity band. The same results therefore roll
+    // up to the same status at every impact, including 0 — a source whose
+    // convention conflates the two translates it at import.
+    const cases: Array<[string[] | undefined, string]> = [
+      [['notReviewed'], 'notReviewed'],
+      [undefined, 'notReviewed'],
+      [['failed'], 'failed'],
+      [['passed'], 'passed'],
+      [['notApplicable'], 'notApplicable'],
+    ];
+    for (const [resultStatuses, want] of cases) {
+      for (const impact of [0, 0.3, 0.5, 1]) {
+        expect(computeEffectiveStatus({ impact, resultStatuses }, REF)).toBe(want);
+      }
+    }
   });
 
-  it('lets an errored scan escape the impact-0 short-circuit', () => {
-    // An execution error means the check never ran, so nothing was established
-    // about applicability — error ranks above the impact-0 short-circuit,
-    // matching InSpec EnhancedOutcomes and Heimdall inspecjs.
+  it('reports error at impact 0 when a result errored', () => {
+    // error outranks every other status in the worst-wins order, so this holds
+    // without a dedicated rung. Kept because it is the case a reader expects to
+    // find: an execution error means the check never ran, which matches InSpec
+    // EnhancedOutcomes and Heimdall inspecjs.
     expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['error'] }, REF)).toBe('error');
     expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['passed', 'error'] }, REF)).toBe(
       'error'
@@ -147,7 +157,7 @@ describe('computeEffectiveStatus', () => {
     // Overrides rank above the raw roll-up everywhere else; an explicit
     // non-expired override on a crashed impact-0 check governs the same way.
     // 'passed' (a falsePositive adjudication) distinguishes the override
-    // branch from the impact-0 short-circuit's own notApplicable.
+    // branch from the error roll-up.
     expect(
       computeEffectiveStatus(
         {
@@ -290,19 +300,15 @@ describe('computeEffectiveImpact', () => {
   }
 });
 
-// Parity: TestComputeEffectiveStatus_Rung3IgnoresImpactOverrides in go/.
-// Rung 3 (impact 0 -> notApplicable) reads the requirement's OWN impact and
-// deliberately ignores an impact override. Rung 3 asks whether the control was
-// in scope, which the profile author states at authoring time; effective impact
-// asks how much risk it carries now, which an assessor states at adjudication
-// time. See status-determination.md, "Settled — rung 3 reads the requirement's
-// own impact, deliberately".
-// CHARACTERIZATION: these pin behaviour that already shipped, so they passed the
-// moment they were written and were NOT red-first. Mutation stands in for the
-// red step — changing rung 3 to read computeEffectiveImpact fails the second and
-// third cases. The first and fourth are mutation-invariant on purpose: they pin
-// the adjacent rungs so the decision reads in context.
-describe('computeEffectiveStatus — rung 3 ignores impact overrides', () => {
+// Parity: TestComputeEffectiveStatus_ImpactNeverReachesStatus in go/.
+// Status answers "what did the assessment establish" and impact answers "how
+// much risk if it is realized". Neither an authored impact nor an impact
+// override reaches the status, so the two can never disagree: a riskAdjustment
+// re-scoring a finding to 0.0 leaves it failed, and an adjustment away from 0
+// cannot bring a control into scope. Only an override carrying a status makes a
+// scope claim, and it governs through the ladder's first rung. See
+// status-determination.md, "Settled — impact never reaches the status".
+describe('computeEffectiveStatus — impact never reaches the status', () => {
   const adjust = (impact: number) => ({
     impact,
     appliedAt: APPLIED_OLD,
@@ -312,11 +318,13 @@ describe('computeEffectiveStatus — rung 3 ignores impact overrides', () => {
 
   const cases: { name: string; input: EffectiveStatusInput; want: string }[] = [
     {
-      // InSpec supplies no pass/fail for an impact-0 control, so rung 3 is the
-      // only thing distinguishing "reviewed, not applicable" from "no data".
-      name: 'an authored impact of 0 with no results is notApplicable, not notReviewed',
+      // An impact of 0 is a severity band, not a scope claim. A source whose
+      // convention says otherwise — InSpec supplies no pass/fail for an
+      // impact-0 control — states the claim in results[] at import instead,
+      // where every consumer can see it.
+      name: 'an authored impact of 0 with no results is notReviewed, not notApplicable',
       input: { impact: 0 },
-      want: 'notApplicable',
+      want: 'notReviewed',
     },
     {
       name: 'an adjustment to 0 leaves a real finding failing — it is re-scored, not closed',
@@ -324,17 +332,22 @@ describe('computeEffectiveStatus — rung 3 ignores impact overrides', () => {
       want: 'failed',
     },
     {
-      // The mirror: raising the impact of an out-of-scope control does not bring
-      // it into scope either. Rung 3 reads the authored value only.
-      name: 'an adjustment away from 0 does not make an out-of-scope control applicable',
+      name: 'an adjustment away from 0 does not change the status either',
       input: { impact: 0, overrides: [adjust(0.9)] },
-      want: 'notApplicable',
+      want: 'notReviewed',
     },
     {
       // An override that DOES carry a status is making a scope claim, and rung 1
       // lets it win — that is the sanctioned way to say this.
-      name: 'a status-carrying override still outranks the authored impact',
+      name: 'a status-carrying override outranks the roll-up',
       input: { impact: 0.7, resultStatuses: ['failed'], overrides: [waived] },
+      want: 'notApplicable',
+    },
+    {
+      // The translated shape the InSpec importer now emits: the scope claim is a
+      // result, so it survives without help from the ladder.
+      name: 'an explicit notApplicable result reports notApplicable at impact 0',
+      input: { impact: 0, resultStatuses: ['notReviewed', 'notApplicable'] },
       want: 'notApplicable',
     },
   ];

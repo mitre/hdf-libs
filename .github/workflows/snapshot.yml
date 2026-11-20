@@ -1,0 +1,414 @@
+name: Main snapshots
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+# Keep the running publication; newer pushes replace the one pending run.
+concurrency:
+  group: main-snapshot-publication
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    if: github.repository == 'mitre/hdf-libs' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      source: ${{ steps.prepare.outputs.source }}
+      prepared: ${{ steps.prepare.outputs.prepared }}
+      version: ${{ steps.prepare.outputs.version }}
+      attempt: ${{ github.run_attempt }}
+      artifact: ${{ steps.metadata.outputs.artifact-id }}
+    steps:
+      # The triggering commit, not the branch tip: npm provenance and the build
+      # attestation are signed under github.sha, so that is what must be built.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
+      - name: Prepare snapshot
+        id: prepare
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          # A rerun of an older run, or a run that lost a race with a newer push,
+          # would move next back to older code; the newer commit's own run covers it.
+          git fetch --quiet origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || {
+            echo 'main has moved past this commit; its snapshot is superseded, not republished' >&2
+            exit 1
+          }
+          # Snapshots take over next, which stable v3 converter installs used to
+          # follow; nothing is tagged or published until stable exists for them.
+          tags=$(curl --fail --silent --show-error --retry 3 --max-time 60 \
+            'https://registry.npmjs.org/-/package/@mitre%2fhdf-converters/dist-tags') || {
+            echo 'Could not read the dist-tags of @mitre/hdf-converters from the registry' >&2
+            exit 1
+          }
+          jq -e '.stable | type == "string"' <<< "$tags" >/dev/null || {
+            echo 'Initialize the stable dist-tag on @mitre/hdf-converters before publishing snapshots' >&2
+            exit 1
+          }
+          version=$(bash scripts/derive-snapshot-version.sh "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
+          prepared=$(bash scripts/prepare-snapshot.sh "$version" "$RUNNER_TEMP/snapshot")
+          git update-ref refs/heads/snapshot "$prepared"
+          git bundle create "$RUNNER_TEMP/snapshot/source.bundle" refs/heads/snapshot "^$GITHUB_SHA"
+          {
+            echo "source=$GITHUB_SHA"
+            echo "prepared=$prepared"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: metadata
+        with:
+          name: snapshot-metadata-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/snapshot/
+          if-no-files-found: error
+          retention-days: 14
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    outputs:
+      artifact: ${{ steps.packages.outputs.artifact-id }}
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      PREPARED: ${{ needs.prepare.outputs.prepared }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      # Node and pnpm at mise.lock's versions and checksums. No cache in a
+      # publication workflow: a poisoned cache could tamper with what is built.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node pnpm
+          cache: false
+      - uses: $/.github/actions/setup-npm
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
+      # The lockfile belongs to the source commit, so dependencies install there.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact }}
+          path: snapshot-metadata
+      - name: Select prepared manifests
+        run: |
+          git fetch snapshot-metadata/source.bundle refs/heads/snapshot
+          test "$(git rev-parse FETCH_HEAD)" = "$PREPARED"
+          git checkout --detach "$PREPARED"
+      # Built after the checkout so the stamped version constants reach dist/.
+      # The prepared manifests pin siblings at a version no registry has yet, so
+      # pnpm must not reconcile node_modules against them before running.
+      - name: Build TypeScript
+        run: pnpm --config.verify-deps-before-run=false build:ts
+      - name: Pack and import npm packages
+        run: |
+          artifact="$RUNNER_TEMP/snapshot-packages"
+          mkdir -p "$artifact"
+          while read -r pkg; do
+            (cd "$pkg" && pnpm pack --pack-destination "$artifact")
+          done < snapshot-metadata/packages.txt
+          bash scripts/check-npm-consumers.sh "$artifact"
+          git diff --exit-code HEAD
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: packages
+        with:
+          name: snapshot-packages-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/snapshot-packages/*.tgz
+          if-no-files-found: error
+          retention-days: 14
+
+  tag:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: snapshot-tags
+    # The push uses an App token minted below, so the job's own token stays read-only.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact }}
+          path: snapshot-artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact }}
+          path: snapshot-metadata
+      - name: Check publication attempt
+        env:
+          BUILT_ATTEMPT: ${{ needs.prepare.outputs.attempt }}
+        run: |
+          test "$BUILT_ATTEMPT" = "$GITHUB_RUN_ATTEMPT" || {
+            echo 'Rerun all jobs or start a new workflow; partial-job retries cannot reuse snapshot versions.' >&2
+            exit 1
+          }
+      # Snapshot tags are signed by the MITRE snapshot key, a software key used
+      # with no human present. Its keyring lives outside the checkout for the
+      # length of the job, and git signs through a wrapper that supplies the
+      # passphrase on a file descriptor, so no gpg call can prompt or log it.
+      - name: Import the snapshot signing key
+        env:
+          SNAPSHOT_GPG_PRIVATE_KEY: ${{ secrets.SNAPSHOT_GPG_PRIVATE_KEY }}
+          SNAPSHOT_GPG_PASSPHRASE: ${{ secrets.SNAPSHOT_GPG_PASSPHRASE }}
+        run: |
+          GNUPGHOME=$(mktemp -d)
+          export GNUPGHOME
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          cat > "$GNUPGHOME/gpg-sign" <<'EOF'
+          #!/usr/bin/env bash
+          exec gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@" 3<<< "$SNAPSHOT_GPG_PASSPHRASE"
+          EOF
+          chmod 700 "$GNUPGHOME/gpg-sign"
+          # The secret must hold exactly the key consumers are told to verify against.
+          published=$(gpg --batch --with-colons --show-keys .github/snapshot-signing-key.asc)
+          test "$(grep -c '^pub:' <<< "$published")" = 1
+          fingerprint=$(awk -F: '$1 == "fpr" { print $10; exit }' <<< "$published")
+          "$GNUPGHOME/gpg-sign" --quiet --import <<< "$SNAPSHOT_GPG_PRIVATE_KEY"
+          gpg --batch --quiet --list-secret-keys "$fingerprint" > /dev/null
+          echo "SNAPSHOT_SIGNING_FINGERPRINT=$fingerprint" >> "$GITHUB_ENV"
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.SNAPSHOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+      - name: Publish snapshot tags
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          SNAPSHOT_GPG_PASSPHRASE: ${{ secrets.SNAPSHOT_GPG_PASSPHRASE }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+          SOURCE: ${{ needs.prepare.outputs.source }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-next\.$GITHUB_RUN_ID\.$GITHUB_RUN_ATTEMPT$ ]]
+          git fetch snapshot-metadata/source.bundle refs/heads/snapshot
+          test "$(git rev-parse FETCH_HEAD)" = "$PREPARED"
+          test "$(git show -s --format=%P "$PREPARED")" = "$SOURCE"
+          refs=("refs/tags/snapshots/v$VERSION")
+          while read -r gomod; do refs+=("refs/tags/${gomod%/go.mod}/v$VERSION"); done < snapshot-metadata/gomods.txt
+          export GIT_CONFIG_COUNT=5 \
+            GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0='mitre-hdf-libs[bot]' \
+            GIT_CONFIG_KEY_1=user.email GIT_CONFIG_VALUE_1='353107672+mitre-hdf-libs[bot]@users.noreply.github.com' \
+            GIT_CONFIG_KEY_2=user.signingkey GIT_CONFIG_VALUE_2="$SNAPSHOT_SIGNING_FINGERPRINT" \
+            GIT_CONFIG_KEY_3=gpg.program GIT_CONFIG_VALUE_3="$GNUPGHOME/gpg-sign" \
+            GIT_CONFIG_KEY_4=http.https://github.com/.extraheader
+          auth=$(printf 'x-access-token:%s' "$APP_TOKEN" | openssl base64 -A)
+          export GIT_CONFIG_VALUE_4="AUTHORIZATION: basic $auth"
+          # git tag refuses an existing name, so a replay cannot move a published tag.
+          for ref in "${refs[@]}"; do
+            git tag -s -a "${ref#refs/tags/}" "$PREPARED" -m "Snapshot $VERSION from main at $SOURCE"
+            git tag -v "${ref#refs/tags/}"
+          done
+          git push --atomic origin "${refs[@]}"
+      - name: Remove the signing keyring
+        if: always()
+        run: |
+          if [ -z "${GNUPGHOME:-}" ] || [ ! -f "$GNUPGHOME/gpg-sign" ]; then exit 0; fi
+          gpgconf --kill all
+          rm -rf "$GNUPGHOME"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            snapshot-artifacts/*.tgz
+            snapshot-metadata/*
+
+  publish:
+    needs: [prepare, build, tag]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: npm-snapshots
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      SOURCE: ${{ needs.prepare.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          persist-credentials: false
+      # Node at mise.lock's version and checksum; this job runs npm only. The
+      # publish, dist-tag and install commands name the registry themselves, and
+      # npm authenticates through OIDC (id-token: write), so no .npmrc is written.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
+          install_args: node
+          cache: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact }}
+          path: snapshot-artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact }}
+          path: snapshot-metadata
+      - uses: $/.github/actions/setup-npm
+      - name: Validate snapshot archives
+        id: validate
+        env:
+          BUILT_ATTEMPT: ${{ needs.prepare.outputs.attempt }}
+        run: |
+          # A re-run of this job alone keeps the building attempt's version and archives, so
+          # the version must name this run and that attempt, and main must not have moved past
+          # the source: an older run re-run late would otherwise move next back to older code.
+          [[ "$VERSION" == *"-next.$GITHUB_RUN_ID.$BUILT_ATTEMPT" ]]
+          test "$BUILT_ATTEMPT" -le "$GITHUB_RUN_ATTEMPT"
+          test "$SOURCE" = "$GITHUB_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || {
+            echo 'main has moved past this commit; its snapshot is superseded, not republished' >&2
+            exit 1
+          }
+          bash scripts/check-snapshot-archives.sh snapshot-artifacts "$VERSION" > "$RUNNER_TEMP/packages.txt"
+          test -s "$RUNNER_TEMP/packages.txt"
+          test -s snapshot-metadata/gomods.txt
+      - name: Publish packages
+        id: publish
+        run: bash scripts/publish-snapshot-packages.sh "$VERSION" "$RUNNER_TEMP/packages.txt" snapshot-artifacts
+      - name: Wait for the registry and the proxy to serve the version
+        id: wait
+        run: |
+          bash scripts/wait-for-snapshot-publication.sh "$VERSION" "$RUNNER_TEMP/packages.txt" \
+            snapshot-metadata/gomods.txt 600 30
+      - name: Install check, npm
+        id: npm-check
+        run: bash scripts/check-npm-consumers.sh --registry-version "$VERSION"
+      - name: Install check, Go
+        id: go-check
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          GOPRIVATE: ''
+          GONOPROXY: ''
+          GONOSUMDB: ''
+        run: bash scripts/check-go-consumers.sh "$VERSION" snapshot-metadata/gomods.txt
+      - name: Advance next and read it back
+        id: promote
+        run: |
+          rc=0
+          bash scripts/promote-snapshot-next.sh "$VERSION" "$RUNNER_TEMP/packages.txt" 300 15 \
+            | tee "$RUNNER_TEMP/promotion.log" || rc=$?
+          grep -v '^poll:' "$RUNNER_TEMP/promotion.log" > "$RUNNER_TEMP/next.tsv" || :
+          exit "$rc"
+      - name: Summary
+        if: always()
+        env:
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+          OUTCOMES: |
+            validate ${{ steps.validate.outcome }}
+            publish ${{ steps.publish.outcome }}
+            wait ${{ steps.wait.outcome }}
+            npm-check ${{ steps.npm-check.outcome }}
+            go-check ${{ steps.go-check.outcome }}
+            promote ${{ steps.promote.outcome }}
+        run: |
+          {
+            echo "## Snapshot $VERSION"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| source | $SOURCE |"
+            echo "| prepared | $PREPARED |"
+            echo "| version | $VERSION |"
+            awk 'NF == 2 { printf "| %s | %s |\n", $1, $2 }' <<< "$OUTCOMES"
+            echo
+            if [ -s "$RUNNER_TEMP/next.tsv" ]; then
+              echo '| package | next | |'
+              echo '| --- | --- | --- |'
+              awk -F '\t' '{ printf "| %s | %s | %s |\n", $1, $2, $3 }' "$RUNNER_TEMP/next.tsv"
+            else
+              echo 'next was not advanced for any package.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Go has no dist-tag, so the branch next plays that role for Go consumers: it moves to the
+  # prepared commit only after publish has advanced npm next, and the module tags on that
+  # commit make `go get <module>@next` resolve to the snapshot version.
+  advance-go-next:
+    needs: [prepare, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: snapshot-tags
+    # The push uses an App token minted below, so the job's own token stays read-only.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.SNAPSHOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SNAPSHOT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+      - name: Advance the Go next branch and read it back
+        id: advance
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE: ${{ needs.prepare.outputs.source }}
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$APP_TOKEN" | openssl base64 -A)
+          export GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          bash scripts/advance-snapshot-go-next.sh "$VERSION" "$SOURCE" "$PREPARED"
+      # Written on a refusal too: npm next is already advanced by then, so a run whose
+      # summary said nothing here would read as a clean snapshot.
+      - name: Summary
+        if: always()
+        env:
+          OUTCOME: ${{ steps.advance.outcome }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PREPARED: ${{ needs.prepare.outputs.prepared }}
+        run: |
+          if [ "$OUTCOME" = success ]; then
+            printf '\nGo branch next: %s (v%s)\n' "$PREPARED" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '\nGo branch next: not advanced (%s). npm next is at v%s; the Go branch has not moved.\n' \
+              "${OUTCOME:-did not run}" "$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          fi

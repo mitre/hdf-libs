@@ -147,13 +147,20 @@ export interface EffectiveStatusInput {
  * implementation of the ladder in status-determination.md:
  *
  * 1. the governing (most recent non-expired) status override's status
- * 2. else result roll-up "error" → "error"
- * 3. else impact === 0 → "notApplicable"
- * 4. else worst-wins roll-up of the result statuses (empty → "notReviewed")
+ * 2. else the worst-wins roll-up of the result statuses (empty → "notReviewed")
+ *
+ * Impact is deliberately not consulted. A status says what the assessment
+ * established; an impact says how much risk the requirement carries. A source
+ * that conflates them — InSpec scores a not-applicable control 0 and reports no
+ * pass or fail — has that convention translated into an explicit notApplicable
+ * result by its importer, so the claim travels in results[] where every consumer
+ * can see it rather than being re-derived here for every format.
  *
  * The stored effectiveStatus field is an output cache and is never read: the
  * only sanctioned channel for status to diverge from the results is a
  * governing override.
+ *
+ * Parity: ComputeEffectiveStatus in go/status.go.
  */
 export function computeEffectiveStatus(
   input: EffectiveStatusInput,
@@ -161,14 +168,7 @@ export function computeEffectiveStatus(
 ): string {
   const governing = governingStatusOverride(input.overrides ?? [], referenceTimestamp);
   if (governing?.status) return governing.status;
-  const rolledUp = worstStatus(input.resultStatuses ?? []);
-  if (rolledUp === 'error') {
-    return 'error';
-  }
-  if (input.impact === 0) {
-    return 'notApplicable';
-  }
-  return rolledUp;
+  return worstStatus(input.resultStatuses ?? []);
 }
 
 /**

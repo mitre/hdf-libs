@@ -284,7 +284,7 @@ func requirementBlock(
 	converterVersion string,
 ) map[string]interface{} {
 	st := exportmap.StatusOf(req)
-	block := exportmap.BuildHDFBlock(req, baseline, st.Raw, st.Overridden, st.Suppressed,
+	block := exportmap.BuildHDFBlockFromStatus(req, baseline, st,
 		generator, tool, converterVersion)
 	delete(block, "results")
 	if v, ok := req["sourceLocation"]; ok {
@@ -376,26 +376,17 @@ func resultBlock(
 
 const kindFail = "fail"
 
-// sarifLevels is the set a carried severity tag must belong to before it is
-// trusted as a SARIF level rather than an HDF severity word.
+// sarifLevels is the set a carried level must belong to before it is trusted as a
+// SARIF level.
 var sarifLevels = map[string]bool{"none": true, "note": true, "warning": true, "error": true}
 
-// ruleLevel resolves the SARIF severity level for a requirement.
-//
-// A tags.severity written by sarif-to-hdf holds the source level verbatim and is
-// the only thing that can restore "none", which HDF impact cannot express —
-// impact 0.0 means no impact, not ungraded. Absent that, the level is derived
-// from impact on the repo's own severity bands, which is the inverse of the
-// alias table sarif-to-hdf maps levels through.
 // resultLevel is the level for ONE result, preferring the level sarif-to-hdf
-// carried for it. tags["severity"] is a requirement-level summary, so a rule whose
-// results carried different levels had them all re-emitted at the summary's level
-// and the RESOLVED level (SARIF 3.27.10: the result's own level, else the rule's
-// defaultConfiguration, else warning) came back changed for every result but one.
-//
-// A result the source left level-less carries nothing here, and falls through to
-// the rule level — which is the rule's defaultConfiguration, so the level still
-// resolves to what it resolved to before.
+// carried for it. tags["sarif-level"] is a requirement-level summary, so a rule
+// whose results carried different levels had them all re-emitted at the summary's
+// level and the RESOLVED level (SARIF 3.27.10: the result's own level, else the
+// rule's defaultConfiguration, else warning) came back changed for every result
+// but one. A result the source left level-less carries nothing here and falls
+// through to the rule level.
 func resultLevel(req map[string]interface{}, ordinal int) string {
 	if level := carriedResultField(req, ordinal, "level"); sarifLevels[level] {
 		return level
@@ -403,9 +394,17 @@ func resultLevel(req map[string]interface{}, ordinal int) string {
 	return ruleLevel(req)
 }
 
+// ruleLevel resolves the SARIF severity level for a requirement.
+//
+// The tags["sarif-level"] sarif-to-hdf writes holds the source level verbatim and
+// is the only thing that can restore "none", which HDF impact cannot express, or a
+// level that security-severity outranked for impact. tags["severity"] is never
+// read: in HDF it is an InSpec severity word, not a SARIF level. Absent a carried
+// level, it is derived from impact on the repo's own severity bands, the inverse of
+// the alias table sarif-to-hdf maps levels through.
 func ruleLevel(req map[string]interface{}) string {
 	tags, _ := exportmap.AsMap(req["tags"])
-	if level := exportmap.GetStr(tags, "severity"); sarifLevels[level] {
+	if level := exportmap.GetStr(tags, "sarif-level"); sarifLevels[level] {
 		return level
 	}
 	impact := 0.0
@@ -578,7 +577,8 @@ func ruleTags(req map[string]interface{}) []interface{} {
 	} {
 		for _, cwe := range src {
 			if cwe != "" {
-				add("external/cwe/" + normalizeCWETag(cwe))
+				// CWE-79 renders as cwe-79, the casing the external/cwe/ convention uses.
+				add("external/cwe/" + hdfutil.ASCIILower(cwe))
 			}
 		}
 	}
@@ -598,19 +598,6 @@ func ruleTags(req map[string]interface{}) []interface{} {
 		out = append(out, t)
 	}
 	return out
-}
-
-// normalizeCWETag renders CWE-79 as cwe-79, the casing the external/cwe/ tag
-// convention uses.
-func normalizeCWETag(cwe string) string {
-	lowered := make([]rune, 0, len(cwe))
-	for _, r := range cwe {
-		if r >= 'A' && r <= 'Z' {
-			r += 'a' - 'A'
-		}
-		lowered = append(lowered, r)
-	}
-	return string(lowered)
 }
 
 // cvssBaseScore returns the first CVSS base score on the requirement.
@@ -642,6 +629,7 @@ func resultFingerprintsAt(req map[string]interface{}, ordinal int) (map[string]i
 			if entry, ok := exportmap.AsMap(entries[ordinal]); ok {
 				fp, _ := exportmap.AsMap(entry["fingerprints"])
 				pfp, _ := exportmap.AsMap(entry["partialFingerprints"])
+				fp, pfp = stringValued(fp), stringValued(pfp)
 				if len(fp) > 0 || len(pfp) > 0 {
 					return fp, pfp
 				}

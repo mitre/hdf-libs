@@ -1089,13 +1089,13 @@ describe('XCCDF branch coverage', () => {
   it('should handle rule-result with "notselected" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'notselected' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "informational" status', async () => {
     const xml = makeXccdfResultsXml({ ruleResults: [{ idref: 'rule_1', result: 'informational' }] });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });
 
   it('should handle rule-result with "fixed" status', async () => {
@@ -1759,12 +1759,16 @@ describe('MSFT Secure Score branch coverage', () => {
           remediation: 'Complete the configuration',
           remediationImpact: 'Medium',
           service: 'Azure AD',
+          // getStatus reads maxScore off the PROFILE, not the control score, so
+          // without this the profile was unscored and the test reached 'failed'
+          // via 3 !== 0 rather than via the partial implementation it names.
+          maxScore: 10.0,
         }],
       },
     });
     const hdf = parseHdf(await convertMsftSecureScoreToHdf(input));
     expect(hdf.baselines[0]!.requirements).toHaveLength(1);
-    // Partial implementation should result in "failed"
+    // Partial implementation should result in "failed": score 3 of maxScore 10.
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('failed');
   });
 
@@ -2945,8 +2949,11 @@ describe('Fortify additional branch coverage', () => {
   it('should handle desc classID mismatch (no vulns for desc) — L323 empty vulns', async () => {
     const xml = makeFortifyXml({ vulnClassID: 'OTHER', descClassID: 'NOMATCH' });
     const hdf = parseHdf(await convertFortifyToHdf(xml));
-    // Description with no matching vulns produces 0 results
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // results is required with minItems:1, so the orphan description gets one
+    // synthesized notReviewed result. This asserted toHaveLength(0), pinning a
+    // document the converter itself rejects.
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 
   it('should handle no CreatedTS — L317-318 defaults', async () => {
@@ -3891,8 +3898,11 @@ describe('Splunk deeper branch coverage', () => {
     const input = JSON.stringify([header, profile, control]);
     const hdf = parseHdf(await convertSplunkToHdf(input));
     expect(hdf.baselines[0]!.requirements).toHaveLength(1);
-    // null results should produce empty results array
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // results is required with minItems:1, so a null/absent results array gets
+    // one synthesized notReviewed result. This asserted toHaveLength(0) and so
+    // pinned a document the converter itself rejects.
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 
   it('should handle control with missing profile_sha256 — L207', async () => {
@@ -4338,7 +4348,9 @@ describe('ZAP second-pass branch coverage', () => {
       }],
     });
     const hdf = parseHdf(await convertZapToHdf(input));
-    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    // Same reason as the fortify case above: this asserted toHaveLength(0).
+    expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
   });
 });
 

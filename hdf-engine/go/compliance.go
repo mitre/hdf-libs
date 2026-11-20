@@ -14,12 +14,19 @@ import (
 // Threshold status-key constants used in the threshold spec and violation
 // messages (SAF CLI-compatible keys).
 const (
-	ThresholdPassed   = "passed"
-	ThresholdFailed   = "failed"
-	ThresholdSkipped  = "skipped"
-	ThresholdError    = "error"
-	ThresholdNoImpact = "no_impact"
+	ThresholdPassed        = "passed"
+	ThresholdFailed        = "failed"
+	ThresholdSkipped       = "skipped"
+	ThresholdError         = "error"
+	ThresholdNotApplicable = "not_applicable"
 )
+
+// SAFNotApplicableKey is SAF CLI's name for the notApplicable bucket. It names a
+// severity score rather than the status the bucket counts, so this tool emits
+// not_applicable, but SAF's own threshold files are a supported input and three
+// of the samples in testdata/saf-thresholds use this spelling — so it is a
+// permanent second spelling on input, not a deprecation.
+const SAFNotApplicableKey = "no_impact"
 
 // legacyInformationalKey is the name the informational severity bucket had
 // before 3.7.0 renamed it. Accepted on input and echoed back in violations
@@ -40,17 +47,17 @@ type SeverityCounts struct {
 
 // StatusCounts holds per-status severity breakdowns.
 type StatusCounts struct {
-	Passed   SeverityCounts `yaml:"passed" json:"passed"`
-	Failed   SeverityCounts `yaml:"failed" json:"failed"`
-	Skipped  SeverityCounts `yaml:"skipped" json:"skipped"`
-	Error    SeverityCounts `yaml:"error" json:"error"`
-	NoImpact SeverityCounts `yaml:"no_impact" json:"no_impact"`
+	Passed        SeverityCounts `yaml:"passed" json:"passed"`
+	Failed        SeverityCounts `yaml:"failed" json:"failed"`
+	Skipped       SeverityCounts `yaml:"skipped" json:"skipped"`
+	Error         SeverityCounts `yaml:"error" json:"error"`
+	NotApplicable SeverityCounts `yaml:"not_applicable" json:"not_applicable"`
 }
 
 // ControlIDMapping maps a control ID to its observed status and severity.
 type ControlIDMapping struct {
 	ID     string
-	Status string // "passed", "failed", "skipped", "error", "no_impact"
+	Status string // "passed", "failed", "skipped", "error", "not_applicable"
 	// Severity is the counting BUCKET, not the requirement's raw severity
 	// string: it is always one of "critical", "high", "medium", "low",
 	// "informational", having gone through SeverityBucket. Anything else would
@@ -180,12 +187,15 @@ type ComplianceBound struct {
 
 // ThresholdConfig is a full threshold specification.
 type ThresholdConfig struct {
-	Compliance *ComplianceBound   `yaml:"compliance,omitempty" json:"compliance,omitempty"`
-	Passed     *ThresholdSeverity `yaml:"passed,omitempty" json:"passed,omitempty"`
-	Failed     *ThresholdSeverity `yaml:"failed,omitempty" json:"failed,omitempty"`
-	Skipped    *ThresholdSeverity `yaml:"skipped,omitempty" json:"skipped,omitempty"`
-	Error      *ThresholdSeverity `yaml:"error,omitempty" json:"error,omitempty"`
-	NoImpact   *ThresholdSeverity `yaml:"no_impact,omitempty" json:"no_impact,omitempty"`
+	Compliance    *ComplianceBound   `yaml:"compliance,omitempty" json:"compliance,omitempty"`
+	Passed        *ThresholdSeverity `yaml:"passed,omitempty" json:"passed,omitempty"`
+	Failed        *ThresholdSeverity `yaml:"failed,omitempty" json:"failed,omitempty"`
+	Skipped       *ThresholdSeverity `yaml:"skipped,omitempty" json:"skipped,omitempty"`
+	Error         *ThresholdSeverity `yaml:"error,omitempty" json:"error,omitempty"`
+	NotApplicable *ThresholdSeverity `yaml:"not_applicable,omitempty" json:"not_applicable,omitempty"`
+	// NoImpact is SAF CLI's spelling of NotApplicable, accepted so a SAF
+	// threshold file validates unchanged. Resolved by resolveSAFSection; never written.
+	NoImpact *ThresholdSeverity `yaml:"no_impact,omitempty" json:"no_impact,omitempty"`
 	// Rules are the additive half: a filter predicate plus a bound, for the
 	// policies the fixed grid above cannot express. See rules.go.
 	Rules []ThresholdRule `yaml:"rules,omitempty" json:"rules,omitempty"`
@@ -328,7 +338,7 @@ func thresholdKeyToStatus(key string) string {
 		return string(hdf.NotReviewed)
 	case ThresholdError:
 		return string(hdf.Error)
-	case ThresholdNoImpact:
+	case ThresholdNotApplicable, SAFNotApplicableKey:
 		return string(hdf.NotApplicable)
 	default:
 		return key
@@ -347,7 +357,7 @@ func statusToThresholdKey(status hdf.ResultStatus) string {
 	case hdf.Error:
 		return ThresholdError
 	case hdf.NotApplicable:
-		return ThresholdNoImpact
+		return ThresholdNotApplicable
 	default:
 		return ThresholdSkipped
 	}
@@ -408,7 +418,7 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	case hdf.Error:
 		sc = &counts.Error
 	case hdf.NotApplicable:
-		sc = &counts.NoImpact
+		sc = &counts.NotApplicable
 	default:
 		sc = &counts.Skipped
 	}
@@ -431,7 +441,7 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 // statusBuckets lists a count set's five status buckets, so a bucket-wise
 // operation is written once and cannot miss one.
 func statusBuckets(counts *StatusCounts) [5]*SeverityCounts {
-	return [5]*SeverityCounts{&counts.Passed, &counts.Failed, &counts.Skipped, &counts.Error, &counts.NoImpact}
+	return [5]*SeverityCounts{&counts.Passed, &counts.Failed, &counts.Skipped, &counts.Error, &counts.NotApplicable}
 }
 
 func addSeverities(dst, src *SeverityCounts) {
@@ -485,7 +495,7 @@ func SeverityTotals(counts *StatusCounts) SeverityCounts {
 
 // CalculateCompliance returns the compliance percentage, rounded to two decimals.
 // compliance = passed / (passed + failed + skipped + error) * 100; notApplicable
-// (no_impact) requirements are excluded.
+// (not_applicable) requirements are excluded.
 func CalculateCompliance(counts *StatusCounts) float64 {
 	relevant := counts.Passed.Total + counts.Failed.Total + counts.Skipped.Total + counts.Error.Total
 	if relevant == 0 {
@@ -518,12 +528,18 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 	// Every construction path lands here, so the former name is resolved once
 	// rather than in each of the file, inline and MCP callers. Resolved
 	// before the compliance bounds so a refusal is reported ahead of them.
+	naSection, naRefusal := resolveSAFSection(config)
+	if naRefusal != "" {
+		violations = append(violations, Violation{Message: naRefusal})
+	}
+	naSection.counts = &counts.NotApplicable
+
 	sections := []resolvedSection{
 		{name: ThresholdPassed, threshold: config.Passed, counts: &counts.Passed},
 		{name: ThresholdFailed, threshold: config.Failed, counts: &counts.Failed},
 		{name: ThresholdSkipped, threshold: config.Skipped, counts: &counts.Skipped},
 		{name: ThresholdError, threshold: config.Error, counts: &counts.Error},
-		{name: ThresholdNoImpact, threshold: config.NoImpact, counts: &counts.NoImpact},
+		naSection,
 	}
 	for i := range sections {
 		resolved, wroteNone, refusal := resolveLegacySeverity(sections[i].name, sections[i].threshold)
@@ -572,6 +588,23 @@ type resolvedSection struct {
 	wroteNone bool
 }
 
+// resolveSAFSection picks the notApplicable section from whichever of the two
+// accepted spellings the author wrote, carrying that spelling into the section's
+// name so a violation names the key they will find in their own file. A spec
+// setting both is refused rather than resolved: they name one bucket, so
+// honouring one would drop a bound the author wrote.
+func resolveSAFSection(config *ThresholdConfig) (resolvedSection, string) {
+	switch {
+	case config.NotApplicable != nil && config.NoImpact != nil:
+		return resolvedSection{name: ThresholdNotApplicable, threshold: config.NotApplicable},
+			fmt.Sprintf("both '%s' and '%s' are set; they name the same bucket", SAFNotApplicableKey, ThresholdNotApplicable)
+	case config.NoImpact != nil:
+		return resolvedSection{name: SAFNotApplicableKey, threshold: config.NoImpact}, ""
+	default:
+		return resolvedSection{name: ThresholdNotApplicable, threshold: config.NotApplicable}, ""
+	}
+}
+
 // resolveLegacySeverity folds a section's pre-3.7 "none" key into
 // "informational", reporting whether the bound was written that way so a
 // violation can name the key the author will find in their own file. A spec
@@ -597,6 +630,16 @@ func resolveLegacySeverity(name string, ts *ThresholdSeverity) (*ThresholdSeveri
 	return &resolved, true, ""
 }
 
+// statusKeyFor renders a control map's status in the spelling the spec's section
+// used, so both halves of an "expected X but found Y" message speak one
+// vocabulary. Only the notApplicable bucket has two spellings.
+func statusKeyFor(mapped, sectionKey string) string {
+	if mapped == ThresholdNotApplicable && sectionKey == SAFNotApplicableKey {
+		return SAFNotApplicableKey
+	}
+	return mapped
+}
+
 // checkSeverityThreshold validates all severity bounds within a status category.
 func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string][]ControlIDMapping, wroteNone bool, controlMap []ControlIDMapping) []Violation {
 	if threshold == nil {
@@ -616,10 +659,14 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 
 	// The requirements a count bound counted, so a breached bound can name them.
 	// "total" is the whole status bucket; a severity label narrows it further.
+	// Both sides are normalized to the schema status, because a bucket has two
+	// accepted key spellings and the section carries whichever one the author
+	// wrote while the control map always records the canonical one.
+	wantStatus := thresholdKeyToStatus(status)
 	inBucket := func(label string) []Match {
 		var found []Match
 		for _, m := range controlMap {
-			if m.Status != status {
+			if thresholdKeyToStatus(m.Status) != wantStatus {
 				continue
 			}
 			if label != "total" && m.Severity != label {
@@ -661,7 +708,7 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 			// Fail-closed: every entry carrying the id must satisfy the
 			// assertion. One passing finding out of three must not green a gate.
 			for i, ac := range matches {
-				if ac.Status == status && ac.Severity == label {
+				if thresholdKeyToStatus(ac.Status) == wantStatus && ac.Severity == label {
 					continue
 				}
 				entry := ""
@@ -670,7 +717,7 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 				}
 				violations = append(violations, Violation{Message: fmt.Sprintf(
 					"%s: control %s expected %s/%s but found %s/%s%s",
-					path, expectedID, status, label, ac.Status, ac.Severity, entry)})
+					path, expectedID, status, label, statusKeyFor(ac.Status, status), ac.Severity, entry)})
 			}
 		}
 	}

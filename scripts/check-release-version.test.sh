@@ -20,8 +20,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
-work="$(mktemp -d "${TMPDIR:-/tmp}/check-release-version.XXXXXX")"
+work="$(mktemp -d)" || { echo "cannot create a temporary directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 
 pass=0

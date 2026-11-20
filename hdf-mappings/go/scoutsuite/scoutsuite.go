@@ -2,16 +2,13 @@
 package scoutsuite
 
 import (
-	_ "embed"
 	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/datasets"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
-
-//go:embed scoutsuite-nist-mappings.json
-var mappingsData []byte
 
 type mapping struct {
 	Rule   string `json:"RULE"`
@@ -23,17 +20,24 @@ var (
 	scoutsuiteDataOnce sync.Once
 )
 
+// parseData keeps the JSON shape testable without a mutable package var: the
+// dataset is read inside the loader so the linker can drop it from a consumer
+// that never looks a ScoutSuite rule up.
+func parseData(data []byte) map[string]string {
+	var raw []mapping
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return make(map[string]string)
+	}
+	parsed := make(map[string]string, len(raw))
+	for _, m := range raw {
+		parsed[m.Rule] = m.NistID
+	}
+	return parsed
+}
+
 func loadData() map[string]string {
 	scoutsuiteDataOnce.Do(func() {
-		var raw []mapping
-		if err := json.Unmarshal(mappingsData, &raw); err != nil {
-			scoutsuiteData = make(map[string]string)
-			return
-		}
-		scoutsuiteData = make(map[string]string, len(raw))
-		for _, m := range raw {
-			scoutsuiteData[m.Rule] = m.NistID
-		}
+		scoutsuiteData = parseData(datasets.ScoutSuiteNIST)
 	})
 	return scoutsuiteData
 }

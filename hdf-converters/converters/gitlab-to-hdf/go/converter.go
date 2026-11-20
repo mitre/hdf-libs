@@ -500,6 +500,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			title = vuln.ID
 		}
 
+		// The default description stays empty, not vuln.Name: the source carried none.
 		req := hdf.EvaluatedRequirement{
 			ID:                 vuln.ID,
 			Title:              &title,
@@ -507,7 +508,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			Code:               hdfutil.Ptr(buildVulnCode(vuln)),
 			Results:            []hdf.RequirementResult{result},
 			Tags:               tags,
-			Descriptions:       descriptions,
+			Descriptions:       shared.EnsureDefaultDescription(descriptions, ""),
 			Refs:               buildRefs(vuln),
 			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
 			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),

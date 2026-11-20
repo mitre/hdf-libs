@@ -21,7 +21,7 @@
             {
               "codeDesc": "org.acme.FlakyTest :: testFlaky",
               "runTime": 0.034,
-              "startTime": "2026-07-12T23:25:16.654728Z",
+              "startTime": "2026-10-30T00:19:46.47354Z",
               "status": "passed"
             }
           ],
@@ -30,7 +30,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "org.acme.FlakyTest"
           },
           "controlType": "management",
           "title": "testFlaky",
@@ -47,7 +48,7 @@
             {
               "codeDesc": "org.acme.FlakyTest :: testStable",
               "runTime": 0.001,
-              "startTime": "2026-07-12T23:25:16.654728Z",
+              "startTime": "2026-10-30T00:19:46.47354Z",
               "status": "passed"
             }
           ],
@@ -56,7 +57,8 @@
           "tags": {
             "nist": [
               "SA-11"
-            ]
+            ],
+            "test_suite": "org.acme.FlakyTest"
           },
           "controlType": "management",
           "title": "testStable",
@@ -80,7 +82,7 @@
     "name": "junit-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:25:16.654728Z",
+  "timestamp": "2026-10-30T00:19:46.47354Z",
   "tool": {
     "name": "JUnit XML"
   }

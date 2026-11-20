@@ -19,14 +19,14 @@
     {
       "name": "affected-blank-reason",
       "override": {
-        "type": "riskAdjustment",
+        "type": "waiver",
         "requirementId": "CVE-2021-45046",
         "status": "failed",
         "reason": "   ",
         "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.15.0" }]
       },
       "status": "affected",
-      "actionStatement": "No remediation action was recorded for the riskAdjustment override applied to CVE-2021-45046.",
+      "actionStatement": "No remediation action was recorded for the waiver override applied to CVE-2021-45046.",
       "impactStatement": "",
       "justification": "",
       "why": "whitespace-only text satisfies no schema's intent, so it must fall through to the fallback rather than ship as the remediation"

@@ -30,6 +30,7 @@ interface V1Control {
   tags?: Record<string, unknown>;
   refs?: unknown[];
   code?: string;
+  descriptions?: unknown[];
   source_location?: { ref?: string; line?: number };
   sourceLocation?: { ref?: string; line?: number };
   results?: V1Result[];
@@ -68,12 +69,9 @@ export function normalizeToV2(doc: Record<string, unknown>): Record<string, unkn
   const profiles = doc['profiles'] as V1Profile[];
   const baselines = profiles.map(normalizeProfile);
 
-  // Preserve timestamp from statistics if available
-  const statistics = doc['statistics'] as Record<string, unknown> | undefined;
-
   return {
     baselines,
-    statistics,
+    statistics: normalizeStatistics(doc['statistics']),
     timestamp: doc['timestamp'],
   };
 }
@@ -82,16 +80,139 @@ function normalizeProfile(profile: V1Profile): Record<string, unknown> {
   const controls = profile.controls ?? [];
   const requirements = controls.map(normalizeControl);
 
-  return {
+  const baseline: Record<string, unknown> = {
     name: profile.name,
     title: profile.title,
     version: profile.version,
-    checksum: profile.sha256 ? { algorithm: 'sha256', value: profile.sha256 } : undefined,
-    groups: profile.groups ?? [],
-    supports: profile.supports ?? [],
-    inputs: profile.attributes ?? [],
+    integrity: profile.sha256 ? { algorithm: 'sha256', checksum: profile.sha256 } : undefined,
+    groups: normalizeGroups(profile.groups),
+    supports: normalizeSupports(profile.supports),
     requirements,
   };
+
+  // Legacy attributes are unstructured maps that do not conform to the typed
+  // Input shape, and the differ never reads inputs. Parking them preserves the
+  // data without this normalizer taking on the converter's typing job.
+  const attributes = profile.attributes ?? [];
+  if (attributes.length > 0) {
+    baseline.extensions = { passthrough: { legacyAttributes: attributes } };
+  }
+
+  return baseline;
+}
+
+/** Only a plain object can be projected; a legacy array or scalar carries nothing. */
+function plainObject(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
+/** Legacy groups name their members `controls`; the declared field is `requirements`. */
+function normalizeGroups(groups: unknown[] | undefined): Record<string, unknown>[] {
+  return (groups ?? []).flatMap((raw) => {
+    const g = plainObject(raw);
+    if (!g) return [];
+    const group: Record<string, unknown> = {
+      id: typeof g.id === 'string' ? g.id : '',
+      requirements: Array.isArray(g.controls) ? g.controls.filter((c) => typeof c === 'string') : [],
+    };
+    if (typeof g.title === 'string') group.title = g.title;
+    return [group];
+  });
+}
+
+/** InSpec writes hyphenated support keys; the declared shape is camelCase. */
+function normalizeSupports(supports: unknown[] | undefined): Record<string, string>[] {
+  const KEYS: Array<[string, string]> = [
+    ['platform', 'platform'],
+    ['platform-family', 'platformFamily'],
+    ['platform-name', 'platformName'],
+    ['release', 'release'],
+  ];
+  return (supports ?? []).flatMap((raw) => {
+    const s = plainObject(raw);
+    if (!s) return [];
+    const out: Record<string, string> = {};
+    for (const [legacyKey, declaredKey] of KEYS) {
+      const value = s[legacyKey];
+      if (typeof value === 'string' && value !== '') out[declaredKey] = value;
+    }
+    return Object.keys(out).length > 0 ? [out] : [];
+  });
+}
+
+/** Duration is the only statistic this normalizer maps; the declared type is closed. */
+function normalizeStatistics(stats: unknown): { duration?: number } {
+  const duration = (stats as { duration?: unknown } | undefined)?.duration;
+  return typeof duration === 'number' ? { duration } : {};
+}
+
+/**
+ * A Reference with nothing in it fails the schema, which requires one of ref,
+ * url or uri. Real InSpec emits `{"ref": []}`, so passing legacy refs through
+ * verbatim put empty references into a closed shape. Mirrors the Go twin and
+ * convertRef in the legacyhdf-to-hdf converter.
+ */
+function normalizeRefs(refs: unknown[] | undefined): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  for (const raw of refs ?? []) {
+    if (typeof raw === 'string') {
+      if (raw !== '') out.push({ ref: raw });
+      continue;
+    }
+    const r = plainObject(raw);
+    if (!r) continue;
+    const ref: Record<string, unknown> = {};
+    const value = normalizeRefValue(r.ref);
+    if (value !== undefined) ref.ref = value;
+    if (typeof r.url === 'string' && r.url !== '') ref.url = r.url;
+    if (typeof r.uri === 'string' && r.uri !== '') ref.uri = r.uri;
+    if (Object.keys(ref).length > 0) out.push(ref);
+  }
+  return out;
+}
+
+/** Ref is a string or an array of objects; an empty array carries nothing. */
+function normalizeRefValue(raw: unknown): unknown {
+  if (typeof raw === 'string') return raw === '' ? undefined : raw;
+  if (!Array.isArray(raw)) return undefined;
+  const maps = raw.map(plainObject).filter((m) => m !== undefined);
+  return maps.length > 0 ? maps : undefined;
+}
+
+/** Project rather than copy: the declared SourceLocation is a closed {ref, line}. */
+function normalizeSourceLocation(control: V1Control): { ref?: string; line?: number } | undefined {
+  // Each key is tried for a usable object rather than taken whichever is merely
+  // present: a scalar under source_location shadowed a good sourceLocation, and
+  // an array under it yielded {} where Go omitted the key.
+  const src = plainObject(control.source_location) ?? plainObject(control.sourceLocation);
+  if (!src) return undefined;
+  const out: { ref?: string; line?: number } = {};
+  if (typeof src.ref === 'string') out.ref = src.ref;
+  if (typeof src.line === 'number') out.line = src.line;
+  return out;
+}
+
+/**
+ * A default-labelled description is schema-required (minItems 1 plus a contains
+ * constraint), and `descriptions` is one of the fields the differ tracks — so
+ * dropping the legacy descriptions[] array made check and fix text changes
+ * invisible to it, not merely absent from the output.
+ */
+function normalizeDescriptions(control: V1Control): Record<string, unknown>[] {
+  const legacy: Record<string, unknown>[] = [];
+  for (const raw of Array.isArray(control.descriptions) ? control.descriptions : []) {
+    const d = plainObject(raw);
+    if (!d) continue;
+    if (typeof d.label !== 'string' || d.label === '') continue;
+    legacy.push({ label: d.label, data: typeof d.data === 'string' ? d.data : '' });
+  }
+
+  // A legacy `default` entry is the source's own prose and wins over `desc`;
+  // overwriting it from `desc` dropped that prose whenever the two differed.
+  // Matches ensureDefaultDescription, which the converter uses.
+  if (legacy.some((d) => d.label === 'default')) return legacy;
+  return [{ label: 'default', data: typeof control.desc === 'string' ? control.desc : '' }, ...legacy];
 }
 
 function normalizeControl(control: V1Control): Record<string, unknown> {
@@ -101,14 +222,12 @@ function normalizeControl(control: V1Control): Record<string, unknown> {
   return {
     id: control.id,
     title: control.title,
-    descriptions: control.desc
-      ? [{ label: 'default', data: control.desc }]
-      : [],
+    descriptions: normalizeDescriptions(control),
     impact: control.impact,
     tags: control.tags ?? {},
-    refs: control.refs ?? [],
+    refs: normalizeRefs(control.refs),
     code: control.code,
-    sourceLocation: control.source_location ?? control.sourceLocation,
+    sourceLocation: normalizeSourceLocation(control),
     results,
   };
 }

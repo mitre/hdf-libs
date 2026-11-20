@@ -9,8 +9,46 @@ How hdf-libs determines the overall status of a control/requirement from its ind
 | `passed` | Control requirements are met |
 | `failed` | One or more requirements are not met |
 | `error` | A test execution error occurred |
-| `notApplicable` | Control is not applicable (impact 0.0 or explicitly scoped out) |
+| `notApplicable` | Control is not applicable to this target |
 | `notReviewed` | Control was not evaluated (skipped, no results) |
+
+### What a converter may claim
+
+`passed` is the only status that makes an affirmative claim: this requirement was checked and met. Every exporter carries it as one — CKL `NotAFinding`, ASFF `PASSED`, XCCDF `pass`, ECS `success`, OSCAL-SAR `satisfied` — and `NotAFinding` is a compliance claim eMASS scores. So a converter may emit `passed` only where the **source** assessed the requirement.
+
+That is not the same as forbidding a default branch. Some formats encode a pass as the absence of anything else, and reading them correctly means returning `passed` from the fall-through:
+
+- JUnit: a `<testcase>` with no `<failure>`, `<error>` or `<skipped>` child passed. That is the format's own convention.
+- A scanner that reports only violations: a clean run with no findings did assess the target and found nothing.
+- A tool whose score encodes the verdict, where zero means "no finding" rather than "no data".
+
+What is forbidden is a `passed` the converter invents because the source said nothing. The failure mode is a degenerate comparison of two empty values — this was `msft-secure-score-to-hdf`, where an unscored profile's `maxScore` decodes to 0 and the control's score is 0 too:
+
+```go
+// WRONG — an unscored control has maxScore 0, so this passes on 0 == 0
+if cs.Score == maxScore {
+    return hdf.Passed
+}
+```
+
+Guard the unassessed case first and report `notReviewed`, which is what `scoutsuite-to-hdf` does:
+
+```go
+if checkedItems == 0 {
+    return hdf.NotReviewed   // nothing was checked; that is not a pass
+}
+if flaggedItems == 0 {
+    return hdf.Passed        // items were checked and none flagged
+}
+```
+
+`conveyor-to-hdf` does the same for an absent score: its `Score` is a pointer, and a nil one yields `notReviewed` with the reason in the message rather than reaching the zero-means-clean comparison.
+
+`notReviewed` is the honest substitute because it keeps the requirement in the compliance denominator: an unassessed requirement is outstanding work. `notApplicable` would be worse than wrong — it is excluded from the ratio entirely, so it flatters the number while asserting a scope decision nobody made. `error` claims a failure that did not happen.
+
+The same rule governs a **derived** impact. Where a converter computes impact from a source field and that field is absent, do not let the arithmetic yield `0` — that asserts the requirement carries no risk, on the same missing evidence. Use the converter's unknown-severity default instead, as `msft-secure-score-to-hdf` does for a control with no matching profile and for one whose profile is unscored.
+
+This applies to a derivation, not to a record the converter synthesizes itself. A placeholder requirement — `shared.BuildNoFindingsRequirement`'s clean-scan record, or `conveyor-to-hdf`'s stand-in for a service entry carrying no score — is informational by nature, and `impact: 0` describes the record honestly rather than making a claim about a control's risk.
 
 ## Precedence Order
 
@@ -28,26 +66,28 @@ When a control has multiple test results with different statuses, the overall st
 
 - **`failed` + `passed` → `failed`**: One failure means the control fails
 - **`passed` + `notReviewed` → `passed`**: A passing test proves the control works; a skipped test alongside it doesn't negate that
-- **`impact === 0` → `notApplicable`, except `error`**: A control with impact 0.0 is Not Applicable regardless of whether its tests passed, failed, or were skipped — but **not** when the roll-up is `error`. An execution error means the check never ran, so nothing was established about applicability; an errored control reports `error` even at impact 0.0. This matches InSpec Enhanced Outcomes and Heimdall inspecjs, which both rank error above the Not Applicable determination
-- **A governing override outranks everything**: A non-expired `statusOverride` adjudicates uniformly — at any impact, over any roll-up, including `error` and including impact 0.0. See the effective-status ladder below
-- **No results → `notReviewed`**: Unless impact is 0.0 (then `notApplicable`)
+- **Impact does not affect status**: A status says what the assessment established; an impact says how much risk the requirement carries. The two are independent, so a requirement reports the same status at impact 0.0 as it would at 0.7. A source that conflates them — InSpec scores a control it considers inapplicable 0.0 and then reports no pass or fail for it — has that convention translated into an explicit `notApplicable` result by its importer, so the claim travels in `results[]` where every consumer can see it. See "Not Applicable is a result, not a score" below
+- **A governing override outranks everything**: A non-expired `statusOverride` adjudicates uniformly — at any impact, over any roll-up, including `error`. See the effective-status ladder below
+- **No results → `notReviewed`**: Nothing was established, at any impact
 
 ### The Effective-Status Ladder
 
-The full effective-status computation combines the roll-up above with overrides and impact in one fixed order:
+The full effective-status computation combines the roll-up above with overrides in one fixed order:
 
 ```
 1. governing override   — the most recent non-expired statusOverride's status
-2. error roll-up        — else if the result roll-up is error → error
-3. impact 0             — else if impact === 0 → notApplicable
-4. roll-up              — else the worst-wins roll-up (empty results → notReviewed)
+2. roll-up              — else the worst-wins roll-up (empty results → notReviewed)
 ```
+
+`error` needs no rung of its own: it already outranks every other status in the worst-wins order, so an errored result reports `error` whatever else the requirement carries. That matches InSpec Enhanced Outcomes and Heimdall inspecjs, which both rank error above the Not Applicable determination.
 
 The stored `effectiveStatus` field is **never an input** to this computation. The only sanctioned channel for a requirement's status to diverge from its results is a governing override; an unprovenanced stored value that contradicts the results — in either direction, optimistic (`passed` over failing results) or pessimistic (`error` over passing results) — is ignored and the ladder's answer wins. Source tools whose control-level verdict carries information the results array does not (for example a crashed tool that recorded only its passing sub-checks) must have that knowledge encoded into `results[]` by their converter — as a synthesized errored result — not smuggled through the stored field.
 
 #### Checksum epochs
 
 Requirement-change-event chains anchor their integrity in effective checksums, which hash the *resolved* effective status. When the ladder's semantics change (as in the change that introduced it), checksums computed by older binaries no longer match what a newer binary recomputes — a **checksum epoch**. A chain derived before an epoch boundary and verified after it reports `chainGap` warnings on the affected keys even though no events are missing. The warning text names both possible causes; the remedy for an epoch-crossing chain is to **re-derive it from a fresh rescan**, which re-anchors the chain under the current semantics. Event-chain verification deliberately does not accept old-epoch checksums — doing so would weaken the integrity claim for genuinely broken chains.
+
+There have been two epochs. The first introduced this ladder. The second removed its `impact === 0 → notApplicable` rung, so an impact-0 requirement whose results establish nothing now resolves `notReviewed` where it previously resolved `notApplicable`, and any checksum over that requirement moves with it. In practice almost nothing is anchored on an affected status, and re-conversion from the original source — which supplies the explicit `notApplicable` result — settles both the status and the checksum together.
 
 ### Examples
 
@@ -58,14 +98,19 @@ Requirement-change-event chains anchor their integrity in effective checksums, w
 | `[passed, failed]` | 0.5 | `failed` |
 | `[passed, notReviewed]` | 0.7 | `passed` |
 | `[notReviewed]` | 0.5 | `notReviewed` |
-| `[notReviewed]` | 0.0 | `notApplicable` |
+| `[notReviewed]` | 0.0 | `notReviewed` |
+| `[notReviewed, notApplicable]`† | 0.0 | `notApplicable` |
 | `[passed, error]` | 0.5 | `error` |
 | `[error]` | 0.0 | `error` |
 | `[passed, error]` | 0.0 | `error` |
-| `[]` (empty)*  | 0.0 | `notApplicable` |
+| `[]` (empty)*  | 0.0 | `notReviewed` |
 | `[]` (empty)*  | 0.5 | `notReviewed` |
 
+The impact column is there to show that it changes nothing: every row would read the same with any other value in it.
+
 \* The v3 HDF schema enforces `results.minItems=1`, so empty results arrays should not appear in schema-valid HDF documents — converters synthesize a `passed` placeholder for clean scans (see `../specification/hdf-specification.md` § "Clean-scan convention"). The empty-results rows above remain a safety net for legacy HDF v2 (InSpec-ExecJSON-shaped) input that did not enforce the invariant.
+
+† The shape an InSpec reader emits for a control scored 0.0: the scope claim is a result, so the roll-up reaches `notApplicable` without the ladder needing to know anything about InSpec.
 
 ## Where Status Is Computed
 
@@ -145,9 +190,9 @@ The override's impact is optional rather than defaulted because **0 is a legitim
 
 Everything that asks a requirement's impact post-adjudication goes through this: the `impact` filter and the derived severity in `hdf query`, the override-aware compliance counts and control listings, and threshold rules. The documented no-override-awareness variants (`countControlsByStatusSeverity`, `mapControlIDs`) keep reading the requirement's own impact — that is their purpose. On the query surface, `--impact` is the effective score and `--raw-impact` the unadjusted one; there is no raw twin of `--status`, so the pair exists only where both scores answer different questions (for example, "an override may not move a critical below 0.7").
 
-**Settled — rung 3 reads the requirement's own impact, deliberately.** `impact === 0 → notApplicable` does *not* consult the effective impact, so a `riskAdjustment` re-scoring a finding to 0.0 leaves it `failed`. That is not an oversight, and it is the one place in this document where a rung ignores an override on purpose.
+**Settled — impact never reaches the status.** A `riskAdjustment` re-scoring a finding to 0.0 leaves it `failed`, and so does an authored impact of 0.0 on a failing control. Neither the requirement's own impact nor an override's re-score is consulted when resolving status, so the two can never disagree.
 
-The two fields answer different questions. Rung 3 asks **was this in scope** — a statement the profile author makes at authoring time, and InSpec's convention for a control that does not apply to the target. `effectiveImpact` asks **how much risk does this carry now** — a statement an assessor makes at adjudication time. An override carrying no `status` is not making a scope claim, so it has no business reaching rung 3; one that *does* carry a status is, and rung 1 lets it win. That is the same per-field eligibility as the rest of the ladder, not an exception carved for this case.
+The two fields answer different questions. A status asks **what did the assessment establish**; `effectiveImpact` asks **how much risk does this carry now** — a statement an assessor makes at adjudication time. An override carrying no `status` is not making a claim about what was established, so it cannot move the status; one that *does* carry a status is, and rung 1 lets it win. That is the same per-field eligibility as the rest of the ladder.
 
 Three things hold the line:
 
@@ -155,9 +200,15 @@ Three things hold the line:
 - **FedRAMP, the model the enum is aligned to, separates the same three acts.** A Risk Adjustment reduces the scanner-defined risk level of a vulnerability that *does exist*; the finding stays on the POA&M and closure depends on actual remediation, not on the adjustment being approved. A validated False Positive — the vulnerability "does not actually exist on the system" — moves to the Closed tab and is not an open risk. An Operational Requirement stays open and is periodically reassessed. There is no Risk Adjustment path to "not applicable"; that is what a False Positive is for.
 - **Authority.** The schema names an Authorizing Official for `waiver` and names none for `riskAdjustment`. Since `notApplicable` leaves the compliance denominator (`CalculateCompliance` counts only passed+failed+skipped+error), letting an adjustment reach `notApplicable` would let an assessor raise a compliance score by scoring alone — doing by re-rating what the schema reserves for a signature.
 
-**Dropping rung 3 altogether was considered and rejected on measurement.** Across the fixture corpus, 1,294 of 5,305 requirements (24.4%) carry impact 0, and **1,234 of them roll up to `notReviewed`** because InSpec supplies no pass/fail for an impact-0 control at all. Without rung 3 they would report `notReviewed` — asserting absence of evidence where the tool actually returned a verdict of "reviewed, not applicable" — and would enter the compliance denominator as skipped. Rung 3 is the only thing that tells those two situations apart. (Measured over `hdf-fixtures/**/*.json` and `hdf-converters/converters/*/fixtures/expected/*.json`, counting `baselines[].requirements[]` with `impact == 0` and rolling their `results[].status` up worst-wins.)
+#### Not Applicable is a result, not a score
 
-**The consequence to know:** a requirement can report `notApplicable` with a non-informational severity band, because an override may raise the impact of an out-of-scope control. Scope and risk-if-realized are independent, and a `notApplicable` requirement leaves the denominator whatever its band, so this reads oddly rather than meaning anything contradictory.
+An earlier version of this ladder carried a third rung, `impact === 0 → notApplicable`, and the measurement behind it was sound: across the fixture corpus roughly a quarter of all requirements carry impact 0, and the overwhelming majority of those roll up to `notReviewed` because InSpec supplies no pass or fail for an impact-0 control at all. Reporting them `notReviewed` asserts absence of evidence where the tool actually returned a verdict of "reviewed, not applicable", and drops them into the compliance denominator as skipped.
+
+**The measurement was right about the data and wrong about the remedy.** "Impact 0 means not applicable" is one tool's convention, not an HDF rule. Most converters derive impact from the shared severity map, where 0.0 is the *informational* band — so the rung applied InSpec's reading to every format that had never agreed to it, and a clean scan, a never-run scan and a genuinely inapplicable control all collapsed to one status. It also made a severity score carry an adjudication, which is the overloading this document warns about everywhere else.
+
+So the rung is gone, and the convention is translated where it is true: every reader of an InSpec control payload emits an explicit `notApplicable` result for a control scored 0.0 that reports nothing else. That is `legacyhdf-to-hdf` for exec JSON and legacy HDF, and `splunk-to-hdf` for the same controls read back out of Splunk — one run must produce one document whichever way it is read, so the translation lives in `shared` and both call it. The verdict is then ground truth in `results[]` rather than a special case in the ladder — the same treatment a control-level error gets, and for the same reason. Neither reader rewrites `impact`: that the source scored the control 0.0 is a fact about the source, and `tags.severity` already preserves the original STIG severity where the profile zeroed it.
+
+Two consequences worth knowing. A document converted before this change carries impact 0 with a `notReviewed` roll-up and no translated result, so a consumer recomputing its status now reads `notReviewed` where the stored `effectiveStatus` says `notApplicable`; re-conversion from the original source is the remedy. And because a synthesized `notApplicable` ranks below `passed` and `failed` in worst-wins, the translation can never bury evidence that a check actually ran.
 
 **If a zero-risk finding should not block a pipeline, bound the band, not the status.** A requirement adjusted to 0.0 reports `failed` with severity `informational`, so `failed.critical.max: 0` and `failed.high.max: 0` pass over it while it stays visible and counted — which is what an auditor asking "what did you decide, and why" needs to see.
 
@@ -190,7 +241,7 @@ The precedence rules above answer one question — **did the requirement pass or
 
 ### effectiveStatus is the post-adjudication status, not the verdict
 
-With **no override**, `effectiveStatus` equals the ladder's computation from the raw results — identical to the roll-up except where the ladder's fixed rules intervene (an `error` roll-up always reports `error`; a non-errored impact-0 requirement always reports `notApplicable`). An override is the *only* thing beyond those fixed rules that makes the effective status differ from the roll-up. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
+With **no override**, `effectiveStatus` is exactly the worst-wins roll-up of the raw results. An override is the *only* thing that makes the effective status differ from the roll-up. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
 
 ### Disposition branching
 

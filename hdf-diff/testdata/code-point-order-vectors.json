@@ -1,0 +1,5 @@
+{
+  "$comment": "Pins the order hdf-diff emits identifiers in, shared by Go and TypeScript so the two cannot drift. `ids` is the input order; `codePointOrder` is Go's byte order over UTF-8, which TypeScript reproduces by code point. The set mixes case (uppercase sorts before lowercase, never folded together), differs only in '-' vs '_' (punctuation is never ignored), and pairs U+E000 with U+10000 (UTF-16 order would swap them). Each suite uses the strings as requirement ids, component names, package names and event ids, and asserts every sorted output follows `codePointOrder`.",
+  "ids": ["b-2", "B-1", "a-10", "A-2", "V-1_x", "V-1-x", "sv-1", "SV-1", "𐀀", ""],
+  "codePointOrder": ["A-2", "B-1", "SV-1", "V-1-x", "V-1_x", "a-10", "b-2", "sv-1", "", "𐀀"]
+}

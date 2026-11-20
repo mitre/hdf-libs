@@ -4,9 +4,9 @@
 
 import type { NISTDescriptions } from './types.js';
 import { normalizeNistId } from './normalize.js';
-// The JSON files the Go nist package embeds, imported so both languages read one copy.
-import rawNistDataRev4 from '../../go/nist/nist-descriptions.json';
-import rawNistDataRev5 from '../../go/nist/nist-descriptions-rev5.json';
+// The JSON files go/datasets embeds, imported so both languages read one copy.
+import rawNistDataRev4 from '../../go/datasets/catalogs/nist-descriptions.json';
+import rawNistDataRev5 from '../../go/datasets/catalogs/nist-descriptions-rev5.json';
 
 export { normalizeNistId };
 

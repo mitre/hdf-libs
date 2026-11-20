@@ -1,7 +1,6 @@
 package grype_to_hdf
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -87,10 +87,9 @@ type GrypeMatch struct {
 	Artifact               GrypeArtifact               `json:"artifact"`
 
 	// raw is the match exactly as Grype emitted it. Grype carries no literal
-	// source snippet, so the result's rawSourceRecord is the whole match
-	// re-indented in place — preserving source key order, every field the typed struct does
-	// not model, and the source number literals, so the output is byte-identical
-	// to the TypeScript twin's JSON.stringify(match, null, 2).
+	// source snippet, so the result's rawSourceRecord is the whole match, with
+	// every field the typed struct does not model and the source number tokens
+	// (see exportmap.BuildJSONRawSourceRecord).
 	raw json.RawMessage
 }
 
@@ -344,31 +343,32 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-// renderMatchRecord renders the raw match as indented JSON. json.Indent
-// re-formats the original bytes in place, preserving source key order so the
-// output is byte-identical to the TypeScript twin's JSON.stringify(match, null,
-// 2) — the twins share goldens, so the record cannot be the raw bytes.
-func renderMatchRecord(match GrypeMatch) string {
-	if len(match.raw) == 0 {
-		return "{}"
+// cvssForMatch returns the CVSS metric sets of the match's own CVE: the
+// vulnerability's cvss[] when present, otherwise those of the related entry
+// with the same id (Grype puts NVD's record there for distro-namespace
+// matches), as getDescription does for descriptions. A related entry with a
+// different id is another vulnerability and is never used.
+func cvssForMatch(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) []GrypeCVSS {
+	if len(vuln.CVSS) > 0 {
+		return vuln.CVSS
 	}
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, match.raw, "", "  "); err != nil {
-		return "{}"
+	for _, related := range relatedVulns {
+		if related.ID == vuln.ID && len(related.CVSS) > 0 {
+			return related.CVSS
+		}
 	}
-	return buf.String()
+	return nil
 }
 
-// buildCvssEntries maps every entry in vulnerability.cvss[] to a schema Cvss
-// primitive. Related-vulnerability CVSS arrays are NOT merged in — the schema
-// contract is "one entry per source-CVE CVSS metric set", and the source CVE
-// is always the match's primary vulnerability id.
-func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
-	if len(vuln.CVSS) == 0 {
+// buildCvssEntries maps each CVSS metric set of the match's own CVE (see
+// cvssForMatch) to a schema Cvss primitive, with the CVE id as its source.
+func buildCvssEntries(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerability) []hdf.Cvss {
+	metricSets := cvssForMatch(vuln, relatedVulns)
+	if len(metricSets) == 0 {
 		return nil
 	}
-	out := make([]hdf.Cvss, 0, len(vuln.CVSS))
-	for _, c := range vuln.CVSS {
+	out := make([]hdf.Cvss, 0, len(metricSets))
+	for _, c := range metricSets {
 		var bs *float64
 		if c.Metrics != nil {
 			s := c.Metrics.BaseScore
@@ -524,10 +524,12 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 
 	// Determine status. Severity never changes it (unknown-severity
 	// convention): a detected vulnerability is failed regardless of rating
-	// confidence; only the ignore-rules triage axis differs.
+	// confidence; only the ignore-rules triage axis differs. An ignore rule
+	// suppresses evaluation rather than adjudicating a verdict, so there is no
+	// verdict to override — the claim belongs in results[] as notApplicable.
 	var status hdf.ResultStatus
 	if isIgnored {
-		status = hdf.NotReviewed // Ignored by configured rules
+		status = hdf.NotApplicable
 	} else {
 		status = hdf.Failed
 	}
@@ -566,14 +568,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 	// two matches, and roll-up's first-wins on `code` would otherwise discard
 	// the second. `code` stays absent — Grype runs no executable check — and the
 	// v2 downgrade reconstructs its CODE tab from this record.
-	if len(match.raw) > 0 {
-		result.RawSourceRecord = &hdf.RawSourceRecord{
-			Content:   renderMatchRecord(match),
-			Encoding:  hdf.UTF8,
-			MediaType: "application/json",
-			Pointer:   hdfutil.Ptr(sourcePointer),
-		}
-	}
+	result.RawSourceRecord = exportmap.BuildJSONRawSourceRecord(match.raw, sourcePointer, exportmap.RecordIndented)
 
 	// Get CCI tags from curated NIST → CCI mapping
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
@@ -614,7 +609,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 		Refs:               hdfRefs,
 		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
-		Cvss:               buildCvssEntries(vuln),
+		Cvss:               buildCvssEntries(vuln, match.RelatedVulnerabilities),
 		AffectedPackages:   buildAffectedPackages(match),
 		Cwe:                extractCWE(vuln.CWE),
 		Epss:               buildEpss(vuln.EPSS),

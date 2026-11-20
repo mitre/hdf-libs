@@ -20,10 +20,10 @@ const richResults = `{
       "title": "Baseline Alpha",
       "version": "1.0",
       "status": "loaded",
-      "checksum": {"algorithm": "sha256", "value": "aaa"},
+      "integrity": {"algorithm": "sha256", "checksum": "aaa"},
       "depends": [],
       "groups": [],
-      "inspecVersion": "5.0.0",
+      "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
       "supports": [],
       "requirements": [
         {
@@ -62,10 +62,10 @@ const richResults = `{
     },
     {
       "name": "baseline-b",
-      "checksum": {"algorithm": "sha256", "value": "bbb"},
+      "integrity": {"algorithm": "sha256", "checksum": "bbb"},
       "depends": [],
       "groups": [],
-      "inspecVersion": "5.0.0",
+      "extensions": {"passthrough": {"inspecVersion": "5.0.0"}},
       "supports": [],
       "requirements": [
         {
@@ -160,7 +160,7 @@ func TestListComponentsDetail(t *testing.T) {
 
 func TestListComponentsEmpty(t *testing.T) {
 	// Create fixture with no targets
-	noTargets := `{"baselines": [{"name": "b", "checksum": {"algorithm": "sha256", "value": "x"}, "depends": [], "groups": [], "inspecVersion": "5", "supports": [], "requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}], "statistics": {"duration": 0}}`
+	noTargets := `{"baselines": [{"name": "b", "integrity": {"algorithm": "sha256", "checksum": "x"}, "depends": [], "groups": [], "extensions": {"passthrough": {"inspecVersion": "5"}}, "supports": [], "requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}], "statistics": {"duration": 0}}`
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "no-targets.json")
 	require.NoError(t, os.WriteFile(path, []byte(noTargets), 0o600))
@@ -188,6 +188,23 @@ func TestListRequirementsAllFlag(t *testing.T) {
 		assert.Contains(t, stdout, "AC-1")
 		assert.Contains(t, stdout, "AC-2")
 	})
+}
+
+// --all is read only by the requirements detail view, so its help must say so
+// rather than promise to expand every section.
+func TestListAllFlagHelpNamesTheViewItChanges(t *testing.T) {
+	usage := NewListCmd().Flags().Lookup("all").Usage
+	assert.Contains(t, usage, "--detail requirements")
+	assert.NotContains(t, usage, "Show all details")
+}
+
+func TestListAllFlagIsIgnoredOutsideRequirementsDetail(t *testing.T) {
+	fixture := writeRichFixture(t)
+	without, _, err := executeCommand("list", fixture)
+	require.NoError(t, err)
+	with, _, err := executeCommand("list", fixture, "--all")
+	require.NoError(t, err)
+	assert.Equal(t, without, with)
 }
 
 func TestListErrorCases(t *testing.T) {

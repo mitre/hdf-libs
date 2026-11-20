@@ -4,6 +4,41 @@ Patterns and practices for contributing to the HDF libraries.
 
 ---
 
+## Toolchain
+
+The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
+
+| Tool | Pin | How mise installs it |
+| --- | --- | --- |
+| Node.js | `node` in `mise.toml` (the Active LTS line); exact release in `mise.lock` | Official archive; SHA-256 from `SHASUMS256.txt` and the OpenPGP signature on that file |
+| pnpm | `packageManager` in `package.json` | Release binary; SHA-256 and the GitHub attestation from pnpm's release workflow |
+| Go | `go` line in `go.work` | Official archive, checked against the lock's SHA-256 |
+| golangci-lint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from golangci-lint's release workflow |
+| gosec | `mise.toml` | Official release binary; SHA-256 and the cosign signature on its checksum file |
+| govulncheck | `mise.toml` | `go install`, verified against the Go checksum database |
+| jactionlint | `mise.toml` | Official release binary; SHA-256 and the GitHub attestation from jactionlint's release workflow |
+| shellcheck | `mise.toml` | Official release binary; SHA-256 as `mise.lock` recorded it (shellcheck publishes no checksums or signatures) |
+| oapi-codegen | `mise.toml` | `go install`, verified against the Go checksum database |
+
+Corepack is not used: mise installs pnpm itself, and Node.js stopped shipping Corepack in version 25. CI's shared setup action, the snapshot workflow and the publish job of `release.yml` install Node.js, and pnpm where a job needs it, through mise-action; the `check-go` job adds Go's scanners the same way. npm itself stays pinned by the `setup-npm` action (SHA-512 checked), because mise's npm installer does not cover Windows.
+
+Setup, once per clone (mise 2026.10.9 or newer reads Go's version from `go.work`):
+
+```bash
+mise trust     # allow this repository's mise.toml
+mise install   # install the pinned tools, verified against mise.lock
+```
+
+The pre-commit hook runs `mise exec -- pnpm check`, so it uses these versions whether or not mise is activated in your shell. For a single command, prefix it the same way, for example `mise exec -- golangci-lint run` in a module directory.
+
+Workflow lint runs in the hook and CI with the same pinned jactionlint and ShellCheck binaries. A missing tool fails the check; `mise install` installs both.
+
+Why golangci-lint is pinned to a release binary: its formatters are compiled in from the Go that builds it. A golangci-lint built with a newer Go reports formatting that CI's accepts, so a local build from source (`go install`, Homebrew) can fail the hook on code CI passes. golangci-lint's own [install guide](https://golangci-lint.run/docs/welcome/install/local/) recommends the release binary for the same reason.
+
+To move a pin: edit `mise.toml`, the `go` line of `go.work` or `packageManager` in `package.json`, run `mise lock` to refresh `mise.lock` for every platform, and commit both. A new Node.js release on the same line needs no edit: `mise lock --bump node` moves the lock to it. A new golangci-lint or Go release can change gofmt's output; run `golangci-lint fmt` across the modules in the same change.
+
+---
+
 ## Dual Implementation Pattern (TS + Go)
 
 Every HDF library must be implemented in both TypeScript and Go simultaneously.
@@ -103,8 +138,9 @@ or a small local count that parses the raw source generically.
 
 **Emission unit, confirmed per converter.** Each anchor asserts `emitted ==
 count(source emission unit)`, confirmed against a real fixture. Where the
-converter groups, dedups, or filters (one requirement per *distinct* rule, per
-*actionable* VEX status, per the busiest ZAP site, per CSV finding row), the
+converter rolls up or filters (one requirement per *distinct* rule, with one result
+per instance rather than instances dropped as duplicates; per *actionable* VEX
+status; per the busiest ZAP site; per CSV finding row), the
 anchor counts that same distinct/filtered unit — not the raw array length — so it
 matches exactly. If no clean source-derived count matches the golden, do not write
 a meaningless anchor: a passing-but-vacuous anchor is worse than none. Every
@@ -339,7 +375,7 @@ The user-facing table is the "Exit codes" section of `hdf-cli/README.md`; this s
 
 `hdf diff` keeps its own verdict codes because they encode the comparison, not the run. A diff that fails to run (an unreadable input, a bad flag) uses the codes above.
 
-**Basic mode (`--exit-code`)**, GNU diff compatible: `0` identical, `1` differences.
+**Basic mode**, always on and GNU diff compatible: `0` identical, `1` differences. `--exit-code` is accepted and changes nothing, and a failed run is also `1`.
 
 **Detailed mode (`--detailed-exitcode`)**:
 
@@ -355,6 +391,49 @@ The user-facing table is the "Exit codes" section of `hdf-cli/README.md`; this s
 
 Range 10-14 chosen to avoid sysexits.h (64-78), signal range (128+), and InSpec (100-101).
 Full rationale documented in CHANGELOG.md.
+
+---
+
+## Security scanner rule regression tests
+
+CI scans Go with a local copy of Semgrep's `use-of-unsafe-block` audit rule,
+`.github/semgrep/unsafe.yaml`. CI copies it over the fetched rule at the same path,
+so the finding's HDF requirement id and the rest of the pinned ruleset are
+unchanged. It is the only check that audits `unsafe`: gosec's G103 is filtered by
+golangci-lint's `common-false-positives` preset, which both `.golangci.yml` files
+enable.
+
+The local rule reports every `unsafe` operation except three:
+
+- `unsafe.Sizeof(...)`: a compile-time constant; its operand is never evaluated.
+- `uintptr(unsafe.Pointer(x))` written directly as an argument of
+  `purego.SyscallN`. Go keeps `x` alive and unmoved for the call when the
+  conversion is in the argument list ([rule 4 of the `unsafe`
+  docs](https://pkg.go.dev/unsafe#Pointer)); `golang.org/x/sys/unix` passes
+  pointers to libSystem on macOS the same way. Each argument is judged alone:
+  storing the `uintptr` first, passing it to any other function, arithmetic on
+  it, an `unsafe` call inside it, any other `unsafe` use in the call's other
+  arguments, and an `unsafe` conversion of the function address are still
+  reported.
+- `(*windows.SID)(unsafe.Pointer(&ace.SidStart))`: an ACE's SID is variable-length
+  and stored from `SidStart` on ([`ACCESS_ALLOWED_ACE`](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace));
+  `golang.org/x/sys/windows` has no accessor for it. The address of any other
+  field, a conversion to any other type, and an `unsafe` call inside the ACE
+  expression are still reported.
+
+Allowing a form in the rule, rather than adding an HDF amendment, keeps every
+other `unsafe` use reported; an amendment would apply to the whole rule and
+expire. The cases live in `.github/semgrep/test/unsafe.go`, annotated for
+[Semgrep's rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+CI runs them before the scan and fails if any case fails. To run them locally,
+install the hash-pinned Semgrep (`.github/requirements/semgrep.txt`) and run from
+the repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+Keep every case passing when changing the rule or the pinned Semgrep version.
 
 ---
 

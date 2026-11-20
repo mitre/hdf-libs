@@ -88,12 +88,12 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('notReviewed');
   });
 
-  it('returns "notApplicable" when impact is 0 and there are no results', () => {
+  it('returns "notReviewed" when impact is 0 and there are no results', () => {
     const req = makeRequirement({
       impact: 0,
       results: [],
     });
-    expect(computeEffectiveStatus(req)).toBe('notApplicable');
+    expect(computeEffectiveStatus(req)).toBe('notReviewed');
   });
 
   it('uses non-expired waiver override status instead of result status', () => {
@@ -176,17 +176,19 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('failed');
   });
 
-  it('returns "notApplicable" when impact is 0 and no result errored', () => {
+  it('rolls results up normally when impact is 0', () => {
+    // Delegation pin: impact does not reach the status in the canonical
+    // implementation, and this wrapper inherits that.
     const req = makeRequirement({
       impact: 0,
       results: [makeResult('passed'), makeResult('failed')],
     });
-    expect(computeEffectiveStatus(req)).toBe('notApplicable');
+    expect(computeEffectiveStatus(req)).toBe('failed');
   });
 
   it('returns "error" when impact is 0 but a result errored', () => {
-    // Delegation pin: the canonical implementation lets error escape the
-    // impact-0 short-circuit, and this wrapper inherits it.
+    // error outranks every other status in the worst-wins order, so it needs
+    // no rung of its own.
     const req = makeRequirement({
       impact: 0,
       results: [makeResult('error')],

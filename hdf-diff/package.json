@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-diff",
-  "version": "3.7.2",
+  "version": "3.8.0",
   "description": "Structured comparison of HDF evaluation results \u2014 tracks what changed, why, and by how much",
   "publishConfig": {
     "access": "public"
@@ -14,6 +14,7 @@
       "import": "./dist/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -37,6 +38,11 @@
   "dependencies": {
     "@mitre/hdf-utilities": "workspace:^",
     "@mitre/hdf-validators": "workspace:^"
+  },
+  "devDependencies": {
+    "@mitre/hdf-fixtures": "workspace:^",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.0"
   },
   "engines": {
     "node": ">=24.0.0"

@@ -47,20 +47,9 @@ import components from '@mitre/hdf-openapi/hdf-components.oas.json' with { type:
 const results = components.components.schemas.HdfResults;
 ```
 
-The generated document is the consumer surface. The transform that produces it is
-also exported, but note that `EMBED_DIR` points at this repository's tracked schema
-embed, which is **not** part of the published tarball (`files: ["dist"]`) — so the
-call below works inside this repository and not from an installed copy:
-
-```ts
-// In-repo only: regenerating from the tracked embed.
-import { buildComponentsDocument, loadBundles, EMBED_DIR } from '@mitre/hdf-openapi';
-
-const doc = buildComponentsDocument(loadBundles(EMBED_DIR));
-```
-
-An installed consumer reads the generated artifact, or passes its own bundles to
-`buildComponentsDocument`.
+The generated document is the consumer surface. The transform that produces it
+(`buildComponentsDocument`) runs at build time only and is not exported, because it
+reads the HDF schema bundles, which this package does not ship.
 
 ### The eight roots
 
@@ -100,20 +89,20 @@ Every other definition is hoisted to `#/components/schemas/<Name>` under its own
 - **Whether each generator can consume the document at all.** `openapi-typescript` can. **`oapi-codegen` 2.8.0 cannot:** its parser (kin-openapi) rejects a boolean subschema, which HDF uses to express the three-tier BOM rule (`properties: { model: false }` on a non-`ai-model` BOM). The refusal and its trigger are recorded rather than worked around, because the construct is a real constraint and dropping it would weaken the schema to suit one tool.
 - **Per keyword, whether a generator's output depends on it** — measured differentially: generate from a probe schema carrying the keyword, generate again with that one keyword deleted, compare the bytes. Both generators honour the structural keywords (`$ref`, `properties`, `required`, `items`, `type`, `enum`, `allOf`/`anyOf`/`oneOf`, `format`) and **both discard every validation constraint**: `minimum`, `maximum`, `minLength`, `minItems`, `pattern`, `contains`, `not`, `dependentRequired`, `if`/`then`/`else` and `unevaluatedProperties`. Generated types are shape-only. Anything that must actually enforce the schema has to run a validator — which is why ADR-0008 §7 derives Zod from this document rather than trusting generated types.
 
-None of that is optional. `pnpm test` re-measures the lints and openapi-typescript and fails on any drift from the baseline, and CI's `check-openapi-matrix` job installs the pinned `oapi-codegen` and runs the full matrix, so the Go half is gated too. The test also asserts that CI wiring still exists — an ungated baseline is the real hazard, so losing the job fails the suite rather than quietly going unmeasured.
+None of that is optional. `pnpm test` re-measures the lints and openapi-typescript and fails on any drift from the baseline, and CI's `check-openapi-matrix` job installs `oapi-codegen` at the version `mise.toml` pins and runs the full matrix, so the Go half is gated too. That wiring is itself checked: the root `pnpm run lint:matrix-wiring`, which runs in `pnpm check` and in CI, fails when the job is gone, because an ungated baseline is the real hazard. The package's own `pnpm test` does not check it.
 
-`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. To run the whole matrix locally:
+`oapi-codegen` is a Go binary, not an npm dependency, which is why `pnpm test` measures only the half it can reach. `mise.toml` at the repository root pins it at the version the baseline records, and `mise install` installs that release. Run the matrix under `mise exec --` (or with mise activated in your shell) so that release, not another `oapi-codegen` on PATH, is the one measured. To run the whole matrix locally:
 
 ```bash
-go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
-pnpm run matrix          # verify against the tracked baseline
-pnpm run matrix:update   # re-record after a deliberate tooling or schema change
+mise install                           # oapi-codegen at the pinned version, with the rest of the toolchain
+mise exec -- pnpm run matrix           # verify against the tracked baseline
+mise exec -- pnpm run matrix:update    # re-record after a deliberate tooling or schema change
 pnpm run lint:openapi    # Redocly alone
 ```
 
 With the binary present, `pnpm test` upgrades itself to the full both-generator comparison; without it, the npm half runs and CI covers the rest.
 
-Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **every component** back to a standalone 2020-12 schema and compiles each one, then validates every root example, every definition example and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. The counts are asserted in that test rather than quoted here, so they cannot rot in two places. This repository's own validators are draft-07 and ignore `unevaluatedProperties`, so they would accept documents the schema text rejects.
+Conformance is checked separately and more strictly than any linter manages: `test/conformance.test.ts` extracts **every component** back to a standalone 2020-12 schema and compiles each one, then validates every root example, every definition example and the `@mitre/hdf-fixtures` corpus with a **2020-12** engine. The counts are asserted in that test rather than quoted here, so they cannot rot in two places. This repository's own shipped validators enforce the same 2020-12 dialect.
 
 ## Versioning
 

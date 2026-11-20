@@ -407,11 +407,10 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 		ruleIDRef := sanitizeXCCDFID("xccdf_hdf_rule_" + req.ID + "_rule")
 		stigID := hdfutil.SafeString(req.Tags["stig_id"])
 
-		// When the canonical ladder's answer differs from the raw roll-up,
-		// something governs the requirement (an override, an error escape, or
-		// the impact-0 rule) — the emitted results uniformly reflect that
-		// governed posture. Otherwise each result's own raw status carries
-		// through. The stored effectiveStatus field is never read.
+		// When the canonical ladder's answer differs from the raw roll-up, a
+		// governing override is adjudicating the requirement — the emitted
+		// results uniformly reflect that posture. Otherwise each result's own raw
+		// status carries through. The stored effectiveStatus field is never read.
 		var effective string
 		statusInput := shared.RequirementStatusInput(req)
 		resolved := hdfutil.ComputeEffectiveStatus(statusInput, time.Time{})

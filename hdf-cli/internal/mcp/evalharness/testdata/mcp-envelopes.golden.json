@@ -32,7 +32,7 @@
           "title": "Will regress"
         }
       ],
-      "fromHandle": "eyJwYXRoIjoiaGRmLWNsaS9pbnRlcm5hbC9tY3AvdG9vbHMvdGVzdGRhdGEvZGlmZi1mcm9tLmpzb24iLCJzaXplIjo4MTcsImNvbnRlbnRTaGEyNTYiOiI4YTNiMmI2M2VkMTY3OTQ2ZTUzMDU3NmVhNWZjMTY1MGI0ZTgxZmU0NzNlODdjMWUxYjNjOTk5ZDFmMWYxMmE2IiwiZG9jVHlwZSI6InJlc3VsdHMiLCJlbmdpbmVTY2hlbWFWZXJzaW9uIjoiMy43LjIifQ==",
+      "fromHandle": "eyJwYXRoIjoiaGRmLWNsaS9pbnRlcm5hbC9tY3AvdG9vbHMvdGVzdGRhdGEvZGlmZi1mcm9tLmpzb24iLCJzaXplIjo4MTcsImNvbnRlbnRTaGEyNTYiOiI4YTNiMmI2M2VkMTY3OTQ2ZTUzMDU3NmVhNWZjMTY1MGI0ZTgxZmU0NzNlODdjMWUxYjNjOTk5ZDFmMWYxMmE2IiwiZG9jVHlwZSI6InJlc3VsdHMiLCJlbmdpbmVTY2hlbWFWZXJzaW9uIjoiMy44LjAifQ==",
       "mode": "temporal",
       "returned": 2,
       "summary": {
@@ -47,13 +47,13 @@
         "unmatchedOldCount": 0,
         "updated": 0
       },
-      "toHandle": "eyJwYXRoIjoiaGRmLWNsaS9pbnRlcm5hbC9tY3AvdG9vbHMvdGVzdGRhdGEvZGlmZi10by5qc29uIiwic2l6ZSI6MTExMCwiY29udGVudFNoYTI1NiI6IjJiMmViOGNkNzEyYmY2ZjRlMWRlMDEyNDU3MWIzN2JhOGUyNjMzZmZlOTljODhiZmVmNDNmNTQwZTNkZGQzNjkiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjcuMiJ9",
+      "toHandle": "eyJwYXRoIjoiaGRmLWNsaS9pbnRlcm5hbC9tY3AvdG9vbHMvdGVzdGRhdGEvZGlmZi10by5qc29uIiwic2l6ZSI6MTExMCwiY29udGVudFNoYTI1NiI6IjJiMmViOGNkNzEyYmY2ZjRlMWRlMDEyNDU3MWIzN2JhOGUyNjMzZmZlOTljODhiZmVmNDNmNTQwZTNkZGQzNjkiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjguMCJ9",
       "total": 2
     },
     "hdf_query": {
       "docType": "results",
-      "engineSchemaVersion": "3.7.2",
-      "handle": "eyJwYXRoIjoiaGRmLWZpeHR1cmVzL3Jlc3VsdHMvaW5zcGVjLW11bHRpbGF5ZXJlZC5qc29uIiwic2l6ZSI6NzEwMzkyOSwiY29udGVudFNoYTI1NiI6IjYwNjgzMzhjZTRmYTNjYjE4OWYwNDUzNjE5MGNkYjFmODRhN2IyZjk1MGJhZWNhNDA1N2U0YmZkNWRjOWFhNWYiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjcuMiJ9",
+      "engineSchemaVersion": "3.8.0",
+      "handle": "eyJwYXRoIjoiaGRmLWZpeHR1cmVzL3Jlc3VsdHMvaW5zcGVjLW11bHRpbGF5ZXJlZC5qc29uIiwic2l6ZSI6NzEwMzkzMiwiY29udGVudFNoYTI1NiI6IjUwZGE3OGI3NjNhMWNlMjY2MmJlMzkwODQzZDYwMjE5ZjFhNmI5N2NlNDRkMzAzMTQ2NmYzZGQwNTliZWUxMWUiLCJkb2NUeXBlIjoicmVzdWx0cyIsImVuZ2luZVNjaGVtYVZlcnNpb24iOiIzLjguMCJ9",
       "notice": "Showing 2 of 1603 requirements (capped by limit). Raise or remove limit to see the rest — a larger result then pages with page=N; a smaller limit shows fewer, not more. Or tighten a status/severity/nist/id/search filter to shrink the set.",
       "requirements": [
         {
@@ -83,7 +83,7 @@
           "id": "V-242376",
           "impact": 0,
           "severity": "informational",
-          "status": "notApplicable",
+          "status": "notReviewed",
           "tags": {
             "cci": [
               "CCI-000068"
@@ -127,7 +127,7 @@
           "id": "V-242377",
           "impact": 0,
           "severity": "informational",
-          "status": "notApplicable",
+          "status": "notReviewed",
           "tags": {
             "cci": [
               "CCI-000068"

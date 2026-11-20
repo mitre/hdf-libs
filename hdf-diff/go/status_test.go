@@ -149,12 +149,12 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected: statusNotReviewed,
 		},
 		{
-			name: "returns notApplicable when impact is 0 and there are no results",
+			name: "returns notReviewed when impact is 0 and there are no results",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{}
 			}),
-			expected: statusNotAppl,
+			expected: statusNotReviewed,
 		},
 		{
 			name: "uses non-expired waiver override status instead of result status",
@@ -242,7 +242,9 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected: stStatusFailed,
 		},
 		{
-			name: "returns notApplicable when impact is 0 and no result errored",
+			// Delegation pin: impact does not reach the status in the canonical
+			// implementation, and this wrapper inherits that.
+			name: "rolls results up normally when impact is 0",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{
@@ -250,12 +252,11 @@ func TestComputeEffectiveStatus(t *testing.T) {
 					stMakeResult(hdf.Failed),
 				}
 			}),
-			expected: statusNotAppl,
+			expected: stStatusFailed,
 		},
 		{
-			// Delegation pin: the canonical implementation lets error escape
-			// the impact-0 short-circuit, and this wrapper
-			// inherits it.
+			// error outranks every other status in the worst-wins order, so it
+			// needs no rung of its own.
 			name: "returns error when impact is 0 but a result errored",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0

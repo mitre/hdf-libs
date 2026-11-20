@@ -319,3 +319,9 @@ func isDirectoryOutput(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
+
+// hiddenName reports whether a base name is a dotfile — VCS metadata, Finder and
+// editor droppings — which copies and discovery both leave alone.
+func hiddenName(name string) bool {
+	return name != "." && name != ".." && strings.HasPrefix(name, ".")
+}

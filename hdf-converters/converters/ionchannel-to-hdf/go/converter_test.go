@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -219,8 +221,10 @@ func TestConvert_Minimal_Results(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, req := range result.Baselines[0].Requirements {
-		require.Len(t, req.Results, 1, "each dep should have exactly one notReviewed result")
-		assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+		require.Len(t, req.Results, 1, "each dep should have exactly one notApplicable result")
+		// An inventory record asserts nothing about compliance, so it states
+		// notApplicable rather than leaving the disposition to a severity score.
+		assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
 	}
 }
 
@@ -308,7 +312,9 @@ func TestConvert_EdgeCases_CommunityBaselineEmitted(t *testing.T) {
 	assert.Equal(t, "community", req.Tags["name"])
 	assert.Equal(t, "community", req.Tags["type"])
 	require.Len(t, req.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+	// An inventory record asserts nothing about compliance, so it states
+	// notApplicable rather than leaving the disposition to a severity score.
+	assert.Equal(t, hdf.NotApplicable, req.Results[0].Status)
 
 	// The serializable scan data lands in the requirement's code field.
 	require.NotNil(t, req.Code)
@@ -766,4 +772,26 @@ func TestConvert_ParentDependenciesOrderIsDeterministic(t *testing.T) {
 		req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-o/shared")
 		assert.Equal(t, want, req.Tags["parentDependencies"], "run %d", i)
 	}
+}
+
+// ---- Document timestamp fallback ----
+
+var canonicalUTCTimestamp = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$`)
+
+func TestAnalysisTimestamp_FallbackIsCanonicalUTC(t *testing.T) {
+	ts := analysisTimestamp(IonChannelAnalysis{UpdatedAt: "not a time"})
+	assert.Equal(t, time.UTC, ts.Location())
+	assert.Zero(t, ts.Nanosecond()%int(time.Millisecond), "fallback must be at millisecond precision")
+}
+
+func TestConvert_NoAnalysisTime_EmitsCanonicalUTCTimestamp(t *testing.T) {
+	result, err := ConvertIonChannelToHDF([]byte(`{"scan_summaries": []}`), testVersion)
+	require.NoError(t, err)
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Regexp(t, canonicalUTCTimestamp, doc.Timestamp)
 }

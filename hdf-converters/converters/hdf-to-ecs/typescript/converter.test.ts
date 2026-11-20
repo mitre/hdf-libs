@@ -1,9 +1,10 @@
+import { resolveExportSource } from '../../../shared/typescript/exportbundle.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
-import { convertHdfToEcs } from './converter.js';
+import { convertHdfToEcs, convertHdfToEcsBundle } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
@@ -100,7 +101,8 @@ describe('hdf-to-ecs converter', () => {
     expect(hdf.disposition).toBe('waiver');
     expect(hdf.overridden).toBe(true);
     expect(hdf.baseline_title).toBe('RHEL 9 STIG Baseline');
-    expect(hdf.baseline_checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+    expect(hdf.baseline_version).toBe('1.0.0');
+    expect(hdf.baseline_integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
     expect(hdf.status_overrides).toHaveLength(1);
     expect(obj((hdf.status_overrides as unknown[])[0]).type).toBe('waiver');
     // override provenance -> labels.*
@@ -148,6 +150,18 @@ describe('hdf-to-ecs converter', () => {
     expect(() => JSON.parse(line)).not.toThrow();
   });
 
+  it.each([
+    { location: {}, expected: undefined },
+    { location: { ref: 'controls/stig.rb' }, expected: { origin: { file: { name: 'controls/stig.rb' } } } },
+    { location: { line: 0 }, expected: { origin: { file: { line: 0 } } } },
+  ])('preserves optional source-location members: $location', ({ location, expected }) => {
+    const requirement = { ...testhdf.req('X', { status: 'passed' }), sourceLocation: location };
+    const document = JSON.stringify(testhdf.doc(testhdf.baseline('b', requirement)));
+    const output = lines(convertHdfToEcs(document, VERSION));
+    expect(output).toHaveLength(1);
+    expect(output[0].log).toEqual(expected);
+  });
+
   it('projects ATT&CK tags to threat.* (array and scalar tag forms)', () => {
     const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
       testhdf.req('X', {
@@ -193,9 +207,8 @@ describe('hdf-to-ecs converter', () => {
       error: 'unknown',
     };
     for (const [status, outcome] of Object.entries(cases)) {
-      // Non-zero impact: at impact 0 the canonical ladder resolves the
-      // non-error statuses to notApplicable, which is not what this mapping
-      // test exercises.
+      // Non-zero impact so the severity band is a realistic one; the ladder
+      // reads only the results, so the impact does not affect the mapping.
       const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
         testhdf.req('X', { status, codeDesc: 'c', impact: 0.5 }))));
       const o = lines(convertHdfToEcs(doc, VERSION))[0];
@@ -354,4 +367,14 @@ describe('hdf-to-ecs disposition', () => {
     const labels = rows[0]!['labels'] as Record<string, unknown>;
     expect(labels['hdf_disposition']).toBe('riskAdjustment');
   });
+});
+
+it('retains modern baseline integrity through the explicit bundle readback API', async () => {
+  const source = readFileSync(join(FIXTURES, 'input', 'override.json'));
+  const bundle = await convertHdfToEcsBundle(source, VERSION);
+  const event = JSON.parse(bundle.events);
+  const resolved = await resolveExportSource(JSON.stringify(event.hdf.source), bundle.manifest, [{ href: 'source.json', bytes: bundle.source }]);
+  expect(Buffer.from(resolved.source)).toEqual(source);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual(JSON.parse(source.toString('utf8')).baselines[0].integrity);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
 });

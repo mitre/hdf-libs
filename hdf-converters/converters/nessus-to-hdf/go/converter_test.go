@@ -1,9 +1,12 @@
 package nessus
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -874,4 +877,96 @@ func TestConvertNessusToHDF_NoFindingsPlaceholderCarriesNoNIST(t *testing.T) {
 	req := result.Baselines[0].Requirements[0]
 	assert.Equal(t, "nessus-no-findings", req.ID)
 	assert.NotContains(t, req.Tags, "nist", "a placeholder for a clean host claims no control coverage")
+}
+
+// ---- Wall-clock fallbacks ----
+
+var canonicalUTCTimestamp = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$`)
+
+func assertCanonicalUTC(t *testing.T, ts time.Time) {
+	t.Helper()
+	assert.Equal(t, time.UTC, ts.Location())
+	assert.Zero(t, ts.Nanosecond()%int(time.Millisecond), "fallback must be at millisecond precision")
+}
+
+func TestCalculateTiming_NoHostsFallbackIsCanonicalUTC(t *testing.T) {
+	start, _ := calculateTiming(nil)
+	assertCanonicalUTC(t, start)
+}
+
+func TestParseHostTime_UnparseableFallbackIsCanonicalUTC(t *testing.T) {
+	assertCanonicalUTC(t, parseHostTime(""))
+	assertCanonicalUTC(t, parseHostTime("not a time"))
+}
+
+func TestConvertNessusToHDF_NoHosts_EmitsCanonicalUTCTimestamp(t *testing.T) {
+	result, err := ConvertNessusToHDF([]byte(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Empty Scan</policyName>
+    <Preferences>
+      <ServerPreferences></ServerPreferences>
+    </Preferences>
+  </Policy>
+  <Report name="Empty Scan"></Report>
+</NessusClientData_v2>`), converterVersion)
+	require.NoError(t, err)
+	out, err := json.Marshal(result)
+	require.NoError(t, err)
+	var doc struct {
+		Timestamp string `json:"timestamp"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	assert.Regexp(t, canonicalUTCTimestamp, doc.Timestamp)
+}
+
+// The TypeScript twin ("document missing <Report>") pins the same outcome.
+func TestConvertNessusToHDF_MissingReport(t *testing.T) {
+	result, err := ConvertNessusToHDF([]byte(`<?xml version="1.0"?><NessusClientData_v2>`+
+		`<Policy><policyName>Scan</policyName></Policy></NessusClientData_v2>`), converterVersion)
+	require.NoError(t, err)
+	assert.Empty(t, result.Baselines)
+	assert.Empty(t, result.Components)
+	require.NotNil(t, result.Statistics.Duration)
+	assert.Zero(t, *result.Statistics.Duration)
+}
+
+// The TypeScript twin ("document missing <Policy>") pins the same outcome.
+func TestConvertNessusToHDF_MissingPolicy(t *testing.T) {
+	result, err := ConvertNessusToHDF([]byte(`<?xml version="1.0"?><NessusClientData_v2>`+
+		`<Report name="Scan"><ReportHost name="h"><HostProperties>`+
+		`<tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>`+
+		`</HostProperties></ReportHost></Report></NessusClientData_v2>`), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	assert.Equal(t, "Nessus ", result.Baselines[0].Name)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, "nessus-no-findings", result.Baselines[0].Requirements[0].ID)
+	assert.Len(t, result.Components, 1)
+	require.NotNil(t, result.Statistics.Duration)
+	assert.Zero(t, *result.Statistics.Duration)
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, "2024-01-29T10:00:00Z", result.Timestamp.Format(time.RFC3339))
+}
+
+// The TypeScript twin runs the same two host-property sets.
+func TestCalculateTiming_UnparseableEndFallsBackToStart(t *testing.T) {
+	cases := map[string]string{
+		"unparseable HOST_END": `<tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>` +
+			`<tag name="HOST_END">not a time</tag>`,
+		"unparseable HOST_START and HOST_END": `<tag name="HOST_START">not a time</tag>` +
+			`<tag name="HOST_END">not a time</tag>`,
+	}
+	for name, props := range cases {
+		t.Run(name, func(t *testing.T) {
+			input := []byte(`<?xml version="1.0"?><NessusClientData_v2><Policy><policyName>Scan</policyName>` +
+				`<Preferences><ServerPreferences></ServerPreferences></Preferences></Policy>` +
+				`<Report name="Scan"><ReportHost name="h"><HostProperties>` + props +
+				`</HostProperties></ReportHost></Report></NessusClientData_v2>`)
+			result, err := ConvertNessusToHDF(input, converterVersion)
+			require.NoError(t, err)
+			require.NotNil(t, result.Statistics.Duration)
+			assert.Zero(t, *result.Statistics.Duration, "the end time falls back to the start, not to now")
+		})
+	}
 }

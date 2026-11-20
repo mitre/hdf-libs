@@ -52,12 +52,4 @@ describe('validateLegacyV2 (HDF v2 / InSpec exec-json)', () => {
     const res = validateLegacyV2(doc);
     expect(res.valid, res.getErrorMessage()).toBe(true);
   });
-
-  // Go embeds ../go/legacy/exec-json.schema.json; TS bundles its own copy. They
-  // must be byte-identical so the two engines validate against the same schema.
-  it('pins the TS schema copy byte-identical to the Go-embedded copy', () => {
-    const tsCopy = readFileSync(join(__dirname, 'legacy-exec-json.schema.json'), 'utf-8');
-    const goCopy = readFileSync(join(GO_LEGACY, 'exec-json.schema.json'), 'utf-8');
-    expect(tsCopy).toBe(goCopy);
-  });
 });

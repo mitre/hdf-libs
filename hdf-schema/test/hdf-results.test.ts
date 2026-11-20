@@ -252,6 +252,31 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('baselines array (Evaluated_Baseline)', () => {
+    // description is inherited from Baseline_Metadata now, not declared here.
+    it('should accept a baseline description inherited from Baseline_Metadata', () => {
+      const description = 'Hardening requirements for Ubuntu 22.04 LTS hosts in the CUI enclave.';
+      expect(validate(createMinimalResultsDoc({
+        baselines: [createMinimalEvaluatedBaseline({ description })],
+      }))).toBe(true);
+      expect(validate(createMinimalResultsDoc({
+        baselines: [createMinimalEvaluatedBaseline({ description: 42 })],
+      }))).toBe(false);
+    });
+
+    // The amendment-integrity anchor is the root preAmendmentChecksum; a field
+    // named currentChecksum exists on no HDF schema, so a description sending
+    // consumers to it prescribes a comparison nobody can perform.
+    it('resultsChecksum sends consumers to preAmendmentChecksum, not a currentChecksum that does not exist', () => {
+      const schema = loadSchema('hdf-results.schema.json') as {
+        properties: Record<string, unknown>;
+        $defs: Record<string, { properties: Record<string, { description: string }> }>;
+      };
+      const description = schema.$defs['Evaluated_Baseline']!.properties['resultsChecksum']!.description;
+      expect(description).not.toContain('currentChecksum');
+      expect(description).toContain('preAmendmentChecksum');
+      expect(schema.properties).toHaveProperty('preAmendmentChecksum');
+    });
+
     it('should validate baseline with minimal required fields', () => {
       const doc = createMinimalResultsDoc({ baselines: [createMinimalEvaluatedBaseline()] });
       expect(validate(doc)).toBe(true);
@@ -1307,6 +1332,55 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('override with impact and new types', () => {
+    const inlineOverride = (extra: Record<string, unknown>) => createMinimalResultsDoc({
+      baselines: [
+        createMinimalEvaluatedBaseline({
+          requirements: [
+            createMinimalRequirement({
+              results: [createMinimalResult({ status: 'failed' })],
+              statusOverrides: [
+                {
+                  type: 'operationalRequirement',
+                  reason: 'Air-gapped ingest requires USB transfer per OP-2026-003; ports are physically secured.',
+                  appliedBy: { identifier: 'system-owner@agency.gov', type: 'email' },
+                  appliedAt: '2026-01-20T10:00:00Z',
+                  expiresAt: '2099-12-31T00:00:00Z',
+                  ...extra,
+                },
+              ],
+              effectiveStatus: 'failed',
+              disposition: 'operationalRequirement',
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // An operationalRequirement records an accepted deviation and adjudicates
+    // nothing, so once merged it carries neither status nor impact.
+    it('should accept an inline operationalRequirement carrying neither status nor impact', () => {
+      expect(validate(inlineOverride({}))).toBe(true);
+    });
+
+    it('should reject an inline operationalRequirement carrying status', () => {
+      expect(validate(inlineOverride({ status: 'failed' }))).toBe(false);
+    });
+
+    it('should reject an inline operationalRequirement carrying impact', () => {
+      expect(validate(inlineOverride({ impact: { value: 0.3 } }))).toBe(false);
+    });
+
+    it('should reject an inline riskAdjustment carrying status, and accept one carrying impact', () => {
+      expect(validate(inlineOverride({ type: 'riskAdjustment', status: 'passed', impact: { value: 0.3 } }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'riskAdjustment', status: 'passed' }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'riskAdjustment', impact: { value: 0.3 } }))).toBe(true);
+    });
+
+    it('should still require status or impact on every other inline override type', () => {
+      expect(validate(inlineOverride({ type: 'waiver' }))).toBe(false);
+      expect(validate(inlineOverride({ type: 'waiver', status: 'passed' }))).toBe(true);
+    });
+
     it('should accept requirement with falsePositive override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [

@@ -12,7 +12,7 @@ import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
-import { parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
+import { compareCodePoint, parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
 
 /**
  * Options for configuring the diff behavior.
@@ -164,7 +164,7 @@ export function diffHdf(
   );
 
   // Sort by id
-  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+  requirementDiffs.sort((a, b) => compareCodePoint(a.id, b.id));
 
   // Extract drift: unchanged requirements with metadata changes
   const drift = extractDrift(requirementDiffs);
@@ -295,7 +295,7 @@ function diffFleet(
 
   // Sort by id, then by sourceIndex
   allRequirementDiffs.sort((a, b) => {
-    const idCmp = a.id.localeCompare(b.id);
+    const idCmp = compareCodePoint(a.id, b.id);
     if (idCmp !== 0) return idCmp;
     /* c8 ignore next -- sourceIndex is always set in fleet mode; ?? 0 is defensive typing */
     return (a.sourceIndex ?? 0) - (b.sourceIndex ?? 0);
@@ -332,6 +332,36 @@ export function extractDrift(requirementDiffs: RequirementDiff[]): RequirementDi
   return requirementDiffs
     .filter(r => r.state === 'unchanged' && r.changeReasons.length > 0)
     .map(r => ({ ...r }));
+}
+
+/** An id that sits in more than one baseline; parity: Go baselineMultiple. */
+const BASELINE_MULTIPLE = '(multiple)';
+
+/** Shared batch/fold attribution: differing baseline names are ambiguous. */
+export function recordRequirementBaseline(map: Map<string, string>, id: string, name: string): void {
+  const existing = map.get(id);
+  if (existing === undefined) {
+    map.set(id, name);
+  } else if (existing !== name && existing !== BASELINE_MULTIPLE) {
+    map.set(id, BASELINE_MULTIPLE);
+  }
+}
+
+function requirementBaselineMap(baselines: BaselineLike[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const baseline of baselines) {
+    for (const req of baseline.requirements) {
+      const id = (req as unknown as Record<string, unknown>)['id'];
+      if (typeof id !== 'string') continue;
+      recordRequirementBaseline(map, id, baseline.name);
+    }
+  }
+  return map;
+}
+
+/** The new document's baseline for the id, else the old one's; undefined if neither. */
+function resolveBaseline(id: string, newMap: Map<string, string>, oldMap: Map<string, string>): string | undefined {
+  return newMap.get(id) ?? oldMap.get(id);
 }
 
 /**
@@ -392,6 +422,9 @@ function comparePair(
     }
   }
 
+  const oldReqBaseline = requirementBaselineMap(oldBaselines);
+  const newReqBaseline = requirementBaselineMap(newBaselines);
+
   // Collect all requirements across all baselines
   const oldReqs: Record<string, unknown>[] = [];
   for (const baseline of oldBaselines) {
@@ -441,6 +474,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title ?? oldReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: diffState,
       oldEffectiveStatus: oldStatus,
       newEffectiveStatus: newStatus,
@@ -466,6 +500,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: oldReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: 'absent',
       oldEffectiveStatus: oldStatus,
       changeReasons: [],
@@ -487,6 +522,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title,
+      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
       state: 'new',
       newEffectiveStatus: newStatus,
       changeReasons: [],
@@ -1024,7 +1060,7 @@ export function diffBaselines(
   }
 
   // Sort by id
-  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+  requirementDiffs.sort((a, b) => compareCodePoint(a.id, b.id));
 
   // Build baseline diff from top-level baseline metadata
   const oldName = oldBaseline['name'] as string | undefined ?? '';
@@ -1127,7 +1163,7 @@ export function diffSystems(
     }
   }
 
-  componentDiffs.sort((a, b) => a.name.localeCompare(b.name));
+  componentDiffs.sort((a, b) => compareCodePoint(a.name, b.name));
 
   // Compare top-level system fields
   const systemFieldChanges = computeComponentFieldChanges(

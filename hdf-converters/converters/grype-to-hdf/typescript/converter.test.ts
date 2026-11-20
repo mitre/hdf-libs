@@ -119,7 +119,9 @@ describe('Grype Converter', async () => {
     });
 
     it('should handle ignored matches correctly', async () => {
-      // Use inline fixture since the real amazon.json scan has no ignored matches
+      // amazon.json has no ignored matches; tensorflow.json does, and the real
+      // data is asserted below. This inline case isolates one ignored match
+      // with no competing unignored one.
       const ignoredReport = JSON.stringify({
         descriptor: {name: 'grype', version: '0.79.3'},
         source: {target: {userInput: 'test-image'}},
@@ -143,8 +145,27 @@ describe('Grype Converter', async () => {
       const ignored = requirements.find(r => r.id === 'Grype-Ignored-Match/CVE-2024-0001');
 
       expect(ignored).toBeDefined();
-      expect(ignored?.results[0].status).toBe('notReviewed');
+      // An ignore rule suppresses evaluation itself, so no verdict exists to
+      // adjudicate: the honest status is notApplicable stated as a result, not
+      // notReviewed (which claims the scan still owes us an answer).
+      expect(ignored?.results[0].status).toBe('notApplicable');
       expect(ignored?.results[0].message).toContain('ignored by configured rules');
+      // Impact stays the finding's real severity — never a status flag here.
+      expect(ignored?.impact).toBe(0.3);
+    });
+
+    it('states notApplicable for every ignored match in a real scan', async () => {
+      // tensorflow.json is real trimmed grype output carrying 14 ignoredMatches.
+      const output = await convertGrypeToHdf(loadFixture('tensorflow.json'));
+      const hdf = parseJSON<HDFResults>(output);
+
+      const ignored = hdf.baselines[0].requirements.filter(r => r.id.startsWith('Grype-Ignored-Match/'));
+      expect(ignored).toHaveLength(14);
+      for (const req of ignored) {
+        for (const res of req.results) {
+          expect(res.status).toBe('notApplicable');
+        }
+      }
     });
 
     it('should include NIST and CCI tags', async () => {
@@ -590,5 +611,87 @@ describe('grype result instance identity', () => {
     // discard one of the two packages.
     const names = (group[0]!.affectedPackages ?? []).map((p) => p.name).sort();
     expect(names).toEqual(['busybox', 'ssl_client']);
+  });
+});
+
+// The Go twin reads the same case table (TestRawSourceRecord_SharedCases), so both
+// languages are held to one rendering of each record.
+describe('grype-to-hdf rawSourceRecord shared cases (Go parity)', () => {
+  const casesPath = join(__dirname, '..', 'go', 'testdata', 'raw-source-record-cases.json');
+  const {cases} = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+    cases: Array<{why: string; input: string; pointer: string; content: string}>;
+  };
+
+  it('has cases', () => {
+    expect(cases.length).toBeGreaterThan(0);
+  });
+
+  it.each(cases)('renders $why the same as the Go twin', async ({input, pointer, content}) => {
+    const out = parseJSON<HDFResults>(await convertGrypeToHdf(input));
+    const record = out.baselines[0]!.requirements[0]!.results[0]!.rawSourceRecord!;
+    expect(record.pointer).toBe(pointer);
+    expect(record.content).toBe(content);
+  });
+});
+
+// A distro-namespace match often carries no CVSS of its own while the NVD
+// record for the same CVE id sits in relatedVulnerabilities. The values below
+// are taken from a real Grype 0.121.3 scan of debian:12.
+describe('grype-to-hdf CVSS from same-id related vulnerabilities (Go parity)', () => {
+  const report = JSON.stringify({
+    descriptor: {name: 'grype', version: '0.121.3'},
+    source: {target: {userInput: 'debian:12'}},
+    matches: [
+      {
+        vulnerability: {id: 'CVE-2018-20796', namespace: 'debian:distro:debian:12', severity: 'Negligible', cvss: []},
+        relatedVulnerabilities: [
+          {id: 'CVE-2011-3389', namespace: 'nvd:cpe', cvss: [
+            {source: 'nvd@nist.gov', type: 'Primary', version: '2.0', vector: 'AV:N/AC:M/Au:N/C:P/I:N/A:N', metrics: {baseScore: 4.3}},
+          ]},
+          {id: 'CVE-2018-20796', namespace: 'nvd:cpe', cvss: [
+            {source: 'nvd@nist.gov', type: 'Primary', version: '3.0', vector: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+            {source: 'nvd@nist.gov', type: 'Primary', version: '2.0', vector: 'AV:N/AC:L/Au:N/C:N/I:N/A:P', metrics: {baseScore: 5}},
+          ]},
+        ],
+        matchDetails: [{type: 'exact-direct-match', matcher: 'dpkg-matcher'}],
+        artifact: {name: 'libc6', version: '2.36-9+deb12u13', type: 'deb'},
+      },
+      {
+        vulnerability: {id: 'CVE-2025-13151', namespace: 'debian:distro:debian:12', severity: 'High', cvss: [
+          {source: '134c704f-9b21-4f2e-91b3-4a467353bcc0', type: 'Secondary', version: '3.1', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+        ]},
+        relatedVulnerabilities: [
+          {id: 'CVE-2025-13151', namespace: 'nvd:cpe', cvss: [
+            {source: '134c704f-9b21-4f2e-91b3-4a467353bcc0', type: 'Secondary', version: '3.1', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+          ]},
+        ],
+        matchDetails: [{type: 'exact-direct-match', matcher: 'dpkg-matcher'}],
+        artifact: {name: 'libtasn1-6', version: '4.19.0-2+deb12u1', type: 'deb'},
+      },
+    ],
+  });
+
+  it.each([
+    {
+      name: 'empty primary CVSS takes every entry of the same-id related vulnerability, never an alias',
+      id: 'CVE-2018-20796',
+      want: [
+        {version: '3.0', baseVector: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', baseScore: 7.5},
+        {version: '2.0', baseVector: 'AV:N/AC:L/Au:N/C:N/I:N/A:P', baseScore: 5},
+      ],
+    },
+    {
+      name: 'non-empty primary CVSS is used alone',
+      id: 'CVE-2025-13151',
+      want: [
+        {version: '3.1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', baseScore: 7.5},
+      ],
+    },
+  ])('$name', async ({id, want}) => {
+    const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(report));
+    const req = hdf.baselines[0].requirements.find(r => r.id === `Grype/${id}`);
+    expect(req).toBeDefined();
+    expect(req?.cvss?.map(c => ({version: c.version, baseVector: c.baseVector, baseScore: c.baseScore, source: c.source})))
+      .toEqual(want.map(w => ({...w, source: id})));
   });
 });

@@ -116,6 +116,18 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
+    // Evaluated_Baseline carried description; the standalone root rejected the same prose.
+    it('should accept a root description, as Evaluated_Baseline does', () => {
+      const doc = createMinimalBaselineDoc({
+        description: 'Hardening requirements for Ubuntu 22.04 LTS hosts in the CUI enclave.',
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject a non-string root description', () => {
+      expect(validate(createMinimalBaselineDoc({ description: 42 }))).toBe(false);
+    });
+
     it('should accept full metadata', () => {
       const doc = createMinimalBaselineDoc({
         title: 'Ubuntu 20.04 STIG Baseline',

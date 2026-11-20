@@ -209,6 +209,44 @@ describe('hdf-comparison.schema.json', () => {
     });
   });
 
+  describe('RequirementDiff baseline', () => {
+    // hdf diff writes the owning baseline on every requirementDiff and
+    // --group-by baseline reads it, so the schema has to declare it.
+    it('should accept the owning baseline name on a RequirementDiff', () => {
+      const doc = createMinimalComparisonDoc({
+        requirementDiffs: [
+          {
+            id: 'SV-257777',
+            baseline: 'rhel9-stig-baseline',
+            state: 'new',
+            changeReasons: [],
+            before: null,
+            after: createMinimalRequirement({ id: 'SV-257777' }),
+            fieldChanges: [],
+          },
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject a non-string baseline', () => {
+      const doc = createMinimalComparisonDoc({
+        requirementDiffs: [
+          {
+            id: 'SV-257777',
+            baseline: 3,
+            state: 'new',
+            changeReasons: [],
+            before: null,
+            after: createMinimalRequirement({ id: 'SV-257777' }),
+            fieldChanges: [],
+          },
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+  });
+
   describe('RequirementDiff with null before (state=new)', () => {
     it('should accept a RequirementDiff where before is null', () => {
       const afterReq = createMinimalRequirement({ id: 'SV-200001' });

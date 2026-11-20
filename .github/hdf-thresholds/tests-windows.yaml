@@ -1,0 +1,11 @@
+# Skip budget for the windows leg; shared rules are in tests.yaml, rationale in README.md.
+# 37 is go-hdf-cli-windows-latest on run 43770572546 (symlink and POSIX-mode-bit skips, plus
+# the names NTFS cannot hold: a non-UTF-8 byte is stored as U+FFFD and '?' is refused). The
+# earlier 29 was run 41700987742. 41 adds four evidence-bundle containment tests: two swap
+# a symlink atomically, which needs Unix rename semantics, and two use backslash or colon
+# names NTFS cannot hold. Re-measure on a green run, never on the run being gated.
+rules:
+    - name: skipped stays within the windows budget
+      where:
+          status: notReviewed
+      max: 41

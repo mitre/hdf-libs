@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,9 +19,55 @@ func evidencePackageArg(cmd *cobra.Command, args []string) error {
 	}
 	if strings.TrimSpace(args[0]) == "" {
 		return fmt.Errorf("the evidence package path is blank; name the package to read, " +
-			"or pass - to read it from stdin")
+			"or pass - to read it from stdin (a command that writes the package then needs -o <file>)")
 	}
 	return nil
+}
+
+// stdinPackage is the positional spelling that reads the evidence package from stdin.
+const stdinPackage = stdinInput
+
+var errStdinPackageNeedsOutput = stdinNeedsOutput("package", "<file>")
+
+func requireOutputForStdinPackage(pkg, output string) error {
+	if pkg == stdinPackage && output == "" {
+		return errStdinPackageNeedsOutput
+	}
+	return nil
+}
+
+// stdinNoDirectory is why nothing resolves inside a stdin package: it has no location.
+const stdinNoDirectory = "not inside the package, which was read from stdin and has no directory"
+
+// refuseStdinPackageRelativeRefs is for a reader with no output location to stand in for
+// a stdin package's directory: a package-relative reference there is relative to nothing,
+// and resolving it against the working directory would read an unrelated file.
+func refuseStdinPackageRelativeRefs(pkgPath string, refs []recordedRef) error {
+	if pkgPath != stdinPackage {
+		return nil
+	}
+	var relative []string
+	for _, r := range refs {
+		if r.uri == "" || isRemoteURI(r.uri) || r.decodeErr != nil || escapesPackageRef(string(r.decoded)) {
+			continue
+		}
+		relative = append(relative, fmt.Sprintf("%s %q", r.field, r.uri))
+	}
+	if len(relative) == 0 {
+		return nil
+	}
+	return fmt.Errorf("the package was read from stdin and has no file location, so its "+
+		"package-relative reference(s) cannot be resolved: %s; pass the package as a file",
+		strings.Join(relative, ", "))
+}
+
+// evidencePackageDir is where package-relative references resolve: beside the input, or
+// for a stdin package beside the -o file, the only place that package will exist.
+func evidencePackageDir(pkg, output string) string {
+	if pkg == stdinPackage {
+		return filepath.Dir(output)
+	}
+	return filepath.Dir(pkg)
 }
 
 // NewEvidenceCmd creates the evidence command group with info subcommand.
@@ -47,6 +94,7 @@ Examples:
 	cmd.AddCommand(newEvidenceAddReferenceCmd())
 	cmd.AddCommand(newEvidenceUpdateCmd())
 	cmd.AddCommand(newEvidenceBundleCmd())
+	cmd.AddCommand(newEvidenceResolveCmd())
 
 	return cmd
 }
@@ -253,6 +301,13 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 		fmt.Printf("System: %s\n", sanitizeOutput(sysRef))
 	}
 
+	outputEvidenceContents(doc)
+	outputEvidenceCompleteness(doc)
+
+	return nil
+}
+
+func outputEvidenceContents(doc map[string]interface{}) {
 	// Contents
 	if contents, ok := doc["contents"].([]interface{}); ok && len(contents) > 0 {
 		fmt.Printf("\nContents (%d):\n", len(contents))
@@ -284,7 +339,9 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 				recordedChecksumState(entry))
 		}
 	}
+}
 
+func outputEvidenceCompleteness(doc map[string]interface{}) {
 	// Completeness check
 	if cc, ok := doc["completenessCheck"].(map[string]interface{}); ok {
 		// Attributed to the document, not to this command. The schema calls this block
@@ -310,8 +367,6 @@ func outputEvidenceInfoHuman(doc map[string]interface{}) error {
 			fmt.Printf("  Compliance: %.0f%%\n", v)
 		}
 	}
-
-	return nil
 }
 
 // boolYesNo returns "yes" or "no" for a boolean value.

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
-import { generateTypes, hostIdentityStringFields, insertComponentFields, normalizeSharedTypeDocs } from '../src/generate-types';
+import { canonicalTypeDescriptions, generateTypes, hostIdentityStringFields, insertComponentFields, normKey, normalizeSharedTypeDocs } from '../src/generate-types';
 import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
@@ -23,6 +23,15 @@ describe('generate-types', () => {
     // This ensures other packages can import from @mitre/hdf-schema during parallel test runs
     createIndex();
   });
+
+  it.each([['go', 'hdf.go'], ['ts', 'hdf.ts']])(
+    'emits %s types without trailing horizontal whitespace',
+    (directory, filename) => {
+      const content = readFileSync(join(DIST_DIR, directory, filename), 'utf-8');
+      expect(content.length).toBeGreaterThan(0);
+      expect(content).not.toMatch(/[\t ]+$/m);
+    },
+  );
 
   describe('TypeScript output (combined hdf.ts)', () => {
     it('should create dist/ts directory', () => {
@@ -89,6 +98,11 @@ describe('generate-types', () => {
   });
 
   describe('Go output', () => {
+    it('emits generated Go without trailing horizontal whitespace', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      expect(content).not.toMatch(/[\t ]+$/m);
+    });
+
     it('should create dist/go directory', () => {
       expect(existsSync(join(DIST_DIR, 'go'))).toBe(true);
     });
@@ -304,6 +318,37 @@ describe('Component identity-field reconciler', () => {
       ]);
     });
 
+    it.each([
+      ['object', { text: 'short name' }],
+      ['number', 42],
+      ['null', null],
+      ['boolean', false],
+      ['array', ['short name']],
+    ])('rejects non-string %s descriptions with the property name', (_kind, description) => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string', description } } }],
+          },
+        },
+      };
+      expect(() => hostIdentityStringFields(schema))
+        .toThrow('Host_Component.hostname description must be a string');
+    });
+
+    it('uses an empty description when none is declared', () => {
+      const schema = {
+        $defs: {
+          Host_Component: {
+            allOf: [{ properties: { hostname: { type: 'string' } } }],
+          },
+        },
+      };
+      expect(hostIdentityStringFields(schema)).toEqual([
+        { name: 'hostname', description: '' },
+      ]);
+    });
+
     it('returns [] when the schema has no Host_Component / properties branch', () => {
       expect(hostIdentityStringFields(undefined)).toEqual([]);
       expect(hostIdentityStringFields({ $defs: {} })).toEqual([]);
@@ -366,14 +411,39 @@ describe('shared-type doc normalization (nxxy)', () => {
     expect(normalizeSharedTypeDocs(src, 'go')).toBe(src);
   });
 
-  it('generated shared primitives carry exactly their own $def description (no $ref-sibling grab-bag)', () => {
+  // Every generated type, not a list. A titled $def's doc must be its own description;
+  // any other type's doc must be exactly one source description, since quicktype's
+  // set-union of several never equals any single one of them.
+  it('every generated Go type doc is one source description, never an aggregation', () => {
     const go = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
-    for (const t of ['Checksum', 'Integrity', 'Identity', 'Signature', 'Generator']) {
-      const m = go.match(new RegExp(`((?:^//[^\\n]*\\n)+)type ${t} `, 'm'));
-      expect(m, `${t} type doc block`).toBeTruthy();
-      const paragraphs = m![1].split(/^\/\/\s*$/m).filter((p) => p.trim());
-      expect(paragraphs.length, `${t} must have one description paragraph, not an aggregation`).toBe(1);
+    const collapse = (text: string): string => text.replace(/\s+/g, ' ').trim();
+    const canonical = canonicalTypeDescriptions();
+    const sourceDescriptions = new Set<string>();
+    const collect = (node: unknown): void => {
+      if (Array.isArray(node)) node.forEach(collect);
+      else if (node && typeof node === 'object') {
+        for (const [key, value] of Object.entries(node)) {
+          if (key === 'description' && typeof value === 'string') sourceDescriptions.add(collapse(value));
+          else collect(value);
+        }
+      }
+    };
+    const srcSchemas = join(__dirname, '..', 'src', 'schemas');
+    for (const file of readdirSync(srcSchemas, { recursive: true }) as string[]) {
+      if (file.endsWith('.schema.json')) collect(JSON.parse(readFileSync(join(srcSchemas, file), 'utf-8')));
     }
+    let checked = 0;
+    for (const [, doc, name] of go.matchAll(/((?:^\/\/[^\n]*\n)+)type (\w+) /gm)) {
+      checked++;
+      const text = collapse(doc.replace(/^\/\/ ?/gm, ''));
+      const own = canonical.get(normKey(name));
+      if (own !== undefined) {
+        expect(text, `${name} must carry its own $def description`).toBe(collapse(own));
+      } else {
+        expect(sourceDescriptions.has(text), `${name} aggregates several descriptions: ${text}`).toBe(true);
+      }
+    }
+    expect(checked).toBeGreaterThan(100);
   });
 
   it('Checksum doc is its canonical description, not the amendment/evidence grab-bag', () => {

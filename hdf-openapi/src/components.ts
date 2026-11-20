@@ -39,10 +39,10 @@ export const ROOT_COMPONENT_NAMES: Record<string, string> = {
 };
 
 /** Named definitions across the bundles, excluding the eight roots. */
-export const EXPECTED_DEFINITIONS = 118;
+export const EXPECTED_DEFINITIONS = 121;
 
 export const DIALECT = 'https://json-schema.org/draft/2020-12/schema';
-const COMPONENT_PREFIX = '#/components/schemas/';
+export const COMPONENT_PREFIX = '#/components/schemas/';
 const RESOURCE_KEYS = new Set(['$id', '$schema', '$defs']);
 
 /** One JSON Schema resource: an $id and the named definitions it owns. */

@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "05b44a63-60ae-4a6b-8922-dcf57187465c",
+    "uuid": "c6a1889f-0c6d-4670-9ebd-e413bb888563",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,7 +8,7 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "2f758838-5fbb-406e-9d76-b4bf38b0eab8",
+          "uuid": "446636b0-ce16-4619-a652-e18fe5feeef4",
           "type": "person",
           "name": "test",
           "props": [
@@ -48,7 +48,7 @@
     },
     "risks": [
       {
-        "uuid": "dda8918f-fd8e-492e-bce9-909011d4f22d",
+        "uuid": "0c0de02a-2af8-42df-9ada-e0086292faeb",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "statement": "accepted",
@@ -74,17 +74,17 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "590f2d8b-6591-431c-ab14-4758995ab935",
+              "uuid": "08d1d42b-7dc0-4c16-b429-0dd352f11d1f",
               "title": "Override applied",
               "start": "2020-01-01T00:00:00Z",
               "logged-by": [
                 {
-                  "party-uuid": "2f758838-5fbb-406e-9d76-b4bf38b0eab8"
+                  "party-uuid": "446636b0-ce16-4619-a652-e18fe5feeef4"
                 }
               ]
             },
             {
-              "uuid": "9e547274-43c8-476e-a415-84e9bfbd75ff",
+              "uuid": "24cf26ce-b99a-4371-a611-9201d9d4ea54",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -96,12 +96,12 @@
     ],
     "poam-items": [
       {
-        "uuid": "b8b984b3-6cd3-439c-8df2-89696392013e",
+        "uuid": "f6a81a9d-4979-4da4-abb2-babcc84a1d11",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "related-risks": [
           {
-            "risk-uuid": "dda8918f-fd8e-492e-bce9-909011d4f22d"
+            "risk-uuid": "0c0de02a-2af8-42df-9ada-e0086292faeb"
           }
         ]
       }

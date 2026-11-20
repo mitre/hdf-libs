@@ -3,7 +3,7 @@
  */
 
 import type { OwaspNistMappings, OwaspNistMapping } from './types.js';
-import rawOwaspData from '../data/owasp-nist-mappings.json';
+import rawOwaspData from '../../go/datasets/mappings/owasp-nist-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
 // Authored against Rev 4 (declared Rev: 4 in the data; every control it

@@ -11,8 +11,9 @@ import {
   stripHTML,
   ensureArray,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
-  validateInputSize,
+  validateXmlInput,
   serializeHdf,
+  synthesizedNoResultsResult,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
@@ -441,13 +442,23 @@ function buildRequirement(
     startTime: parseTimestamp(startTimeStr) ?? new Date(),
   }));
 
+  // A <Description> is rule metadata; the finding is <Vulnerability>. One
+  // matching nothing still carries real CWE, NIST and prose worth keeping, but
+  // results is schema-required with minItems:1, so it cannot stay empty.
+  const filledResults: RequirementResult[] = results.length > 0 ? results : [
+    synthesizedNoResultsResult(
+      parseTimestamp(startTimeStr) ?? new Date(),
+      'this rule description matched no vulnerability in the scan, so nothing was established at it',
+    ),
+  ];
+
   const req: EvaluatedRequirement = {
     id: desc.classID ?? 'unknown',
     title,
     impact,
     tags,
     descriptions,
-    results,
+    results: filledResults,
     verificationMethod: VerificationMethodEnum.Automated,
   };
 
@@ -495,7 +506,7 @@ export async function convertFortifyToHdf(input: string, converterVersion = '1.0
   if (!input || input.trim().length === 0) {
     throw new Error('fortify: empty input');
   }
-  validateInputSize(input, 'fortify');
+  validateXmlInput(input, 'fortify');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

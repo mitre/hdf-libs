@@ -51,7 +51,7 @@ Fixtures here are **real tool output**, or a schema-valid document derived from 
 
 | File | Source | Consumers |
 |------|--------|-----------|
-| `inspec-multilayered.json` | InSpec runner, multi-overlay scan | hdf-extension-graph TS + Go tests + hdf-parsers parser parity test + hdf-engine compliance tests (TS + Go). The bug-exhibiting fixture for `hdf-libs-2nm0` — bare timestamps that broke parsers before #83/#828d landed. Moved from `hdf-extension-graph/test/fixtures/multilayered-inspec.json`. The overlay chain re-reports the same requirement id in every layer it touches (534 ids appear more than once, 406 of them with differing statuses, and `SV-257777` twice within a single baseline), which is what hdf-engine's duplicate-id threshold tests need. |
+| `inspec-multilayered.json` | InSpec runner, multi-overlay scan | hdf-extension-graph TS + Go tests + hdf-parsers parser parity test + hdf-engine compliance tests (TS + Go) + hdf-diff change-event folding across multiple baselines (TS + Go), the anchor input for ten hdf-converters converters' tests (TS + Go) — hdf-to-ckl, -cklb, -csv, -ecs, -ocsf, -oscal-sar, -splunk, -xccdf, -xml and oscal-to-hdf — and hdf-cli (threshold smoke, MCP loader, MCP inspect and query tools, and an MCP envelope golden) plus hdf-openapi conformance. **Cannot be regenerated.** It carries no `generator` or `tool` block and its source InSpec exec JSON is not vendored, so nothing in the repo reproduces it. It is a *different run* from `inspec/wrapper.json` — different `statistics.duration` (62.85 vs 56.92), and it carries `metawrapper` and `dep` layers that file lacks while lacking its `inspec-k8s-node` profile — so wrapper.json is not a substitute for it. Treat it as a pre-epoch artifact: its requirements' effective statuses reflect the converter that produced it, not the current one. The bug-exhibiting fixture for `hdf-libs-2nm0` — bare timestamps that broke parsers before #83/#828d landed. Moved from `hdf-extension-graph/test/fixtures/multilayered-inspec.json`. The overlay chain re-reports the same requirement id in every layer it touches (534 ids appear more than once, 406 of them with differing statuses, and `SV-257777` twice within a single baseline), which is what hdf-engine's duplicate-id threshold tests need. |
 | `minimal.json` | Hand-crafted minimal valid HDF Results doc | hdf-to-xml converter (TS + Go) + hdf-parsers integration test + hdf-validators integration test. The smallest schema-valid HDF Results document — single baseline, one passing requirement. Moved from `hdf-converters/converters/hdf-to-xml/fixtures/input/minimal.json`. |
 | `duplicate-baselines.json` | Prisma Cloud HDF results (`prisma-to-hdf`) — 16 baselines, 94 requirements, repeated (name, id) keys. Constructed for merge/correlation testing, PR #362. | hdf-engine TS + Go (filter/query index-uniqueness) + hdf-cli MCP tools (inspect/aggregate/compliance) + hdf-to-html converter TS + Go (same-named baselines are labelled by title, and no component carries a count). Moved from `hdf-engine/testdata/duplicate-baselines.json` and `hdf-cli/internal/mcp/tools/testdata/duplicate-baselines.json`. Byte-identical to `hdf-converters/converters/prisma-to-hdf/fixtures/expected/prismacloud_sample.csv.hdf.json` (sha256 `7273e11d8bf3d55d…`); `fixtures_test.go` pins both. |
 | `merge-grype.json` | Grype HDF results (`grype-to-hdf`, Grype 0.79.3) — one baseline, duplicate requirement ids. **Do not regenerate:** grype-to-hdf now rolls duplicate ids into one requirement per CVE, so a fresh conversion would carry none and silently gut the merge/correlation tests below. Constructed for merge/correlation testing, PR #362. | hdf-engine TS + Go (merge parity) + hdf-cli MCP tools (query correlation, multi-source). Moved from `hdf-engine/testdata/merge-grype.json` and `hdf-cli/internal/mcp/tools/testdata/grype-duplicate-ids.json`. |
@@ -110,7 +110,7 @@ const raw = results.inspecMultilayered.read();
 **Go:**
 
 ```go
-import fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+import fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 
 data := fixtures.Results.InspecMultilayered // []byte, //go:embed'd at build
 ```
@@ -131,3 +131,16 @@ Each new fixture must:
 5. Be added to the group map in `fixtures_gate_test.go`, which validates each
    fixture against its schema. That map is hand-maintained: a fixture missing
    from it is never validated, and nothing reports the omission.
+
+## Historical schema adaptations (2026-11-07)
+
+These two documents are schema-confirmed adaptations of the committed corpus,
+not fresh scanner runs. Their original upstream capture is described above;
+the exact retrieved baseline for this adaptation is pinned below.
+
+- `results/inspec-multilayered.json`: [source before adaptation](https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-fixtures/results/inspec-multilayered.json), SHA-256 `6068338ce4fa3cb189f04536190cdb1f84a7b2f950baeca4057e4bfd5dc9aa5f`. Renamed root targets to components. Every target object, requirement, result, string and bare timestamp is unchanged. No identity was invented. Results components permit an omitted componentId. Bare timestamps remain intentionally preserved for parser normalization tests.
+- `baseline/win2022-stig.json`: [source before adaptation](https://github.com/mitre/hdf-libs/blob/a9a5901d4cb3473dcdfc2a50efcdcecc098b7955/hdf-fixtures/baseline/win2022-stig.json), SHA-256 `5b9ae0304fd22618f47832803ccc935198508f0d42a3c3a3ac96581e7da43e13`. Renamed root checksum to integrity and its value member to checksum. All requirements, prose and metadata values are unchanged. The retained digest is historical source metadata, not a newly calculated digest of this adaptation.
+
+Validation on 2026-11-07: `GOTOOLCHAIN=go1.27.3 go test ./... -count=1`
+in `hdf-fixtures` passed, including the corpus schema gate. That gate normalizes
+bare timestamps in memory, as the parsers do, without rewriting fixture data.

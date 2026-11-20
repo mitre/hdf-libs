@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 // Regenerates the Hipcheck analysis -> NIST 800-53 Rev 5 mapping
-// (hipcheck-nist-mappings.json) and writes it byte-identically to both the Go
-// and TS copies, deterministically sorted so future diffs stay clean.
+// (hipcheck-nist-mappings.json) and writes the one copy both languages read,
+// deterministically sorted so future diffs stay clean.
 //
 //   node scripts/generate-hipcheck-mappings.mjs [--check]
 //
-//     (no flag)  rewrite both mapping files and print a row-count summary
-//     --check    report drift only; exit 1 if regenerating would change EITHER copy (CI gate)
+//     (no flag)  rewrite the mapping file and print a row-count summary
+//     --check    report drift only; exit 1 if regenerating would change the committed
+//                table. This one IS a commit gate (lint:mappings-offline): it needs
+//                no network, so a failure means the commit, not upstream.
 //
 // Provenance: unlike aws-config, Hipcheck publishes NO analysis-to-controls
 // crosswalk, so there is no authoritative source to scrape. The mapping below IS
 // the source of truth: a hand-curated, NIST-RMF-reviewed table. Each row carries
 // a Rationale. Editing the mapping means editing the CURATED array here, then
-// running this script to propagate to both copies. This keeps the same
-// "single source + repeatable refresh + CI drift gate" ergonomics as the other
+// running this script to rewrite the table. This keeps the same
+// "single source + repeatable refresh + commit-time drift gate" ergonomics as
 // mapping generators even though the input is curated rather than scraped.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -22,10 +24,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..');
-const OUT_FILES = [
-  join(REPO, 'hdf-mappings', 'go', 'hipcheck', 'hipcheck-nist-mappings.json'),
-  join(REPO, 'hdf-mappings', 'src', 'data', 'hipcheck-nist-mappings.json'),
-];
+const OUT_FILES = [join(REPO, 'hdf-mappings', 'go', 'datasets', 'mappings', 'hipcheck-nist-mappings.json')];
 
 // Curated source of truth. NIST-ID is a '|'-delimited control list (matching the
 // aws-config mapping convention). Rev 5 throughout.
@@ -72,7 +71,7 @@ if (check) {
     console.error('hipcheck mapping drift: regenerating would change a copy. Run: node scripts/generate-hipcheck-mappings.mjs');
     process.exit(1);
   }
-  console.log(`hipcheck mapping in sync (${rows.length} analyses, both copies).`);
+  console.log(`hipcheck mapping in sync (${rows.length} analyses).`);
 } else {
-  console.log(`hipcheck mapping written: ${rows.length} analyses -> ${OUT_FILES.length} copies.`);
+  console.log(`hipcheck mapping written: ${rows.length} analyses -> ${OUT_FILES[0]}`);
 }

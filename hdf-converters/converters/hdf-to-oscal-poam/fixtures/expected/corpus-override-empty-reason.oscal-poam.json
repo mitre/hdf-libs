@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "49b6a87b-9cc8-4e92-ba05-f1d77d8e8de5",
+    "uuid": "cdb3ce01-3397-40a5-a83e-306b1b2fb1a9",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,7 +8,7 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "137efa82-ccd8-45cc-a1e2-a0391ae39d2d",
+          "uuid": "eafac31f-9730-475d-b2f5-ebd2bb91297b",
           "type": "person",
           "name": "test",
           "props": [
@@ -48,7 +48,7 @@
     },
     "risks": [
       {
-        "uuid": "a70505ba-e4de-4892-859a-c495853517c9",
+        "uuid": "9df7fb5d-b660-45a4-bef6-0e2606aac501",
         "title": "CVE-2021-44228",
         "description": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
         "statement": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
@@ -74,17 +74,17 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "e2216c0f-e49f-4a5e-a3d1-3da2a6f63b50",
+              "uuid": "b42445d0-2f72-4ea1-939e-2628f3f32c62",
               "title": "Override applied",
               "start": "2020-01-01T00:00:00Z",
               "logged-by": [
                 {
-                  "party-uuid": "137efa82-ccd8-45cc-a1e2-a0391ae39d2d"
+                  "party-uuid": "eafac31f-9730-475d-b2f5-ebd2bb91297b"
                 }
               ]
             },
             {
-              "uuid": "ee07bfae-cc48-4203-9ec3-bdef799eb3ad",
+              "uuid": "231807bf-12f9-49e1-95c2-e716ac90eb29",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -96,12 +96,12 @@
     ],
     "poam-items": [
       {
-        "uuid": "43ed9955-bff5-4a93-83d5-cc5990e0ec3b",
+        "uuid": "9b493c25-a7d1-4650-8eca-33198af60b05",
         "title": "CVE-2021-44228",
         "description": "",
         "related-risks": [
           {
-            "risk-uuid": "a70505ba-e4de-4892-859a-c495853517c9"
+            "risk-uuid": "9df7fb5d-b660-45a4-bef6-0e2606aac501"
           }
         ]
       }

@@ -1,7 +1,6 @@
 package hdfutil
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"math"
 	"os"
@@ -349,16 +348,12 @@ func TestComputeCvss40Score_Errors(t *testing.T) {
 	}
 }
 
-// TestCvss40DataParity enforces the AC that the shared MacroVector data tables
-// are byte-identical across Go (//go:embed) and TS (bundled import).
-func TestCvss40DataParity(t *testing.T) {
-	goData, err := os.ReadFile("cvss40-data.json")
+// TestCvss40LookupIsComplete pins the table's size against the FIRST reference
+// calculator, so a truncated or regenerated file fails here rather than as a
+// subtly wrong score.
+func TestCvss40LookupIsComplete(t *testing.T) {
+	goData, err := os.ReadFile(filepath.Join("cvss40data", "cvss40-data.json"))
 	require.NoError(t, err)
-	tsData, err := os.ReadFile(filepath.Join("..", "src", "cvss", "cvss40-data.json"))
-	require.NoError(t, err)
-	assert.Equal(t,
-		sha256.Sum256(goData), sha256.Sum256(tsData),
-		"go/cvss40-data.json and src/cvss/cvss40-data.json must be byte-identical")
 
 	var d struct {
 		Lookup map[string]float64 `json:"lookup"`
