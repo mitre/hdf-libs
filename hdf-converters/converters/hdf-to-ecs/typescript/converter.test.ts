@@ -1,9 +1,10 @@
+import { resolveExportSource } from '../../../shared/typescript/exportbundle.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
-import { convertHdfToEcs } from './converter.js';
+import { convertHdfToEcs, convertHdfToEcsBundle } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
@@ -366,4 +367,14 @@ describe('hdf-to-ecs disposition', () => {
     const labels = rows[0]!['labels'] as Record<string, unknown>;
     expect(labels['hdf_disposition']).toBe('riskAdjustment');
   });
+});
+
+it('retains modern baseline integrity through the explicit bundle readback API', async () => {
+  const source = readFileSync(join(FIXTURES, 'input', 'override.json'));
+  const bundle = await convertHdfToEcsBundle(source, VERSION);
+  const event = JSON.parse(bundle.events);
+  const resolved = await resolveExportSource(JSON.stringify(event.hdf.source), bundle.manifest, [{ href: 'source.json', bytes: bundle.source }]);
+  expect(Buffer.from(resolved.source)).toEqual(source);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual(JSON.parse(source.toString('utf8')).baselines[0].integrity);
+  expect(JSON.parse(resolved.baseline).integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
 });

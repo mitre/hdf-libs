@@ -1,0 +1,322 @@
+[
+  {
+    "name": "original",
+    "edits": []
+  },
+  {
+    "name": "compatible minor",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "profileVersion"
+        ],
+        "value": "1.12"
+      },
+      {
+        "document": "envelope",
+        "path": [
+          "profileVersion"
+        ],
+        "value": "1.12"
+      },
+      {
+        "document": "envelope",
+        "path": [
+          "futureOptional"
+        ],
+        "value": true
+      }
+    ]
+  },
+  {
+    "name": "unknown major",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "profileVersion"
+        ],
+        "value": "2.0"
+      }
+    ],
+    "error": "profile"
+  },
+  {
+    "name": "malformed version",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "profileVersion"
+        ],
+        "value": "1.01"
+      }
+    ],
+    "error": "profile"
+  },
+  {
+    "name": "unknown output profile",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "outputProfile"
+        ],
+        "value": "compact/99"
+      }
+    ],
+    "error": "profile"
+  },
+  {
+    "name": "manifest profile disagreement",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "profileVersion"
+        ],
+        "value": "1.1"
+      }
+    ],
+    "error": "profile"
+  },
+  {
+    "name": "unknown target",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "target"
+        ],
+        "value": "unknown"
+      }
+    ],
+    "error": "target"
+  },
+  {
+    "name": "missing reference",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "artifacts"
+        ],
+        "value": []
+      }
+    ],
+    "error": "artifact"
+  },
+  {
+    "name": "wrong identifier",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "artifact",
+          "externalId"
+        ],
+        "value": "sha512:bad"
+      }
+    ],
+    "error": "identity"
+  },
+  {
+    "name": "wrong digest algorithm",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "artifact",
+          "checksum",
+          "algorithm"
+        ],
+        "value": "sha256"
+      }
+    ],
+    "error": "identity"
+  },
+  {
+    "name": "wrong record",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "requirement",
+          "title"
+        ],
+        "value": "Altered record"
+      }
+    ],
+    "error": "record mismatch"
+  },
+  {
+    "name": "noncanonical pointer",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/00/requirements/0"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "wrong pointer target",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/0/groups/0"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "missing occurrence",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/9/requirements/0"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "negative occurrence",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/-1/requirements/0"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "missing requirement",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "requirement"
+        ],
+        "value": null
+      }
+    ],
+    "error": "record mismatch"
+  },
+  {
+    "name": "missing artifact",
+    "edits": [],
+    "artifactMode": "missing",
+    "error": "artifact"
+  },
+  {
+    "name": "duplicate artifact",
+    "edits": [],
+    "artifactMode": "duplicate",
+    "error": "artifact"
+  },
+  {
+    "name": "tampered artifact",
+    "edits": [],
+    "artifactMode": "tampered",
+    "error": "checksum"
+  },
+  {
+    "name": "duplicate-reference artifact",
+    "edits": [],
+    "artifactMode": "duplicate-reference",
+    "error": "artifact"
+  },
+  {
+    "name": "wrong event location",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "events"
+        ],
+        "value": "other.ndjson"
+      }
+    ],
+    "error": "events"
+  },
+  {
+    "name": "missing event location",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "events"
+        ],
+        "value": null
+      }
+    ],
+    "error": "events"
+  },
+  {
+    "name": "missing source location",
+    "edits": [
+      {
+        "document": "manifest",
+        "path": [
+          "artifacts"
+        ],
+        "value": [
+          {}
+        ]
+      }
+    ],
+    "error": "identity"
+  },
+  {
+    "name": "oversized occurrence index",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/999999999999999999999/requirements/0"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "missing requirement index",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "pointer"
+        ],
+        "value": "/baselines/0/requirements/99"
+      }
+    ],
+    "error": "pointer"
+  },
+  {
+    "name": "absent carried requirement",
+    "edits": [
+      {
+        "document": "envelope",
+        "path": [
+          "requirement"
+        ],
+        "remove": true
+      }
+    ],
+    "error": "record mismatch"
+  }
+]

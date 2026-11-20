@@ -1,5 +1,5 @@
 {
-  "name": "waivers-2026-11-17",
+  "name": "waivers-2026-11-18",
   "overrides": [
     {
       "appliedAt": "2026-09-07T15:01:58Z",
@@ -138,6 +138,22 @@
       },
       "reason": "GHSA-fc5q-39xc-vjpf: picomatch <=4.0.7 backtracks exponentially on crafted extglob patterns such as +(*). No patched release exists — 4.0.7 (2026-08-24) is the latest and the fix is an unreviewed upstream pull request. picomatch reaches this repo only through dev tooling (vite, vitest, tsdown, tinyglobby, fdir, lint-staged), no published package depends on it at runtime, and the patterns those tools match are the literal ones in our checked-in configs, so no attacker-controlled pattern reaches it. The same advisory is waived in pnpm-workspace.yaml's audit configuration; both clear when a fixed picomatch ships.",
       "requirementId": "CVE-2026-112366",
+      "status": "notApplicable",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-11-18T01:45:00Z",
+      "appliedBy": {
+        "identifier": "aaronlippold",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "67693436808f21a66a92914c8f14bbb9cc8a71c2331b0c7e5666e05b4f462c40"
+      },
+      "reason": "GHSA-3g3m-2fjr-6pw4: glob 9.0.0 through 14.0.1 can keep walking the filesystem after an AbortSignal has cancelled the search; the first fixed release is 14.0.2. glob 10.5.0 reaches this repo only through testcontainers 12.2.1 (archiver 7 -> archiver-utils 5, which requires glob ^10), a devDependency of the SIEM service test harness; no published package depends on it, testcontainers' latest release still requires archiver 7, and the harness globs its own checked-in paths without an AbortSignal, so no untrusted pattern or cancellation reaches it. pnpm audit does not fail on this medium advisory, so only the OSV gate needs the adjudication; it clears when testcontainers moves off archiver 7.",
+      "requirementId": "CVE-2026-118773",
       "status": "notApplicable",
       "type": "waiver"
     }

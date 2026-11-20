@@ -487,47 +487,20 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, access archiv
 	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
 	}
-	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
-	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
-	// may be any pre-existing file they pointed at — so this says only what is known: nothing
-	// replaced it. Without it, "no archive written" alone reads as "the path is empty", and an
-	// operator can ship a stale deliverable on that reading.
-	if overwrite {
-		if info, statErr := os.Stat(outputPath); statErr == nil && !info.IsDir() {
-			defer func() {
-				var published *archivePublishedError
-				if err != nil && !errors.As(err, &published) {
-					fmt.Fprintf(os.Stderr,
-						"Note: %s was not replaced; the file already at that path is unchanged.\n",
-						outputPath)
-				}
-			}()
+	err = publishArchive(outputPath, overwrite, access, makeWriter, func() ([]bundleEntry, error) {
+		c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
+		c.collected = map[string][]byte{packageName: pkgRaw}
+		c.carried = map[refKind]int{}
+		for _, r := range refs {
+			if err := c.collectReference(pkgDir, r); err != nil {
+				return nil, err
+			}
 		}
-	}
-
-	// Staged before any referenced document is read, so a destination that cannot take
-	// an archive under the access policy is refused before any input is opened or hashed.
-	staged, err := createStagedArchive(filepath.Dir(outputPath), access)
+		sort.Strings(c.notCarried)
+		sort.Slice(c.entries, func(i, j int) bool { return c.entries[i].path < c.entries[j].path })
+		return c.entries, nil
+	})
 	if err != nil {
-		return &stagingError{out: outputPath, err: err}
-	}
-	stagedName := staged.Name()
-	defer func() {
-		_ = staged.Close()
-		_ = os.Remove(stagedName) // no-op once published
-	}()
-
-	c.entries = []bundleEntry{{path: packageName, data: pkgRaw}}
-	c.collected = map[string][]byte{packageName: pkgRaw}
-	c.carried = map[refKind]int{}
-	for _, r := range refs {
-		if err := c.collectReference(pkgDir, r); err != nil {
-			return err
-		}
-	}
-	sort.Strings(c.notCarried)
-	sort.Slice(c.entries, func(i, j int) bool { return c.entries[i].path < c.entries[j].path })
-	if err := writeArchiveAtomically(outputPath, overwrite, staged, c.entries, makeWriter); err != nil {
 		return err
 	}
 	c.report(pkgDir, outputPath, refs)
@@ -868,6 +841,12 @@ func (c *bundleCollection) reportExtent() {
 // quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
 // the comment on the existence check.
 func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
+	return refuseArchiveOverInput(outputPath, pkgDir, pkgPath, "evidence package itself", refs, overwrite)
+}
+
+// refuseArchiveOverInput is refuseOutputOverAnInput for any command that archives an
+// input file: inputLabel names what pkgPath is in the refusal.
+func refuseArchiveOverInput(outputPath, pkgDir, pkgPath, inputLabel string, refs []recordedRef, overwrite bool) error {
 	taken, isDir := outputTaken(outputPath)
 	if isDir {
 		return describeTakenOutput(outputPath)
@@ -880,8 +859,8 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 		}
 	}
 	if samePath(outputPath, pkgPath) {
-		return fmt.Errorf("refusing to write the archive over the evidence package itself (%s); "+
-			"name a different -o", pkgPath)
+		return fmt.Errorf("refusing to write the archive over the %s (%s); "+
+			"name a different -o", inputLabel, pkgPath)
 	}
 	for _, r := range refs {
 		if r.uri == "" || isRemoteURI(r.uri) {
@@ -951,6 +930,47 @@ func samePath(a, b string) bool {
 	absA, errA := filepath.Abs(a)
 	absB, errB := filepath.Abs(b)
 	return errA == nil && errB == nil && absA == absB
+}
+
+// publishArchive stages the archive beside outputPath under the access policy, asks
+// build for its entries, and publishes them. Call it past the pre-flight refusals.
+func publishArchive(outputPath string, overwrite bool, access archiveAccess,
+	makeWriter func(*os.File) archiveWriter, build func() ([]bundleEntry, error)) (err error) {
+	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
+	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
+	// may be any pre-existing file they pointed at — so this says only what is known: nothing
+	// replaced it. Without it, "no archive written" alone reads as "the path is empty", and an
+	// operator can ship a stale deliverable on that reading.
+	if overwrite {
+		if info, statErr := os.Stat(outputPath); statErr == nil && !info.IsDir() {
+			defer func() {
+				var published *archivePublishedError
+				if err != nil && !errors.As(err, &published) {
+					fmt.Fprintf(os.Stderr,
+						"Note: %s was not replaced; the file already at that path is unchanged.\n",
+						outputPath)
+				}
+			}()
+		}
+	}
+
+	// Staged before build reads any input, so a destination that cannot take an archive
+	// under the access policy is refused before any input is opened or hashed.
+	staged, err := createStagedArchive(filepath.Dir(outputPath), access)
+	if err != nil {
+		return &stagingError{out: outputPath, err: err}
+	}
+	stagedName := staged.Name()
+	defer func() {
+		_ = staged.Close()
+		_ = os.Remove(stagedName) // no-op once published
+	}()
+
+	entries, err := build()
+	if err != nil {
+		return err
+	}
+	return writeArchiveAtomically(outputPath, overwrite, staged, entries, makeWriter)
 }
 
 // newArchiveWriter is the default seam binding: zip. A tar.gz implementation
