@@ -84,6 +84,7 @@ export interface LegacyDependency {
   supermarket?: string;
   compliance?: string;
   status?: string;
+  status_message?: string;
   skip_message?: string;
   [key: string]: unknown;
 }
@@ -222,20 +223,17 @@ export interface V2Group {
   [key: string]: unknown;
 }
 
+/** The nine fields HDF declares, closed: an undeclared key fails validation. */
 export interface V2Dependency {
   name?: string;
   url?: string;
   path?: string;
   git?: string;
   branch?: string;
-  tag?: string;
-  commit?: string;
-  version?: string;
   supermarket?: string;
   compliance?: string;
   status?: string;
-  skipMessage?: string;
-  [key: string]: unknown;
+  statusMessage?: string;
 }
 
 export interface V2Baseline {
@@ -624,40 +622,34 @@ function convertGroup(v1Group: LegacyGroup): V2Group {
 
 /**
  * Convert v1.0 dependency to v2.0 dependency.
- * Transforms snake_case to camelCase for skip_message.
+ *
+ * HDF's Dependency is a closed 1:1 mirror of the nine fields legacy exec-json
+ * declares, but legacy sets additionalProperties: true. So anything outside
+ * those nine is dropped rather than carried: copying it through produced a
+ * document the validator rejects, whatever the key.
  */
 function convertDependency(v1Dep: LegacyDependency): V2Dependency {
   const v2Dep: V2Dependency = {};
 
-  // Copy most fields as-is
   if (present(v1Dep.name)) v2Dep.name = v1Dep.name;
   if (present(v1Dep.url)) v2Dep.url = v1Dep.url;
   if (present(v1Dep.path)) v2Dep.path = v1Dep.path;
   if (present(v1Dep.git)) v2Dep.git = v1Dep.git;
   if (present(v1Dep.branch)) v2Dep.branch = v1Dep.branch;
-  if (present(v1Dep.tag)) v2Dep.tag = v1Dep.tag;
-  if (present(v1Dep.commit)) v2Dep.commit = v1Dep.commit;
-  if (present(v1Dep.version)) v2Dep.version = v1Dep.version;
   if (present(v1Dep.supermarket)) v2Dep.supermarket = v1Dep.supermarket;
   if (present(v1Dep.compliance)) v2Dep.compliance = v1Dep.compliance;
   if (present(v1Dep.status)) v2Dep.status = v1Dep.status;
 
-  // Transform snake_case to camelCase
-  if (present(v1Dep.skip_message)) {
-    v2Dep.skipMessage = v1Dep.skip_message;
-  }
-
-  // Preserve any other fields, minus nulls: the legacy schema makes
-  // status_message nullable, and copying it under its snake_case name put a
-  // null into a shape HDF declares closed.
-  const knownFields = new Set([
-    'name', 'url', 'path', 'git', 'branch', 'tag', 'commit', 'version',
-    'supermarket', 'compliance', 'status', 'skip_message', 'status_message'
-  ]);
-  for (const [key, value] of Object.entries(v1Dep)) {
-    if (!knownFields.has(key) && !(key in v2Dep) && present(value)) {
-      v2Dep[key] = value;
-    }
+  // Same one declared slot as at profile level, and the same precedence.
+  // skip_message is an undeclared extra here too, but it folds rather than
+  // drops because the declared slot means the same thing; status_message was
+  // listed as a known field here and then never mapped.
+  if (present(v1Dep.status_message) && v1Dep.status_message !== '') {
+    v2Dep.statusMessage = v1Dep.status_message;
+  } else if (present(v1Dep.skip_message)) {
+    v2Dep.statusMessage = v1Dep.skip_message;
+  } else if (present(v1Dep.status_message)) {
+    v2Dep.statusMessage = v1Dep.status_message;
   }
 
   return v2Dep;

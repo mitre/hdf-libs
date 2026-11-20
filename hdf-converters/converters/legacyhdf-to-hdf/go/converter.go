@@ -424,7 +424,7 @@ func convertGroup(v1 LegacyGroup) hdf.RequirementGroup {
 
 // convertDependency converts a v1.0 dependency to v2.0 Dependency.
 func convertDependency(v1 LegacyDependency) hdf.Dependency {
-	return hdf.Dependency{
+	v2 := hdf.Dependency{
 		Name:        v1.Name,
 		URL:         v1.URL,
 		Path:        v1.Path,
@@ -434,6 +434,17 @@ func convertDependency(v1 LegacyDependency) hdf.Dependency {
 		Supermarket: v1.Supermarket,
 		Compliance:  v1.Compliance,
 	}
+
+	// Same one declared slot as at profile level, and the same precedence.
+	// skip_message is an undeclared extra here too, but it folds rather than
+	// drops because the declared slot means the same thing; status_message was
+	// not carried here at all.
+	v2.StatusMessage = v1.StatusMessage
+	if (v1.StatusMessage == nil || *v1.StatusMessage == "") && v1.SkipMessage != nil {
+		v2.StatusMessage = v1.SkipMessage
+	}
+
+	return v2
 }
 
 // convertSupports maps v1 profile `supports` entries (InSpec hyphenated keys)

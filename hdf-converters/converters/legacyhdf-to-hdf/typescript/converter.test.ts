@@ -595,13 +595,17 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(dep.path).toBe('/path/to/profile');
       expect(dep.git).toBe('https://github.com/test/profile.git');
       expect(dep.branch).toBe('main');
-      expect(dep.tag).toBe('v1.0.0');
-      expect(dep.commit).toBe('abc123');
-      expect(dep.version).toBe('1.0.0');
       expect(dep.supermarket).toBe('test/profile');
       expect(dep.compliance).toEqual({ name: 'compliance' });
       expect(dep.status).toBe('loaded');
-      expect(dep.skipMessage).toBe('Skipped');
+      // tag, commit and version are not part of the legacy format and HDF's
+      // Dependency is closed, so they are dropped rather than emitted; the
+      // overlapping skip_message folds into the declared statusMessage.
+      expect(dep).not.toHaveProperty('tag');
+      expect(dep).not.toHaveProperty('commit');
+      expect(dep).not.toHaveProperty('version');
+      expect(dep).not.toHaveProperty('skipMessage');
+      expect(dep.statusMessage).toBe('Skipped');
     });
 
     it('should convert profile/baseline with all optional fields', () => {
@@ -717,7 +721,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.baselines[0].groups![0]).toHaveProperty('custom_group_field', 'custom');
     });
 
-    it('should preserve unknown fields in dependencies', () => {
+    it('should drop unknown fields in dependencies (closed v2 shape)', () => {
       const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -733,7 +737,11 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       };
 
       const v2 = convertLegacyHdf(v1);
-      expect(v2.baselines[0].depends![0]).toHaveProperty('custom_dep_field', 'custom');
+      // Dependency is as closed as the baseline below it. This used to copy any
+      // unrecognized key straight through, which could only ever produce a
+      // document the validator rejects.
+      expect(v2.baselines[0].depends![0]).not.toHaveProperty('custom_dep_field');
+      expect(v2.baselines[0].depends![0]).toEqual({ name: 'dep' });
     });
 
     it('should drop unknown fields in profiles/baselines (closed v2 shape)', () => {
@@ -2556,6 +2564,61 @@ describe('the legacy profile status explanation folds into one declared slot', (
         expect(baseline.statusMessage).toBe(tc.want);
       }
       expect(baseline).not.toHaveProperty('skipMessage');
+    });
+  }
+});
+
+// ── Dependency conversion, pinned by the same shared table ───────────────
+// HDF's Dependency is a closed 1:1 mirror of the nine fields legacy declares,
+// while legacy sets additionalProperties: true. TypeScript emitted
+// tag/commit/version and skip_message and copied every unrecognized key into
+// the closed shape; both languages dropped the statusMessage HDF declares.
+describe('a legacy dependency converts to the declared closed shape', () => {
+  const DEP_CASES = (JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'legacy-profile-status-cases.json'), 'utf-8'),
+  ) as {dependencyCases: {cases: {name: string; dependency: Record<string, unknown>; want: Record<string, unknown>}[]}})
+    .dependencyCases.cases;
+
+  function dependencyFrom(dep: Record<string, unknown>): Record<string, unknown> {
+    const doc = {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics: {duration: 0.1},
+      profiles: [{
+        name: 'p',
+        sha256: 'abc',
+        supports: [],
+        attributes: [],
+        groups: [],
+        depends: [dep],
+        controls: [{
+          id: 'V-1',
+          title: 't',
+          impact: 0.5,
+          tags: {},
+          refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.valid ? '' : legacy.getErrorMessage()).toBe(true);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    expectValidResults(out);
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    const depends = baseline.depends as Record<string, unknown>[];
+    expect(depends).toHaveLength(1);
+    return depends[0]!;
+  }
+
+  it('has a populated table', () => {
+    expect(DEP_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of DEP_CASES) {
+    it(tc.name, () => {
+      expect(dependencyFrom(tc.dependency)).toEqual(tc.want);
     });
   }
 });

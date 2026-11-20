@@ -2085,3 +2085,38 @@ func TestConvertProfile_StatusExplanationMatchesSharedTable(t *testing.T) {
 		})
 	}
 }
+
+// Twin of the TypeScript 'a legacy dependency converts to the declared closed
+// shape' block. HDF's Dependency is a closed 1:1 mirror of the nine fields
+// legacy exec-json declares, while legacy sets additionalProperties: true. This
+// side dropped status_message, which HDF does declare, because the legacy type
+// carried no field for it.
+func TestConvertDependency_MatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-profile-status-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		DependencyCases struct {
+			Cases []struct {
+				Name       string          `json:"name"`
+				Dependency json.RawMessage `json:"dependency"`
+				Want       map[string]any  `json:"want"`
+			} `json:"cases"`
+		} `json:"dependencyCases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.DependencyCases.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.DependencyCases.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			var v1 LegacyDependency
+			require.NoError(t, json.Unmarshal(tc.Dependency, &v1))
+
+			got, err := json.Marshal(convertDependency(v1))
+			require.NoError(t, err)
+			want, err := json.Marshal(tc.Want)
+			require.NoError(t, err)
+			assert.JSONEq(t, string(want), string(got))
+		})
+	}
+}
