@@ -1,0 +1,90 @@
+# Local copy of semgrep-rules go/lang/security/audit/unsafe.yaml at SEMGREP_RULES_SHA.
+# CI copies it over the fetched rule, so the rule ID and metadata stay the same, after
+# checking the fetched rule against unsafe.upstream.sha256, the sha256 of the upstream
+# file this copy was derived from; a changed upstream fails the scan until it is re-derived.
+# It reports every unsafe operation except three documented safe forms:
+#   - unsafe.Sizeof(...): a compile-time constant; its operand is not evaluated.
+#   - uintptr(unsafe.Pointer(x)) written directly as a purego.SyscallN argument:
+#     Go keeps x alive and unmoved for the call (rule 4 of the unsafe docs).
+#   - (*windows.SID)(unsafe.Pointer(&ace.SidStart)): an ACE's variable-length SID,
+#     stored from SidStart on in Microsoft's ACCESS_ALLOWED_ACE layout.
+# An unsafe operation inside the last two forms is still reported.
+rules:
+- id: use-of-unsafe-block
+  message: >-
+    Using the unsafe package in Go gives you low-level memory management and many of the strengths of
+    the C language, but also steps around the type safety of Go and can lead to buffer overflows and
+    possible arbitrary code execution by an attacker.
+    Only use this package if you absolutely know what you're doing.
+  languages: [go]
+  severity: WARNING
+  metadata:
+    cwe:
+    - 'CWE-242: Use of Inherently Dangerous Function'
+    source_rule_url: https://github.com/securego/gosec/blob/master/rules/unsafe.go
+    category: security
+    technology:
+    - go
+    confidence: LOW
+    references:
+    - https://cwe.mitre.org/data/definitions/242.html
+    - https://pkg.go.dev/unsafe#Pointer
+    - https://pkg.go.dev/unsafe#Sizeof
+    - https://pkg.go.dev/github.com/ebitengine/purego#SyscallN
+    - https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace
+    subcategory:
+    - audit
+    likelihood: LOW
+    impact: LOW
+  pattern-either:
+  # Outside any purego.SyscallN call: every operation but Sizeof and the ACE SID read.
+  - patterns:
+    - pattern: unsafe.$FUNC(...)
+    - pattern-not: unsafe.Sizeof(...)
+    - pattern-not-inside: purego.SyscallN(...)
+    - pattern-not-inside: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
+  # Within the ACE expression of the SID read.
+  - patterns:
+    - pattern: (*windows.SID)(unsafe.Pointer(&$ACE.SidStart))
+    - metavariable-pattern:
+        metavariable: $ACE
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $ACE
+  # Inside a SyscallN call, each argument is judged alone: any operation other than
+  # unsafe.Pointer is reported,
+  - patterns:
+    - pattern-inside: purego.SyscallN(...)
+    - pattern: unsafe.$FUNC(...)
+    - pattern-not: unsafe.Sizeof(...)
+    - pattern-not: unsafe.Pointer(...)
+  # an argument after the function address that uses unsafe.Pointer other than as
+  # exactly uintptr(unsafe.Pointer(x)) is reported,
+  - patterns:
+    - pattern: purego.SyscallN($FN, ..., $ARG, ...)
+    - metavariable-pattern:
+        metavariable: $ARG
+        patterns:
+        - pattern: <... unsafe.Pointer(...) ...>
+        - pattern-not: uintptr(unsafe.Pointer($X))
+        - pattern-not: unsafe.Pointer($Y)
+    - focus-metavariable: $ARG
+  # an unsafe operation inside x is reported,
+  - patterns:
+    - pattern: purego.SyscallN($FN, ..., uintptr(unsafe.Pointer($X)), ...)
+    - metavariable-pattern:
+        metavariable: $X
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $X
+  # and the function address is not an argument the call keeps alive.
+  - patterns:
+    - pattern: purego.SyscallN($FN, ...)
+    - metavariable-pattern:
+        metavariable: $FN
+        patterns:
+        - pattern: unsafe.$FUNC(...)
+        - pattern-not: unsafe.Sizeof(...)
+    - focus-metavariable: $FN

@@ -634,3 +634,65 @@ describe('grype-to-hdf rawSourceRecord shared cases (Go parity)', () => {
     expect(record.content).toBe(content);
   });
 });
+
+// A distro-namespace match often carries no CVSS of its own while the NVD
+// record for the same CVE id sits in relatedVulnerabilities. The values below
+// are taken from a real Grype 0.121.3 scan of debian:12.
+describe('grype-to-hdf CVSS from same-id related vulnerabilities (Go parity)', () => {
+  const report = JSON.stringify({
+    descriptor: {name: 'grype', version: '0.121.3'},
+    source: {target: {userInput: 'debian:12'}},
+    matches: [
+      {
+        vulnerability: {id: 'CVE-2018-20796', namespace: 'debian:distro:debian:12', severity: 'Negligible', cvss: []},
+        relatedVulnerabilities: [
+          {id: 'CVE-2011-3389', namespace: 'nvd:cpe', cvss: [
+            {source: 'nvd@nist.gov', type: 'Primary', version: '2.0', vector: 'AV:N/AC:M/Au:N/C:P/I:N/A:N', metrics: {baseScore: 4.3}},
+          ]},
+          {id: 'CVE-2018-20796', namespace: 'nvd:cpe', cvss: [
+            {source: 'nvd@nist.gov', type: 'Primary', version: '3.0', vector: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+            {source: 'nvd@nist.gov', type: 'Primary', version: '2.0', vector: 'AV:N/AC:L/Au:N/C:N/I:N/A:P', metrics: {baseScore: 5}},
+          ]},
+        ],
+        matchDetails: [{type: 'exact-direct-match', matcher: 'dpkg-matcher'}],
+        artifact: {name: 'libc6', version: '2.36-9+deb12u13', type: 'deb'},
+      },
+      {
+        vulnerability: {id: 'CVE-2025-13151', namespace: 'debian:distro:debian:12', severity: 'High', cvss: [
+          {source: '134c704f-9b21-4f2e-91b3-4a467353bcc0', type: 'Secondary', version: '3.1', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+        ]},
+        relatedVulnerabilities: [
+          {id: 'CVE-2025-13151', namespace: 'nvd:cpe', cvss: [
+            {source: '134c704f-9b21-4f2e-91b3-4a467353bcc0', type: 'Secondary', version: '3.1', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', metrics: {baseScore: 7.5}},
+          ]},
+        ],
+        matchDetails: [{type: 'exact-direct-match', matcher: 'dpkg-matcher'}],
+        artifact: {name: 'libtasn1-6', version: '4.19.0-2+deb12u1', type: 'deb'},
+      },
+    ],
+  });
+
+  it.each([
+    {
+      name: 'empty primary CVSS takes every entry of the same-id related vulnerability, never an alias',
+      id: 'CVE-2018-20796',
+      want: [
+        {version: '3.0', baseVector: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', baseScore: 7.5},
+        {version: '2.0', baseVector: 'AV:N/AC:L/Au:N/C:N/I:N/A:P', baseScore: 5},
+      ],
+    },
+    {
+      name: 'non-empty primary CVSS is used alone',
+      id: 'CVE-2025-13151',
+      want: [
+        {version: '3.1', baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', baseScore: 7.5},
+      ],
+    },
+  ])('$name', async ({id, want}) => {
+    const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(report));
+    const req = hdf.baselines[0].requirements.find(r => r.id === `Grype/${id}`);
+    expect(req).toBeDefined();
+    expect(req?.cvss?.map(c => ({version: c.version, baseVector: c.baseVector, baseScore: c.baseScore, source: c.source})))
+      .toEqual(want.map(w => ({...w, source: id})));
+  });
+});

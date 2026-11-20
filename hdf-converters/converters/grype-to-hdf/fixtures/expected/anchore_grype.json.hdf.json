@@ -13,6 +13,22 @@
               "version": "2.10.4-r3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.4,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:P",
+              "source": "CVE-2021-36159",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 9.1,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H",
+              "source": "CVE-2021-36159",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strings for the FTP and HTTP protocols. The FTP passive mode implementation allows an out-of-bounds read because strtol is used to parse the relevant numbers into address bytes. It does not check if the line ends prematurely. If it does, the for-loop condition checks for the '\\0' terminator one byte too late.",
@@ -90,6 +106,22 @@
               "name": "apk-tools",
               "purl": "pkg:apk/alpine/apk-tools@2.10.4-r3?arch=aarch64\u0026distro=alpine-3.11.3",
               "version": "2.10.4-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2021-30139",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-30139",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -360,6 +392,22 @@
               "version": "1.31.1-r9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42386",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42386",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the nvalloc function",
@@ -456,6 +504,22 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42385",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42385",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -556,6 +620,22 @@
               "version": "1.31.1-r9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42384",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42384",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the handle_special function",
@@ -652,6 +732,22 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42383",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42383",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -752,6 +848,22 @@
               "version": "1.31.1-r9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42382",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42382",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the getvar_s function",
@@ -848,6 +960,22 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42381",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42381",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -948,6 +1076,22 @@
               "version": "1.31.1-r9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42380",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42380",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the clrvar function",
@@ -1044,6 +1188,22 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42379",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42379",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1144,6 +1304,22 @@
               "version": "1.31.1-r9"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:S/C:P/I:P/A:P",
+              "source": "CVE-2021-42378",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.2,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-42378",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the getvar_i function",
@@ -1240,6 +1416,29 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2021-28831",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-28831",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-28831",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1341,6 +1540,22 @@
               "name": "ssl_client",
               "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64\u0026upstream=busybox\u0026distro=alpine-3.11.3",
               "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.3,
+              "baseSeverity": "low",
+              "baseVector": "AV:L/AC:M/Au:N/C:P/I:N/A:P",
+              "source": "CVE-2021-42374",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:L/I:N/A:H",
+              "source": "CVE-2021-42374",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1813,6 +2028,22 @@
               "name": "libssl1.1",
               "purl": "pkg:apk/alpine/libssl1.1@1.1.1d-r3?arch=aarch64\u0026upstream=openssl\u0026distro=alpine-3.11.3",
               "version": "1.1.1d-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2021-3711",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-3711",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2667,6 +2898,22 @@
               "version": "1.1.1d-r3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5.8,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:N/A:P",
+              "source": "CVE-2021-3712",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H",
+              "source": "CVE-2021-3712",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "ASN.1 strings are represented internally within OpenSSL as an ASN1_STRING structure which contains a buffer holding the string data and a field holding the buffer length. This contrasts with normal C strings which are repesented as a buffer for the string data which is terminated with a NUL (0) byte. Although not a strict requirement, ASN.1 strings that are parsed using OpenSSL's own \"d2i\" functions (and other similar parsing functions) as well as any string whose value has been set with the ASN1_STRING_set() function will additionally NUL terminate the byte array in the ASN1_STRING structure. However, it is possible for applications to directly construct valid ASN1_STRING structures which do not NUL terminate the byte array by directly setting the \"data\" and \"length\" fields in the ASN1_STRING array. This can also happen by using the ASN1_STRING_set0() function. Numerous OpenSSL functions that print ASN.1 data have been found to assume that the ASN1_STRING byte array will be NUL terminated, even though this is not guaranteed for strings that have been directly constructed. Where an application requests an ASN.1 structure to be printed, and where that ASN.1 structure contains ASN1_STRINGs that have been directly constructed by the application without NUL terminating the \"data\" field, then a read buffer overrun can occur. The same thing can also occur during name constraints processing of certificates (for example if a certificate has been directly constructed by the application instead of loading it via the OpenSSL parsing functions, and the certificate contains non NUL terminated ASN1_STRING structures). It can also occur in the X509_get1_email(), X509_REQ_get1_email() and X509_get1_ocsp() functions. If a malicious actor can cause an application to directly construct an ASN1_STRING and then process it through one of the affected OpenSSL functions then this issue could be hit. This might result in a crash (causing a Denial of Service attack). It could also result in the disclosure of private memory contents (such as private keys, or sensitive plaintext). Fixed in OpenSSL 1.1.1l (Affected 1.1.1-1.1.1k). Fixed in OpenSSL 1.0.2za (Affected 1.0.2-1.0.2y).",
@@ -2811,6 +3058,22 @@
               "name": "libssl1.1",
               "purl": "pkg:apk/alpine/libssl1.1@1.1.1d-r3?arch=aarch64\u0026upstream=openssl\u0026distro=alpine-3.11.3",
               "version": "1.1.1d-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.8,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:P/I:P/A:N",
+              "source": "CVE-2021-3450",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+              "source": "CVE-2021-3450",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2968,6 +3231,22 @@
               "version": "1.1.1d-r3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2021-23840",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-23840",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Calls to EVP_CipherUpdate, EVP_EncryptUpdate and EVP_DecryptUpdate may overflow the output length argument in some cases where the input length is close to the maximum permissable length for an integer on the platform. In such cases the return value from the function call will be 1 (indicating success), but the output length value will be negative. This could cause applications to behave incorrectly or crash. OpenSSL versions 1.1.1i and below are affected by this issue. Users of these versions should upgrade to OpenSSL 1.1.1j. OpenSSL versions 1.0.2x and below are affected by this issue. However OpenSSL 1.0.2 is out of support and no longer receiving public updates. Premium support customers of OpenSSL 1.0.2 should upgrade to 1.0.2y. Other users should upgrade to 1.1.1j. Fixed in OpenSSL 1.1.1j (Affected 1.1.1-1.1.1i). Fixed in OpenSSL 1.0.2y (Affected 1.0.2-1.0.2x).",
@@ -3109,6 +3388,22 @@
               "name": "libssl1.1",
               "purl": "pkg:apk/alpine/libssl1.1@1.1.1d-r3?arch=aarch64\u0026upstream=openssl\u0026distro=alpine-3.11.3",
               "version": "1.1.1d-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2020-1967",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2020-1967",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4345,6 +4640,22 @@
               "version": "1.1.1d-r3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2021-3449",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-3449",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "An OpenSSL TLS server may crash if sent a maliciously crafted renegotiation ClientHello message from a client. If a TLSv1.2 renegotiation ClientHello omits the signature_algorithms extension (where it was present in the initial ClientHello), but includes a signature_algorithms_cert extension then a NULL pointer dereference will result, leading to a crash and a denial of service attack. A server is only vulnerable if it has TLSv1.2 and renegotiation enabled (which is the default configuration). OpenSSL TLS clients are not impacted by this issue. All OpenSSL 1.1.1 versions are affected by this issue. Users of these versions should upgrade to OpenSSL 1.1.1k. OpenSSL 1.0.2 is not impacted by this issue. Fixed in OpenSSL 1.1.1k (Affected 1.1.1-1.1.1j).",
@@ -4515,6 +4826,22 @@
               "version": "1.1.1d-r3"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2021-23841",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-23841",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The OpenSSL public API function X509_issuer_and_serial_hash() attempts to create a unique hash value based on the issuer and serial number data contained within an X509 certificate. However it fails to correctly handle any errors that may occur while parsing the issuer field (which might occur if the issuer field is maliciously constructed). This may subsequently result in a NULL pointer deref and a crash leading to a potential denial of service attack. The function X509_issuer_and_serial_hash() is never directly called by OpenSSL itself so applications are only vulnerable if they use this function directly and they use it on certificates that may have been obtained from untrusted sources. OpenSSL versions 1.1.1i and below are affected by this issue. Users of these versions should upgrade to OpenSSL 1.1.1j. OpenSSL versions 1.0.2x and below are affected by this issue. However OpenSSL 1.0.2 is out of support and no longer receiving public updates. Premium support customers of OpenSSL 1.0.2 should upgrade to 1.0.2y. Other users should upgrade to 1.1.1j. Fixed in OpenSSL 1.1.1j (Affected 1.1.1-1.1.1i). Fixed in OpenSSL 1.0.2y (Affected 1.0.2-1.0.2x).",
@@ -4662,6 +4989,22 @@
               "name": "libssl1.1",
               "purl": "pkg:apk/alpine/libssl1.1@1.1.1d-r3?arch=aarch64\u0026upstream=openssl\u0026distro=alpine-3.11.3",
               "version": "1.1.1d-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2020-1971",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2020-1971",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4823,6 +5166,22 @@
               "name": "libssl1.1",
               "purl": "pkg:apk/alpine/libssl1.1@1.1.1d-r3?arch=aarch64\u0026upstream=openssl\u0026distro=alpine-3.11.3",
               "version": "1.1.1d-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+              "source": "CVE-2021-23839",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 3.7,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2021-23839",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -5038,6 +5397,22 @@
               "version": "1.1.24-r0"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 2.1,
+              "baseSeverity": "low",
+              "baseVector": "AV:L/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2020-28928",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2020-28928",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In musl libc through 1.2.1, wcsnrtombs mishandles particular combinations of destination buffer size and source character limit, as demonstrated by an invalid write access (buffer overflow).",
@@ -5240,6 +5615,15 @@
               "name": "zlib",
               "purl": "pkg:apk/alpine/zlib@1.2.11-r3?arch=aarch64\u0026distro=alpine-3.11.3",
               "version": "1.2.11-r3"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-37434",
+              "version": "3.1"
             }
           ],
           "descriptions": [

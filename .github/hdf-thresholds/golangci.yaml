@@ -1,4 +1,7 @@
-# Applies to: golangci-lint, one document per Go module from go.work — the policy is applied to each.
+# Applies to: golangci-lint, one document per Go module from go.work and per target OS:
+# the Linux pass over every module, and the GOOS=windows and GOOS=darwin passes over the
+# modules with build-constrained files, which see the windows- and darwin-tagged files.
+# The policy is applied to each.
 rules:
     - name: no requirement errored
       where:

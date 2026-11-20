@@ -23,6 +23,11 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
+func semgrepSchema(t *testing.T, version string) *shared.SchemaValidator {
+	t.Helper()
+	return shared.NewSchemaValidator(t, filepath.Join("..", "fixtures", "semgrep_output_v1-"+version+".schema.json"))
+}
+
 func convertFixture(t *testing.T, name string) *hdf.HDFResults {
 	t.Helper()
 	out, err := ConvertSemgrepToHDF(loadFixture(t, name), testVersion)
@@ -49,6 +54,52 @@ func contains(haystack, needle string) bool {
 		}
 		return false
 	})()
+}
+
+// Rule authors publish the ported rule's link under two independent keys:
+// source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
+// Bandit-derived Python rule).
+func TestPublishedSourceRuleReferences(t *testing.T) {
+	semgrepSchema(t, "1.183.0").RequireValid(t, "source-rule-urls.json", loadFixture(t, "source-rule-urls.json"))
+	out := convertFixture(t, "source-rule-urls.json")
+	reqs := out.Baselines[0].Requirements
+	goRule := findReq(reqs, "use-of-unsafe-block")
+	pythonRule := findReq(reqs, "subprocess-shell-true")
+	require.NotNil(t, goRule)
+	require.NotNil(t, pythonRule)
+	assert.Equal(t, []string{
+		"https://cwe.mitre.org/data/definitions/242.html",
+		"https://github.com/securego/gosec/blob/master/rules/unsafe.go",
+	}, shared.RefURLs(goRule.Refs))
+	assert.Equal(t, []string{
+		"https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
+		"https://docs.python.org/3/library/subprocess.html",
+		"https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+	}, shared.RefURLs(pythonRule.Refs))
+}
+
+// The case file is shared with the TypeScript suite, so both languages are held
+// to the same refs for every case, and each input is checked against the Semgrep
+// output schema it declares before it is converted.
+func TestSourceRuleReferenceMapping(t *testing.T) {
+	validator := semgrepSchema(t, "1.183.0")
+	var cases []struct {
+		Name  string          `json:"name"`
+		Input json.RawMessage `json:"input"`
+		URLs  []string        `json:"urls"`
+	}
+	shared.LoadJSON(t, filepath.Join("..", "fixtures", "source-rule-url-cases.json"), &cases)
+	require.NotEmpty(t, cases)
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			validator.RequireValid(t, tc.Name, tc.Input)
+			out, err := ConvertSemgrepToHDF(tc.Input, testVersion)
+			require.NoError(t, err)
+			req := findReq(out.Baselines[0].Requirements, "use-of-unsafe-block")
+			require.NotNil(t, req)
+			assert.Equal(t, tc.URLs, shared.RefURLs(req.Refs))
+		})
+	}
 }
 
 // ---- Contract ----
