@@ -22,8 +22,8 @@ func syntheticHDFBefore() map[string]interface{} {
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Diff Test Baseline",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "abc123"},
+				"name":      "Diff Test Baseline",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "abc123"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "failed"),
 					makeRequirementWithResultStatus("REQ-002", "passed"),
@@ -48,8 +48,8 @@ func syntheticHDFAfter() map[string]interface{} {
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Diff Test Baseline",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "def456"},
+				"name":      "Diff Test Baseline",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "def456"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "passed"),
 					makeRequirementWithResultStatus("REQ-002", "failed"),
@@ -69,8 +69,8 @@ func syntheticHDFUpdated() map[string]interface{} {
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Diff Test Baseline",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "ghi789"},
+				"name":      "Diff Test Baseline",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "ghi789"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "notReviewed"),
 				},
@@ -86,8 +86,8 @@ func syntheticHDFSingleFailed() map[string]interface{} {
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Diff Test Baseline",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "jkl012"},
+				"name":      "Diff Test Baseline",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "jkl012"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "failed"),
 				},
@@ -103,8 +103,8 @@ func syntheticHDFSinglePassed() map[string]interface{} {
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Diff Test Baseline",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "mno345"},
+				"name":      "Diff Test Baseline",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "mno345"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "passed"),
 				},
@@ -437,8 +437,8 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 	oldFixture := map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Baseline Changed Test",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "aaa"},
+				"name":      "Baseline Changed Test",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "aaa"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", "passed"),
 				},
@@ -450,8 +450,8 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 	newFixture := map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "Baseline Changed Test",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "bbb"},
+				"name":      "Baseline Changed Test",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "bbb"},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-002", "passed"),
 				},
@@ -676,16 +676,16 @@ func makeTwoBaselineFixture(
 	return map[string]interface{}{
 		"baselines": []interface{}{
 			map[string]interface{}{
-				"name":     "RHEL9-STIG",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum1},
+				"name":      "RHEL9-STIG",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": checksum1},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-001", req1Status),
 					makeRequirementWithResultStatus("REQ-002", req2Status),
 				},
 			},
 			map[string]interface{}{
-				"name":     "PostgreSQL-STIG",
-				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum2},
+				"name":      "PostgreSQL-STIG",
+				"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": checksum2},
 				"requirements": []interface{}{
 					makeRequirementWithResultStatus("REQ-003", req3Status),
 					makeRequirementWithResultStatus("REQ-004", req4Status),
@@ -1231,8 +1231,8 @@ func TestDiffCommand_MismatchedTypes(t *testing.T) {
 // TestDiffCommand_UnsupportedType rejects diffing baseline documents (not yet supported).
 func TestDiffCommand_UnsupportedType(t *testing.T) {
 	baseline := map[string]interface{}{
-		"name":     "test-baseline",
-		"checksum": map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+		"name":      "test-baseline",
+		"integrity": map[string]interface{}{"algorithm": "sha256", "checksum": "abc"},
 		"requirements": []interface{}{
 			map[string]interface{}{
 				"id": "REQ-1", "impact": 0.5,

@@ -392,6 +392,49 @@ Full rationale documented in CHANGELOG.md.
 
 ---
 
+## Security scanner rule regression tests
+
+CI scans Go with a local copy of Semgrep's `use-of-unsafe-block` audit rule,
+`.github/semgrep/unsafe.yaml`. CI copies it over the fetched rule at the same path,
+so the finding's HDF requirement id and the rest of the pinned ruleset are
+unchanged. It is the only check that audits `unsafe`: gosec's G103 is filtered by
+golangci-lint's `common-false-positives` preset, which both `.golangci.yml` files
+enable.
+
+The local rule reports every `unsafe` operation except three:
+
+- `unsafe.Sizeof(...)`: a compile-time constant; its operand is never evaluated.
+- `uintptr(unsafe.Pointer(x))` written directly as an argument of
+  `purego.SyscallN`. Go keeps `x` alive and unmoved for the call when the
+  conversion is in the argument list ([rule 4 of the `unsafe`
+  docs](https://pkg.go.dev/unsafe#Pointer)); `golang.org/x/sys/unix` passes
+  pointers to libSystem on macOS the same way. Each argument is judged alone:
+  storing the `uintptr` first, passing it to any other function, arithmetic on
+  it, an `unsafe` call inside it, any other `unsafe` use in the call's other
+  arguments, and an `unsafe` conversion of the function address are still
+  reported.
+- `(*windows.SID)(unsafe.Pointer(&ace.SidStart))`: an ACE's SID is variable-length
+  and stored from `SidStart` on ([`ACCESS_ALLOWED_ACE`](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace));
+  `golang.org/x/sys/windows` has no accessor for it. The address of any other
+  field, a conversion to any other type, and an `unsafe` call inside the ACE
+  expression are still reported.
+
+Allowing a form in the rule, rather than adding an HDF amendment, keeps every
+other `unsafe` use reported; an amendment would apply to the whole rule and
+expire. The cases live in `.github/semgrep/test/unsafe.go`, annotated for
+[Semgrep's rule test runner](https://semgrep.dev/docs/writing-rules/testing-rules).
+CI runs them before the scan and fails if any case fails. To run them locally,
+install the hash-pinned Semgrep (`.github/requirements/semgrep.txt`) and run from
+the repository root:
+
+```sh
+semgrep --test --metrics off --config .github/semgrep/unsafe.yaml .github/semgrep/test/unsafe.go
+```
+
+Keep every case passing when changing the rule or the pinned Semgrep version.
+
+---
+
 ## Schema Development Pattern
 
 ### Adding a New Document Type

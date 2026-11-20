@@ -60,3 +60,63 @@ func TestEvidenceBundle_RefusesAnEntryNameContainingABackslash(t *testing.T) {
 		})
 	}
 }
+
+// A staged archive that cannot be created is reported as -o and the operation that
+// failed; the staged file's name, which the operator never typed, is left out.
+func TestEvidenceBundle_StagingFailureNamesOutputNotTheStagedFile(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root creates files in a read-only directory")
+	}
+	dir, pkgPath := bundleTree(t)
+	sealed := filepath.Join(dir, "sealed")
+	require.NoError(t, os.Mkdir(sealed, 0o500))
+	out := filepath.Join(sealed, "boe.zip")
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+out, "the error names -o")
+	assert.Contains(t, err.Error(), "open: permission denied", "and the operation that failed")
+	assert.NotContains(t, err.Error(), stagedArchivePrefix, "but never the staged file")
+}
+
+// The staged archive is created before any referenced document is read, so a
+// destination that cannot take one is refused before any input is opened or hashed.
+// The referenced document is removed here: reading it first would report that instead.
+func TestEvidenceBundle_StagesTheArchiveBeforeReadingDocuments(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root creates files in a read-only directory")
+	}
+	dir, pkgPath := bundleTree(t)
+	require.NoError(t, os.Remove(filepath.Join(dir, "scans", "rhel9-results.json")))
+	sealed := filepath.Join(dir, "sealed")
+	require.NoError(t, os.Mkdir(sealed, 0o500))
+	out := filepath.Join(sealed, "boe.zip")
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+out, "the destination is refused")
+	assert.NotContains(t, err.Error(), "rhel9-results.json", "before the missing document is read")
+}
+
+// A symlink to a directory at -o is the link, which publication would replace, so it
+// is refused as an existing name the way a dangling symlink is, up front and when
+// publication finds it; the two refusals are one message.
+func TestEvidenceBundle_RefusesASymlinkToADirectoryAtOutputAsAnExistingName(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	link := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "scans"), link))
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", link)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "-o "+link+" already exists; pass --overwrite")
+	assert.NotContains(t, err.Error(), "is a directory")
+
+	staged := filepath.Join(dir, stagedArchivePrefix+"test")
+	require.NoError(t, os.WriteFile(staged, []byte("archive"), 0o600))
+	publishErr := platformNoClobber.publish(staged, link)
+	require.Error(t, publishErr)
+	assert.Equal(t, err.Error(), publishErr.Error(), "publication's refusal is the same message")
+	target, readErr := os.Readlink(link)
+	require.NoError(t, readErr)
+	assert.Equal(t, filepath.Join(dir, "scans"), target, "the link is untouched")
+}

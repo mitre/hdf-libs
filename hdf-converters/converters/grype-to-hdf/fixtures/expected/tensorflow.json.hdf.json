@@ -12,6 +12,22 @@
               "version": "2.38-4ubuntu2.6"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2022-27943",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-27943",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libiberty/rust-demangle.c in GNU GCC 11.2 allows stack consumption in demangle_const, as demonstrated by nm-new.",
@@ -81,6 +97,22 @@
               "version": "2.38-4ubuntu2.6"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2019-1010204",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2019-1010204",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "GNU binutils gold gold v1.11-v1.16 (GNU binutils v2.21-v2.31.1) is affected by: Improper Input Validation, Signed/Unsigned Comparison, Out-of-bounds Read. The impact is: Denial of service. The component is: gold/fileread.cc:497, elfcpp/elfcpp_file.h:644. The attack vector is: An ELF file with an invalid e_shoff header field must be opened.",
@@ -148,6 +180,15 @@
               "name": "binutils",
               "purl": "pkg:deb/ubuntu/binutils@2.38-4ubuntu2.6?arch=amd64\u0026distro=ubuntu-22.04",
               "version": "2.38-4ubuntu2.6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-48064",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -228,6 +269,22 @@
               "version": "2.38-4ubuntu2.6"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+              "source": "CVE-2018-20657",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2018-20657",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "The demangle_template function in cplus-dem.c in GNU libiberty, as distributed in GNU Binutils 2.31.1, has a memory leak via a crafted string, leading to a denial of service (memory consumption), as demonstrated by cxxfilt, a related issue to CVE-2018-12698.",
@@ -300,6 +357,22 @@
               "version": "4:11.2.0-1ubuntu1"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N",
+              "source": "CVE-2023-4039",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 4.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N",
+              "source": "CVE-2023-4039",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "\n\n**DISPUTED**A failure in the -fstack-protector feature in GCC-based toolchains \nthat target AArch64 allows an attacker to exploit an existing buffer \noverflow in dynamically-sized local variables in your application \nwithout this being detected. This stack-protector failure only applies \nto C99-style dynamically-sized local variables or those created using \nalloca(). The stack-protector operates as intended for statically-sized \nlocal variables.\n\nThe default behavior when the stack-protector \ndetects an overflow is to terminate your application, resulting in \ncontrolled loss of availability. An attacker who can exploit a buffer \noverflow without triggering the stack-protector might be able to change \nprogram flow control to cause an uncontrolled loss of availability or to\n go further and affect confidentiality or integrity. NOTE: The GCC project argues that this is a missed hardening bug and not a vulnerability by itself.\n\n\n\n\n\n",
@@ -364,6 +437,22 @@
               "name": "cpp",
               "purl": "pkg:deb/ubuntu/cpp@4:11.2.0-1ubuntu1?arch=amd64\u0026upstream=gcc-defaults%401.193ubuntu1\u0026distro=ubuntu-22.04",
               "version": "4:11.2.0-1ubuntu1"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 2.1,
+              "baseSeverity": "low",
+              "baseVector": "AV:L/AC:L/Au:N/C:P/I:N/A:N",
+              "source": "CVE-2020-13844",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-13844",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -454,6 +543,15 @@
               "name": "libcurl3-gnutls",
               "purl": "pkg:deb/ubuntu/libcurl3-gnutls@7.81.0-1ubuntu1.16?arch=amd64\u0026upstream=curl\u0026distro=ubuntu-22.04",
               "version": "7.81.0-1ubuntu1.16"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2024-7264",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -671,6 +769,15 @@
               "version": "3.11.0~rc1-1~22.04"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-42919",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Python 3.9.x before 3.9.16 and 3.10.x before 3.10.9 on Linux allows local privilege escalation in a non-default configuration. The Python multiprocessing library, when used with the forkserver start method on Linux, allows pickles to be deserialized from any user in the same machine local network namespace, which in many system configurations means any user on the same machine. Pickles can execute arbitrary code. Thus, this allows for local user privilege escalation to the user that any forkserver process is running as. Setting multiprocessing.util.abstract_sockets_supported to False is a workaround. The forkserver start method for multiprocessing is not the default start method. This issue is Linux specific because only Linux supports abstract namespace sockets. CPython before 3.9 does not make use of Linux abstract namespace sockets by default. Support for users manually specifying an abstract namespace socket was added as a bugfix in 3.7.8 and 3.8.3, but users would need to make specific uncommon API calls in order to do that in CPython before 3.9.",
@@ -787,6 +894,15 @@
               "version": "5.15.0-113.123"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "AV:L/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2012-4542",
+              "version": "2.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "block/scsi_ioctl.c in the Linux kernel through 3.8 does not properly consider the SCSI device class during authorization of SCSI commands, which allows local users to bypass intended access restrictions via an SG_IO ioctl call that leverages overlapping opcodes.",
@@ -871,6 +987,15 @@
               "version": "5.15.0-113.123"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "AV:N/AC:L/Au:N/C:N/I:N/A:C",
+              "source": "CVE-2013-7445",
+              "version": "2.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "The Direct Rendering Manager (DRM) subsystem in the Linux kernel through 4.x mishandles requests for Graphics Execution Manager (GEM) objects, which allows context-dependent attackers to cause a denial of service (memory consumption) via an application that processes graphics data, as demonstrated by JavaScript code that creates many CANVAS elements for rendering by Chrome or Firefox.",
@@ -932,6 +1057,22 @@
               "name": "linux-libc-dev",
               "purl": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "version": "5.15.0-113.123"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 2.1,
+              "baseSeverity": "low",
+              "baseVector": "AV:L/AC:L/Au:N/C:P/I:N/A:N",
+              "source": "CVE-2015-8553",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N",
+              "source": "CVE-2015-8553",
+              "version": "3.0"
             }
           ],
           "descriptions": [
@@ -1001,6 +1142,22 @@
               "name": "linux-libc-dev",
               "purl": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "version": "5.15.0-113.123"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 2.6,
+              "baseSeverity": "low",
+              "baseVector": "AV:N/AC:H/Au:N/C:P/I:N/A:N",
+              "source": "CVE-2017-0537",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 4.7,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:L/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "source": "CVE-2017-0537",
+              "version": "3.0"
             }
           ],
           "descriptions": [
@@ -1075,6 +1232,22 @@
               "version": "5.15.0-113.123"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "AV:L/AC:L/Au:N/C:P/I:P/A:P",
+              "source": "CVE-2017-13165",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2017-13165",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "An elevation of privilege vulnerability in the kernel file system. Product: Android. Versions: Android kernel. Android ID A-31269937.",
@@ -1136,6 +1309,22 @@
               "name": "linux-libc-dev",
               "purl": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "version": "5.15.0-113.123"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.9,
+              "baseSeverity": "medium",
+              "baseVector": "AV:L/AC:L/Au:N/C:C/I:N/A:N",
+              "source": "CVE-2017-13693",
+              "version": "2.0"
+            },
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2017-13693",
+              "version": "3.0"
             }
           ],
           "descriptions": [
@@ -1208,6 +1397,22 @@
               "version": "5.15.0-113.123"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-38096",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:N/I:L/A:H",
+              "source": "CVE-2022-38096",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A NULL pointer dereference vulnerability was found in vmwgfx driver in drivers/gpu/vmxgfx/vmxgfx_execbuf.c in GPU component of Linux kernel with device file '/dev/dri/renderD128 (or Dxxx)'. This flaw allows a local attacker with a user account on the system to gain privilege, causing a denial of service(DoS).",
@@ -1272,6 +1477,15 @@
               "name": "linux-libc-dev",
               "purl": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "version": "5.15.0-113.123"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.7,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2023-20569",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -1535,6 +1749,22 @@
               "version": "5.15.0-113.123"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2024-23307",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:H/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2024-23307",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Integer Overflow or Wraparound vulnerability in Linux Linux kernel kernel on Linux, x86, ARM (md, raid, raid5 modules) allows Forced Integer Overflow.",
@@ -1597,6 +1827,22 @@
               "name": "linux-libc-dev",
               "purl": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "version": "5.15.0-113.123"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H",
+              "source": "CVE-2024-24857",
+              "version": "3.1"
+            },
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:A/AC:H/PR:H/UI:R/S:U/C:N/I:H/A:L",
+              "source": "CVE-2024-24857",
+              "version": "3.1"
             }
           ],
           "descriptions": [

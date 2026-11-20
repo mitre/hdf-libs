@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.86.2
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
+	github.com/ebitengine/purego v0.11.3
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-libs/hdf-converters/v3 v3.8.0
@@ -24,6 +25,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tiktoken-go/tokenizer v0.10.0
 	github.com/toon-format/toon-go v1.0.1
+	golang.org/x/sys v0.50.0
 	golang.org/x/term v0.48.0
 	golang.org/x/text v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -99,7 +101,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
-	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect

@@ -257,7 +257,9 @@ FLAGS
                                never tags.cwe, so a SARIF-derived document matches nothing
                                until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
-      --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
+      --nist stringArray       Filter by NIST control (repeatable, OR logic). Exact by default, so
+                               AC-2 reaches neither AC-2 (1) nor CM-6 b; a * or ? wildcard globs —
+                               AC-2* for one control's enhancements and sub-parts, AC-* for the family
       --id string              Filter by requirement ID, STIG ID, GID, or group title (exact; * or ? globs)
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
       --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
@@ -274,7 +276,8 @@ FLAGS
                                which kind it is, and reads the GOVERNING plan only
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
-      --search string          Search in control title and description
+      --search string          Search requirement id, title, and description (case-insensitive
+                               substring). It does not read code.
   -p, --baseline string        Filter by profile name
       --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
                                glob allowed on the value, e.g. environment:prod*). Labels say which
@@ -720,6 +723,7 @@ EXAMPLES
   hdf evidence update q1.hdf-evidence-package.json --results "scans/*.json" --overwrite
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip --overwrite
+  hdf evidence bundle q1.hdf-evidence-package.json -o shared/q3-evidence.zip --output-access inherit
   hdf evidence export q1.hdf-evidence-package.json --format oscal -o oscal/
 ```
 
@@ -751,7 +755,9 @@ To attach context to a **results** document's findings instead of to the package
 
 **`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
 
-Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
+Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing. `bundle` takes the same posture toward the archive it writes: an `-o` that already exists is refused, because a previous archive may already have been handed to an assessor, and `--overwrite` replaces it deliberately. The refusal also covers a file that appears at `-o` while the archive is being built: the archive is published with an exclusive rename, or where the filesystem has none a hard link, and both fail rather than replace a name that already exists. A filesystem with neither — exFAT on macOS, or a FUSE filesystem such as an rclone or sshfs mount that implements no hard links — cannot publish without that risk, so `bundle` refuses there unless you write to another directory or pass `--overwrite`. If the archive is published but flushing its directory entry to disk then fails, the error says the archive was written to `-o`. `--overwrite` does not lift the input protections — a path naming the package or a document it records is refused either way, and that specific refusal is what is reported, so the tool never suggests overwriting evidence. Under `--overwrite` a failed run leaves whatever was already at that path untouched rather than deleting a file you may still want, and says so on stderr naming the path — `no archive written` alone would read as "the path is empty".
+
+**`bundle` archives are private by default.** `--output-access private` (the default) creates the archive owner-only (mode 0600) at the moment it is created and, before writing anything, reads the owner and mode back from the open file; if the storage cannot show owner-only — a default SMB mount reads back 0755, and a FAT volume reads back whatever its mount mask allows — the run fails, removes its staged file and leaves `-o` untouched, rather than trust a mode the filesystem did not apply. `--output-access inherit` creates the archive with the directory's normal access instead (mode 0666 under your umask, plus any default ACL), for a directory provisioned for sharing between accounts; with umask 077 it is still private. Neither mode changes permissions after writing, and a failed private check never falls back to `inherit`. On Linux, `private` also reads the file's NFSv4 ACL and refuses one that gives anyone but the owner access to the data, or the right to change the file's ACL or owner — on NFSv4 an entry inherited from the directory can survive a 0600 create. On Windows, where a file mode only sets the read-only attribute, `private` creates the archive with a protected access list whose one entry grants your account full access, so the folder's inherited grants do not reach it, then reads it back before writing; a volume that does not keep access lists (FAT, exFAT) is refused, and `inherit` keeps the folder's inherited grants. On macOS, `private` creates the archive with an empty, non-inheriting ACL, so an entry a shared folder passes to new files does not reach it, then reads the ACL back and refuses any entry; a volume that ignores ownership (most external drives) is refused. On network or shared storage one line notes that the server and its mount options also control who can read the file; it is a note, not a refusal, and it is best-effort by filesystem type (on Linux: NFS, SMB, FUSE, 9p, Ceph, OCFS2, AFS, GFS2 and Lustre; on macOS any non-local volume). On other Unix systems `private` is the 0600 create and the owner-and-mode read-back; ACL inheritance is not checked there. Administrators are outside any file-mode guarantee. A container that runs as root writes a root-owned archive that an upload step running as another user cannot read: run the container as the invoking user (`docker run --user "$(id -u):$(id -g)"`) or pass `--output-access inherit`.
 
 `--uri` is repeatable and stays literal. For local discovery, repeat `--file` with filesystem paths or quoted globs relative to the working directory — each selected file is recorded as a package-relative reference, and a selection outside the package's directory is refused (use `--uri` to reference an external artifact deliberately) — or use `--from-dir` (immediate files, with `--recursive` to include nested directories). Give one `--format` for everything or one per selector group in `--uri`, `--file`, `--from-dir` order, preserving repeat order within each flag. Formats are assigned before expansion, so every file matched by a selector gets its group's format. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred.
 
@@ -1198,7 +1204,7 @@ Environment variables:
 |----------|-------------|---------|
 | `HDF_MCP_ROOT` | Path-confinement root; every tool path and write output is resolved under it and anything outside is refused | process working directory |
 | `HDF_MCP_ENABLE_WRITES` | Write gate; `1`, `true`, `yes`, or `on` permits writes to disk, anything else leaves the write tools in preview mode | disabled |
-| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 50 MB |
+| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 256 MB |
 | `HDF_MCP_CACHE_BYTES` | Budget for the parsed-document cache | 256 MB |
 | `HDF_MCP_LOG_LEVEL` | Stderr log level: `error`, `warn`, `info`, or `debug` | `info` |
 | `HDF_MCP_TOOLS` | Same syntax as `--tools`; the flag takes precedence when both are set | all tools |

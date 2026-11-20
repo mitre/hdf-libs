@@ -2,11 +2,11 @@ package tools
 
 import (
 	"bytes"
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // The sources[] contract shared by hdf_query and hdf_compliance (ADR-0016 §7,
@@ -103,20 +103,7 @@ func TestSources_NonResultsMemberRefusesTheSet(t *testing.T) {
 // a multi-source view is a results view (statuses, compliance): a baseline
 // member is refused too, so the set is never a mix of scored and unscored rows.
 func TestSources_BaselineMemberRefusesTheSet(t *testing.T) {
-	var doc map[string]any
-	if err := json.Unmarshal(readToolsFixture(t, "sarif-gosec.json"), &doc); err != nil {
-		t.Fatal(err)
-	}
-	// Turn the results document into a baseline document: one baseline of
-	// requirement definitions, no results. The loader detects it as "baseline".
-	b := doc["baselines"].([]any)[0].(map[string]any)
-	reqs := b["requirements"].([]any)
-	for _, r := range reqs {
-		delete(r.(map[string]any), "results")
-	}
-	baselineDoc := map[string]any{"name": "gosec-rules", "version": "1", "requirements": reqs}
-	raw, _ := json.Marshal(baselineDoc)
-	writeRootFiles(t, map[string][]byte{"rules.json": raw, "zap.json": readToolsFixture(t, "zap-webgoat.json")})
+	writeRootFiles(t, map[string][]byte{"rules.json": fixtures.Baseline.Win2022Stig, "zap.json": readToolsFixture(t, "zap-webgoat.json")})
 	_, alone := callQuery(t, queryInput{Source: handle.Source{Path: "rules.json"}, Limit: 1})
 	if alone.DocType != "baseline" {
 		t.Fatalf("fixture invariant: rules.json must load as a baseline document, got %q", alone.DocType)

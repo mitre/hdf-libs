@@ -175,7 +175,8 @@ func messageFor(result Result) string {
 
 func referencesFor(metadata Metadata) []string {
 	candidates := append([]string(nil), metadata.References...)
-	candidates = append(candidates, string(metadata.Source), string(metadata.Shortlink), string(metadata.SourceRuleURL))
+	candidates = append(candidates, string(metadata.Source), string(metadata.Shortlink),
+		string(metadata.SourceRuleURL), string(metadata.SourceRuleURLUnderscore))
 	if url, ok := metadata.ASVS["control_url"].(string); ok {
 		candidates = append(candidates, url)
 	}

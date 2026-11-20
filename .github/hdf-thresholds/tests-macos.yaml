@@ -1,0 +1,10 @@
+# Skip budget for the macOS archive legs; shared rules are in tests.yaml, rationale in
+# README.md. 9 is go-hdf-cli over the CLI command package on a macOS development host
+# (APFS refuses the non-UTF-8 names six evidence tests create, and the case-differing,
+# too-large and stdin-path tests skip there); re-measure from the first green run of
+# this leg, never from the run being gated.
+rules:
+    - name: skipped stays within the macos budget
+      where:
+          status: notReviewed
+      max: 9
