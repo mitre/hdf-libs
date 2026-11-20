@@ -99,7 +99,7 @@ const RECOMPUTE_CVSS_VERSION = '3.1';
  * Author an inline riskAdjustment on each CVE-matched finding that has a 3.1 base
  * vector and whose CVE carries a structural exploitation signal in the bundle.
  * Applies CVSS Exploit Maturity E:H (the 3.1 analog of 4.0 E:A) and recomputes
- * the Threat score. Skips (no fabrication) when a base vector is absent or non-3.1.
+ * the Threat score. Skips (no fabrication) when no cvss entry carries a 3.1 base vector.
  * TypeScript peer of recomputeExploitation in enrich_stix.go.
  */
 function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, opts: EnrichOptions): void {
@@ -108,12 +108,9 @@ function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, 
 
   for (const [cve, src] of exploitedCves(bundle)) {
     for (const req of reqById.get(cve) ?? []) {
-      const entry = findBaseVectorEntry(req, cve);
-      if (!entry) continue; // no base vector → cannot recompute honestly; skip
+      const entry = findBaseVectorEntry(req, cve, RECOMPUTE_CVSS_VERSION);
+      if (!entry) continue; // no 3.1 base vector → cannot recompute honestly; skip
       const baseVector = entry.baseVector as string;
-      if (parseCvssVector(baseVector).version !== RECOMPUTE_CVSS_VERSION) {
-        continue; // another CVSS version → skip, never fabricate
-      }
       let score: CvssScore;
       try {
         score = computeCvssScore(`${baseVector}/E:H`);
@@ -170,17 +167,22 @@ function stixExploitationReferences(o: Doc): string[] {
   }
 }
 
-/** The finding's cvss[] entry carrying a base vector for the CVE (or a version-agnostic entry). */
-function findBaseVectorEntry(req: Doc, cve: string): Doc | undefined {
+/**
+ * The finding's first cvss[] entry whose base vector is of the wanted CVSS
+ * version and whose id is the CVE or absent. The version is part of the search
+ * because a finding can carry one entry per version: trivy writes its 2.0 entry
+ * before its 3.x one.
+ */
+function findBaseVectorEntry(req: Doc, cve: string, version: string): Doc | undefined {
   const arr = req.cvss;
   if (!Array.isArray(arr)) return undefined;
   for (const e of arr) {
     const m = e as Doc;
     const bv = m.baseVector;
-    if (typeof bv === 'string' && bv) {
-      const id = m.id;
-      if (id === undefined || id === cve) return m;
-    }
+    if (typeof bv !== 'string' || !bv) continue;
+    if (parseCvssVector(bv).version !== version) continue;
+    const id = m.id;
+    if (id === undefined || id === cve) return m;
   }
   return undefined;
 }

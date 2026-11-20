@@ -336,6 +336,33 @@ describe('enrichStix — opt-in E:H recompute', () => {
     expect((requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[]) ?? []).toHaveLength(0);
   });
 
+  // A finding can carry several base vectors: trivy writes its 2.0 entry before
+  // its 3.x one and puts the CVE in source, not id. The 3.1 entry must still be
+  // the one the recompute reads.
+  it('recomputes a 3.1 entry that sits behind a 2.0 entry', () => {
+    const results = JSON.parse(recResults()) as Doc;
+    requirementById(results, 'CVE-2012-0158').cvss = [
+      { version: '2.0', source: 'nvd', baseVector: 'AV:N/AC:M/Au:N/C:C/I:C/A:C', baseScore: 9.3 },
+      {
+        version: '3.1',
+        source: 'nvd',
+        baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+        baseScore: 9.8,
+      },
+    ];
+    const doc = JSON.parse(
+      enrichStix(JSON.stringify(results), recBundle(), { recomputeCvss: true, asOf }),
+    ) as Doc;
+    const overrides = (requirementById(doc, 'CVE-2012-0158').statusOverrides as Doc[]) ?? [];
+    expect(overrides).toHaveLength(1);
+    expect(overrides[0]?.cvss).toMatchObject({
+      version: '3.1',
+      baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      computedScore: 9.8,
+    });
+    expect(validateResults(doc).valid).toBe(true);
+  });
+
   it('authors nothing unless recompute is opted in', () => {
     const doc = JSON.parse(enrichStix(recResults(), recBundle())) as Doc;
     for (const id of ['CVE-2012-0158', 'CVE-2009-4324', 'CVE-2013-0422']) {
