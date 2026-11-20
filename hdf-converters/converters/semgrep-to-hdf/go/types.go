@@ -1,6 +1,20 @@
 package semgrep
 
-import "encoding/json"
+import (
+	"encoding/json"
+	jsonv2 "encoding/json/v2"
+)
+
+// decodeJSON is encoding/json's decoding with one change: an object member must
+// match a field's name exactly, as the TypeScript converter reads it. v1 matches
+// names case-insensitively and the last match wins, so a "SOURCE-RULE-URL",
+// "Extra" or "Results" member would be read as, or overwrite, the canonical one.
+// DefaultOptionsV1 turns case-insensitive matching on, so the option that turns
+// it off must come after it. encoding/json/v2 requires the jsonv2 experiment,
+// which Go 1.27 enables by default.
+func decodeJSON(data []byte, v any) error {
+	return jsonv2.Unmarshal(data, v, json.DefaultOptionsV1(), jsonv2.MatchCaseInsensitiveNames(false))
+}
 
 // Report is the top-level `semgrep scan --json` output.
 type Report struct {
@@ -21,7 +35,7 @@ type Paths struct {
 func (p *Paths) UnmarshalJSON(data []byte) error {
 	type alias Paths
 	var v alias
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*p = Paths(v)
 		return nil
 	}
@@ -46,7 +60,7 @@ type Result struct {
 func (r *Result) UnmarshalJSON(data []byte) error {
 	type alias Result
 	var v alias
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*r = Result(v)
 		return nil
 	}
@@ -64,7 +78,7 @@ type Position struct {
 func (p *Position) UnmarshalJSON(data []byte) error {
 	type alias Position
 	var v alias
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*p = Position(v)
 		return nil
 	}
@@ -89,7 +103,7 @@ type Extra struct {
 func (e *Extra) UnmarshalJSON(data []byte) error {
 	type alias Extra
 	var v alias
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*e = Extra(v)
 		return nil
 	}
@@ -126,7 +140,7 @@ type Metadata struct {
 func (m *Metadata) UnmarshalJSON(data []byte) error {
 	type alias Metadata
 	var v alias
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*m = Metadata(v)
 		return nil
 	}
@@ -156,7 +170,7 @@ type StringOrSlice []string
 // normalizeToArray filter.
 func (s *StringOrSlice) UnmarshalJSON(data []byte) error {
 	var single string
-	if err := json.Unmarshal(data, &single); err == nil {
+	if err := decodeJSON(data, &single); err == nil {
 		if single == "" {
 			*s = nil
 		} else {
@@ -165,11 +179,11 @@ func (s *StringOrSlice) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	var raw []json.RawMessage
-	if err := json.Unmarshal(data, &raw); err == nil {
+	if err := decodeJSON(data, &raw); err == nil {
 		out := make([]string, 0, len(raw))
 		for _, entry := range raw {
 			var str string
-			if json.Unmarshal(entry, &str) == nil {
+			if decodeJSON(entry, &str) == nil {
 				out = append(out, str)
 			}
 		}
@@ -192,7 +206,7 @@ type LenientString string
 // UnmarshalJSON implements json.Unmarshaler.
 func (s *LenientString) UnmarshalJSON(data []byte) error {
 	var v string
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*s = LenientString(v)
 		return nil
 	}
@@ -206,7 +220,7 @@ type LenientInt int
 // UnmarshalJSON implements json.Unmarshaler.
 func (i *LenientInt) UnmarshalJSON(data []byte) error {
 	var v int
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*i = LenientInt(v)
 		return nil
 	}
@@ -220,7 +234,7 @@ type LenientMap map[string]any
 // UnmarshalJSON implements json.Unmarshaler.
 func (m *LenientMap) UnmarshalJSON(data []byte) error {
 	var v map[string]any
-	if err := json.Unmarshal(data, &v); err == nil {
+	if err := decodeJSON(data, &v); err == nil {
 		*m = v
 		return nil
 	}

@@ -538,14 +538,14 @@ func parseReport(input []byte) (report *Report, isSarif bool, err error) {
 	// arrays is rejected as "not semgrep" — matching the TypeScript guard and
 	// this converter's own fingerprint, which score the same bytes zero.
 	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(input, &probe); err != nil {
+	if err := decodeJSON(input, &probe); err != nil {
 		return nil, false, fmt.Errorf("semgrep: failed to parse report: %w", err)
 	}
 	if !jsonValueHasPrefix(probe["results"], '[') || !jsonValueHasPrefix(probe["errors"], '[') {
 		return nil, false, fmt.Errorf("semgrep: input does not look like a Semgrep report")
 	}
 	var r Report
-	if err := json.Unmarshal(input, &r); err != nil {
+	if err := decodeJSON(input, &r); err != nil {
 		return nil, false, fmt.Errorf("semgrep: failed to parse report: %w", err)
 	}
 	return &r, false, nil

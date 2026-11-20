@@ -37,11 +37,15 @@ runConverterContractTests({
 describe('semgrep to HDF converter', () => {
   // Rule authors publish the ported rule's link under two independent keys:
   // source_rule_url (the Go unsafe rule, linking gosec) and source-rule-url (the
-  // Bandit-derived Python rule). The case file is shared with the Go suite.
+  // Bandit-derived Python rule). The case file is shared with the Go suite; an input is
+  // the report text itself, so a duplicate member reaches the converter as written.
   const validateSource = loadSchemaValidator(join(FIXTURES_DIR, 'semgrep_output_v1-1.183.0.schema.json'));
-  const sourceReferenceCases = JSON.parse(
-    readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8'),
-  ) as { name: string; input: Record<string, unknown>; urls: string[] }[];
+  const caseTable = JSON.parse(readFileSync(join(FIXTURES_DIR, 'source-rule-url-cases.json'), 'utf-8')) as {
+    expected: { status: string; impact: number; severity: string; line: number; filesScanned: number };
+    cases: { name: string; input: string; urls: string[]; tags?: Record<string, unknown> }[];
+  };
+  // The Go suite rejects a case member it does not read; the same set is closed here.
+  const CASE_ANNOTATIONS = new Set(['name', 'input', 'urls', 'tags']);
 
   it('preserves published source rule references', async () => {
     const hdf = await convert('source-rule-urls.json');
@@ -61,13 +65,37 @@ describe('semgrep to HDF converter', () => {
     ]);
   });
 
-  it.each(sourceReferenceCases)('maps source references: $name', async ({ name, input, urls }) => {
-    assertSchemaValid(validateSource, name, input);
-    const hdf = JSON.parse(await convertSemgrepToHdf(JSON.stringify(input))) as HDFResults;
+  it.each(caseTable.cases)('maps source references: $name', async (c) => {
+    expect(Object.keys(c).filter((key) => !CASE_ANNOTATIONS.has(key))).toEqual([]);
+    assertSchemaValid(validateSource, c.name, JSON.parse(c.input));
+    const hdf = JSON.parse(await convertSemgrepToHdf(c.input)) as HDFResults;
     expectValidResults(hdf);
-    const req = findReq(hdf, 'use-of-unsafe-block');
+    const req = findReq(hdf, 'use-of-unsafe-block')!;
     expect(req).toBeDefined();
-    expect(refUrls(req!)).toEqual(urls);
+    expect(refUrls(req)).toEqual(c.urls);
+    const want = caseTable.expected;
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe(want.status);
+    expect(req.impact).toBe(want.impact);
+    expect(req.severity).toBe(want.severity);
+    expect(req.sourceLocation?.line).toBe(want.line);
+    expect(findReq(hdf, 'semgrep-scan-coverage')?.tags?.filesScanned).toBe(want.filesScanned);
+    for (const [key, value] of Object.entries(c.tags ?? {})) {
+      if (value === null) expect(req.tags ?? {}).not.toHaveProperty(key);
+      else expect(req.tags?.[key]).toEqual(value);
+    }
+  });
+
+  // A container member that differs from its name only by case is not read.
+  it('does not read RESULTS as results', async () => {
+    const resultsOnly = '{"version":"1.183.0","RESULTS":[],"errors":[],"paths":{"scanned":["unsafe.go"]}}';
+    await expect(convertSemgrepToHdf(resultsOnly)).rejects.toThrow('does not look like a Semgrep report');
+  });
+
+  it('does not read paths.SCANNED as scanned', async () => {
+    const scannedOnly = '{"version":"1.183.0","results":[],"errors":[],"paths":{"SCANNED":["unsafe.go"]}}';
+    const hdf = JSON.parse(await convertSemgrepToHdf(scannedOnly)) as HDFResults;
+    expect(findReq(hdf, 'semgrep-scan-coverage')?.tags?.filesScanned).toBe(0);
   });
 
   it('rejects input that is not a Semgrep report', async () => {

@@ -59,10 +59,10 @@ Native Semgrep conversion reads the rule-author metadata keys `source-rule-url` 
 `source_rule_url` independently. Published rules use them to link to the rule they port
 or its documentation (for example gosec or Bandit); neither is a spelling of the other.
 Both contribute to requirement `refs` alongside the other reference fields: distinct URLs
-are kept, identical URLs appear once, and neither key masks the other. The TypeScript
-converter reads these two keys exactly; the Go converter's exact matching lands with its
-json/v2 decoding change. Empty, redacted or non-string values are filtered as the other
-reference fields are. `refs` carries the links, not the metadata keys they came from;
+are kept, identical URLs appear once, and neither key masks the other. Both converters
+match member names exactly, so a key that differs from these only by case is not read;
+the Go converter decodes native Semgrep output with `encoding/json/v2` to do so. Empty,
+redacted or non-string values are filtered as the other reference fields are. `refs` carries the links, not the metadata keys they came from;
 keep the original scanner output when that provenance is needed. A real Semgrep 1.183.0
 capture and a schema-confirmed case file under
 `hdf-converters/converters/semgrep-to-hdf/fixtures/` are read by both language suites.

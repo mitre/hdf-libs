@@ -53,8 +53,32 @@ results, errors and paths members unchanged, and replaces only that finding's
 `extra.metadata` to cover: each key alone, both keys with distinct and with
 duplicate URLs, no reference keys, empty, redacted, null, number, boolean, array
 and object values of either key alongside a valid value of the other, and
-unrecognized key punctuation. `name` and `urls` are test-vector annotations, not
-Semgrep fields. Both languages consume these same inputs.
+unrecognized key punctuation. Twelve more cases add members that differ from a
+canonical name only by case, alone, before and after the canonical member, at
+every level the converters decode (report RESULTS, finding EXTRA, envelope
+METADATA, the two reference keys, position LINE, paths SCANNED); one carries two
+exact `source_rule_url` members in its JSON text, and the last value is expected.
+Three cases ("case variants cannot overwrite canonical metadata", "case variants
+before canonical metadata", "case variants alone do not create metadata") go
+further: they replace the unsafe finding's whole `metadata` with an assembled
+object the capture never carried. Its members are `references` (the gosec URL),
+`source` and `asvs.control_url` (the Bandit URL from the capture's Python
+finding), `shortlink` (the gosec URL), `cwe`, `subcategory`, `technology`,
+`category` and `likelihood` (the capture's values), `owasp` (`A01:2017 -
+Injection`, from the Python finding), `vulnerability_class` (`Memory
+Corruption`), `bandit-code` (`B602`), and `confidence` and `impact` set to `HIGH`
+where the capture says `LOW`. The first two cases add an upper-case twin of every
+member with an empty-object value, after and before the canonical members; the
+third carries only the upper-case twins with those values and expects no tag
+from them. These values are assembled: `metadata` is raw JSON in the official
+schema, so the schema pass confirms only that a rule may carry such an object,
+nothing about the values.
+The file is an object: `$comment`, an `expected` block holding the finding and
+coverage values every case must preserve (status, impact, severity, line, files
+scanned), and `cases`. Each case's `input` is the report's JSON text as one string,
+handed to the converters unparsed so the duplicate member survives; `name`, `urls`,
+`tags` and `expected` are test annotations, not Semgrep fields. Both languages read
+this one file.
 
 ## `expected/`
 
@@ -81,5 +105,5 @@ The 1.183.0 output schema is vendored as `semgrep_output_v1-1.183.0.schema.json`
 and recorded in provenance.json. Both converter test suites validate the real
 capture and every adapted case against it: TypeScript with Ajv2020 and Go with
 santhosh-tekuri/jsonschema, each through its shared schema validator; metadata is
-raw JSON in the official schema. Validation passed for the real capture and all 20
-adapted cases on 2026-11-15 (Ajv2020) and 2026-11-18 (Go).
+raw JSON in the official schema. Validation passed for the real capture and all 35
+adapted cases on 2026-11-16 (Ajv2020) and 2026-11-18 (Go).
