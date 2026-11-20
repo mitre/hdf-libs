@@ -6,15 +6,15 @@ Written against the eMASS REST API specification **v3.22**, read from `docs/eMAS
 
 ## How to read this
 
-eMASS groups each entity's fields into `*RequiredFields`, `*ConditionalFields`, `*OptionalFields` and `*ReadOnlyFields` schemas. A write must satisfy the required group and whichever conditionals apply; read-only fields are returned but never sent.
+eMASS groups most entities' fields into `*RequiredFields`, `*ConditionalFields`, `*OptionalFields` and `*ReadOnlyFields` schemas, composed into the write body with `allOf`. A write must satisfy the required group and whichever conditionals apply; read-only fields are returned but never sent. POA&Ms, controls and the hardware and software baselines follow that pattern; artifacts follow it without a conditional group. **Test results and milestones have no group schemas at all** — their requirements come from `[Required]` markers inside `TestResultsGet` and `MilestonesGet`, and from each write body's own `required` list, which is where the Required column for those two entities comes from.
 
-One property of the API shapes everything here: **eMASS reports when a record was created and never when it last changed.** `createdDate` exists on POA&M items and milestones; no `lastUpdate`, `lastModified`, `updatedDate` or `modifiedDate` appears anywhere in the specification, and `PoamReadOnlyFields` carries no timestamp at all. A client therefore cannot tell from eMASS alone whether a record has been edited since it was read. Conflict detection is layered to work without one.
+One property of the API shapes everything here: **eMASS reports when a record was created and never when it last changed.** `createdDate` exists on POA&M items and milestones; no `lastUpdate`, `lastModified`, `updatedDate` or `modifiedDate` appears anywhere in the specification. A client therefore cannot tell from eMASS alone whether a record has been edited since it was read. Conflict detection is layered to work without one.
 
 ## Identity: the join key
 
 | HDF | eMASS | Notes |
 |-----|-------|-------|
-| `hdf-system.identifier` | `systemId` | The join. Documented in HDF as "System identifier from an authoritative source. Example: eMASS system ID". |
+| `hdf-system.identifier` | `systemId` | The join. Documented in HDF as "System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package ID." |
 | `hdf-system.identifierScheme` | — | Must be `https://emass.mil` for the identifier to be read as an eMASS system id. |
 | `components[].externalIds.emass` | `systemId` | Per-component alternative, written by `hdf label set --external-id emass=<id>`. |
 
@@ -29,13 +29,13 @@ eMASS schema `TestResultsGet`. Write is a batch `POST` to `/api/systems/{systemI
 | HDF | eMASS field | Required | Notes |
 |-----|-------------|----------|-------|
 | `hdf-system.identifier` | `systemId` | Required | |
-| `requirements[].tags.nist` | `control` | Read-only | eMASS derives it; sent implicitly via the assessment procedure. |
-| `requirements[].tags.cci` | `cci` | Required | HDF carries CCI as a tag array, e.g. `["CCI-000068"]`. |
+| `baselines[].requirements[].tags.nist` | `control` | Read-only | eMASS derives it; sent implicitly via the assessment procedure. |
+| — | `cci` | Read-only on write | `TestResultsRequestPostBody` carries only `testedBy`, `testDate`, `description`, `complianceStatus` and `assessmentProcedure`. eMASS derives `cci` from the assessment procedure, so HDF's `baselines[].requirements[].tags.cci` cannot reach a test result even though it holds the data. |
 | — | `assessmentProcedure` | Required | **Operator input.** HDF names the requirement by its own id and by NIST control and CCI, not by an eMASS assessment procedure. |
-| — | `testedBy` | Required | **Operator input.** Format is "Last Name, First Name"; a scanner result has no human tester. |
-| `requirements[].results[].startTime` | `testDate` | Required | Unix time; HDF is RFC3339 and converts. |
-| `requirements[].results[].codeDesc` | `description` | Required | 4000-character limit; HDF prose is unbounded and must be truncated. |
-| `requirements[].effectiveStatus` | `complianceStatus` | Required | Mapped, see below. |
+| `runner.operator.identifier` | `testedBy` | Required | Partly derivable. `runner.operator` is "the identity of the person or system responsible for executing the test" — a human auditor for a manual assessment, a tool or CI system otherwise. eMASS wants "Last Name, First Name", so an automated run still needs **operator input** to name a responsible person. |
+| `baselines[].requirements[].results[].startTime` | `testDate` | Required | Unix time; HDF is RFC3339 and converts. |
+| `baselines[].requirements[].results[].codeDesc` | `description` | Required | 4000-character limit; HDF prose is unbounded and must be truncated. |
+| `baselines[].requirements[].effectiveStatus` | `complianceStatus` | Required | Mapped, see below. |
 
 ### Status mapping
 
@@ -51,6 +51,10 @@ eMASS `complianceStatus` admits exactly `Compliant`, `Non-Compliant` and `Not Ap
 
 `notReviewed` and `error` have nowhere to go. Reporting either as `Non-Compliant` would assert a failing assessment that did not happen, and as `Not Applicable` would assert a scope decision nobody made. Requirements in those states are therefore **not pushed**, and the receipt records them as skipped with the reason.
 
+Skipping is not the end of it. A control's own `complianceStatus` is `[Read-only]` — eMASS derives it from the test results attached to the control — and the only `Undetermined` enums in the specification are `slcmFrequency` and `slcmMethod`, which concern monitoring cadence. There is therefore **no way to tell eMASS that a prior answer is no longer backed by a scan.** If an earlier push recorded `Compliant` and the current package reports `notReviewed`, eMASS keeps showing `Compliant`.
+
+A push must not leave that silent. It reports the staleness on its own output — named in the dry-run diff, recorded in the receipt under its own skip reason, and written to stderr on a committing run so a CI log carries it even when the receipt is discarded. Nothing is written to eMASS, because eMASS has no field that could hold it; closing the gap on the eMASS side would mean deleting the prior result, which a push does not do.
+
 ## POA&M items
 
 eMASS schemas `PoamRequiredFields`, `PoamConditionalFields`, `PoamOptionalFields`, `PoamReadOnlyFields`. HDF's counterpart is a `Standalone_Override` of POA&M type in an amendments document.
@@ -59,43 +63,71 @@ eMASS schemas `PoamRequiredFields`, `PoamConditionalFields`, `PoamOptionalFields
 
 | HDF | eMASS field | Group | Notes |
 |-----|-------------|-------|-------|
-| `statusOverrides[].status` | `status` | Required | eMASS admits `Ongoing`, `Risk Accepted`, `Completed`, `Not Applicable`, `Archived`. |
-| `statusOverrides[].reason` | `vulnerabilityDescription` | Required | 2000-character limit. |
-| `tool.name` + `statusOverrides[].requirementId` | `sourceIdentifyingVulnerability` | Required | 2000-character limit. |
+| derived — see below | `status` | Required | eMASS admits `Ongoing`, `Risk Accepted`, `Completed`, `Not Applicable`, `Archived`. **Not** `overrides[].status`, which is a `Result_Status` (`passed`/`failed`/…) describing the requirement's posture, not the remediation's lifecycle. |
+| `overrides[].reason` | `vulnerabilityDescription` | Required | 2000-character limit. |
+| `tool.name` + `overrides[].requirementId` | `sourceIdentifyingVulnerability` | Required | 2000-character limit. |
 | — | `pocOrganization` | Required | **Operator input.** |
 | — | `resources` | Required | **Operator input.** |
 | — | `identifiedInCFOAuditOrOtherReview` | Required | Defaults to `false` when unspecified. |
-| `statusOverrides[].appliedBy.identifier` | `pocEmail` | Conditional | Only when the identity's `type` is `email`. |
+| `overrides[].appliedBy.identifier` | `pocEmail` | Conditional | eMASS requires it once `pocFirstName`, `pocLastName` or `pocPhoneNumber` has data — so supplying any of those operator-input fields makes this required. Usable only when the identity's `type` is `email`. |
 | — | `pocFirstName`, `pocLastName`, `pocPhoneNumber` | Conditional | **Operator input.** HDF's `Identity` is `{identifier, type, description}` and carries no name parts or phone. |
-| `statusOverrides[].milestones[].estimatedCompletion` | `scheduledCompletionDate` | Conditional | Required for ongoing and completed items. |
-| `statusOverrides[].milestones[].completedAt` | `completionDate` | Conditional | Required for completed items. |
-| `statusOverrides[].justification` | `comments` | Conditional | Required for completed and risk-accepted items. |
+| `overrides[].milestones[].estimatedCompletion` | `scheduledCompletionDate` | Conditional | Required for ongoing and completed items. |
+| `overrides[].milestones[].completedAt` | `completionDate` | Conditional | Required for completed items. |
+| — | `comments` | Conditional | **Operator input.** Required for completed and risk-accepted items. `overrides[].justification` is a VEX controlled-vocabulary enum (`component_not_present`, `vulnerable_code_not_in_execute_path`, …), not prose — writing it here produces an unreadable comment. `reason` is the free-text field and is already consumed by `vulnerabilityDescription`. |
 | — | the resourcing block | Conditional | **Operator input**, see below. |
-| `statusOverrides[].requirementId` | `externalUid` | Optional | Gives eMASS a handle on the HDF requirement. |
-| `requirements[].tags.nist` | `controlAcronym` | Optional | |
-| `statusOverrides[].cvss` | `rawSeverity` | Optional | Derived from the CVSS base score. |
-| `statusOverrides[].impact` | `impact` | Optional | eMASS uses a Very Low to Very High band, HDF a 0.0–1.0 score. |
+| `overrides[].requirementId` | `externalUid` | Optional | Gives eMASS a handle on the HDF requirement. |
+| `baselines[].requirements[].tags.nist` | `controlAcronym` | Optional | |
+| `baselines[].requirements[].severity` | `severity` | Conditional | Required for approved items. HDF's five-band `critical`/`high`/`medium`/`low`/`informational` maps onto eMASS's `Very High`/`High`/`Moderate`/`Low`/`Very Low`. |
+| `overrides[].cvss.baseScore` | `rawSeverity` | Optional | Derived from the CVSS base score. |
+| `overrides[].impact.value` | `impact` | Optional | eMASS uses a Very Low to Very High band, HDF a 0.0–1.0 score. |
+
+### Deriving the POA&M status
+
+eMASS's `status` is a remediation lifecycle; HDF has no single field for it. It is derived:
+
+| eMASS `status` | derived from |
+|----------------|--------------|
+| `Risk Accepted` | `overrides[].type` is `riskAdjustment` or `operationalRequirement` |
+| `Not Applicable` | `overrides[].type` is `falsePositive`, or the override sets `notApplicable` |
+| `Completed` | every entry in `overrides[].milestones[]` has `status: completed` |
+| `Ongoing` | any milestone is `pending` or `inProgress` |
+| `Archived` | no HDF source — eMASS-side lifecycle state only |
+
+`overrides[].type` admits `waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment` and `operationalRequirement`; only some of those describe a remediation at all, so a push writes POA&Ms for the subset that does.
+
+### Write rules that constrain the order
+
+eMASS enforces business rules a push must honor, not just field requirements:
+
+- A `Completed` or `Ongoing` POA&M **cannot be saved without milestones**, and `PoamRequestPostBody` composes `MilestonesRequiredPost` — so milestones go in the POA&M create, not only through the milestones endpoint.
+- A `Risk Accepted` POA&M **cannot have** a `scheduledCompletionDate` or milestones.
+- An `Approved` POA&M cannot have its `scheduledCompletionDate` updated; an archived one cannot be updated at all; and items in an active package are locked.
+- A `PUT` additionally requires `poamId` and `displayPoamId`; a milestone `PUT` requires `milestoneId`. Those come from the previous push's receipt, which is why correlation matters.
+
+### Instance-dependent requirements
+
+Some eMASS instances require the Risk Analysis fields on a POA&M write: `severity`, `relevanceOfThreat`, `likelihood`, `impact`, `residualRiskLevel` and `mitigations`. Only `severity` and `impact` have an HDF source; the rest are **operator input** where an instance demands them. `identifiedInCFOAuditOrOtherReview` is likewise instance-dependent — required for VA, optional for Army and USCG — and absent from `PoamRequestPostBody.required`.
 
 ### The resourcing block
 
-`PoamConditionalFields` includes a funding model: `personnelResourcesFundedBaseHours`, `personnelResourcesCostCode`, `personnelResourcesUnfundedBaseHours`, `personnelResourcesNonfundingObstacle`, `personnelResourcesNonfundingObstacleOtherReason`, and four `nonPersonnelResources*` equivalents. The specification states that at least one must be completed.
+`PoamConditionalFields` includes a funding model: `personnelResourcesFundedBaseHours`, `personnelResourcesCostCode`, `personnelResourcesUnfundedBaseHours`, `personnelResourcesNonfundingObstacle`, `personnelResourcesNonfundingObstacleOtherReason`, and five `nonPersonnelResources*` equivalents (`FundedAmount`, `CostCode`, `UnfundedAmount`, `NonfundingObstacle`, `NonfundingObstacleOtherReason`). The specification states that at least one must be completed.
 
 HDF models none of it. It describes what an assessment found, not who owns remediating it or what that costs. All of these are **operator input**.
 
 ## Milestones
 
-eMASS schema `MilestonesGet`, under `/api/systems/{systemId}/poam/{poamId}/milestones`.
+eMASS schema `MilestonesGet`, under `/api/systems/{systemId}/poams/{poamId}/milestones`.
 
 **Natural key:** parent POA&M plus description. **Write:** `POST` to create, `PUT` to update.
 
 | HDF | eMASS field | Required | Notes |
 |-----|-------------|----------|-------|
-| `statusOverrides[].milestones[].description` | `description` | Required | |
-| `statusOverrides[].milestones[].estimatedCompletion` | `scheduledCompletionDate` | Required | Unix time. |
-| `statusOverrides[].milestones[].status` | — | — | **No counterpart.** See below. |
-| `statusOverrides[].milestones[].completedAt` | — | — | No counterpart on the milestone itself; reaches eMASS only as the parent POA&M's `completionDate`. |
-| `statusOverrides[].milestones[].completedBy` | — | — | No counterpart. eMASS has `createdBy`, read-only, naming whoever created the milestone there. |
-| `statusOverrides[].milestones[].title` | — | — | No counterpart; eMASS milestones have a description only. |
+| `overrides[].milestones[].description` | `description` | Required | |
+| `overrides[].milestones[].estimatedCompletion` | `scheduledCompletionDate` | Required | Unix time. |
+| `overrides[].milestones[].status` | — | — | **No counterpart.** See below. |
+| `overrides[].milestones[].completedAt` | — | — | No counterpart on the milestone itself; reaches eMASS only as the parent POA&M's `completionDate`. |
+| `overrides[].milestones[].completedBy` | — | — | No counterpart. eMASS has `createdBy`, read-only, naming whoever created the milestone there. |
+| `overrides[].milestones[].title` | — | — | No counterpart; eMASS milestones have a description only. |
 
 An eMASS milestone has no progress status. Its `reviewStatus` is read-only and belongs to the approval chain, not to the milestone's own completion. So HDF's `pending`/`inProgress`/`completed` does not survive the push, and a milestone's completion state is visible in eMASS only indirectly, through the parent POA&M.
 
@@ -105,19 +137,21 @@ eMASS schemas `ArtifactsRequiredFields`, `ArtifactsOptionalFields`, `ArtifactsRe
 
 **Natural key:** `filename`. An upload whose filename matches an existing artifact updates it; an unmatched filename creates a new one, which makes this the one entity with genuine upsert semantics. **Write:** `POST` to add, `PUT` to update.
 
-The upload is `multipart/form-data` carrying a zip archive, and `filename` names a file *inside* that archive — the specification says it "should match exactly one file within the provided zip file". So pushing artifacts means assembling a zip of the package's external evidence and naming each member, not posting files individually.
+The upload is `multipart/form-data`, and the `isBulk` query parameter decides its shape. It **defaults to `false`**, where "an individual artifact file is expected"; set to `true`, "a .zip file is expected which can contain multiple artifact files". So a push may post files one at a time or batch them into an archive, and the choice is ours.
+
+Note that `filename` means two different things. In the `POST` body it is the binary file being uploaded. On the metadata side — `ArtifactsRequiredFields` — it is the name used to match an existing artifact, and that is where the "should match exactly one file within the provided zip file" wording belongs.
 
 | HDF | eMASS field | Required | Notes |
 |-----|-------------|----------|-------|
 | `externalEvidence[].uri` basename | `filename` | Required | The natural key. |
-| — | `isTemplate` | Required | Always `false` for pushed evidence. |
-| — | `type` | Required | **Operator input.** "Artifact type options", with no enum in the specification; valid values are instance-defined. |
-| — | `category` | Required | **Operator input.** Same, "Artifact category options". |
-| `externalEvidence[].sourceName` | `name` | Optional | 100-character limit. |
+| — | `isTemplate` | Required | `false`. The specification sets this as a create-time default. |
+| — | `type` | Required | Defaults to `Other` per the specification's documented create-time defaults. Overridable as **operator input**; the JSON schema carries no `enum`, so the accepted values are instance-defined. |
+| — | `category` | Required | Defaults to `Evidence`, same basis. |
+| — | `name` | Optional | 100-character limit. **Operator input**: `External_Evidence_Reference` has no display name; `sourceName` belongs to `External_Reference`, a different type. |
 | `externalEvidence[].description` | `description` | Optional | 10,000-character limit. |
-| `requirements[].tags.nist` | `controls` | Optional | |
-| `signature.signedAt` | `signedDate` | Optional | Unix time, when the package is signed. |
-| `externalEvidence[].integrity` | — | — | **No counterpart.** eMASS computes `fileSize` and `mimeContentType` itself and stores no caller-supplied digest. |
+| `baselines[].requirements[].tags.nist` | `controls` | Optional | |
+| `signature.created` | `signedDate` | Optional | Unix time, when the package is signed. |
+| `externalEvidence[].checksum` | — | — | **No counterpart.** eMASS computes `fileSize` and `mimeContentType` itself and stores no caller-supplied digest. |
 
 ## HDF with no eMASS counterpart
 
@@ -130,9 +164,29 @@ These are carried by an evidence package and have nowhere to go. A push records 
 | `signature` | Only the artifact `signedDate` survives; the signature itself has no field. |
 | `contents[].checksum` | Per-document checksums have no eMASS equivalent. |
 | `planRef` | eMASS has no assessment-plan reference on a system. |
-| `milestones[].status`, `.completedBy`, `.title` | As above: eMASS milestones carry description and schedule only. |
+| `packageId`, `preparedAt`, `preparedBy` | Package-level provenance. eMASS records who submitted through its own workflow, not as submitted metadata. |
+| `systemRef` | Superseded by `systemId` as the join; the HDF reference itself has no field. |
+| `generator` | eMASS does not record which converter produced a submission. |
+| `contents[].type`, `.uri`, `.componentRef`, `.checksum` | Document references. eMASS holds artifacts, not references to HDF documents. |
+| `externalEvidence[].format`, `.mediaType`, `.formatVersion` | eMASS derives `mimeContentType` from the file extension itself. |
+| `externalEvidence[].metadata` (`recordCount`, `timeRange`, `collector`) | Telemetry-corpus description with no eMASS counterpart. |
+| `tool`, `runner`, `statistics`, `derivation` | Scan provenance. Only `tool.name` reaches eMASS, inside `sourceIdentifyingVulnerability`, and only `runner.operator` inside `testedBy`. |
+| `baselines[].requirements[].cvss`, `.cwe`, `.epss`, `.kev` | Vulnerability enrichment. eMASS carries only a single `rawSeverity` string. |
+| `baselines[].requirements[].disposition`, `.effectiveImpact`, `.effectiveChecksum` | Override-resolution results, computed HDF-side and not modeled by eMASS. |
+| `baselines[].requirements[].descriptions`, `.evidence` | Only a test result's single `description` reaches eMASS, truncated to 4000 characters. |
+| `baselines[].requirements[].results[].message`, `.backtrace`, `.resource`, `.runTime`, `.rawSourceRecord` | Per-result detail. eMASS keeps one prose `description` per result. |
+| `components[]` | See below. |
+| `overrides[].milestones[].status`, `.completedBy`, `.title` | As above: eMASS milestones carry description and schedule only. |
 | `effectiveStatus` of `notReviewed` or `error` | Outside eMASS's three-value compliance vocabulary. |
-| `requirements[].results[]` beyond the first | eMASS records one test result per control and assessment procedure; a requirement with several results must be rolled up, and the roll-up is lossy. |
+| `baselines[].requirements[].results[]` beyond the first | A test result carries one `description` and one `complianceStatus`, so a requirement with several results must be rolled up and the roll-up is lossy. Whether eMASS keeps one result per control and assessment procedure or accumulates them is **not stated in the specification**, and a repeated write's behavior is undocumented — it has to be established against a live instance. |
+
+## System inventory
+
+HDF's `components[]` describes the hosts, images, cloud accounts and other targets an assessment ran against. eMASS has two surfaces that cover the same ground — `/api/systems/{systemId}/hw-baseline` and `/sw-baseline`, each with full `POST`/`PUT`/`DELETE` and its own required, conditional, optional and read-only groups — plus `PoamOptionalFields.devicesAffected`, "list any affected devices by hostname".
+
+**Mapping the inventory is out of scope for this crosswalk.** Pushing an evidence package means pushing what the assessment found, and a hardware or software baseline is a statement about what the system *is*, maintained on its own cadence. Writing it from a scan's incidental component list would assert an inventory nobody curated. The one exception worth taking is `devicesAffected`, which is derivable from the components a requirement's results reference.
+
+Recorded here rather than omitted, because a reader checking this page against eMASS would otherwise find two write surfaces unaccounted for.
 
 ## Operator input
 
@@ -143,7 +197,10 @@ Fields eMASS requires, or conditionally requires, that an HDF evidence package c
 | eMASS field | Entity | Why HDF cannot supply it |
 |-------------|--------|---------------------------|
 | `assessmentProcedure` | test result | HDF identifies requirements by its own id, NIST control and CCI, not by eMASS procedure. |
-| `testedBy` | test result | A scanner result has no human tester. |
+| `testedBy` | test result | Partly derivable from `runner.operator`; an automated run still needs a responsible person named. |
+| `name` | artifact | `External_Evidence_Reference` carries no display name. |
+| `comments` | POA&M | The only free-text HDF field, `reason`, is already consumed by `vulnerabilityDescription`. |
+| `relevanceOfThreat`, `likelihood`, `residualRiskLevel`, `mitigations` | POA&M | Risk-analysis fields some instances require; HDF models none of them. |
 | `pocOrganization` | POA&M | HDF's `Identity` has no organization. |
 | `resources` | POA&M | Programmatic, not assessment data. |
 | `pocFirstName`, `pocLastName`, `pocPhoneNumber` | POA&M | HDF's `Identity` is a single identifier string with a type. |
