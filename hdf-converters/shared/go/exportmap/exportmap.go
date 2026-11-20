@@ -224,7 +224,7 @@ func EventID(component map[string]interface{}, baselineName, controlID string) s
 	return strings.Join([]string{comp, baselineName, controlID}, "|")
 }
 
-// --- lossless hdf.* block ---
+// --- legacy hdf.* projection ---
 
 // BuildHDFBlock builds the hdf.* block from a raw verdict and the two flags.
 //

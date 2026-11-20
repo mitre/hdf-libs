@@ -1,0 +1,509 @@
+{
+  "$comment": "One legacy exec-json document and the baseline-level shape both normalizers must produce from it. Read by test/normalize.test.ts and go/normalize_test.go so the two implementations are asserted against ONE definition; they had diverged badly here, each failing differently, which single-language tests could not catch. Only the fields whose shape was wrong are pinned: groups, supports, integrity, descriptions and the legacy attributes' resting place. refsById pins that a reference carrying nothing is dropped rather than emitted empty \u2014 real InSpec writes {\"ref\": []}, and the declared Reference requires one of ref/url/uri. sourceLocationById pins the projection of a closed {ref, line} whose legacy members are both nullable.",
+  "legacy": {
+    "statistics": {
+      "duration": 1.5,
+      "controls": {
+        "passed": {
+          "total": 2
+        }
+      }
+    },
+    "profiles": [
+      {
+        "name": "nginx-baseline",
+        "title": "NGINX Baseline",
+        "version": "2.0.0",
+        "sha256": "abc123",
+        "supports": [
+          {
+            "platform": "unix",
+            "platform-family": "linux",
+            "platform-name": "ubuntu",
+            "release": "22.04"
+          }
+        ],
+        "attributes": [
+          {
+            "name": "max_age",
+            "options": {
+              "type": "numeric",
+              "default": 90
+            }
+          }
+        ],
+        "groups": [
+          {
+            "id": "controls/V-1.rb",
+            "title": "Group One",
+            "controls": [
+              "V-1",
+              "V-2"
+            ]
+          }
+        ],
+        "controls": [
+          {
+            "id": "V-1",
+            "title": "t1",
+            "impact": 0.5,
+            "tags": {},
+            "desc": "the requirement",
+            "descriptions": [
+              {
+                "label": "check",
+                "data": "run this"
+              },
+              {
+                "label": "fix",
+                "data": "do that"
+              }
+            ],
+            "source_location": {
+              "ref": "controls/V-1.rb",
+              "line": 1
+            },
+            "results": [
+              {
+                "status": "passed",
+                "code_desc": "c",
+                "start_time": "2026-01-02T03:04:05Z"
+              }
+            ],
+            "refs": [
+              {
+                "ref": []
+              },
+              {
+                "ref": "NIST SP 800-53"
+              },
+              {}
+            ]
+          },
+          {
+            "id": "V-2",
+            "title": "t2",
+            "impact": 0.5,
+            "tags": {},
+            "results": [
+              {
+                "status": "passed",
+                "code_desc": "c",
+                "start_time": "2026-01-02T03:04:05Z"
+              }
+            ],
+            "source_location": {
+              "ref": null,
+              "line": null
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "statistics": {
+      "duration": 1.5
+    },
+    "groups": [
+      {
+        "id": "controls/V-1.rb",
+        "title": "Group One",
+        "requirements": [
+          "V-1",
+          "V-2"
+        ]
+      }
+    ],
+    "supports": [
+      {
+        "platform": "unix",
+        "platformFamily": "linux",
+        "platformName": "ubuntu",
+        "release": "22.04"
+      }
+    ],
+    "integrity": {
+      "algorithm": "sha256",
+      "checksum": "abc123"
+    },
+    "legacyAttributes": [
+      {
+        "name": "max_age",
+        "options": {
+          "type": "numeric",
+          "default": 90
+        }
+      }
+    ],
+    "descriptionsById": {
+      "V-1": [
+        {
+          "label": "default",
+          "data": "the requirement"
+        },
+        {
+          "label": "check",
+          "data": "run this"
+        },
+        {
+          "label": "fix",
+          "data": "do that"
+        }
+      ],
+      "V-2": [
+        {
+          "label": "default",
+          "data": ""
+        }
+      ]
+    },
+    "refsById": {
+      "V-1": [
+        {
+          "ref": "NIST SP 800-53"
+        }
+      ],
+      "V-2": []
+    },
+    "sourceLocationById": {
+      "V-1": {
+        "ref": "controls/V-1.rb",
+        "line": 1
+      },
+      "V-2": {}
+    }
+  },
+  "refCases": {
+    "$comment": "Reference normalization, read by both languages. The declared Reference requires one of ref/url/uri, so an entry carrying nothing must be dropped rather than emitted empty. `refs` is spliced into a control verbatim and `want` is the normalized array. These lived inline in the Go suite and asserted only a count, with no TypeScript twin at all \u2014 which is how the empty-ref defect reached one language and not the other.",
+    "cases": [
+      {
+        "name": "a string ref becomes a ref object",
+        "refs": [
+          "NIST SP 800-53"
+        ],
+        "want": [
+          {
+            "ref": "NIST SP 800-53"
+          }
+        ]
+      },
+      {
+        "name": "an empty string carries nothing",
+        "refs": [
+          ""
+        ],
+        "want": []
+      },
+      {
+        "name": "a null entry carries nothing",
+        "refs": [
+          null
+        ],
+        "want": []
+      },
+      {
+        "name": "an array entry carries nothing",
+        "refs": [
+          []
+        ],
+        "want": []
+      },
+      {
+        "name": "an empty object carries nothing",
+        "refs": [
+          {}
+        ],
+        "want": []
+      },
+      {
+        "name": "an empty ref string carries nothing",
+        "refs": [
+          {
+            "ref": ""
+          }
+        ],
+        "want": []
+      },
+      {
+        "name": "an empty ref array carries nothing",
+        "refs": [
+          {
+            "ref": []
+          }
+        ],
+        "want": []
+      },
+      {
+        "name": "a ref array holding no objects carries nothing",
+        "refs": [
+          {
+            "ref": [
+              7,
+              null,
+              []
+            ]
+          }
+        ],
+        "want": []
+      },
+      {
+        "name": "a populated ref array is kept",
+        "refs": [
+          {
+            "ref": [
+              {
+                "title": "t"
+              }
+            ]
+          }
+        ],
+        "want": [
+          {
+            "ref": [
+              {
+                "title": "t"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "a ref array keeps only its object members",
+        "refs": [
+          {
+            "ref": [
+              {
+                "title": "t"
+              },
+              7
+            ]
+          }
+        ],
+        "want": [
+          {
+            "ref": [
+              {
+                "title": "t"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "a url-only ref is kept",
+        "refs": [
+          {
+            "url": "https://example.test/a"
+          }
+        ],
+        "want": [
+          {
+            "url": "https://example.test/a"
+          }
+        ]
+      },
+      {
+        "name": "a uri-only ref is kept",
+        "refs": [
+          {
+            "uri": "urn:example:x"
+          }
+        ],
+        "want": [
+          {
+            "uri": "urn:example:x"
+          }
+        ]
+      },
+      {
+        "name": "an empty url and uri carry nothing",
+        "refs": [
+          {
+            "url": "",
+            "uri": ""
+          }
+        ],
+        "want": []
+      },
+      {
+        "name": "ref, url and uri together are all kept",
+        "refs": [
+          {
+            "ref": "r",
+            "url": "https://example.test/u",
+            "uri": "urn:example:u"
+          }
+        ],
+        "want": [
+          {
+            "ref": "r",
+            "url": "https://example.test/u",
+            "uri": "urn:example:u"
+          }
+        ]
+      },
+      {
+        "name": "the empty entries are dropped and the rest kept",
+        "refs": [
+          {
+            "ref": []
+          },
+          {
+            "ref": "keep"
+          },
+          {}
+        ],
+        "want": [
+          {
+            "ref": "keep"
+          }
+        ]
+      }
+    ]
+  },
+  "malformed": {
+    "$comment": "Adversarial input, not a captured document: normalizeToV2/ToV2 accept arbitrary JSON and nothing schema-validates the input first, so every guard below is reachable in production. Both languages must drop the same things \u2014 a guard that silently keeps garbage in one language is the same class of divergence as the group and supports defects above.",
+    "legacy": {
+      "statistics": {
+        "duration": "1.5"
+      },
+      "profiles": [
+        {
+          "name": "p",
+          "groups": [
+            "not an object",
+            null,
+            [],
+            {
+              "title": "a group with no id"
+            },
+            {
+              "id": "g2",
+              "controls": "not an array"
+            },
+            {
+              "id": "g3",
+              "controls": [
+                "V-1",
+                7,
+                null
+              ]
+            }
+          ],
+          "supports": [
+            "not an object",
+            null,
+            {},
+            {
+              "platform": ""
+            },
+            {
+              "release": "9"
+            }
+          ],
+          "controls": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "desc": "prose",
+              "descriptions": [
+                "not an object",
+                null,
+                [],
+                {
+                  "data": "no label"
+                },
+                {
+                  "label": "",
+                  "data": "an empty label"
+                },
+                {
+                  "label": "check",
+                  "data": 7
+                }
+              ],
+              "results": []
+            },
+            {
+              "id": "V-2",
+              "impact": 0.5,
+              "tags": {},
+              "source_location": "not an object",
+              "sourceLocation": {
+                "ref": "controls/V-2.rb",
+                "line": 3
+              },
+              "results": []
+            },
+            {
+              "id": "V-3",
+              "impact": 0.5,
+              "tags": {},
+              "source_location": [],
+              "results": []
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "statistics": {},
+      "groups": [
+        {
+          "id": "",
+          "title": "a group with no id",
+          "requirements": []
+        },
+        {
+          "id": "g2",
+          "requirements": []
+        },
+        {
+          "id": "g3",
+          "requirements": [
+            "V-1"
+          ]
+        }
+      ],
+      "supports": [
+        {
+          "release": "9"
+        }
+      ],
+      "descriptionsById": {
+        "V-1": [
+          {
+            "label": "default",
+            "data": "prose"
+          },
+          {
+            "label": "check",
+            "data": ""
+          }
+        ],
+        "V-2": [
+          {
+            "label": "default",
+            "data": ""
+          }
+        ],
+        "V-3": [
+          {
+            "label": "default",
+            "data": ""
+          }
+        ]
+      },
+      "sourceLocationById": {
+        "V-1": null,
+        "V-2": {
+          "ref": "controls/V-2.rb",
+          "line": 3
+        },
+        "V-3": null
+      }
+    }
+  }
+}
