@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/control-mapping-candidates/v1/index.json",
+  "title": "Scanner-to-NIST candidate corpus",
+  "description": "A ranked review queue produced outside this repo: for each scanner check, the NIST SP 800-53 controls a scoring harness proposes, with the score that ordered them. A candidate is a suggestion awaiting human adjudication and confers no mapping authority. Field names follow the upstream artifact wherever it already carries the field, so ingestion needs no wholesale renaming; the three the contract adds or renames are recorded in provenance.md.",
+  "$comment": "This document states the shape. Rules it cannot express — that a control id exists at the declared revision, that one revision explains the whole candidate set, that a scanner version is concrete — live in the validators (go/controlmapping/validate.go and src/control-mapping/index.ts), and go/controlmapping/testdata/candidate-validation-cases.json is the worked case table both read. A test in each language asserts every property required here is in fact enforced by the validator, so the two cannot drift.",
+  "type": "object",
+  "required": ["schema", "catalog", "scanner", "checks"],
+  "properties": {
+    "schema": {
+      "const": "control-mapping-candidates/v1",
+      "description": "Schema literal. Refused outright when it is anything else, before the rest of the document is trusted."
+    },
+    "catalog": {
+      "type": "object",
+      "description": "The NIST catalog the scores were computed against.",
+      "required": ["revision", "pinned_commit"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Human-readable catalog name. Prose only — revision is the field validated against."
+        },
+        "revision": {
+          "type": "integer",
+          "enum": [4, 5],
+          "description": "The SP 800-53 revision the corpus was indexed against. Every candidate control id must exist at this revision. A corpus whose ids span revisions is refused regardless of what this declares, because a mixed catalog skews every score computed over it."
+        },
+        "pinned_commit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Commit of the catalog source the harness read, so the scores can be re-derived."
+        }
+      }
+    },
+    "scanner": {
+      "type": "object",
+      "description": "The tool whose check catalog this corpus maps.",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Scanner name, which keys the published mapping."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The concrete scanner release scored. An image reference is accepted and its tag judged; a floating tag such as latest is refused, because the set of checks scored would be unknowable. Scanners that stamp their own version into their reports let a converter cross-check this at convert time."
+        },
+        "checks": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of checks in the scanner's catalog, carried for provenance."
+        }
+      }
+    },
+    "method": {
+      "description": "Upstream's account of how the scores were produced. Carried uninterpreted; this repo draws no conclusion from it."
+    },
+    "checks": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Candidates keyed by scanner check id. An empty object is an upstream build failure, not an empty import.",
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["candidates"],
+        "properties": {
+          "query_name": { "type": "string", "description": "The check's name in the scanner's own catalog." },
+          "platform": { "type": "string", "description": "The platform the check targets." },
+          "cwe": { "type": "string", "description": "CWE the scanner associates with the check, when it names one." },
+          "category": { "type": "string", "description": "The scanner's own category for the check." },
+          "candidates": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Proposed controls in rank order. A check with nothing to propose must be absent rather than present and empty, so adjudication cannot read it as reviewed-and-rejected.",
+            "items": {
+              "type": "object",
+              "required": ["control", "score"],
+              "properties": {
+                "control": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The proposed control, at any granularity the catalog defines: a family-level control (AU-2, SA-15), an enhancement (SA-10.4), or a statement sub-part (AU-2 a, SA-4.3 (a)). A bare family code (AU) is not a control and is refused, because it cannot be a tags.nist value. Enhancements written with a dot are translated to NIST's parenthesised spelling on ingest, and the id must then normalize and exist at the declared revision."
+                },
+                "control_title": { "type": "string", "description": "The control's title as the harness read it from the catalog." },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Rank score within this check, normalised to 0..1. Absent is refused rather than read as 0.0."
+                },
+                "raw": { "type": "number", "description": "Pre-normalisation score, carried for provenance." },
+                "matched_on": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Which catalog text fields the match drew on."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

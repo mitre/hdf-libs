@@ -157,3 +157,22 @@ export type {
   HadolintMappingDataset,
   HadolintMappingProvenance,
 } from './hadolint/types.js';
+
+// Control-mapping candidate ingestion exports
+export {
+  CANDIDATE_SCHEMA,
+  CandidateFaultCode,
+  UnadjudicatedError,
+  resolveNistFromCandidates,
+  validateCandidates,
+} from './control-mapping/index.js';
+
+export type {
+  Candidate,
+  CandidateCatalog,
+  CandidateCheck,
+  CandidateCorpus,
+  CandidateFault,
+  CandidateScanner,
+  CandidateValidation,
+} from './control-mapping/index.js';
