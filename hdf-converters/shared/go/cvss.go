@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"math"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -80,15 +81,21 @@ type CvssInput struct {
 }
 
 // BuildCvss assembles an hdf.Cvss from the base-metric fields a converter
-// provides. Version is always set. BaseScore is the source's score; without
-// one it is computed from BaseVector through hdfutil.ComputeCvssScore when the
-// vector scores and its version is the entry's version, and is otherwise
-// absent. BaseSeverity follows BaseScore on the entry's version's scale.
-// BaseVector and Source are set only when non-empty. Consumers needing
-// threat/environmental/computed enrichment set those fields themselves.
+// provides. Version is always set. BaseScore is the source's score, read as
+// absent when it is not finite; without one it is computed from BaseVector
+// through hdfutil.ComputeCvssScore when the vector scores and its version is
+// the entry's version, and is otherwise absent. BaseSeverity follows BaseScore
+// on the entry's version's scale. BaseVector and Source are set only when
+// non-empty. Consumers needing threat/environmental/computed enrichment set
+// those fields themselves.
 func BuildCvss(in CvssInput) hdf.Cvss {
 	cv := hdf.Cvss{Version: in.Version}
 	score := in.BaseScore
+	// A non-finite score has no severity band and no JSON form: json.Marshal
+	// refuses one, which would fail the whole document over a single entry.
+	if score != nil && (math.IsNaN(*score) || math.IsInf(*score, 0)) {
+		score = nil
+	}
 	if score == nil && in.BaseVector != "" {
 		if s, err := hdfutil.ComputeCvssScore(in.BaseVector); err == nil && s.Version == string(in.Version) {
 			score = &s.BaseScore

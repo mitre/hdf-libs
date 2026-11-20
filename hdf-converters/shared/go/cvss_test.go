@@ -2,6 +2,7 @@ package shared
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -184,5 +185,36 @@ func TestCvssVersionFromVector_SharedCases(t *testing.T) {
 			got = CvssVersionFromVector(c.Vector, c.Fallback)
 		}
 		assert.Equal(t, c.Want, got, "vector %q fallback %q", c.Vector, c.Fallback)
+	}
+}
+
+// A source can hand the builder a non-finite score: strconv.ParseFloat accepts
+// NaN, Inf and Infinity. json.Marshal refuses one, so a single such score would
+// fail the whole document; the TypeScript peer has always read it as absent.
+func TestBuildCvss_NonFiniteScoreReadsAsAbsent(t *testing.T) {
+	for name, score := range map[string]float64{
+		"NaN":               math.NaN(),
+		"positive infinity": math.Inf(1),
+		"negative infinity": math.Inf(-1),
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Run("with a vector, the vector supplies the score", func(t *testing.T) {
+				got := BuildCvss(CvssInput{Version: hdf.The20, BaseScore: &score, BaseVector: "AV:N/AC:L/Au:N/C:C/I:C/A:C"})
+				require.NotNil(t, got.BaseScore)
+				assert.InDelta(t, 10.0, *got.BaseScore, 1e-9)
+				require.NotNil(t, got.BaseSeverity)
+				assert.Equal(t, hdf.CVSSSeverityHigh, *got.BaseSeverity)
+				_, err := json.Marshal(got)
+				require.NoError(t, err)
+			})
+
+			t.Run("without a vector, the entry carries no score", func(t *testing.T) {
+				got := BuildCvss(CvssInput{Version: hdf.The20, BaseScore: &score})
+				assert.Nil(t, got.BaseScore)
+				assert.Nil(t, got.BaseSeverity)
+				_, err := json.Marshal(got)
+				require.NoError(t, err)
+			})
+		})
 	}
 }

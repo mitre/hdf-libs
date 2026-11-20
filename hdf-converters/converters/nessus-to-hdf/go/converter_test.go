@@ -1059,3 +1059,71 @@ func TestConvertNessusToHDF_ComputedSeverityFollowsTheEntryVersion(t *testing.T)
 		})
 	}
 }
+
+// syntheticNessusWithRawBaseScore renders one ReportItem whose v2 base score is
+// the given raw text, with or without a base vector beside it.
+func syntheticNessusWithRawBaseScore(rawScore string, withVector bool) string {
+	vector := ""
+	if withVector {
+		vector = "        <cvss_vector>AV:N/AC:L/Au:N/C:C/I:C/A:C</cvss_vector>\n"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999996" pluginName="Synthetic Non-Finite Score Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99996</cvss_score_source>
+        <cvss_base_score>%s</cvss_base_score>
+%s        <description>Synthetic finding carrying a non-finite base score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, rawScore, vector)
+}
+
+// strconv.ParseFloat accepts these, so a .nessus file can put a non-finite
+// number in cvss_base_score; json.Marshal then refuses the whole document.
+func TestConvertNessusToHDF_NonFiniteBaseScore(t *testing.T) {
+	for _, raw := range []string{"NaN", "Inf", "Infinity", "-Inf"} {
+		t.Run(raw, func(t *testing.T) {
+			t.Run("the base vector supplies the score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, true)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				require.NotNil(t, entry.BaseScore)
+				assert.InDelta(t, 10.0, *entry.BaseScore, 1e-9)
+				require.NotNil(t, entry.BaseSeverity)
+				assert.Equal(t, hdf.CVSSSeverityHigh, *entry.BaseSeverity, "10.0 is high on the 2.0 scale")
+			})
+
+			t.Run("without a vector the entry carries no score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, false)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				assert.Nil(t, entry.BaseScore)
+				assert.Nil(t, entry.BaseSeverity)
+			})
+		})
+	}
+}
+
+func onlyCvssEntry(t *testing.T, result *hdf.HDFResults, pluginID string) hdf.Cvss {
+	t.Helper()
+	req := findReqAcrossBaselines(result, pluginID)
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1)
+	return req.Cvss[0]
+}

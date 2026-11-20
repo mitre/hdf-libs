@@ -38,3 +38,31 @@ describe('cvssVersionFromVector shared cases', () => {
     expect(got).toBe(want);
   });
 });
+
+// JSON cannot carry a non-finite number, so these cannot live in the shared
+// table. Peer of TestBuildCvss_NonFiniteScoreReadsAsAbsent in go/cvss_test.go.
+describe('buildCvss with a non-finite base score', () => {
+  it.each([
+    ['NaN', Number.NaN],
+    ['positive infinity', Number.POSITIVE_INFINITY],
+    ['negative infinity', Number.NEGATIVE_INFINITY],
+  ])('%s with a vector takes the score from the vector', (_name, baseScore) => {
+    const got = buildCvss({
+      version: CvssVersion.The20,
+      baseScore,
+      baseVector: 'AV:N/AC:L/Au:N/C:C/I:C/A:C',
+    });
+    expect(got.baseScore).toBe(10);
+    expect(got.baseSeverity).toBe('high');
+  });
+
+  it.each([
+    ['NaN', Number.NaN],
+    ['positive infinity', Number.POSITIVE_INFINITY],
+    ['negative infinity', Number.NEGATIVE_INFINITY],
+  ])('%s without a vector leaves the entry without a score', (_name, baseScore) => {
+    const got = buildCvss({version: CvssVersion.The20, baseScore});
+    expect(got.baseScore).toBeUndefined();
+    expect(got.baseSeverity).toBeUndefined();
+  });
+});
