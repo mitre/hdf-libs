@@ -6,7 +6,7 @@ Patterns and practices for contributing to the HDF libraries.
 
 ## Toolchain
 
-The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
+The toolchain is pinned with [mise](https://mise.jdx.dev). The root `README.md` lists the same tools under Prerequisites, for someone setting a clone up; this table adds where each one comes from and how its download is verified. `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
 
 | Tool | Pin | How mise installs it |
 | --- | --- | --- |
