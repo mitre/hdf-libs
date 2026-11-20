@@ -936,6 +936,24 @@ func TestBuildBaselineTags_DocumentableNotBooleanIsOmitted(t *testing.T) {
 	assert.False(t, has)
 }
 
+func TestBuildBaselineTags_SecurityOverrideGuidanceSpelling(t *testing.T) {
+	// DISA spelled the element SecurityOverrideGuidance until 2012; it holds the
+	// same guidance and lands in the same tag.
+	old := &Rule{Description: Prose("<VulnDiscussion>Why</VulnDiscussion>" +
+		"<SecurityOverrideGuidance>Elevate to CAT I if unpatched.</SecurityOverrideGuidance>")}
+	assert.Equal(t, "Elevate to CAT I if unpatched.", buildBaselineTags(old, nil)["severity_override_guidance"])
+
+	both := &Rule{Description: Prose("<VulnDiscussion>Why</VulnDiscussion>" +
+		"<SecurityOverrideGuidance>Old text</SecurityOverrideGuidance>" +
+		"<SeverityOverrideGuidance>Current text</SeverityOverrideGuidance>")}
+	assert.Equal(t, "Current text", buildBaselineTags(both, nil)["severity_override_guidance"])
+
+	empty := &Rule{Description: Prose("<VulnDiscussion>Why</VulnDiscussion>" +
+		"<SecurityOverrideGuidance></SecurityOverrideGuidance>")}
+	_, has := buildBaselineTags(empty, nil)["severity_override_guidance"]
+	assert.False(t, has)
+}
+
 func TestBenchmark_DISADescriptionSubElementTags(t *testing.T) {
 	sles := loadFixture(t, "U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(sles, converterVersion)
@@ -966,6 +984,28 @@ func TestBenchmark_DISADescriptionSubElementTags(t *testing.T) {
 		}
 	}
 	assert.True(t, strings.HasPrefix(pi, "Print clients configured to use the unauthorized port(s)"), "got %q", pi)
+
+	mac := loadFixture(t, "U_Mac_10.5_V1R2_STIG_Manual-XCCDF.xml")
+	result, err = ConvertXccdfBenchmarkToHDF(mac, converterVersion)
+	require.NoError(t, err)
+	var sog string
+	for _, r := range result.Requirements {
+		if r.ID == "SV-31297" {
+			sog, _ = r.Tags["severity_override_guidance"].(string)
+		}
+	}
+	assert.True(t, strings.HasPrefix(sog, "If any of the patches not installed are"), "got %q", sog)
+
+	ie8 := loadFixture(t, "U_Microsoft_IE8_V1R19_Manual-xccdf.xml")
+	result, err = ConvertXccdfBenchmarkToHDF(ie8, converterVersion)
+	require.NoError(t, err)
+	var tpt string
+	for _, r := range result.Requirements {
+		if r.ID == "SV-25182" {
+			tpt, _ = r.Tags["third_party_tools"].(string)
+		}
+	}
+	assert.Equal(t, "HK", tpt)
 }
 
 func TestExtractVulnDiscussion(t *testing.T) {

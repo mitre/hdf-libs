@@ -1,0 +1,658 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "24 Jul 2015",
+      "benchmarkRelease": "19",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2015-06-30",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "platforms": [
+        "cpe:/a:microsoft:ie:8"
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-25182",
+            "SV-25181",
+            "SV-25555",
+            "SV-72161",
+            "SV-25613",
+            "SV-25817",
+            "SV-25553",
+            "SV-44917",
+            "SV-25699"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA, Field Security Operations",
+      "releaseInfo": "Release: 19 Benchmark Date: 24 Jul 2015",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-3427",
+      "requirements": [
+        "SV-25182"
+      ],
+      "title": "DTBI320 - Security zone machine settings"
+    },
+    {
+      "id": "V-3428",
+      "requirements": [
+        "SV-25181"
+      ],
+      "title": "DTBI319 - Changing of policies"
+    },
+    {
+      "id": "V-3430",
+      "requirements": [
+        "SV-25555"
+      ],
+      "title": "DTBI367 - Proxy settings "
+    },
+    {
+      "id": "V-6228",
+      "requirements": [
+        "SV-72161"
+      ],
+      "title": "DTBI001 - The IE home page is not set correctly"
+    },
+    {
+      "id": "V-6243",
+      "requirements": [
+        "SV-25613"
+      ],
+      "title": "DTBI022 - Download signed ActiveX - Internet"
+    },
+    {
+      "id": "V-14245",
+      "requirements": [
+        "SV-25817"
+      ],
+      "title": "DTBI697 - IE - Users enable or disable add-ons"
+    },
+    {
+      "id": "V-15490",
+      "requirements": [
+        "SV-25553"
+      ],
+      "title": "DTBI305-Automatic configuration is not disabled"
+    },
+    {
+      "id": "V-15492",
+      "requirements": [
+        "SV-44917"
+      ],
+      "title": "DTBI315 - Customer Experience Improvement Pgm"
+    },
+    {
+      "id": "V-22147",
+      "requirements": [
+        "SV-25699"
+      ],
+      "title": "DTBI750 - Microsoft web site list updates"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "85ae5f543b219751e7892601ab1a39021e5bdca12000175b2b3e9dafc9eb2525"
+  },
+  "name": "ie8",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "This setting enforces consistent security zone settings to all users of the computer. Security zones control browser behavior at various web sites and it is desirable to maintain a consistent policy for all users of a machine.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Use only machine settings” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: If the value Security_HKLM_only is REG_DWORD = 1, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Use only machine settings” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: Set the value Security_HKLM_only to REG_DWORD = 1.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25182",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-30120r1_chk",
+        "documentable": false,
+        "fix_id": "F-26928r1_fix",
+        "gid": "V-3427",
+        "gtitle": "DTBI320 - Security zone machine settings",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25182r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI320",
+        "third_party_tools": "HK"
+      },
+      "title": "Internet Explorer is not configured to require consistent security zone settings to all users."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting prevents users from changing the Internet Explorer policies on the machine. Policy changes should be made by administrators only, so this setting should be enabled.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Do not allow users to change policies” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: If the value Security_options_edit is REG_DWORD = 1, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Do not allow users to change policies” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: Set the value Security_options_edit to REG_DWORD = 1.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25181",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-30121r1_chk",
+        "documentable": false,
+        "fix_id": "F-26929r1_fix",
+        "gid": "V-3428",
+        "gtitle": "DTBI319 - Changing of policies",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25181r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI319",
+        "third_party_tools": "HK"
+      },
+      "title": "Internet Explorer is configured to allow users to change policies."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting controls whether or not the Internet Explorer proxy settings are configured on a per-user or per-machine basis.",
+          "label": "default"
+        },
+        {
+          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: If the value ProxySettingsPerUser is REG_DWORD = 1, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: Set the value ProxySettingsPerUser to REG_DWORD = 1.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25555",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "check_id": "C-27036r1_chk",
+        "documentable": false,
+        "fix_id": "F-23137r1_fix",
+        "gid": "V-3430",
+        "gtitle": "DTBI367 - Proxy settings ",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25555r1_rule",
+        "severity": "low",
+        "stig_id": "DTBI367"
+      },
+      "title": "Internet Explorer is not configured to disable making Proxy Settings Per Machine."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "By setting this parameter appropriately, a malicious web site will not be automatically loaded into a browser which may contain mobile code.",
+          "label": "default"
+        },
+        {
+          "data": "The policy for User Configuration -\u003e Policies -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer \"Disable changing home page settings\" must be \"Enable\" and specify the URL for the home page. Procedure: Use the Windows Registry Editor to navigate to the following key: HKCU\\Software\\Microsoft\\Internet Explorer\\Main Criteria: If the value Start Page is about:blank or a trusted site this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Set the policy for User Configuration -\u003e Policies -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer \"Disable changing home page settings\" to \"Enable\" and specify the URL for the home page.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-72161",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-170r4_chk",
+        "documentable": false,
+        "fix_id": "F-131r3_fix",
+        "gid": "V-6228",
+        "gtitle": "DTBI001 - The IE home page is not set correctly",
+        "ia_controls": "DCMC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-72161r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI001"
+      },
+      "title": "The IE home page is not set to blank or a trusted site."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Active X controls can contain potentially malicious code and must only be allowed to be downloaded from trusted sites.",
+          "label": "default"
+        },
+        {
+          "data": "oval:microsoft.com:def:39",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Internet Control Panel -\u003e Security Page -\u003e Internet Zone -\u003e \"Download signed ActiveX controls\" will be set to “Enabled” and \"Disable\". Change the registry key HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3 Criteria:Set the value 1001 to REG_DWORD = 3 (Disabled = 3).",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25613",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-23195r1_fix",
+        "gid": "V-6243",
+        "gtitle": "DTBI022 - Download signed ActiveX - Internet",
+        "ia_controls": "DCMC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25613r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI022"
+      },
+      "title": "The Download signed ActiveX controls property is not set properly for the Internet Zone."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This check verifies that the system is configured to allow users to enable or disable add-ons through Add-On Manager in Internet Explorer.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: If the value NoExtensionManagement “does not” exist or the value is set to REG_DWORD = 0, this is not a finding. If the value NoExtensionManagement “does” exist and is set to REG_DWORD = 1 (decimal), this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: Remove the value NoExtensionManagement or set to REG_DWORD = 0 (decimal).",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25817",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "check_id": "C-27178r1_chk",
+        "documentable": false,
+        "fix_id": "F-23278r1_fix",
+        "gid": "V-14245",
+        "gtitle": "DTBI697 - IE - Users enable or disable add-ons",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25817r1_rule",
+        "severity": "low",
+        "stig_id": "DTBI697"
+      },
+      "title": "Internet Explorer - Do not allow users to enable or disable add-ons."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting specifies to automatically detect the proxy server settings used to connect to the Internet and customize Internet Explorer. This setting specifies that Internet Explorer use the configuration settings provided in a file by the system administrator. If you enable this policy setting, the user will not be able to do automatic configuration. You can import your current connection settings from your machine using Internet Explorer Maintenance under Admin Templates using group policy editor. If you disable or do no configure this policy setting, the user will have the freedom to automatically configure these settings.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Disable changing Automatic Configuration settings\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Control Panel Criteria: If the value Autoconfig is REG_DWORD = 1 (Hex), this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Disable changing Automatic Configuration settings\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Control Panel Criteria: Set the value Autoconfig to REG_DWORD = 1 (Hex).",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25553",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-27034r1_chk",
+        "documentable": false,
+        "fix_id": "F-23135r1_fix",
+        "gid": "V-15490",
+        "gtitle": "DTBI305-Automatic configuration is not disabled",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
+        ],
+        "rid": "SV-25553r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI305"
+      },
+      "title": "Automatic configuration of Internet Explorer is not disabled."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting controls whether users can participate in the Microsoft Customer Experience Improvement Program to help improve Microsoft applications. When users choose to participate in the Customer Experience Improvement Program (CEIP), applications automatically send information to Microsoft about how the applications are used. This information is combined with other CEIP data to help Microsoft solve problems and to improve the products and features customers use most often. This feature does not collect users' names, addresses, or any other identifying information except the IP address that is used to send the data. By default, users have the opportunity to opt into participation in the CEIP the first time they run an application. If your organization has policies that govern the use of external resources such as the CEIP, allowing users to opt in to the program might cause them to violate these policies.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM Criteria: If the value DisableCustomerImprovementProgram is REG_DWORD = 0, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM Criteria: Set the value DisableCustomerImprovementProgram to REG_DWORD = 0.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44917",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-42358r1_chk",
+        "documentable": false,
+        "fix_id": "F-38349r1_fix",
+        "gid": "V-15492",
+        "gtitle": "DTBI315 - Customer Experience Improvement Pgm",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
+        ],
+        "rid": "SV-44917r1_rule",
+        "severity": "medium",
+        "stig_id": "DTBI315"
+      },
+      "title": "Prevent participation in the Customer Experience Improvement Program is not disabled."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This policy controls the Web site compatibility lists provided by Microsoft. If you do not configure this setting, the Microsoft Web site list will not be active. The user can enable the functionality using the Compatibility View Settings dialog box.",
+          "label": "default"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Compatibility View -\u003e “Include updated Web site lists from Microsoft” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\BrowserEmulation Criteria: If the value MSCompatibilityMode is REG_DWORD = 0, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Compatibility View -\u003e “Include updated Web site lists from Microsoft” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\BrowserEmulation Criteria: Set the value MSCompatibilityMode to REG_DWORD = 0.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-25699",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "1682",
+              "publisher": "DISA FSO",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "check_id": "C-27159r2_chk",
+        "documentable": false,
+        "fix_id": "F-23254r1_fix",
+        "gid": "V-22147",
+        "gtitle": "DTBI750 - Microsoft web site list updates",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "potential_impacts": "May adversely impact system.",
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-25699r2_rule",
+        "severity": "low",
+        "stig_id": "DTBI750"
+      },
+      "title": "Include updated Web site lists from Microsoft is disabled."
+    }
+  ],
+  "status": "loaded",
+  "summary": "The Internet Explorer 8 Security Technical Implementation Guide (STIG) is published as a tool to improve the security of Department of Defense (DoD) information systems. Registry paths and values identified in each control assume the use of Group Policy Administrative Templates. Installations not using Group Policies to administer Microsoft Browser products may observe alternate registry paths for stored configuration values.",
+  "title": "Internet Explorer 8 STIG",
+  "version": "1"
+}

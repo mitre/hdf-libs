@@ -1,0 +1,492 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "24 Jan 2024",
+      "benchmarkRelease": "1.12",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2023-12-01",
+      "conventionsVersion": "1.10.0",
+      "generatorVersion": "3.4.1.22916",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "platforms": [
+        "cpe:/o:redhat:enterprise_linux:8"
+      ],
+      "profiles": [
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-230221",
+            "SV-230223",
+            "SV-230231",
+            "SV-230232",
+            "SV-230241",
+            "SV-230253"
+          ],
+          "title": "III - Administrative Sensitive"
+        },
+        {
+          "id": "xccdf_mil.disa.stig_profile_CAT_I_Only",
+          "selectedRuleIds": [],
+          "title": "CAT I Only"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 1.12 Benchmark Date: 24 Jan 2024",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230221",
+      "requirements": [
+        "SV-230221"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    },
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230223",
+      "requirements": [
+        "SV-230223"
+      ],
+      "title": "SRG-OS-000033-GPOS-00014"
+    },
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230231",
+      "requirements": [
+        "SV-230231"
+      ],
+      "title": "SRG-OS-000073-GPOS-00041"
+    },
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230232",
+      "requirements": [
+        "SV-230232"
+      ],
+      "title": "SRG-OS-000073-GPOS-00041"
+    },
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230241",
+      "requirements": [
+        "SV-230241"
+      ],
+      "title": "SRG-OS-000134-GPOS-00068"
+    },
+    {
+      "id": "xccdf_mil.disa.stig_group_V-230253",
+      "requirements": [
+        "SV-230253"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "06af0fc8c7e66fa19f37109b3e3449006dabd967a22187a304de9f8ffd8743b6"
+  },
+  "name": "xccdf-mil.disa.stig-benchmark-rhel-8-stig",
+  "requirements": [
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "An operating system release is considered \"supported\" if the vendor continues to provide security patches for the product. With an unsupported release, it will not be possible to resolve security issues discovered in the system software. Red Hat offers the Extended Update Support (EUS) add-on to a Red Hat Enterprise Linux subscription, for a fee, for those customers who wish to standardize on a specific minor release for an extended period. The RHEL 8 minor releases eligible for EUS are 8.1, 8.2, 8.4, 8.6, and 8.8. Each RHEL 8 EUS stream is available for 24 months from the availability of the minor release. RHEL 8.10 will be the final minor release overall. For more details on the Red Hat Enterprise Linux Life Cycle visit https://access.redhat.com/support/policy/updates/errata/. Note: The life-cycle time spans and dates are subject to adjustment.",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8os:def:230221",
+          "label": "check"
+        },
+        {
+          "data": "Upgrade to a supported version of RHEL 8.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230221",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32865r567410_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230221",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230221r858734_rule",
+        "severity": "high",
+        "stig_id": "RHEL-08-010000"
+      },
+      "title": "RHEL 8 must be a vendor-supported release."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Use of weak or untested encryption algorithms undermines the purposes of using encryption to protect data. The operating system must implement cryptographic modules adhering to the higher standards approved by the federal government since this provides assurance they have been tested and validated. RHEL 8 utilizes GRUB 2 as the default bootloader. Note that GRUB 2 command-line parameters are defined in the \"kernelopts\" variable of the /boot/grub2/grubenv file for all kernel boot entries. The command \"fips-mode-setup\" modifies the \"kernelopts\" variable, which in turn updates all kernel boot entries. The fips=1 kernel option needs to be added to the kernel command line during system installation so that key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Users must also ensure the system has plenty of entropy during the installation process by moving the mouse around, or if no mouse is available, ensuring that many keystrokes are typed. The recommended amount of keystrokes is 256 and more. Less than 256 keystrokes may generate a nonunique key. Satisfies: SRG-OS-000033-GPOS-00014, SRG-OS-000125-GPOS-00065, SRG-OS-000396-GPOS-00176, SRG-OS-000423-GPOS-00187, SRG-OS-000478-GPOS-00223",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8os:def:230223",
+          "label": "check"
+        },
+        {
+          "data": "Configure the operating system to implement DOD-approved encryption by following the steps below: To enable strict FIPS compliance, the fips=1 kernel option needs to be added to the kernel boot parameters during system installation so key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Enable FIPS mode after installation (not strict FIPS-compliant) with the following command: $ sudo fips-mode-setup --enable Reboot the system for the changes to take effect.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230223",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000068"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32867r928584_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230223",
+        "gtitle": "SRG-OS-000033-GPOS-00014",
+        "nist": [
+          "AC-17 (2)",
+          "AC-17 (2).1"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230223r928585_rule",
+        "severity": "high",
+        "stig_id": "RHEL-08-010020"
+      },
+      "title": "RHEL 8 must implement NIST FIPS-validated cryptography for the following: To provision digital signatures, to generate cryptographic hashes, and to protect data requiring data-at-rest protections in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Unapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised. FIPS 140-2 is the current standard for validating that mechanisms used to access cryptographic modules utilize authentication that meets DoD requirements.",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8:def:103",
+          "label": "check"
+        },
+        {
+          "data": "Configure RHEL 8 to encrypt all stored passwords. Edit/Modify the following line in the \"/etc/login.defs\" file and set \"[ENCRYPT_METHOD]\" to SHA512. ENCRYPT_METHOD SHA512",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230231",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000196"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32875r567440_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230231",
+        "gtitle": "SRG-OS-000073-GPOS-00041",
+        "nist": [
+          "IA-5 (1) (c)",
+          "IA-5 (1).1 (v)"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230231r877397_rule",
+        "severity": "medium",
+        "stig_id": "RHEL-08-010110"
+      },
+      "title": "RHEL 8 must encrypt all stored passwords with a FIPS 140-2 approved cryptographic hashing algorithm."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "The system must use a strong hashing algorithm to store the password. Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8:def:104",
+          "label": "check"
+        },
+        {
+          "data": "Lock all interactive user accounts not using SHA-512 hashing until the passwords can be regenerated with SHA-512.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230232",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000196"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32876r567443_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230232",
+        "gtitle": "SRG-OS-000073-GPOS-00041",
+        "nist": [
+          "IA-5 (1) (c)",
+          "IA-5 (1).1 (v)"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230232r877397_rule",
+        "severity": "medium",
+        "stig_id": "RHEL-08-010120"
+      },
+      "title": "RHEL 8 must employ FIPS 140-2 approved cryptographic hashing algorithms for all stored passwords."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Without verification of the security functions, security functions may not operate correctly and the failure may go unnoticed. Security function is defined as the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. Security functionality includes, but is not limited to, establishing system accounts, configuring access authorizations (i.e., permissions, privileges), setting events to be audited, and setting intrusion detection parameters. Policycoreutils contains the policy core utilities that are required for basic operation of an SELinux-enabled system. These utilities include load_policy to load SELinux policies, setfile to label filesystems, newrole to switch roles, and run_init to run /etc/init.d scripts in the proper context.",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8:def:112",
+          "label": "check"
+        },
+        {
+          "data": "Configure the operating system to have the policycoreutils package installed with the following command: $ sudo yum install policycoreutils",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230241",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-001084"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32885r567470_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230241",
+        "gtitle": "SRG-OS-000134-GPOS-00068",
+        "nist": [
+          "SC-3",
+          "SC-3.1 (ii)"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230241r627750_rule",
+        "severity": "low",
+        "stig_id": "RHEL-08-010171"
+      },
+      "title": "RHEL 8 must have policycoreutils package installed."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "The most important characteristic of a random number generator is its randomness, namely its ability to deliver random numbers that are impossible to predict. Entropy in computer security is associated with the unpredictability of a source of randomness. The random source with high entropy tends to achieve a uniform distribution of random values. Random number generators are one of the most important building blocks of cryptosystems. The SSH implementation in RHEL8 uses the OPENSSL library, which does not use high-entropy sources by default. By using the SSH_USE_STRONG_RNG environment variable the OPENSSL random generator is reseeded from /dev/random. This setting is not recommended on computers without the hardware random generator because insufficient entropy causes the connection to be blocked until enough entropy is available.",
+          "label": "default"
+        },
+        {
+          "data": "oval:mil.disa.stig.rhel8:def:122",
+          "label": "check"
+        },
+        {
+          "data": "Configure the operating system SSH server to use strong entropy. Add or modify the following line in the \"/etc/sysconfig/sshd\" file. SSH_USE_STRONG_RNG=32 The SSH service must be restarted for changes to take effect.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-230253",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2921",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "documentable": false,
+        "fix_id": "F-32897r567506_fix",
+        "gid": "xccdf_mil.disa.stig_group_V-230253",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "xccdf_mil.disa.stig_rule_SV-230253r627750_rule",
+        "severity": "low",
+        "stig_id": "RHEL-08-010292"
+      },
+      "title": "RHEL 8 must ensure the SSH server uses strong entropy."
+    }
+  ],
+  "status": "loaded",
+  "summary": "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.",
+  "title": "Red Hat Enterprise Linux 8 STIG SCAP Benchmark",
+  "version": "001.012"
+}

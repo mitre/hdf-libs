@@ -1325,12 +1325,15 @@ func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
 }
 
 // DISA's description body is literal text with eleven labelled sub-elements
-// (VulnDiscussion feeds the default description); these ten become tags.
+// (VulnDiscussion feeds the default description); these ten become tags. The
+// severity guidance was spelled SecurityOverrideGuidance until 2012, so both
+// spellings feed one tag; the current spelling wins when a rule carries both.
 var descriptionSubElementTags = []struct{ element, tag string }{
 	{"FalsePositives", "false_positives"},
 	{"FalseNegatives", "false_negatives"},
 	{"Mitigations", "mitigations"},
 	{"SeverityOverrideGuidance", "severity_override_guidance"},
+	{"SecurityOverrideGuidance", "severity_override_guidance"},
 	{"PotentialImpacts", "potential_impacts"},
 	{"ThirdPartyTools", "third_party_tools"},
 	{"MitigationControl", "mitigation_control"},
@@ -1338,11 +1341,15 @@ var descriptionSubElementTags = []struct{ element, tag string }{
 }
 
 // addDescriptionSubElementTags emits one tag per non-empty DISA sub-element:
-// strings for the eight above (the first non-empty occurrence), a list for
-// Responsibility (DISA repeats it), a bool for Documentable ("true"/"false";
-// anything else is not a boolean and is left out rather than guessed).
+// strings for the elements above (the first non-empty occurrence of the first
+// spelling that has one), a list for Responsibility (DISA repeats it), a bool
+// for Documentable ("true"/"false"; anything else is not a boolean and is left
+// out rather than guessed).
 func addDescriptionSubElementTags(tags map[string]interface{}, desc string) {
 	for _, s := range descriptionSubElementTags {
+		if _, set := tags[s.tag]; set {
+			continue
+		}
 		if vals := descriptionSubElementText(desc, s.element); len(vals) > 0 {
 			tags[s.tag] = vals[0]
 		}

@@ -1,0 +1,941 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "03 Dec 2009",
+      "benchmarkRelease": "1",
+      "benchmarkStatus": "accepted",
+      "notices": [
+        {
+          "id": "Developed by DISA for the DoD",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "III - Administrative Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-15354",
+            "SV-15355",
+            "SV-15356",
+            "SV-15358",
+            "SV-15362",
+            "SV-15416",
+            "SV-15417",
+            "SV-15418",
+            "SV-15422",
+            "SV-15426",
+            "SV-15428",
+            "SV-15431",
+            "SV-15433",
+            "SV-15436",
+            "SV-15438",
+            "SV-15439",
+            "SV-15440"
+          ],
+          "title": "III - Administrative Classified"
+        }
+      ],
+      "publisher": "DISA, Field Security Operations",
+      "releaseInfo": "Release: 1 Benchmark Date: 03 Dec 2009",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-14678",
+      "requirements": [
+        "SV-15354"
+      ],
+      "title": "DTSG001-AntiSpyware software not installed on acce"
+    },
+    {
+      "id": "V-14679",
+      "requirements": [
+        "SV-15355"
+      ],
+      "title": "DTSG002-Antispyware software not at supported leve"
+    },
+    {
+      "id": "V-14680",
+      "requirements": [
+        "SV-15356"
+      ],
+      "title": "DTSG003-Migration plan does not exist for Antispyw"
+    },
+    {
+      "id": "V-14682",
+      "requirements": [
+        "SV-15358"
+      ],
+      "title": "DTSG004-Antispyware software maintenance rollup "
+    },
+    {
+      "id": "V-14684",
+      "requirements": [
+        "SV-15362"
+      ],
+      "title": "DTSG005-Antispyware not configured download update"
+    },
+    {
+      "id": "V-14700",
+      "requirements": [
+        "SV-15416"
+      ],
+      "title": "DTSG006-Antispyware definitions updated weekly"
+    },
+    {
+      "id": "V-14701",
+      "requirements": [
+        "SV-15417"
+      ],
+      "title": "DTSG007- Antispyware signature files older than 7"
+    },
+    {
+      "id": "V-14702",
+      "requirements": [
+        "SV-15418"
+      ],
+      "title": "DTSG008-Antispyware Beta definitions are used "
+    },
+    {
+      "id": "V-14704",
+      "requirements": [
+        "SV-15422"
+      ],
+      "title": "DTSG009-Antispyware does not start on-access"
+    },
+    {
+      "id": "V-14706",
+      "requirements": [
+        "SV-15426"
+      ],
+      "title": "DTSG010- Antispyware not configued to scan weekly"
+    },
+    {
+      "id": "V-14708",
+      "requirements": [
+        "SV-15428"
+      ],
+      "title": "DTSG011-Antispyware scheduled scan to scan memory"
+    },
+    {
+      "id": "V-14709",
+      "requirements": [
+        "SV-15431"
+      ],
+      "title": "DTSG012- Antispyware not configured to inform user"
+    },
+    {
+      "id": "V-14710",
+      "requirements": [
+        "SV-15433"
+      ],
+      "title": "DTSG013-Antispyware not configured to inform user "
+    },
+    {
+      "id": "V-14711",
+      "requirements": [
+        "SV-15436"
+      ],
+      "title": "DTSG014-Antispyware not configured to inform user"
+    },
+    {
+      "id": "V-14712",
+      "requirements": [
+        "SV-15438"
+      ],
+      "title": "DTSG015-Antispyware not configured to maintain log"
+    },
+    {
+      "id": "V-14713",
+      "requirements": [
+        "SV-15439"
+      ],
+      "title": "DTSG016-Antispyware logs are not be reviewed"
+    },
+    {
+      "id": "V-14714",
+      "requirements": [
+        "SV-15440"
+      ],
+      "title": "DTSG017-Antispyware included in incident response"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "9a608191fd9617a58c7cfce37a66fecab3d1e872d573d4c9db5c09534a166b3f"
+  },
+  "name": "desktop-application-antispyware-general",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Without on-access and on-demand scan enabled, the virus scan is not scanning files as they are being accessed.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Examine the machine to determine if an Antispyware program is installed. If it is installed, ensure that it is configured for on-access and on-demand detection. Criteria: If a program is installed and configured for on-access and on-demand detection, this is not a finding. Please Note: Antispyware products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista).",
+          "label": "check"
+        },
+        {
+          "data": "Criteria: Install a program and configured for on-access and on-demand detection. Please Note: Products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista).",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15354",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-12821r2_chk",
+        "documentable": false,
+        "fix_id": "F-14145r3_fix",
+        "gid": "V-14678",
+        "gtitle": "DTSG001-AntiSpyware software not installed on acce",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15354r4_rule",
+        "severity": "high",
+        "stig_id": "DTSG001"
+      },
+      "title": "AntiSpyware software is not installed or not configured for on access and on demand detection."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Installed software must be at a vendor supported level.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help, then About. Criteria: Validate with the vendor’s website that this version of the product is on the supported products list. If it is on the list, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Upgrade to a supported version of the product.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15355",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-12822r1_chk",
+        "documentable": false,
+        "fix_id": "F-14146r1_fix",
+        "gid": "V-14679",
+        "gtitle": "DTSG002-Antispyware software not at supported leve",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15355r2_rule",
+        "severity": "high",
+        "stig_id": "DTSG002"
+      },
+      "title": "The Antispyware software is not at a vendor supported level."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. A migration plan must be in place for the antispyware that is planned for End-of-Life or the end of vendor support.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help, then About. Criteria: Determine from the vendor’s web site, if the vendor has announced non-support dates for the software. If the vendor has announced a non-support date, ask the IOA for a copy of the migration plan. If a plan exists, this is not a finding. If the product has not been announced as going non-support, this finding is Not Applicable.",
+          "label": "check"
+        },
+        {
+          "data": "Create a migration plan for updating to a supported version of the product prior to its becoming non-supported.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15356",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12823r1_chk",
+        "documentable": false,
+        "fix_id": "F-14147r1_fix",
+        "gid": "V-14680",
+        "gtitle": "DTSG003-Migration plan does not exist for Antispyw",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15356r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG003"
+      },
+      "title": "A migration plan does not exist for Antispyware software that is scheduled to go non-support by the vendor."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. The software must be a supported vendor release and current with all maintenance patches and software updates.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help then About. Criteria: Validate with the vendor’s website that contains the latest maintenance rollup or software update for this version. If it does, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Apply the latest maintenance rollup or software update for this version.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15358",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12825r1_chk",
+        "documentable": false,
+        "fix_id": "F-14149r1_fix",
+        "gid": "V-14682",
+        "gtitle": "DTSG004-Antispyware software maintenance rollup ",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15358r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG004"
+      },
+      "title": "The Antispyware software does not have the latest maintenance rollup of software update applied"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. In addition to the vendor, the DoD provides multiple locations for the download of software updates and signature files. It is mandatory that the location from which software updates and signature files are received be a trusted source.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the configuration parameter that controls where the updates are downloaded from. Criteria: If this parameter is configured to pull from a trusted site such as the JTF –GNO , the DoD download server or from the vendor site, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the product to download updates from a trusted site such as the JTF –GNO, the DoD download server or from the vendor site.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15362",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12828r1_chk",
+        "documentable": false,
+        "fix_id": "F-14151r1_fix",
+        "gid": "V-14684",
+        "gtitle": "DTSG005-Antispyware not configured download update",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15362r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG005"
+      },
+      "title": "The Antispyware software is not configured to download updates from a trusted source."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. There must be a mechanism for the automatic update of antispyware signature files on at least a weekly basis. This mechanism must be enabled and configured.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the parameter that controls whether autoupdates of signatures are done and the frequency of automatic updates of signature files. (Depending upon the product this may be one parameter or multiple parameters. Criteria: If the parameter is set to manual updates, this is a finding. If the parameter is set to automatic updates and the frequency is more than weekly, this is a finding. If the parameter is set to automatic and the parameter is set to weekly (or less – daily recommended), this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the product to perform automatic updates and the frequency to weekly (or less – daily recommended).",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15416",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12883r1_chk",
+        "documentable": false,
+        "fix_id": "F-14165r1_fix",
+        "gid": "V-14700",
+        "gtitle": "DTSG006-Antispyware definitions updated weekly",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15416r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG006"
+      },
+      "title": "The Antispyware definition/signature files are not automatically set to be updated at least weekly."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Antispyware signatures files are updated on a daily basis by antispyware software vendors. It is mandatory that the antispyware signature file on the system be no older that 7 days. Note: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine, this is not a finding.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the date of the signature files. Criteria: If they are less than 7 days old, this is not a finding. If they are older than 7 days, this is a finding. Note: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Update the signature files to the most current available.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15417",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-12884r2_chk",
+        "documentable": false,
+        "fix_id": "F-14166r1_fix",
+        "gid": "V-14701",
+        "gtitle": "DTSG007- Antispyware signature files older than 7",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15417r2_rule",
+        "severity": "high",
+        "stig_id": "DTSG007"
+      },
+      "title": "The Antispyware signature files are older than 7 days."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. AntiSpyware signature or spyware definition files must be from a trusted source and in a production status. Beta or non-production files are prohibited.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the date and version of the signature files. Criteria: Validate with the vendor’s website that this signature file is a production version. (Vendors normally have a special area for test/beta versions.) If the signature files are beta or non-production versions, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Remove any Beta or non-production versions of signature files and replace with valid current signature files on production systems.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15418",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12885r1_chk",
+        "documentable": false,
+        "fix_id": "F-14167r1_fix",
+        "gid": "V-14702",
+        "gtitle": "DTSG008-Antispyware Beta definitions are used ",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15418r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG008"
+      },
+      "title": "Beta or non-production Antispyware definitions/signature files are being used on a production machine."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Without on-access protection enabled at system boot, the antispyware software is not scanning files as they are being accessed.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the parameter that controls on-access antispyware protection. This is normally found as a high level setting on the initial screen of the Antispyware software. Criteria: Validate that the on-access protection is configured to start automatically when the machine is booted. If it is configured to start at boot time, this is not a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure on-access protection to start automatically when the machine is booted.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15422",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-12886r1_chk",
+        "documentable": false,
+        "fix_id": "F-14169r1_fix",
+        "gid": "V-14704",
+        "gtitle": "DTSG009-Antispyware does not start on-access",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15422r2_rule",
+        "severity": "high",
+        "stig_id": "DTSG009"
+      },
+      "title": "The Antispyware software does not start on-access protection automatically when the machine is booted."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. A weekly antispyware scan of all local hard drives is required. This scan must be performed on at least a weekly basis if not more frequently.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Check for a scheduled scan. Ensure all the local drives are included in the scan. Determine the frequency of the schedule. Normally, there is a scheduled scan section. Next, select the properties of each scan to see if there is at least one scan that meets the criteria listed below. Criteria: Ensure there is at least one scan that includes all the drives and is scheduled at least weekly. If one exists, this is not a finding. If a scan does not exist that meet this criterion, this is a finding. NOTE: Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations. This is highly recommended for machines that browse the web and are used as email clients regularly.",
+          "label": "check"
+        },
+        {
+          "data": "Create a scheduled scan which includes all the local drives and is performed at least weekly. NOTE: Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations. This is highly recommended for machines that browse the web and are used as email clients regularly.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15426",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12893r1_chk",
+        "documentable": false,
+        "fix_id": "F-14171r1_fix",
+        "gid": "V-14706",
+        "gtitle": "DTSG010- Antispyware not configued to scan weekly",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15426r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG010"
+      },
+      "title": "The Antispyware software is not configured to perform a scan of local hard drives at least weekly.  "
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. A weekly scheduled antispyware scan is required to scan memory as well as all local hard drives. The indepth scan option must be enabled.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Refer to the scheduled or boot scans found for DTSG010. Criteria: If no scans were found in DTSG010, this (DTSG011) is also a finding. Validate if the scheduled (or boot) scan is configured to scan in memory, all drives. Also validate that in depth (sometimes called deep) scanning is also performed. If any of these are not being scanned as part of the scan from DTSG010, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Create a scheduled scan which is configured to scan in memory, all drives, at least weekly. This scan also needs to perform in depth or deep scanning.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15428",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12895r1_chk",
+        "documentable": false,
+        "fix_id": "F-14173r1_fix",
+        "gid": "V-14708",
+        "gtitle": "DTSG011-Antispyware scheduled scan to scan memory",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15428r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG011"
+      },
+      "title": "The Antispyware scheduled scan is not configured to scan memory and drives (with an indepth scan option)."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. An automated reporting function is required to be enabled for the occurrence of any malicious activity or spyware. The SA or user is required to be informed via report, email, or report to a central monitoring system.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Locate the parameters that control the on access scans. Criteria: If on access is not enabled (DTSG009 was a finding), this check (DTSG012) is also a finding. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the on-access scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found. Enabling both types of notification is recommended.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15431",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12898r1_chk",
+        "documentable": false,
+        "fix_id": "F-14174r2_fix",
+        "gid": "V-14709",
+        "gtitle": "DTSG012- Antispyware not configured to inform user",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15431r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG012"
+      },
+      "title": "The Antispyware, when running in on access mode, is not configured to inform the user (or report or report to a central monitoring console) when malicious activity or spyware is found."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Whenever suspicious or malicious activity is found the SA or user must be notified of such an occurrence. This notification can take the form of a report, email, or central monitoring console.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Refer to the scheduled or boot scans found for DTSG010. Criteria: If no scans were found in DTSG010, this (DTSG013) is also a finding. Locate the parameters for the scheduled (or boot) scan. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the scheduled scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found. Enabling both types of notification is recommended.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15433",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12899r1_chk",
+        "documentable": false,
+        "fix_id": "F-14177r1_fix",
+        "gid": "V-14710",
+        "gtitle": "DTSG013-Antispyware not configured to inform user ",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15433r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG013"
+      },
+      "title": "The Antispyware, when running in a scheduled scan, is not configured to inform the user (or report to a central monitoring console) when malicious activity or spyware is found."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Whenever suspicious or malicious activity is found the SA or user must be notified of such an occurrence. This notification can take the form of a report, email, or central monitoring console.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Locate the parameters (or the execution point for the on demand scanner. (DTSG001) Criteria: If the software is not capable of on demand scanning, this is a finding. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the on demand scan notification parameter to inform the user or send notification to a central monitoring console when malicous activity or spyware is found. Enabling both types of notification is recommended.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15436",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-12901r1_chk",
+        "documentable": false,
+        "fix_id": "F-14178r1_fix",
+        "gid": "V-14711",
+        "gtitle": "DTSG014-Antispyware not configured to inform user",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15436r2_rule",
+        "severity": "medium",
+        "stig_id": "DTSG014"
+      },
+      "title": "The Antispyware, when running in on-demand mode, is not configured to inform the user (or report to a central monitoring console) when malicious activity or spyware is found."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Log files for antispyware activity must be maintained for at least 30 days. These logs can be archived locally or an a central log file repository.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Determine the parameters that control the log retention. (This action might possibly be performed on the server.) Criteria: Validate the log retention is set to at least 30 days. If the logs are not being maintained or the retention is less than 30 days, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the log retention to at least 30 days.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15438",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "C-12903r1_chk",
+        "documentable": false,
+        "fix_id": "F-14179r2_fix",
+        "gid": "V-14712",
+        "gtitle": "DTSG015-Antispyware not configured to maintain log",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15438r3_rule",
+        "severity": "low",
+        "stig_id": "DTSG015"
+      },
+      "title": "The Antispyware software is not configured to maintain logs for at least 30 days."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Antispyware log files must be reviewed. There must exist a formal plan for log file review detailing the process.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Ask the SA about the procedures for log review. Criteria: Validate that the logs are being reviewed. If the logs are not being reviewed, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Create a procedure for reviewing the log data. Validate the logs are being reviewed.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15439",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "C-12904r1_chk",
+        "documentable": false,
+        "fix_id": "F-14180r1_fix",
+        "gid": "V-14713",
+        "gtitle": "DTSG016-Antispyware logs are not be reviewed",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15439r2_rule",
+        "severity": "low",
+        "stig_id": "DTSG016"
+      },
+      "title": "The Antispyware software is not configured to maintain logs for at least 30 days."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This setting is required for the antispyware software. Every site must maintain a incident response plan. Antispyware, as an integral part of any organizations security practice, must be included in the site's incident response plan.",
+          "label": "default"
+        },
+        {
+          "data": "Procedure: Ask for a copy of the incident response plan. Criteria: Ensure that Antispyware is included in the incident response plan. If it is not, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Ensure that Antispyware is included in the incident response plan.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-15440",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "C-12905r1_chk",
+        "documentable": false,
+        "fix_id": "F-14181r1_fix",
+        "gid": "V-14714",
+        "gtitle": "DTSG017-Antispyware included in incident response",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-15440r2_rule",
+        "severity": "low",
+        "stig_id": "DTSG017"
+      },
+      "title": "The Antispyware software is included in the incident response procedures both for the user and the site."
+    }
+  ],
+  "status": "loaded",
+  "summary": "",
+  "title": "Desktop Application Antispyware General",
+  "version": "4"
+}

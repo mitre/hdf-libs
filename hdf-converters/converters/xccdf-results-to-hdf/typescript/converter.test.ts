@@ -1250,6 +1250,33 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect((baseline.requirements as BaselineRequirement[])[0]!.tags).not.toHaveProperty('documentable');
     });
 
+    it('carries the pre-2012 SecurityOverrideGuidance spelling into severity_override_guidance', async () => {
+      const doc = (description: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>${description}</description>
+      <fixtext>Fix it</fixtext>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const tagsOf = async (description: string) => {
+        const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(doc(description))) as HDFBaseline;
+        return (baseline.requirements as BaselineRequirement[])[0]!.tags!;
+      };
+      const old = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;Elevate to CAT I if unpatched.&lt;/SecurityOverrideGuidance&gt;');
+      expect(old['severity_override_guidance']).toBe('Elevate to CAT I if unpatched.');
+      const both = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;Old text&lt;/SecurityOverrideGuidance&gt;&lt;SeverityOverrideGuidance&gt;Current text&lt;/SeverityOverrideGuidance&gt;');
+      expect(both['severity_override_guidance']).toBe('Current text');
+      const empty = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;');
+      expect(empty).not.toHaveProperty('severity_override_guidance');
+    });
+
     it('carries the sub-elements the real DISA fixtures fill', async () => {
       const sles = await parseBaseline('U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml');
       const byId = new Map((sles.requirements as BaselineRequirement[]).map((r) => [r.id, r]));
@@ -1264,6 +1291,12 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       const mfd = await parseBaseline('U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml');
       const r = (mfd.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-7015');
       expect(r!.tags!['potential_impacts']).toMatch(/^Print clients configured to use the unauthorized port\(s\)/);
+      const mac = await parseBaseline('U_Mac_10.5_V1R2_STIG_Manual-XCCDF.xml');
+      const sog = (mac.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-31297');
+      expect(sog!.tags!['severity_override_guidance']).toMatch(/^If any of the patches not installed are/);
+      const ie8 = await parseBaseline('U_Microsoft_IE8_V1R19_Manual-xccdf.xml');
+      const tpt = (ie8.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-25182');
+      expect(tpt!.tags!['third_party_tools']).toBe('HK');
     });
 
     it('should extract VulnDiscussion as default description', async () => {

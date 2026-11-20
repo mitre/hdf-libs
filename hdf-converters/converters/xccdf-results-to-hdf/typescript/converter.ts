@@ -1613,24 +1613,28 @@ function descriptionFieldValues(description: string, element: string): string[] 
 }
 
 // DISA's description body is literal text with eleven labelled sub-elements
-// (VulnDiscussion feeds the default description); these ten become tags.
+// (VulnDiscussion feeds the default description); these ten become tags. The
+// severity guidance was spelled SecurityOverrideGuidance until 2012, so both
+// spellings feed one tag; the current spelling wins when a rule carries both.
 const descriptionSubElementTags: ReadonlyArray<readonly [element: string, tag: string]> = [
   ['FalsePositives', 'false_positives'],
   ['FalseNegatives', 'false_negatives'],
   ['Mitigations', 'mitigations'],
   ['SeverityOverrideGuidance', 'severity_override_guidance'],
+  ['SecurityOverrideGuidance', 'severity_override_guidance'],
   ['PotentialImpacts', 'potential_impacts'],
   ['ThirdPartyTools', 'third_party_tools'],
   ['MitigationControl', 'mitigation_control'],
   ['IAControls', 'ia_controls'],
 ];
 
-// One tag per non-empty DISA sub-element: strings for the eight above (the first
-// non-empty occurrence), a list for Responsibility (DISA repeats it), a boolean for
-// Documentable ("true"/"false"; anything else is not a boolean and is left out
-// rather than guessed).
+// One tag per non-empty DISA sub-element: strings for the elements above (the
+// first non-empty occurrence of the first spelling that has one), a list for
+// Responsibility (DISA repeats it), a boolean for Documentable ("true"/"false";
+// anything else is not a boolean and is left out rather than guessed).
 function addDescriptionSubElementTags(tags: Record<string, unknown>, description: string): void {
   for (const [element, tag] of descriptionSubElementTags) {
+    if (tag in tags) continue;
     const vals = descriptionSubElementText(description, element);
     if (vals.length > 0) tags[tag] = vals[0];
   }
