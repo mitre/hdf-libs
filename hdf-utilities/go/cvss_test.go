@@ -22,14 +22,23 @@ type cvssScoreCase struct {
 // TypeScript tests read the same files, so both languages assert identical values.
 func loadVectorCases[T any](t *testing.T, name string) []T {
 	t.Helper()
+	return loadCaseGroup[T](t, name, "cases")
+}
+
+// loadCaseGroup reads one named array of a shared testdata file, for a file
+// carrying more than one group of cases.
+func loadCaseGroup[T any](t *testing.T, name, key string) []T {
+	t.Helper()
 	data, err := os.ReadFile(filepath.Join("..", "testdata", name))
 	require.NoError(t, err)
-	var fx struct {
-		Cases []T `json:"cases"`
-	}
-	require.NoError(t, json.Unmarshal(data, &fx))
-	require.NotEmpty(t, fx.Cases)
-	return fx.Cases
+	var groups map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(data, &groups))
+	raw, ok := groups[key]
+	require.True(t, ok, "%s: no %q cases", name, key)
+	var cases []T
+	require.NoError(t, json.Unmarshal(raw, &cases))
+	require.NotEmpty(t, cases)
+	return cases
 }
 
 func TestComputeCvssScore31(t *testing.T) {
@@ -314,6 +323,51 @@ func TestValidateCvssVector(t *testing.T) {
 		assert.False(t, valid)
 		assert.True(t, hasErr(errs, "E"))
 	})
+}
+
+type cvssIgnoredMetricCase struct {
+	Vector     string  `json:"vector"`
+	Equivalent string  `json:"equivalent"`
+	Version    string  `json:"version"`
+	Base       float64 `json:"base"`
+	Temporal   float64 `json:"temporal"`
+	Note       string  `json:"note"`
+}
+
+type cvssUnsupportedVersionCase struct {
+	Vector  string `json:"vector"`
+	Version string `json:"version"`
+	Note    string `json:"note"`
+}
+
+const cvssPrototypeKeyFile = "cvss-prototype-key-cases.json"
+
+func TestCvssPrototypeLookupKeys(t *testing.T) {
+	for _, c := range loadCaseGroup[cvssIgnoredMetricCase](t, cvssPrototypeKeyFile, "ignoredMetricNames") {
+		t.Run("ignored metric name/"+c.Vector, func(t *testing.T) {
+			valid, errs := ValidateCvssVector(c.Vector, "")
+			assert.True(t, valid, "%s: %v", c.Note, errs)
+			assert.Empty(t, errs)
+
+			score, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err, c.Note)
+			assert.Equal(t, c.Version, score.Version)
+			assert.Equal(t, c.Base, score.BaseScore, "base")
+			assert.Equal(t, c.Temporal, score.TemporalScore, "temporal")
+
+			reference, err := ComputeCvssScore(c.Equivalent)
+			require.NoError(t, err)
+			assert.Equal(t, reference, score, "the extra metric must change nothing")
+		})
+	}
+
+	for _, c := range loadCaseGroup[cvssUnsupportedVersionCase](t, cvssPrototypeKeyFile, "unsupportedVersions") {
+		t.Run("unsupported version/"+c.Version, func(t *testing.T) {
+			valid, errs := ValidateCvssVector(c.Vector, c.Version)
+			assert.False(t, valid, c.Note)
+			assert.Equal(t, []string{"unsupported CVSS version: " + c.Version}, errs)
+		})
+	}
 }
 
 type cvss40Case struct {

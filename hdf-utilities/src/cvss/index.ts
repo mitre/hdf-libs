@@ -30,126 +30,129 @@ export interface CvssValidationResult {
  *
  * Sourced from FIRST specifications (linked above). Only metrics present
  * in a given version's grammar appear in that version's map; unknown metrics
- * encountered during validation are ignored (forward-compat).
+ * encountered during validation are ignored (forward-compat). This and
+ * REQUIRED_METRICS are Maps because a plain-object lookup resolves an
+ * inherited `Object.prototype` member for a key such as `toString`, which
+ * would read a function where a list of values belongs.
  */
-const METRIC_VALUES: Record<string, Record<string, string[]>> = {
-  '2.0': {
-    AV: ['L', 'A', 'N'],
-    AC: ['H', 'M', 'L'],
-    Au: ['M', 'S', 'N'],
-    C: ['N', 'P', 'C'],
-    I: ['N', 'P', 'C'],
-    A: ['N', 'P', 'C'],
+const METRIC_VALUES: ReadonlyMap<string, ReadonlyMap<string, readonly string[]>> = new Map([
+  ['2.0', new Map<string, readonly string[]>([
+    ['AV', ['L', 'A', 'N']],
+    ['AC', ['H', 'M', 'L']],
+    ['Au', ['M', 'S', 'N']],
+    ['C', ['N', 'P', 'C']],
+    ['I', ['N', 'P', 'C']],
+    ['A', ['N', 'P', 'C']],
     // Temporal
-    E: ['U', 'POC', 'F', 'H', 'ND'],
-    RL: ['OF', 'TF', 'W', 'U', 'ND'],
-    RC: ['UC', 'UR', 'C', 'ND'],
+    ['E', ['U', 'POC', 'F', 'H', 'ND']],
+    ['RL', ['OF', 'TF', 'W', 'U', 'ND']],
+    ['RC', ['UC', 'UR', 'C', 'ND']],
     // Environmental
-    CDP: ['N', 'L', 'LM', 'MH', 'H', 'ND'],
-    TD: ['N', 'L', 'M', 'H', 'ND'],
-    CR: ['L', 'M', 'H', 'ND'],
-    IR: ['L', 'M', 'H', 'ND'],
-    AR: ['L', 'M', 'H', 'ND'],
-  },
-  '3.0': {
-    AV: ['N', 'A', 'L', 'P'],
-    AC: ['L', 'H'],
-    PR: ['N', 'L', 'H'],
-    UI: ['N', 'R'],
-    S: ['U', 'C'],
-    C: ['N', 'L', 'H'],
-    I: ['N', 'L', 'H'],
-    A: ['N', 'L', 'H'],
+    ['CDP', ['N', 'L', 'LM', 'MH', 'H', 'ND']],
+    ['TD', ['N', 'L', 'M', 'H', 'ND']],
+    ['CR', ['L', 'M', 'H', 'ND']],
+    ['IR', ['L', 'M', 'H', 'ND']],
+    ['AR', ['L', 'M', 'H', 'ND']],
+  ])],
+  ['3.0', new Map<string, readonly string[]>([
+    ['AV', ['N', 'A', 'L', 'P']],
+    ['AC', ['L', 'H']],
+    ['PR', ['N', 'L', 'H']],
+    ['UI', ['N', 'R']],
+    ['S', ['U', 'C']],
+    ['C', ['N', 'L', 'H']],
+    ['I', ['N', 'L', 'H']],
+    ['A', ['N', 'L', 'H']],
     // Temporal
-    E: ['X', 'U', 'P', 'F', 'H'],
-    RL: ['X', 'O', 'T', 'W', 'U'],
-    RC: ['X', 'U', 'R', 'C'],
+    ['E', ['X', 'U', 'P', 'F', 'H']],
+    ['RL', ['X', 'O', 'T', 'W', 'U']],
+    ['RC', ['X', 'U', 'R', 'C']],
     // Environmental
-    CR: ['X', 'L', 'M', 'H'],
-    IR: ['X', 'L', 'M', 'H'],
-    AR: ['X', 'L', 'M', 'H'],
-    MAV: ['X', 'N', 'A', 'L', 'P'],
-    MAC: ['X', 'L', 'H'],
-    MPR: ['X', 'N', 'L', 'H'],
-    MUI: ['X', 'N', 'R'],
-    MS: ['X', 'U', 'C'],
-    MC: ['X', 'N', 'L', 'H'],
-    MI: ['X', 'N', 'L', 'H'],
-    MA: ['X', 'N', 'L', 'H'],
-  },
-  '3.1': {
-    AV: ['N', 'A', 'L', 'P'],
-    AC: ['L', 'H'],
-    PR: ['N', 'L', 'H'],
-    UI: ['N', 'R'],
-    S: ['U', 'C'],
-    C: ['N', 'L', 'H'],
-    I: ['N', 'L', 'H'],
-    A: ['N', 'L', 'H'],
+    ['CR', ['X', 'L', 'M', 'H']],
+    ['IR', ['X', 'L', 'M', 'H']],
+    ['AR', ['X', 'L', 'M', 'H']],
+    ['MAV', ['X', 'N', 'A', 'L', 'P']],
+    ['MAC', ['X', 'L', 'H']],
+    ['MPR', ['X', 'N', 'L', 'H']],
+    ['MUI', ['X', 'N', 'R']],
+    ['MS', ['X', 'U', 'C']],
+    ['MC', ['X', 'N', 'L', 'H']],
+    ['MI', ['X', 'N', 'L', 'H']],
+    ['MA', ['X', 'N', 'L', 'H']],
+  ])],
+  ['3.1', new Map<string, readonly string[]>([
+    ['AV', ['N', 'A', 'L', 'P']],
+    ['AC', ['L', 'H']],
+    ['PR', ['N', 'L', 'H']],
+    ['UI', ['N', 'R']],
+    ['S', ['U', 'C']],
+    ['C', ['N', 'L', 'H']],
+    ['I', ['N', 'L', 'H']],
+    ['A', ['N', 'L', 'H']],
     // Temporal
-    E: ['X', 'U', 'P', 'F', 'H'],
-    RL: ['X', 'O', 'T', 'W', 'U'],
-    RC: ['X', 'U', 'R', 'C'],
+    ['E', ['X', 'U', 'P', 'F', 'H']],
+    ['RL', ['X', 'O', 'T', 'W', 'U']],
+    ['RC', ['X', 'U', 'R', 'C']],
     // Environmental
-    CR: ['X', 'L', 'M', 'H'],
-    IR: ['X', 'L', 'M', 'H'],
-    AR: ['X', 'L', 'M', 'H'],
-    MAV: ['X', 'N', 'A', 'L', 'P'],
-    MAC: ['X', 'L', 'H'],
-    MPR: ['X', 'N', 'L', 'H'],
-    MUI: ['X', 'N', 'R'],
-    MS: ['X', 'U', 'C'],
-    MC: ['X', 'N', 'L', 'H'],
-    MI: ['X', 'N', 'L', 'H'],
-    MA: ['X', 'N', 'L', 'H'],
-  },
-  '4.0': {
+    ['CR', ['X', 'L', 'M', 'H']],
+    ['IR', ['X', 'L', 'M', 'H']],
+    ['AR', ['X', 'L', 'M', 'H']],
+    ['MAV', ['X', 'N', 'A', 'L', 'P']],
+    ['MAC', ['X', 'L', 'H']],
+    ['MPR', ['X', 'N', 'L', 'H']],
+    ['MUI', ['X', 'N', 'R']],
+    ['MS', ['X', 'U', 'C']],
+    ['MC', ['X', 'N', 'L', 'H']],
+    ['MI', ['X', 'N', 'L', 'H']],
+    ['MA', ['X', 'N', 'L', 'H']],
+  ])],
+  ['4.0', new Map<string, readonly string[]>([
     // Base
-    AV: ['N', 'A', 'L', 'P'],
-    AC: ['L', 'H'],
-    AT: ['N', 'P'],
-    PR: ['N', 'L', 'H'],
-    UI: ['N', 'P', 'A'],
-    VC: ['H', 'L', 'N'],
-    VI: ['H', 'L', 'N'],
-    VA: ['H', 'L', 'N'],
-    SC: ['H', 'L', 'N'],
-    SI: ['H', 'L', 'N'],
-    SA: ['H', 'L', 'N'],
+    ['AV', ['N', 'A', 'L', 'P']],
+    ['AC', ['L', 'H']],
+    ['AT', ['N', 'P']],
+    ['PR', ['N', 'L', 'H']],
+    ['UI', ['N', 'P', 'A']],
+    ['VC', ['H', 'L', 'N']],
+    ['VI', ['H', 'L', 'N']],
+    ['VA', ['H', 'L', 'N']],
+    ['SC', ['H', 'L', 'N']],
+    ['SI', ['H', 'L', 'N']],
+    ['SA', ['H', 'L', 'N']],
     // Threat
-    E: ['X', 'A', 'P', 'U'],
+    ['E', ['X', 'A', 'P', 'U']],
     // Environmental (modified base) — same enums as their base counterparts plus X
-    MAV: ['X', 'N', 'A', 'L', 'P'],
-    MAC: ['X', 'L', 'H'],
-    MAT: ['X', 'N', 'P'],
-    MPR: ['X', 'N', 'L', 'H'],
-    MUI: ['X', 'N', 'P', 'A'],
-    MVC: ['X', 'H', 'L', 'N'],
-    MVI: ['X', 'H', 'L', 'N'],
-    MVA: ['X', 'H', 'L', 'N'],
-    MSC: ['X', 'H', 'L', 'N'],
-    MSI: ['X', 'S', 'H', 'L', 'N'],
-    MSA: ['X', 'S', 'H', 'L', 'N'],
+    ['MAV', ['X', 'N', 'A', 'L', 'P']],
+    ['MAC', ['X', 'L', 'H']],
+    ['MAT', ['X', 'N', 'P']],
+    ['MPR', ['X', 'N', 'L', 'H']],
+    ['MUI', ['X', 'N', 'P', 'A']],
+    ['MVC', ['X', 'H', 'L', 'N']],
+    ['MVI', ['X', 'H', 'L', 'N']],
+    ['MVA', ['X', 'H', 'L', 'N']],
+    ['MSC', ['X', 'H', 'L', 'N']],
+    ['MSI', ['X', 'S', 'H', 'L', 'N']],
+    ['MSA', ['X', 'S', 'H', 'L', 'N']],
     // Requirements
-    CR: ['X', 'H', 'M', 'L'],
-    IR: ['X', 'H', 'M', 'L'],
-    AR: ['X', 'H', 'M', 'L'],
+    ['CR', ['X', 'H', 'M', 'L']],
+    ['IR', ['X', 'H', 'M', 'L']],
+    ['AR', ['X', 'H', 'M', 'L']],
     // Supplemental
-    S: ['X', 'N', 'P'],
-    AU: ['X', 'N', 'Y'],
-    R: ['X', 'A', 'U', 'I'],
-    V: ['X', 'D', 'C'],
-    RE: ['X', 'L', 'M', 'H'],
-    U: ['X', 'Clear', 'Green', 'Amber', 'Red'],
-  },
-};
+    ['S', ['X', 'N', 'P']],
+    ['AU', ['X', 'N', 'Y']],
+    ['R', ['X', 'A', 'U', 'I']],
+    ['V', ['X', 'D', 'C']],
+    ['RE', ['X', 'L', 'M', 'H']],
+    ['U', ['X', 'Clear', 'Green', 'Amber', 'Red']],
+  ])],
+]);
 
-const REQUIRED_METRICS: Record<string, string[]> = {
-  '2.0': ['AV', 'AC', 'Au', 'C', 'I', 'A'],
-  '3.0': ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'],
-  '3.1': ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'],
-  '4.0': ['AV', 'AC', 'AT', 'PR', 'UI', 'VC', 'VI', 'VA', 'SC', 'SI', 'SA'],
-};
+const REQUIRED_METRICS: ReadonlyMap<string, readonly string[]> = new Map([
+  ['2.0', ['AV', 'AC', 'Au', 'C', 'I', 'A']],
+  ['3.0', ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A']],
+  ['3.1', ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A']],
+  ['4.0', ['AV', 'AC', 'AT', 'PR', 'UI', 'VC', 'VI', 'VA', 'SC', 'SI', 'SA']],
+]);
 
 /**
  * Parse a CVSS vector string into version + metric map.
@@ -234,8 +237,8 @@ export function validateCvssVector(
   const parsed = parseCvssVector(vector);
   const v = version ?? parsed.version;
 
-  const grammar = METRIC_VALUES[v];
-  const required = REQUIRED_METRICS[v];
+  const grammar = METRIC_VALUES.get(v);
+  const required = REQUIRED_METRICS.get(v);
   if (!grammar || !required) {
     errors.push(`unsupported CVSS version: ${v}`);
     return { valid: false, errors };
@@ -248,7 +251,7 @@ export function validateCvssVector(
   }
 
   for (const [key, value] of parsed.metrics.entries()) {
-    const allowed = grammar[key];
+    const allowed = grammar.get(key);
     if (!allowed) {
       // Unknown metric: forward-compat — no error.
       continue;

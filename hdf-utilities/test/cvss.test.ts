@@ -21,11 +21,20 @@ interface CvssScoreCase {
 // Shared vector files in testdata; the Go tests read the same files, so both
 // languages assert identical values.
 function loadVectorCases<T>(name: string): T[] {
-  return (
-    JSON.parse(
-      readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', name), 'utf-8'),
-    ) as { cases: T[] }
-  ).cases;
+  return loadCaseGroup<T>(name, 'cases');
+}
+
+// One named array of a shared testdata file, for a file carrying more than one
+// group of cases.
+function loadCaseGroup<T>(name: string, key: string): T[] {
+  const file = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', name), 'utf-8'),
+  ) as Record<string, T[]>;
+  const cases = file[key];
+  if (cases === undefined || cases.length === 0) {
+    throw new Error(`${name}: no "${key}" cases`);
+  }
+  return cases;
 }
 const cvss31Cases = loadVectorCases<CvssScoreCase>('cvss31-vectors.json');
 const cvss30Cases = loadVectorCases<CvssScoreCase>('cvss30-vectors.json');
@@ -301,6 +310,53 @@ describe('validateCvssVector', () => {
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('E'))).toBe(true);
   });
+});
+
+interface CvssIgnoredMetricCase {
+  vector: string;
+  equivalent: string;
+  version: string;
+  base: number;
+  temporal: number;
+  note: string;
+}
+
+interface CvssUnsupportedVersionCase {
+  vector: string;
+  version: string;
+  note: string;
+}
+
+const PROTOTYPE_KEY_FILE = 'cvss-prototype-key-cases.json';
+
+describe('lookup keys that are also object prototype members', () => {
+  for (const c of loadCaseGroup<CvssIgnoredMetricCase>(
+    PROTOTYPE_KEY_FILE,
+    'ignoredMetricNames',
+  )) {
+    it(`ignores the extra metric in ${c.vector} (${c.note})`, () => {
+      expect(validateCvssVector(c.vector)).toEqual({ valid: true, errors: [] });
+      const score = computeCvssScore(c.vector);
+      expect(score).toEqual({
+        version: c.version,
+        baseScore: c.base,
+        temporalScore: c.temporal,
+      });
+      expect(score).toEqual(computeCvssScore(c.equivalent));
+    });
+  }
+
+  for (const c of loadCaseGroup<CvssUnsupportedVersionCase>(
+    PROTOTYPE_KEY_FILE,
+    'unsupportedVersions',
+  )) {
+    it(`reports version "${c.version}" as unsupported (${c.note})`, () => {
+      expect(validateCvssVector(c.vector, c.version)).toEqual({
+        valid: false,
+        errors: [`unsupported CVSS version: ${c.version}`],
+      });
+    });
+  }
 });
 
 describe('computeCvssScore (CVSS 3.1)', () => {

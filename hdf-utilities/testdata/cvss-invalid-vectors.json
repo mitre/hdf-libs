@@ -1,5 +1,5 @@
 {
-  "_comment": "Vectors computeCvssScore / ComputeCvssScore must refuse rather than score, with a text the error must contain. Shared by go/cvss_test.go and test/cvss.test.ts so both languages refuse the same inputs with the same message. Metric names that are also JavaScript object properties (toString, constructor, __proto__, hasOwnProperty) must be refused like any other out-of-enum value.",
+  "_comment": "Vectors computeCvssScore / ComputeCvssScore must refuse rather than score, with a text the error must contain. Shared by go/cvss_test.go and test/cvss.test.ts so both languages refuse the same inputs with the same message. Metric *values* that are also JavaScript object prototype members (toString, constructor, __proto__, hasOwnProperty) must be refused like any other out-of-enum value. One of those names in the metric *name* position is ignored instead, for forward compatibility, and is pinned by cvss-prototype-key-cases.json.",
   "cases": [
     { "vector": "AV:N/AC:L/Au:N/C:P/I:P", "mentions": "metric \"A\"", "note": "2.0 missing a base metric" },
     { "vector": "AV:N/AC:L/Au:X/C:P/I:P/A:P", "mentions": "Au:\"X\"", "note": "2.0 out-of-enum base value" },
