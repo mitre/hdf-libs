@@ -31,6 +31,8 @@ mise install   # install the pinned tools, verified against mise.lock
 
 The pre-commit hook runs `mise exec -- pnpm check`, so it uses these versions whether or not mise is activated in your shell. For a single command, prefix it the same way, for example `mise exec -- golangci-lint run` in a module directory.
 
+Workflow lint runs in the hook and CI with the same pinned jactionlint and ShellCheck binaries. A missing tool fails the check; `mise install` installs both.
+
 Why golangci-lint is pinned to a release binary: its formatters are compiled in from the Go that builds it. A golangci-lint built with a newer Go reports formatting that CI's accepts, so a local build from source (`go install`, Homebrew) can fail the hook on code CI passes. golangci-lint's own [install guide](https://golangci-lint.run/docs/welcome/install/local/) recommends the release binary for the same reason.
 
 To move a pin: edit `mise.toml`, the `go` line of `go.work` or `packageManager` in `package.json`, run `mise lock` to refresh `mise.lock` for every platform, and commit both. A new Node.js release on the same line needs no edit: `mise lock --bump node` moves the lock to it. A new golangci-lint or Go release can change gofmt's output; run `golangci-lint fmt` across the modules in the same change.
