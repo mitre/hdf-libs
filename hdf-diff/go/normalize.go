@@ -154,14 +154,7 @@ func normalizeControl(control map[string]any) hdf.EvaluatedRequirement {
 		req.Title = &title
 	}
 
-	// desc -> descriptions array
-	if desc, ok := control["desc"].(string); ok && desc != "" {
-		req.Descriptions = []hdf.Description{
-			{Label: "default", Data: desc},
-		}
-	} else {
-		req.Descriptions = []hdf.Description{}
-	}
+	req.Descriptions = normalizeDescriptions(control)
 
 	req.Impact = getFloat(control, "impact")
 
@@ -181,8 +174,7 @@ func normalizeControl(control map[string]any) hdf.EvaluatedRequirement {
 	}
 
 	// source_location or sourceLocation
-	sl := normalizeSourceLocation(control)
-	req.SourceLocation = &sl
+	req.SourceLocation = normalizeSourceLocation(control)
 
 	// Results
 	results, _ := control["results"].([]any)
@@ -197,6 +189,40 @@ func normalizeControl(control map[string]any) hdf.EvaluatedRequirement {
 	req.Results = reqResults
 
 	return req
+}
+
+// A default-labelled description is schema-required (minItems 1 plus a contains
+// constraint), and `descriptions` is one of the fields the differ tracks — so
+// dropping the legacy descriptions[] array made check and fix text changes
+// invisible to it, not merely absent from the output.
+func normalizeDescriptions(control map[string]any) []hdf.Description {
+	legacy := []hdf.Description{}
+	hasDefault := false
+	raws, _ := control["descriptions"].([]any)
+	for _, raw := range raws {
+		dMap, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		label, ok := dMap["label"].(string)
+		if !ok || label == "" {
+			continue
+		}
+		if label == "default" {
+			hasDefault = true
+		}
+		data, _ := dMap["data"].(string)
+		legacy = append(legacy, hdf.Description{Label: label, Data: data})
+	}
+
+	// A legacy `default` entry is the source's own prose and wins over `desc`;
+	// overwriting it from `desc` dropped that prose whenever the two differed.
+	// Matches ensureDefaultDescription, which the converter uses.
+	if hasDefault {
+		return legacy
+	}
+	desc, _ := control["desc"].(string)
+	return append([]hdf.Description{{Label: "default", Data: desc}}, legacy...)
 }
 
 func normalizeResult(result map[string]any) hdf.RequirementResult {
@@ -241,26 +267,27 @@ func normalizeResultStatus(status string) string {
 	}
 }
 
-func normalizeSourceLocation(control map[string]any) hdf.SourceLocation {
-	sl := hdf.SourceLocation{}
-
-	// Try snake_case first, then camelCase
+// Nil when the control carries no source location: emitting an empty object
+// where TypeScript omits the key is the same shape divergence as the rest of
+// this file, and the declared SourceLocation is a closed {ref, line}.
+func normalizeSourceLocation(control map[string]any) *hdf.SourceLocation {
 	var loc map[string]any
 	if v, ok := control["source_location"].(map[string]any); ok {
 		loc = v
 	} else if v, ok := control["sourceLocation"].(map[string]any); ok {
 		loc = v
 	}
-
-	if loc != nil {
-		if ref, ok := loc["ref"].(string); ok {
-			sl.Ref = &ref
-		}
-		if line, ok := loc["line"].(float64); ok {
-			sl.Line = &line
-		}
+	if loc == nil {
+		return nil
 	}
 
+	sl := &hdf.SourceLocation{}
+	if ref, ok := loc["ref"].(string); ok {
+		sl.Ref = &ref
+	}
+	if line, ok := loc["line"].(float64); ok {
+		sl.Line = &line
+	}
 	return sl
 }
 
@@ -280,8 +307,20 @@ func normalizeGroups(profile map[string]any) []hdf.RequirementGroup {
 	result := make([]hdf.RequirementGroup, 0, len(groups))
 	for _, g := range groups {
 		if gMap, ok := g.(map[string]any); ok {
+			// A legacy group names its members `controls`; the declared field is
+			// `requirements`. Leaving it unset both lost the membership list and
+			// marshalled as null, which the schema rejects.
+			members := []string{}
+			if controls, ok := gMap["controls"].([]any); ok {
+				for _, c := range controls {
+					if id, ok := c.(string); ok {
+						members = append(members, id)
+					}
+				}
+			}
 			rg := hdf.RequirementGroup{
-				ID: getString(gMap, "id"),
+				ID:           getString(gMap, "id"),
+				Requirements: members,
 			}
 			if title, ok := gMap["title"].(string); ok {
 				rg.Title = &title
@@ -300,12 +339,23 @@ func normalizeSupports(profile map[string]any) []hdf.SupportedPlatform {
 	result := make([]hdf.SupportedPlatform, 0, len(supports))
 	for _, s := range supports {
 		if sMap, ok := s.(map[string]any); ok {
+			// InSpec writes these hyphenated; reading camelCase meant every key
+			// but `platform` was silently dropped.
 			sp := hdf.SupportedPlatform{}
-			if p, ok := sMap["platform"].(string); ok {
+			if p, ok := sMap["platform"].(string); ok && p != "" {
 				sp.Platform = &p
 			}
-			if pn, ok := sMap["platformName"].(string); ok {
+			if pf, ok := sMap["platform-family"].(string); ok && pf != "" {
+				sp.PlatformFamily = &pf
+			}
+			if pn, ok := sMap["platform-name"].(string); ok && pn != "" {
 				sp.PlatformName = &pn
+			}
+			if r, ok := sMap["release"].(string); ok && r != "" {
+				sp.Release = &r
+			}
+			if sp.Platform == nil && sp.PlatformFamily == nil && sp.PlatformName == nil && sp.Release == nil {
+				continue
 			}
 			result = append(result, sp)
 		}
@@ -334,28 +384,71 @@ func normalizeRefs(control map[string]any) []hdf.Reference {
 	}
 	result := make([]hdf.Reference, 0, len(refs))
 	for _, r := range refs {
-		ref := hdf.Reference{}
-		switch v := r.(type) {
-		case string:
-			// Plain string ref: wrap in Ref.String
-			ref.Ref = &hdf.Ref{String: &v}
-		case map[string]any:
-			// Object ref: extract "ref", "url", "uri" fields
-			if refStr, ok := v["ref"].(string); ok {
-				ref.Ref = &hdf.Ref{String: &refStr}
-			}
-			if urlStr, ok := v["url"].(string); ok {
-				ref.URL = &urlStr
-			}
-			if uriStr, ok := v["uri"].(string); ok {
-				ref.URI = &uriStr
-			}
-		default:
-			// Unknown format: add empty Reference to preserve count
+		if ref := normalizeRef(r); ref != nil {
+			result = append(result, *ref)
 		}
-		result = append(result, ref)
 	}
 	return result
+}
+
+// A Reference with nothing in it fails the schema, which requires one of ref,
+// url or uri. Real InSpec emits `{"ref": []}`, so preserving a slot for it (the
+// previous behaviour) emitted an empty Reference and made the output invalid.
+// Mirrors convertRef in the legacyhdf-to-hdf converter.
+func normalizeRef(raw any) *hdf.Reference {
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		s := v
+		return &hdf.Reference{Ref: &hdf.Ref{String: &s}}
+	case map[string]any:
+		ref := &hdf.Reference{}
+		has := false
+		if r := normalizeRefValue(v["ref"]); r != nil {
+			ref.Ref = r
+			has = true
+		}
+		if u, ok := v["url"].(string); ok && u != "" {
+			ref.URL = &u
+			has = true
+		}
+		if u, ok := v["uri"].(string); ok && u != "" {
+			ref.URI = &u
+			has = true
+		}
+		if !has {
+			return nil
+		}
+		return ref
+	}
+	return nil
+}
+
+// Ref is a union of a string and an array of objects; an empty array carries
+// nothing, so it is absence rather than a value.
+func normalizeRefValue(raw any) *hdf.Ref {
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		s := v
+		return &hdf.Ref{String: &s}
+	case []any:
+		maps := make([]map[string]any, 0, len(v))
+		for _, e := range v {
+			if m, ok := e.(map[string]any); ok {
+				maps = append(maps, m)
+			}
+		}
+		if len(maps) == 0 {
+			return nil
+		}
+		return &hdf.Ref{AnythingMapArray: maps}
+	}
+	return nil
 }
 
 // Helper functions for safe type extraction from map[string]any.
