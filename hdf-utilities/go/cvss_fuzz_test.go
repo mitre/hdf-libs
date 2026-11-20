@@ -16,6 +16,7 @@ func FuzzParseCvssVector(f *testing.F) {
 	seeds := []string{
 		"AV:N/AC:L/Au:N/C:C/I:C/A:C",                                                     // legacy 2.0
 		"AV:N/AC:M/Au:S/C:P/I:P/A:N/E:POC/RL:OF/RC:C/CDP:LM/TD:H/CR:M",                   // 2.0 with temporal + environmental
+		"AV:L/AC:H/Au:M/C:N/I:N/A:N",                                                     // 2.0 zero impact, negative bracket
 		"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",                                   // 3.0
 		"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H/E:F/RL:O/RC:C",                     // 3.1 scope changed + temporal
 		"CVSS:3.1/AV:P/AC:H/PR:H/UI:R/S:U/C:N/I:N/A:N",                                   // 3.1 all-minimal
