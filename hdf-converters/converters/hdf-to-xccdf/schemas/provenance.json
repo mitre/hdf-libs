@@ -27,6 +27,12 @@
       "source": "https://www.w3.org/2009/01/xml.xsd",
       "sha256": "cc701736c42cc64126fad063bb95f94484b5de3b5f808a86ea098b0957aff829",
       "retrieved": "2026-09-09"
+    },
+    {
+      "file": "xccdf-1.1.4.xsd",
+      "source": "https://csrc.nist.gov/schema/xccdf/1.1.4/xccdf-1.1.4.xsd",
+      "sha256": "d3db163244693d76d6a0899e05d0b2cc0cbffdbe744a0713d737c39e00595a78",
+      "retrieved": "2026-10-28"
     }
   ]
 }

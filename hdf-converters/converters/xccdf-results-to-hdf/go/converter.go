@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,16 +41,58 @@ func isXccdfNS(ns string) bool {
 
 // Benchmark is the root element of an XCCDF document.
 type Benchmark struct {
-	XMLName     xml.Name   `xml:"Benchmark"`
-	ID          string     `xml:"id,attr"`
-	Status      string     `xml:"status"`
-	Title       string     `xml:"title"`
-	Description string     `xml:"description"`
-	Version     string     `xml:"version"`
-	Platforms   []Platform `xml:"platform"`
-	Groups      []Group    `xml:"Group"`
-	Rules       []Rule     `xml:"Rule"`
-	TestResult  TestResult `xml:"TestResult"`
+	XMLName     xml.Name             `xml:"Benchmark"`
+	ID          string               `xml:"id,attr"`
+	Statuses    []BenchmarkStatus    `xml:"status"`
+	Title       string               `xml:"title"`
+	Description Prose                `xml:"description"`
+	Notices     []Notice             `xml:"notice"`
+	References  []BenchmarkReference `xml:"reference"`
+	PlainTexts  []PlainText          `xml:"plain-text"`
+	Version     string               `xml:"version"`
+	Platforms   []Platform           `xml:"platform"`
+	Profiles    []Profile            `xml:"Profile"`
+	Groups      []Group              `xml:"Group"`
+	Rules       []Rule               `xml:"Rule"`
+	TestResult  TestResult           `xml:"TestResult"`
+}
+
+// BenchmarkStatus is the benchmark's XCCDF status with its date.
+type BenchmarkStatus struct {
+	Date  string `xml:"date,attr"`
+	Value string `xml:",chardata"`
+}
+
+// Notice is a benchmark notice: prose (htmlTextWithSubType) with an id.
+type Notice struct {
+	ID    string `xml:"id,attr"`
+	Inner string `xml:",innerxml"`
+}
+
+// BenchmarkReference is a benchmark-level reference with its Dublin Core
+// publisher and source.
+type BenchmarkReference struct {
+	Publishers []string `xml:"publisher"`
+	Sources    []string `xml:"source"`
+}
+
+// PlainText is a benchmark plain-text element, selected by id.
+type PlainText struct {
+	ID   string `xml:"id,attr"`
+	Text string `xml:",chardata"`
+}
+
+// Profile is a benchmark Profile with the items it selects.
+type Profile struct {
+	ID      string          `xml:"id,attr"`
+	Titles  []string        `xml:"title"`
+	Selects []ProfileSelect `xml:"select"`
+}
+
+// ProfileSelect is one Profile select; @selected defaults to true in XCCDF.
+type ProfileSelect struct {
+	IDRef    string `xml:"idref,attr"`
+	Selected string `xml:"selected,attr"`
 }
 
 // Platform represents an XCCDF platform element.
@@ -61,10 +105,11 @@ type Platform struct {
 // bound to a single Rule silently drops every rule after the first, and a Group
 // without nested Groups drops whole subtrees.
 type Group struct {
-	ID     string  `xml:"id,attr"`
-	Title  string  `xml:"title"`
-	Rules  []Rule  `xml:"Rule"`
-	Groups []Group `xml:"Group"`
+	ID       string  `xml:"id,attr"`
+	Selected string  `xml:"selected,attr"`
+	Title    string  `xml:"title"`
+	Rules    []Rule  `xml:"Rule"`
+	Groups   []Group `xml:"Group"`
 }
 
 // groupedRule pairs a rule with the Group it was found in, at any depth.
@@ -114,9 +159,9 @@ type Rule struct {
 	Weight      string          `xml:"weight,attr"`
 	Version     string          `xml:"version"`
 	Title       string          `xml:"title"`
-	Description string          `xml:"description"`
-	Rationale   string          `xml:"rationale"`
-	Warning     string          `xml:"warning"`
+	Description Prose           `xml:"description"`
+	Rationale   Prose           `xml:"rationale"`
+	Warning     Prose           `xml:"warning"`
 	Fixtext     Fixtext         `xml:"fixtext"`
 	Idents      []Ident         `xml:"ident"`
 	Checks      []Check         `xml:"check"`
@@ -134,10 +179,91 @@ type RuleReference struct {
 	Type       string `xml:"type"`
 }
 
-// Fixtext represents an XCCDF fixtext element with optional fixref attribute.
+// Fixtext is an XCCDF fixtext element: prose with an optional fixref attribute.
 type Fixtext struct {
-	Text   string `xml:",chardata"`
+	Inner  string `xml:",innerxml"`
 	Fixref string `xml:"fixref,attr"`
+}
+
+// Text is the fixtext prose, read the way Prose is.
+func (f Fixtext) Text() string {
+	return proseFromInnerXML(f.Inner)
+}
+
+// Prose is the text of an htmlTextWithSubType element (description, rationale,
+// warning, fixtext, front and rear matter). CIS and SCAP Security Guide content
+// carries its words inside XHTML children, so the element's own character data
+// is not the text; the raw inner XML is, with the markup stripped later by the
+// callers, as DISA's escaped sub-elements already are.
+type Prose string
+
+func (p *Prose) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var raw struct {
+		Inner string `xml:",innerxml"`
+	}
+	if err := d.DecodeElement(&raw, &start); err != nil {
+		return err
+	}
+	*p = Prose(proseFromInnerXML(raw.Inner))
+	return nil
+}
+
+var (
+	cdataSectionRe = regexp.MustCompile(`(?s)<!\[CDATA\[(.*?)\]\]>`)
+	xmlCommentOrPI = regexp.MustCompile(`(?s)<!--.*?-->|<\?.*?\?>`)
+	xmlEntityRe    = regexp.MustCompile(`&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));`)
+	lineEndingRe   = regexp.MustCompile(`\r\n?`)
+)
+
+var xmlNamedEntities = map[string]string{"lt": "<", "gt": ">", "quot": `"`, "apos": "'", "amp": "&"}
+
+// proseFromInnerXML turns raw inner XML into the text the decoder would have
+// produced for character data, and the same text the TypeScript converter
+// produces from the same bytes: line endings folded to LF (XML 1.0 §2.11),
+// CDATA sections literal, comments and processing instructions dropped (the
+// markup stripper would stop at the first ">" inside one), and the predefined
+// and numeric entities decoded everywhere else. Element tags stay in place for
+// the markup stripper.
+func proseFromInnerXML(inner string) string {
+	inner = lineEndingRe.ReplaceAllString(inner, "\n")
+	var b strings.Builder
+	last := 0
+	for _, m := range cdataSectionRe.FindAllStringSubmatchIndex(inner, -1) {
+		b.WriteString(proseMarkupText(inner[last:m[0]]))
+		b.WriteString(inner[m[2]:m[3]])
+		last = m[1]
+	}
+	b.WriteString(proseMarkupText(inner[last:]))
+	return b.String()
+}
+
+func proseMarkupText(s string) string {
+	return decodeXMLEntities(xmlCommentOrPI.ReplaceAllString(s, ""))
+}
+
+// decodeXMLEntities decodes the five predefined entities and decimal or hex
+// character references, and nothing else, matching the TypeScript decoder: a
+// reference to no valid code point becomes U+FFFD in both.
+func decodeXMLEntities(s string) string {
+	return xmlEntityRe.ReplaceAllStringFunc(s, func(ref string) string {
+		m := xmlEntityRe.FindStringSubmatch(ref)
+		switch {
+		case m[1] != "":
+			return codePointText(m[1], 10)
+		case m[2] != "":
+			return codePointText(m[2], 16)
+		default:
+			return xmlNamedEntities[m[3]]
+		}
+	})
+}
+
+func codePointText(digits string, base int) string {
+	n, err := strconv.ParseInt(digits, base, 32)
+	if err != nil {
+		return "\uFFFD"
+	}
+	return string(rune(n))
 }
 
 // Ident represents an XCCDF ident element (CCI, CCE, etc.).
@@ -825,7 +951,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		Title:           hdfutil.Ptr(baselineName),
 		Version:         hdfutil.Ptr(benchmark.Version),
 		Status:          &status,
-		Summary:         hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
+		Summary:         hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
@@ -850,6 +976,189 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 // ---------------------------------------------------------------------------
 // Benchmark-to-Baseline conversion
 // ---------------------------------------------------------------------------
+
+// benchmarkPassthrough gathers the benchmark-level facts the Baseline has no
+// field for, flat under extensions.passthrough with the keys the CKL path
+// uses. A missing or empty source leaves its key out.
+func benchmarkPassthrough(b *Benchmark) map[string]any {
+	ext := map[string]any{}
+	if info := b.plainText("release-info"); info != "" {
+		ext["releaseInfo"] = info
+		if release, date, ok := parseReleaseInfo(info); ok {
+			ext["benchmarkRelease"] = release
+			ext["benchmarkDate"] = date
+		}
+	}
+	status := b.currentStatus()
+	setIfNotEmpty(ext, "benchmarkStatus", strings.TrimSpace(status.Value))
+	setIfNotEmpty(ext, "benchmarkStatusDate", status.Date)
+	var notices []map[string]any
+	for _, n := range b.Notices {
+		notices = append(notices, map[string]any{"id": n.ID, "text": hdfutil.StripHTML(proseFromInnerXML(n.Inner))})
+	}
+	if len(notices) > 0 {
+		ext["notices"] = notices
+	}
+	for _, r := range b.References {
+		if _, set := ext["publisher"]; !set {
+			setIfNotEmpty(ext, "publisher", firstOf(r.Publishers))
+		}
+		if _, set := ext["source"]; !set {
+			setIfNotEmpty(ext, "source", firstOf(r.Sources))
+		}
+	}
+	var platforms []string
+	for _, p := range b.Platforms {
+		if p.IDRef != "" {
+			platforms = append(platforms, p.IDRef)
+		}
+	}
+	if len(platforms) > 0 {
+		ext["platforms"] = platforms
+	}
+	var profiles []map[string]any
+	if len(b.Profiles) > 0 {
+		rules, groups := buildRuleMap(b), groupsByID(b)
+		for i := range b.Profiles {
+			p := &b.Profiles[i]
+			profiles = append(profiles, map[string]any{"id": p.ID, "selectedRuleIds": selectedRequirementIDs(p, rules, groups), "title": firstOf(p.Titles)})
+		}
+	}
+	if len(profiles) > 0 {
+		ext["profiles"] = profiles
+	}
+	setIfNotEmpty(ext, "generatorVersion", b.plainText("generator"))
+	setIfNotEmpty(ext, "conventionsVersion", b.plainText("conventionsVersion"))
+	return ext
+}
+
+// selectedRequirementIDs resolves a Profile's selects to requirement ids: a
+// Rule contributes its own id and a Group every rule it holds at any depth
+// unless that rule or an inner group is deselected (XCCDF: selecting a Group
+// selects its items): a group's rules, then its nested groups, each in
+// document order. Ids are revision-free and deduplicated; an idref naming
+// nothing is kept as given, revision-free.
+func selectedRequirementIDs(p *Profile, rules map[string]*Rule, groups map[string]*Group) []string {
+	var ids []string
+	for _, s := range p.Selects {
+		switch {
+		case isDeselected(s.Selected) || s.IDRef == "":
+		case rules[s.IDRef] != nil:
+			ids = append(ids, baselineRequirementID(rules[s.IDRef]))
+		case groups[s.IDRef] != nil:
+			ids = append(ids, groupRequirementIDs(groups[s.IDRef])...)
+		default:
+			ids = append(ids, extractRuleID(s.IDRef))
+		}
+	}
+	out := dedup(ids)
+	if out == nil {
+		out = []string{}
+	}
+	return out
+}
+
+func groupRequirementIDs(g *Group) []string {
+	var ids []string
+	for i := range g.Rules {
+		if !isDeselected(g.Rules[i].Selected) {
+			ids = append(ids, baselineRequirementID(&g.Rules[i]))
+		}
+	}
+	for i := range g.Groups {
+		if !isDeselected(g.Groups[i].Selected) {
+			ids = append(ids, groupRequirementIDs(&g.Groups[i])...)
+		}
+	}
+	return ids
+}
+
+// groupsByID indexes every Group at any depth by its id.
+func groupsByID(b *Benchmark) map[string]*Group {
+	index := map[string]*Group{}
+	var walk func(groups []Group)
+	walk = func(groups []Group) {
+		for i := range groups {
+			index[groups[i].ID] = &groups[i]
+			walk(groups[i].Groups)
+		}
+	}
+	walk(b.Groups)
+	return index
+}
+
+// baselineRequirementID is the requirement id a Rule becomes: the SV- id
+// without its revision suffix, or the rule's version when it has no id.
+func baselineRequirementID(rule *Rule) string {
+	if id := extractRuleID(rule.ID); id != "" {
+		return id
+	}
+	return rule.Version
+}
+
+// currentStatus is the benchmark's current status: the one with the latest
+// date, or the last in document order when none is dated, as XCCDF defines it.
+func (b *Benchmark) currentStatus() BenchmarkStatus {
+	var current BenchmarkStatus
+	for _, s := range b.Statuses {
+		if s.Date > current.Date || (s.Date == "" && current.Date == "") {
+			current = s
+		}
+	}
+	return current
+}
+
+// firstOf is the first of several same-named elements (a Profile may carry one
+// title per language, a reference one publisher per language); "" when none.
+func firstOf(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return items[0]
+}
+
+// isDeselected reads an XCCDF selected attribute as xs:boolean: "false" or
+// "0", trimmed; anything else, including absence, is selected.
+func isDeselected(selected string) bool {
+	switch strings.TrimSpace(selected) {
+	case "false", "0":
+		return true
+	}
+	return false
+}
+
+// plainText is the trimmed text of the plain-text element with the given id,
+// found by id and never by position, or "".
+func (b *Benchmark) plainText(id string) string {
+	for _, p := range b.PlainTexts {
+		if p.ID == id {
+			return strings.TrimSpace(p.Text)
+		}
+	}
+	return ""
+}
+
+// parseReleaseInfo splits DISA's "Release: 9 Benchmark Date: 01 Jul 2026" into
+// the release and the date, as stig-parser does. Anything else is not parsed
+// and the caller keeps the text verbatim.
+func parseReleaseInfo(info string) (release, date string, ok bool) {
+	before, after, found := strings.Cut(info, "Benchmark Date: ")
+	if !found {
+		return "", "", false
+	}
+	release = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(before), "Release:"))
+	date = strings.TrimSpace(after)
+	if release == "" || date == "" {
+		return "", "", false
+	}
+	return release, date, true
+}
+
+func setIfNotEmpty(m map[string]any, key, val string) {
+	if val != "" {
+		m[key] = val
+	}
+}
 
 func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
 	integrity := shared.InputIntegrity(input)
@@ -887,7 +1196,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Title:        hdfutil.Ptr(benchmark.Title),
 		Version:      hdfutil.Ptr(benchmark.Version),
 		Status:       &status,
-		Summary:      hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
+		Summary:      hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
 		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
@@ -896,6 +1205,9 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 			Version: converterVersion,
 		},
 	}
+	if ext := benchmarkPassthrough(benchmark); len(ext) > 0 {
+		baseline.Extensions = &hdf.Extensions{Passthrough: ext}
+	}
 
 	return baseline, nil
 }
@@ -903,10 +1215,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 // convertRuleToBaselineRequirement converts a single XCCDF Rule into an HDF
 // BaselineRequirement for benchmark-to-baseline conversion.
 func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequirement {
-	id := extractRuleID(rule.ID)
-	if id == "" {
-		id = rule.Version
-	}
+	id := baselineRequirementID(rule)
 
 	severity := strings.ToLower(rule.Severity)
 	impact := hdfutil.SeverityToImpact(severity, 0.5)
@@ -940,7 +1249,7 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description
 
 	if rule.Description != "" {
-		descText := extractVulnDiscussion(rule.Description)
+		descText := extractVulnDiscussion(string(rule.Description))
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
 			Data:  hdfutil.StripHTML(descText),
@@ -959,21 +1268,21 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule.Fixtext.Text != "" {
+	if fix := rule.Fixtext.Text(); fix != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(fix),
 		})
 	}
 
-	if r := strings.TrimSpace(rule.Rationale); r != "" {
+	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "rationale",
 			Data:  hdfutil.StripHTML(r),
 		})
 	}
 
-	if w := strings.TrimSpace(rule.Warning); w != "" {
+	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "warning",
 			Data:  hdfutil.StripHTML(w),
@@ -1018,8 +1327,64 @@ func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
 		tags["gid"] = group.ID
 		tags["gtitle"] = group.Title
 	}
+	addDescriptionSubElementTags(tags, string(rule.Description))
 
 	return tags
+}
+
+// DISA's description body is literal text with eleven labelled sub-elements
+// (VulnDiscussion feeds the default description); these ten become tags. The
+// severity guidance was spelled SecurityOverrideGuidance until 2012, so both
+// spellings feed one tag; the current spelling wins when a rule carries both.
+var descriptionSubElementTags = []struct{ element, tag string }{
+	{"FalsePositives", "false_positives"},
+	{"FalseNegatives", "false_negatives"},
+	{"Mitigations", "mitigations"},
+	{"SeverityOverrideGuidance", "severity_override_guidance"},
+	{"SecurityOverrideGuidance", "severity_override_guidance"},
+	{"PotentialImpacts", "potential_impacts"},
+	{"ThirdPartyTools", "third_party_tools"},
+	{"MitigationControl", "mitigation_control"},
+	{"IAControls", "ia_controls"},
+}
+
+// addDescriptionSubElementTags emits one tag per non-empty DISA sub-element:
+// strings for the elements above (the first non-empty occurrence of the first
+// spelling that has one), a list for Responsibility (DISA repeats it), a bool
+// for Documentable ("true"/"false"; anything else is not a boolean and is left
+// out rather than guessed).
+func addDescriptionSubElementTags(tags map[string]interface{}, desc string) {
+	for _, s := range descriptionSubElementTags {
+		if _, set := tags[s.tag]; set {
+			continue
+		}
+		if vals := descriptionSubElementText(desc, s.element); len(vals) > 0 {
+			tags[s.tag] = vals[0]
+		}
+	}
+	if vals := descriptionSubElementText(desc, "Responsibility"); len(vals) > 0 {
+		tags["responsibility"] = vals
+	}
+	if vals := descriptionSubElementText(desc, "Documentable"); len(vals) > 0 {
+		switch vals[0] {
+		case "true":
+			tags["documentable"] = true
+		case "false":
+			tags["documentable"] = false
+		}
+	}
+}
+
+// descriptionSubElementText is every non-empty occurrence of <element> in
+// document order, markup stripped the way the default description is.
+func descriptionSubElementText(desc, element string) []string {
+	var out []string
+	for _, raw := range descriptionFieldValues(desc, element) {
+		if v := strings.TrimSpace(hdfutil.StripHTML(raw)); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // kebabCase converts a string like "MS_Windows_Server_2022_STIG" to
@@ -1171,7 +1536,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		}
 		if benchmark != nil {
 			baseline.Version = hdfutil.Ptr(benchmark.Version)
-			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description))
+			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description)))
 		}
 		baselines = append(baselines, baseline)
 
@@ -1426,7 +1791,7 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description
 
 	if rule != nil && rule.Description != "" {
-		descText := extractVulnDiscussion(rule.Description)
+		descText := extractVulnDiscussion(string(rule.Description))
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
 			Data:  hdfutil.StripHTML(descText),
@@ -1449,21 +1814,21 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule.Fixtext.Text != "" {
+	if fix := rule.Fixtext.Text(); fix != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(fix),
 		})
 	}
 
-	if r := strings.TrimSpace(rule.Rationale); r != "" {
+	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "rationale",
 			Data:  hdfutil.StripHTML(r),
 		})
 	}
 
-	if w := strings.TrimSpace(rule.Warning); w != "" {
+	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "warning",
 			Data:  hdfutil.StripHTML(w),
@@ -1477,21 +1842,32 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 // XML element embedded in the description string. Returns the full string
 // if no VulnDiscussion element is found.
 func extractVulnDiscussion(desc string) string {
-	const openTag = "<VulnDiscussion>"
-	const closeTag = "</VulnDiscussion>"
-
-	startIdx := strings.Index(desc, openTag)
-	if startIdx == -1 {
-		return desc
+	if vals := descriptionFieldValues(desc, "VulnDiscussion"); len(vals) > 0 {
+		return vals[0]
 	}
-	startIdx += len(openTag)
+	return desc
+}
 
-	endIdx := strings.Index(desc[startIdx:], closeTag)
-	if endIdx == -1 {
-		return desc
+// descriptionFieldValues is the raw text inside every <element>…</element>
+// pair of a DISA description, in document order. It splits on the literal
+// tags and never parses: 209 of the current library's descriptions are not
+// well-formed XML, and DISA's own stylesheet string-splits the same way.
+func descriptionFieldValues(desc, element string) []string {
+	openTag, closeTag := "<"+element+">", "</"+element+">"
+	var vals []string
+	for rest := desc; ; {
+		start := strings.Index(rest, openTag)
+		if start == -1 {
+			return vals
+		}
+		rest = rest[start+len(openTag):]
+		end := strings.Index(rest, closeTag)
+		if end == -1 {
+			return vals
+		}
+		vals = append(vals, rest[:end])
+		rest = rest[end+len(closeTag):]
 	}
-
-	return desc[startIdx : startIdx+endIdx]
 }
 
 // buildTags constructs the tags map from the rule-result and rule definition.

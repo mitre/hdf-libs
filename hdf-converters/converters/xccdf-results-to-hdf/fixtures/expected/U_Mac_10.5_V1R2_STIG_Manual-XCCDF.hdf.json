@@ -1,0 +1,538 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "29 Jul 2011",
+      "benchmarkRelease": "2",
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2011-07-29",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": "Terms of Use"
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "III - Administrative Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-31216",
+            "SV-31233",
+            "SV-31239",
+            "SV-31297",
+            "SV-31313",
+            "SV-31345",
+            "SV-31389",
+            "SV-31529"
+          ],
+          "title": "III - Administrative Classified"
+        }
+      ],
+      "publisher": "DISA, Field Security Operations",
+      "releaseInfo": "Release: 2 Benchmark Date: 29 Jul 2011",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-25185",
+      "requirements": [
+        "SV-31216",
+        "SV-31216"
+      ],
+      "title": "OSX00005-Must have an HFS+ formatted drive"
+    },
+    {
+      "id": "V-25200",
+      "requirements": [
+        "SV-31233"
+      ],
+      "title": "OSX00015-Admin accounts with difficult names"
+    },
+    {
+      "id": "V-25204",
+      "requirements": [
+        "SV-31239"
+      ],
+      "title": "OSX00020-Maximum password age"
+    },
+    {
+      "id": "V-25251",
+      "requirements": [
+        "SV-31297"
+      ],
+      "title": "OSX00055-Application software updates"
+    },
+    {
+      "id": "V-25259",
+      "requirements": [
+        "SV-31313"
+      ],
+      "title": "OSX00095-Require an Open Firmware or EFI password "
+    },
+    {
+      "id": "V-25274",
+      "requirements": [
+        "SV-31345"
+      ],
+      "title": "OSX00170-Securely configure /etc/sshd_config"
+    },
+    {
+      "id": "V-25296",
+      "requirements": [
+        "SV-31389"
+      ],
+      "title": "OSX00280-Set the correct date and time"
+    },
+    {
+      "id": "V-25374",
+      "requirements": [
+        "SV-31529"
+      ],
+      "title": "OSX00670-Operating System Updates"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "b49469eda61e8e61abff89aebde14a8a92069b7ecf5e4e978b8e102a8cb8eee6"
+  },
+  "name": "macosx-10.5",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access permissions to file objects is a DoD policy requirement.",
+          "label": "default"
+        },
+        {
+          "data": "OSX00005-1. Click on Finder icon 2. Click on Applications 3. Under Utilities, click on Terminal. 4. Enter command: diskutil info / 5. Ensure File System is Journaled HFS+",
+          "label": "check"
+        },
+        {
+          "data": "OSX00005-Manual option during image build process. Choose HFS+ formatted drive.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31216",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-31659r1_chk",
+        "documentable": false,
+        "fix_id": "F-28138r1_fix",
+        "gid": "V-25185",
+        "gtitle": "OSX00005-Must have an HFS+ formatted drive",
+        "ia_controls": "ECCD-1, ECCD-2",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31216r1_rule",
+        "severity": "high",
+        "stig_id": "OSX00005"
+      },
+      "title": "The hard drive(s) on the system must be formatted using the HFS+ (Hierarchical File System)format."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access permissions to file objects is a DoD policy requirement.",
+          "label": "default"
+        },
+        {
+          "data": "OSX00005-1. Click on Finder icon 2. Click on Applications 3. Under Utilities, click on Terminal. 4. Enter command: diskutil info / 5. Ensure File System is Journaled HFS+",
+          "label": "check"
+        },
+        {
+          "data": "OSX00005-Manual option during image build process. Choose HFS+ formatted drive.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31216",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-31659r1_chk",
+        "documentable": false,
+        "fix_id": "F-28138r1_fix",
+        "gid": "V-25185",
+        "gtitle": "OSX00005-Must have an HFS+ formatted drive",
+        "ia_controls": "ECCD-1, ECCD-2",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31216r2_rule",
+        "severity": "high",
+        "stig_id": "OSX00005"
+      },
+      "title": "The hard drive(s) on the system must be formatted using the HFS+ (Hierarchical File System)format."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The administrator account has unlimited privileges to the system. Creating a complex name improves the protection of this account and the system. When creating an administrator account, do not use administrator, do not use the name of the machine, etc.",
+          "label": "default"
+        },
+        {
+          "data": "1. Select Finder. 2. Select Applications. 3. Select System Preferences. 4. Select Accounts. 5. Verify there are no easy to guess administrator account names. If any accounts have easy to guess names, then this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "1. Select Finder. 2. Select Applications. 3. Select System Preferences. 4. Select Accounts. 5. Rename or recreate accounts with difficult-to-guess names.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31233",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-31666r1_chk",
+        "documentable": false,
+        "fix_id": "F-28147r1_fix",
+        "gid": "V-25200",
+        "gtitle": "OSX00015-Admin accounts with difficult names",
+        "ia_controls": "IAIA-1, IAIA-2",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31233r1_rule",
+        "severity": "medium",
+        "stig_id": "OSX00015"
+      },
+      "title": "OSX00015-Create administrator accounts with difficult-to-guess names "
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the passwords. Further, scheduled changing of passwords hinders the ability of unauthorized system users to crack passwords and gain access to a system.",
+          "label": "default"
+        },
+        {
+          "data": "Open a terminal session and use the following command to view the setting for Maximum password age: sudo pwpolicy -n -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword. If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding. Note: If the command returns a response of: password server is not configured, the system is not managed. Use the following command for non-managed systems: pwpolicy -n /Local/Default -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword. If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Open a terminal session and use the following command to set the value for maximum password age: sudo pwpolicy -n -setglobalpolicy “maxMinutesUntilChangePassword=86400”. Note: For non-managed system, use the command: pwpolicy -n /Local/Default -setglobalpolicy \"maxMinutesUntilChangePassword=86400\".",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31239",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-31667r1_chk",
+        "documentable": false,
+        "fix_id": "F-28150r1_fix",
+        "gid": "V-25204",
+        "gtitle": "OSX00020-Maximum password age",
+        "ia_controls": "IAIA-1, IAIA-2",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31239r1_rule",
+        "severity": "medium",
+        "stig_id": "OSX00020"
+      },
+      "title": "OSX00020-Maximum password age "
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Major software vendors release security patches and hot fixes to their products when security vulnerabilities are discovered. It is essential that these updates be applied in a timely manner to prevent unauthorized persons from exploiting identified vulnerabilities. Unsupported software should be updated or removed.",
+          "label": "default"
+        },
+        {
+          "data": "Open a terminal session and enter the following command: sudo softwareupdate --list or sudo softwareupdate --list --all Review the result for proper versions and current patch level. GUI procedures: 1. Choose Apple (?) \u003e Software Update. 2. Select 'Scheduled Check \u0026 Installed Updates' 3. Verify all current software updates are installed. If the current software updates are not installed, then this is a finding. Note: This check does not show 3rd party software or updates.",
+          "label": "check"
+        },
+        {
+          "data": "Ensure all software is kept up-to-date with manufacturer's updates, especially security updates and patches. Note: Do not enable Automatic Updating as this will conflict with V-25298",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31297",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-31683r1_chk",
+        "documentable": false,
+        "fix_id": "F-28170r1_fix",
+        "gid": "V-25251",
+        "gtitle": "OSX00055-Application software updates",
+        "ia_controls": "VIVM-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31297r1_rule",
+        "severity": "medium",
+        "severity_override_guidance": "If any of the patches not installed are ‘Critical’, then this should be elevated to a Category 1",
+        "stig_id": "OSX00055"
+      },
+      "title": "OSX00055-Application software updates"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "PowerPC-based computers use Open Firmware to control hardware. This is similar to the BIOS on an x86 PC. Open Firmware is the hardware base layer for Mac OS X and is a possible point of intrusion. By protecting it from unauthorized access, you can prevent attackers from gaining access to your computer.",
+          "label": "default"
+        },
+        {
+          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/) 2 Verify the \"Require password to change Open Firmware settings\" is selected.",
+          "label": "check"
+        },
+        {
+          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/). 2. Click Change. 3. Select “Require password to change Open Firmware settings.” 4. In the Password and Verify fields, enter a new Open Firmware or EFI password, and click OK. This password can be up to eight characters. Do not use the capital letter “U” in an Open Firmware password. If you do, your password will not be recognized during the startup process. 5. Close the Firmware Password Utility.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31313",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "check_id": "C-31691r1_chk",
+        "documentable": false,
+        "fix_id": "F-28178r1_fix",
+        "gid": "V-25259",
+        "gtitle": "OSX00095-Require an Open Firmware or EFI password ",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31313r1_rule",
+        "severity": "high",
+        "stig_id": "OSX00095"
+      },
+      "title": "OSX00095-Require an Open Firmware or EFI password \n"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Reduces the time allowed to authenticate to 30 seconds.",
+          "label": "default"
+        },
+        {
+          "data": "1. Open a terminal session and enter the following command: more /etc/sshd_config 2. Ensure the value LoginGraceTime is set to 30 or less. If the value LoginGraceTime is not set to 30 or less, then this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "1. Open a terminal session and enter the following command: sudo pico /etc/sshd_config 2. Edit the value: LoginGraceTime to 30. 3. Save the file.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31345",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "C-31706r1_chk",
+        "documentable": false,
+        "fix_id": "F-28192r1_fix",
+        "gid": "V-25274",
+        "gtitle": "OSX00170-Securely configure /etc/sshd_config",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31345r1_rule",
+        "severity": "low",
+        "stig_id": "OSX00170"
+      },
+      "title": "OSX00170-Securely configure /etc/sshd_config - Login Grace Time\n"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Correct date and time settings are required for authentication protocols, like Kerberos. Incorrect date and time settings can cause security issues.",
+          "label": "default"
+        },
+        {
+          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel. 2. Ensure the correct date and time is set. If the date and time are not correct, then this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel. 2. Set the correct date and time.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31389",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "C-31729r1_chk",
+        "documentable": false,
+        "fix_id": "F-28215r1_fix",
+        "gid": "V-25296",
+        "gtitle": "OSX00280-Set the correct date and time",
+        "ia_controls": "ECSC-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31389r1_rule",
+        "severity": "low",
+        "stig_id": "OSX00280"
+      },
+      "title": "OSX00280-Set the correct date and time"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Failure to install the most current operating system updates leaves a system vulnerable to exploitation. Current OS updates and patches correct known security and system vulnerabilities. If an OS is at an unsupported level this will be upgraded to a Category I finding since new vulnerabilities may not be patched. Note to administrators: Apple only supports the current major version and one previous major version of Mac OS X.",
+          "label": "default"
+        },
+        {
+          "data": "1. Open a terminal session and enter one of the following commands: sudo softwareupdate --list or sudo softwareupdate --list --all. 2. Review the results and verify the current approved software patches are applied.",
+          "label": "check"
+        },
+        {
+          "data": "Install the current OS updates and patches.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-31529",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "check_id": "C-31802r1_chk",
+        "documentable": false,
+        "fix_id": "F-28297r1_fix",
+        "gid": "V-25374",
+        "gtitle": "OSX00670-Operating System Updates",
+        "ia_controls": "VIVM-1",
+        "nist": [],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-31529r1_rule",
+        "severity": "medium",
+        "severity_override_guidance": "If an OS is at an unsupported level this will be upgraded to a Category I finding since new vulnerabilities may not be patched.",
+        "stig_id": "OSX00670"
+      },
+      "title": "OSX00670-Operating System Updates"
+    }
+  ],
+  "status": "loaded",
+  "summary": "MAC OSX 10.5 Security Technical Implementation Guide",
+  "title": "MAC OSX 10.5 Security Technical Implementation Guide",
+  "version": "1"
+}

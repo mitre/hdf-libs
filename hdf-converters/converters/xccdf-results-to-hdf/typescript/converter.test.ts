@@ -2,11 +2,11 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf, buildCheckCode, extractCheckContentRef } from './converter.js';
+import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf, buildCheckCode, extractCheckContentRef, parseReleaseInfo } from './converter.js';
 import type { CheckElement } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { assertRequirementCount, countXmlElements } from '../../../shared/typescript/anchor.js';
-import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import { expectValidResults, expectValidBaseline } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults, HDFBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -1227,6 +1227,100 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect(req30!.impact).toBe(0.7); // high
     });
 
+    it('carries the DISA description sub-elements as tags', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;true&lt;/Documentable&gt;&lt;Mitigations&gt;Use &lt;b&gt;TLS&lt;/b&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;Elevate to CAT I if world-writable.&lt;/SeverityOverrideGuidance&gt;&lt;Responsibility&gt;System Administrator&lt;/Responsibility&gt;&lt;Responsibility&gt;Information Assurance Officer&lt;/Responsibility&gt;&lt;IAControls&gt;ECAR-1, ECAR-2&lt;/IAControls&gt;</description>
+      <fixtext>Fix it</fixtext>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
+      const tags = (baseline.requirements as BaselineRequirement[])[0]!.tags!;
+      expect(tags['documentable']).toBe(true);
+      expect(tags['responsibility']).toEqual(['System Administrator', 'Information Assurance Officer']);
+      expect(tags['ia_controls']).toBe('ECAR-1, ECAR-2');
+      expect(tags['mitigations']).toBe('Use TLS');
+      expect(tags['severity_override_guidance']).toBe('Elevate to CAT I if world-writable.');
+      for (const absent of ['false_positives', 'false_negatives', 'potential_impacts', 'third_party_tools', 'mitigation_control', 'vuln_discussion']) {
+        expect(tags).not.toHaveProperty(absent);
+      }
+    });
+
+    it('omits documentable when its value is not a boolean', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;Documentable&gt;maybe&lt;/Documentable&gt;</description>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
+      expect((baseline.requirements as BaselineRequirement[])[0]!.tags).not.toHaveProperty('documentable');
+    });
+
+    it('carries the pre-2012 SecurityOverrideGuidance spelling into severity_override_guidance', async () => {
+      const doc = (description: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="B">
+  <title>B</title>
+  <version>1</version>
+  <Group id="V-1">
+    <title>G</title>
+    <Rule id="SV-1r1_rule" severity="medium">
+      <version>STIG-1</version>
+      <title>Rule One</title>
+      <description>${description}</description>
+      <fixtext>Fix it</fixtext>
+    </Rule>
+  </Group>
+</Benchmark>`;
+      const tagsOf = async (description: string) => {
+        const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(doc(description))) as HDFBaseline;
+        return (baseline.requirements as BaselineRequirement[])[0]!.tags!;
+      };
+      const old = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;Elevate to CAT I if unpatched.&lt;/SecurityOverrideGuidance&gt;');
+      expect(old['severity_override_guidance']).toBe('Elevate to CAT I if unpatched.');
+      const both = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;Old text&lt;/SecurityOverrideGuidance&gt;&lt;SeverityOverrideGuidance&gt;Current text&lt;/SeverityOverrideGuidance&gt;');
+      expect(both['severity_override_guidance']).toBe('Current text');
+      const empty = await tagsOf('&lt;VulnDiscussion&gt;Why&lt;/VulnDiscussion&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;');
+      expect(empty).not.toHaveProperty('severity_override_guidance');
+    });
+
+    it('carries the sub-elements the real DISA fixtures fill', async () => {
+      const sles = await parseBaseline('U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml');
+      const byId = new Map((sles.requirements as BaselineRequirement[]).map((r) => [r.id, r]));
+      expect(byId.get('SV-44791')!.tags!['documentable']).toBe(true);
+      expect(byId.get('SV-44760')!.tags!['documentable']).toBe(false);
+      expect(byId.get('SV-45877')!.tags!['responsibility']).toEqual(['System Administrator', 'Information Assurance Officer']);
+      expect(byId.get('SV-44760')!.tags!['responsibility']).toEqual(['System Administrator']);
+      expect(byId.get('SV-45872')!.tags!['false_positives']).toMatch(/^False positives may occur with the SMTP EXPN check/);
+      expect(byId.get('SV-45723')!.tags!['mitigations']).toBe('GEN000000-FW');
+      expect(byId.get('SV-45723')!.tags!['mitigation_control']).toMatch(/^The system's firewall default-deny policy/);
+      expect(byId.get('SV-45286')!.tags!['ia_controls']).toBe('ECAR-1, ECAR-2, ECAR-3');
+      const mfd = await parseBaseline('U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml');
+      const r = (mfd.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-7015');
+      expect(r!.tags!['potential_impacts']).toMatch(/^Print clients configured to use the unauthorized port\(s\)/);
+      const mac = await parseBaseline('U_Mac_10.5_V1R2_STIG_Manual-XCCDF.xml');
+      const sog = (mac.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-31297');
+      expect(sog!.tags!['severity_override_guidance']).toMatch(/^If any of the patches not installed are/);
+      const ie8 = await parseBaseline('U_Microsoft_IE8_V1R19_Manual-xccdf.xml');
+      const tpt = (ie8.requirements as BaselineRequirement[]).find((x) => x.id === 'SV-25182');
+      expect(tpt!.tags!['third_party_tools']).toBe('HK');
+    });
+
     it('should extract VulnDiscussion as default description', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
       const req = findBaselineReq(baseline, 'SV-254238');
@@ -1704,6 +1798,216 @@ describe('extractCheckContentRef', () => {
     expect(
       extractCheckContentRef({ 'check-content-ref': {} as CheckElement['check-content-ref'] })
     ).toEqual({ name: '', href: '' });
+  });
+});
+
+// XCCDF prose elements are htmlTextWithSubType: CIS and SCAP Security Guide
+// content carries its text inside XHTML children, so a parser that reads only
+// an element's own text drops every word. Text on both sides of the span
+// proves document order is kept.
+describe('prose inside xhtml children', () => {
+  it('carries text inside xhtml children', async () => {
+    const baseline = await parseBaseline('CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml');
+    expect(baseline.summary?.startsWith('This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser.'), baseline.summary).toBe(true);
+
+    const req = findBaselineReq(baseline, 'xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled');
+    expect(req).toBeDefined();
+    const descriptions = Object.fromEntries(req!.descriptions.map((d) => [d.label, d.data]));
+    expect(descriptions['default']).toBe('This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)');
+    expect(descriptions['rationale']).toBe('This setting is typically disabled to help combat phishing attempts.');
+    expect(descriptions['fix']).toBe('To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.');
+  });
+});
+
+// Edges no committed fixture carries: the five predefined entities and numeric
+// references decode (an invalid code point becomes U+FFFD), a CDATA section is
+// literal, a comment or PI is dropped even when it contains ">", a nested
+// element keeps its place, and every prose field is wired. Synthetic XML
+// input, not a committed fixture.
+describe('prose pipeline edges', () => {
+  it('decodes entities, keeps CDATA literal, drops comments and PIs, keeps nested-element order, wires every prose field', async () => {
+    const input = '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:xhtml="http://www.w3.org/1999/xhtml" id="xccdf_x_benchmark_p">' +
+      '<status>draft</status><title>t</title><version>1</version>' +
+      '<Group id="g"><title>g</title><Rule id="r" severity="low"><title>r</title>' +
+      '<description>a &lt;b&gt; &amp; &#65; &#x42; &quot;q&quot; &apos;p&apos; &#xD800; line1\r\nline2 <xhtml:p>in <xhtml:s>s</xhtml:s> out</xhtml:p> <!-- c > d --> <?pi x > y ?> <![CDATA[c &amp; <d>]]> end</description>' +
+      '<warning category="general"><xhtml:p>careful <xhtml:code>x</xhtml:code></xhtml:p></warning>' +
+      '<rationale><xhtml:p>why <xhtml:em>it</xhtml:em> matters</xhtml:p></rationale>' +
+      '<fixtext fixref="f"><xhtml:div>run <xhtml:code>cmd</xhtml:code></xhtml:div></fixtext>' +
+      '</Rule></Group></Benchmark>';
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(input)) as HDFBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+    const descriptions = Object.fromEntries(baseline.requirements[0]!.descriptions.map((d) => [d.label, d.data]));
+    expect(descriptions).toEqual({
+      default: 'a & A B "q" \'p\' \uFFFD line1 line2 in s out c &amp; end',
+      fix: 'run cmd',
+      rationale: 'why it matters',
+      warning: 'careful x',
+    });
+  });
+});
+
+// --- Benchmark-level facts under extensions.passthrough ---
+
+function passthroughOf(baseline: HDFBaseline): Record<string, unknown> {
+  expect(baseline.extensions?.passthrough, 'extensions.passthrough missing').toBeDefined();
+  return baseline.extensions!.passthrough as Record<string, unknown>;
+}
+
+describe('benchmark facts in extensions.passthrough', () => {
+  // DISA's release-info, located by id and split on "Benchmark Date: ".
+  it('carries release-info into extensions.passthrough', async () => {
+    const ext = passthroughOf(await parseBaseline('U_RHEL_9_STIG_V2R9_Manual-xccdf.xml'));
+    expect(ext['releaseInfo']).toBe('Release: 9 Benchmark Date: 01 Jul 2026');
+    expect(ext['benchmarkRelease']).toBe('9');
+    expect(ext['benchmarkDate']).toBe('01 Jul 2026');
+  });
+
+  it('carries status, notices, publisher, platforms, profiles and generator facts', async () => {
+    const disaBaseline = await parseBaseline('U_RHEL_9_STIG_V2R9_Manual-xccdf.xml');
+    const disa = passthroughOf(disaBaseline);
+    expect(disa['benchmarkStatus']).toBe('accepted');
+    expect(disa['benchmarkStatusDate']).toBe('2026-05-20');
+    expect(disa['publisher']).toBe('DISA');
+    expect(disa['source']).toBe('STIG.DOD.MIL');
+    expect(disa['generatorVersion']).toBe('3.5.2');
+    expect(disa['conventionsVersion']).toBe('1.10.0');
+    expect(disa['notices']).toEqual([{ id: 'terms-of-use', text: '' }]);
+    expect(disa).not.toHaveProperty('platforms');
+    const disaProfiles = disa['profiles'] as Array<Record<string, unknown>>;
+    expect(disaProfiles).toHaveLength(9);
+    expect(disaProfiles[0]).toEqual({
+      id: 'MAC-1_Classified',
+      selectedRuleIds: ['SV-257777', 'SV-257778', 'SV-257779', 'SV-257782', 'SV-257784', 'SV-257795', 'SV-257949'],
+      title: 'I - Mission Critical Classified',
+    });
+    expect(Object.keys(disa)).toEqual([...Object.keys(disa)].sort());
+
+    const cisBaseline = await parseBaseline('CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml');
+    const cis = passthroughOf(cisBaseline);
+    expect(cis['benchmarkStatus']).toBe('draft');
+    expect(cis['benchmarkStatusDate']).toBe('2021-12-09');
+    expect(cis['platforms']).toEqual(['cpe:2.3:a:google:chrome:*:*:*:*:*:*:*']);
+    for (const absent of ['releaseInfo', 'benchmarkRelease', 'benchmarkDate', 'publisher', 'source', 'generatorVersion', 'conventionsVersion']) {
+      expect(cis).not.toHaveProperty(absent);
+    }
+    const cisNotices = cis['notices'] as Array<Record<string, string>>;
+    expect(cisNotices).toHaveLength(1);
+    expect(cisNotices[0]!['id']).toBe('terms-of-use');
+    expect(cisNotices[0]!['text']!.startsWith('BACKGROUND. The Center for Internet Security'), cisNotices[0]!['text']).toBe(true);
+    const cisProfiles = cis['profiles'] as Array<Record<string, unknown>>;
+    expect(cisProfiles).toHaveLength(2);
+    expect(cisProfiles[0]!['id']).toBe('xccdf_org.cisecurity.benchmarks_profile_Level_1_L1_-_CorporateEnterprise_Environment_general_use');
+    expect(cisProfiles[0]!['title']).toBe('Level 1 (L1) - Corporate/Enterprise Environment (general use)');
+    const level1 = cisProfiles[0]!['selectedRuleIds'] as string[];
+    expect(level1).toHaveLength(15);
+    expect(level1[0]).toBe('xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled');
+    expect(cisProfiles[1]!['selectedRuleIds']).toHaveLength(23);
+
+    expectValidBaseline(disaBaseline);
+    expectValidBaseline(cisBaseline);
+  });
+
+  it('parses release-info', () => {
+    const cases: Array<[string, string, string, boolean]> = [
+      ['Release: 9 Benchmark Date: 01 Jul 2026', '9', '01 Jul 2026', true],
+      ['Release: 3.5 Benchmark Date: 24 Jan 2020', '3.5', '24 Jan 2020', true],
+      ['Release: 12 Benchmark Date: 23 Oct 2020 ', '12', '23 Oct 2020', true],
+      ['Version 2 build 7', '', '', false],
+      ['Benchmark Date: 01 Jul 2026', '', '', false],
+      ['Release: 9 Benchmark Date: ', '', '', false],
+      ['', '', '', false],
+    ];
+    for (const [input, release, date, ok] of cases) {
+      expect(parseReleaseInfo(input), input).toEqual({ release, date, ok });
+    }
+  });
+
+  // release-info is found by its id wherever it sits among the plain-text
+  // elements, and unparseable text keeps releaseInfo verbatim with no parsed
+  // keys and no error. Synthetic XML input, not a committed fixture.
+  it('finds release-info by id and keeps unparseable text verbatim', async () => {
+    const head = '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="x_benchmark"><status date="2026-01-02">accepted</status><title>t</title><description>d</description>';
+    const tail = '<version>1</version><Group id="V-1"><title>g</title><Rule id="SV-1r1_rule" severity="low"><version>X-1</version><title>r</title><description>d</description></Rule></Group></Benchmark>';
+    const convert = async (xml: string): Promise<Record<string, unknown>> =>
+      passthroughOf(JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline);
+
+    const byId = await convert(head +
+      '<plain-text id="other">Release: 1 Benchmark Date: 01 Jan 2000</plain-text><plain-text id="generator">3.5.2</plain-text><plain-text id="conventionsVersion">1.10.0</plain-text><plain-text id="release-info">Release: 4 Benchmark Date: 02 Feb 2026</plain-text>' + tail);
+    expect(byId['releaseInfo']).toBe('Release: 4 Benchmark Date: 02 Feb 2026');
+    expect(byId['benchmarkRelease']).toBe('4');
+    expect(byId['benchmarkDate']).toBe('02 Feb 2026');
+    expect(byId['generatorVersion']).toBe('3.5.2');
+    expect(byId['conventionsVersion']).toBe('1.10.0');
+
+    const unparseable = await convert(head + '<plain-text id="release-info">Version 2 build 7</plain-text>' + tail);
+    expect(unparseable['releaseInfo']).toBe('Version 2 build 7');
+    expect(unparseable).not.toHaveProperty('benchmarkRelease');
+    expect(unparseable).not.toHaveProperty('benchmarkDate');
+
+    const none = await convert(head + tail);
+    for (const absent of ['releaseInfo', 'benchmarkRelease', 'benchmarkDate', 'generatorVersion', 'conventionsVersion', 'notices', 'platforms', 'profiles', 'publisher', 'source']) {
+      expect(none).not.toHaveProperty(absent);
+    }
+    expect(none['benchmarkStatus']).toBe('accepted');
+  });
+});
+
+// A Profile select names a Rule or a Group. A selected Group contributes every
+// rule it holds at any depth unless that rule or an inner group opts out
+// (XCCDF: selecting a Group selects its items), so selectedRuleIds always
+// holds requirement ids a consumer can join on. Duplicates collapse; an idref
+// naming nothing is kept as given. Synthetic XML input, not a committed fixture.
+describe('profile selects', () => {
+  it('resolve to requirement ids', async () => {
+    const input = '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="x_benchmark"><status>accepted</status><title>t</title><description>d</description><version>1</version>' +
+      '<Profile id="p"><title>P</title><select idref="g1" selected="true"/><select idref="SV-3r1_rule" selected="true"/><select idref="nothing" selected="true"/><select idref="SV-5r1_rule" selected="false"/></Profile>' +
+      '<Group id="g1"><title>g1</title><Rule id="SV-1r1_rule" severity="low"><version>X-1</version><title>r1</title><description>d</description></Rule>' +
+      '<Group id="g2"><title>g2</title><Rule id="SV-2r1_rule" severity="low" selected="false"><version>X-2</version><title>r2</title><description>d</description></Rule><Rule id="SV-3r1_rule" severity="low"><version>X-3</version><title>r3</title><description>d</description></Rule></Group>' +
+      '<Group id="g3" selected="false"><title>g3</title><Rule id="SV-4r1_rule" severity="low"><version>X-4</version><title>r4</title><description>d</description></Rule></Group></Group>' +
+      '<Group id="g4"><title>g4</title><Rule id="SV-5r1_rule" severity="low"><version>X-5</version><title>r5</title><description>d</description></Rule></Group></Benchmark>';
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(input)) as HDFBaseline;
+    const profiles = passthroughOf(baseline)['profiles'] as Array<Record<string, unknown>>;
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0]!['selectedRuleIds']).toEqual(['SV-1', 'SV-3', 'nothing']);
+  });
+});
+
+// Edges no fixture carries, resolved alike in both languages: several status
+// elements (latest dated wins; undated, the last), attributed Dublin Core
+// children, first non-empty publisher and source, a Profile with several titles
+// (the first), selected="0", a dangling revisioned idref, a notice with markup.
+// Synthetic XML input, not a committed fixture.
+describe('benchmark passthrough edges', () => {
+  const rule = '<Group id="g"><title>g</title><Rule id="SV-1r1_rule" severity="low"><version>X-1</version><title>r1</title><description>d</description></Rule><Rule id="SV-2r1_rule" severity="low"><version>X-2</version><title>r2</title><description>d</description></Rule></Group></Benchmark>';
+
+  it('resolve identically to Go', async () => {
+    const input = '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xhtml="http://www.w3.org/1999/xhtml" id="x_benchmark">' +
+      '<status date="2021-02-02">accepted</status><status date="2020-01-01">draft</status><status>incomplete</status>' +
+      '<title>t</title><description>d</description>' +
+      '<notice id="n"><xhtml:p>a <xhtml:b>b</xhtml:b></xhtml:p></notice>' +
+      '<reference href="https://example.invalid"><dc:publisher></dc:publisher><dc:source>S1</dc:source></reference>' +
+      '<reference><dc:publisher xml:lang="en">P2</dc:publisher><dc:publisher>P2b</dc:publisher><dc:source>S2</dc:source></reference>' +
+      '<reference><dc:publisher>P3</dc:publisher></reference>' +
+      '<version>1</version>' +
+      '<Profile id="p"><title xml:lang="en">First</title><title xml:lang="de">Zweite</title><select idref="SV-1r1_rule" selected="true"/><select idref="SV-2r1_rule" selected=" 0 "/><select idref="SV-9r2_rule" selected="true"/></Profile>' + rule;
+    const ext = passthroughOf(JSON.parse(await convertXccdfBenchmarkToHdf(input)) as HDFBaseline);
+    expect(ext).toEqual({
+      benchmarkStatus: 'accepted',
+      benchmarkStatusDate: '2021-02-02',
+      notices: [{ id: 'n', text: 'a b' }],
+      profiles: [{ id: 'p', selectedRuleIds: ['SV-1', 'SV-9'], title: 'First' }],
+      publisher: 'P2',
+      source: 'S1',
+    });
+    // Key order matches Go's sorted map serialisation at every level.
+    expect(Object.keys(ext)).toEqual(['benchmarkStatus', 'benchmarkStatusDate', 'notices', 'profiles', 'publisher', 'source']);
+    expect(Object.keys((ext['notices'] as object[])[0]!)).toEqual(['id', 'text']);
+    expect(Object.keys((ext['profiles'] as object[])[0]!)).toEqual(['id', 'selectedRuleIds', 'title']);
+
+    const undated = passthroughOf(JSON.parse(await convertXccdfBenchmarkToHdf(
+      '<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" id="x_benchmark"><status>draft</status><status>accepted</status><title>t</title><description>d</description><version>1</version>' + rule
+    )) as HDFBaseline);
+    expect(undated).toEqual({ benchmarkStatus: 'accepted' });
   });
 });
 

@@ -22,6 +22,11 @@ hdf-converters/**/schemas/** -text
 hdf-converters/**/fixtures/*.xsd -text
 hdf-converters/**/fixtures/*schema*.json -text
 hdf-converters/**/fixtures/*-report-format-*.json -text
+# DISA XCCDF benchmarks (Manual and the SCAP benchmark component) carry CRLF inside rule
+# text, and so does the 2007 CIS ESX benchmark; their provenance records the published bytes'
+# sha256, so eol=lf would rewrite exactly the content the fixtures exist to keep.
+hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/U_*.xml -text
+hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/CIS_VMware_ESX_3.5_Benchmark_v1.2.0.xml -text
 # Embedded report assets are byte-exact artifacts too: Go embeds them into the
 # goldens, the vendored stylesheet's sha256 is recorded in provenance.txt, and
 # the TypeScript module is generated from the same bytes, so a CRLF checkout

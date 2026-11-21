@@ -1,4 +1,10 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2025-11-19"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"

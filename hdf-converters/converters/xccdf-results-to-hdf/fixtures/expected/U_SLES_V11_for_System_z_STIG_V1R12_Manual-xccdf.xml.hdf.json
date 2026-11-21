@@ -1,0 +1,1189 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "26 Oct 2018",
+      "benchmarkRelease": "12",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2018-09-19",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-44760",
+            "SV-44791",
+            "SV-44860",
+            "SV-44901",
+            "SV-44827",
+            "SV-46272",
+            "SV-45184",
+            "SV-45205",
+            "SV-45851",
+            "SV-45877",
+            "SV-46282",
+            "SV-45872",
+            "SV-45723",
+            "SV-45809",
+            "SV-45286",
+            "SV-46164"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 12 Benchmark Date: 26 Oct 2018",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-756",
+      "requirements": [
+        "SV-44760"
+      ],
+      "title": "GEN000020"
+    },
+    {
+      "id": "V-760",
+      "requirements": [
+        "SV-44791"
+      ],
+      "title": "GEN000280"
+    },
+    {
+      "id": "V-770",
+      "requirements": [
+        "SV-44860"
+      ],
+      "title": "GEN000560"
+    },
+    {
+      "id": "V-774",
+      "requirements": [
+        "SV-44901"
+      ],
+      "title": "GEN000900"
+    },
+    {
+      "id": "V-781",
+      "requirements": [
+        "SV-44827"
+      ],
+      "title": "GEN000380"
+    },
+    {
+      "id": "V-794",
+      "requirements": [
+        "SV-46272"
+      ],
+      "title": "GEN001200"
+    },
+    {
+      "id": "V-801",
+      "requirements": [
+        "SV-45184"
+      ],
+      "title": "GEN002380"
+    },
+    {
+      "id": "V-808",
+      "requirements": [
+        "SV-45205"
+      ],
+      "title": "GEN002560"
+    },
+    {
+      "id": "V-833",
+      "requirements": [
+        "SV-45851"
+      ],
+      "title": "GEN004400"
+    },
+    {
+      "id": "V-846",
+      "requirements": [
+        "SV-45877"
+      ],
+      "title": "GEN004820"
+    },
+    {
+      "id": "V-867",
+      "requirements": [
+        "SV-46282"
+      ],
+      "title": "GEN006400"
+    },
+    {
+      "id": "V-4692",
+      "requirements": [
+        "SV-45872"
+      ],
+      "title": "GEN004660"
+    },
+    {
+      "id": "V-22411",
+      "requirements": [
+        "SV-45723"
+      ],
+      "title": "GEN003604"
+    },
+    {
+      "id": "V-24386",
+      "requirements": [
+        "SV-45809"
+      ],
+      "title": "GEN003850"
+    },
+    {
+      "id": "V-29236",
+      "requirements": [
+        "SV-45286"
+      ],
+      "title": "GEN002720-2"
+    },
+    {
+      "id": "V-34936",
+      "requirements": [
+        "SV-46164"
+      ],
+      "title": "GEN000000-ZSLE0002"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "c9e132c2a59876850e3ced5f45189af160a63eeffb160fe7242ce70ffe1844b6"
+  },
+  "name": "suse-zlinux",
+  "requirements": [
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "If the system does not require valid root authentication before it boots into single-user or maintenance mode, anyone who invokes single-user or maintenance mode is granted privileged access to all files on the system.",
+          "label": "default"
+        },
+        {
+          "data": "Check if the system requires a password for entering single-user mode. # grep '~:S:' /etc/inittab If /sbin/sulogin is not listed, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit /etc/inittab and set sulogin to run in single-user mode. Example line in /etc/inittab: # what to do in single-user mode ls:S:wait:/etc/init.d/rc S ~~:S:respawn:/sbin/sulogin",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44760",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000213"
+        ],
+        "check_id": "C-42265r1_chk",
+        "documentable": false,
+        "fix_id": "F-38210r1_fix",
+        "gid": "V-756",
+        "gtitle": "GEN000020",
+        "nist": [
+          "AC-3",
+          "AC-3.1"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-44760r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN000020"
+      },
+      "title": "The system must require authentication upon booting into single-user and maintenance modes."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Shared accounts (accounts where two or more people log in with the same user identification) do not provide identification and authentication. There is no way to provide for non-repudiation or individual accountability.",
+          "label": "default"
+        },
+        {
+          "data": "Use the last command to check for multiple accesses to an account from different workstations/IP addresses. # last -R If users log directly onto accounts, rather than using the switch user (su) command from their own named account to access them, this is a finding (such as logging directly on to oracle). Verify with the SA or the IAO on documentation for users/administrators to log into their own accounts first and then switch user (su) to the account to be shared has been maintained including requirements and procedures. If no such documentation exists, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Use the switch user (su) command from a named account login to access shared accounts. Maintain audit trails to identify the actual user of the account name. Document requirements and procedures for users/administrators to log into their own accounts first and then switch user (su) to the account to be shared.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44791",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000770"
+        ],
+        "check_id": "C-42288r1_chk",
+        "documentable": true,
+        "fix_id": "F-38241r1_fix",
+        "gid": "V-760",
+        "gtitle": "GEN000280",
+        "nist": [
+          "IA-2 (5)",
+          "IA-2 (5) (b)",
+          "IA-2 (5).2 (ii)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-44791r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN000280"
+      },
+      "title": "Direct logins must not be permitted to shared, default, application, or utility accounts."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "If an account is configured for password authentication but does not have an assigned password, it may be possible to log into the account without authentication. If the root user is configured without a password, the entire system may be compromised. For user accounts not using password authentication, the account must be configured with a password lock value instead of a blank or null value.",
+          "label": "default"
+        },
+        {
+          "data": "Verify the system will not log in accounts with blank passwords. # grep nullok /etc/pam.d/common-auth # grep nullok /etc/pam.d/common-account # grep nullok /etc/pam.d/common-password # grep nullok /etc/pam.d/common-session If an entry for nullok is found, this is a finding on Linux.",
+          "label": "check"
+        },
+        {
+          "data": "Edit /etc/pam.d/ and remove the \"nullok\" setting. OR Use ‘pam-config’ to configure the affected module if it is supported by pam-config",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44860",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-42322r1_chk",
+        "documentable": false,
+        "fix_id": "F-38293r1_fix",
+        "gid": "V-770",
+        "gtitle": "GEN000560",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-44860r1_rule",
+        "severity": "high",
+        "stig_id": "GEN000560"
+      },
+      "title": "The system must not have accounts configured with blank or null passwords."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "Changing the root home directory to something other than / and assigning it a 0700 protection makes it more difficult for intruders to manipulate the system by reading the files root places in its default directory. It also gives root the same discretionary access control for root's home directory as for the other user home directories.",
+          "label": "default"
+        },
+        {
+          "data": "Determine if root is assigned a home directory other than / by listing its home directory. Procedure: # grep \"^root\" /etc/passwd | awk -F\":\" '{print $6}' If the root user home directory is /, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "The root home directory should be something other than / (such as /roothome). Procedure: # mkdir /rootdir # chown root /rootdir # chgrp root /rootdir # chmod 700 /rootdir # cp -r /.??* /rootdir/. Then, edit the passwd file and change the root home directory to /rootdir. The cp -r /.??* command copies all files and subdirectories of file names beginning with \".\" into the new root directory, which preserves the previous root environment. Ensure you are in the \"/\" directory when executing the \"cp\" command. _ OR Use the YaST ‘Security and Users’ \u003e ‘User and Group Management’ module to update the home directory for root.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44901",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-42341r1_chk",
+        "documentable": false,
+        "fix_id": "F-38333r2_fix",
+        "gid": "V-774",
+        "gtitle": "GEN000900",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-44901r1_rule",
+        "severity": "low",
+        "stig_id": "GEN000900"
+      },
+      "title": "The root users home directory must not be the root directory (/)."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "If a user is assigned the GID of a group not existing on the system, and a group with the GID is subsequently created, the user may have unintended rights to the group.",
+          "label": "default"
+        },
+        {
+          "data": "Perform the following to ensure there are no GIDs referenced in /etc/passwd not defined in /etc/group: # pwck -r If GIDs referenced in /etc/passwd are not defined in /etc/group are returned, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Add a group to the system for each GID referenced without a corresponding group.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-44827",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-42299r1_chk",
+        "documentable": false,
+        "fix_id": "F-38266r1_fix",
+        "gid": "V-781",
+        "gtitle": "GEN000380",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-44827r1_rule",
+        "severity": "low",
+        "stig_id": "GEN000380"
+      },
+      "title": "All GIDs referenced in the /etc/passwd file must be defined in the /etc/group file."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "Restricting permissions will protect system command files from unauthorized modification. System command files include files present in directories used by the operating system for storing default system executables and files present in directories included in the system's default executable search paths.",
+          "label": "default"
+        },
+        {
+          "data": "Check the permissions for files in /etc, /bin, /usr/bin, /usr/local/bin, /sbin, /usr/sbin and /usr/local/sbin. Procedure: # DIRS=\"/etc /bin /usr/bin /usr/local/bin /sbin /usr/sbin /usr/local/sbin\";for DIR in $DIRS;do find $DIR -type f -perm +022 -exec stat -c %a:%n {} \\;;done This will return the octal permissions and name of all group or world writable files. If any file listed is world or group writable (either or both of the 2 lowest order digits contain a 2, 3 or 6), this is a finding. Note: Elevate to Severity Code I if any file listed is world-writable.",
+          "label": "check"
+        },
+        {
+          "data": "Change the mode for system command files to 0755 or less permissive taking into account necessary GUID and SUID bits. Procedure: # chmod go-w",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-46272",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-001499"
+        ],
+        "check_id": "C-43432r1_chk",
+        "documentable": false,
+        "fix_id": "F-39575r1_fix",
+        "gid": "V-794",
+        "gtitle": "GEN001200",
+        "nist": [
+          "CM-5 (6)",
+          "CM-5 (6).1"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-46272r1_rule",
+        "severity": "medium",
+        "severity_override_guidance": "Elevate to Severity Code I if any file listed world-writable.",
+        "stig_id": "GEN001200"
+      },
+      "title": "All system command files must have mode 0755 or less permissive."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "All files with the setuid bit set will allow anyone running these files to be temporarily assigned the UID of the file. While many system files depend on these attributes for proper operation, security problems can result if setuid is assigned to programs allowing reading and writing of files, or shell escapes. Only default vendor-supplied executables should have the setuid bit set.",
+          "label": "default"
+        },
+        {
+          "data": "If STIGID GEN000220 is satisfied, this is not a finding. List all setuid files on the system. Procedure: # find / -perm -4000 -exec ls -l {} \\; | more Note: Executing these commands may result in large listings of files; the output may be redirected to a file for easier analysis. Ask the SA or IAO if files with the suid bit set have been documented. If any undocumented file has its suid bit set, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Document the files with the suid bit set or unset the suid bit on the executable.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45184",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000368"
+        ],
+        "check_id": "C-42530r2_chk",
+        "documentable": true,
+        "fix_id": "F-38578r1_fix",
+        "gid": "V-801",
+        "gtitle": "GEN002380",
+        "nist": [
+          "CM-6 c",
+          "CM-6.1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45184r2_rule",
+        "severity": "medium",
+        "stig_id": "GEN002380"
+      },
+      "title": "The owner, group-owner, mode, ACL, and location of files with the setuid bit set must be documented using site-defined procedures."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "The umask controls the default access mode assigned to newly created files. An umask of 077 limits new files to mode 700 or less permissive. Although umask can be represented as a 4-digit number, the first digit representing special access modes is typically ignored or required to be 0. This requirement applies to the globally configured system defaults and the user defaults for each account on the system.",
+          "label": "default"
+        },
+        {
+          "data": "Check global initialization files for the configured umask value. Procedure: # grep umask /etc/* Check local initialization files for the configured umask value. Procedure: # cut -d: -f6 /etc/passwd |xargs -n1 -IDIR find DIR -name \".*\" -type f -maxdepth 1 -exec grep umask {} \\; If the system and user default umask is not 077, this a finding. Note: If the default umask is 000 or allows for the creation of world-writable files this becomes a Severity Code I finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit local and global initialization files that contain \"umask\" and change them to use 077 instead of the current value.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45205",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-42553r1_chk",
+        "documentable": true,
+        "fix_id": "F-38601r1_fix",
+        "gid": "V-808",
+        "gtitle": "GEN002560",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45205r1_rule",
+        "severity": "medium",
+        "severity_override_guidance": "If the default umask is 000 or does not restrict the world-writable permission, this becomes a CAT I finding.",
+        "stig_id": "GEN002560"
+      },
+      "title": "The system and user default umask must be 077."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "If a file executed through a mail aliases file is not owned and writable only by root, it may be subject to unauthorized modification. Unauthorized modification of files executed through aliases may allow unauthorized users to attain root privileges.",
+          "label": "default"
+        },
+        {
+          "data": "Verify the ownership of files referenced within the sendmail aliases file. Procedure: # more /etc/aliases Examine the aliases file for any utilized directories or paths. # ls -lL Check the owner for any paths referenced. Check if the file or parent directory is owned by root. If not, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit the /etc/aliases file (alternatively, /usr/lib/sendmail.cf). Locate the entries executing a program. They will appear similar to the following line: Aliasname: : /usr/local/bin/ls (or some other program name) Ensure root owns the programs and the directory(ies) they reside in by using the chown command to change owner to root. Procedure: # chown root",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45851",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000225"
+        ],
+        "check_id": "C-43149r1_chk",
+        "documentable": false,
+        "fix_id": "F-39235r1_fix",
+        "gid": "V-833",
+        "gtitle": "GEN004400",
+        "nist": [
+          "AC-6",
+          "AC-6.1"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45851r1_rule",
+        "severity": "high",
+        "stig_id": "GEN004400"
+      },
+      "title": "Files executed through a mail aliases file must be owned by root and must reside within a directory owned and writable only by root."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Due to the numerous vulnerabilities inherent in anonymous FTP, it is not recommended. If anonymous FTP must be used on a system, the requirement must be authorized and approved in the system accreditation package.",
+          "label": "default"
+        },
+        {
+          "data": "Attempt to log into this host with a user name of anonymous and a password of guest (also try the password of guest@mail.com). If the logon is successful and the use of anonymous ftp has not been documented and approved by the IAO, this is a finding. Procedure: # ftp localhost Name: anonymous 530 Guest login not allowed on this machine.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the FTP service to not permit anonymous logins.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45877",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-001475"
+        ],
+        "check_id": "C-43194r1_chk",
+        "documentable": true,
+        "fix_id": "F-39255r1_fix",
+        "gid": "V-846",
+        "gtitle": "GEN004820",
+        "nist": [
+          "AC-22 c",
+          "AC-22.1 (iii)"
+        ],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
+        ],
+        "rid": "SV-45877r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN004820"
+      },
+      "title": "Anonymous FTP must not be active on the system unless authorized."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Due to numerous security vulnerabilities existing within NIS, it must not be used. Possible alternative directory services are NIS+ and LDAP.",
+          "label": "default"
+        },
+        {
+          "data": "Perform the following to determine if NIS is active on the system: # ps -ef | grep ypbind If NIS is found active on the system, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Disable the use of NIS. Use as a replacement NIS+ or LDAP.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-46282",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-001435"
+        ],
+        "check_id": "C-36937r2_chk",
+        "documentable": false,
+        "fix_id": "F-39579r1_fix",
+        "gid": "V-867",
+        "gtitle": "GEN006400",
+        "nist": [
+          "AC-17 (8)",
+          "AC-17 (8).1 (i)"
+        ],
+        "responsibility": [
+          "System Administrator",
+          "Information Assurance Officer"
+        ],
+        "rid": "SV-46282r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN006400"
+      },
+      "title": "The Network Information System (NIS) protocol must not be used."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "The SMTP EXPN function allows an attacker to determine if an account exists on a system, providing significant assistance to a brute force attack on user accounts. EXPN may also provide additional information concerning users on the system, such as the full names of account owners.",
+          "label": "default"
+        },
+        {
+          "data": "This vulnerability is applicable only to sendmail. If Postfix is the SMTP service for the system this will never be a finding. Procedure: Determine if EXPN is disabled. # grep -v \"^#\" /etc/mail/sendmail.cf |grep -i PrivacyOptions If nothing is returned or the returned line does not contain \"noexpn\", this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Rebuild /etc/mail/sendmail.cf with the \"noexpn\" Privacy Flag set. Procedure: Edit /etc/mail/sendmail.mc resetting the Privacy Flags to the default: define('confPRIVACYFLAGS', 'authwarnings,novrfy,noexpn,restrictqrun')dnl Rebuild the sendmail.cf file with: # make -C /etc/mail Restart the sendmail service. # service sendmail restart",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45872",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-43189r1_chk",
+        "documentable": false,
+        "false_positives": "False positives may occur with the SMTP EXPN check. According to RFC821, it is acceptable for a server to respond with a 250 (success) or 550 (failure) when the server supports the EXPN command. For example, some servers return 550 EXPN command not available, meaning the command is not supported and the machine is not vulnerable. However, a result of 550 that is a mailing list, not a user would be a failure code, but not an indication of an error, and the machine would be vulnerable. If a false positive is suspected, check the log file for the response from the server.",
+        "fix_id": "F-39250r1_fix",
+        "gid": "V-4692",
+        "gtitle": "GEN004660",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45872r1_rule",
+        "severity": "low",
+        "stig_id": "GEN004660"
+      },
+      "title": "The SMTP service must not have the EXPN feature active."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "The processing of (ICMP) timestamp requests increases the attack surface of the system. Responding to broadcast ICMP timestamp requests facilitates network mapping and provides a vector for amplification attacks.",
+          "label": "default"
+        },
+        {
+          "data": "Verify the system does not respond to ICMP TIMESTAMP_REQUESTs set to broadcast addresses. Procedure: # cat /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts If the result is not 1, this is a finding. Note: The same parameter controls both ICMP ECHO_REQUESTs and TIMESTAMP_REQUESTs.",
+          "label": "check"
+        },
+        {
+          "data": "Configure the system to not respond to ICMP TIMESTAMP_REQUESTs sent to broadcast addresses. Edit /etc/sysctl.conf and add a setting for \"net.ipv4.icmp_echo_ignore_broadcasts=1\" and reload the sysctls. Procedure: # echo \"net.ipv4.icmp_echo_ignore_broadcasts=1\" \u003e\u003e /etc/sysctl.conf # sysctl -p",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45723",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-001551"
+        ],
+        "check_id": "C-43090r1_chk",
+        "documentable": false,
+        "fix_id": "F-39121r1_fix",
+        "gid": "V-22411",
+        "gtitle": "GEN003604",
+        "mitigation_control": "The system's firewall default-deny policy mitigates the risk from this vulnerability.",
+        "mitigations": "GEN000000-FW",
+        "nist": [
+          "AC-4",
+          "AC-4.1 (ii)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45723r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN003604"
+      },
+      "title": "The system must not respond to Internet Control Message Protocol (ICMP) timestamp requests sent to a broadcast address."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "The telnet daemon provides a typically unencrypted remote access service which does not provide for the confidentiality and integrity of user passwords or the remote session. If a privileged user were to log on using this service, the privileged user password could be compromised.",
+          "label": "default"
+        },
+        {
+          "data": "# chkconfig --list | grep telnet If an entry is returned and any run level is “on” telnet is running. If the telnet daemon is running, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Identify the telnet service running and disable it. Procedure # insserv –r telnetd If telnet is running as an xinetd service, edit the /etc/xinetd.d file and set “disable = yes” and then restart the xinetd service: # rcxinetd restart disable the telnet server: chkconfig telnet off verify the telnet daemon is no longer running: # ps -ef |grep telnet",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45809",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000197"
+        ],
+        "check_id": "C-43130r1_chk",
+        "documentable": false,
+        "fix_id": "F-39199r1_fix",
+        "gid": "V-24386",
+        "gtitle": "GEN003850",
+        "mitigation_control": "If an enabled telnet daemon is configured to only allow encrypted sessions, such as with Kerberos or the use of encrypted network tunnels, the risk of exposing sensitive information is mitigated, and this is not a finding.",
+        "mitigations": "GEN003850",
+        "nist": [
+          "IA-5 (1) (c)",
+          "IA-5 (1).1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45809r1_rule",
+        "severity": "high",
+        "stig_id": "GEN003850"
+      },
+      "title": "The telnet daemon must not be running."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "If the system is not configured to audit certain activities and write them to an audit log, it is more difficult to detect and track system compromises and damages incurred during a system compromise.",
+          "label": "default"
+        },
+        {
+          "data": "Check that auditd is configured to audit failed file access attempts. There must be an audit rule for each of the access syscalls that logs all failed accesses (-F success=0) or there must both an \"-F exit=-EPERM\" and \"-F exit=-EACCES\" for each access syscall. Procedure: # cat /etc/audit/audit.rules | grep -e \"-a exit,always\" | grep -e \"-S open\" | grep -e \"-F success=0\" # cat /etc/audit/audit.rules | grep -e \"-a exit,always\" | grep -e \"-S open\" | grep -e \"-F exit=-EPERM\" # cat /etc/audit/audit.rules | grep -e \"-a exit,always\" | grep -e \"-S open\" | grep -e \"-F exit=-EACCES\" If an \"-S open\" audit rule with \"-F success\" does not exist and no separate rules containing \"-F exit=-EPERM\" and \"-F exit=-EACCES\" for \"open\" exist, then this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit the audit.rules file and add the following line(s) to enable auditing of failed attempts to access files and programs: either: -a exit,always -F arch= -S open -F success=0 or both: -a exit,always -F arch= -S open -F exit=-EPERM -a exit,always -F arch= -S open -F exit=-EACCES Restart the auditd service. # rcauditd restart OR # service auditd restart",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-45286",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000126"
+        ],
+        "check_id": "C-42633r1_chk",
+        "documentable": false,
+        "fix_id": "F-38682r1_fix",
+        "gid": "V-29236",
+        "gtitle": "GEN002720-2",
+        "ia_controls": "ECAR-1, ECAR-2, ECAR-3",
+        "nist": [
+          "AU-2 d",
+          "AU-2.1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-45286r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN002720-2"
+      },
+      "title": "The audit system must be configured to audit failed attempts to access files and programs."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Pam global requirements are generally defined in the common-account, common-auth, common- password and common-session files located in the /etc/pam.d directory In order for the requirements to be applied the file(s) containing them must be included directly or indirectly in each program's definition file in /etc/pam.d",
+          "label": "default"
+        },
+        {
+          "data": "Verify that common-{account,auth,password,session} settings are being applied. Procedure: Verify that local customization has occurred in the common-{account,auth,password,session}-pc file(s) by some method other than the use of the pam-config utility. The files \"/etc/pam.d/common-{account,auth,password,session} -pc \" are autogenerated by \"pam-config\". Any manual changes made to them will be lost the next time \"pam-config\" is run. Check to see if the system default for any of the symlinks pointing to the \"/etc/pam.d/common-{account,auth,password,session} -pc\" files have been changed. # ls -l /etc/pam.d/common-{account,auth,password,session} If the symlinks point to \"/etc/pam.d/common-{account,auth,password,session}-pc\" and manual updates have been made in these files, the updates can not be protected. This is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "In the default distribution of SLES 11 \"/etc/pam.d/common-{account,auth,password,session}\" are symlinks to their respective \"/etc/pam.d/common-{account,auth,password,session}-pc\" files. These common-{account,auth,password,session}-pc files are autogenerated by the pam-config utility. When a site adds password requirements(for example), a new /etc/pam.d/common-password-local file must be created with only the additional requirements and an include for \"common-password-pc\". Then the symlink \"/etc/pam.d/common-password\" is modified to point to \"/etc/pam.d/common-password-local\". This way any changes made do not get lost when \"/etc/pam.d/common-password-pc\" is regenerated and each program's pam.d definition file need only have \"include common-password\" to assure the password requirements will be applied to it. Use the same technique for any of the common-{account,auth,password,session}-pc files that require local customization.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-46164",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "2123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000192"
+        ],
+        "check_id": "C-43421r1_chk",
+        "documentable": false,
+        "fix_id": "F-39498r1_fix",
+        "gid": "V-34936",
+        "gtitle": "GEN000000-ZSLE0002",
+        "ia_controls": "ECSC-1",
+        "nist": [
+          "IA-5 (1) (a)",
+          "IA-5 (1).1 (v)"
+        ],
+        "responsibility": [
+          "System Administrator"
+        ],
+        "rid": "SV-46164r1_rule",
+        "severity": "medium",
+        "stig_id": "GEN000000-ZSLE0002"
+      },
+      "title": "Global settings defined in common-{account,auth,password,session} must be applied in the pam.d definition files."
+    }
+  ],
+  "status": "loaded",
+  "summary": "The SUSE Linux Enterprise Server Ver 11 for System z Security Technical Implementation Guide (STIG) is published as a tool to improve the security of Department of Defense (DoD) information systems. Comments or proposed revisions to this document should be sent via e-mail to the following address: disa.stig_spt@mail.mil",
+  "title": "SUSE Linux Enterprise Server v11 for System z Security Technical Implementation Guide",
+  "version": "1"
+}

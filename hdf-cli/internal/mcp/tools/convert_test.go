@@ -421,3 +421,29 @@ func TestHdfConvert_UnretainedDocumentCarriesNotice(t *testing.T) {
 		t.Errorf("expected a notice telling the caller to persist the document, got %q", out.Notice)
 	}
 }
+
+// Auto-detection resolves an XCCDF benchmark to the "xccdf" converter, as the
+// CLI does, and the conversion succeeds — but it yields an HDF baseline, and
+// this tool returns hdf-results only. The refusal must say that, not report a
+// converter defect.
+func TestHdfConvert_AutoDetect_XccdfBenchmark_WrongDocType(t *testing.T) {
+	res, _ := callConvert(t, convertInput{Content: string(xccdfBenchmarkFixture(t))})
+	if res == nil || !res.IsError {
+		t.Fatal("a benchmark through a results-only tool must be an isError result")
+	}
+	text := payloadText(t, res)
+	if !strings.Contains(text, "WRONG_DOC_TYPE") || !strings.Contains(text, "baseline") {
+		t.Fatalf("expected WRONG_DOC_TYPE naming the baseline, got: %s", text)
+	}
+}
+
+// xccdfBenchmarkFixture reads a tracked XCCDF benchmark (no TestResult).
+func xccdfBenchmarkFixture(t *testing.T) []byte {
+	t.Helper()
+	p := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "xccdf-results-to-hdf", "fixtures", "input", "benchmark-minimal-1.1.xml")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("xccdf benchmark fixture is tracked in the repo and must be readable: %v", err)
+	}
+	return b
+}

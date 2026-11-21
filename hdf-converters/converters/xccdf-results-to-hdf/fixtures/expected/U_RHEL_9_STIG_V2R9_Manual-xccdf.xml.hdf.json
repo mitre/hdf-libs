@@ -1,0 +1,563 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "01 Jul 2026",
+      "benchmarkRelease": "9",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2026-05-20",
+      "conventionsVersion": "1.10.0",
+      "generatorVersion": "3.5.2",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-257777",
+            "SV-257778",
+            "SV-257779",
+            "SV-257782",
+            "SV-257784",
+            "SV-257795",
+            "SV-257949"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 9 Benchmark Date: 01 Jul 2026",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-257777",
+      "requirements": [
+        "SV-257777"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    },
+    {
+      "id": "V-257778",
+      "requirements": [
+        "SV-257778"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    },
+    {
+      "id": "V-257779",
+      "requirements": [
+        "SV-257779"
+      ],
+      "title": "SRG-OS-000023-GPOS-00006"
+    },
+    {
+      "id": "V-257782",
+      "requirements": [
+        "SV-257782"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    },
+    {
+      "id": "V-257784",
+      "requirements": [
+        "SV-257784"
+      ],
+      "title": "SRG-OS-000324-GPOS-00125"
+    },
+    {
+      "id": "V-257795",
+      "requirements": [
+        "SV-257795"
+      ],
+      "title": "SRG-OS-000433-GPOS-00193"
+    },
+    {
+      "id": "V-257949",
+      "requirements": [
+        "SV-257949"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "9fc7cccff72b389c772d17e087010b7c767fe7f20b47fc4faad9fb594727278f"
+  },
+  "name": "rhel-9-stig",
+  "requirements": [
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "An operating system release is considered \"supported\" if the vendor continues to provide security patches for the product. With an unsupported release, it will not be possible to resolve security issues discovered in the system software. End Of Life dates for Red Hat Linux 9 releases are as follows: Current end of Full Support for Red Hat Linux 9 is 31 May 2027. Current end of Maintenance Support for Red Hat Linux 9 is 31 May 3032. Current end of Extended Life Cycle Support (ELS) for Red Hat Linux 9 is 31 May 2035.",
+          "label": "default"
+        },
+        {
+          "data": "Verify the version or RHEL 9 is vendor supported with the following command: $ cat /etc/redhat-release Red Hat Enterprise Linux release 9.6 (Plow) If the installed version of RHEL 9 is not supported, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Upgrade to a supported version of RHEL 9.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257777",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-61518r1155675_chk",
+        "documentable": false,
+        "fix_id": "F-61442r925317_fix",
+        "gid": "V-257777",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "SV-257777r1155676_rule",
+        "severity": "high",
+        "stig_id": "RHEL-09-211010"
+      },
+      "title": "RHEL 9 must be a vendor-supported release."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "Installing software updates is a fundamental mitigation against the exploitation of publicly known vulnerabilities. If the most recent security patches and updates are not installed, unauthorized users may take advantage of weaknesses in the unpatched software. The lack of prompt attention to patching could result in a system compromise.",
+          "label": "default"
+        },
+        {
+          "data": "Verify RHEL 9 security patches and updates are installed and up to date. Updates are required to be applied with a frequency determined by organizational policy. Obtain the list of available package security updates from Red Hat. The URL for updates is https://access.redhat.com/errata-search/. It is important to note that updates provided by Red Hat may not be present on the system if the underlying packages are not installed. Check that the available package security updates have been installed on the system with the following command: $ sudo dnf history list | more ID | Command line | Date and time | Action(s) | Altered ------------------------------------------------------------------------------- 70 | install aide | 2023-03-05 10:58 | Install | 1 69 | update -y | 2023-03-04 14:34 | Update | 18 EE 68 | install vlc | 2023-02-21 17:12 | Install | 21 67 | update -y | 2023-02-21 17:04 | Update | 7 EE Typical update frequency may be overridden by Information Assurance Vulnerability Alert (IAVA) notifications from CYBERCOM. If the system is in noncompliance with the organizational patching policy, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Install RHEL 9 security patches and updates at the organizationally defined frequency. If system updates are installed via a centralized repository that is configured on the system, all updates can be installed with the following command: $ sudo dnf update",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257778",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-61519r1134891_chk",
+        "documentable": false,
+        "fix_id": "F-61443r925320_fix",
+        "gid": "V-257778",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "SV-257778r1134892_rule",
+        "severity": "medium",
+        "stig_id": "RHEL-09-211015"
+      },
+      "title": "RHEL 9 vendor packaged system security patches and updates must be installed and up to date."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance. System use notifications are required only for access via login interfaces with human users and are not required when such human interfaces do not exist. Satisfies: SRG-OS-000023-GPOS-00006, SRG-OS-000228-GPOS-00088",
+          "label": "default"
+        },
+        {
+          "data": "Verify RHEL 9 displays the Standard Mandatory DOD Notice and Consent Banner before granting access to the operating system via a command line user logon. Check that a banner is displayed at the command line login screen with the following command: $ sudo cat /etc/issue If the banner is set correctly it will return the following text: \"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only. By using this IS (which includes any device attached to this IS), you consent to the following conditions: -The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations. -At any time, the USG may inspect and seize data stored on this IS. -Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose. -This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy. -Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\" If the banner text does not match the Standard Mandatory DOD Notice and Consent Banner exactly, or the line is commented out, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure RHEL 9 to display the Standard Mandatory DOD Notice and Consent Banner before granting access to the system via command line logon. Edit the \"/etc/issue\" file to replace the default text with the Standard Mandatory DOD Notice and Consent Banner. The DOD-required text is: \"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only. By using this IS (which includes any device attached to this IS), you consent to the following conditions: -The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations. -At any time, the USG may inspect and seize data stored on this IS. -Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose. -This IS includes security measures (e.g., authentication and access controls) to protect USG interests -- not for your personal benefit or privacy. -Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\"",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257779",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000048",
+          "CCI-001384",
+          "CCI-001385",
+          "CCI-001386",
+          "CCI-001387",
+          "CCI-001388"
+        ],
+        "check_id": "C-61520r925322_chk",
+        "documentable": false,
+        "fix_id": "F-61444r925323_fix",
+        "gid": "V-257779",
+        "gtitle": "SRG-OS-000023-GPOS-00006",
+        "nist": [
+          "AC-8 a",
+          "AC-8 c",
+          "AC-8 c 1",
+          "AC-8 c 2",
+          "AC-8 c 3",
+          "AC-8.1 (ii)",
+          "AC-8.2 (i)",
+          "AC-8.2 (ii)",
+          "AC-8.2 (iii)"
+        ],
+        "rid": "SV-257779r958390_rule",
+        "severity": "medium",
+        "stig_id": "RHEL-09-211020"
+      },
+      "title": "RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner before granting local or remote access to the system via a command line user logon."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "The most important characteristic of a random number generator is its randomness, namely its ability to deliver random numbers that are impossible to predict. Entropy in computer security is associated with the unpredictability of a source of randomness. The random source with high entropy tends to achieve a uniform distribution of random values. Random number generators are one of the most important building blocks of cryptosystems. The rngd service feeds random data from hardware device to kernel random device. Quality (nonpredictable) random number generation is important for several security functions (i.e., ciphers).",
+          "label": "default"
+        },
+        {
+          "data": "Note: For RHEL 9 systems running with kernel FIPS mode enabled as specified by RHEL-09-671010, this requirement is Not Applicable. Verify that RHEL 9 has enabled the hardware random number generator entropy gatherer service with the following command: $ systemctl is-active rngd active If the \"rngd\" service is not active, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Install the rng-tools package with the following command: $ sudo dnf install rng-tools Then enable the rngd service run the following command: $ sudo systemctl enable --now rngd",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257782",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-61523r942960_chk",
+        "documentable": false,
+        "fix_id": "F-61447r925332_fix",
+        "gid": "V-257782",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "SV-257782r991589_rule",
+        "severity": "low",
+        "stig_id": "RHEL-09-211035"
+      },
+      "title": "RHEL 9 must enable the hardware random number generator entropy gatherer service."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "A locally logged-on user who presses Ctrl-Alt-Delete when at the console can reboot the system. If accidentally pressed, as could happen in the case of a mixed OS environment, this can create the risk of short-term loss of availability of systems due to unintentional reboot. In a graphical user environment, risk of unintentional reboot from the Ctrl-Alt-Delete sequence is reduced because the user will be prompted before any action is taken. Satisfies: SRG-OS-000324-GPOS-00125, SRG-OS-000480-GPOS-00227",
+          "label": "default"
+        },
+        {
+          "data": "Verify RHEL 9 is configured to not reboot the system when Ctrl-Alt-Delete is pressed seven times within two seconds with the following command: $ sudo grep -iR CtrlAltDelBurstAction /etc/systemd/system* /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf:CtrlAltDelBurstAction=none If the \"CtrlAltDelBurstAction\" is not set to \"none\", is commented out, or is missing, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure RHEL 9 to disable the CtrlAltDelBurstAction by adding it to a drop file in a \"/etc/systemd/system.conf.d/\" configuration file: If no drop file exists, create one with the following command: $ sudo mkdir -p /etc/systemd/system.conf.d \u0026\u0026 sudo vi /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf Edit the file to contain the setting by adding the following text: CtrlAltDelBurstAction=none Reload the daemon for this change to take effect. $ sudo systemctl daemon-reload",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257784",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-002235"
+        ],
+        "check_id": "C-61525r1208765_chk",
+        "documentable": false,
+        "fix_id": "F-61449r1208465_fix",
+        "gid": "V-257784",
+        "gtitle": "SRG-OS-000324-GPOS-00125",
+        "nist": [
+          "AC-6 (10)"
+        ],
+        "rid": "SV-257784r1208766_rule",
+        "severity": "high",
+        "stig_id": "RHEL-09-211045"
+      },
+      "title": "The systemd Ctrl-Alt-Delete burst key sequence in RHEL 9 must be disabled."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "Kernel page-table isolation is a kernel feature that mitigates the Meltdown security vulnerability and hardens the kernel against attempts to bypass kernel address space layout randomization (KASLR). Satisfies: SRG-OS-000433-GPOS-00193, SRG-OS-000095-GPOS-00049",
+          "label": "default"
+        },
+        {
+          "data": "Verify RHEL 9 enables kernel page-table isolation with the following command: $ sudo grubby --info=ALL | grep args | grep -v 'pti=on' If any output is returned, this is a finding. Check that kernel page-table isolation is enabled by default to persist in kernel updates: $ grep pti /etc/default/grub GRUB_CMDLINE_LINUX=\"pti=on\" If \"pti\" is not set to \"on\", is missing or commented out, this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Configure RHEL 9 to enable kernel page-table isolation with the following command: $ sudo grubby --update-kernel=ALL --args=\"pti=on\" Add or modify the following line in \"/etc/default/grub\" to ensure the configuration survives kernel updates: GRUB_CMDLINE_LINUX=\"pti=on\"",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257795",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "cci": [
+          "CCI-000381",
+          "CCI-002824"
+        ],
+        "check_id": "C-61536r1044844_chk",
+        "documentable": false,
+        "fix_id": "F-61460r925371_fix",
+        "gid": "V-257795",
+        "gtitle": "SRG-OS-000433-GPOS-00193",
+        "nist": [
+          "CM-7",
+          "CM-7 a",
+          "CM-7.1 (ii)",
+          "SI-16"
+        ],
+        "rid": "SV-257795r1044845_rule",
+        "severity": "low",
+        "stig_id": "RHEL-09-212050"
+      },
+      "title": "RHEL 9 must enable mitigations against processor-based vulnerabilities."
+    },
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "To ensure that DNS resolver settings are respected, a DNS mode in Network Manager must be configured. The following are common DNS values in NetworkManager.conf [main]: - default: NetworkManager will update /etc/resolv.conf to reflect the nameservers provided by currently active connections. - none: NetworkManager will not modify /etc/resolv.conf. Used when DNS is managed manually or by another service. - systemd-resolved: Uses systemd-resolved to manage DNS. - dnsmasq: Enables the internal dnsmasq plugin.",
+          "label": "default"
+        },
+        {
+          "data": "Verify that RHEL 9 has a DNS mode configured in Network Manager. $ NetworkManager --print-config [main] dns=none If the dns key under main does not exist or is not set to \"default\", \"none\", or \"systemd-resolved\", this is a finding. Note: If RHEL 9 is configured to use a DNS resolver other than Network Manager, the configuration must be documented and approved by the information system security officer (ISSO).",
+          "label": "check"
+        },
+        {
+          "data": "Configure NetworkManager in RHEL 9 to use a DNS mode. In \"/etc/NetworkManager/NetworkManager.conf\", add the following line in the \"[main]\" section: dns = Where is default, none, or systemd-resolved. NetworkManager must be reloaded for the change to take effect. $ sudo systemctl reload NetworkManager",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-257949",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "5551",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-61690r1134911_chk",
+        "documentable": false,
+        "fix_id": "F-61614r1134912_fix",
+        "gid": "V-257949",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "SV-257949r1134947_rule",
+        "severity": "medium",
+        "stig_id": "RHEL-09-252040"
+      },
+      "title": "RHEL 9 must configure a DNS processing mode in Network Manager."
+    }
+  ],
+  "status": "loaded",
+  "summary": "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.",
+  "title": "Red Hat Enterprise Linux 9 Security Technical Implementation Guide",
+  "version": "2"
+}
