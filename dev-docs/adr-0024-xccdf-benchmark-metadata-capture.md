@@ -169,7 +169,8 @@ generator renders them identically in both languages; `cis_controls` is the one 
 
 Tags because that is where every per-rule identifier and marker already lives, where the InSpec generator reads,
 and where `hdf query --tag` can filter. An empty source produces no tag, ever: not an empty string, not an empty
-list (the benchmark path emitted `stig_id: ""` and `nist: []` on every CIS and SSG rule before decision 6). The names are the snake_case of the
+list (the benchmark path emitted `stig_id: ""` and `nist: []` on every CIS and SSG rule before decision 6; one
+exception stands until its open question in decision 6 is answered: a DISA rule with no CCI carries `nist: []`). The names are the snake_case of the
 DISA element names (`mitigation_control`, singular, as `MitigationControl` is). The CKL path carries the same facts
 under `tags.cklMetadata` with the CKL field names (`False_Positives`, `Mitigation_Control`, `Potential_Impact`,
 `Security_Override_Guidance`, …) and `legacy_ids` (plural); those are the checklist's own field names, kept for the
@@ -369,7 +370,10 @@ deduplicated and sorted (the placeholder safeguard `0.0` is skipped): `cci` from
 from the crosswalk's own validated `nist_control`, both exposed by `hdf-mappings` as CIS-to-CCI and CIS-to-NIST lookups. The existing
 CCI-to-NIST table is a test cross-check on the crosswalk, not the source. A safeguard the crosswalk does not cover
 (one v7 sentinel) contributes nothing, so the tags are absent, never empty. The DISA family keeps every tag it
-has today, so no DISA golden changes shape. The CIS and SSG
+has today. One DISA value changes: a rule with no CCI that carries DoD Instruction 8500.2 IA controls (the manuals
+of 2009 to 2015 and a few still published) gets `nist` from DoD CIO's 2014 crosswalk of those controls to SP 800-53
+Revision 4, vendored into `hdf-mappings`, and no `cci`, because DoD assigned none (register gap 18). How a DISA rule
+with neither is written is an open question; it carries `nist: []` today. The CIS and SSG
 rows are chosen to match the profiles already in use (MITRE's CIS baselines, SAF CLI's `--idType cis`), so the
 upgrade matcher meets prior work that looks like its own output.
 
