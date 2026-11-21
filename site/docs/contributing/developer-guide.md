@@ -6,7 +6,7 @@ Patterns and practices for contributing to the HDF libraries.
 
 ## Toolchain
 
-The toolchain is pinned with [mise](https://mise.jdx.dev). `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
+The toolchain is pinned with [mise](https://mise.jdx.dev). The root `README.md` lists the same tools under Prerequisites, for someone setting a clone up; this table adds where each one comes from and how its download is verified. `mise.toml` names the versions and `mise.lock` records the exact release and each download's checksum and provenance check, so the pre-commit hook and CI run the same releases on every machine.
 
 | Tool | Pin | How mise installs it |
 | --- | --- | --- |
@@ -505,6 +505,46 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
   workspace dependencies (fixes pnpm junction resolution on Windows)
 - Go tests that load fixtures from sibling packages should skip gracefully if
   fixture files are not found
+
+---
+
+## Type-Checking Tests
+
+vitest strips types without checking them, and ESLint lints tests on its untyped
+block, so only tsc catches a type error in a test. Each TypeScript package with
+tests has three configs:
+
+| File | Holds | Used by |
+| --- | --- | --- |
+| `tsconfig.json` | no files; references the two below | editors, which then give each file its own config |
+| `tsconfig.lib.json` | the published sources | `type-check`, tsdown |
+| `tsconfig.test.json` | the sources and tests, extending `tsconfig.lib.json` | `type-check:tests` |
+
+`tsconfig.test.json` differs from the published config in two ways:
+
+- `lib: ["es2024"]`, the value `@tsconfig/node24` uses: tests run only on Node 24,
+  while the published code keeps `ES2020` because it runs in consumers' runtimes,
+  including hdf-engine's browser bundle.
+- `allowJs`: tests that import the repository's `.mjs` scripts get those scripts'
+  types inferred from the scripts themselves, so no declaration can drift.
+
+`pnpm --filter <package> run type-check:tests` checks a package's tests. A package
+whose tests are clean runs it from `type-check` too, so `pnpm check` and CI fail on
+a test type error there. A bare `tsc --noEmit` in a package checks nothing:
+`tsconfig.json` lists no files, so always name the config with `-p`.
+
+`strict` and `noUncheckedIndexedAccess` make an index read or optional field
+possibly `undefined`. Narrow it; do not assert it away:
+
+- `assert.isDefined(x)` or `assert.exists(x)` (`import { assert } from 'vitest'`),
+  which narrow `x` for the lines after them
+- optional chaining inside an expectation, `expect(rows[0]?.id).toBe('a')`, which
+  still fails when the value is missing
+- a fixture typed as the schema type it stands for
+
+Not allowed: the non-null assertion `!`, `as any`, `as unknown as`, a cast to a
+type the value does not have, and `@ts-ignore`, `@ts-expect-error` or
+`@ts-nocheck`.
 
 ---
 

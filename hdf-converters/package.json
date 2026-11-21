@@ -38,7 +38,8 @@
     "test:coverage": "vitest run --coverage",
     "test:differential": "vitest run converters/**/differential.test.ts",
     "test:parity": "pnpm test:differential && pnpm test:go && node shared/typescript/compare-all.js",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -p tsconfig.lib.json --noEmit",
+    "type-check:tests": "tsc -p tsconfig.test.json",
     "lint:go": "golangci-lint run ./...",
     "lint:go:fix": "golangci-lint run --fix ./..."
   },

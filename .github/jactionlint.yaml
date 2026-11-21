@@ -1,8 +1,17 @@
 # jactionlint (mise.toml pins it) lints the workflows, composite actions and
 # dependabot.yml: in CI's scan-workflows job and with `pnpm lint:workflows`.
-# The correctness profile holds the checks actionlint made, plus rules for
-# mistakes actionlint missed; the default profile's security and policy rules
-# are adopted separately. jactionlint accepts GitHub's `$/` self-repository
-# `uses:` form, so actionlint's ignore patterns for it are gone and `$/`
-# targets and their inputs are checked.
-profile: correctness
+# The default profile is the one upstream recommends and the one that applies
+# when nothing is configured; it adds the security and policy rules to the
+# correctness checks actionlint made. jactionlint accepts GitHub's `$/`
+# self-repository `uses:` form, so actionlint's ignore patterns for it are gone
+# and `$/` targets and their inputs are checked.
+profile: default
+
+rules:
+  # Beyond the untrusted expansions the rule catches by default, report every
+  # expression expanded into a script. The ones here are not attacker-controlled
+  # — a runner path, a matrix value — so this costs a one-time hoist into `env:`
+  # and makes the next expansion, which may not be safe, fail the lint instead
+  # of reading like the ones already in the file.
+  template-injection:
+    pedantic: true
