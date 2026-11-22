@@ -829,20 +829,27 @@ type shippedFormatCase struct {
 }
 
 // formatCaseDocument places the case's value at a real `format`-bearing site in
-// hdf-results: componentId on a component, startTime on a result.
+// hdf-results: componentId on a component, startTime on a result, systemRef at
+// the root and refUri on a requirement's reference.
 func formatCaseDocument(t *testing.T, tc shippedFormatCase) []byte {
 	t.Helper()
 	var doc map[string]any
 	require.NoError(t, json.Unmarshal(resultsWith(""), &doc))
+	requirement := func() map[string]any {
+		baseline := doc["baselines"].([]any)[0].(map[string]any)
+		return baseline["requirements"].([]any)[0].(map[string]any)
+	}
 	switch tc.Field {
 	case "componentId":
 		doc["components"] = []any{map[string]any{
 			"componentId": tc.Value, "type": "host", "name": "h",
 		}}
 	case "startTime":
-		baseline := doc["baselines"].([]any)[0].(map[string]any)
-		req := baseline["requirements"].([]any)[0].(map[string]any)
-		req["results"].([]any)[0].(map[string]any)["startTime"] = tc.Value
+		requirement()["results"].([]any)[0].(map[string]any)["startTime"] = tc.Value
+	case "systemRef":
+		doc["systemRef"] = tc.Value
+	case "refUri":
+		requirement()["refs"] = []any{map[string]any{"uri": tc.Value}}
 	default:
 		t.Fatalf("unknown field %q", tc.Field)
 	}
@@ -872,6 +879,57 @@ func TestValidateResults_FormatsMatchTheRFCs(t *testing.T) {
 			assert.Equal(t, tc.Valid, result.Valid, "%s\ngot: %s", tc.Why, result.Error())
 		})
 	}
+}
+
+// IsURIReference is what the CLI uses to refuse a reference before recording it, so it
+// must give the verdict the schema's `format: uri-reference` gives for the same string.
+// Without this the pre-flight check and the schema could drift, and the CLI would refuse
+// a value the document would have accepted, or record one it will not.
+func TestIsURIReference_AgreesWithSchemaFormat(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "shipped-format-cases.json"))
+	require.NoError(t, err, "read the shared format table")
+	var table struct {
+		Cases []shippedFormatCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+
+	checked := 0
+	for _, tc := range table.Cases {
+		if tc.Field != "systemRef" {
+			continue
+		}
+		checked++
+		t.Run(tc.Name, func(t *testing.T) {
+			assert.Equal(t, tc.Valid, IsURIReference(tc.Value), tc.Why)
+			assert.Equal(t, ValidateResults(formatCaseDocument(t, tc)).Valid, IsURIReference(tc.Value),
+				"IsURIReference and the schema validator must agree")
+		})
+	}
+	require.NotZero(t, checked, "the table must carry systemRef cases")
+}
+
+// IsURI is the same contract for `format: uri`, which the refUri rows exercise.
+func TestIsURI_AgreesWithSchemaFormat(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "shipped-format-cases.json"))
+	require.NoError(t, err, "read the shared format table")
+	var table struct {
+		Cases []shippedFormatCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+
+	checked := 0
+	for _, tc := range table.Cases {
+		if tc.Field != "refUri" {
+			continue
+		}
+		checked++
+		t.Run(tc.Name, func(t *testing.T) {
+			assert.Equal(t, tc.Valid, IsURI(tc.Value), tc.Why)
+			assert.Equal(t, ValidateResults(formatCaseDocument(t, tc)).Valid, IsURI(tc.Value),
+				"IsURI and the schema validator must agree")
+		})
+	}
+	require.NotZero(t, checked, "the table must carry refUri cases")
 }
 
 // IsUUID is what callers use to reject a componentId before writing it, so it

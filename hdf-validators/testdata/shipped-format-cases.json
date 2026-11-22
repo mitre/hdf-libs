@@ -1,6 +1,6 @@
 {
   "$comment": "Pins the shipped Go and TypeScript HDF validators to one another on JSON Schema `format`. Both read this file and validate the same documents, so the two halves of this repo cannot disagree about whether a document is valid HDF. Each case names the RFC clause that settles it, because a validator disagreeing with its peer is only half the problem — one of them is also wrong.",
-  "$knownDivergence": "uri-reference is deliberately absent. gojsonschema accepts a space, '<', '|', '^' and backtick inside one where ajv rejects them, so the shipped pair still disagrees there. It is left recorded rather than closed because neither library is RFC 3986-exact — ajv accepts a double quote the RFC excludes — so matching either would import its idiosyncrasies rather than make one correct. That behaviour is already pinned for both libraries in hdf-converters/shared/testdata/format-assertion-cases.json, which uses the same two libraries; re-asserting it here would duplicate a pin, not add one.",
+  "$resolved": "uri and uri-reference were once absent from this table, recorded as a divergence the two libraries could not settle: santhosh-tekuri accepts a space, '<', '|', '^', a backtick, braces and non-ASCII inside a uri-reference where ajv rejects them, and ajv accepts the structurally impossible 'git@github.com:mitre/x.git' and '://example.com' where santhosh-tekuri rejects them. The two lean opposite ways, so matching either would import its errors. Both are now replaced by one RFC 3986 implementation per language, and every row below cites the clause that settles it. Measured over 128 values before the change: the RFC verdict is the stricter of the two libraries everywhere but three rows — it rejects a double quote both accepted, and accepts 'a:' and an IPvFuture host that one side rejected. So no value loses a verdict it held in both languages, and nothing is tightened past the standard.",
   "cases": [
     {
       "name": "uppercase uuid",
@@ -99,6 +99,419 @@
       "value": "urn:uuid:3f2504e0-4f89-11d3-9a0c-0305e82c3301",
       "valid": true,
       "why": "ajv accepts the urn:uuid: form, so the Go peer must too"
+    },
+    {
+      "name": "relative path as a system reference",
+      "field": "systemRef",
+      "value": "../system.json",
+      "valid": true,
+      "why": "RFC 3986 §4.2: a relative-part carrying a path-noscheme is a URI reference"
+    },
+    {
+      "name": "rooted path",
+      "field": "systemRef",
+      "value": "/systems/prod.json",
+      "valid": true,
+      "why": "§4.2: path-absolute"
+    },
+    {
+      "name": "bare relative segment",
+      "field": "systemRef",
+      "value": "systems/prod.json",
+      "valid": true,
+      "why": "§4.2: path-noscheme"
+    },
+    {
+      "name": "absolute reference with query and fragment",
+      "field": "systemRef",
+      "value": "https://example.com/a?b=c#d",
+      "valid": true,
+      "why": "§3: scheme, authority, path, query and fragment"
+    },
+    {
+      "name": "colon in a later path segment",
+      "field": "systemRef",
+      "value": "a/b:c",
+      "valid": true,
+      "why": "§4.2: only the FIRST segment of a path-noscheme excludes the colon"
+    },
+    {
+      "name": "colon shielded by a dot-segment",
+      "field": "systemRef",
+      "value": "./a:b",
+      "valid": true,
+      "why": "§4.2: the dot-segment is the first segment, so the colon-bearing one is not"
+    },
+    {
+      "name": "fragment only",
+      "field": "systemRef",
+      "value": "#system",
+      "valid": true,
+      "why": "§4.4: path-empty plus a fragment is a same-document reference"
+    },
+    {
+      "name": "percent-encoded space",
+      "field": "systemRef",
+      "value": "a%20b",
+      "valid": true,
+      "why": "§2.1: pct-encoded is the correct spelling of a space"
+    },
+    {
+      "name": "empty reference",
+      "field": "systemRef",
+      "value": "",
+      "valid": true,
+      "why": "§4.2: path-empty is a legal relative-part"
+    },
+    {
+      "name": "every sub-delim in a segment",
+      "field": "systemRef",
+      "value": "a!$&'()*+,;=b",
+      "valid": true,
+      "why": "§2.2: sub-delims are legal in a path segment"
+    },
+    {
+      "name": "tilde in a segment",
+      "field": "systemRef",
+      "value": "~user/x",
+      "valid": true,
+      "why": "§2.3: the tilde is unreserved"
+    },
+    {
+      "name": "ipv6 literal host",
+      "field": "systemRef",
+      "value": "//[::1]/p",
+      "valid": true,
+      "why": "§3.2.2: an IP-literal carries an IPv6address in brackets"
+    },
+    {
+      "name": "ipv4-mapped ipv6 literal host",
+      "field": "systemRef",
+      "value": "//[::ffff:192.0.2.1]/p",
+      "valid": true,
+      "why": "RFC 4291 §2.2 form 3: a trailing dotted quad stands for the last two groups, which both languages must count the same way or they drift"
+    },
+    {
+      "name": "ipvfuture literal host",
+      "field": "systemRef",
+      "value": "//[v7.fe80::a]/p",
+      "valid": true,
+      "why": "§3.2.2 IPvFuture. santhosh-tekuri rejects it, so Go is the side that moves here — the RFC, not either library, settles the verdict"
+    },
+    {
+      "name": "scp-style remote",
+      "field": "systemRef",
+      "value": "git@github.com:mitre/x.git",
+      "valid": false,
+      "why": "§4.2: the first segment of a path-noscheme is segment-nz-nc, which excludes the colon, because a reader would otherwise take 'git@github.com' for a scheme. ajv accepts this and is wrong"
+    },
+    {
+      "name": "scheme starting with a digit",
+      "field": "systemRef",
+      "value": "1http://example.com",
+      "valid": false,
+      "why": "§3.1: a scheme starts with ALPHA, so this can only be read as a relative reference — whose first segment then carries a colon"
+    },
+    {
+      "name": "empty scheme",
+      "field": "systemRef",
+      "value": "://example.com",
+      "valid": false,
+      "why": "§3.1: a scheme is at least one ALPHA"
+    },
+    {
+      "name": "a lone colon",
+      "field": "systemRef",
+      "value": ":",
+      "valid": false,
+      "why": "§4.2: a first segment consisting of one colon is still a first segment containing one"
+    },
+    {
+      "name": "raw space",
+      "field": "systemRef",
+      "value": "has space",
+      "valid": false,
+      "why": "§2: SP is outside the character set a URI may contain"
+    },
+    {
+      "name": "angle brackets",
+      "field": "systemRef",
+      "value": "<tag>",
+      "valid": false,
+      "why": "§2: '<' and '>' are excluded; appendix C notes they are the usual delimiters AROUND a URI"
+    },
+    {
+      "name": "vertical bar",
+      "field": "systemRef",
+      "value": "a|b",
+      "valid": false,
+      "why": "§2: not unreserved, reserved or pct-encoded"
+    },
+    {
+      "name": "circumflex",
+      "field": "systemRef",
+      "value": "a^b",
+      "valid": false,
+      "why": "§2: not unreserved, reserved or pct-encoded"
+    },
+    {
+      "name": "backtick",
+      "field": "systemRef",
+      "value": "a`b",
+      "valid": false,
+      "why": "§2: not unreserved, reserved or pct-encoded"
+    },
+    {
+      "name": "braces",
+      "field": "systemRef",
+      "value": "a{b}c",
+      "valid": false,
+      "why": "§2: not unreserved, reserved or pct-encoded"
+    },
+    {
+      "name": "double quote",
+      "field": "systemRef",
+      "value": "x\"y",
+      "valid": false,
+      "why": "§2: the double quote is excluded. This is the one value in this table that BOTH libraries accepted — the divergence was never the whole defect"
+    },
+    {
+      "name": "backslash",
+      "field": "systemRef",
+      "value": "a\\b",
+      "valid": false,
+      "why": "§2: the backslash is excluded, which is why a Windows path has to be rewritten rather than carried"
+    },
+    {
+      "name": "non-ascii path",
+      "field": "systemRef",
+      "value": "../café/x",
+      "valid": false,
+      "why": "§2 is ASCII-only: a non-ASCII path is an IRI (RFC 3987), and percent-encoding its UTF-8 is how it becomes a URI reference"
+    },
+    {
+      "name": "non-ascii host",
+      "field": "systemRef",
+      "value": "https://例え.jp/p",
+      "valid": false,
+      "why": "§3.2.2: an IDN reaches a URI punycoded, not as its Unicode spelling"
+    },
+    {
+      "name": "truncated percent escape",
+      "field": "systemRef",
+      "value": "a%2",
+      "valid": false,
+      "why": "§2.1: pct-encoded is '%' HEXDIG HEXDIG — two digits, not one"
+    },
+    {
+      "name": "non-hex percent escape",
+      "field": "systemRef",
+      "value": "a%zzb",
+      "valid": false,
+      "why": "§2.1: 'zz' are not HEXDIG"
+    },
+    {
+      "name": "bare percent",
+      "field": "systemRef",
+      "value": "100%",
+      "valid": false,
+      "why": "§2.1: a literal percent has to be written %25"
+    },
+    {
+      "name": "malformed ipv6 literal",
+      "field": "systemRef",
+      "value": "//[:::1]/p",
+      "valid": false,
+      "why": "§3.2.2: three colons are not an IPv6address"
+    },
+    {
+      "name": "two elisions in an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[1::2::3]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2: '::' may appear once, since two runs of zeros leave the length ambiguous"
+    },
+    {
+      "name": "empty ip literal",
+      "field": "systemRef",
+      "value": "//[]/p",
+      "valid": false,
+      "why": "§3.2.2: the brackets must carry something"
+    },
+    {
+      "name": "brackets around something that is not an address",
+      "field": "systemRef",
+      "value": "//[not-ip]/p",
+      "valid": false,
+      "why": "§3.2.2: an IP-literal is an IPv6address or an IPvFuture, nothing else"
+    },
+    {
+      "name": "bracketed host with a space before an at-sign",
+      "field": "systemRef",
+      "value": "//[hello world@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host that is two labels round an at-sign",
+      "field": "systemRef",
+      "value": "//[x@y]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host that is only an at-sign",
+      "field": "systemRef",
+      "value": "//[@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host with two at-signs",
+      "field": "systemRef",
+      "value": "//[a@b@c]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed address followed by an at-sign",
+      "field": "systemRef",
+      "value": "//[::1@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host with non-ascii before an at-sign",
+      "field": "systemRef",
+      "value": "//[café@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host with excluded characters before an at-sign",
+      "field": "systemRef",
+      "value": "//[<>|^@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "bracketed host with a double quote before an at-sign",
+      "field": "systemRef",
+      "value": "//[a\"b@]/p",
+      "valid": false,
+      "why": "RFC 3986 §3.2.2 with §3.2.1: userinfo admits neither '@' nor '[', so an '@' between the brackets belongs to the host and the brackets must still hold an address. Both shipped libraries reject this; an early version of this file's own implementation accepted it by splitting userinfo at the first '@' wherever it fell"
+    },
+    {
+      "name": "dotted quad before the elision",
+      "field": "systemRef",
+      "value": "//[1.2.3.4::1]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2: the dotted quad spells the address's LAST 32 bits, so it cannot precede the '::' elision"
+    },
+    {
+      "name": "userinfo with a bracketed host and a port",
+      "field": "systemRef",
+      "value": "//user@[::1]:8080/p",
+      "valid": true,
+      "why": "§3.2: the control for the rows above — userinfo IS stripped when the authority does not open with a bracket, and the IPv6 host is then checked"
+    },
+    {
+      "name": "space in the authority",
+      "field": "systemRef",
+      "value": "//exa mple.com/p",
+      "valid": false,
+      "why": "§3.2.2: a reg-name is unreserved, pct-encoded or sub-delims"
+    },
+    {
+      "name": "absolute uri with query and fragment",
+      "field": "refUri",
+      "value": "https://example.com/a?b=c#d",
+      "valid": true,
+      "why": "§3: the full production"
+    },
+    {
+      "name": "urn",
+      "field": "refUri",
+      "value": "urn:uuid:3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+      "valid": true,
+      "why": "§3.3: path-rootless after the scheme"
+    },
+    {
+      "name": "ssh remote",
+      "field": "refUri",
+      "value": "ssh://git@github.com/mitre/x.git",
+      "valid": true,
+      "why": "§3.2.1: userinfo is part of the authority"
+    },
+    {
+      "name": "uppercase scheme",
+      "field": "refUri",
+      "value": "HTTP://EXAMPLE.COM/A",
+      "valid": true,
+      "why": "§3.1: a scheme is case-insensitive, so the uppercase spelling is the same URI"
+    },
+    {
+      "name": "scheme with an empty path",
+      "field": "refUri",
+      "value": "a:",
+      "valid": true,
+      "why": "§3: hier-part may be path-empty. ajv rejects this and is wrong"
+    },
+    {
+      "name": "host and port read as a scheme",
+      "field": "refUri",
+      "value": "host:8080/p",
+      "valid": true,
+      "why": "§3: 'host' is the scheme and '8080/p' a path-rootless. It validates for the wrong reason, which is why a host:port belongs in a uri-reference"
+    },
+    {
+      "name": "drive letter read as a scheme",
+      "field": "refUri",
+      "value": "C:/profiles/x",
+      "valid": true,
+      "why": "§3.1: a one-letter scheme is legal, so a Windows path validates by being misread — a separator swap alone does not make one a URI"
+    },
+    {
+      "name": "rooted path",
+      "field": "refUri",
+      "value": "/absolute/path",
+      "valid": false,
+      "why": "§4.3: a URI requires a scheme; only a uri-reference admits a relative path"
+    },
+    {
+      "name": "relative path",
+      "field": "refUri",
+      "value": "../local-profile",
+      "valid": false,
+      "why": "§4.3: no scheme"
+    },
+    {
+      "name": "scheme starting with a digit",
+      "field": "refUri",
+      "value": "1http://example.com",
+      "valid": false,
+      "why": "§3.1: a scheme starts with ALPHA"
+    },
+    {
+      "name": "non-ascii host",
+      "field": "refUri",
+      "value": "https://例え.jp/p",
+      "valid": false,
+      "why": "§2 is ASCII-only. santhosh-tekuri accepts this and is wrong"
+    },
+    {
+      "name": "non-ascii in the path",
+      "field": "refUri",
+      "value": "mailto:josé@example.com",
+      "valid": false,
+      "why": "§2 is ASCII-only, so the UTF-8 has to be percent-encoded"
+    },
+    {
+      "name": "empty string",
+      "field": "refUri",
+      "value": "",
+      "valid": false,
+      "why": "§3: a URI is at least a scheme and a colon"
     }
   ]
 }

@@ -15,6 +15,7 @@ import (
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // Decoded is a reference whose percent-escapes have been resolved exactly once.
@@ -111,6 +112,29 @@ var ErrNameNotUTF8 = errors.New("its name is not valid UTF-8, and a recorded ref
 func Recordable(path string) error {
 	if !utf8.ValidString(path) {
 		return ErrNameNotUTF8
+	}
+	return nil
+}
+
+// ErrNotURIReference is why a value supplied as a reference cannot be recorded as given.
+var ErrNotURIReference = errors.New("a reference field is a uri-reference (RFC 3986), " +
+	"which does not admit it as written; a character outside that set has to be " +
+	"percent-encoded — a space is %20, a literal percent %25, a non-ASCII character its " +
+	"UTF-8 bytes")
+
+// RecordableAsGiven reports whether raw can be recorded verbatim in a uri-reference
+// field, which is what a command does with a value the operator supplied as a reference
+// rather than as a path.
+//
+// It CHECKS rather than encodes, because encoding a value that is already a reference
+// would turn a correct "my%20scans/sys.json" into "my%2520scans/sys.json", and telling
+// the two apart means inferring from whether the value contains a %.
+func RecordableAsGiven(raw string) error {
+	if err := Recordable(raw); err != nil {
+		return err
+	}
+	if !validators.IsURIReference(raw) {
+		return ErrNotURIReference
 	}
 	return nil
 }

@@ -2,6 +2,8 @@ import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 import Ajv2020 from 'ajv/dist/2020.js';
 
+import { isUri, isUriReference } from './rfc3986.js';
+
 // Pinned HDF v2 (Heimdall/InSpec exec-json) schema — sourced from heimdall2
 // inspecjs (see ../go/legacy/PROVENANCE.md). One copy, which Go embeds from its
 // own package directory because go:embed cannot reach outside it.
@@ -91,6 +93,11 @@ function createValidator(): Ajv2020 {
     type: 'string',
     validate: (v: string) => /^\d{4}-\d{2}-\d{2}[Tt]/.test(v) && registeredDateTime.validate(v),
   });
+  // ajv-formats checks characters where RFC 3986 states a grammar, so it accepts a
+  // scp-style 'git@host:path' that §4.2 forbids. rfc3986.ts transcribes the ABNF and
+  // its Go twin does the same; both are pinned by ../testdata/shipped-format-cases.json.
+  ajv.addFormat('uri', { type: 'string', validate: isUri });
+  ajv.addFormat('uri-reference', { type: 'string', validate: isUriReference });
 
   // Add all primitive schemas so they can be referenced via $ref
   ajv.addSchema(commonSchema);

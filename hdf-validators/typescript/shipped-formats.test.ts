@@ -17,7 +17,7 @@ import { validateResults } from './index.js';
 
 interface ShippedFormatCase {
   name: string;
-  field: 'componentId' | 'startTime';
+  field: 'componentId' | 'startTime' | 'systemRef' | 'refUri';
   value: string;
   valid: boolean;
   why: string;
@@ -34,38 +34,41 @@ const cases = (
 
 /** Places the case's value at a real format-bearing site in hdf-results. */
 function documentFor(tc: ShippedFormatCase): Record<string, unknown> {
+  const requirement: Record<string, unknown> = {
+    id: 'SV-1',
+    impact: 0.5,
+    tags: {},
+    descriptions: [{ label: 'default', data: 'Test' }],
+    results: [
+      {
+        status: 'passed',
+        codeDesc: 'Test',
+        startTime: tc.field === 'startTime' ? tc.value : '2025-01-01T00:00:00Z',
+      },
+    ],
+  };
+  if (tc.field === 'refUri') requirement['refs'] = [{ uri: tc.value }];
   const doc: Record<string, unknown> = {
     baselines: [
       {
         name: 'Format Test Baseline',
         integrity: { algorithm: 'sha256', checksum: 'abc123' },
-        requirements: [
-          {
-            id: 'SV-1',
-            impact: 0.5,
-            tags: {},
-            descriptions: [{ label: 'default', data: 'Test' }],
-            results: [
-              {
-                status: 'passed',
-                codeDesc: 'Test',
-                startTime: tc.field === 'startTime' ? tc.value : '2025-01-01T00:00:00Z',
-              },
-            ],
-          },
-        ],
+        requirements: [requirement],
       },
     ],
     components:
       tc.field === 'componentId' ? [{ componentId: tc.value, type: 'host', name: 'h' }] : [],
     statistics: {},
   };
+  if (tc.field === 'systemRef') doc['systemRef'] = tc.value;
   return doc;
 }
 
 describe('shipped validators agree on format', () => {
-  it('covers both format-bearing fields', () => {
-    expect(new Set(cases.map((c) => c.field))).toEqual(new Set(['componentId', 'startTime']));
+  it('covers every format-bearing field', () => {
+    expect(new Set(cases.map((c) => c.field))).toEqual(
+      new Set(['componentId', 'startTime', 'systemRef', 'refUri']),
+    );
   });
 
   it.each(cases.map((c) => [c.name, c] as const))('%s', (_name, tc) => {

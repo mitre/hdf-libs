@@ -165,8 +165,11 @@ An ABSOLUTE --uri is treated as a path on this machine, so a name needing escape
 escaped for you; a RELATIVE one is treated as a reference already and recorded as you
 wrote it — the same split 'hdf evidence set' documents, because both commands record
 through one function.
-An artifact outside the package, or a remote URL, is recorded exactly as given: it is
-external by design and rewriting it would claim the artifact is somewhere it is not.
+An artifact outside the package, or a remote URL, keeps the location given: it is external
+by design and relocating it would claim the artifact is somewhere it is not. An absolute
+path is still escaped for you; a RELATIVE or remote value is a reference already and is
+recorded verbatim, so it has to BE a legal uri-reference — a raw space, a non-ASCII
+character or a bracket in a query is refused, with the encoding named.
 Because the URI is normalized before the duplicate check, two spellings of the same
 artifact are recognized as the same artifact and the second is refused.
 

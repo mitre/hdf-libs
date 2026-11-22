@@ -494,7 +494,7 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 		// A remote URI is recorded verbatim, as add-evidence --uri and set record one:
 		// Encode is a path encoder and would escape its "?" and "#". A local path is
 		// encoded into a uri-reference. Neither may carry bytes that are not UTF-8.
-		href, hrefErr := opts.href, evidenceref.Recordable(opts.href)
+		href, hrefErr := opts.href, evidenceref.RecordableAsGiven(opts.href)
 		if !isRemoteURI(opts.href) {
 			href, hrefErr = evidenceref.Encode(filepath.ToSlash(opts.href))
 		}

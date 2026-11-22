@@ -33,14 +33,14 @@ Use --unset to remove optional fields. Required fields (name, contents) cannot b
 paths on this machine: an absolute path resolving INSIDE the package's directory is recorded
 relative to the package, exactly as 'hdf evidence build' records one. A reference to something
 the package does not contain — an absolute path elsewhere, a parent traversal, or a remote URI —
-is recorded exactly as given, because rewriting it would claim the artifact is somewhere it is
-not.
+keeps the location given, because relocating it would claim the artifact is somewhere it is not.
+An absolute path is still escaped into a legal uri-reference; only its target is left alone.
 
 An ABSOLUTE value is treated as a path on this machine and recorded as a uri-reference, so a
 name needing escapes is escaped for you. A RELATIVE value is treated as a reference already
-and recorded as you wrote it — so write it the way the format admits ('my%20scans/sys.json',
-not 'my scans/sys.json'). Both resolve, but only the escaped spelling is a legal
-uri-reference.
+and recorded as you wrote it, so write it the way the format admits ('my%20scans/sys.json',
+not 'my scans/sys.json'): an unescaped spelling is refused rather than recorded, because it
+is not a legal uri-reference and the package would fail its own schema.
 
 Examples:
   hdf evidence set evidence.json --name "Q2 2026 Evidence"
@@ -102,8 +102,9 @@ var requiredEvidenceFields = map[string]bool{
 // machine that wrote it, so a machine-local absolute path does not survive being handed on
 // — it bundles into an archive carrying the file under a relative name while the package
 // still names the original path. A reference pointing OUTSIDE the package is a legitimate
-// external reference by standing decision and is recorded exactly as given: rewriting it
-// would claim the artifact is somewhere it is not. Resolution goes through
+// external reference by standing decision and keeps the location given: relocating it
+// would claim the artifact is somewhere it is not. Its spelling is still escaped, because
+// an absolute value is a path. Resolution goes through
 // packageSubtreeRef, the one predicate bundle and verify already use.
 // THE SPLIT IS THE CONTRACT, decided deliberately (maintainer, 2026-10-13): an ABSOLUTE
 // value is a path on this machine, so it is resolved, relativized and ENCODED into a
@@ -113,15 +114,16 @@ var requiredEvidenceFields = map[string]bool{
 // schema-perfect: an operator who correctly passes "my%20scans/sys.json" would get
 // "my%2520scans/sys.json", a double-encode and a worse defect than the one it fixes.
 // Telling a raw path from an encoded reference requires inferring from whether the value
-// contains a %, which 52n0c.31's anti-patterns forbid outright — it would make what is
-// recorded depend on the filename. Refusing an unescaped relative value was the third
-// option and was declined because it breaks usage that works today: measured, all three
-// shapes verify, since decoding leaves a literal space alone.
+// contains a %, which this package's anti-patterns forbid outright — it would make what
+// is recorded depend on the filename.
 //
-// So the cost accepted here is that a relative value containing a character
-// uri-reference does not admit is recorded as the operator wrote it. It RESOLVES
-// correctly — that is measured — but it is not a spelling the format admits, and the
-// operator owns that because they supplied a reference rather than a path.
+// So a relative value is CHECKED and refused when uri-reference does not admit it
+// (maintainer, 2026-11-21, superseding the 2026-10-13 decision to record it anyway).
+// That decision declined refusing because the unescaped spelling worked; it worked only
+// in Go, because the shipped TypeScript validator always refused it, so such a package
+// was already invalid to half this toolchain. Both validators now implement RFC 3986, so
+// writing one fails validation either way — refusing, and naming the encoding, is the
+// actionable form of the same outcome.
 //
 // A value that is not valid UTF-8 is refused in every shape: no reference can carry it,
 // and encoding/json would rewrite its bytes to U+FFFD, recording a different name.
@@ -130,6 +132,9 @@ func packageRelativeIfInside(pkgDir, ref string) (string, error) {
 		return "", fmt.Errorf("%q cannot be recorded as a reference: %w", ref, err)
 	}
 	if ref == "" || isRemoteURI(ref) || !filepath.IsAbs(ref) {
+		if err := evidenceref.RecordableAsGiven(ref); err != nil {
+			return "", fmt.Errorf("%q cannot be recorded as a reference: %w", ref, err)
+		}
 		return ref, nil
 	}
 	// Decoded before resolving and re-encoded by nothing: what this returns is a
@@ -148,6 +153,13 @@ func packageRelativeIfInside(pkgDir, ref string) (string, error) {
 			// "scans/x.json" into "scans%2Fx.json", which silently stopped normalizing.
 			return encodeRef(ref, string(resolved))
 		}
+		// Outside the package the LOCATION stands, but the spelling is still a path's, so
+		// it is encoded too: an absolute name carrying a space was otherwise recorded in a
+		// form uri-reference does not admit, and the write then failed with a bare schema
+		// error instead of the escaping the operator needed.
+		return encodeRef(ref, filepath.ToSlash(string(decoded)))
 	}
-	return ref, nil
+	// Its % introduces no escape, so it is a literal percent in a filename — encoded as it
+	// stands, which is the only spelling in which such a name is expressible at all.
+	return encodeRef(ref, filepath.ToSlash(ref))
 }

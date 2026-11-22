@@ -154,3 +154,42 @@ func TestRecordable_AdmitsOnlyWhatDecodeAccepts(t *testing.T) {
 		}
 	}
 }
+
+// RecordableAsGiven is the pre-flight the commands run before recording a value the
+// operator supplied as a reference, so it is tested here and not only through them: the
+// whole point is that the check and the schema agree, and a CLI test can only say that
+// something refused.
+func TestRecordableAsGiven(t *testing.T) {
+	for _, tc := range []struct {
+		why, raw string
+		ok       bool
+	}{
+		{"an escaped relative reference is what the format admits", "my%20scans/sys.json", true},
+		{"so is a bare relative path needing no escapes", "scans/sys.json", true},
+		{"and a remote URI", "https://portal.example/q3.json", true},
+		{"and the empty reference, which is a same-document one", "", true},
+		{"a raw space is not in the character set", "my scans/sys.json", false},
+		{"nor is a non-ASCII character", "scans/café.json", false},
+		{"nor a bracket in a query", "https://e.test/r?x=[a]", false},
+		{"a colon in the first segment reads as a scheme", "git@github.com:mitre/x.git", false},
+		{"a truncated escape is not an escape", "a%2", false},
+	} {
+		t.Run(tc.why, func(t *testing.T) {
+			err := RecordableAsGiven(tc.raw)
+			if tc.ok {
+				if err != nil {
+					t.Fatalf("RecordableAsGiven(%q) = %v, want nil: %s", tc.raw, err, tc.why)
+				}
+				return
+			}
+			if !errors.Is(err, ErrNotURIReference) {
+				t.Fatalf("RecordableAsGiven(%q) = %v, want ErrNotURIReference: %s", tc.raw, err, tc.why)
+			}
+		})
+	}
+
+	// A name that is not UTF-8 is refused for the earlier reason, which no encoding fixes.
+	if err := RecordableAsGiven("caf\xe9.json"); !errors.Is(err, ErrNameNotUTF8) {
+		t.Fatalf("got %v, want ErrNameNotUTF8", err)
+	}
+}

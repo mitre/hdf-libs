@@ -87,9 +87,11 @@ func TestEvidenceSet_NormalizesAnInSubtreeAbsoluteRef(t *testing.T) {
 		"a subdirectory document keeps its subdirectory, with forward slashes")
 }
 
-// Anything bundle would NOT carry must be recorded exactly as given: normalizing it would
-// claim the artifact is somewhere it is not. This is the standing contract — a package may
-// legitimately reference what it does not contain.
+// Anything bundle would NOT carry keeps the location given: relocating it would claim the
+// artifact is somewhere it is not. This is the standing contract — a package may
+// legitimately reference what it does not contain. An absolute value's SPELLING is still
+// escaped, which no row here exercises because none of them needs escaping; that branch is
+// TestEvidenceSet_AbsoluteReferenceOutsideThePackageIsEncoded.
 func TestEvidenceSet_LeavesAReferenceItCannotResolveExactlyAsGiven(t *testing.T) {
 	for _, tc := range []struct {
 		name, ref string
@@ -154,33 +156,76 @@ func TestEvidenceSet_OutputPathLeavesTheInputUntouched(t *testing.T) {
 	})
 }
 
-// A RELATIVE --system-ref is recorded as given, which is the documented contract and not
-// an oversight. Pinned because the alternative — encoding it — would double-encode an
-// operator's correct "my%20scans/sys.json" into "my%2520scans/sys.json", and telling a
-// raw path from an encoded reference requires inferring from whether the value contains a
-// %, which 52n0c.31 forbids. An ABSOLUTE value is a path and IS encoded; that branch is
-// covered by TestEvidenceRecording_EveryCommandEncodesTheReferenceItWrites.
-//
-// Maintainer decision 2026-10-13, after measuring that all three shapes resolve: the cost
-// accepted is that a relative value may be recorded in a spelling uri-reference does not
-// admit, and the operator owns that because they supplied a reference rather than a path.
+// A RELATIVE --system-ref is recorded as given and never encoded, which is the documented
+// contract and not an oversight: encoding it would double-encode an operator's correct
+// "my%20scans/sys.json" into "my%2520scans/sys.json", and telling a raw path from an
+// encoded reference requires inferring from whether the value contains a %, which this
+// package's anti-patterns forbid. An ABSOLUTE value is a path and IS encoded; that branch
+// is covered by TestEvidenceRecording_EveryCommandEncodesTheReferenceItWrites.
 func TestEvidenceSet_RelativeReferenceIsRecordedAsGiven(t *testing.T) {
 	pkg := writeTestEvidence(t)
 	dir := filepath.Dir(pkg)
 
-	for _, given := range []string{"my scans/sys.json", "my%20scans/sys.json"} {
+	const given = "my%20scans/sys.json"
+	out := filepath.Join(dir, "set-out.json")
+	_, _, err := executeCommand("evidence", "set", pkg, "--system-ref", given, "-o", out)
+	require.NoError(t, err)
+
+	raw, err := os.ReadFile(out)
+	require.NoError(t, err)
+	var doc struct {
+		SystemRef string `json:"systemRef"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	assert.Equal(t, given, doc.SystemRef,
+		"a relative value is a reference already and is recorded unchanged — encoding it "+
+			"would turn the correct escaped spelling into a double-encoded one")
+}
+
+// An ABSOLUTE value is a path, so its spelling is escaped wherever it points: inside the
+// package, where it is also relativized, and outside, where only the spelling changes.
+// The outside branch recorded it raw until 2026-11-21, so an absolute name carrying a
+// space was written in a form uri-reference does not admit and the write then died on a
+// bare schema error instead of naming the escaping the operator needed.
+func TestEvidenceSet_AbsoluteReferenceOutsideThePackageIsEncoded(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	outside := filepath.Join(t.TempDir(), "my scans", "sys.json")
+
+	out := filepath.Join(dir, "set-out.json")
+	_, _, err := executeCommand("evidence", "set", pkg, "--system-ref", outside, "-o", out)
+	require.NoError(t, err)
+
+	raw, err := os.ReadFile(out)
+	require.NoError(t, err)
+	var doc struct {
+		SystemRef string `json:"systemRef"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	assert.Contains(t, doc.SystemRef, "my%20scans/sys.json",
+		"the space is escaped, so what is recorded is a legal uri-reference")
+	assert.NotEqual(t, outside, doc.SystemRef, "not the raw path, which is not one")
+	_, _, err = executeCommand("validate", out)
+	require.NoError(t, err, "and the package it wrote validates")
+}
+
+// The counterpart: a relative value uri-reference does not admit is REFUSED, naming the
+// encoding, rather than recorded (maintainer, 2026-11-21, superseding the 2026-10-13
+// decision to record it anyway). That decision declined refusing because the unescaped
+// spelling "works today"; it worked only in Go, because the shipped TypeScript validator
+// always refused it — so such a package was already invalid to half this toolchain. Both
+// validators now implement RFC 3986, so the write fails either way; refusing at the flag
+// is the actionable form of the same outcome, and nothing is written.
+func TestEvidenceSet_RefusesAnUnescapedRelativeReference(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+
+	for _, given := range []string{"my scans/sys.json", "scans/café.json"} {
 		out := filepath.Join(dir, "set-out.json")
 		_, _, err := executeCommand("evidence", "set", pkg, "--system-ref", given, "-o", out)
-		require.NoError(t, err)
-
-		raw, err := os.ReadFile(out)
-		require.NoError(t, err)
-		var doc struct {
-			SystemRef string `json:"systemRef"`
-		}
-		require.NoError(t, json.Unmarshal(raw, &doc))
-		assert.Equal(t, given, doc.SystemRef,
-			"a relative value is a reference already and is recorded unchanged — encoding it "+
-				"would turn the correct escaped spelling into a double-encoded one")
+		require.Error(t, err, "%q is not a uri-reference and must not be recorded", given)
+		assert.Contains(t, err.Error(), "has to be percent-encoded",
+			"and the operator is told how to spell it, not handed a bare schema error")
+		assert.NoFileExists(t, out, "with nothing written")
 	}
 }

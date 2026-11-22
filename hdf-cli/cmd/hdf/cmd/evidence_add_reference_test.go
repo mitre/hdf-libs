@@ -454,13 +454,17 @@ func TestEvidenceAddReference_RefusesAnInvalidInputPackage(t *testing.T) {
 	assert.NoFileExists(t, out, "with nothing written")
 }
 
-// The command validates its SERIALIZED OUTPUT before writing, as every other evidence
-// subcommand does. Pinning that needs a VALID input whose write makes the package
-// invalid — href carries format: uri-reference, so a malformed one passes the input gate
-// and fails the pre-write gate. Driving it with an already-invalid input instead only
-// proves "some validation exists somewhere", which is how the pre-write gate came to be
-// deletable with the suite green.
-func TestEvidenceAddReference_RefusesToWriteAnInvalidOutput(t *testing.T) {
+// A malformed --href is refused and nothing is written.
+//
+// This USED to pin the pre-write gate: href was the last field the command wrote
+// without checking it, so a malformed one was the only way to turn a valid input into
+// an invalid output. Checking it at the flag (2026-11-21) closed that gap and with it
+// the only CLI route to the gate, so what is pinned here now is the refusal and that
+// neither file is touched. The gate behind it is an untested backstop for a field added
+// later without a flag check — carded, not faked: driving it with an already-invalid
+// input proves only that "some validation exists somewhere", which is how it came to be
+// deletable before.
+func TestEvidenceAddReference_RefusesAMalformedHref(t *testing.T) {
 	dir, pkgPath := referencePackage(t)
 	before, err := os.ReadFile(pkgPath)
 	require.NoError(t, err)
@@ -472,8 +476,8 @@ func TestEvidenceAddReference_RefusesToWriteAnInvalidOutput(t *testing.T) {
 	_, _, err = executeCommand("evidence", "add-reference", pkgPath,
 		"--source-name", "x", "--href", "http://[::1", "-o", out)
 	require.Error(t, err, "a malformed href must not be written into the package")
-	assert.Contains(t, err.Error(), "failed validation before write",
-		"the PRE-WRITE gate must be what refuses, not the input read")
+	assert.Contains(t, err.Error(), "uri-reference (RFC 3986)",
+		"refused for the reason it is wrong, not with a bare schema error")
 	assert.NoFileExists(t, out, "and nothing may be written")
 
 	after, err := os.ReadFile(pkgPath)

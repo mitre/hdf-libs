@@ -149,17 +149,162 @@ func validRFC3339Time(s string) bool {
 }
 
 func registerModernFormats(compiler *jsonschema.Compiler) {
-	for name, checker := range map[string]gojsonschema.FormatChecker{
-		"uuid": rfc4122Checker{}, "date-time": rfc3339Checker{},
+	for name, accepts := range map[string]func(string) bool{
+		"uuid":          IsUUID,
+		"date-time":     func(s string) bool { return rfc3339Checker{}.IsFormat(s) },
+		"uri":           IsURI,
+		"uri-reference": IsURIReference,
 	} {
 		compiler.RegisterFormat(&jsonschema.Format{Name: name, Validate: func(value any) error {
-			if _, ok := value.(string); !ok {
+			s, ok := value.(string)
+			if !ok {
 				return nil
 			}
-			if checker.IsFormat(value) {
+			if accepts(s) {
 				return nil
 			}
 			return fmt.Errorf("invalid %s", name)
 		}})
 	}
+}
+
+// RFC 3986 §2 fixes the characters a URI may contain and §3 to §4.2 the grammar
+// they have to form; neither shipped library implements both halves. The modern Go
+// engine hands the value to net/url, which accepts a space, '<', '|', '^', a
+// backtick, braces and non-ASCII that §2 excludes. ajv-formats applies a
+// character-level regex that misses §4.2's rule against a colon in a relative
+// reference's first segment, so it accepts git@github.com:mitre/x.git. The two lean
+// opposite ways, so matching either would import its errors rather than reconcile
+// the pair. These patterns transcribe the ABNF instead, and the verdicts are pinned
+// for both languages by ../testdata/shipped-format-cases.json.
+const (
+	cUnreserved = `A-Za-z0-9\-._~`
+	cSubDelims  = `!$&'()*+,;=`
+	pPctEncoded = `(?:%[0-9A-Fa-f]{2})`
+	pPchar      = `(?:[` + cUnreserved + cSubDelims + `:@]|` + pPctEncoded + `)`
+	pSegment    = pPchar + `*`
+	pSegmentNz  = pPchar + `+`
+	// §4.2: the first segment of a relative path excludes the colon, so a reader
+	// cannot mistake it for a scheme.
+	pSegmentNzNc = `(?:[` + cUnreserved + cSubDelims + `@]|` + pPctEncoded + `)+`
+	pScheme      = `[A-Za-z][A-Za-z0-9+\-.]*`
+	pUserinfo    = `(?:[` + cUnreserved + cSubDelims + `:]|` + pPctEncoded + `)*`
+	pRegName     = `(?:[` + cUnreserved + cSubDelims + `]|` + pPctEncoded + `)*`
+	// What sits between the brackets is settled by validIPLiteral; the grammar only
+	// has to find the extent, which keeps the pattern backtracking-free.
+	pIPLiteral    = `\[[^\[\]]*\]`
+	pHost         = `(?:` + pIPLiteral + `|` + pRegName + `)`
+	pAuthority    = `(?:` + pUserinfo + `@)?` + pHost + `(?::[0-9]*)?`
+	pPathAbempty  = `(?:/` + pSegment + `)*`
+	pPathAbsolute = `/(?:` + pSegmentNz + `(?:/` + pSegment + `)*)?`
+	pPathRootless = pSegmentNz + `(?:/` + pSegment + `)*`
+	pPathNoscheme = pSegmentNzNc + `(?:/` + pSegment + `)*`
+	pQueryOrFrag  = `(?:` + pPchar + `|[/?])*`
+	pHierPart     = `(?://` + pAuthority + pPathAbempty + `|` + pPathAbsolute + `|` + pPathRootless + `|)`
+	pRelativePart = `(?://` + pAuthority + pPathAbempty + `|` + pPathAbsolute + `|` + pPathNoscheme + `|)`
+	pTail         = `(?:\?` + pQueryOrFrag + `)?(?:#` + pQueryOrFrag + `)?`
+	pURI          = pScheme + `:` + pHierPart + pTail
+	pRelativeRef  = pRelativePart + pTail
+)
+
+var (
+	rxURI       = regexp.MustCompile(`\A(?:` + pURI + `)\z`)
+	rxURIRef    = regexp.MustCompile(`\A(?:` + pURI + `|` + pRelativeRef + `)\z`)
+	rxScheme    = regexp.MustCompile(`\A` + pScheme + `\z`)
+	rxIPvFuture = regexp.MustCompile(`\A[vV][0-9A-Fa-f]+\.[` + cUnreserved + cSubDelims + `:]+\z`)
+	rxIPv6Group = regexp.MustCompile(`\A[0-9A-Fa-f]{1,4}\z`)
+	rxIPv4      = regexp.MustCompile(
+		`\A(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}` +
+			`(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\z`)
+)
+
+// IsURI reports whether s satisfies RFC 3986 §3's URI production, so a caller can refuse
+// a value before writing it into a document that would then fail validation.
+func IsURI(s string) bool { return rxURI.MatchString(s) && validIPLiteral(s) }
+
+// IsURIReference reports whether s satisfies §4.1: a URI or a relative reference. The
+// same purpose as IsURI — a producer recording a reference checks it before writing.
+func IsURIReference(s string) bool { return rxURIRef.MatchString(s) && validIPLiteral(s) }
+
+// validIPLiteral settles the bracketed host, which §3.2.2 restricts to an IPv6
+// address or an IPvFuture. Finding it means stepping past a scheme and into the
+// authority, because a colon or a `//` elsewhere in the value is not one.
+func validIPLiteral(s string) bool {
+	rest := s
+	if i := strings.Index(rest, ":"); i >= 0 && rxScheme.MatchString(rest[:i]) {
+		rest = rest[i+1:]
+	}
+	if !strings.HasPrefix(rest, "//") {
+		return true
+	}
+	authority := rest[2:]
+	if i := strings.IndexAny(authority, "/?#"); i >= 0 {
+		authority = authority[:i]
+	}
+	// Only an authority that does NOT open with the bracket can carry userinfo: §3.2.1
+	// excludes "@" and "[" from it, so an "@" between brackets belongs to the host, and
+	// stripping at it skipped this check altogether.
+	if !strings.HasPrefix(authority, "[") {
+		if i := strings.Index(authority, "@"); i >= 0 {
+			authority = authority[i+1:]
+		}
+	}
+	if !strings.HasPrefix(authority, "[") {
+		return true
+	}
+	end := strings.Index(authority, "]")
+	// Unreachable while the pattern requires the closing bracket; kept because a looser
+	// pattern would make the slice below panic.
+	if end < 0 {
+		return false
+	}
+	body := authority[1:end]
+	if body != "" && (body[0] == 'v' || body[0] == 'V') {
+		return rxIPvFuture.MatchString(body)
+	}
+	return validIPv6(body)
+}
+
+// validIPv6 implements RFC 4291 §2.2: eight 16-bit groups, at most one `::` run
+// standing for one or more zero groups, and an optional dotted quad standing for
+// the last two. The TypeScript peer counts the same way, so the two cannot drift.
+func validIPv6(s string) bool {
+	halves := strings.SplitN(s, "::", 3)
+	if len(halves) > 2 {
+		return false
+	}
+	total := 0
+	for i, half := range halves {
+		n, ok := ipv6GroupCount(half, i == len(halves)-1)
+		if !ok {
+			return false
+		}
+		total += n
+	}
+	if len(halves) == 2 {
+		return total <= 7
+	}
+	return total == 8
+}
+
+// ipv6GroupCount counts the groups on one side of the elision, reporting false on a
+// malformed one; a dotted quad counts for two. ls32 is the address's LAST 32 bits, so it
+// is accepted only in the trailing half — counting it on the left made 1.2.3.4::1 valid.
+func ipv6GroupCount(part string, trailing bool) (int, bool) {
+	if part == "" {
+		return 0, true
+	}
+	groups := strings.Split(part, ":")
+	count := 0
+	for i, g := range groups {
+		if trailing && i == len(groups)-1 && rxIPv4.MatchString(g) {
+			count += 2
+			continue
+		}
+		if !rxIPv6Group.MatchString(g) {
+			return 0, false
+		}
+		count++
+	}
+	return count, true
 }

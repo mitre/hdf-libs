@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/evidenceref"
 )
 
 // updatablePackage builds a package with one results document, and returns the base
@@ -1288,7 +1290,8 @@ func checksumOf(t *testing.T, doc map[string]any, uri string) string {
 // APFS — so they must match. A case-fold alone does not see it (EqualFold(NFC, NFD) is
 // false), which reopened this card's P1 for an input class that is ordinary on macOS:
 // readdir and extracted archives yield NFD, shell completion yields NFC, and `build`
-// records whichever it was handed.
+// records whichever it was handed. Both spellings are recorded PERCENT-ENCODED, because
+// uri-reference is ASCII-only, so what the matcher compares is the decoded form.
 func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInUnicodeNormalization(t *testing.T) {
 	dir, pkgPath := updatablePackage(t)
 	const nfc = "café.json"  // é as one rune
@@ -1305,7 +1308,8 @@ func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInUnicodeNormalization(t *
 	doc := updatedPackage(t, pkgPath)
 	contents, _ := doc["contents"].([]any)
 	entry, _ := contents[len(contents)-1].(map[string]any)
-	stored := "scans/" + nfd
+	stored, err := evidenceref.Encode("scans/" + nfd)
+	require.NoError(t, err)
 	entry["uri"] = stored
 	entry["checksum"] = map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)}
 	patched, err := json.Marshal(doc)
@@ -1319,7 +1323,9 @@ func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInUnicodeNormalization(t *
 	updated := updatedPackage(t, out)
 	uris := contentURIs(t, updated)
 	assert.Contains(t, uris, stored, "the stored NFD spelling survives")
-	assert.NotContains(t, uris, "scans/"+nfc, "and no second entry is appended for one file")
+	encodedNFC, err := evidenceref.Encode("scans/" + nfc)
+	require.NoError(t, err)
+	assert.NotContains(t, uris, encodedNFC, "and no second entry is appended for one file")
 	sum := evidenceDigestSum(src)
 	assert.Equal(t, hex.EncodeToString(sum[:]), checksumOf(t, updated, stored),
 		"and its checksum is refreshed, so the package does not fail its own verify")

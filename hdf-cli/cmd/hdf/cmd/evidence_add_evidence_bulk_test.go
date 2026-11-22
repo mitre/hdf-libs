@@ -49,7 +49,11 @@ func TestEvidenceAddEvidence_Discovery(t *testing.T) {
 		{"group formats", []string{"--file", "*.txt", "--file", "nested/*.json", "--format", "raw-log", "--format", "x-json"}, []string{"a.txt", "b.txt", "nested/c.json"}, []string{"raw-log", "raw-log", "x-json"}},
 		{"directory", []string{"--from-dir", ".", "--format", "raw-log"}, []string{"a.txt", "b.txt"}, []string{"raw-log", "raw-log"}},
 		{"recursive", []string{"--from-dir", ".", "--recursive", "--format", "raw-log"}, []string{"a.txt", "b.txt", "nested/c.json"}, []string{"raw-log", "raw-log", "raw-log"}},
-		{"remote query unchanged", []string{"--uri", "https://example.test/report?x=[a]*", "--file", "a.txt", "--format", "x-remote", "--format", "raw-log"}, []string{"https://example.test/report?x=[a]*", "a.txt"}, []string{"x-remote", "raw-log"}},
+		// The brackets arrive percent-encoded because RFC 3986 §3.4 admits only pchar, "/"
+		// and "?" in a query, so a raw "[" is not a uri-reference and is refused — see
+		// TestEvidenceAddEvidence_RefusesARemoteURIThatIsNotAURIReference. The "*" stays
+		// raw, which is what proves --uri is never glob-expanded.
+		{"remote query unchanged", []string{"--uri", "https://example.test/report?x=%5Ba%5D*", "--file", "a.txt", "--format", "x-remote", "--format", "raw-log"}, []string{"https://example.test/report?x=%5Ba%5D*", "a.txt"}, []string{"x-remote", "raw-log"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pkg := writeTestEvidence(t)
@@ -70,6 +74,24 @@ func TestEvidenceAddEvidence_Discovery(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A remote --uri is recorded verbatim, so it has to BE a uri-reference. A raw "[" in a
+// query is not one — RFC 3986 §3.4 admits only pchar, "/" and "?" there — and the shipped
+// TypeScript validator always refused such a package even while Go accepted it. So it is
+// refused at the flag, naming the encoding, rather than written and left to fail its own
+// schema on the next read.
+func TestEvidenceAddEvidence_RefusesARemoteURIThatIsNotAURIReference(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	out := filepath.Join(dir, "added.json")
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "https://example.test/report?x=[a]*", "--format", "x-remote", "-o", out)
+	require.Error(t, err, "a raw bracket in a query is not a uri-reference")
+	assert.Contains(t, err.Error(), "has to be percent-encoded",
+		"and the operator is told how to spell it, not handed a bare schema error")
+	assert.NoFileExists(t, out, "with nothing written")
 }
 
 // Every row here is refused inside expandEvidenceInputs, before the package is opened,
