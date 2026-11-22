@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { convertGitlabVulnerabilitiesToHdf, type Envelope, type Vulnerability } from './converter';
 import { parseJSON } from '@mitre/hdf-utilities';
@@ -317,4 +320,52 @@ describe('cvss', () => {
     const req = await convertOne({ cvss: [{ vector: 'CVSS:4.0/AV:N', version: 2, baseScore: 1 }] });
     expect(req.cvss![0]!.version).toBe('4.0');
   });
+});
+
+// Shared with go/branches_test.go and the nessus-to-hdf suites: computed scores
+// that land where the 2.0 and 3.x severity scales differ.
+interface ComputedSeverityCase {
+  version: string;
+  vector: string;
+  baseScore: number;
+  computedScore: number;
+  computedSeverity: string;
+  note: string;
+}
+
+const COMPUTED_SEVERITY_CASES = (
+  JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'shared', 'cvss-computed-severity-cases.json'),
+      'utf-8',
+    ),
+  ) as { cases: ComputedSeverityCase[] }
+).cases;
+
+describe('cvss computed severity follows the entry version', () => {
+  it('reads a populated shared table', () => {
+    expect(COMPUTED_SEVERITY_CASES.length).toBeGreaterThan(0);
+  });
+
+  it.each(COMPUTED_SEVERITY_CASES)(
+    'CVSS $version computed $computedScore is $computedSeverity ($note)',
+    async (c) => {
+      const req = await convertOne({
+        identifiers: [{ externalType: 'cve', externalId: 'CVE-2024-99997' }],
+        cvss: [
+          {
+            vendor: 'NVD',
+            vector: c.vector,
+            version: c.version === '2.0' ? 2 : 3.1,
+            baseScore: c.baseScore,
+            overallScore: c.computedScore,
+          },
+        ],
+      });
+      expect(req.cvss).toHaveLength(1);
+      expect(req.cvss![0]!.version).toBe(c.version);
+      expect(req.cvss![0]!.computedScore).toBeCloseTo(c.computedScore, 9);
+      expect(req.cvss![0]!.computedSeverity).toBe(c.computedSeverity);
+    },
+  );
 });

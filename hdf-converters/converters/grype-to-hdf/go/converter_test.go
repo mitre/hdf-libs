@@ -727,11 +727,12 @@ func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("expected 2 cvss entries (neither-score-nor-vector dropped), got %d", len(got))
 	}
-	if got[0].BaseScore != nil {
-		t.Errorf("metrics-less entry must omit baseScore, got %v", *got[0].BaseScore)
+	// A metrics-less entry is scored from its own vector.
+	if got[0].BaseScore == nil || *got[0].BaseScore != 9.8 {
+		t.Errorf("metrics-less entry must take its vector's score 9.8, got %v", got[0].BaseScore)
 	}
-	if got[0].BaseSeverity != nil {
-		t.Errorf("metrics-less entry must omit baseSeverity")
+	if got[0].BaseSeverity == nil || *got[0].BaseSeverity != hdf.CVSSSeverityCritical {
+		t.Errorf("metrics-less entry must take the critical severity of 9.8, got %v", got[0].BaseSeverity)
 	}
 	if got[0].BaseVector == nil {
 		t.Errorf("metrics-less entry must preserve baseVector")

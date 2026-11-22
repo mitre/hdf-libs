@@ -1,4 +1,4 @@
-import { computeCvssScore, roundImpact } from '@mitre/hdf-utilities';
+import { computeCvssScore, parseCvssVector, roundImpact, type CvssScore } from '@mitre/hdf-utilities';
 import { limitArrayWithWarning, validateInputSize } from './converterutil.js';
 import {
   parseStixBundle,
@@ -92,11 +92,14 @@ export function enrichStix(resultsInput: string, bundleInput: string, opts?: Enr
   return JSON.stringify(doc, null, 2);
 }
 
+/** The CVSS version the exploitation recompute is defined for; E:H is a 3.1 value. */
+const RECOMPUTE_CVSS_VERSION = '3.1';
+
 /**
  * Author an inline riskAdjustment on each CVE-matched finding that has a 3.1 base
  * vector and whose CVE carries a structural exploitation signal in the bundle.
  * Applies CVSS Exploit Maturity E:H (the 3.1 analog of 4.0 E:A) and recomputes
- * the Threat score. Skips (no fabrication) when a base vector is absent or non-3.1.
+ * the Threat score. Skips (no fabrication) when no cvss entry carries a 3.1 base vector.
  * TypeScript peer of recomputeExploitation in enrich_stix.go.
  */
 function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, opts: EnrichOptions): void {
@@ -105,14 +108,14 @@ function recomputeExploitation(bundle: StixBundle, reqById: Map<string, Doc[]>, 
 
   for (const [cve, src] of exploitedCves(bundle)) {
     for (const req of reqById.get(cve) ?? []) {
-      const entry = findBaseVectorEntry(req, cve);
-      if (!entry) continue; // no base vector → cannot recompute honestly; skip
+      const entry = findBaseVectorEntry(req, cve, RECOMPUTE_CVSS_VERSION);
+      if (!entry) continue; // no 3.1 base vector → cannot recompute honestly; skip
       const baseVector = entry.baseVector as string;
-      let score: { baseScore: number; temporalScore: number };
+      let score: CvssScore;
       try {
         score = computeCvssScore(`${baseVector}/E:H`);
       } catch {
-        continue; // non-3.1 (e.g. 4.0) or unparseable → skip, never fabricate
+        continue; // invalid 3.1 vector → skip, never fabricate
       }
       const ov = buildRiskAdjustment(cve, baseVector, score, src, appliedAt, expiresAt);
       const existing = Array.isArray(req.statusOverrides) ? req.statusOverrides : [];
@@ -164,17 +167,22 @@ function stixExploitationReferences(o: Doc): string[] {
   }
 }
 
-/** The finding's cvss[] entry carrying a base vector for the CVE (or a version-agnostic entry). */
-function findBaseVectorEntry(req: Doc, cve: string): Doc | undefined {
+/**
+ * The finding's first cvss[] entry whose base vector is of the wanted CVSS
+ * version and whose id is the CVE or absent. The version is part of the search
+ * because a finding can carry one entry per version: trivy writes its 2.0 entry
+ * before its 3.x one.
+ */
+function findBaseVectorEntry(req: Doc, cve: string, version: string): Doc | undefined {
   const arr = req.cvss;
   if (!Array.isArray(arr)) return undefined;
   for (const e of arr) {
     const m = e as Doc;
     const bv = m.baseVector;
-    if (typeof bv === 'string' && bv) {
-      const id = m.id;
-      if (id === undefined || id === cve) return m;
-    }
+    if (typeof bv !== 'string' || !bv) continue;
+    if (parseCvssVector(bv).version !== version) continue;
+    const id = m.id;
+    if (id === undefined || id === cve) return m;
   }
   return undefined;
 }
@@ -183,7 +191,7 @@ function findBaseVectorEntry(req: Doc, cve: string): Doc | undefined {
 function buildRiskAdjustment(
   cve: string,
   baseVector: string,
-  score: { baseScore: number; temporalScore: number },
+  score: CvssScore,
   src: Doc,
   appliedAt: Date,
   expiresAt: Date,
@@ -196,7 +204,7 @@ function buildRiskAdjustment(
     appliedAt: toRfc3339(appliedAt),
     expiresAt: toRfc3339(expiresAt),
     cvss: {
-      version: '3.1',
+      version: score.version,
       baseVector,
       baseScore: score.baseScore,
       threatVector: 'E:H',

@@ -819,9 +819,39 @@ describe('Nessus to HDF Converter', async () => {
       expect(req!.tags.cvss_base_score).toBe('6.4');
     });
 
-    // Synthetic v2-only ReportItem: tests the legacy CVSS v2 branch +
-    // CVSS:3.1/ version detection + EPSS + multi-CWE pipe-delimited input.
-    // Real Nessus output occasionally lacks v3 fields for older plugins.
+    // Synthetic item with a 3.1 base vector and no base score: the shared
+    // builder scores the vector.
+    it('scores a CVE finding that carries a vector but no base score', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="4" pluginID="999998" pluginName="Synthetic Vector-Only Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99998</cvss_score_source>
+        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</cvss3_vector>
+        <description>Synthetic vector-only finding.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '999998');
+      expect(req!.cvss).toHaveLength(1);
+      expect(req!.cvss![0].version).toBe('3.1');
+      expect(req!.cvss![0].baseScore).toBe(10);
+      expect(req!.cvss![0].baseSeverity).toBe('critical');
+    });
+
+    // Synthetic v2-only ReportItem: the legacy CVSS v2 branch with the CVSS2#
+    // prefix stripped, EPSS, and pipe-delimited multi-CWE input. Real Nessus
+    // output occasionally lacks v3 fields for older plugins.
     it('handles v2-only CVE finding with EPSS, CVSS:3.1, multi-CWE', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
@@ -859,7 +889,8 @@ describe('Nessus to HDF Converter', async () => {
       expect(c.version).toBe('2.0');
       expect(c.baseVector).toBe('AV:N/AC:L/Au:N/C:C/I:C/A:C'); // CVSS2# stripped
       expect(c.baseScore).toBeCloseTo(9.8, 3);
-      expect(c.baseSeverity).toBe('critical');
+      // CVSS 2.0 has no critical rating: 9.8 is high.
+      expect(c.baseSeverity).toBe('high');
       expect(c.threatVector).toBe('E:F/RL:OF/RC:C');
       expect(c.threatScore).toBeCloseTo(8.5, 3);
       expect(c.computedSeverity).toBe('high');
@@ -1130,4 +1161,71 @@ describe('document missing <Policy>', () => {
     expect(result.statistics.duration).toBe(0);
     expect(JSON.parse(serializeHdf(result)).timestamp).toBe('2024-01-29T10:00:00Z');
   });
+});
+
+// Shared with go/converter_test.go, the gitlab-vulnerabilities-to-hdf suites and
+// its own TypeScript peer: computed scores that land where the 2.0 and 3.x
+// severity scales differ.
+interface ComputedSeverityCase {
+  version: string;
+  vector: string;
+  baseScore: number;
+  computedScore: number;
+  computedSeverity: string;
+  note: string;
+}
+
+const COMPUTED_SEVERITY_CASES = (
+  JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'cvss-computed-severity-cases.json'), 'utf-8'),
+  ) as { cases: ComputedSeverityCase[] }
+).cases;
+
+// One ReportItem carrying the case's base vector and score with its computed
+// score as the temporal score, under the element names its version selects.
+function syntheticNessusTemporalScan(c: ComputedSeverityCase): string {
+  const [vectorEl, scoreEl, temporalEl] =
+    c.version === '2.0'
+      ? ['cvss_vector', 'cvss_base_score', 'cvss_temporal_score']
+      : ['cvss3_vector', 'cvss3_base_score', 'cvss3_temporal_score'];
+  return `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999997" pluginName="Synthetic Computed Severity Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99997</cvss_score_source>
+        <${vectorEl}>${c.vector}</${vectorEl}>
+        <${scoreEl}>${c.baseScore}</${scoreEl}>
+        <${temporalEl}>${c.computedScore}</${temporalEl}>
+        <description>Synthetic finding for the computed-severity scale.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+}
+
+describe('Nessus computed severity follows the entry version', () => {
+  it('reads a populated shared table', () => {
+    expect(COMPUTED_SEVERITY_CASES.length).toBeGreaterThan(0);
+  });
+
+  it.each(COMPUTED_SEVERITY_CASES)(
+    'CVSS $version computed $computedScore is $computedSeverity ($note)',
+    async (c) => {
+      const result = await convertNessusToHdf(syntheticNessusTemporalScan(c));
+      const req = findReqAcrossBaselines(result, '999997');
+      expect(req!.cvss).toHaveLength(1);
+      const entry = req!.cvss![0]!;
+      expect(entry.version).toBe(c.version);
+      expect(entry.computedScore).toBeCloseTo(c.computedScore, 9);
+      expect(entry.computedSeverity).toBe(c.computedSeverity);
+    },
+  );
 });

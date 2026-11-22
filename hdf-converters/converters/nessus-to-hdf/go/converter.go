@@ -617,41 +617,33 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		return nil
 	}
 
-	c := hdf.Cvss{Source: &source}
-
+	in := shared.CvssInput{Source: source}
+	var threatVector string
+	var threatScore *float64
 	if hasV3 {
-		c.Version = detectV3Version(item.CVSS3Vector)
-		bv := item.CVSS3Vector
-		c.BaseVector = &bv
-		c.BaseScore = parseFloatPtr(item.CVSS3BaseScore)
-		if tv := stripVersionPrefix(item.CVSS3TemporalVector); tv != "" {
-			c.ThreatVector = &tv
-		}
-		if ts := parseFloatPtr(item.CVSS3TemporalScore); ts != nil {
-			c.ThreatScore = ts
-			// The v3 temporal score IS the post-threat-enrichment computed score.
-			c.ComputedScore = ts
-		}
+		in.Version = detectV3Version(item.CVSS3Vector)
+		in.BaseVector = item.CVSS3Vector
+		in.BaseScore = parseFloatPtr(item.CVSS3BaseScore)
+		threatVector = stripVersionPrefix(item.CVSS3TemporalVector)
+		threatScore = parseFloatPtr(item.CVSS3TemporalScore)
 	} else {
-		c.Version = hdf.The20
-		bv := stripV2Prefix(item.CVSSVector)
-		c.BaseVector = &bv
-		c.BaseScore = parseFloatPtr(item.CVSSBaseScore)
-		if tv := stripV2Prefix(item.CVSSTemporalVector); tv != "" {
-			c.ThreatVector = &tv
-		}
-		if ts := parseFloatPtr(item.CVSSTemporalScore); ts != nil {
-			c.ThreatScore = ts
-			c.ComputedScore = ts
-		}
+		in.Version = hdf.The20
+		in.BaseVector = stripV2Prefix(item.CVSSVector)
+		in.BaseScore = parseFloatPtr(item.CVSSBaseScore)
+		threatVector = stripV2Prefix(item.CVSSTemporalVector)
+		threatScore = parseFloatPtr(item.CVSSTemporalScore)
 	}
 
-	if c.BaseScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.BaseScore)
-		c.BaseSeverity = &sev
+	c := shared.BuildCvss(in)
+	if threatVector != "" {
+		c.ThreatVector = &threatVector
 	}
-	if c.ComputedScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.ComputedScore)
+	if threatScore != nil {
+		// The temporal score IS the post-threat-enrichment computed score, for
+		// both v2 and v3.
+		c.ThreatScore = threatScore
+		c.ComputedScore = threatScore
+		sev := shared.CvssSeverityFromScore(c.Version, *threatScore)
 		c.ComputedSeverity = &sev
 	}
 

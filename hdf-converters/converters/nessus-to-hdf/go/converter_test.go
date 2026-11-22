@@ -2,6 +2,7 @@ package nessus
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -644,6 +645,21 @@ func TestBuildCvssEntries_V2OnlyWithCVE(t *testing.T) {
 	assert.InDelta(t, 5.1, *c.ComputedScore, 0.001)
 }
 
+// A CVE finding with a vector but no base score is scored from the vector, as
+// every converter's CVSS entry is.
+func TestBuildCvssEntries_V3VectorWithoutScore(t *testing.T) {
+	got := buildCvssEntries(&ReportItem{
+		CVSSScoreSource: "CVE-2024-99998",
+		CVSS3Vector:     "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+	})
+	require.Len(t, got, 1)
+	assert.Equal(t, hdf.The31, got[0].Version)
+	require.NotNil(t, got[0].BaseScore)
+	assert.InDelta(t, 10.0, *got[0].BaseScore, 0.001)
+	require.NotNil(t, got[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *got[0].BaseSeverity)
+}
+
 func TestBuildCvssEntries_NoCVEScoreSource(t *testing.T) {
 	// Non-CVE score source ("Tenable" or empty) should return nil.
 	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "Tenable", CVSSBaseScore: "5.0"}))
@@ -695,7 +711,7 @@ func TestCvssSeverityMapping(t *testing.T) {
 		{9.5, hdf.CVSSSeverityCritical},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(tt.score))
+		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(hdf.The31, tt.score))
 	}
 }
 
@@ -969,4 +985,145 @@ func TestCalculateTiming_UnparseableEndFallsBackToStart(t *testing.T) {
 			assert.Zero(t, *result.Statistics.Duration, "the end time falls back to the start, not to now")
 		})
 	}
+}
+
+type computedSeverityCase struct {
+	Version          hdf.Version      `json:"version"`
+	Vector           string           `json:"vector"`
+	BaseScore        float64          `json:"baseScore"`
+	ComputedScore    float64          `json:"computedScore"`
+	ComputedSeverity hdf.CVSSSeverity `json:"computedSeverity"`
+	Note             string           `json:"note"`
+}
+
+func loadComputedSeverityCases(t *testing.T) []computedSeverityCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "cvss-computed-severity-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []computedSeverityCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+// syntheticNessusTemporalScan renders one ReportItem carrying the case's base
+// vector and score with its computed score as the temporal score, under the v2
+// or v3 element names the case's version selects.
+func syntheticNessusTemporalScan(c computedSeverityCase) string {
+	vectorEl, scoreEl, temporalEl := "cvss_vector", "cvss_base_score", "cvss_temporal_score"
+	if c.Version != hdf.The20 {
+		vectorEl, scoreEl, temporalEl = "cvss3_vector", "cvss3_base_score", "cvss3_temporal_score"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999997" pluginName="Synthetic Computed Severity Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99997</cvss_score_source>
+        <%[1]s>%[2]s</%[1]s>
+        <%[3]s>%[4]v</%[3]s>
+        <%[5]s>%[6]v</%[5]s>
+        <description>Synthetic finding for the computed-severity scale.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, vectorEl, c.Vector, scoreEl, c.BaseScore, temporalEl, c.ComputedScore)
+}
+
+// Nessus gives the temporal score, which the converter records as the computed
+// score; its severity must come from the entry's own version scale.
+func TestConvertNessusToHDF_ComputedSeverityFollowsTheEntryVersion(t *testing.T) {
+	for _, c := range loadComputedSeverityCases(t) {
+		t.Run(fmt.Sprintf("%s/%v", c.Version, c.ComputedScore), func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusTemporalScan(c)), converterVersion)
+			require.NoError(t, err)
+
+			req := findReqAcrossBaselines(result, "999997")
+			require.NotNil(t, req)
+			require.Len(t, req.Cvss, 1)
+			entry := req.Cvss[0]
+			assert.Equal(t, c.Version, entry.Version)
+			require.NotNil(t, entry.ComputedScore)
+			assert.InDelta(t, c.ComputedScore, *entry.ComputedScore, 1e-9)
+			require.NotNil(t, entry.ComputedSeverity)
+			assert.Equal(t, c.ComputedSeverity, *entry.ComputedSeverity, c.Note)
+		})
+	}
+}
+
+// syntheticNessusWithRawBaseScore renders one ReportItem whose v2 base score is
+// the given raw text, with or without a base vector beside it.
+func syntheticNessusWithRawBaseScore(rawScore string, withVector bool) string {
+	vector := ""
+	if withVector {
+		vector = "        <cvss_vector>AV:N/AC:L/Au:N/C:C/I:C/A:C</cvss_vector>\n"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999996" pluginName="Synthetic Non-Finite Score Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99996</cvss_score_source>
+        <cvss_base_score>%s</cvss_base_score>
+%s        <description>Synthetic finding carrying a non-finite base score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, rawScore, vector)
+}
+
+// strconv.ParseFloat accepts these, so a .nessus file can put a non-finite
+// number in cvss_base_score; json.Marshal then refuses the whole document.
+func TestConvertNessusToHDF_NonFiniteBaseScore(t *testing.T) {
+	for _, raw := range []string{"NaN", "Inf", "Infinity", "-Inf"} {
+		t.Run(raw, func(t *testing.T) {
+			t.Run("the base vector supplies the score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, true)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				require.NotNil(t, entry.BaseScore)
+				assert.InDelta(t, 10.0, *entry.BaseScore, 1e-9)
+				require.NotNil(t, entry.BaseSeverity)
+				assert.Equal(t, hdf.CVSSSeverityHigh, *entry.BaseSeverity, "10.0 is high on the 2.0 scale")
+			})
+
+			t.Run("without a vector the entry carries no score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, false)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				assert.Nil(t, entry.BaseScore)
+				assert.Nil(t, entry.BaseSeverity)
+			})
+		})
+	}
+}
+
+func onlyCvssEntry(t *testing.T, result *hdf.HDFResults, pluginID string) hdf.Cvss {
+	t.Helper()
+	req := findReqAcrossBaselines(result, pluginID)
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1)
+	return req.Cvss[0]
 }

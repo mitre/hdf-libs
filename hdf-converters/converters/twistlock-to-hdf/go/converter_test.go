@@ -564,7 +564,7 @@ func TestConvertTwistlock_CvssSeverityBands(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			assert.Equal(t, tc.want, shared.CvssSeverityFromScore(tc.score))
+			assert.Equal(t, tc.want, shared.CvssSeverityFromScore(hdf.The31, tc.score))
 		})
 	}
 }

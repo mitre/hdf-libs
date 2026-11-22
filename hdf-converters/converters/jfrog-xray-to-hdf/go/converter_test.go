@@ -358,7 +358,7 @@ func TestConvertJfrogXray_CvssV2Only(t *testing.T) {
 	require.NotNil(t, req.Cvss[0].BaseScore)
 	assert.InDelta(t, 10.0, *req.Cvss[0].BaseScore, 0.001)
 	require.NotNil(t, req.Cvss[0].BaseSeverity)
-	assert.Equal(t, hdf.CVSSSeverityCritical, *req.Cvss[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityHigh, *req.Cvss[0].BaseSeverity, "CVSS 2.0 has no critical rating: 10.0 is high")
 }
 
 func TestConvertJfrogXray_NoCvssWhenNoCves(t *testing.T) {
@@ -423,7 +423,8 @@ func TestConvertJfrogXray_CvssVectorOnlyAndV2Absent(t *testing.T) {
 	req := result.Baselines[0].Requirements[0]
 	require.Len(t, req.Cvss, 1, "only the v3 metric should be emitted")
 	assert.Equal(t, hdf.The31, req.Cvss[0].Version)
-	assert.Nil(t, req.Cvss[0].BaseScore, "unparseable score must be omitted")
+	require.NotNil(t, req.Cvss[0].BaseScore, "an unparseable source score leaves the vector's own score")
+	assert.InDelta(t, 9.8, *req.Cvss[0].BaseScore, 0.001)
 	require.NotNil(t, req.Cvss[0].BaseVector)
 	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", *req.Cvss[0].BaseVector)
 	assert.Equal(t, []string{"CVE-9999-0001"}, hdfutil.SafeStringSlice(req.Tags["cve"]))

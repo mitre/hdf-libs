@@ -255,7 +255,7 @@ describe('neuvector to HDF converter', async () => {
       expect(cv.baseVector).toBe('AV:N/AC:L/Au:N/C:N/I:N/A:P');
     });
 
-    it('omits baseScore when a vector is present but the score is zero', async () => {
+    it('scores the vector when a vector is present but the score is zero', async () => {
       const mk = (v: Record<string, unknown>) => JSON.stringify({
         error_message: '',
         report: {
@@ -273,13 +273,15 @@ describe('neuvector to HDF converter', async () => {
       const v3 = JSON.parse(await convertNeuvectorToHdf(mk({ vectors_v3: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' }))) as HDFResults;
       const cv3 = v3.baselines[0]!.requirements[0]!.cvss![0]!;
       expect(cv3.version).toBe('3.0');
-      expect(cv3.baseScore).toBeUndefined();
+      // A zero score is no score: the vector is scored.
+      expect(cv3.baseScore).toBe(9.8);
       expect(cv3.baseVector).toBeTruthy();
 
       const v2 = JSON.parse(await convertNeuvectorToHdf(mk({ vectors: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' }))) as HDFResults;
       const cv2 = v2.baselines[0]!.requirements[0]!.cvss![0]!;
       expect(cv2.version).toBe('2.0');
-      expect(cv2.baseScore).toBeUndefined();
+      expect(cv2.baseScore).toBe(7.5);
+      expect(cv2.baseSeverity).toBe('high');
     });
 
     it('omits cvss[] when the vulnerability carries no vector', async () => {

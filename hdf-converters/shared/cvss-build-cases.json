@@ -1,0 +1,24 @@
+{
+  "_comment": "Shared by go/cvss_test.go and typescript/cvss_build_cases.test.ts. buildCases: BuildCvss input and the baseScore / baseSeverity it must produce (null = absent). A vector-only input is scored through hdf-utilities ComputeCvssScore only when the vector's version is the entry's version; a supplied score is never replaced; severity follows the entry's version (CVSS 2.0: NVD v2 ranges). Expected scores are NVD's (CVE-2025-13151, CVE-2011-3389) or the FIRST CVSS 4.0 reference vector's. versionCases: CvssVersionFromVector input, optional fallback and result.",
+  "buildCases": [
+    { "name": "3.1 vector only is scored", "input": { "version": "3.1", "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" }, "want": { "baseScore": 7.5, "baseSeverity": "high" } },
+    { "name": "3.0 vector only is scored", "input": { "version": "3.0", "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" }, "want": { "baseScore": 7.5, "baseSeverity": "high" } },
+    { "name": "2.0 vector only is scored with a v2 severity", "input": { "version": "2.0", "baseVector": "AV:N/AC:M/Au:N/C:P/I:N/A:N" }, "want": { "baseScore": 4.3, "baseSeverity": "medium" } },
+    { "name": "4.0 vector only is scored", "input": { "version": "4.0", "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N" }, "want": { "baseScore": 9.3, "baseSeverity": "critical" } },
+    { "name": "a supplied score is never replaced", "input": { "version": "3.1", "baseScore": 5.0, "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" }, "want": { "baseScore": 5.0, "baseSeverity": "medium" } },
+    { "name": "a vector of another version is not scored", "input": { "version": "3.1", "baseVector": "AV:N/AC:M/Au:N/C:P/I:N/A:N" }, "want": { "baseScore": null, "baseSeverity": null } },
+    { "name": "an unscorable vector leaves the score empty", "input": { "version": "3.1", "baseVector": "CVSS:3.1/AV:N/AC:L" }, "want": { "baseScore": null, "baseSeverity": null } },
+    { "name": "a supplied 2.0 score of 10 is high, 2.0 has no critical", "input": { "version": "2.0", "baseScore": 10.0, "baseVector": "AV:N/AC:L/Au:N/C:C/I:C/A:C" }, "want": { "baseScore": 10.0, "baseSeverity": "high" } },
+    { "name": "a supplied 2.0 score of 0 is low, 2.0 has no none", "input": { "version": "2.0", "baseScore": 0.0 }, "want": { "baseScore": 0.0, "baseSeverity": "low" } },
+    { "name": "a supplied 3.1 score of 10 is critical", "input": { "version": "3.1", "baseScore": 10.0 }, "want": { "baseScore": 10.0, "baseSeverity": "critical" } }
+  ],
+  "versionCases": [
+    { "vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N", "want": "2.0" },
+    { "vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N", "fallback": "3.0", "want": "2.0" },
+    { "vector": "AV:N/AC:L", "want": "3.1" },
+    { "vector": "AV:N/AC:L", "fallback": "3.0", "want": "3.0" },
+    { "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "fallback": "2.0", "want": "3.0" },
+    { "vector": "CVSS:4.0/AV:N", "want": "4.0" },
+    { "vector": "", "fallback": "3.0", "want": "3.0" }
+  ]
+}

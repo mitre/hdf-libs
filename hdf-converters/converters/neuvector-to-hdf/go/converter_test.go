@@ -268,18 +268,22 @@ func TestConvertNeuVector_CvssV2Fallback(t *testing.T) {
 // buildCvssEntries branch coverage for the sub-branches fixtures don't exercise:
 // a vector present with a zero score (score omitted), and no vector at all.
 func TestBuildCvssEntries_Branches(t *testing.T) {
-	t.Run("v3 vector, no score", func(t *testing.T) {
+	t.Run("v3 vector, zero score is scored from the vector", func(t *testing.T) {
 		out := buildCvssEntries(NeuVectorVuln{VectorsV3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", ScoreV3: 0})
 		require.Len(t, out, 1)
 		assert.Equal(t, hdf.The30, out[0].Version)
-		assert.Nil(t, out[0].BaseScore, "zero score_v3 must not be emitted")
+		require.NotNil(t, out[0].BaseScore, "a zero score_v3 is no score: the vector is scored")
+		assert.InDelta(t, 9.8, *out[0].BaseScore, 0.001)
 		require.NotNil(t, out[0].BaseVector)
 	})
-	t.Run("v2 vector, no score", func(t *testing.T) {
+	t.Run("v2 vector, zero score is scored from the vector", func(t *testing.T) {
 		out := buildCvssEntries(NeuVectorVuln{Vectors: "AV:N/AC:L/Au:N/C:P/I:P/A:P", Score: 0})
 		require.Len(t, out, 1)
 		assert.Equal(t, hdf.The20, out[0].Version)
-		assert.Nil(t, out[0].BaseScore, "zero score must not be emitted")
+		require.NotNil(t, out[0].BaseScore, "a zero score is no score: the vector is scored")
+		assert.InDelta(t, 7.5, *out[0].BaseScore, 0.001)
+		require.NotNil(t, out[0].BaseSeverity)
+		assert.Equal(t, hdf.CVSSSeverityHigh, *out[0].BaseSeverity)
 	})
 	t.Run("no vector, no entry", func(t *testing.T) {
 		assert.Empty(t, buildCvssEntries(NeuVectorVuln{ScoreV3: 9.8, Score: 5}),
