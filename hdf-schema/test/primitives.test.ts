@@ -3246,6 +3246,17 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
+      // A local checkout is a legitimate git dependency, so the field is a
+      // uri-reference; InSpec accepts one and this definition's own description
+      // says relative paths are allowed.
+      it('should accept a local checkout reached by relative path', () => {
+        expect(validate({name: 'baseline-dependency', git: '../forks/rhel-9-stig-baseline'})).toBe(true);
+      });
+
+      it('should accept an absolute local path', () => {
+        expect(validate({name: 'baseline-dependency', git: '/srv/profiles/rhel-9-stig-baseline'})).toBe(true);
+      });
+
       it('should reject invalid URI', () => {
         const invalid = {
           name: 'baseline-dependency',
@@ -3255,7 +3266,7 @@ describe('Primitive Schema Validation', () => {
         expect(validate.errors).toContainEqual(
           expect.objectContaining({
             keyword: 'format',
-            params: { format: 'uri' },
+            params: { format: 'uri-reference' },
           })
         );
       });

@@ -2622,3 +2622,47 @@ describe('a legacy dependency converts to the declared closed shape', () => {
     });
   }
 });
+
+// ── Dependency location normalization, pinned by a shared table ──────────
+// HDF declares git and url as uri-reference; legacy declares plain strings and
+// InSpec accepts a local path. A Windows path is not expressible as a URI
+// reference at all, so it is rewritten by the smallest change that makes it
+// one, and anything already expressible is carried byte-identical.
+describe('a legacy dependency location becomes a usable uri-reference', () => {
+  const LOCATION_CASES = (JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'legacy-dependency-location-cases.json'), 'utf-8'),
+  ) as {cases: {name: string; field: string; in: string; want: string}[]}).cases;
+
+  function locationFrom(field: string, value: string): unknown {
+    const doc = {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics: {duration: 0.1},
+      profiles: [{
+        name: 'p', sha256: 'abc', supports: [], attributes: [], groups: [],
+        depends: [{name: 'dep', [field]: value}],
+        controls: [{
+          id: 'V-1', title: 't', impact: 0.5, tags: {}, refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.valid ? '' : legacy.getErrorMessage()).toBe(true);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    expectValidResults(out);
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    return (baseline.depends as Record<string, unknown>[])[0]![field];
+  }
+
+  it('has a populated table', () => {
+    expect(LOCATION_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of LOCATION_CASES) {
+    it(tc.name, () => {
+      expect(locationFrom(tc.field, tc.in)).toBe(tc.want);
+    });
+  }
+});

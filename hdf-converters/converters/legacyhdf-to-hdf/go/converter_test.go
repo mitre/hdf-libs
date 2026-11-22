@@ -607,8 +607,10 @@ func TestConvertDependency_AllFields(t *testing.T) {
 	assert.Equal(t, url, *v2.URL)
 	require.NotNil(t, v2.Path)
 	assert.Equal(t, path, *v2.Path)
+	// The scp-style remote this fixture carries is not a valid uri-reference, so
+	// it is rewritten to the ssh:// form the schema and both validators accept.
 	require.NotNil(t, v2.Git)
-	assert.Equal(t, git, *v2.Git)
+	assert.Equal(t, "ssh://git@github.com/example/repo.git", *v2.Git)
 	require.NotNil(t, v2.Branch)
 	assert.Equal(t, branch, *v2.Branch)
 	require.NotNil(t, v2.Supermarket)
@@ -2117,6 +2119,71 @@ func TestConvertDependency_MatchesSharedTable(t *testing.T) {
 			want, err := json.Marshal(tc.Want)
 			require.NoError(t, err)
 			assert.JSONEq(t, string(want), string(got))
+		})
+	}
+}
+
+// Twin of the TypeScript 'a legacy dependency location becomes a usable
+// uri-reference' block. HDF declares git and url as uri-reference while legacy
+// declares plain strings and InSpec accepts a local path, so a Windows path is
+// not expressible as-is; the shared table decides what each value becomes so
+// the two languages cannot rewrite it differently.
+func TestConvertDependency_LocationMatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-dependency-location-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		Cases []struct {
+			Name  string `json:"name"`
+			Field string `json:"field"`
+			In    string `json:"in"`
+			Want  string `json:"want"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			v1 := LegacyDependency{Name: hdfutil.Ptr("dep")}
+			switch tc.Field {
+			case "git":
+				v1.Git = hdfutil.Ptr(tc.In)
+			case "url":
+				v1.URL = hdfutil.Ptr(tc.In)
+			default:
+				t.Fatalf("the table names an unsupported field %q", tc.Field)
+			}
+
+			v2 := convertDependency(v1)
+			var got *string
+			if tc.Field == "git" {
+				got = v2.Git
+			} else {
+				got = v2.URL
+			}
+			require.NotNilf(t, got, "%s must be carried", tc.Field)
+			assert.Equal(t, tc.Want, *got)
+
+			// Format assertion is optional in JSON Schema 2020-12 and this side
+			// validates with santhosh-tekuri while TypeScript uses Ajv, so the
+			// normalized value is checked against the real validator here too
+			// rather than assumed to satisfy the same uri-reference.
+			doc := LegacyHDFResults{
+				Version:    "1.0.0",
+				Platform:   LegacyPlatform{Name: "centos", Release: hdfutil.Ptr("7")},
+				Statistics: LegacyStatistics{Duration: hdfutil.Ptr(0.1)},
+				Profiles: []LegacyProfile{{
+					Name:     "p",
+					SHA256:   hdfutil.Ptr("abc"),
+					Depends:  []LegacyDependency{v1},
+					Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5)}},
+				}},
+			}
+			raw, err := json.Marshal(ConvertLegacyHDF(&doc, "1.0.0"))
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "normalized %s=%q must validate: %s", tc.Field, tc.Want, v.Error())
 		})
 	}
 }

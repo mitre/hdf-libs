@@ -620,6 +620,67 @@ function convertGroup(v1Group: LegacyGroup): V2Group {
   return v2Group;
 }
 
+/** A [user@]dotted.host:path remote; one letter before the colon is a drive. */
+const SCP_LIKE = /^(?:[A-Za-z0-9_.\-]+@)?[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)+:/;
+
+/** One character a URI reference may not carry. `%` is unsafe: only a real %XX escape survives. */
+const URI_UNSAFE = /[^A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=]/;
+
+const HEX_PAIR = /^[0-9A-Fa-f]{2}$/;
+
+function percentEncode(value: string): string {
+  const chars = [...value];
+  let out = '';
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i]!;
+    // An existing escape is kept; a bare % is itself illegal and becomes %25.
+    if (ch === '%' && HEX_PAIR.test(chars.slice(i + 1, i + 3).join(''))) {
+      out += `%${chars[i + 1]}${chars[i + 2]}`;
+      i += 2;
+      continue;
+    }
+    if (!URI_UNSAFE.test(ch)) {
+      out += ch;
+      continue;
+    }
+    // TextEncoder, not encodeURIComponent: it maps a lone surrogate to U+FFFD
+    // exactly as Go does, where encodeURIComponent throws URIError instead.
+    for (const byte of new TextEncoder().encode(ch)) {
+      out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+    }
+  }
+  return out;
+}
+
+/**
+ * Make a legacy dependency location expressible as the uri-reference HDF
+ * declares. Legacy carries it as a plain string and InSpec accepts a local
+ * path, but a Windows path is not a URI reference at all: a backslash is not
+ * legal in one, nor is a space. A value that is already expressible — every
+ * remote URL, an scp-style remote, any POSIX path — is returned byte-identical.
+ */
+function normalizeGitLocation(value: string): string {
+  // scp syntax is not a URI reference at all: RFC 3986 forbids a colon in a
+  // relative reference's first segment, and the two validators disagree about
+  // it. ssh:// is git's equivalent and both accept that. Only `git` gets this:
+  // scp syntax is meaningless for `url`, where it would mangle a host:port.
+  if (SCP_LIKE.test(value)) {
+    const [host, ...rest] = value.split(':');
+    return `ssh://${host}/${percentEncode(rest.join(':').replace(/^\/+/, ''))}`;
+  }
+  return normalizeDependencyLocation(value);
+}
+
+function normalizeDependencyLocation(value: string): string {
+  if (!value.includes('\\') && !URI_UNSAFE.test(value)) return value;
+  const slashed = value.replace(/\\/g, '/');
+  // A drive-letter or UNC path takes the RFC 8089 file form rather than a bare
+  // separator swap: 'C:/x' validates only by reading 'C' as a scheme.
+  if (slashed.startsWith('//')) return `file:${percentEncode(slashed)}`;
+  if (/^[A-Za-z]:\//.test(slashed)) return `file:///${percentEncode(slashed)}`;
+  return percentEncode(slashed);
+}
+
 /**
  * Convert v1.0 dependency to v2.0 dependency.
  *
@@ -632,9 +693,9 @@ function convertDependency(v1Dep: LegacyDependency): V2Dependency {
   const v2Dep: V2Dependency = {};
 
   if (present(v1Dep.name)) v2Dep.name = v1Dep.name;
-  if (present(v1Dep.url)) v2Dep.url = v1Dep.url;
+  if (present(v1Dep.url)) v2Dep.url = normalizeDependencyLocation(v1Dep.url);
   if (present(v1Dep.path)) v2Dep.path = v1Dep.path;
-  if (present(v1Dep.git)) v2Dep.git = v1Dep.git;
+  if (present(v1Dep.git)) v2Dep.git = normalizeGitLocation(v1Dep.git);
   if (present(v1Dep.branch)) v2Dep.branch = v1Dep.branch;
   if (present(v1Dep.supermarket)) v2Dep.supermarket = v1Dep.supermarket;
   if (present(v1Dep.compliance)) v2Dep.compliance = v1Dep.compliance;
