@@ -1,56 +1,75 @@
 package generators
 
 import (
+	"bytes"
+	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestEscapeQuotes_PlainText(t *testing.T) {
-	assert.Equal(t, "'hello world'", EscapeQuotes("hello world"))
+type rubyLiteralCase struct {
+	Input   string `json:"input"`
+	Literal string `json:"literal"`
+	Why     string `json:"why"`
 }
 
-func TestEscapeQuotes_EmptyString(t *testing.T) {
-	assert.Equal(t, "''", EscapeQuotes(""))
+// The TypeScript peer (escapeQuotes) asserts against this same table.
+func loadRubyLiteralCases(t *testing.T) []rubyLiteralCase {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "ruby-literal-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []rubyLiteralCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Cases, "empty table would pass vacuously")
+	return table.Cases
 }
 
-func TestEscapeQuotes_SingleQuotes(t *testing.T) {
-	// String with single quotes → double-quoted
-	assert.Equal(t, `"it's a test"`, EscapeQuotes("it's a test"))
+func TestEscapeQuotes_SharedTable(t *testing.T) {
+	for _, c := range loadRubyLiteralCases(t) {
+		assert.Equal(t, c.Literal, EscapeQuotes(c.Input), c.Why)
+	}
 }
 
-func TestEscapeQuotes_DoubleQuotes(t *testing.T) {
-	// String with double quotes → single-quoted
-	assert.Equal(t, `'say "hello"'`, EscapeQuotes(`say "hello"`))
+// Syntax validity does not prove the value is unchanged, so Ruby itself reads
+// every literal back and the value must equal the input.
+func TestEscapeQuotes_RubyReadsInputBack(t *testing.T) {
+	cases := loadRubyLiteralCases(t)
+	var script strings.Builder
+	script.WriteString("require 'json'\nSTDOUT.write(JSON.generate([\n")
+	for _, c := range cases {
+		script.WriteString(EscapeQuotes(c.Input))
+		script.WriteString(",\n")
+	}
+	script.WriteString("]))\n")
+
+	var values []string
+	require.NoError(t, json.Unmarshal(runRuby(t, script.String()), &values))
+	require.Len(t, values, len(cases))
+	for i, c := range cases {
+		assert.Equal(t, c.Input, values[i], "%s: literal %s", c.Why, EscapeQuotes(c.Input))
+	}
 }
 
-func TestEscapeQuotes_BothQuoteTypes(t *testing.T) {
-	assert.Equal(t, `%q(it's a "test")`, EscapeQuotes(`it's a "test"`))
-}
-
-func TestEscapeQuotes_BackslashesInSingleQuoted(t *testing.T) {
-	assert.Equal(t, `'path\\to\\file'`, EscapeQuotes(`path\to\file`))
-}
-
-func TestEscapeQuotes_BackslashesInDoubleQuoted(t *testing.T) {
-	assert.Equal(t, `"it's a path\\to\\file"`, EscapeQuotes(`it's a path\to\file`))
-}
-
-func TestEscapeQuotes_BackslashBeforeParenInPercentQ(t *testing.T) {
-	// \) → \\) in %q mode so Ruby sees literal backslash, then ) closes %q()
-	assert.Equal(t, `%q(it's a "test" with \\))`, EscapeQuotes(`it's a "test" with \)`))
-}
-
-func TestEscapeQuotes_OnlyBackslashes(t *testing.T) {
-	assert.Equal(t, `'\\'`, EscapeQuotes(`\`))
-}
-
-// Ruby string literals may span lines, so line breaks, trailing spaces and a
-// trailing newline pass through unescaped in every quoting form.
-func TestEscapeQuotes_MultilineContent(t *testing.T) {
-	assert.Equal(t, "'line vty 0 1\n access-class MANAGEMENT_NET in\n'",
-		EscapeQuotes("line vty 0 1\n access-class MANAGEMENT_NET in\n"))
-	assert.Equal(t, "\"it's MANAGEMENT_NET \npermit\n\n\"",
-		EscapeQuotes("it's MANAGEMENT_NET \npermit\n\n"))
-	assert.Equal(t, "%q(it's \"x\"\r\n  y)", EscapeQuotes("it's \"x\"\r\n  y"))
+// runRuby runs script under ruby and returns its stdout, skipping the test
+// when ruby is not installed.
+func runRuby(t *testing.T, script string) []byte {
+	t.Helper()
+	if _, err := exec.LookPath("ruby"); err != nil {
+		t.Skip("ruby is not installed; the shared table still pins every literal")
+	}
+	cmd := exec.CommandContext(t.Context(), "ruby", "-")
+	cmd.Stdin = strings.NewReader(script)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	require.NoError(t, err, "ruby rejected the script: %s", stderr.String())
+	return out
 }

@@ -39,14 +39,14 @@ func GenerateControlStub(req hdf.BaselineRequirement) string {
 			if innerID == req.ID {
 				return *req.Code
 			}
-			rewritten := (*req.Code)[:m[2]] + req.ID + (*req.Code)[m[3]:]
-			return rewritten
+			// Replace the quoted id, quotes included, so the new id is escaped.
+			return (*req.Code)[:m[2]-1] + EscapeQuotes(req.ID) + (*req.Code)[m[3]+1:]
 		}
 	}
 
 	var lines []string
 
-	lines = append(lines, fmt.Sprintf("control '%s' do", req.ID))
+	lines = append(lines, fmt.Sprintf("control %s do", EscapeQuotes(req.ID)))
 
 	// Title
 	if req.Title != nil {
@@ -66,7 +66,7 @@ func GenerateControlStub(req hdf.BaselineRequirement) string {
 		if d.Label == "default" {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf("  desc '%s', %s", d.Label, EscapeQuotes(d.Data)))
+		lines = append(lines, fmt.Sprintf("  desc %s, %s", EscapeQuotes(d.Label), EscapeQuotes(d.Data)))
 	}
 
 	// Impact — always render with at least one decimal place for whole numbers
@@ -114,13 +114,13 @@ func formatTag(key string, value interface{}) string {
 	case []interface{}:
 		items := make([]string, len(v))
 		for i, item := range v {
-			items[i] = fmt.Sprintf("'%s'", fmt.Sprint(item))
+			items[i] = EscapeQuotes(fmt.Sprint(item))
 		}
 		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
 	case []string:
 		items := make([]string, len(v))
 		for i, item := range v {
-			items[i] = fmt.Sprintf("'%s'", item)
+			items[i] = EscapeQuotes(item)
 		}
 		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
 	case bool:

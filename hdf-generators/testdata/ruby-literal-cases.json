@@ -1,0 +1,145 @@
+{
+  "$comment": "Ruby string literals for generated InSpec controls. EscapeQuotes (Go) and escapeQuotes (TS) must return `literal` for `input`; the Go suite also evaluates every literal with ruby and requires the value to equal `input`.",
+  "cases": [
+    {
+      "input": "hello world",
+      "literal": "'hello world'",
+      "why": "no quotes: single-quoted"
+    },
+    {
+      "input": "",
+      "literal": "''",
+      "why": "empty string"
+    },
+    {
+      "input": "it's a test",
+      "literal": "\"it's a test\"",
+      "why": "a single quote: double-quoted"
+    },
+    {
+      "input": "say \"hello\"",
+      "literal": "'say \"hello\"'",
+      "why": "double quotes only: single-quoted"
+    },
+    {
+      "input": "it's a \"test\"",
+      "literal": "%q(it's a \"test\")",
+      "why": "both quote kinds: %q()"
+    },
+    {
+      "input": "path\\to\\file",
+      "literal": "'path\\\\to\\\\file'",
+      "why": "backslashes doubled in single quotes"
+    },
+    {
+      "input": "it's a path\\to\\file",
+      "literal": "\"it's a path\\\\to\\\\file\"",
+      "why": "backslashes doubled in double quotes"
+    },
+    {
+      "input": "\\",
+      "literal": "'\\\\'",
+      "why": "a lone backslash"
+    },
+    {
+      "input": "it's #{1+1}",
+      "literal": "\"it's \\#{1+1}\"",
+      "why": "#{ would interpolate in double quotes"
+    },
+    {
+      "input": "it's #@x and #$y",
+      "literal": "\"it's \\#@x and \\#$y\"",
+      "why": "#@ and #$ would interpolate in double quotes"
+    },
+    {
+      "input": "it's #1 #",
+      "literal": "\"it's #1 #\"",
+      "why": "a # not followed by { @ $ needs no escape"
+    },
+    {
+      "input": "#{1+1}",
+      "literal": "'#{1+1}'",
+      "why": "single quotes never interpolate"
+    },
+    {
+      "input": "it's \\#{x}",
+      "literal": "\"it's \\\\\\#{x}\"",
+      "why": "a backslash before #{ is doubled, then the # escaped"
+    },
+    {
+      "input": "it's \"a\" 1) step",
+      "literal": "%q(it's \"a\" 1\\) step)",
+      "why": "an unbalanced ) would end %q()"
+    },
+    {
+      "input": "it's \"a\" (1 step",
+      "literal": "%q(it's \"a\" \\(1 step)",
+      "why": "an unbalanced ( would leave %q() open"
+    },
+    {
+      "input": "it's \"a\" (b)",
+      "literal": "%q(it's \"a\" \\(b\\))",
+      "why": "balanced parens are escaped too"
+    },
+    {
+      "input": "it's \"a\" \\\\b",
+      "literal": "%q(it's \"a\" \\\\\\\\b)",
+      "why": "%q() reads \\\\ as one backslash"
+    },
+    {
+      "input": "it's a \"test\" with \\)",
+      "literal": "%q(it's a \"test\" with \\\\\\))",
+      "why": "a backslash before ) in %q()"
+    },
+    {
+      "input": "line vty 0 1\n access-class MANAGEMENT_NET in\n",
+      "literal": "'line vty 0 1\n access-class MANAGEMENT_NET in\n'",
+      "why": "line breaks and a trailing newline pass through raw"
+    },
+    {
+      "input": "it's MANAGEMENT_NET \npermit\n\n",
+      "literal": "\"it's MANAGEMENT_NET \npermit\n\n\"",
+      "why": "trailing space before a newline passes through raw"
+    },
+    {
+      "input": "it's \"x\"\n  y",
+      "literal": "%q(it's \"x\"\n  y)",
+      "why": "line breaks pass through %q() raw"
+    },
+    {
+      "input": "a\tb",
+      "literal": "'a\tb'",
+      "why": "a tab passes through raw"
+    },
+    {
+      "input": "café ’",
+      "literal": "'café ’'",
+      "why": "non-ASCII passes through raw"
+    },
+    {
+      "input": "a\r\nb",
+      "literal": "\"a\\r\nb\"",
+      "why": "Ruby folds a raw CRLF to LF, so CR is escaped in double quotes"
+    },
+    {
+      "input": "a\rb",
+      "literal": "\"a\\rb\"",
+      "why": "Ruby reads a raw lone CR as a space"
+    },
+    {
+      "input": "it's \"x\"\r\n  y",
+      "literal": "\"it's \\\"x\\\"\\r\n  y\"",
+      "why": "CR forces double quotes even with both quote kinds"
+    },
+    {
+      "input": "a\u0007b",
+      "literal": "\"a\\u0007b\\u007F\"",
+      "why": "other control characters are escaped as \\uXXXX"
+    },
+    {
+      "input": "it's\u0000",
+      "literal": "\"it's\\u0000\"",
+      "why": "NUL is escaped"
+    }
+  ]
+}

@@ -35,13 +35,14 @@ export function generateControlStub(req: BaselineRequirement): string {
         return req.code;
       }
       const start = m.index + m[0].indexOf(innerID);
-      return req.code.slice(0, start) + req.id + req.code.slice(start + innerID.length);
+      // Replace the quoted id, quotes included, so the new id is escaped.
+      return req.code.slice(0, start - 1) + escapeQuotes(req.id) + req.code.slice(start + innerID.length + 1);
     }
   }
 
   const lines: string[] = [];
 
-  lines.push(`control '${req.id}' do`);
+  lines.push(`control ${escapeQuotes(req.id)} do`);
 
   // Title
   if (req.title) {
@@ -63,7 +64,7 @@ export function generateControlStub(req: BaselineRequirement): string {
       seenDefault.add('default');
       continue; // already emitted above as bare desc
     }
-    lines.push(`  desc '${d.label}', ${escapeQuotes(d.data)}`);
+    lines.push(`  desc ${escapeQuotes(d.label)}, ${escapeQuotes(d.data)}`);
   }
 
   // Impact — always render with at least one decimal place for 0 and whole numbers
@@ -104,7 +105,7 @@ function formatTag(key: string, value: unknown): string {
 
   if (Array.isArray(value)) {
     // Ruby array syntax: tag key: ['val1', 'val2']
-    const items = value.map((v: unknown) => `'${String(v)}'`).join(', ');
+    const items = value.map((v: unknown) => escapeQuotes(String(v))).join(', ');
     return `tag ${key}: [${items}]`;
   }
 
