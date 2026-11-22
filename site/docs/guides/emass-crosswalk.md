@@ -8,7 +8,7 @@ Written against the eMASS REST API specification **v3.22**, read from `docs/eMAS
 
 eMASS groups most entities' fields into `*RequiredFields`, `*ConditionalFields`, `*OptionalFields` and `*ReadOnlyFields` schemas, composed into the write body with `allOf`. A write must satisfy the required group and whichever conditionals apply; read-only fields are returned but never sent. POA&Ms, controls and the hardware and software baselines follow that pattern; artifacts follow it without a conditional group. Two entities depart from it. **Test results have no group schemas at all** — their requirements come from the `[Required]` markers inside `TestResultsGet` and from the write body's own `required` list. **Milestones have `MilestonesRequiredPost` and `MilestonesRequiredPut` but not the rest of the quartet**, and those two name their fields inside `properties.milestones.items.required` rather than at the schema root.
 
-One property of the API shapes everything here: **no entity a push writes reports when it last changed.** `createdDate` exists on POA&M items and milestones only — artifacts, test results and controls carry no creation timestamp either — and no modification timestamp appears on any of the five. A client therefore cannot tell from eMASS alone whether one of those records has been edited since it was read, and conflict detection is layered to work without one.
+One property of the API shapes everything here: **no entity a push writes reports when it last changed.** `createdDate` exists on POA&M items and milestones only — artifacts, test results and controls carry no creation timestamp either — and none of them reports a modification timestamp. A client therefore cannot tell from eMASS alone whether one of those records has been edited since it was read, and conflict detection is layered to work without one.
 
 The specification does carry one last-edit timestamp, on a surface a push does not write: `WorkflowInstanceGet.lastEditedDate` ("[Read-Only] Date the workflow was last acted on") and its companion `lastEditedBy`, returned by `GET /api/workflows/instances`. It describes a workflow instance — a package moving through approval — not the POA&M, artifact or test result inside it, so it cannot date a record a push would overwrite. It is worth knowing anyway: POA&M items lock while their package is in an active workflow, so a workflow instance's last-acted-on date is evidence about *why* a write may be refused, even though it cannot tell you whether a particular POA&M changed. `ControlsReadOnlyFields.modifiedByOverlays` is a related near-miss — it names what modified a control's values, not when — and so is `ArtifactsOptionalFields.lastReviewedDate`, which a caller supplies rather than eMASS maintaining.
 
@@ -77,10 +77,10 @@ eMASS schemas `PoamRequiredFields`, `PoamConditionalFields`, `PoamOptionalFields
 | `overrides[].milestones[].completedAt` | `completionDate` | Conditional | Required for completed items. |
 | `baselines[].requirements[].poams[].explanation` | `comments` | Conditional | Required for completed and risk-accepted items. HDF's `POAM` primitive requires `explanation`, "Detailed explanation of the plan, including what actions will be taken" — prose about the remediation, which is what this field wants. Use it when the requirement carries a POA&M; it is **operator input** only when none does. 2000-character limit. Do **not** write `overrides[].justification`, a VEX controlled-vocabulary enum (`component_not_present`, `vulnerable_code_not_in_execute_path`, …) that produces an unreadable comment, and do not reuse `reason`, which `vulnerabilityDescription` already carries. |
 | — | the resourcing block | Conditional | **Operator input**, see below. |
-| `overrides[].requirementId` | `externalUid` | Optional | Gives eMASS a handle on the HDF requirement. |
+| `overrides[].requirementId` | `externalUid` | Optional | Gives eMASS a handle on the HDF requirement. 100-character limit, against an unbounded HDF field — a long id truncates. |
 | `baselines[].requirements[].tags.nist` | `controlAcronym` | Optional | |
 | `baselines[].requirements[].severity` | `severity` | Conditional | Required for approved items — though `reviewStatus` (`Not Approved`/`Under Review`/`Approved`) is `[Read-only]`, so a push cannot put an item into that state and the condition never binds at create time. HDF's five-band `critical`/`high`/`medium`/`low`/`informational` maps onto eMASS's `Very High`/`High`/`Moderate`/`Low`/`Very Low`. |
-| `overrides[].cvss.baseScore` | `rawSeverity` | Optional | Derived from the CVSS base score. |
+| `overrides[].cvss.baseScore` | `rawSeverity` | Optional | **Lossy, and the thresholds are a decision this page does not make.** CVSS gives a 0.0–10.0 number; `rawSeverity` takes the same five prose bands as `severity`. CVSS v3.1's own qualitative ranges are the obvious source but there are four of them, not five, so a push must define the mapping explicitly rather than inherit one. |
 | `overrides[].impact.value` | `impact` | Optional | eMASS uses a Very Low to Very High band, HDF a 0.0–1.0 score. |
 
 ### Deriving the POA&M status
@@ -129,7 +129,7 @@ eMASS schema `MilestonesGet`, under `/api/systems/{systemId}/poams/{poamId}/mile
 
 | HDF | eMASS field | Required | Notes |
 |-----|-------------|----------|-------|
-| `overrides[].milestones[].description` | `description` | Required | |
+| `overrides[].milestones[].description` | `description` | Required | 2,000-character limit, against an unbounded HDF field. |
 | `overrides[].milestones[].estimatedCompletion` | `scheduledCompletionDate` | Required | Unix time. |
 | `overrides[].milestones[].status` | — | — | **No counterpart.** See below. |
 | `overrides[].milestones[].completedAt` | — | — | No counterpart on the milestone itself; reaches eMASS only as the parent POA&M's `completionDate`. |
@@ -140,7 +140,7 @@ An eMASS milestone has no progress status. Its `reviewStatus` is read-only and b
 
 ## Artifacts
 
-eMASS schemas `ArtifactsRequiredFields`, `ArtifactsOptionalFields`, `ArtifactsReadOnlyFields`. HDF's counterparts are the evidence package's `externalEvidence[]` and `contents[]`.
+eMASS schemas `ArtifactsRequiredFields`, `ArtifactsOptionalFields`, `ArtifactsReadOnlyFields`. HDF's counterpart is the evidence package's `externalEvidence[]` — the external files a package points at. Its `contents[]` is *not* a second source: those entries reference the package's own HDF documents rather than files to upload, and have no eMASS counterpart.
 
 **Natural key:** `filename`. The `POST` description says an upload whose filename matches an existing artifact updates it and an unmatched filename creates a new one, which would make this the one entity with genuine upsert semantics. **The same endpoint's business rules contradict that**, stating an artifact version cannot be saved if an artifact with the same filename already exists and that filename uniqueness is enforced by the API for both methods. The specification does not resolve which governs, so an implementation must not rely on upsert until it is confirmed against a live instance — and a push that assumes it will either duplicate or fail on every re-push of the same evidence file.
 
@@ -150,11 +150,11 @@ Note that `filename` means two different things. In the `POST` body it is the bi
 
 | HDF | eMASS field | Required | Notes |
 |-----|-------------|----------|-------|
-| `externalEvidence[].uri` basename | `filename` | Required | The natural key. |
+| `externalEvidence[].uri` basename | `filename` | Required | The natural key. 1,000-character limit, and eMASS caps an artifact at 30MB. |
 | — | `isTemplate` | Required | `false`. The specification sets this as a create-time default. |
 | — | `type` | Required | The specification documents nine values — `Procedure`, `Diagram`, `Policy`, `Labor`, `Document`, `Image`, `Other`, `Scan Result`, `Auditor Report` — in the field's description rather than as a JSON `enum`, and notes an instance may add its own. `Other` is the documented create-time default, but **`Scan Result` is the honest value for an evidence package's scanner output** and is derivable from the converter that produced the document, so it is not operator input. |
 | — | `category` | Required | Two documented values, `Implementation Guidance` and `Evidence`, again in prose and again instance-extensible. `Evidence` is both the documented default and the correct value here. |
-| — | `name` | Optional | 100-character limit. **Operator input**: `External_Evidence_Reference` has no display name; `sourceName` belongs to `External_Reference`, a different type. |
+| — | `name` | Optional | 100-character limit. **Operator input**, though rarely needed: `External_Evidence_Reference` has no display name (`sourceName` belongs to `External_Reference`, a different type), and the specification defaults `name` to `filename` when it is not supplied. |
 | `externalEvidence[].description` | `description` | Optional | 10,000-character limit. |
 | `baselines[].requirements[].tags.nist` | `controls` | Optional | |
 | `signature.created` | `signedDate` | Optional | Unix time, when the package is signed. |
@@ -169,12 +169,11 @@ These are carried by an evidence package and have nowhere to go. A push records 
 | `integrity` | eMASS stores no package-level hash. It computes `fileSize` and `mimeContentType` per artifact and nothing across a submission. |
 | `completenessCheck` | An eMASS system's completeness is its own workflow's concern, assessed in the Control Approval Chain rather than asserted by a submitter. |
 | `signature` | Only the artifact `signedDate` survives; the signature itself has no field. |
-| `contents[].checksum` | Per-document checksums have no eMASS equivalent. |
 | `planRef` | eMASS has no assessment-plan reference on a system. |
 | `packageId`, `preparedAt`, `preparedBy` | Package-level provenance. eMASS records who submitted through its own workflow, not as submitted metadata. |
 | `systemRef` | Superseded by `systemId` as the join; the HDF reference itself has no field. |
 | `generator` | eMASS does not record which converter produced a submission. |
-| `contents[].type`, `.uri`, `.componentRef`, `.checksum` | Document references. eMASS holds artifacts, not references to HDF documents. |
+| `contents[].type`, `.uri`, `.componentRef`, `.checksum`, `.description` | Document references, the whole type. eMASS holds artifacts, not references to HDF documents, and has no per-document checksum. |
 | `externalEvidence[].format`, `.mediaType`, `.formatVersion` | eMASS derives `mimeContentType` from the file extension itself. |
 | `externalEvidence[].metadata` (`recordCount`, `timeRange`, `collector`) | Telemetry-corpus description with no eMASS counterpart. |
 | `tool`, `runner`, `statistics`, `derivation` | Scan provenance. Only `tool.name` reaches eMASS, inside `sourceIdentifyingVulnerability`, and only `runner.operator` inside `testedBy`. |
@@ -204,7 +203,7 @@ These are carried by an evidence package and have nowhere to go. A push records 
 
 HDF's `components[]` describes the hosts, images, cloud accounts and other targets an assessment ran against. eMASS has two surfaces that cover the same ground — `/api/systems/{systemId}/hw-baseline` and `/sw-baseline`, each with full `POST`/`PUT`/`DELETE` and its own required, conditional, optional and read-only groups — plus `PoamOptionalFields.devicesAffected`, "list any affected devices by hostname".
 
-**Mapping the inventory is out of scope for this crosswalk.** Pushing an evidence package means pushing what the assessment found, and a hardware or software baseline is a statement about what the system *is*, maintained on its own cadence. Writing it from a scan's incidental component list would assert an inventory nobody curated. The one exception worth taking is `devicesAffected`, which is derivable from the components a requirement's results reference.
+**Mapping the inventory is out of scope for this crosswalk.** Pushing an evidence package means pushing what the assessment found, and a hardware or software baseline is a statement about what the system *is*, maintained on its own cadence. Writing it from a scan's incidental component list would assert an inventory nobody curated. The one exception worth taking is `devicesAffected`, derivable from the components a requirement's results reference — though the specification marks it **Navy only**, so not every instance will accept it. The `personnelResources*` and `NonfundingObstacle` members of the resourcing block are likewise marked VA only.
 
 ## Write surfaces this crosswalk does not map
 

@@ -1,13 +1,8 @@
-// Every HDF property path the eMASS crosswalk cites must actually resolve,
-// segment by segment, through the bundled schemas — following $refs and array
-// items rather than merely checking that each name exists somewhere.
-//
-// The page's first review failed on four cited paths. The worst was
-// `statusOverrides[].milestones[]`: `statusOverrides` is a real hdf-results
-// property, and `milestones` is a real property elsewhere, so a name-existence
-// check passes it — yet `Status_Override` has no `milestones`, so the path is
-// nothing. Only real resolution catches that, which is why this walks the tree.
-// The eMASS half of the page is verified against the specification itself.
+// Every HDF path the crosswalk cites must resolve segment by segment through the
+// bundled schemas, following $refs, array items and composition. A name-existence
+// check is not enough: it passes `statusOverrides[].milestones[]`, where both
+// names exist but `Status_Override` has no `milestones`. The eMASS half of the
+// page is verified against the specification itself.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const page = join(here, '..', 'docs', 'guides', 'emass-crosswalk.md');
+const pagePath = join(here, '..', 'docs', 'guides', 'emass-crosswalk.md');
 // hdf-validators/go/schemas holds the committed copy of the bundles that
 // hdf-schema's build:schemas syncs on every build, byte-identical to
 // hdf-schema/dist/schemas. Read it rather than dist, because `pnpm check`
@@ -111,11 +106,8 @@ function resolves(segments, root) {
   return true;
 }
 
-// The page cites a path in full once, then continues with `.foo` shorthand in
-// the same cell. Those continuations were invisible to an earlier version of
-// this check, which left 17 of the cited paths unverified — in exactly the rows
-// the review's errors lived in. Resolve each against the last full path on its
-// line, so the shorthand is checked as the reader would read it.
+// The page cites a path in full, then continues with `.foo` in the same cell.
+// Resolve each continuation against the last full path on its line.
 function citedPaths(markdown) {
   const out = [];
   const bare = [];
@@ -140,16 +132,12 @@ function citedPaths(markdown) {
   return { paths: out, bare };
 }
 
-// Every HDF property name and whether it is an array, for checking the [] marker
-// on a name cited on its own. A bare name that is not an HDF property at all is
-// skipped rather than failed: the page also cites enum values, eMASS field names
-// and ordinary prose in backticks, and nothing distinguishes those by shape. So
-// this catches a dropped or spurious marker, not an invented bare name.
-// The no-counterpart tables' first column is HDF by construction — every
-// backticked token in it names an HDF property — so those can take full
-// resolution rather than the marker-only check a bare name gets elsewhere.
-// This is where the review found a live defect (externalReferences cited
-// without its []), and where most bare names on the page live.
+// Array-ness per property name, for the [] marker on a name cited alone. A name
+// that is not an HDF property is skipped: the page also cites enum values, eMASS
+// fields and prose in backticks, indistinguishable by shape. So this catches a
+// wrong marker, not an invented bare name.
+// The no-counterpart tables' first column is HDF by construction, so it takes
+// full resolution rather than the marker-only check a bare name gets elsewhere.
 function noCounterpartPaths(markdown) {
   const out = [];
   let inSection = false;
@@ -171,10 +159,53 @@ function noCounterpartPaths(markdown) {
   return out;
 }
 
-// Every property name and every enum value in the schemas. The no-counterpart
-// column mixes full paths, sub-property names in parentheses and enum values,
-// and nothing distinguishes those by shape — but a token that is none of the
-// three is an invented name, which is what the check is for.
+// Property names and enum values. The no-counterpart column mixes paths,
+// parenthesised sub-properties and enum values; a token that is none is invented.
+// Levels the page must cover exhaustively: every property mapped or listed.
+// Declared, not inferred, so adding one is deliberate.
+const EXHAUSTIVE_LEVELS = [
+  ['hdf-results', []],
+  ['hdf-results', ['baselines']],
+  ['hdf-results', ['baselines', 'requirements']],
+  ['hdf-results', ['baselines', 'requirements', 'results']],
+  ['hdf-results', ['baselines', 'requirements', 'poams']],
+  ['hdf-evidence-package', []],
+  ['hdf-evidence-package', ['externalEvidence']],
+  ['hdf-evidence-package', ['externalEvidence', 'metadata']],
+  ['hdf-evidence-package', ['contents']],
+];
+
+// Walk to a level and return its property names, expanding composition.
+function propertiesAt(doc, segments) {
+  let node = deref(docs[doc], docs[doc]);
+  for (const segment of segments) {
+    const candidates = [];
+    const collect = (n, depth) => {
+      const here = deref(n, docs[doc]);
+      if (!here || typeof here !== 'object' || depth > 8) return;
+      const unwrapped = here.type === 'array' && here.items ? deref(here.items, docs[doc]) : here;
+      if (!unwrapped || typeof unwrapped !== 'object') return;
+      candidates.push(unwrapped);
+      for (const kw of ['allOf', 'anyOf', 'oneOf']) (unwrapped[kw] ?? []).forEach((c) => collect(c, depth + 1));
+    };
+    collect(node, 0);
+    const next = candidates.map((c) => c.properties?.[segment]).find(Boolean);
+    if (!next) return null;
+    node = next;
+  }
+  const names = new Set();
+  const gather = (n, depth) => {
+    const here = deref(n, docs[doc]);
+    if (!here || typeof here !== 'object' || depth > 8) return;
+    const unwrapped = here.type === 'array' && here.items ? deref(here.items, docs[doc]) : here;
+    if (!unwrapped || typeof unwrapped !== 'object') return;
+    Object.keys(unwrapped.properties ?? {}).forEach((k) => names.add(k));
+    for (const kw of ['allOf', 'anyOf', 'oneOf']) (unwrapped[kw] ?? []).forEach((c) => gather(c, depth + 1));
+  };
+  gather(node, 0);
+  return names;
+}
+
 function vocabulary() {
   const names = new Set();
   const values = new Set();
@@ -215,13 +246,42 @@ function arrayness() {
   return seen;
 }
 
-const { paths, bare } = citedPaths(readFileSync(page, 'utf-8'));
+const { paths, bare } = citedPaths(readFileSync(pagePath, 'utf-8'));
 const arrays = arrayness();
-const noCounterpart = noCounterpartPaths(readFileSync(page, 'utf-8'));
+const noCounterpart = noCounterpartPaths(readFileSync(pagePath, 'utf-8'));
 const vocab = vocabulary();
 
 test('the crosswalk cites enough HDF paths for the check to mean something', () => {
   assert.ok(paths.length > 12, `only ${paths.length} HDF paths cited`);
+});
+
+test('every property at a level the page covers exhaustively is accounted for', () => {
+  // Matched against the full cited paths, not a bag of segment names: a
+  // page-global name check passes `contents[].description` purely because
+  // `description` occurs elsewhere, which is how that defect survived.
+  const strip = (path) => path.replace(/\[\]/g, '');
+  const citedFull = new Set();
+  for (const { path } of [...paths, ...noCounterpart]) {
+    const segments = strip(path).split('.');
+    // Record every prefix: a property the page descends THROUGH is accounted
+    // for by the rows beneath it, and so is one cited as a bare sub-property.
+    for (let i = 1; i <= segments.length; i += 1) citedFull.add(segments.slice(0, i).join('.'));
+  }
+  const citedBare = new Set(bare.map((t) => t.replace(/\[\]$/, '')));
+
+  const missing = [];
+  for (const [doc, segments] of EXHAUSTIVE_LEVELS) {
+    const names = propertiesAt(doc, segments);
+    assert.ok(names && names.size > 0, `level ${doc}.${segments.join('.')} resolved to nothing — the level list is stale`);
+    for (const name of names) {
+      // A document root's properties are cited as bare names; a nested level's
+      // must appear as the full path, so the citation is pinned to this level.
+      const full = [...segments, name].join('.');
+      const ok = citedFull.has(full) || citedBare.has(name);
+      if (!ok) missing.push(`${doc}.${[...segments, name].join('.')}`);
+    }
+  }
+  assert.deepEqual(missing, [], `HDF properties neither mapped nor listed at their level: ${missing.join(', ')}`);
 });
 
 test('an HDF property cited on its own carries the right array marker', () => {
@@ -232,6 +292,12 @@ test('an HDF property cited on its own carries the right array marker', () => {
     return isArray !== token.endsWith('[]');
   });
   assert.deepEqual(wrong, [], `cited with the wrong array marker: ${wrong.join(', ')}`);
+});
+
+test('the no-counterpart tables were actually found', () => {
+  // Scoped by heading text, so a docs tidy-up could silently empty it and leave
+  // the check below passing over nothing.
+  assert.ok(noCounterpart.length > 50, `only ${noCounterpart.length} tokens found — has the heading changed?`);
 });
 
 test('every field in the no-counterpart tables is a real HDF property', () => {
