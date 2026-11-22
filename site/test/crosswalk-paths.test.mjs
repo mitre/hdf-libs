@@ -118,27 +118,136 @@ function resolves(segments, root) {
 // line, so the shorthand is checked as the reader would read it.
 function citedPaths(markdown) {
   const out = [];
+  const bare = [];
   for (const line of markdown.split('\n')) {
     let parent = null;
-    for (const [, token] of line.matchAll(/`([A-Za-z.][A-Za-z0-9_.[\]]*)`/g)) {
-      // A JSON Schema location inside the eMASS spec (properties/items/required)
-      // is not an HDF path, though it is lowercase and dotted like one.
-      if (/(^|\.)(properties|items|required|allOf)(\.|$)/.test(token)) continue;
-      if (/^[a-z]/.test(token) && (token.includes('.') || token.includes('[]'))) {
+    for (const [, token] of line.matchAll(/`([A-Za-z.][A-Za-z0-9_.[\]-]*)`/g)) {
+      // A JSON Schema location inside the eMASS spec, which is lowercase and
+      // dotted like an HDF path. Matched narrowly: `required` on its own is a
+      // real HDF property (Input.required, at baselines[].inputs[].required),
+      // so only the nested-location forms are excluded.
+      if (/(^|\.)(properties|items|allOf)\./.test(token)) continue;
+      if (/^[a-z]/.test(token) && token.includes('.')) {
         out.push({ cited: token, path: token });
         parent = token.replace(/\.[A-Za-z0-9_]+(\[\])?$/, '');
+      } else if (/^[a-z][A-Za-z0-9_]*(\[\])?$/.test(token)) {
+        bare.push(token);
       } else if (token.startsWith('.') && parent) {
         out.push({ cited: token, path: parent + token });
+      }
+    }
+  }
+  return { paths: out, bare };
+}
+
+// Every HDF property name and whether it is an array, for checking the [] marker
+// on a name cited on its own. A bare name that is not an HDF property at all is
+// skipped rather than failed: the page also cites enum values, eMASS field names
+// and ordinary prose in backticks, and nothing distinguishes those by shape. So
+// this catches a dropped or spurious marker, not an invented bare name.
+// The no-counterpart tables' first column is HDF by construction — every
+// backticked token in it names an HDF property — so those can take full
+// resolution rather than the marker-only check a bare name gets elsewhere.
+// This is where the review found a live defect (externalReferences cited
+// without its []), and where most bare names on the page live.
+function noCounterpartPaths(markdown) {
+  const out = [];
+  let inSection = false;
+  for (const line of markdown.split('\n')) {
+    if (line.startsWith('## ')) inSection = /no eMASS counterpart/i.test(line);
+    if (!inSection || !line.startsWith('|')) continue;
+    const cell = line.split('|')[1] ?? '';
+    if (/^\s*-+\s*$/.test(cell) || /^\s*HDF\s*$/.test(cell)) continue;
+    let parent = null;
+    for (const [, token] of cell.matchAll(/`([A-Za-z.][A-Za-z0-9_.[\]-]*)`/g)) {
+      if (token.startsWith('.')) {
+        if (parent) out.push({ cited: token, path: parent + token });
+      } else {
+        out.push({ cited: token, path: token });
+        if (token.includes('.')) parent = token.replace(/\.[A-Za-z0-9_]+(\[\])?$/, '');
       }
     }
   }
   return out;
 }
 
-const paths = citedPaths(readFileSync(page, 'utf-8'));
+// Every property name and every enum value in the schemas. The no-counterpart
+// column mixes full paths, sub-property names in parentheses and enum values,
+// and nothing distinguishes those by shape — but a token that is none of the
+// three is an invented name, which is what the check is for.
+function vocabulary() {
+  const names = new Set();
+  const values = new Set();
+  for (const root of Object.values(docs)) {
+    const walk = (node, depth) => {
+      if (!node || typeof node !== 'object' || depth > 16) return;
+      Object.keys(node.properties ?? {}).forEach((n) => names.add(n));
+      (node.enum ?? []).forEach((v) => typeof v === 'string' && values.add(v));
+      for (const [key, value] of Object.entries(node)) {
+        if (key === 'examples') continue;
+        if (Array.isArray(value)) value.forEach((v) => walk(v, depth + 1));
+        else if (value && typeof value === 'object') walk(value, depth + 1);
+      }
+    };
+    walk(root, 0);
+  }
+  return { names, values };
+}
+
+function arrayness() {
+  const seen = new Map();
+  for (const root of Object.values(docs)) {
+    const walk = (node, depth) => {
+      if (!node || typeof node !== 'object' || depth > 14) return;
+      for (const [name, child] of Object.entries(node.properties ?? {})) {
+        const resolved = deref(child, root);
+        const isArray = resolved?.type === 'array';
+        if (seen.has(name) && seen.get(name) !== isArray) seen.set(name, null);
+        else if (!seen.has(name)) seen.set(name, isArray);
+      }
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) value.forEach((v) => walk(deref(v, root), depth + 1));
+        else if (value && typeof value === 'object') walk(deref(value, root), depth + 1);
+      }
+    };
+    walk(root, 0);
+  }
+  return seen;
+}
+
+const { paths, bare } = citedPaths(readFileSync(page, 'utf-8'));
+const arrays = arrayness();
+const noCounterpart = noCounterpartPaths(readFileSync(page, 'utf-8'));
+const vocab = vocabulary();
 
 test('the crosswalk cites enough HDF paths for the check to mean something', () => {
   assert.ok(paths.length > 12, `only ${paths.length} HDF paths cited`);
+});
+
+test('an HDF property cited on its own carries the right array marker', () => {
+  const wrong = bare.filter((token) => {
+    const name = token.replace(/\[\]$/, '');
+    const isArray = arrays.get(name);
+    if (isArray === undefined || isArray === null) return false;
+    return isArray !== token.endsWith('[]');
+  });
+  assert.deepEqual(wrong, [], `cited with the wrong array marker: ${wrong.join(', ')}`);
+});
+
+test('every field in the no-counterpart tables is a real HDF property', () => {
+  const unresolved = noCounterpart
+    .filter(({ path }) => {
+      const segments = path.replace(/^hdf-(system|results|amendments|plan)\./, '').split('.').filter(Boolean);
+      if (DOCUMENTS.some((name) => resolves(segments, docs[name]))) return false;
+      // A single token may be a sub-property named in parentheses or an enum
+      // value, neither of which resolves from a document root.
+      // The escape is for existence only: a token carrying [] has made a claim
+      // about its type, so it must resolve rather than be forgiven here.
+      if (path.endsWith('[]')) return true;
+      return !(segments.length === 1 && (vocab.names.has(path) || vocab.values.has(path)));
+    })
+    .map(({ cited, path }) => (cited === path ? cited : `${cited} (as ${path})`));
+  assert.deepEqual(unresolved, [], `not HDF properties: ${unresolved.join(', ')}`);
 });
 
 test('every HDF path the crosswalk cites resolves through a bundled schema', () => {
