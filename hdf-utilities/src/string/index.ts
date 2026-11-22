@@ -30,6 +30,20 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Remove HTML tags from a string and keep every other character.
+ *
+ * Unlike {@link stripHtml}, whitespace is not collapsed or trimmed, so prose
+ * keeps its line breaks, indentation and edge whitespace. Each tag span becomes
+ * nothing, leaving the element's text content. Parity: hdfutil.StripHTMLTags.
+ *
+ * @param html - String potentially containing HTML tags
+ * @returns The input with every `<...>` span removed
+ */
+export function stripHtmlTags(html: string): string {
+  return replaceHtmlTags(html, '');
+}
+
+/**
  * Lowercase A-Z and nothing else. `toLowerCase` applies Unicode lowercase
  * mapping (U+0130 becomes two code points) and Go's `strings.ToLower` and
  * `strings.EqualFold` apply their own Unicode tables, so this is the one

@@ -39,7 +39,7 @@
     {
       "descriptions": [
         {
-          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and DHCP (Dynamic Host Configuration Protocol) services. The package can be removed with the following command:",
+          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and\nDHCP (Dynamic Host Configuration Protocol) services.\n\nThe  package can be removed with the following command:\n\n      ",
           "label": "default"
         },
         {
@@ -47,7 +47,7 @@
           "label": "check"
         },
         {
-          "data": "Unless a system is specifically designated to act as a DNS caching, DNS forwarding and/or DHCP server, it is recommended that the package be removed to reduce the potential attack surface.",
+          "data": "Unless a system is specifically designated to act as a DNS\ncaching, DNS forwarding and/or DHCP server, it is recommended that the\npackage be removed to reduce the potential attack surface.",
           "label": "rationale"
         }
       ],
@@ -68,7 +68,7 @@
     {
       "descriptions": [
         {
-          "data": "The service can be disabled with the following command:",
+          "data": "\nThe  service can be disabled with the following command:\n\n      ",
           "label": "default"
         },
         {
@@ -76,7 +76,7 @@
           "label": "check"
         },
         {
-          "data": "Unless a system is specifically designated to act as a DNS caching, DNS forwarding and/or DHCP server, it is recommended that the package be removed to reduce the potential attack surface.",
+          "data": "Unless a system is specifically designated to act as a DNS\ncaching, DNS forwarding and/or DHCP server, it is recommended\nthat the package be removed to reduce the potential attack surface.",
           "label": "rationale"
         }
       ],
@@ -103,7 +103,7 @@
     {
       "descriptions": [
         {
-          "data": "The service is provided by the package. The package can be removed with the following command:",
+          "data": "The  service is provided by the  package.\nThe  package can be removed with the following command:\n\n       ",
           "label": "default"
         },
         {
@@ -111,7 +111,7 @@
           "label": "check"
         },
         {
-          "data": "If there is no need to make DNS server software available, removing it provides a safeguard against its activation.",
+          "data": "If there is no need to make DNS server software available,\nremoving it provides a safeguard against its activation.",
           "label": "rationale"
         }
       ],
@@ -406,7 +406,7 @@
     {
       "descriptions": [
         {
-          "data": "The service can be disabled with the following command:",
+          "data": "\nThe  service can be disabled with the following command:\n\n       ",
           "label": "default"
         },
         {
@@ -414,7 +414,7 @@
           "label": "check"
         },
         {
-          "data": "All network services involve some risk of compromise due to implementation flaws and should be disabled if possible.",
+          "data": "All network services involve some risk of compromise due to\nimplementation flaws and should be disabled if possible.",
           "label": "rationale"
         }
       ],
@@ -705,15 +705,15 @@
     {
       "descriptions": [
         {
-          "data": "If it is necessary for a secondary nameserver to receive zone data via zone transfer from the primary server, follow the instructions here. Use dnssec-keygen to create a symmetric key file in the current directory: This output is the name of a file containing the new key. Read the file to find the base64-encoded key string: Add the directives to on the primary server: Add the directives below to on the secondary nameserver:",
+          "data": "If it is necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server, follow the instructions here.  Use\ndnssec-keygen to create a symmetric key file in the current directory:\n\nThis output is the name of a file containing the new key. Read the file to find\nthe base64-encoded key string:\n\nAdd the directives to  on the primary server:\n\nAdd the directives below to  on the secondary nameserver:\n\n       ",
           "label": "default"
         },
         {
-          "data": "The BIND transaction signature (TSIG) functionality allows primary and secondary nameservers to use a shared secret to verify authorization to perform zone transfers. This method is more secure than using IP-based limiting to restrict nameserver access, since IP addresses can be easily spoofed. However, if you cannot configure TSIG between your servers because, for instance, the secondary nameserver is not under your control and its administrators are unwilling to configure TSIG, you can configure an allow-transfer directive with numerical IP addresses or ACLs as a last resort.",
+          "data": "The BIND transaction signature (TSIG) functionality allows primary\nand secondary nameservers to use a shared secret to verify authorization to\nperform zone transfers. This method is more secure than using IP-based limiting\nto restrict nameserver access, since IP addresses can be easily spoofed.\nHowever, if you cannot configure TSIG between your servers because, for\ninstance, the secondary nameserver is not under your control and its\nadministrators are unwilling to configure TSIG, you can configure an\nallow-transfer directive with numerical IP addresses or ACLs as a last resort.",
           "label": "rationale"
         },
         {
-          "data": "The purpose of the dnssec-keygen command is to create the shared secret string base64-key-string. Once this secret has been obtained and inserted into named.conf on the primary and secondary servers, the key files Kdns.example.com .+NNN +MMMMM .key and Kdns.example.com .+NNN +MMMMM .private are no longer needed, and may safely be deleted.",
+          "data": "The purpose of the dnssec-keygen command is to\ncreate the shared secret string base64-key-string. Once this secret has been\nobtained and inserted into named.conf on the primary and secondary servers, the\nkey files Kdns.example.com .+NNN +MMMMM .key and Kdns.example.com .+NNN +MMMMM\n.private are no longer needed, and may safely be deleted.",
           "label": "warning"
         }
       ],
@@ -1003,11 +1003,11 @@
     {
       "descriptions": [
         {
-          "data": "Is there a mission-critical reason to enable the risky dynamic update functionality? If not, edit . For each zone specification, correct the following directive if necessary:",
+          "data": "Is there a mission-critical reason to enable the risky dynamic\nupdate functionality? If not, edit . For each zone\nspecification, correct the following directive if necessary:\n\n       ",
           "label": "default"
         },
         {
-          "data": "Dynamic updates allow remote servers to add, delete, or modify any entries in your zone file. Therefore, they should be considered highly risky, and disabled unless there is a very good reason for their use. If dynamic updates must be allowed, IP-based ACLs are insufficient protection, since they are easily spoofed. Instead, use TSIG keys (see the previous section for an example), and consider using the update-policy directive to restrict changes to only the precise type of change needed.",
+          "data": "Dynamic updates allow remote servers to add, delete, or modify any\nentries in your zone file. Therefore, they should be considered highly risky,\nand disabled unless there is a very good reason for their use. If dynamic\nupdates must be allowed, IP-based ACLs are insufficient protection, since they\nare easily spoofed. Instead, use TSIG keys (see the previous section for an\nexample), and consider using the update-policy directive to restrict changes to\nonly the precise type of change needed.",
           "label": "rationale"
         }
       ],
@@ -1026,11 +1026,11 @@
     {
       "descriptions": [
         {
-          "data": "Is it necessary for a secondary nameserver to receive zone data via zone transfer from the primary server? If not, follow the instructions in this section. If so, see the next section for instructions on protecting zone transfers. Add or correct the following directive within :",
+          "data": "Is it necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server?  If not, follow the instructions in\nthis section. If so, see the next section for instructions on protecting zone\ntransfers.\nAdd or correct the following directive within :\n\n       ",
           "label": "default"
         },
         {
-          "data": "If both the primary and secondary nameserver are under your control, or if you have only one nameserver, it may be possible to use an external configuration management mechanism to distribute zone updates. In that case, it is not necessary to allow zone transfers within BIND itself, so they should be disabled to avoid the potential for abuse.",
+          "data": "If both the primary and secondary nameserver are under your control,\nor if you have only one nameserver, it may be possible to use an external\nconfiguration management mechanism to distribute zone updates. In that case, it\nis not necessary to allow zone transfers within BIND itself, so they should be\ndisabled to avoid the potential for abuse.",
           "label": "rationale"
         }
       ],
@@ -1048,7 +1048,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This guide presents a catalog of security-relevant configuration settings for Red Hat Enterprise Linux 8. It is a rendering of content structured in the eXtensible Configuration Checklist Description Format (XCCDF) in order to support security automation. The SCAP content is is available in the package which is developed at . Providing system administrators with such guidance informs them how to securely configure systems under their control in a variety of network roles. Policy makers and baseline creators can use this catalog of settings, with its associated references to higher-level security control catalogs, in order to assist them in security baseline creation. This guide is a , and satisfaction of every item is not likely to be possible or sensible in many operational scenarios. However, the XCCDF format enables granular selection and adjustment of settings, and their association with OVAL and OCIL content provides an automated checking capability. Transformations of this document, and its associated automated checking content, are capable of providing baselines that meet a diverse set of policy objectives. Some example XCCDF , which are selections of items that form checklists and can be used as baselines, are available with this guide. They can be processed, in an automated fashion, with tools that support the Security Content Automation Protocol (SCAP). The DISA STIG, which provides required settings for US Department of Defense systems, is one example of a baseline created from this guidance.",
+  "summary": "This guide presents a catalog of security-relevant\nconfiguration settings for Red Hat Enterprise Linux 8. It is a rendering of\ncontent structured in the eXtensible Configuration Checklist Description Format (XCCDF)\nin order to support security automation.  The SCAP content is\nis available in the  package which is developed at\n\n    .\n\n    \nProviding system administrators with such guidance informs them how to securely\nconfigure systems under their control in a variety of network roles. Policy\nmakers and baseline creators can use this catalog of settings, with its\nassociated references to higher-level security control catalogs, in order to\nassist them in security baseline creation. This guide is a , and satisfaction of every item is not likely to be possible or\nsensible in many operational scenarios. However, the XCCDF format enables\ngranular selection and adjustment of settings, and their association with OVAL\nand OCIL content provides an automated checking capability. Transformations of\nthis document, and its associated automated checking content, are capable of\nproviding baselines that meet a diverse set of policy objectives. Some example\nXCCDF , which are selections of items that form checklists and\ncan be used as baselines, are available with this guide. They can be\nprocessed, in an automated fashion, with tools that support the Security\nContent Automation Protocol (SCAP). The DISA STIG, which provides required\nsettings for US Department of Defense systems, is one example of a baseline\ncreated from this guidance.\n",
   "title": "Guide to the Secure Configuration of Red Hat Enterprise Linux 8",
   "version": "0.1.81"
 }

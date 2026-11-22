@@ -55,7 +55,7 @@ export {
 export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 
 // String utilities
-export { asciiLower, stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
+export { asciiLower, stripHtml, stripHtmlTags, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
 
 // Severity/impact mapping
 export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact, UNKNOWN_SEVERITY_IMPACT } from './severity/index.js';

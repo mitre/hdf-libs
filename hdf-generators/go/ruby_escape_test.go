@@ -45,8 +45,12 @@ func TestEscapeQuotes_OnlyBackslashes(t *testing.T) {
 	assert.Equal(t, `'\\'`, EscapeQuotes(`\`))
 }
 
+// Ruby string literals may span lines, so line breaks, trailing spaces and a
+// trailing newline pass through unescaped in every quoting form.
 func TestEscapeQuotes_MultilineContent(t *testing.T) {
-	result := EscapeQuotes("line one\nline two")
-	assert.Contains(t, result, "line one")
-	assert.Contains(t, result, "line two")
+	assert.Equal(t, "'line vty 0 1\n access-class MANAGEMENT_NET in\n'",
+		EscapeQuotes("line vty 0 1\n access-class MANAGEMENT_NET in\n"))
+	assert.Equal(t, "\"it's MANAGEMENT_NET \npermit\n\n\"",
+		EscapeQuotes("it's MANAGEMENT_NET \npermit\n\n"))
+	assert.Equal(t, "%q(it's \"x\"\r\n  y)", EscapeQuotes("it's \"x\"\r\n  y"))
 }

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { asciiLower, stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from '../src/string/index.js';
+import { asciiLower, stripHtml, stripHtmlTags, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from '../src/string/index.js';
 
 describe('stripHtml', () => {
   it('should strip simple tags', () => {
@@ -299,5 +299,19 @@ describe('asciiLower matches the shared cross-language table', () => {
 
   it.each(table.cases.map((c) => [c.input, c] as const))('lowers %j', (_v, c) => {
     expect(asciiLower(c.input), c.why).toBe(c.lowered);
+  });
+});
+
+describe('stripHtmlTags matches the shared cross-language table', () => {
+  const table = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'strip-html-tags-cases.json'), 'utf-8'),
+  ) as { cases: Array<{ input: string; stripped: string; why: string }> };
+
+  it('has a populated table', () => {
+    expect(table.cases.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(table.cases.map((c) => [c.input, c] as const))('strips %j', (_v, c) => {
+    expect(stripHtmlTags(c.input), c.why).toBe(c.stripped);
   });
 });

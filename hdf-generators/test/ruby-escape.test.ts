@@ -38,11 +38,13 @@ describe('escapeQuotes', () => {
     expect(escapeQuotes("it's a path\\to\\file")).toBe("\"it's a path\\\\to\\\\file\"");
   });
 
-  it('handles multiline content', () => {
-    const input = 'line one\nline two';
-    const result = escapeQuotes(input);
-    expect(result).toContain('line one');
-    expect(result).toContain('line two');
+  // Ruby string literals may span lines, so line breaks, trailing spaces and a
+  // trailing newline pass through unescaped in every quoting form.
+  it('carries multi-line content through every quoting form unchanged', () => {
+    expect(escapeQuotes('line vty 0 1\n access-class MANAGEMENT_NET in\n'))
+      .toBe("'line vty 0 1\n access-class MANAGEMENT_NET in\n'");
+    expect(escapeQuotes("it's MANAGEMENT_NET \npermit\n\n")).toBe('"it\'s MANAGEMENT_NET \npermit\n\n"');
+    expect(escapeQuotes('it\'s "x"\r\n  y')).toBe('%q(it\'s "x"\r\n  y)');
   });
 
   it('handles strings with only backslashes', () => {
