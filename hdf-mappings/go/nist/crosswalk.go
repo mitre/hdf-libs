@@ -305,7 +305,7 @@ func AtRevisionFromRev3(controls []string, rev int) []string {
 // Revision 4 roster lists a few identifiers Revision 4 withdrew.
 func placeRev3AtRev4(c string, withdrawn map[string][]string) []string {
 	m := rev3Control.FindStringSubmatch(c)
-	if m == nil || !statementParts.MatchString(c[len(m[0]):]) {
+	if len(m) == 0 || !statementParts.MatchString(c[len(m[0]):]) {
 		return nil
 	}
 	spaced := func(ids ...string) []string {
