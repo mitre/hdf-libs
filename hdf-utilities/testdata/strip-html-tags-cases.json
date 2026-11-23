@@ -1,0 +1,17 @@
+{
+  "$comment": "Shared table for whitespace-keeping tag removal, read by go/strings_test.go (StripHTMLTags) and test/string.test.ts (stripHtmlTags) so neither language can drift. Each <...> span is removed and nothing is inserted in its place, which leaves an element's text content; every other character, whitespace included, passes through. This is the prose-carrying counterpart of StripHTML/stripHtml, which collapses whitespace runs and trims.",
+  "cases": [
+    {"input": "", "stripped": "", "why": "empty stays empty"},
+    {"input": "line vty 0 1\n access-class MANAGEMENT_NET in\n transport input ssh", "stripped": "line vty 0 1\n access-class MANAGEMENT_NET in\n transport input ssh", "why": "line breaks and the indentation after them are data"},
+    {"input": "ip access-list extended MANAGEMENT_NET \npermit ip x.x.x.0 0.0.0.255 any\ndeny   ip any any log-input", "stripped": "ip access-list extended MANAGEMENT_NET \npermit ip x.x.x.0 0.0.0.255 any\ndeny   ip any any log-input", "why": "trailing spaces and interior runs of spaces are not collapsed"},
+    {"input": "Step 1.\n\nStep 2.", "stripped": "Step 1.\n\nStep 2.", "why": "a blank line is a paragraph break"},
+    {"input": "\nleading and trailing\n\n", "stripped": "\nleading and trailing\n\n", "why": "edge whitespace is not trimmed"},
+    {"input": "first\r\nsecond", "stripped": "first\r\nsecond", "why": "CRLF passes through unchanged"},
+    {"input": "a\tb c", "stripped": "a\tb c", "why": "tab and NBSP pass through unchanged"},
+    {"input": "The <xhtml:code>x</xhtml:code> package", "stripped": "The x package", "why": "an inline element leaves its text and the surrounding spaces"},
+    {"input": "one<br/>two", "stripped": "onetwo", "why": "a tag span becomes nothing, not a space"},
+    {"input": "<p>\n  indented\n</p>", "stripped": "\n  indented\n", "why": "whitespace between tags is kept"},
+    {"input": "x < y > z", "stripped": "x  z", "why": "a span runs from < to the first following >, as in StripHTML"},
+    {"input": "a < b", "stripped": "a < b", "why": "a < with no closing > stays literal"}
+  ]
+}

@@ -28,7 +28,8 @@ func TestIntegration_LoadFixture(t *testing.T) {
 
 func TestIntegration_GeneratesAllControls(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	assert.Len(t, profile.Controls, 18)
 	for _, req := range baseline.Requirements {
 		filename := "controls/" + req.ID + ".rb"
@@ -39,7 +40,8 @@ func TestIntegration_GeneratesAllControls(t *testing.T) {
 
 func TestIntegration_ValidRubyBlocks(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	for filename, ruby := range profile.Controls {
 		id := strings.TrimSuffix(strings.TrimPrefix(filename, "controls/"), ".rb")
 		assert.True(t, strings.HasPrefix(ruby, "control '"+id+"' do\n"),
@@ -51,7 +53,8 @@ func TestIntegration_ValidRubyBlocks(t *testing.T) {
 
 func TestIntegration_STIGMetadataInTags(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	sv238 := profile.Controls["controls/SV-254238.rb"]
 	assert.Contains(t, sv238, "tag cci: ['CCI-000366']")
@@ -62,7 +65,8 @@ func TestIntegration_STIGMetadataInTags(t *testing.T) {
 
 func TestIntegration_MultipleCCIsAndNIST(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	sv240 := profile.Controls["controls/SV-254240.rb"]
 	assert.Contains(t, sv240, "'CCI-000366'")
@@ -73,7 +77,8 @@ func TestIntegration_MultipleCCIsAndNIST(t *testing.T) {
 
 func TestIntegration_CheckAndFixDescriptions(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	sv238 := profile.Controls["controls/SV-254238.rb"]
 	assert.Contains(t, sv238, "desc 'check'")
@@ -82,7 +87,8 @@ func TestIntegration_CheckAndFixDescriptions(t *testing.T) {
 
 func TestIntegration_InSpecYml(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	assert.Contains(t, profile.InSpecYml, "name: microsoft-windows-server-2022-stig-baseline")
 	assert.Contains(t, profile.InSpecYml, "title: Microsoft Windows Server 2022 Security Technical Implementation Guide")
@@ -94,7 +100,8 @@ func TestIntegration_InSpecYml(t *testing.T) {
 func TestIntegration_SingleFile(t *testing.T) {
 	baseline := loadFixture(t)
 	opts := &GeneratorOptions{SingleFile: true}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 
 	assert.Len(t, profile.Controls, 1)
 	content, ok := profile.Controls["controls/controls.rb"]
@@ -112,7 +119,8 @@ func TestIntegration_MetadataOverrides(t *testing.T) {
 			Version:    "99.0.0",
 		},
 	}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 
 	assert.Contains(t, profile.InSpecYml, "maintainer: Custom Team")
 	assert.Contains(t, profile.InSpecYml, "version: '99.0.0'")
@@ -122,7 +130,8 @@ func TestIntegration_MetadataOverrides(t *testing.T) {
 
 func TestIntegration_HighImpactControls(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	sv240 := profile.Controls["controls/SV-254240.rb"]
 	assert.Contains(t, sv240, "impact 0.7")
@@ -131,7 +140,8 @@ func TestIntegration_HighImpactControls(t *testing.T) {
 
 func TestIntegration_MultiLineDescriptions(t *testing.T) {
 	baseline := loadFixture(t)
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 
 	sv240 := profile.Controls["controls/SV-254240.rb"]
 	assert.Contains(t, sv240, "web browser")

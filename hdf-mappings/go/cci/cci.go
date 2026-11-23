@@ -14,8 +14,9 @@ import (
 type CCIItem struct {
 	// Definition/description of the CCI
 	Def string `json:"def"`
-	// Array of NIST control references this CCI maps to
-	Nist []string `json:"nist"`
+	// DISA's NIST SP 800-53 references keyed by revision (4, 5), as published;
+	// a revision DISA gives no reference for is absent
+	Nist map[int][]string `json:"nist"`
 }
 
 // CCIMappings represents the complete CCI to NIST mapping database
@@ -56,30 +57,35 @@ func GetCCIDescription(cciID string) string {
 	return ""
 }
 
-// NativeRevision is the NIST 800-53 revision the DISA CCI list's NIST
-// references were authored against (Rev 4-era list: it references Appendix J
-// privacy controls and SA-12/SA-19, all withdrawn or relocated in Rev 5).
-// GetCCINistMappings (and CCIToNIST atop it) translate to the process-global
-// revision via the NIST crosswalk.
-const NativeRevision = 4
-
 // GetCCINistMappings returns the NIST control mappings for a CCI ID at the
 // process-global NIST revision. Returns nil if the CCI ID is not found.
 //
 // Example:
 //
 //	mappings := GetCCINistMappings("CCI-000001")
-//	// Returns: []string{"AC-1 a", "AC-1.1 (i and ii)", "AC-1 a 1"}
+//	// Returns: []string{"AC-1 a 1"}
 func GetCCINistMappings(cciID string) []string {
-	if cciID == "" {
+	return GetCCINistMappingsForRevision(cciID, nist.Revision())
+}
+
+// GetCCINistMappingsForRevision returns DISA's references for the CCI at rev.
+// When DISA gives none at rev, the other revision's references are translated
+// through the NIST crosswalk, so the result never mixes revisions. Returns nil
+// if the CCI ID is not found.
+func GetCCINistMappingsForRevision(cciID string, rev int) []string {
+	item, exists := loadCCIData()[cciID]
+	if cciID == "" || !exists {
 		return nil
 	}
-
-	data := loadCCIData()
-	if item, exists := data[cciID]; exists {
-		return nist.AtRevision(item.Nist, NativeRevision, nist.Revision())
+	if refs := item.Nist[rev]; len(refs) > 0 {
+		return append([]string(nil), refs...)
 	}
-	return nil
+	for _, native := range []int{5, 4} {
+		if refs := item.Nist[native]; native != rev && len(refs) > 0 {
+			return nist.AtRevision(append([]string(nil), refs...), native, rev)
+		}
+	}
+	return []string{}
 }
 
 // GetAllCCIIDs returns all CCI IDs available in the database.
@@ -152,7 +158,7 @@ func baseNistControl(control string) string {
 // Example:
 //
 //	controls := CCIToNIST([]string{"CCI-000366", "CCI-000001"})
-//	// Returns: []string{"AC-1 a", ..., "CM-6 b", ...}
+//	// Returns: []string{"AC-1 a 1", "CM-6 b"}
 func CCIToNIST(cciIDs []string) []string {
 	seen := make(map[string]bool)
 	for _, cciID := range cciIDs {

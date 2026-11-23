@@ -8,6 +8,11 @@ export interface GeneratorOptions {
   metadata?: ProfileMetadata;
   /** InSpec version constraint for inspec.yml. Default: '~>6.0'. */
   inspecVersion?: string;
+  /**
+   * Identifier each control is keyed on: 'rule' (default), 'group' (tags.gid)
+   * or 'version' (tags.stig_id). It sets the control id and filename.
+   */
+  idType?: string;
 }
 
 /**

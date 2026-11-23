@@ -1,0 +1,390 @@
+{
+  "$comment": "Control id selection for generated InSpec profiles. GenerateInSpecProfile (Go) and generateInSpecProfile (TS) must produce `controls` (filename -> first line) or fail with exactly `error`, for each `idType` and `requirements`. A case with `perFileOnly` fails only when each control gets its own file.",
+  "cases": [
+    {
+      "why": "rule is the default and keeps today's output",
+      "idType": "",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-215808",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215808",
+            "stig_id": "CISC-ND-000020"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "controls/SV-215807.rb": "control 'SV-215807' do",
+        "controls/SV-215808.rb": "control 'SV-215808' do"
+      }
+    },
+    {
+      "why": "rule named explicitly",
+      "idType": "rule",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-215808",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215808",
+            "stig_id": "CISC-ND-000020"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "controls/SV-215807.rb": "control 'SV-215807' do",
+        "controls/SV-215808.rb": "control 'SV-215808' do"
+      }
+    },
+    {
+      "why": "group keys on tags.gid",
+      "idType": "group",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-215808",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215808",
+            "stig_id": "CISC-ND-000020"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "controls/V-215807.rb": "control 'V-215807' do",
+        "controls/V-215808.rb": "control 'V-215808' do"
+      }
+    },
+    {
+      "why": "version keys on tags.stig_id",
+      "idType": "version",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-215808",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215808",
+            "stig_id": "CISC-ND-000020"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "controls/CISC-ND-000010.rb": "control 'CISC-ND-000010' do",
+        "controls/CISC-ND-000020.rb": "control 'CISC-ND-000020' do"
+      }
+    },
+    {
+      "why": "a requirement without the chosen identifier fails, naming it",
+      "idType": "version",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-1",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-1"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-2",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-2",
+            "stig_id": ""
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "error": "id type version: 2 requirements have no version id (tags.stig_id): SV-1, SV-2"
+    },
+    {
+      "why": "a duplicate id fails, naming both and the id types that tell them apart",
+      "idType": "rule",
+      "requirements": [
+        {
+          "id": "SV-7031",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-6806",
+            "stig_id": "MFD08.002"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-7031",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-6807",
+            "stig_id": "MFD09.001"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "error": "id type rule: 2 requirements resolve to control id SV-7031: SV-7031 (group V-6806, version MFD08.002), SV-7031 (group V-6807, version MFD09.001); id type group or version tells them apart"
+    },
+    {
+      "why": "a duplicate no id type separates names the remedy",
+      "idType": "group",
+      "requirements": [
+        {
+          "id": "SV-1",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-1",
+            "stig_id": "X-1"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-1",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-1",
+            "stig_id": "X-1"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "error": "id type group: 2 requirements resolve to control id V-1: SV-1 (group V-1, version X-1), SV-1 (group V-1, version X-1); no id type tells them apart: convert to an HDF baseline, give one requirement a distinct id, and generate from that file"
+    },
+    {
+      "why": "traversal, both separators and an id that sanitizes to nothing stay inside controls/",
+      "idType": "rule",
+      "requirements": [
+        {
+          "id": "../../etc/x",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "..\\y",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "..",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "controls/etcx.rb": "control '../../etc/x' do",
+        "controls/y.rb": "control '..\\\\y' do",
+        "controls/unknown.rb": "control '..' do"
+      }
+    },
+    {
+      "why": "two ids that sanitize to the same filename fail",
+      "idType": "rule",
+      "requirements": [
+        {
+          "id": "a/b",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-1",
+            "stig_id": "X-1"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "ab",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-2",
+            "stig_id": "X-2"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "error": "id type rule: 2 requirements resolve to file controls/ab.rb: a/b, ab",
+      "perFileOnly": true
+    },
+    {
+      "why": "an unknown id type fails",
+      "idType": "cis",
+      "requirements": [
+        {
+          "id": "SV-215807",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215807",
+            "stig_id": "CISC-ND-000010"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        },
+        {
+          "id": "SV-215808",
+          "impact": 0.7,
+          "tags": {
+            "gid": "V-215808",
+            "stig_id": "CISC-ND-000020"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "d"
+            }
+          ]
+        }
+      ],
+      "error": "unknown id type \"cis\"; use rule, group or version"
+    }
+  ]
+}

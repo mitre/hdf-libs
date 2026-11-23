@@ -179,8 +179,12 @@ func TranslateControls(controls []string, from, to int) (translated []string, un
 }
 
 // A NIST-shaped base at the start of a longer reference, e.g. "AC-1 a",
-// "AC-1.2 (i)", "SA-12 b 1" — DISA-CCI statement-reference styles.
-var baseControl = regexp.MustCompile(`^([A-Z]{2}-\d+(?:\(\d+\))?)`)
+// "AC-1.2 (i)", "SA-12 b 1", "AU-8 (1) (a)" — DISA-CCI statement-reference
+// styles, which write an enhancement with a space before its parenthesis.
+var baseControl = regexp.MustCompile(`^([A-Z]{2}-\d+)(?:( ?)\((\d+)\))?`)
+
+// spacedEnhancement matches a crosswalk target's enhancement, "SC-45(1)".
+var spacedEnhancement = regexp.MustCompile(`^([A-Z]{2}-\d+)\((\d+)\)`)
 
 // AtRevision translates a control list authored against nativeRev into rev.
 // Identity when the revisions are equal (or either is unsupported). Per token:
@@ -210,23 +214,55 @@ func AtRevision(controls []string, nativeRev, rev int) []string {
 			}
 			continue
 		}
-		if m := baseControl.FindStringSubmatch(c); len(m) > 1 && m[1] != c {
-			switch btr := Translate(m[1], nativeRev, rev); btr.Relation {
-			case RelationIdentity:
-				add(c)
-				continue
-			case RelationUnknown:
-				// fall through to pass-through
-			default:
-				for _, t := range btr.Targets {
-					add(t)
-				}
-				continue
+		if targets, ok := translateBase(c, nativeRev, rev); ok {
+			for _, t := range targets {
+				add(t)
 			}
+			continue
 		}
 		add(c)
 	}
 	return out
+}
+
+// translateBase translates the control a longer reference starts with. A
+// spaced enhancement ("AU-8 (1) (a)") is tried as "AU-8(1)" and, when the
+// crosswalk does not list it, as its base control "AU-8"; redirect targets keep
+// the reference's spacing. ok is false when no candidate is known, so the
+// caller passes the reference through.
+func translateBase(c string, nativeRev, rev int) (targets []string, ok bool) {
+	m := baseControl.FindStringSubmatch(c)
+	if m == nil {
+		return nil, false
+	}
+	spaced := m[2] == " "
+	var candidates []string
+	if m[3] != "" {
+		candidates = append(candidates, m[1]+"("+m[3]+")")
+	}
+	if m[3] == "" || spaced {
+		candidates = append(candidates, m[1])
+	}
+	for _, base := range candidates {
+		if base == c {
+			continue
+		}
+		switch btr := Translate(base, nativeRev, rev); btr.Relation {
+		case RelationIdentity:
+			return []string{c}, true
+		case RelationUnknown:
+			continue
+		default:
+			for _, t := range btr.Targets {
+				if spaced {
+					t = spacedEnhancement.ReplaceAllString(t, "$1 ($2)")
+				}
+				targets = append(targets, t)
+			}
+			return targets, true
+		}
+	}
+	return nil, false
 }
 
 // RosterSize returns the number of control IDs in the crosswalk's catalog for

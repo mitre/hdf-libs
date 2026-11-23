@@ -1,5 +1,6 @@
 import type { BaselineRequirement } from '@mitre/hdf-schema';
 import { escapeQuotes } from './ruby-escape.js';
+import { byCodePoint, formatTag } from './ruby-value.js';
 
 /**
  * Detects when a code string already starts with `control 'ID' do`,
@@ -35,13 +36,14 @@ export function generateControlStub(req: BaselineRequirement): string {
         return req.code;
       }
       const start = m.index + m[0].indexOf(innerID);
-      return req.code.slice(0, start) + req.id + req.code.slice(start + innerID.length);
+      // Replace the quoted id, quotes included, so the new id is escaped.
+      return req.code.slice(0, start - 1) + escapeQuotes(req.id) + req.code.slice(start + innerID.length + 1);
     }
   }
 
   const lines: string[] = [];
 
-  lines.push(`control '${req.id}' do`);
+  lines.push(`control ${escapeQuotes(req.id)} do`);
 
   // Title
   if (req.title) {
@@ -63,7 +65,7 @@ export function generateControlStub(req: BaselineRequirement): string {
       seenDefault.add('default');
       continue; // already emitted above as bare desc
     }
-    lines.push(`  desc '${d.label}', ${escapeQuotes(d.data)}`);
+    lines.push(`  desc ${escapeQuotes(d.label)}, ${escapeQuotes(d.data)}`);
   }
 
   // Impact — always render with at least one decimal place for 0 and whole numbers
@@ -76,8 +78,8 @@ export function generateControlStub(req: BaselineRequirement): string {
     lines.push(`  impact ${impactStr}`);
   }
 
-  // Tags
-  for (const [key, value] of Object.entries(req.tags)) {
+  // Tags — sorted for deterministic output, matching the Go generator
+  for (const [key, value] of Object.entries(req.tags).sort(([a], [b]) => byCodePoint(a, b))) {
     lines.push(`  ${formatTag(key, value)}`);
   }
 
@@ -94,28 +96,4 @@ export function generateControlStub(req: BaselineRequirement): string {
   lines.push(''); // trailing newline
 
   return lines.join('\n');
-}
-
-/** Format a single tag key-value pair as Ruby DSL. */
-function formatTag(key: string, value: unknown): string {
-  if (value === null || value === undefined) {
-    return `tag ${key}: nil`;
-  }
-
-  if (Array.isArray(value)) {
-    // Ruby array syntax: tag key: ['val1', 'val2']
-    const items = value.map((v: unknown) => `'${String(v)}'`).join(', ');
-    return `tag ${key}: [${items}]`;
-  }
-
-  if (typeof value === 'boolean') {
-    return `tag ${key}: ${value}`;
-  }
-
-  if (typeof value === 'string') {
-    return `tag ${key}: ${escapeQuotes(value)}`;
-  }
-
-  // Fallback for other types (numbers, objects)
-  return `tag ${key}: ${JSON.stringify(value)}`;
 }

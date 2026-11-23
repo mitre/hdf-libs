@@ -21,6 +21,13 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(whitespaceRe.ReplaceAllString(stripped, " "))
 }
 
+// StripHTMLTags removes each <...> span and keeps every other character, so
+// prose keeps its line breaks, indentation and edge whitespace. Parity:
+// stripHtmlTags (TypeScript).
+func StripHTMLTags(html string) string {
+	return htmlTagRe.ReplaceAllString(html, "")
+}
+
 // ASCIILower lowercases A-Z and nothing else. strings.ToLower and strings.EqualFold
 // apply Unicode tables that JavaScript's toLowerCase does not share, so this is the
 // one lowering both languages agree on. Parity: asciiLower (TypeScript).

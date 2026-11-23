@@ -1,11 +1,13 @@
 package generators
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func makeRequirement(id string, impact float64) hdf.BaselineRequirement {
@@ -199,4 +201,66 @@ func TestGenerateControlStub_WellFormedBlock(t *testing.T) {
 	assert.Less(t, titleIdx, descIdx)
 	assert.Less(t, descIdx, impactIdx)
 	assert.Less(t, impactIdx, tagIdx)
+}
+
+// rubyControlDSL stands in for InSpec's control DSL so Ruby can load a
+// generated control and report the values it declares.
+const rubyControlDSL = `require 'json'
+$c = { 'descs' => {}, 'tags' => {} }
+def control(id, &blk) $c['id'] = id; instance_eval(&blk) end
+def title(t) $c['title'] = t end
+def desc(a, b = nil) b.nil? ? $c['descs']['default'] = a : $c['descs'][a] = b end
+def impact(i) $c['impact'] = i end
+def tag(h) h.each { |k, v| $c['tags'][k.to_s] = v } end
+`
+
+// Every string the generator writes into Ruby reaches InSpec unchanged: the
+// control id, title, description labels and text, and string and array tags.
+func TestGenerateControlStub_RubyReadsEveryStringBack(t *testing.T) {
+	req := hdf.BaselineRequirement{
+		ID:     "SV-1'x",
+		Impact: 0.5,
+		Title:  ptr(`it's #{1+1}`),
+		Descriptions: []hdf.Description{
+			{Label: "default", Data: `it's "a" 1) step`},
+			{Label: "it's", Data: "fix\r\nthis \\ (now)\n"},
+		},
+		Tags: map[string]interface{}{
+			"gtitle": `it's #@x`,
+			"cci":    []interface{}{"CCI's", `a"b`, `c\d`},
+			"nist":   []string{"AC-1 a'b"},
+		},
+	}
+	src := GenerateControlStub(req)
+	out := runRuby(t, rubyControlDSL+src+"\nSTDOUT.write(JSON.generate($c))\n")
+
+	var got struct {
+		ID     string            `json:"id"`
+		Title  string            `json:"title"`
+		Descs  map[string]string `json:"descs"`
+		Tags   map[string]any    `json:"tags"`
+		Impact float64           `json:"impact"`
+	}
+	require.NoError(t, json.Unmarshal(out, &got), "generated control:\n%s", src)
+	assert.Equal(t, req.ID, got.ID)
+	assert.Equal(t, *req.Title, got.Title)
+	assert.InDelta(t, req.Impact, got.Impact, 0)
+	assert.Equal(t, map[string]string{"default": `it's "a" 1) step`, "it's": "fix\r\nthis \\ (now)\n"}, got.Descs)
+	assert.Equal(t, map[string]any{
+		"gtitle": `it's #@x`,
+		"cci":    []any{"CCI's", `a"b`, `c\d`},
+		"nist":   []any{"AC-1 a'b"},
+	}, got.Tags)
+}
+
+// A renamed control's new id is written as a Ruby literal, never spliced raw
+// inside the old id's quotes.
+func TestGenerateControlStub_RenamedControlBlock_EscapesNewID(t *testing.T) {
+	req := makeRequirement(`SV-2'); system('x`, 0.5)
+	code := "control 'SV-244540' do\n  describe true do\n    it { should eq true }\n  end\nend\n"
+	req.Code = &code
+	ruby := GenerateControlStub(req)
+	assert.True(t, strings.HasPrefix(ruby, `control "SV-2'); system('x" do`), "got:\n%s", ruby)
+	out := runRuby(t, `def control(id) STDOUT.write(id) end`+"\n"+strings.SplitN(ruby, "\n", 2)[0]+" end\n")
+	assert.Equal(t, req.ID, string(out))
 }
