@@ -1,0 +1,166 @@
+{
+  "$comment": "One InSpec tag line per case. formatTag (Go) and formatTag (TS) must write `line` for `key` and `value`; the Go suite also has Ruby read every line back to `key` and `value`.",
+  "cases": [
+    {
+      "key": "severity",
+      "value": "high",
+      "line": "tag severity: 'high'",
+      "why": "a string through the string-literal escaper"
+    },
+    {
+      "key": "cci",
+      "value": [
+        "CCI-000054",
+        "CCI-001133"
+      ],
+      "line": "tag cci: ['CCI-000054', 'CCI-001133']",
+      "why": "a string array, the DISA shape"
+    },
+    {
+      "key": "nist",
+      "value": [],
+      "line": "tag nist: []",
+      "why": "an empty array"
+    },
+    {
+      "key": "rid",
+      "value": null,
+      "line": "tag rid: nil",
+      "why": "null"
+    },
+    {
+      "key": "documentable",
+      "value": false,
+      "line": "tag documentable: false",
+      "why": "a boolean"
+    },
+    {
+      "key": "weight",
+      "value": 10,
+      "line": "tag weight: 10",
+      "why": "an integral number"
+    },
+    {
+      "key": "score",
+      "value": 2.5,
+      "line": "tag score: 2.5",
+      "why": "a fractional number"
+    },
+    {
+      "key": "big",
+      "value": 12345678,
+      "line": "tag big: 12345678",
+      "why": "a large integer stays in decimal"
+    },
+    {
+      "key": "huge",
+      "value": 1e+21,
+      "line": "tag huge: 1e+21",
+      "why": "1e21 and above use exponent form, as JavaScript prints them"
+    },
+    {
+      "key": "tiny",
+      "value": 1e-07,
+      "line": "tag tiny: 1e-7",
+      "why": "below 1e-6 uses exponent form, as JavaScript prints them"
+    },
+    {
+      "key": "neg",
+      "value": -0.0,
+      "line": "tag neg: 0",
+      "why": "negative zero prints as 0"
+    },
+    {
+      "key": "scores",
+      "value": [
+        1,
+        2.5,
+        true,
+        null,
+        "a"
+      ],
+      "line": "tag scores: [1, 2.5, true, nil, 'a']",
+      "why": "array items keep their JSON type"
+    },
+    {
+      "key": "refs",
+      "value": [
+        {
+          "b": 1,
+          "a": "x"
+        }
+      ],
+      "line": "tag refs: [{ 'a' => 'x', 'b' => 1 }]",
+      "why": "an object becomes a hash with string keys, sorted"
+    },
+    {
+      "key": "obj",
+      "value": {},
+      "line": "tag obj: {}",
+      "why": "an empty object"
+    },
+    {
+      "key": "cis_controls",
+      "value": [
+        {
+          "version": 8,
+          "ids": [
+            "4.1"
+          ]
+        }
+      ],
+      "line": "tag cis_controls: [{ 'ids' => ['4.1'], 'version' => 8 }]",
+      "why": "nested arrays inside hashes"
+    },
+    {
+      "key": "quoted",
+      "value": {
+        "a'\"b": 1
+      },
+      "line": "tag quoted: { %q(a'\"b) => 1 }",
+      "why": "a hash key with both quote kinds"
+    },
+    {
+      "key": "cis-level",
+      "value": 1,
+      "line": "tag 'cis-level': 1",
+      "why": "a key that is not a Ruby identifier becomes a quoted label"
+    },
+    {
+      "key": "a.b",
+      "value": "v",
+      "line": "tag 'a.b': 'v'",
+      "why": "a dotted key"
+    },
+    {
+      "key": "1abc",
+      "value": 1,
+      "line": "tag '1abc': 1",
+      "why": "an identifier cannot start with a digit"
+    },
+    {
+      "key": "it's",
+      "value": 1,
+      "line": "tag \"it's\": 1",
+      "why": "a key with a single quote"
+    },
+    {
+      "key": "a'\"b",
+      "value": 1,
+      "line": "tag %q(a'\"b) => 1",
+      "why": "a key with both quote kinds cannot be a label"
+    },
+    {
+      "key": "_ok1",
+      "value": 1,
+      "line": "tag _ok1: 1",
+      "why": "an identifier key stays a bare label"
+    },
+    {
+      "key": "Gtitle",
+      "value": "t",
+      "line": "tag Gtitle: 't'",
+      "why": "a capitalized identifier is a valid label"
+    }
+  ]
+}

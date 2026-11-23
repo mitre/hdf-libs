@@ -104,36 +104,6 @@ func GenerateControlStub(req hdf.BaselineRequirement) string {
 	return strings.Join(lines, "\n")
 }
 
-// formatTag formats a single tag key-value pair as Ruby DSL.
-func formatTag(key string, value interface{}) string {
-	if value == nil {
-		return fmt.Sprintf("tag %s: nil", key)
-	}
-
-	switch v := value.(type) {
-	case []interface{}:
-		items := make([]string, len(v))
-		for i, item := range v {
-			items[i] = EscapeQuotes(fmt.Sprint(item))
-		}
-		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
-	case []string:
-		items := make([]string, len(v))
-		for i, item := range v {
-			items[i] = EscapeQuotes(item)
-		}
-		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
-	case bool:
-		return fmt.Sprintf("tag %s: %t", key, v)
-	case string:
-		return fmt.Sprintf("tag %s: %s", key, EscapeQuotes(v))
-	case float64:
-		return fmt.Sprintf("tag %s: %s", key, formatFloat(v))
-	default:
-		return fmt.Sprintf("tag %s: %v", key, v)
-	}
-}
-
 // formatFloat formats a float64 without unnecessary trailing zeros.
 func formatFloat(f float64) string {
 	s := fmt.Sprintf("%g", f)
