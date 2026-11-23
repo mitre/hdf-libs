@@ -1,0 +1,458 @@
+{
+  "$comment": "Pins the Go and TypeScript matchers to one another on how the occurrences of a repeated requirement id pair up. Both halves read this file and assert the same expectations, including the ORDER of the result, so the two engines cannot disagree about what a comparison contains. A requirement id names the requirement rather than the finding (maintainer ruling, 2026-09-20), so a repeated id is legal and expected; occurrences pair by the composite content key of code, title and affectedPackages, with document position as the tie-break (maintainer ruling, 2026-11-23). Matched pairs are named by title because a title is unique within each side of every case below, except where the case is deliberately about indistinguishable occurrences.",
+  "cases": [
+    {
+      "name": "identical occurrences on both sides",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ],
+        [
+          "B",
+          "B"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "why": "A document compared with an identical copy of itself must report no change; before 2026-11-23 every occurrence was reported absent AND new."
+    },
+    {
+      "name": "the new side is reordered",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "B"
+        },
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ],
+        [
+          "B",
+          "B"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "why": "Nothing in hdf-schema orders requirements[], so content decides and a producer that reorders its output reports no change. Emitted in the OLD side's order."
+    },
+    {
+      "name": "a surplus occurrence on the new side",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [
+        "B"
+      ],
+      "why": "One more finding against the same requirement is new, and does not disturb the occurrence that was already there."
+    },
+    {
+      "name": "a surplus occurrence on the old side",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ]
+      ],
+      "unmatchedOld": [
+        "B"
+      ],
+      "unmatchedNew": [],
+      "why": "One finding resolved while the other persists: absent, not a wholesale replacement."
+    },
+    {
+      "name": "three occurrences against one",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        },
+        {
+          "id": "SV-001",
+          "title": "C"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ]
+      ],
+      "unmatchedOld": [
+        "B",
+        "C"
+      ],
+      "unmatchedNew": [],
+      "why": "N to M with N greater than M: the content match is kept and the rest are absent, in document order."
+    },
+    {
+      "name": "one occurrence against three",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        },
+        {
+          "id": "SV-001",
+          "title": "C"
+        }
+      ],
+      "matched": [
+        [
+          "B",
+          "B"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [
+        "A",
+        "C"
+      ],
+      "why": "N to M with N less than M, and the content match is not the first in document order — a positional rule would pair B with A here."
+    },
+    {
+      "name": "equal counts, one occurrence changed",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "C"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ],
+        [
+          "B",
+          "C"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "why": "N equals M but the content does not all match: the content pair is kept and the remainder pairs positionally, so a changed occurrence is reported as a change rather than as absent plus new."
+    },
+    {
+      "name": "occurrences separated only by affectedPackages",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "CVE-2024-1234",
+          "title": "same",
+          "affectedPackages": [
+            {
+              "name": "libfoo"
+            }
+          ]
+        },
+        {
+          "id": "CVE-2024-1234",
+          "title": "same",
+          "affectedPackages": [
+            {
+              "name": "libbar"
+            }
+          ]
+        }
+      ],
+      "new": [
+        {
+          "id": "CVE-2024-1234",
+          "title": "same",
+          "affectedPackages": [
+            {
+              "name": "libbar"
+            }
+          ]
+        },
+        {
+          "id": "CVE-2024-1234",
+          "title": "same",
+          "affectedPackages": [
+            {
+              "name": "libfoo"
+            }
+          ]
+        }
+      ],
+      "matched": [
+        [
+          "same",
+          "same"
+        ],
+        [
+          "same",
+          "same"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "whyPairingNotAsserted": "Titles are equal here on purpose; the point is that no occurrence is lost when only affectedPackages differs, which is the shipped dropwizard case.",
+      "why": "One CVE reported against two packages: affectedPackages is the only discriminator in the shipped cyclonedx golden."
+    },
+    {
+      "name": "indistinguishable occurrences",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "same"
+        },
+        {
+          "id": "SV-001",
+          "title": "same"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "same"
+        },
+        {
+          "id": "SV-001",
+          "title": "same"
+        }
+      ],
+      "matched": [
+        [
+          "same",
+          "same"
+        ],
+        [
+          "same",
+          "same"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "whyPairingNotAsserted": "The occurrences are interchangeable, so which pairs with which cannot be observed and is not asserted.",
+      "why": "Two entries that no content key can separate — the shipped inspec overlay repeats, which differ only in a timestamp's microseconds. Their keys are EQUAL, so they pair through that key's queue in document order; the cross-key positional fallback is reached only by 'equal counts, one occurrence changed'."
+    },
+    {
+      "name": "distinct ids are unaffected",
+      "strategy": "exactId",
+      "old": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-002",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-002",
+          "title": "B"
+        },
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ],
+        [
+          "B",
+          "B"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "why": "The ordinary case still emits in the old side's order, so the change to duplicate handling does not move anything else."
+    },
+    {
+      "name": "mapped id with occurrences on both sides",
+      "strategy": "mappedId",
+      "mapping": {
+        "V-001": "SV-001"
+      },
+      "old": [
+        {
+          "id": "V-001",
+          "title": "A"
+        },
+        {
+          "id": "V-001",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        },
+        {
+          "id": "SV-001",
+          "title": "B"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ],
+        [
+          "B",
+          "B"
+        ]
+      ],
+      "unmatchedOld": [],
+      "unmatchedNew": [],
+      "why": "A renumbering carries its occurrences across: the mapping settles the id, the content key settles which occurrence is which."
+    },
+    {
+      "name": "two mapped sources pointing at one target",
+      "strategy": "mappedId",
+      "mapping": {
+        "V-001": "SV-001",
+        "V-002": "SV-001"
+      },
+      "old": [
+        {
+          "id": "V-001",
+          "title": "A"
+        },
+        {
+          "id": "V-002",
+          "title": "B"
+        }
+      ],
+      "new": [
+        {
+          "id": "SV-001",
+          "title": "A"
+        }
+      ],
+      "matched": [
+        [
+          "A",
+          "A"
+        ]
+      ],
+      "unmatchedOld": [
+        "B"
+      ],
+      "unmatchedNew": [],
+      "why": "Two ids merged into one: only one old entry can claim the single new occurrence, and the other is absent rather than matched twice."
+    }
+  ]
+}

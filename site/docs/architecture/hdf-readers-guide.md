@@ -139,6 +139,8 @@ hdf diff feb-scan.json mar-scan.json --format table
 
 Produces a per-requirement diff table (`ID | Title | Old Status | New Status | State`) followed by a one-line summary of the counts: `Summary: 12 fixed, 3 regressed, 2 new, 0 absent, 498 unchanged, 0 updated (515 total)`. Use `-f markdown` for a markdown-friendly version, `-f json` for machine consumption, or `--stat` for just the counts.
 
+Requirements are matched **within their baseline**, with baselines paired by name. A requirement id names the requirement rather than the individual finding, so the same id legitimately appears in several baselines of one document — an InSpec overlay chain carries one control at every layer — and in several entries of one baseline, when a scanner reports one CVE against several packages. Each of those entries is compared with its own counterpart, so a document compared with an identical copy of itself reports no change, and each row names the baseline it was matched in. Entries of one baseline that share an id are paired on their content (`code`, `title`, `affectedPackages`), falling back to document order when that cannot tell them apart; a surplus entry on either side is reported `absent` or `new`. A requirement that moves from one baseline to another is reported `absent` in the one it left and `new` in the one it joined, because each is compared within its own baseline.
+
 ```bash
 hdf diff --detailed-exitcode feb-scan.json mar-scan.json
 # Exit code 12 (mixed fixes and regressions)

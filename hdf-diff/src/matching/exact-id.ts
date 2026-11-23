@@ -1,10 +1,12 @@
 import type { MatchStrategy, MatchResult } from './types.js';
+import { buildIdIndex, pairOccurrences } from './util.js';
 
 /**
  * Create an exact ID matching strategy.
  *
- * Matches requirements by their `id` field with exact string equality.
- * Confidence is always 1.0 for matches.
+ * Matches requirements by `id` with exact string equality. An id carried by several
+ * entries names one requirement reported several times, so pairOccurrences pairs those
+ * among themselves. Confidence is always 1.0 for matches.
  */
 export function createExactIdStrategy(): MatchStrategy {
   return {
@@ -16,72 +18,46 @@ export function createExactIdStrategy(): MatchStrategy {
         unmatchedNew: [],
       };
 
-      // Build a map of new requirements by id, detecting duplicates.
-      // When multiple requirements share the same ID, the ID is ambiguous
-      // and cannot be used for matching — all duplicates go to unmatchedNew.
-      const newById = new Map<string, Record<string, unknown>>();
-      const duplicateNewIds = new Set<string>();
-      for (const req of newReqs) {
-        const id = req['id'];
-        if (typeof id === 'string') {
-          if (newById.has(id)) {
-            // Mark this ID as a duplicate — remove it from the map
-            duplicateNewIds.add(id);
-            newById.delete(id);
-          } else if (!duplicateNewIds.has(id)) {
-            newById.set(id, req);
-          }
-        }
-      }
+      const oldById = buildIdIndex(oldReqs);
+      const newById = buildIdIndex(newReqs);
 
-      // Build a map of old requirements by id, detecting duplicates.
-      const oldById = new Map<string, Record<string, unknown>>();
-      const duplicateOldIds = new Set<string>();
-      for (const req of oldReqs) {
-        const id = req['id'];
-        if (typeof id === 'string') {
-          if (oldById.has(id)) {
-            duplicateOldIds.add(id);
-            oldById.delete(id);
-          } else if (!duplicateOldIds.has(id)) {
-            oldById.set(id, req);
-          }
-        }
-      }
-
-      // Track which new reqs have been matched
-      const matchedNewIds = new Set<string>();
-
-      // Match old requirements against new by id (skip duplicate old IDs)
+      // Document order, one id at a time: the order must not depend on map iteration,
+      // because the Go half emits the same one.
+      const pairedWith = new Map<number, number>();
+      const pairedNew = new Set<number>();
+      const seen = new Set<string>();
       for (const oldReq of oldReqs) {
         const id = oldReq['id'];
-        if (typeof id !== 'string' || duplicateOldIds.has(id)) {
+        if (typeof id !== 'string' || seen.has(id)) continue;
+        seen.add(id);
+        const { pairs } = pairOccurrences(
+          oldById.get(id) ?? [],
+          newById.get(id) ?? [],
+          oldReqs,
+          newReqs,
+        );
+        for (const [oi, ni] of pairs) {
+          pairedWith.set(oi, ni);
+          pairedNew.add(ni);
+        }
+      }
+
+      for (const [i, oldReq] of oldReqs.entries()) {
+        const newIdx = pairedWith.get(i);
+        if (newIdx === undefined) {
           result.unmatchedOld.push(oldReq);
           continue;
         }
-
-        const newReq = newById.get(id);
-        if (newReq) {
-          result.matched.push({
-            oldReq,
-            newReq,
-            strategy: 'exactId',
-            confidence: 1.0,
-          });
-          matchedNewIds.add(id);
-        } else {
-          result.unmatchedOld.push(oldReq);
-        }
+        result.matched.push({
+          oldReq,
+          newReq: newReqs[newIdx]!,
+          strategy: 'exactId',
+          confidence: 1.0,
+        });
       }
 
-      // Collect unmatched new requirements (including all duplicates)
-      for (const req of newReqs) {
-        const id = req['id'];
-        if (typeof id === 'string') {
-          if (duplicateNewIds.has(id) || !matchedNewIds.has(id)) {
-            result.unmatchedNew.push(req);
-          }
-        } else {
+      for (const [i, req] of newReqs.entries()) {
+        if (!pairedNew.has(i)) {
           result.unmatchedNew.push(req);
         }
       }
