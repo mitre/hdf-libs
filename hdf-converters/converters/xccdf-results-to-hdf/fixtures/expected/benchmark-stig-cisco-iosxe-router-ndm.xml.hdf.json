@@ -1,4 +1,160 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "01 Apr 2026",
+      "benchmarkRelease": "7",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2026-02-11",
+      "conventionsVersion": "1.10.0",
+      "generatorVersion": "3.5.2",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-215807",
+            "SV-215808",
+            "SV-215812",
+            "SV-215823",
+            "SV-215832",
+            "SV-215844",
+            "SV-215845",
+            "SV-215856",
+            "SV-220140"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 7 Benchmark Date: 01 Apr 2026",
+      "source": "STIG.DOD.MIL"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"
@@ -109,6 +265,7 @@
           "CCI-000054"
         ],
         "check_id": "C-17046r1186316_chk",
+        "documentable": false,
         "fix_id": "F-17044r1186317_fix",
         "gid": "V-215807",
         "gtitle": "SRG-APP-000001-NDM-000200",
@@ -156,6 +313,7 @@
           "CCI-000018"
         ],
         "check_id": "C-17047r287463_chk",
+        "documentable": false,
         "fix_id": "F-17045r1186319_fix",
         "gid": "V-215808",
         "gtitle": "SRG-APP-000026-NDM-000208",
@@ -204,6 +362,7 @@
           "CCI-004192"
         ],
         "check_id": "C-17051r835102_chk",
+        "documentable": false,
         "fix_id": "F-17049r835103_fix",
         "gid": "V-215812",
         "gtitle": "SRG-APP-000038-NDM-000213",
@@ -252,6 +411,7 @@
           "CCI-000382"
         ],
         "check_id": "C-17062r1007814_chk",
+        "documentable": false,
         "fix_id": "F-17060r892393_fix",
         "gid": "V-215823",
         "gtitle": "SRG-APP-000142-NDM-000245",
@@ -301,6 +461,7 @@
           "CCI-000196"
         ],
         "check_id": "C-17071r287535_chk",
+        "documentable": false,
         "fix_id": "F-17069r287536_fix",
         "gid": "V-215832",
         "gtitle": "SRG-APP-000171-NDM-000258",
@@ -351,6 +512,7 @@
           "CCI-001941"
         ],
         "check_id": "C-17083r835120_chk",
+        "documentable": false,
         "fix_id": "F-17081r835121_fix",
         "gid": "V-215844",
         "gtitle": "SRG-APP-000411-NDM-000330",
@@ -399,6 +561,7 @@
           "CCI-003123"
         ],
         "check_id": "C-17084r860789_chk",
+        "documentable": false,
         "fix_id": "F-17082r860790_fix",
         "gid": "V-215845",
         "gtitle": "SRG-APP-000412-NDM-000331",
@@ -447,6 +610,7 @@
           "CCI-004909"
         ],
         "check_id": "C-17095r991888_chk",
+        "documentable": false,
         "fix_id": "F-17093r287608_fix",
         "gid": "V-215856",
         "gtitle": "SRG-APP-000516-NDM-000344",
@@ -495,6 +659,7 @@
           "CCI-000366"
         ],
         "check_id": "C-21855r388870_chk",
+        "documentable": false,
         "fix_id": "F-21847r388871_fix",
         "gid": "V-220140",
         "gtitle": "SRG-APP-000516-NDM-000351",

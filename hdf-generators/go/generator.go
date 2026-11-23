@@ -13,7 +13,7 @@ type GeneratorOptions struct {
 	SingleFile bool
 	// Override baseline metadata in the generated inspec.yml.
 	Metadata *ProfileMetadata
-	// InSpec version constraint for inspec.yml. Default: "~>6.0".
+	// InSpec version constraint for inspec.yml. Default: ">= 7.0".
 	InSpecVersion string
 	// Identifier each control is keyed on: "rule" (default), "group"
 	// (tags.gid) or "version" (tags.stig_id). It sets the control id and filename.
@@ -34,6 +34,22 @@ type InSpecProfile struct {
 	InSpecYml string
 	// Map of filename (e.g. "controls/SV-238196.rb") to Ruby source code.
 	Controls map[string]string
+}
+
+// benchmarkRelease is extensions.passthrough.benchmarkRelease when it is an unsigned
+// integer, else "": DISA releases are integers, and anything else joined into
+// <version>.<release>.0 fails InSpec's semver check.
+func benchmarkRelease(baseline hdf.HDFBaseline) string {
+	if baseline.Extensions == nil {
+		return ""
+	}
+	release, _ := baseline.Extensions.Passthrough["benchmarkRelease"].(string)
+	for _, r := range release {
+		if r < '0' || r > '9' {
+			return ""
+		}
+	}
+	return release
 }
 
 // GenerateInSpecYml generates an inspec.yml YAML string from an HDF Baseline and options.
@@ -75,6 +91,10 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 	}
 
 	version := ptrOr(baseline.Version, "")
+	// <version>.<release>.0 is SAF CLI's profileVersion shape, so both tools agree.
+	if release := benchmarkRelease(baseline); release != "" && version != "" {
+		version = version + "." + release + ".0"
+	}
 	if opts != nil && opts.Metadata != nil && opts.Metadata.Version != "" {
 		version = opts.Metadata.Version
 	}
@@ -82,7 +102,7 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		lines = append(lines, fmt.Sprintf("version: '%s'", version))
 	}
 
-	inspecVersion := ">=6.0"
+	inspecVersion := ">= 7.0"
 	if opts != nil && opts.InSpecVersion != "" {
 		inspecVersion = opts.InSpecVersion
 	}

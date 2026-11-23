@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTMLTags, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, stripHTMLTags, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -33,18 +33,47 @@ interface XccdfBenchmark {
 
 interface BenchmarkElement {
   id?: string;
+  status?: string | StatusElement | Array<string | StatusElement>;
   title?: string | TextElement;
   description?: string | TextElement;
+  notice?: Array<string | NoticeElement>;
+  reference?: BenchmarkReferenceElement[];
   version?: string | VersionElement;
+  platform?: BenchmarkPlatformElement[];
   Group?: GroupElement[];
   Rule?: RuleElement[];
   Profile?: ProfileElement[];
   TestResult?: TestResultElement;
-  'plain-text'?: PlainText | PlainText[];
+  'plain-text'?: PlainText[];
 }
 
 interface TextElement {
   '#text'?: string;
+}
+
+interface StatusElement {
+  '#text'?: string;
+  date?: string;
+}
+
+interface NoticeElement {
+  '#text'?: string;
+  id?: string;
+}
+
+interface BenchmarkReferenceElement {
+  href?: string;
+  publisher?: string | TextElement | Array<string | TextElement>;
+  source?: string | TextElement | Array<string | TextElement>;
+}
+
+interface BenchmarkPlatformElement {
+  idref?: string;
+}
+
+interface SelectElement {
+  idref?: string;
+  selected?: string;
 }
 
 interface VersionElement {
@@ -59,7 +88,8 @@ interface PlainText {
 
 interface ProfileElement {
   id?: string;
-  title?: string | TextElement;
+  title?: string | TextElement | Array<string | TextElement>;
+  select?: SelectElement[];
 }
 
 /**
@@ -69,6 +99,7 @@ interface ProfileElement {
  */
 interface GroupElement {
   id?: string;
+  selected?: string;
   title?: string | TextElement;
   Rule?: RuleElement[];
   Group?: GroupElement[];
@@ -123,6 +154,7 @@ function flattenGroups(groups: GroupElement[]): GroupedRule[] {
 
 interface RuleElement {
   id?: string;
+  selected?: string;
   severity?: string;
   title?: string | TextElement;
   description?: string | TextElement;
@@ -277,6 +309,9 @@ const ARRAY_TAGS = [
   'platform',
   'check-content',
   'reference',
+  'notice',
+  'plain-text',
+  'metadata',
   // ARF-specific array tags
   'report',
   'report-request',
@@ -348,17 +383,24 @@ function parseCpeVersion(testSystem: string | undefined): string {
   return parts.length >= 4 ? parts[3]! : '';
 }
 
+// Prose elements (htmlTextWithSubType) are left unparsed: CIS and SCAP Security
+// Guide content carries its words inside XHTML children, and parsing those into
+// keyed objects loses the words and their order. The raw inner XML goes through
+// proseText, which sees the same bytes Go's decoder gives innerxml.
+const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtext', '*.notice'];
+
+// trimValues would strip each text node before the parser concatenates them, so
+// prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
+// came back as "Thepackage". Keep the whitespace, which is the source's prose.
+const PARSE_OPTIONS = { trimValues: false, stopNodes: PROSE_STOP_NODES };
+
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
   validateXmlInput(input, 'xccdf');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
   // Detect input format: ARF or raw XCCDF
   const arfParsed = parsed as ArfParsed;
@@ -396,11 +438,7 @@ export async function convertXccdfBenchmarkToHdf(input: string, converterVersion
   }
   validateXmlInput(input, 'xccdf');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
   const xccdfParsed = parsed as XccdfBenchmark;
   const benchmark = xccdfParsed.Benchmark;
 
@@ -432,11 +470,7 @@ export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0
   }
   validateXmlInput(input, 'xccdf');
 
-  // trimValues would strip each text node before the parser concatenates them, so
-  // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
-  // way the Go converter does when it strips tags from the raw element text.
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, PARSE_OPTIONS);
 
   // Check ARF first
   const arfParsed = parsed as ArfParsed;
@@ -517,7 +551,7 @@ async function convertBenchmarkResultsToHdf(
   baseline.title = baselineName;
   baseline.version = extractVersion(benchmark.version);
   baseline.status = 'loaded';
-  baseline.summary = stripHTMLTags(extractText(benchmark.description));
+  baseline.summary = stripHTMLTags(proseText(benchmark.description));
 
   const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
   const toolVersion = parseCpeVersion(testResult['test-system']);
@@ -550,6 +584,182 @@ function calculateDuration(testResult: TestResultElement): number {
 // ---------------------------------------------------------------------------
 // Benchmark-to-Baseline conversion
 // ---------------------------------------------------------------------------
+
+/**
+ * Splits DISA's "Release: 9 Benchmark Date: 01 Jul 2026" into the release and
+ * the date, as stig-parser does. Anything else is not parsed and the caller
+ * keeps the text verbatim.
+ */
+export function parseReleaseInfo(info: string): { release: string; date: string; ok: boolean } {
+  const marker = 'Benchmark Date: ';
+  const at = info.indexOf(marker);
+  if (at < 0) {
+    return { release: '', date: '', ok: false };
+  }
+  const release = info.slice(0, at).trim().replace(/^Release:/, '').trim();
+  const date = info.slice(at + marker.length).trim();
+  if (release === '' || date === '') {
+    return { release: '', date: '', ok: false };
+  }
+  return { release, date, ok: true };
+}
+
+// The benchmark's current status: the one with the latest date, or the last
+// in document order when none is dated, as XCCDF defines it.
+function currentStatus(benchmark: BenchmarkElement): { value: string; date: string } {
+  let current = { value: '', date: '' };
+  const statuses = Array.isArray(benchmark.status) ? benchmark.status : benchmark.status === undefined ? [] : [benchmark.status];
+  for (const s of statuses) {
+    const candidate = typeof s === 'string' ? { value: s, date: '' } : { value: s['#text'] ?? '', date: s.date ?? '' };
+    if (candidate.date > current.date || (candidate.date === '' && current.date === '')) {
+      current = candidate;
+    }
+  }
+  return { value: current.value.trim(), date: current.date };
+}
+
+// Reads an XCCDF selected attribute as xs:boolean: "false" or "0", trimmed;
+// anything else, including absence, is selected.
+function isDeselected(selected: string | undefined): boolean {
+  const value = (selected ?? '').trim();
+  return value === 'false' || value === '0';
+}
+
+// The trimmed text of the plain-text element with the given id, found by id
+// and never by position, or ''.
+function plainTextById(benchmark: BenchmarkElement, id: string): string {
+  return extractText((benchmark['plain-text'] ?? []).find((p) => p.id === id)).trim();
+}
+
+// The requirement id a Rule becomes: the SV- id without its revision suffix,
+// or the rule's version when it has no id.
+function baselineRequirementId(rule: RuleElement): string {
+  return extractRuleID(rule.id ?? '') || extractVersion(rule.version);
+}
+
+function groupsById(groups: GroupElement[], index = new Map<string, GroupElement>()): Map<string, GroupElement> {
+  for (const group of groups) {
+    if (group.id) {
+      index.set(group.id, group);
+    }
+    groupsById(group.Group ?? [], index);
+  }
+  return index;
+}
+
+function groupRequirementIds(group: GroupElement): string[] {
+  const ids: string[] = [];
+  for (const rule of group.Rule ?? []) {
+    if (!isDeselected(rule.selected)) {
+      ids.push(baselineRequirementId(rule));
+    }
+  }
+  for (const inner of group.Group ?? []) {
+    if (!isDeselected(inner.selected)) {
+      ids.push(...groupRequirementIds(inner));
+    }
+  }
+  return ids;
+}
+
+// Resolves a Profile's selects to requirement ids: a Rule contributes its own
+// id and a Group every rule it holds at any depth unless that rule or an inner
+// group is deselected (XCCDF: selecting a Group selects its items): a group's
+// rules, then its nested groups, each in document order. Ids are revision-free
+// and deduplicated; an idref naming nothing is kept as given, revision-free.
+function selectedRequirementIds(
+  profile: ProfileElement,
+  rules: Map<string, RuleElement>,
+  groups: Map<string, GroupElement>
+): string[] {
+  const ids: string[] = [];
+  for (const s of profile.select ?? []) {
+    const idref = s.idref ?? '';
+    if (isDeselected(s.selected) || idref === '') {
+      continue;
+    }
+    const rule = rules.get(idref);
+    const group = groups.get(idref);
+    if (rule) {
+      ids.push(baselineRequirementId(rule));
+    } else if (group) {
+      ids.push(...groupRequirementIds(group));
+    } else {
+      ids.push(extractRuleID(idref));
+    }
+  }
+  return [...new Set(ids)];
+}
+
+// The text of the first of several same-named elements (a Profile may carry
+// one title per language, a reference one publisher per language), or ''.
+function firstText(field: string | TextElement | Array<string | TextElement> | undefined): string {
+  return extractText(Array.isArray(field) ? field[0] : field);
+}
+
+function setIf(target: Record<string, unknown>, key: string, value: string): void {
+  if (value !== '') {
+    target[key] = value;
+  }
+}
+
+// Benchmark-level facts the Baseline has no field for, flat under
+// extensions.passthrough with the keys the CKL path uses, inserted in sorted
+// key order so the output matches Go's map serialisation byte for byte. A
+// missing or empty source leaves its key out.
+function benchmarkPassthrough(benchmark: BenchmarkElement): Record<string, unknown> {
+  const ext: Record<string, unknown> = {};
+  const info = plainTextById(benchmark, 'release-info');
+  const parsed = parseReleaseInfo(info);
+  const status = currentStatus(benchmark);
+  const notices = (benchmark.notice ?? []).map((n) => ({
+    id: typeof n === 'string' ? '' : (n.id ?? ''),
+    text: stripHTML(proseText(n)),
+  }));
+  const references = benchmark.reference ?? [];
+  const publisher = references.map((r) => firstText(r.publisher)).find((v) => v !== '') ?? '';
+  const source = references.map((r) => firstText(r.source)).find((v) => v !== '') ?? '';
+  const platforms = (benchmark.platform ?? []).map((p) => p.idref ?? '').filter((v) => v !== '');
+  const rules = new Map<string, RuleElement>();
+  for (const { rule } of flattenGroups(benchmark.Group ?? [])) {
+    if (rule.id) {
+      rules.set(rule.id, rule);
+    }
+  }
+  for (const rule of benchmark.Rule ?? []) {
+    if (rule.id) {
+      rules.set(rule.id, rule);
+    }
+  }
+  const groups = groupsById(benchmark.Group ?? []);
+  const profiles = (benchmark.Profile ?? []).map((p) => ({
+    id: p.id ?? '',
+    selectedRuleIds: selectedRequirementIds(p, rules, groups),
+    title: firstText(p.title),
+  }));
+
+  if (parsed.ok) {
+    setIf(ext, 'benchmarkDate', parsed.date);
+    setIf(ext, 'benchmarkRelease', parsed.release);
+  }
+  setIf(ext, 'benchmarkStatus', status.value);
+  setIf(ext, 'benchmarkStatusDate', status.date);
+  setIf(ext, 'conventionsVersion', plainTextById(benchmark, 'conventionsVersion'));
+  setIf(ext, 'generatorVersion', plainTextById(benchmark, 'generator'));
+  if (notices.length > 0) {
+    ext['notices'] = notices;
+  }
+  if (platforms.length > 0) {
+    ext['platforms'] = platforms;
+  }
+  if (profiles.length > 0) {
+    ext['profiles'] = profiles;
+  }
+  setIf(ext, 'publisher', publisher);
+  setIf(ext, 'releaseInfo', info);
+  setIf(ext, 'source', source);
+  return ext;
+}
 
 async function convertBenchmarkToBaselineJson(
   benchmark: BenchmarkElement,
@@ -597,12 +807,16 @@ async function convertBenchmarkToBaselineJson(
     title: extractText(benchmark.title),
     version: extractVersion(benchmark.version),
     status: 'loaded',
-    summary: stripHTMLTags(extractText(benchmark.description)),
+    summary: stripHTMLTags(proseText(benchmark.description)),
     integrity,
     requirements,
     groups,
     generator: { name: 'xccdf-results-to-hdf', version: converterVersion },
   };
+  const ext = benchmarkPassthrough(benchmark);
+  if (Object.keys(ext).length > 0) {
+    baseline.extensions = { passthrough: ext };
+  }
 
   return serializeHdf(baseline);
 }
@@ -614,7 +828,7 @@ function ruleToBaselineRequirement(
   rule: RuleElement,
   group: GroupElement | undefined
 ): BaselineRequirement {
-  const id = extractRuleID(rule.id ?? '') || extractVersion(rule.version);
+  const id = baselineRequirementId(rule);
   // A title-less rule gets no title at all: an empty string is junk, and
   // synthesizing one from the id would invent data. Go omits it too.
   const title = extractText(rule.title) || undefined;
@@ -644,6 +858,7 @@ function ruleToBaselineRequirement(
     tags['gid'] = group.id;
     tags['gtitle'] = extractText(group.title);
   }
+  addDescriptionSubElementTags(tags, proseText(rule.description));
 
   const req: BaselineRequirement = {
     id,
@@ -776,7 +991,7 @@ async function convertArfCollection(
     baseline.status = 'loaded';
     if (benchmark) {
       baseline.version = extractVersion(benchmark.version);
-      baseline.summary = stripHTMLTags(extractText(benchmark.description));
+      baseline.summary = stripHTMLTags(proseText(benchmark.description));
     }
     baselines.push(baseline);
 
@@ -1073,16 +1288,48 @@ const NAMED_ENTITIES: Record<string, string> = {
 // so character references arrive undecoded; Go's encoding/xml decodes them for
 // free. STIG fix texts rely on this (an entity-encoded "<partition>" must
 // become a real tag before stripHTMLTags can drop it). Only predefined and numeric
-// references are decoded; document-defined entities stay untouched.
+// references are decoded; document-defined entities stay untouched. A
+// reference to no valid code point becomes U+FFFD, as it does in Go.
 function decodeXmlEntities(s: string): string {
   return s.replace(
     /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(lt|gt|quot|apos|amp));/g,
     (match, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
-      if (dec !== undefined) return String.fromCodePoint(Number.parseInt(dec, 10));
-      if (hex !== undefined) return String.fromCodePoint(Number.parseInt(hex, 16));
+      if (dec !== undefined) return codePointText(Number.parseInt(dec, 10));
+      if (hex !== undefined) return codePointText(Number.parseInt(hex, 16));
       return name !== undefined ? NAMED_ENTITIES[name] ?? match : match;
     },
   );
+}
+
+function codePointText(n: number): string {
+  return n > 0x10ffff || (n >= 0xd800 && n <= 0xdfff) ? '\uFFFD' : String.fromCodePoint(n);
+}
+
+function proseMarkupText(s: string): string {
+  return decodeXmlEntities(s.replace(/<!--[\s\S]*?-->|<\?[\s\S]*?\?>/g, ''));
+}
+
+// A prose element is a stop node, so its value is the raw inner XML: a string,
+// or under #text beside its attributes.
+function proseText(field: string | TextElement | FixtextElement | undefined): string {
+  if (field === undefined || field === null) {
+    return '';
+  }
+  return proseFromInnerXml(typeof field === 'string' ? field : (field['#text'] ?? ''));
+}
+
+// Turns raw inner XML into the text the parser would have produced for
+// character data, and the same text the Go converter produces from the same
+// bytes: line endings folded to LF (XML 1.0 §2.11), CDATA sections literal,
+// comments and processing instructions dropped (stripHTML would stop at the
+// first ">" inside one), and the predefined and numeric entities decoded
+// everywhere else. Element tags stay in place for stripHTMLTags.
+function proseFromInnerXml(inner: string): string {
+  return inner
+    .replace(/\r\n?/g, '\n')
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((part, i) => (i % 2 === 1 ? part.slice('<![CDATA['.length, -']]>'.length) : proseMarkupText(part)))
+    .join('');
 }
 
 /**
@@ -1151,21 +1398,6 @@ function extractVersion(
 }
 
 /**
- * Extract fixtext content from fixtext field.
- */
-function extractFixtext(
-  field: string | FixtextElement | undefined
-): string {
-  if (field === undefined || field === null) {
-    return '';
-  }
-  if (typeof field === 'string') {
-    return decodeXmlEntities(field);
-  }
-  return decodeXmlEntities((field as FixtextElement)['#text'] ?? '');
-}
-
-/**
  * Extract check-content text from a check element.
  */
 function extractCheckContent(
@@ -1223,21 +1455,21 @@ export function extractCheckContentRef(
 function buildRuleDescriptions(rule: RuleElement | undefined): Description[] {
   const descriptions: Description[] = [{
     label: 'default',
-    data: stripHTMLTags(extractVulnDiscussion(extractText(rule?.description))),
+    data: stripHTMLTags(extractVulnDiscussion(proseText(rule?.description))),
   }];
   const checkDesc = checkDescriptionData(selectCheck(rule?.check));
   if (checkDesc) {
     descriptions.push({ label: 'check', data: checkDesc });
   }
-  const fixtext = extractFixtext(rule?.fixtext);
+  const fixtext = proseText(rule?.fixtext);
   if (fixtext) {
     descriptions.push({ label: 'fix', data: stripHTMLTags(fixtext) });
   }
-  const rationale = extractText(rule?.rationale);
+  const rationale = proseText(rule?.rationale);
   if (rationale.trim()) {
     descriptions.push({ label: 'rationale', data: stripHTMLTags(rationale) });
   }
-  const warning = extractText(rule?.warning);
+  const warning = proseText(rule?.warning);
   if (warning.trim()) {
     descriptions.push({ label: 'warning', data: stripHTMLTags(warning) });
   }
@@ -1347,10 +1579,69 @@ export function buildCheckCode(check: CheckElement | undefined): string {
  * VulnDiscussion tag is found, returns the original text.
  */
 function extractVulnDiscussion(description: string): string {
-  const match = description.match(
-    /<VulnDiscussion>([\s\S]*?)<\/VulnDiscussion>/
-  );
-  return match ? match[1]! : description;
+  const vals = descriptionFieldValues(description, 'VulnDiscussion');
+  return vals.length > 0 ? vals[0]! : description;
+}
+
+// The raw text inside every <element>…</element> pair of a DISA description, in
+// document order. Splits on the literal tags and never parses: 209 of the current
+// library's descriptions are not well-formed XML, and DISA's own stylesheet
+// string-splits the same way.
+function descriptionFieldValues(description: string, element: string): string[] {
+  const openTag = `<${element}>`;
+  const closeTag = `</${element}>`;
+  const vals: string[] = [];
+  let rest = description;
+  for (;;) {
+    const start = rest.indexOf(openTag);
+    if (start === -1) return vals;
+    rest = rest.slice(start + openTag.length);
+    const end = rest.indexOf(closeTag);
+    if (end === -1) return vals;
+    vals.push(rest.slice(0, end));
+    rest = rest.slice(end + closeTag.length);
+  }
+}
+
+// DISA's description body is literal text with eleven labelled sub-elements
+// (VulnDiscussion feeds the default description); these ten become tags. The
+// severity guidance was spelled SecurityOverrideGuidance until 2012, so both
+// spellings feed one tag; the current spelling wins when a rule carries both.
+const descriptionSubElementTags: ReadonlyArray<readonly [element: string, tag: string]> = [
+  ['FalsePositives', 'false_positives'],
+  ['FalseNegatives', 'false_negatives'],
+  ['Mitigations', 'mitigations'],
+  ['SeverityOverrideGuidance', 'severity_override_guidance'],
+  ['SecurityOverrideGuidance', 'severity_override_guidance'],
+  ['PotentialImpacts', 'potential_impacts'],
+  ['ThirdPartyTools', 'third_party_tools'],
+  ['MitigationControl', 'mitigation_control'],
+  ['IAControls', 'ia_controls'],
+];
+
+// One tag per non-empty DISA sub-element: strings for the elements above (the
+// first non-empty occurrence of the first spelling that has one), a list for
+// Responsibility (DISA repeats it), a boolean for Documentable ("true"/"false";
+// anything else is not a boolean and is left out rather than guessed).
+function addDescriptionSubElementTags(tags: Record<string, unknown>, description: string): void {
+  for (const [element, tag] of descriptionSubElementTags) {
+    if (tag in tags) continue;
+    const vals = descriptionSubElementText(description, element);
+    if (vals.length > 0) tags[tag] = vals[0];
+  }
+  const responsibility = descriptionSubElementText(description, 'Responsibility');
+  if (responsibility.length > 0) tags['responsibility'] = responsibility;
+  const documentable = descriptionSubElementText(description, 'Documentable')[0];
+  if (documentable === 'true') tags['documentable'] = true;
+  else if (documentable === 'false') tags['documentable'] = false;
+}
+
+// Every non-empty occurrence of <element> in document order, markup stripped the
+// way the default description is.
+function descriptionSubElementText(description: string, element: string): string[] {
+  return descriptionFieldValues(description, element)
+    .map((raw) => stripHTML(raw).trim())
+    .filter((v) => v !== '');
 }
 
 /**

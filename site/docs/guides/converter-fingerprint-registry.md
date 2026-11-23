@@ -25,7 +25,8 @@ The fingerprint registry is a two-layer system:
 │  - label         │    │  run each fingerprint()     │
 │  - inputFamily   │    │  sort by confidence         │
 │  - outputType    │    │  return best match          │
-│  - fingerprint() │    └─────────────────────────────┘
+│  - source?       │    └─────────────────────────────┘
+│  - fingerprint() │
 └──────────────────┘
         ▲
         │  registerFingerprint()
@@ -166,6 +167,8 @@ export function register(): void {
   registerFingerprint(trivyFingerprint);
 }
 ```
+
+After detection, `hdf convert` and the MCP `hdf_convert` tool pick the converter by the fingerprint's `source` if it sets one, else by the id up to its first `-to-` (`trivy-to-hdf` → `trivy`). Set `source` only when that rule picks the wrong converter: the XCCDF/ARF fingerprint names `xccdf`, because its root element cannot say whether the file is a benchmark or results and only that converter reads the whole document to decide. The field exists in both languages so the registries stay identical.
 
 ### Step 2: Write the test
 

@@ -12,6 +12,7 @@ func init() {
 		Direction:   registry.DirectionIngest,
 		InputFamily: registry.FamilyXML,
 		OutputType:  registry.OutputResults,
+		Source:      "xccdf",
 		Fingerprint: func(input any) float64 {
 			s, ok := input.(string)
 			if !ok {

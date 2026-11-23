@@ -32,16 +32,30 @@ export function stripHtml(html: string): string {
 /**
  * Remove HTML tags from a string and keep every other character.
  *
- * Unlike {@link stripHtml}, whitespace is not collapsed or trimmed, so prose
- * keeps its line breaks, indentation and edge whitespace. Each tag span becomes
- * nothing, leaving the element's text content. Parity: hdfutil.StripHTMLTags.
+ * Unlike {@link stripHtml}, all whitespace is kept. A tag becomes nothing, except
+ * a `<br>` with no source line break beside it (across spaces or tabs), which
+ * becomes one. Parity: hdfutil.StripHTMLTags.
  *
  * @param html - String potentially containing HTML tags
- * @returns The input with every `<...>` span removed
+ * @returns The element's text content
  */
 export function stripHtmlTags(html: string): string {
-  return replaceHtmlTags(html, '');
+  return mapHtmlTags(html, (tag, end) => {
+    if (!BR_TAG.test(tag) || lineEndsBefore(html, end - tag.length)) return '';
+    LINE_ENDS.lastIndex = end;
+    return LINE_ENDS.test(html) ? '' : '\n';
+  });
 }
+
+/** Whether `html` breaks the line just before `start`, across spaces or tabs only. */
+function lineEndsBefore(html: string, start: number): boolean {
+  let i = start - 1;
+  while (i >= 0 && (html[i] === ' ' || html[i] === '\t')) i--;
+  return i >= 0 && (html[i] === '\n' || html[i] === '\r');
+}
+
+const BR_TAG = /^<(?:[A-Za-z][\w.-]*:)?[Bb][Rr]\b/;
+const LINE_ENDS = /[ \t]*(?:\r?\n|\r)/y;
 
 /**
  * Lowercase A-Z and nothing else. `toLowerCase` applies Unicode lowercase
@@ -71,6 +85,14 @@ export function asciiLower(s: string): string {
  * @param replacement - What each tag span becomes (`' '` or `''`)
  */
 export function replaceHtmlTags(html: string, replacement: string): string {
+  return mapHtmlTags(html, () => replacement);
+}
+
+/**
+ * The linear scan behind {@link replaceHtmlTags}: each `<...>` span becomes
+ * what `f` returns for it, given the span and the index just past it.
+ */
+function mapHtmlTags(html: string, f: (tag: string, end: number) => string): string {
   let out = '';
   let i = 0;
   while (i < html.length) {
@@ -84,7 +106,7 @@ export function replaceHtmlTags(html: string, replacement: string): string {
       out += html.slice(i);
       break;
     }
-    out += html.slice(i, lt) + replacement;
+    out += html.slice(i, lt) + f(html.slice(lt, gt + 1), gt + 1);
     i = gt + 1;
   }
   return out;

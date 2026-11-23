@@ -1,4 +1,24 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2026-06-01",
+      "platforms": [
+        "cpe:/o:redhat:enterprise_linux:8.0",
+        "cpe:/o:redhat:enterprise_linux:8.1",
+        "cpe:/o:redhat:enterprise_linux:8.10",
+        "cpe:/o:redhat:enterprise_linux:8.2",
+        "cpe:/o:redhat:enterprise_linux:8.3",
+        "cpe:/o:redhat:enterprise_linux:8.4",
+        "cpe:/o:redhat:enterprise_linux:8.5",
+        "cpe:/o:redhat:enterprise_linux:8.6",
+        "cpe:/o:redhat:enterprise_linux:8.7",
+        "cpe:/o:redhat:enterprise_linux:8.8",
+        "cpe:/o:redhat:enterprise_linux:8.9",
+        "cpe:/o:redhat:enterprise_linux:8"
+      ]
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"
@@ -39,7 +59,7 @@
     {
       "descriptions": [
         {
-          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and\nDHCP (Dynamic Host Configuration Protocol) services.\n\nThe  package can be removed with the following command:\n\n      ",
+          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and\nDHCP (Dynamic Host Configuration Protocol) services.\n\nThe dnsmasq package can be removed with the following command:\n\n$ sudo yum erase dnsmasq\n      ",
           "label": "default"
         },
         {
@@ -68,7 +88,7 @@
     {
       "descriptions": [
         {
-          "data": "\nThe  service can be disabled with the following command:\n\n      ",
+          "data": "\nThe dnsmasq service can be disabled with the following command:\n$ sudo systemctl mask --now dnsmasq.service\n      ",
           "label": "default"
         },
         {
@@ -103,7 +123,7 @@
     {
       "descriptions": [
         {
-          "data": "The  service is provided by the  package.\nThe  package can be removed with the following command:\n\n       ",
+          "data": "The named service is provided by the bind package.\nThe bind package can be removed with the following command:\n\n$ sudo yum erase bind\n       ",
           "label": "default"
         },
         {
@@ -406,7 +426,7 @@
     {
       "descriptions": [
         {
-          "data": "\nThe  service can be disabled with the following command:\n\n       ",
+          "data": "\nThe named service can be disabled with the following command:\n$ sudo systemctl mask --now named.service\n       ",
           "label": "default"
         },
         {
@@ -705,7 +725,7 @@
     {
       "descriptions": [
         {
-          "data": "If it is necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server, follow the instructions here.  Use\ndnssec-keygen to create a symmetric key file in the current directory:\n\nThis output is the name of a file containing the new key. Read the file to find\nthe base64-encoded key string:\n\nAdd the directives to  on the primary server:\n\nAdd the directives below to  on the secondary nameserver:\n\n       ",
+          "data": "If it is necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server, follow the instructions here.  Use\ndnssec-keygen to create a symmetric key file in the current directory:\n$ cd /tmp\n$ sudo dnssec-keygen -a HMAC-MD5 -b 128 -n HOST dns.example.com\nKdns.example.com .+aaa +iiiii\nThis output is the name of a file containing the new key. Read the file to find\nthe base64-encoded key string:\n$ sudo cat Kdns.example.com .+NNN +MMMMM .key\ndns.example.com IN KEY 512 3 157 base64-key-string\nAdd the directives to /etc/named.conf on the primary server:\nkey zone-transfer-key {\n  algorithm hmac-md5;\n  secret \"base64-key-string \";\n};\nzone \"example.com \" IN {\n  type master;\n  allow-transfer { key zone-transfer-key; };\n  ...\n};\nAdd the directives below to /etc/named.conf on the secondary nameserver:\nkey zone-transfer-key {\n  algorithm hmac-md5;\n  secret \"base64-key-string \";\n};\n\nserver IP-OF-MASTER {\n  keys { zone-transfer-key; };\n};\n\nzone \"example.com \" IN {\n  type slave;\n  masters { IP-OF-MASTER ; };\n  ...\n};\n       ",
           "label": "default"
         },
         {
@@ -1003,7 +1023,7 @@
     {
       "descriptions": [
         {
-          "data": "Is there a mission-critical reason to enable the risky dynamic\nupdate functionality? If not, edit . For each zone\nspecification, correct the following directive if necessary:\n\n       ",
+          "data": "Is there a mission-critical reason to enable the risky dynamic\nupdate functionality? If not, edit /etc/named.conf. For each zone\nspecification, correct the following directive if necessary:\nzone \"example.com \" IN {\n  allow-update { none; };\n  ...\n};\n       ",
           "label": "default"
         },
         {
@@ -1026,7 +1046,7 @@
     {
       "descriptions": [
         {
-          "data": "Is it necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server?  If not, follow the instructions in\nthis section. If so, see the next section for instructions on protecting zone\ntransfers.\nAdd or correct the following directive within :\n\n       ",
+          "data": "Is it necessary for a secondary nameserver to receive zone data\nvia zone transfer from the primary server?  If not, follow the instructions in\nthis section. If so, see the next section for instructions on protecting zone\ntransfers.\nAdd or correct the following directive within /etc/named.conf:\noptions {\n  allow-transfer { none; };\n  ...\n}\n       ",
           "label": "default"
         },
         {
@@ -1048,7 +1068,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This guide presents a catalog of security-relevant\nconfiguration settings for Red Hat Enterprise Linux 8. It is a rendering of\ncontent structured in the eXtensible Configuration Checklist Description Format (XCCDF)\nin order to support security automation.  The SCAP content is\nis available in the  package which is developed at\n\n    .\n\n    \nProviding system administrators with such guidance informs them how to securely\nconfigure systems under their control in a variety of network roles. Policy\nmakers and baseline creators can use this catalog of settings, with its\nassociated references to higher-level security control catalogs, in order to\nassist them in security baseline creation. This guide is a , and satisfaction of every item is not likely to be possible or\nsensible in many operational scenarios. However, the XCCDF format enables\ngranular selection and adjustment of settings, and their association with OVAL\nand OCIL content provides an automated checking capability. Transformations of\nthis document, and its associated automated checking content, are capable of\nproviding baselines that meet a diverse set of policy objectives. Some example\nXCCDF , which are selections of items that form checklists and\ncan be used as baselines, are available with this guide. They can be\nprocessed, in an automated fashion, with tools that support the Security\nContent Automation Protocol (SCAP). The DISA STIG, which provides required\nsettings for US Department of Defense systems, is one example of a baseline\ncreated from this guidance.\n",
+  "summary": "This guide presents a catalog of security-relevant\nconfiguration settings for Red Hat Enterprise Linux 8. It is a rendering of\ncontent structured in the eXtensible Configuration Checklist Description Format (XCCDF)\nin order to support security automation.  The SCAP content is\nis available in the scap-security-guide package which is developed at\n\n    https://www.open-scap.org/security-policies/scap-security-guide.\n\n    \nProviding system administrators with such guidance informs them how to securely\nconfigure systems under their control in a variety of network roles. Policy\nmakers and baseline creators can use this catalog of settings, with its\nassociated references to higher-level security control catalogs, in order to\nassist them in security baseline creation. This guide is a catalog, not a\nchecklist, and satisfaction of every item is not likely to be possible or\nsensible in many operational scenarios. However, the XCCDF format enables\ngranular selection and adjustment of settings, and their association with OVAL\nand OCIL content provides an automated checking capability. Transformations of\nthis document, and its associated automated checking content, are capable of\nproviding baselines that meet a diverse set of policy objectives. Some example\nXCCDF Profiles, which are selections of items that form checklists and\ncan be used as baselines, are available with this guide. They can be\nprocessed, in an automated fashion, with tools that support the Security\nContent Automation Protocol (SCAP). The DISA STIG, which provides required\nsettings for US Department of Defense systems, is one example of a baseline\ncreated from this guidance.\n",
   "title": "Guide to the Secure Configuration of Red Hat Enterprise Linux 8",
   "version": "0.1.81"
 }

@@ -148,7 +148,7 @@ to override auto-detection.`,
 	cmd.Flags().StringVar(&copyright, "copyright", "", "Override copyright in inspec.yml")
 	cmd.Flags().StringVar(&license, "license", "", "Override license in inspec.yml")
 	cmd.Flags().StringVar(&profileVer, "version", "", "Override version in inspec.yml")
-	cmd.Flags().StringVar(&inspecVersion, "inspec-version", "", "InSpec version constraint (default: >=6.0)")
+	cmd.Flags().StringVar(&inspecVersion, "inspec-version", "", "InSpec version constraint (default: >= 7.0)")
 	cmd.Flags().StringVarP(&sourceType, "source-type", "s", "", "Input format: \"baseline\" (JSON) or \"xccdf\" (XML). Auto-detected if omitted.")
 
 	return cmd
