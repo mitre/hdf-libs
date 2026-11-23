@@ -250,16 +250,45 @@ describe('CCI dataset', () => {
     expect(Object.keys(table).length).toBeGreaterThan(5000);
   });
 
-  it('holds only 800-53 control identifiers, Rev 4 and Rev 5, without duplicates', () => {
+  it('holds only 800-53 control identifiers, keyed by revision, without duplicates', () => {
     for (const [id, item] of Object.entries(table)) {
       expect(Object.keys(item).sort(), id).toEqual(['def', 'nist']);
       for (const [rev, refs] of Object.entries(item.nist)) {
-        expect(['4', '5'], `${id} revision key`).toContain(rev);
+        expect(['3', '4', '5'], `${id} revision key`).toContain(rev);
+        if (rev === '3') expect(Object.keys(item.nist), `${id}: Rev 3 only when DISA gives no later reference`).toEqual(['3']);
         expect(refs.length, `${id} Rev ${rev}`).toBeGreaterThan(0);
         expect(new Set(refs).size, `${id} Rev ${rev} duplicates`).toBe(refs.length);
         for (const ref of refs) expect(ref, `${id} Rev ${rev}`).toMatch(CONTROL_IDENTIFIER);
       }
     }
+  });
+});
+
+// Same exceptions as the Go TestEveryRev3OnlyCCIMapsToAControl: CP-10 (3) was
+// withdrawn with no successor, and SI-7 (4) went into SA-12, which Rev 5 moved
+// to the SR family.
+describe('a CCI DISA references only at Revision 3', () => {
+  const table = rawCCIData as Record<string, { nist: Record<string, string[]> }>;
+  const noSuccessor = new Set([
+    'CCI-000554@4',
+    'CCI-000554@5',
+    'CCI-000555@4',
+    'CCI-000555@5',
+    'CCI-001302@5',
+    'CCI-001303@5',
+    'CCI-001304@5',
+  ]);
+
+  it('maps to a control at Rev 4 and Rev 5', () => {
+    const unmapped = new Set<string>();
+    const rev3Only = Object.values(table).filter((item) => item.nist['3']).length;
+    expect(rev3Only, "DISA's 2025-01-23 list has 551 items with only a Rev 3 reference").toBe(551);
+    expect(table['CCI-000863']?.nist['3'], 'malformed statement parts keep the enhancement').toEqual(['MA-2 (1)']);
+    for (const [id, item] of Object.entries(table)) {
+      if (!item.nist['3']) continue;
+      for (const rev of [4, 5]) if (!getCCINistMappings(id, rev)?.length) unmapped.add(`${id}@${rev}`);
+    }
+    expect(unmapped).toEqual(noSuccessor);
   });
 });
 
@@ -281,6 +310,14 @@ describe('getCCINistMappings at a revision', () => {
     ['CCI-000262', 4, ['CA-3 (1)']],
     ['CCI-003658', 5, ['AC-3 (15) (a)']],
     ['CCI-000504', 4, ['CP-4 (4)']],
+    ['CCI-000007', 5, ['AC-2']],
+    ['CCI-000007', 4, ['AC-2']],
+    ['CCI-001435', 5, ['CM-7']],
+    ['CCI-001435', 4, ['CM-7']],
+    ['CCI-000160', 4, ['AU-8 (1)']],
+    ['CCI-000160', 5, ['SC-45 (1)']],
+    ['CCI-000554', 5, []],
+    ['CCI-001435', 3, []],
   ] as const)('%s at Rev %d', (cci, rev, want) => {
     expect(getCCINistMappings(cci, rev)).toEqual(want);
   });

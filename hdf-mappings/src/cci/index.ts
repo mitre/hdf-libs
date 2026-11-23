@@ -5,7 +5,7 @@
 import type { CCIMappings, NistCCIMappings } from './types.js';
 import rawCCIData from '../../go/datasets/mappings/cci-mappings.json';
 import rawNistCCIData from '../../go/datasets/mappings/nist-cci-mappings.json';
-import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
+import { getCurrentNistRevision, nistControlsAtRevision, nistControlsFromRev3 } from '../nist/index.js';
 
 const cciData = rawCCIData as CCIMappings;
 const nistCCIData = rawNistCCIData as NistCCIMappings;
@@ -34,7 +34,8 @@ export function getCCIDescription(cciId: string): string | undefined {
 /**
  * Get DISA's NIST SP 800-53 references for a CCI ID at a revision. When DISA
  * gives none at that revision, the other revision's references are translated
- * through the NIST crosswalk, so the result never mixes revisions.
+ * through the NIST crosswalk, and an item DISA references only at Revision 3 is
+ * read through it as well, so the result never mixes revisions.
  *
  * @param cciId - The CCI ID (e.g., 'CCI-000001')
  * @param rev - NIST revision, default the module-global revision
@@ -53,13 +54,14 @@ export function getCCINistMappings(cciId: string, rev: number = getCurrentNistRe
 
   const item = cciData[cciId];
   if (!item) return undefined;
-  const own = item.nist[rev];
+  // Key 3 is the stored fallback, never a revision to answer at.
+  const own = rev === 3 ? undefined : item.nist[rev];
   if (own?.length) return [...own];
   for (const native of [5, 4]) {
     const refs = item.nist[native];
     if (native !== rev && refs?.length) return nistControlsAtRevision([...refs], native, rev);
   }
-  return [];
+  return nistControlsFromRev3(item.nist[3] ?? [], rev);
 }
 
 /**

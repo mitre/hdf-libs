@@ -415,7 +415,7 @@ func TestLazyLoading(t *testing.T) {
 }
 
 func TestCCIToNISTRevisionAware(t *testing.T) {
-	// The CCI list's NIST references are Rev 4-era. At the default Rev 5,
+	// This item carries a Rev 4 reference only. At the default Rev 5,
 	// CCIToNIST translates: identity refs keep their statement suffixes,
 	// Appendix J privacy refs follow NIST's pointers, and refs to controls
 	// with no Rev 5 equivalent drop.

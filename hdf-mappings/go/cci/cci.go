@@ -14,8 +14,8 @@ import (
 type CCIItem struct {
 	// Definition/description of the CCI
 	Def string `json:"def"`
-	// DISA's NIST SP 800-53 references keyed by revision (4, 5), as published;
-	// a revision DISA gives no reference for is absent
+	// DISA's NIST SP 800-53 references keyed by revision, as published: 4 and 5
+	// where DISA gives them, and 3 only for an item with neither
 	Nist map[int][]string `json:"nist"`
 }
 
@@ -70,14 +70,16 @@ func GetCCINistMappings(cciID string) []string {
 
 // GetCCINistMappingsForRevision returns DISA's references for the CCI at rev.
 // When DISA gives none at rev, the other revision's references are translated
-// through the NIST crosswalk, so the result never mixes revisions. Returns nil
+// through the NIST crosswalk, and an item DISA references only at Revision 3
+// is read through it as well, so the result never mixes revisions. Returns nil
 // if the CCI ID is not found.
 func GetCCINistMappingsForRevision(cciID string, rev int) []string {
 	item, exists := loadCCIData()[cciID]
 	if cciID == "" || !exists {
 		return nil
 	}
-	if refs := item.Nist[rev]; len(refs) > 0 {
+	// Key 3 is the stored fallback, never a revision to answer at.
+	if refs := item.Nist[rev]; len(refs) > 0 && rev != 3 {
 		return append([]string(nil), refs...)
 	}
 	for _, native := range []int{5, 4} {
@@ -85,7 +87,7 @@ func GetCCINistMappingsForRevision(cciID string, rev int) []string {
 			return nist.AtRevision(append([]string(nil), refs...), native, rev)
 		}
 	}
-	return []string{}
+	return nist.AtRevisionFromRev3(item.Nist[3], rev)
 }
 
 // GetAllCCIIDs returns all CCI IDs available in the database.

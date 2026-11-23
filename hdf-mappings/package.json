@@ -25,6 +25,8 @@
     "mappings:awsconfig:check": "node scripts/generate-awsconfig-mappings.mjs --check",
     "mappings:cci": "node scripts/generate-cci-mappings.mjs",
     "mappings:cci:check": "node scripts/generate-cci-mappings.mjs --check",
+    "mappings:rev4-withdrawn": "node scripts/generate-nist-rev4-withdrawn.mjs",
+    "mappings:rev4-withdrawn:check": "node scripts/generate-nist-rev4-withdrawn.mjs --check",
     "mappings:crosswalk": "node scripts/generate-nist-crosswalk.mjs",
     "mappings:crosswalk:check": "node scripts/generate-nist-crosswalk.mjs --check",
     "mappings:descriptions": "node scripts/generate-nist-descriptions.mjs",

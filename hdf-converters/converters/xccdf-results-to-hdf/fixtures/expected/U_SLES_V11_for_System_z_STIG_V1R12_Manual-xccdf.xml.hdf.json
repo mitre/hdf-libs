@@ -851,6 +851,7 @@
       "title": "Anonymous FTP must not be active on the system unless authorized."
     },
     {
+      "controlType": "operational",
       "descriptions": [
         {
           "data": "Due to numerous security vulnerabilities existing within NIS, it must not be used.  Possible alternative directory services are NIS+ and LDAP.",
@@ -888,7 +889,9 @@
         "fix_id": "F-39579r1_fix",
         "gid": "V-867",
         "gtitle": "GEN006400",
-        "nist": [],
+        "nist": [
+          "CM-7"
+        ],
         "responsibility": [
           "System Administrator",
           "Information Assurance Officer"

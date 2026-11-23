@@ -39,6 +39,7 @@ export {
   translateNistControls,
   nistRosterSize,
   nistControlsAtRevision,
+  nistControlsFromRev3,
 } from './nist/index.js';
 
 export type { NISTDescriptions } from './nist/types.js';
