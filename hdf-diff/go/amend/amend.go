@@ -9,6 +9,7 @@ import (
 	"time"
 
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
@@ -124,6 +125,7 @@ func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 // fleet and be applied per host, so "matched nothing here" is normal, but it
 // must leave the document alone rather than half-stamping it.
 func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef string) bool {
+	referenceTimestamp, _ := doc["timestamp"].(string)
 	baselinesRaw, ok := doc["baselines"]
 	if !ok {
 		return false
@@ -167,43 +169,67 @@ func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef
 				continue
 			}
 
-			applyOverrideToReq(req, override)
+			applyOverrideToReq(req, override, referenceTimestamp)
 			matched = true
 		}
 	}
 	return matched
 }
 
-// applyOverrideToReq applies a single override to a matched requirement.
-func applyOverrideToReq(req, override map[string]interface{}) {
-	// Set effectiveStatus from the override's status, validating it first.
-	if statusRaw, ok := override["status"]; ok {
-		validStatuses := map[string]bool{
-			"passed": true, "failed": true, "notApplicable": true,
-			"notReviewed": true, "error": true,
-		}
-		status, isString := statusRaw.(string)
-		if isString && validStatuses[status] {
-			req["effectiveStatus"] = status
-		}
-	}
-
-	// Set effectiveImpact from the override's impact field.
-	if impactObj, ok := override["impact"].(map[string]interface{}); ok {
-		if val, ok := impactObj["value"].(float64); ok {
-			req["effectiveImpact"] = val
-		}
-	}
-
-	// Set disposition from the override's type.
-	if ovType, ok := override["type"].(string); ok && ovType != "" {
-		req["disposition"] = ovType
-	}
-
-	// Build a statusOverride entry and append to the array.
-	statusOverride := buildStatusOverride(override)
+// applyOverrideToReq records the override on the requirement, then resolves the
+// cached effective fields from every override it now carries.
+func applyOverrideToReq(req, override map[string]interface{}, referenceTimestamp string) {
 	existing, _ := req["statusOverrides"].([]interface{})
-	req["statusOverrides"] = append(existing, statusOverride)
+	req["statusOverrides"] = append(existing, buildStatusOverride(override))
+	resolveEffectiveFields(req, referenceTimestamp)
+}
+
+var validOverrideStatuses = map[hdf.ResultStatus]bool{
+	hdf.Passed: true, hdf.Failed: true, hdf.NotApplicable: true, hdf.NotReviewed: true, hdf.Error: true,
+}
+
+// resolveEffectiveFields sets effectiveStatus, effectiveImpact and disposition from
+// the governing override rather than the one applied last. A requirement that
+// cannot be typed is left as it was.
+func resolveEffectiveFields(req map[string]interface{}, referenceTimestamp string) {
+	raw, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+	var typed hdf.EvaluatedRequirement
+	if err := json.Unmarshal(raw, &typed); err != nil {
+		return
+	}
+
+	windows := make([]hdfutil.StatusOverrideInput, len(typed.StatusOverrides))
+	carriesStatus, carriesImpact := false, false
+	for i := range typed.StatusOverrides {
+		ov := &typed.StatusOverrides[i]
+		if ov.Status != nil && !validOverrideStatuses[*ov.Status] {
+			ov.Status = nil
+		}
+		carriesStatus = carriesStatus || ov.Status != nil
+		carriesImpact = carriesImpact || ov.Impact != nil
+		windows[i] = hdfutil.StatusOverrideInput{AppliedAt: ov.AppliedAt, ExpiresAt: ov.ExpiresAt}
+	}
+
+	if carriesStatus {
+		req["effectiveStatus"] = diff.ComputeEffectiveStatus(typed, referenceTimestamp)
+	}
+	if carriesImpact {
+		hasImpact := func(i int) bool { return typed.StatusOverrides[i].Impact != nil }
+		ref := hdfutil.ParseTimestamp(referenceTimestamp)
+		if i := hdfutil.GoverningOverrideIndex(windows, hasImpact, ref); i >= 0 {
+			req["effectiveImpact"] = typed.StatusOverrides[i].Impact.Value
+		} else {
+			delete(req, "effectiveImpact")
+		}
+	}
+	if disposition := diff.ComputeDisposition(typed, referenceTimestamp); disposition != nil {
+		req["disposition"] = string(*disposition)
+	} else {
+		delete(req, "disposition")
+	}
 }
 
 // buildStatusOverride creates a statusOverride map from a standalone override.
