@@ -176,6 +176,8 @@ const EXHAUSTIVE_LEVELS = [
   ['hdf-amendments', ['overrides']],
   ['hdf-amendments', ['overrides', 'milestones']],
   ['hdf-amendments', ['overrides', 'cvss']],
+  ['hdf-amendments', ['overrides', 'impact']],
+  ['hdf-amendments', ['overrides', 'appliedBy']],
 ];
 
 // Walk to a level and return its property names, expanding composition.
@@ -291,9 +293,18 @@ test('every property at a level the page covers exhaustively is accounted for', 
     assert.ok(names && names.size > 0, `level ${doc}.${segments.join('.')} resolved to nothing — the level list is stale`);
     for (const name of names) {
       const full = [...segments, name].join('.');
+      // Descending into a property accounts for it only when that level is
+      // itself declared exhaustive. Otherwise a single dotted citation in prose
+      // (runner.operator) would silently excuse the whole object's other
+      // properties if its blanket row were ever dropped.
+      const declared = EXHAUSTIVE_LEVELS.some(
+        ([d, segs]) => d === doc && segs.join('.') === [...segments, name].join('.'),
+      );
+      // An open map's keys are data, so descending into it accounts for it.
+      const open = OPEN_MAPS.has(name);
       const ok = segments.length === 0
-        ? rootAny.has(name) || rootByDoc.get(doc)?.has(name) || descended.has(name)
-        : terminal.has(full) || descended.has(full);
+        ? rootAny.has(name) || rootByDoc.get(doc)?.has(name) || ((declared || open) && descended.has(name))
+        : terminal.has(full) || ((declared || open) && descended.has(full));
       if (!ok) missing.push(`${doc}.${full}`);
     }
   }
