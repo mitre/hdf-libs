@@ -113,8 +113,7 @@
         "gid": "V-215807",
         "gtitle": "SRG-APP-000001-NDM-000200",
         "nist": [
-          "AC-10",
-          "AC-10.1 (ii)"
+          "AC-10"
         ],
         "rid": "SV-215807r1186318_rule",
         "severity": "medium",
@@ -161,8 +160,7 @@
         "gid": "V-215808",
         "gtitle": "SRG-APP-000026-NDM-000208",
         "nist": [
-          "AC-2 (4)",
-          "AC-2 (4).1 (i and ii)"
+          "AC-2 (4)"
         ],
         "rid": "SV-215808r1186320_rule",
         "severity": "medium",
@@ -211,7 +209,7 @@
         "gtitle": "SRG-APP-000038-NDM-000213",
         "nist": [
           "AC-4",
-          "AC-4.1 (iii)"
+          "MA-4 (4) (b) (2)"
         ],
         "rid": "SV-215812r1137875_rule",
         "severity": "medium",
@@ -258,9 +256,7 @@
         "gid": "V-215823",
         "gtitle": "SRG-APP-000142-NDM-000245",
         "nist": [
-          "CM-7",
-          "CM-7 b",
-          "CM-7.1 (iii)"
+          "CM-7 b"
         ],
         "rid": "SV-215823r1043177_rule",
         "severity": "high",
@@ -310,7 +306,8 @@
         "gtitle": "SRG-APP-000171-NDM-000258",
         "nist": [
           "IA-5 (1) (c)",
-          "IA-5 (1).1 (v)"
+          "IA-5 (1) (d)",
+          "SC-28 (3)"
         ],
         "rid": "SV-215832r1015294_rule",
         "severity": "high",
@@ -454,8 +451,8 @@
         "gid": "V-215856",
         "gtitle": "SRG-APP-000516-NDM-000344",
         "nist": [
-          "SC-17",
-          "SC-17.1"
+          "SC-17 a",
+          "SC-17 b"
         ],
         "rid": "SV-215856r991889_rule",
         "severity": "medium",
@@ -502,8 +499,7 @@
         "gid": "V-220140",
         "gtitle": "SRG-APP-000516-NDM-000351",
         "nist": [
-          "CM-6 b",
-          "CM-6.1 (iv)"
+          "CM-6 b"
         ],
         "rid": "SV-220140r961863_rule",
         "severity": "high",

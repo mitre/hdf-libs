@@ -48,8 +48,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230221",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-010000"
           },
@@ -100,8 +99,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230223",
             "gtitle": "SRG-OS-000033-GPOS-00014",
             "nist": [
-              "AC-17 (2)",
-              "AC-17 (2).1"
+              "AC-17 (2)"
             ],
             "stig_id": "RHEL-08-010020"
           },
@@ -152,8 +150,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230231",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010110"
           },
@@ -204,8 +201,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230232",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010120"
           },
@@ -256,8 +252,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230233",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010130"
           },
@@ -308,8 +303,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230234",
             "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
-              "AC-3",
-              "AC-3.1"
+              "AC-3"
             ],
             "stig_id": "RHEL-08-010140"
           },
@@ -360,8 +354,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230236",
             "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
-              "AC-3",
-              "AC-3.1"
+              "AC-3"
             ],
             "stig_id": "RHEL-08-010151"
           },
@@ -412,8 +405,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230241",
             "gtitle": "SRG-OS-000134-GPOS-00068",
             "nist": [
-              "SC-3",
-              "SC-3.1 (ii)"
+              "SC-3"
             ],
             "stig_id": "RHEL-08-010171"
           },
@@ -464,8 +456,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230244",
             "gtitle": "SRG-OS-000163-GPOS-00072",
             "nist": [
-              "SC-10",
-              "SC-10.1 (ii)"
+              "SC-10"
             ],
             "stig_id": "RHEL-08-010200"
           },
@@ -516,8 +507,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230253",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-010292"
           },
@@ -568,7 +558,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230265",
             "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
-              "CM-5 (3)"
+              "CM-14"
             ],
             "stig_id": "RHEL-08-010371"
           },
@@ -619,7 +609,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230266",
             "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
-              "CM-5 (3)"
+              "CM-14"
             ],
             "stig_id": "RHEL-08-010372"
           },
@@ -670,8 +660,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230269",
             "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
-              "SC-4",
-              "SC-4.1"
+              "SC-4"
             ],
             "stig_id": "RHEL-08-010375"
           },
@@ -722,8 +711,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230270",
             "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
-              "SC-4",
-              "SC-4.1"
+              "SC-4"
             ],
             "stig_id": "RHEL-08-010376"
           },
@@ -825,8 +813,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230380",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-020330"
           },

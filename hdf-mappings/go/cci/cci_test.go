@@ -66,20 +66,20 @@ func TestGetCCINistMappings(t *testing.T) {
 		expectContains string
 	}{
 		{
-			// The raw DISA entry lists "CM-6 b" twice; the revision-translation
-			// layer dedups, so 2 distinct references come back.
+			// DISA's Rev 5 reference.
 			name:           "CCI-000366 maps to CM-6 controls",
 			cciID:          "CCI-000366",
 			expectNil:      false,
-			expectLen:      2,
+			expectLen:      1,
 			expectContains: "CM-6 b",
 		},
 		{
+			// DISA gives only a Rev 4 reference; AC-1 is identical at Rev 5.
 			name:           "CCI-000001 maps to AC-1 controls",
 			cciID:          "CCI-000001",
 			expectNil:      false,
-			expectLen:      3,
-			expectContains: "AC-1 a",
+			expectLen:      1,
+			expectContains: "AC-1 a 1",
 		},
 		{
 			name:      "Empty CCI ID returns nil",
