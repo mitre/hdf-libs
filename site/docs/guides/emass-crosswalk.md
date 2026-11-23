@@ -32,9 +32,9 @@ eMASS schema `TestResultsGet`. Write is a batch `POST` to `/api/systems/{systemI
 |-----|-------------|----------|-------|
 | `hdf-system.identifier` | `systemId` | Required | |
 | `baselines[].requirements[].tags.nist` | `control` | Read-only | eMASS derives it; sent implicitly via the assessment procedure. |
-| — | `cci` | Read-only on write | `TestResultsRequestPostBody` carries only `testedBy`, `testDate`, `description`, `complianceStatus` and `assessmentProcedure`. eMASS derives `cci` from the assessment procedure, so HDF's `baselines[].requirements[].tags.cci` cannot reach a test result even though it holds the data. |
+| — | `cci` | Read-only on write | `TestResultsRequestPostBody` carries only `testedBy`, `testDate`, `description`, `complianceStatus` and `assessmentProcedure`. eMASS appears to derive `cci` from the assessment procedure — its artifact schema calls `ccis` the "CCI mapping for Assessment Procedures", though the test-result endpoint does not say so outright — and either way HDF's `baselines[].requirements[].tags.cci` cannot reach a test result even though it holds the data. |
 | — | `assessmentProcedure` | Required | **Operator input.** HDF names the requirement by its own id and by NIST control and CCI, not by an eMASS assessment procedure. |
-| `runner.operator.identifier` | `testedBy` | Required | Partly derivable. `runner.operator` is "the identity of the person or system responsible for executing the test" — a human auditor for a manual assessment, a tool or CI system otherwise. eMASS wants "Last Name, First Name", so an automated run still needs **operator input** to name a responsible person. |
+| `runner.operator.identifier` | `testedBy` | Required | Partly derivable. `runner.operator` is "the identity of the person or system responsible for executing the test" — a human auditor for a manual assessment, a tool or CI system otherwise. eMASS wants "Last Name, First Name", so an automated run still needs **operator input** to name a responsible person. 100-character limit. |
 | `baselines[].requirements[].results[].startTime` | `testDate` | Required | Unix time; HDF is RFC3339 and converts. |
 | `baselines[].requirements[].results[].codeDesc` | `description` | Required | 4000-character limit; HDF prose is unbounded and must be truncated. |
 | `baselines[].requirements[].effectiveStatus` | `complianceStatus` | Required | Mapped, see below. |
@@ -117,7 +117,7 @@ Some eMASS instances require the Risk Analysis fields on a POA&M write: `severit
 
 ### The resourcing block
 
-`PoamConditionalFields` includes a funding model: `personnelResourcesFundedBaseHours`, `personnelResourcesCostCode`, `personnelResourcesUnfundedBaseHours`, `personnelResourcesNonfundingObstacle`, `personnelResourcesNonfundingObstacleOtherReason`, and five `nonPersonnelResources*` equivalents (`FundedAmount`, `CostCode`, `UnfundedAmount`, `NonfundingObstacle`, `NonfundingObstacleOtherReason`). The specification states that at least one must be completed.
+`PoamConditionalFields` includes a funding model: `personnelResourcesFundedBaseHours`, `personnelResourcesCostCode`, `personnelResourcesUnfundedBaseHours`, `personnelResourcesNonfundingObstacle`, `personnelResourcesNonfundingObstacleOtherReason`, and five `nonPersonnelResources*` equivalents (`FundedAmount`, `CostCode`, `UnfundedAmount`, `NonfundingObstacle`, `NonfundingObstacleOtherReason`). On a VA instance the specification states that at least one must be completed.
 
 HDF models none of it. It describes what an assessment found, not who owns remediating it or what that costs. All of these are **operator input**.
 
@@ -175,13 +175,18 @@ These are carried by an evidence package and have nowhere to go. A push records 
 | `generator` | eMASS does not record which converter produced a submission. |
 | `contents[].type`, `.uri`, `.componentRef`, `.checksum`, `.description` | Document references, the whole type. eMASS holds artifacts, not references to HDF documents, and has no per-document checksum. |
 | `externalEvidence[].format`, `.mediaType`, `.formatVersion` | eMASS derives `mimeContentType` from the file extension itself. |
-| `externalEvidence[].metadata` (`recordCount`, `timeRange`, `collector`) | Telemetry-corpus description with no eMASS counterpart. |
+| `externalEvidence[].metadata.recordCount`, `.timeRange`, `.collector` | Telemetry-corpus description with no eMASS counterpart. |
 | `tool`, `runner`, `statistics`, `derivation` | Scan provenance. Only `tool.name` reaches eMASS, inside `sourceIdentifyingVulnerability`, and only `runner.operator` inside `testedBy`. |
 | `baselines[].requirements[].cvss[]`, `.cwe[]`, `.epss`, `.kev` | Vulnerability enrichment. eMASS carries only a single `rawSeverity` string. |
 | `baselines[].requirements[].disposition`, `.effectiveImpact`, `.effectiveChecksum` | Override-resolution results, computed HDF-side and not modeled by eMASS. |
 | `baselines[].requirements[].descriptions[]`, `.evidence[]` | Only a test result's single `description` reaches eMASS, truncated to 4000 characters. |
 | `baselines[].requirements[].results[].message`, `.backtrace[]`, `.resource`, `.runTime`, `.rawSourceRecord` | Per-result detail. eMASS keeps one prose `description` per result. |
 | `components[]` | See below. |
+| `overrides[].expiresAt` | **Required on every override, and eMASS cannot hold it.** It time-boxes the acceptance; eMASS's `extensionDate` is read-only and its POA&M has no expiry a client can set. A push drops the one field saying when the acceptance stops being valid, so the receipt must carry it. |
+| `overrides[].componentRef` | Scopes an override to a single component. eMASS's POA&M is system-wide, so a component-scoped amendment pushed as-is asserts more than the amendment did. `devicesAffected` is the nearest thing and is Navy only. |
+| `overrides[].baselineRef`, `.affectedPackages[]`, `.externalReferences[]`, `.inheritedFrom` | Which baseline and packages an override applies to, and its outbound links. eMASS has no field for any of them. |
+| `overrides[].appliedAt`, `.signature`, `.previousChecksum`, `.evidence[]` | Amendment provenance and the chain linking revisions. eMASS dates a submission itself and holds no signature or prior-version pointer. |
+| `amendmentId`, `approvedBy`, `appliedBy` (amendments root) | Document identity and the approving authority. eMASS records approval through its own workflow, not as submitted data. |
 | `overrides[].milestones[].status`, `.completedBy`, `.title` | As above: eMASS milestones carry description and schedule only. |
 | `effectiveStatus` of `notReviewed` or `error` | Outside eMASS's three-value compliance vocabulary. |
 | `baselines[].maintainer`, `.license`, `.copyright`, `.copyrightEmail`, `.summary`, `.version`, `.name`, `.title`, `.description` | Baseline identity and provenance, largely inherited from the InSpec profile a scan ran. eMASS holds the control catalog itself and records no statement about the baseline that produced a result. |
@@ -193,7 +198,7 @@ These are carried by an evidence package and have nowhere to go. A push records 
 | `baselines[].requirements[].title`, `.code`, `.impact`, `.applicability`, `.controlType`, `.verificationMethod` | Requirement definition. eMASS holds the control catalog itself, so a push names a control rather than describing it. `impact` reaches eMASS only indirectly, as the `severity` band. |
 | `baselines[].requirements[].affectedPackages[]`, `.refs[]`, `.sourceLocation` | Where a finding lives and what it affects. eMASS's nearest field is `PoamOptionalFields.devicesAffected`, a hostname list, which `components[]` supplies instead. |
 | `baselines[].requirements[].statusOverrides[]` | The in-results override record. eMASS has no per-result adjudication trail; what a push sends is the resolved POA&M, and `disposition` above records the resolution. |
-| `baselines[].requirements[].poams[].type`, `.appliedBy`, `.appliedAt`, `.expiresAt`, `.evidence[]`, `.previousChecksum`, `.signature` | HDF's POA&M model beyond `explanation` and `milestones[]`. eMASS's POA&M has no amendment chain, no attached evidence and no signature, and its dates are scheduled and completion dates rather than an applied-at or an expiry. |
+| `baselines[].requirements[].poams[].type`, `.appliedBy`, `.appliedAt`, `.expiresAt`, `.evidence[]`, `.previousChecksum`, `.signature` | HDF's POA&M model beyond `baselines[].requirements[].poams[].explanation` and `.milestones[]`. eMASS's POA&M has no amendment chain, no attached evidence and no signature, and its dates are scheduled and completion dates rather than an applied-at or an expiry. |
 | `baselines[].requirements[].results[].status`, `.exception`, `.resourceId` | Per-result detail. Only the rolled-up `complianceStatus` and one `description` reach a test result. |
 | `timestamp`, `remediation`, `preAmendmentChecksum`, `externalReferences[]`, `extensions`, `id` (results root) | Document-level provenance and passthrough. eMASS dates a submission itself and holds no document identity. |
 | `name`, `description`, `version`, `labels`, `externalReferences[]`, `extensions` (evidence-package root) | Package identity and metadata. eMASS's unit is the system, not the package. |
@@ -203,7 +208,7 @@ These are carried by an evidence package and have nowhere to go. A push records 
 
 HDF's `components[]` describes the hosts, images, cloud accounts and other targets an assessment ran against. eMASS has two surfaces that cover the same ground — `/api/systems/{systemId}/hw-baseline` and `/sw-baseline`, each with full `POST`/`PUT`/`DELETE` and its own required, conditional, optional and read-only groups — plus `PoamOptionalFields.devicesAffected`, "list any affected devices by hostname".
 
-**Mapping the inventory is out of scope for this crosswalk.** Pushing an evidence package means pushing what the assessment found, and a hardware or software baseline is a statement about what the system *is*, maintained on its own cadence. Writing it from a scan's incidental component list would assert an inventory nobody curated. The one exception worth taking is `devicesAffected`, derivable from the components a requirement's results reference — though the specification marks it **Navy only**, so not every instance will accept it. The `personnelResources*` and `NonfundingObstacle` members of the resourcing block are likewise marked VA only.
+**Mapping the inventory is out of scope for this crosswalk.** Pushing an evidence package means pushing what the assessment found, and a hardware or software baseline is a statement about what the system *is*, maintained on its own cadence. Writing it from a scan's incidental component list would assert an inventory nobody curated. The one exception worth taking is `devicesAffected`, derivable from the components a requirement's results reference — though the specification marks it **Navy only**, so not every instance will accept it. Every one of the resourcing block's ten fields is likewise marked VA only.
 
 ## Write surfaces this crosswalk does not map
 

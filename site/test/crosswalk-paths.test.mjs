@@ -132,12 +132,8 @@ function citedPaths(markdown) {
   return { paths: out, bare };
 }
 
-// Array-ness per property name, for the [] marker on a name cited alone. A name
-// that is not an HDF property is skipped: the page also cites enum values, eMASS
-// fields and prose in backticks, indistinguishable by shape. So this catches a
-// wrong marker, not an invented bare name.
-// The no-counterpart tables' first column is HDF by construction, so it takes
-// full resolution rather than the marker-only check a bare name gets elsewhere.
+// The no-counterpart column is HDF by construction, so it takes full resolution
+// rather than the marker-only check a bare name gets elsewhere.
 function noCounterpartPaths(markdown) {
   const out = [];
   let inSection = false;
@@ -159,8 +155,6 @@ function noCounterpartPaths(markdown) {
   return out;
 }
 
-// Property names and enum values. The no-counterpart column mixes paths,
-// parenthesised sub-properties and enum values; a token that is none is invented.
 // Levels the page must cover exhaustively: every property mapped or listed.
 // Declared, not inferred, so adding one is deliberate.
 const EXHAUSTIVE_LEVELS = [
@@ -173,6 +167,9 @@ const EXHAUSTIVE_LEVELS = [
   ['hdf-evidence-package', ['externalEvidence']],
   ['hdf-evidence-package', ['externalEvidence', 'metadata']],
   ['hdf-evidence-package', ['contents']],
+  ['hdf-amendments', []],
+  ['hdf-amendments', ['overrides']],
+  ['hdf-amendments', ['overrides', 'milestones']],
 ];
 
 // Walk to a level and return its property names, expanding composition.
@@ -206,6 +203,7 @@ function propertiesAt(doc, segments) {
   return names;
 }
 
+// Property names and enum values, for tokens that cannot resolve from a root.
 function vocabulary() {
   const names = new Set();
   const values = new Set();
@@ -225,6 +223,8 @@ function vocabulary() {
   return { names, values };
 }
 
+// Array-ness per name, for the [] marker on a name cited alone. An unknown name
+// is skipped: the page also cites enum values and eMASS fields in backticks.
 function arrayness() {
   const seen = new Map();
   for (const root of Object.values(docs)) {
@@ -277,7 +277,7 @@ test('every property at a level the page covers exhaustively is accounted for', 
       // A document root's properties are cited as bare names; a nested level's
       // must appear as the full path, so the citation is pinned to this level.
       const full = [...segments, name].join('.');
-      const ok = citedFull.has(full) || citedBare.has(name);
+      const ok = segments.length === 0 ? citedBare.has(name) || citedFull.has(full) : citedFull.has(full);
       if (!ok) missing.push(`${doc}.${[...segments, name].join('.')}`);
     }
   }
