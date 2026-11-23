@@ -31,6 +31,8 @@ type FingerprintSpec struct {
 	InputFamily registry.InputFamily
 	// OutputType is the expected output type.
 	OutputType registry.OutputType
+	// Source is the convert-registry source the fingerprint names, if any.
+	Source string
 	// Positive contains inputs that should match with the given confidence.
 	Positive []DetectionCase
 	// Negative contains inputs that should not match (confidence must be 0.0).
@@ -50,6 +52,7 @@ func RunFingerprintTests(t *testing.T, spec FingerprintSpec) {
 		assert.Equal(t, spec.Direction, fp.Direction)
 		assert.Equal(t, spec.InputFamily, fp.InputFamily)
 		assert.Equal(t, spec.OutputType, fp.OutputType)
+		assert.Equal(t, spec.Source, fp.Source)
 	})
 
 	for _, tc := range spec.Positive {

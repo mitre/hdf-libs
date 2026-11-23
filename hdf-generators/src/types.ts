@@ -6,7 +6,7 @@ export interface GeneratorOptions {
   singleFile?: boolean;
   /** Override baseline metadata in the generated inspec.yml. */
   metadata?: ProfileMetadata;
-  /** InSpec version constraint for inspec.yml. Default: '~>6.0'. */
+  /** InSpec version constraint for inspec.yml. Default: '>= 7.0'. */
   inspecVersion?: string;
   /**
    * Identifier each control is keyed on: 'rule' (default), 'group' (tags.gid)

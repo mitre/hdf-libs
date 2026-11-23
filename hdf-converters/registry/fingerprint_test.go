@@ -406,3 +406,11 @@ func TestSourceNameFromFingerprintID(t *testing.T) {
 		}
 	}
 }
+
+// A fingerprint that names its source converter resolves there; one that does
+// not falls back to the ID rule. The XCCDF/ARF fingerprint needs the former:
+// its ID derives to the strict results converter, which rejects benchmarks.
+func TestSourceNameFor(t *testing.T) {
+	assert.Equal(t, "nessus", SourceNameFor(ConverterFingerprint{ID: "nessus-to-hdf"}))
+	assert.Equal(t, "xccdf", SourceNameFor(ConverterFingerprint{ID: "xccdf-results-to-hdf", Source: "xccdf"}))
+}

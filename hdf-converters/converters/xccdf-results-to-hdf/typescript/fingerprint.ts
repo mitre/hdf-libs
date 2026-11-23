@@ -16,6 +16,7 @@ export const xccdfFingerprint: ConverterFingerprint = {
   direction: 'ingest',
   inputFamily: 'xml',
   outputType: 'results',
+  source: 'xccdf',
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'string') return 0;
     const root = extractXmlRootElement(input);

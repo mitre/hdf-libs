@@ -21,6 +21,13 @@ export interface ConverterFingerprint {
   inputFamily: InputFamily;
   /** What the converter produces */
   outputType: OutputType;
+  /**
+   * Convert-registry source this fingerprint resolves to when the id's
+   * "-to-" prefix would pick the wrong converter. The XCCDF/ARF fingerprint
+   * matches benchmarks, results and ARF alike; only the "xccdf" converter reads
+   * the whole document to tell them apart. Mirrors the Go field.
+   */
+  source?: string;
   /** Structural fingerprint. Returns confidence 0.0-1.0. */
   fingerprint: (input: unknown) => number;
   /**

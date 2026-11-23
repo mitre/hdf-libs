@@ -1127,3 +1127,150 @@ func onlyCvssEntry(t *testing.T, result *hdf.HDFResults, pluginID string) hdf.Cv
 	require.Len(t, req.Cvss, 1)
 	return req.Cvss[0]
 }
+
+// nonFiniteTemporalCase and nonFiniteEpssCase are rows of the shared table both
+// language suites read, so Go and TypeScript cannot drift on the same input.
+type nonFiniteTemporalCase struct {
+	Name          string   `json:"name"`
+	Field         string   `json:"field"`
+	Raw           string   `json:"raw"`
+	ExpectPresent bool     `json:"expectPresent"`
+	ExpectScore   *float64 `json:"expectScore"`
+}
+
+type nonFiniteEpssCase struct {
+	Name             string   `json:"name"`
+	Score            string   `json:"score"`
+	Percentile       string   `json:"percentile"`
+	ExpectEntry      bool     `json:"expectEntry"`
+	ExpectScore      *float64 `json:"expectScore"`
+	ExpectPercentile *float64 `json:"expectPercentile"`
+}
+
+func loadNonFiniteCases(t *testing.T) (temporal []nonFiniteTemporalCase, epss []nonFiniteEpssCase) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "nessus-non-finite-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		TemporalScore []nonFiniteTemporalCase `json:"temporalScore"`
+		Epss          []nonFiniteEpssCase     `json:"epss"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.TemporalScore)
+	require.NotEmpty(t, table.Epss)
+	return table.TemporalScore, table.Epss
+}
+
+// syntheticNessusWithRawTemporal renders one ReportItem whose named temporal
+// field carries the given raw text, beside a base vector of its own version.
+func syntheticNessusWithRawTemporal(field, raw string) string {
+	vector := "        <cvss_vector>AV:N/AC:L/Au:N/C:P/I:P/A:P</cvss_vector>\n"
+	if field == "cvss3_temporal_score" {
+		vector = "        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</cvss3_vector>\n"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999995" pluginName="Synthetic Temporal" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99995</cvss_score_source>
+%s        <%s>%s</%s>
+        <description>Synthetic finding carrying a temporal score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, vector, field, raw, field)
+}
+
+// syntheticNessusWithRawEpss renders one ReportItem carrying the given raw EPSS
+// members; an empty string omits the element, as a real scan would.
+func syntheticNessusWithRawEpss(score, percentile string) string {
+	el := ""
+	if score != "" {
+		el += fmt.Sprintf("        <epss_score>%s</epss_score>\n", score)
+	}
+	if percentile != "" {
+		el += fmt.Sprintf("        <epss_percentile>%s</epss_percentile>\n", percentile)
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999994" pluginName="Synthetic EPSS" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99994</cvss_score_source>
+        <cvss_base_score>5.0</cvss_base_score>
+%s        <description>Synthetic finding carrying EPSS members.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, el)
+}
+
+// A temporal score the scan did not report as a finite number is absent, not a
+// substitute: Go wrote NaN and failed the document's own serialization, while
+// TypeScript wrote 0, which is a real threat score.
+func TestConvertNessusToHDF_NonFiniteTemporalScoreIsOmitted(t *testing.T) {
+	temporal, _ := loadNonFiniteCases(t)
+	for _, c := range temporal {
+		t.Run(c.Name, func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawTemporal(c.Field, c.Raw)), converterVersion)
+			require.NoError(t, err)
+			_, err = json.Marshal(result)
+			require.NoError(t, err, "the document must serialize")
+
+			entry := onlyCvssEntry(t, result, "999995")
+			if !c.ExpectPresent {
+				assert.Nil(t, entry.ThreatScore, "a score the scan did not report as finite must be absent")
+				assert.Nil(t, entry.ComputedScore)
+				assert.Nil(t, entry.ComputedSeverity)
+				return
+			}
+			require.NotNil(t, c.ExpectScore)
+			require.NotNil(t, entry.ThreatScore)
+			assert.InDelta(t, *c.ExpectScore, *entry.ThreatScore, 1e-9)
+			require.NotNil(t, entry.ComputedScore)
+			assert.InDelta(t, *c.ExpectScore, *entry.ComputedScore, 1e-9)
+			assert.NotNil(t, entry.ComputedSeverity)
+		})
+	}
+}
+
+// Epss requires score, percentile and date together, so a member the scan did
+// not report as a finite number costs the whole entry rather than taking a zero.
+func TestConvertNessusToHDF_NonFiniteEpssOmitsTheEntry(t *testing.T) {
+	_, epss := loadNonFiniteCases(t)
+	for _, c := range epss {
+		t.Run(c.Name, func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawEpss(c.Score, c.Percentile)), converterVersion)
+			require.NoError(t, err)
+			_, err = json.Marshal(result)
+			require.NoError(t, err, "the document must serialize")
+
+			req := findReqAcrossBaselines(result, "999994")
+			require.NotNil(t, req)
+			if !c.ExpectEntry {
+				assert.Nil(t, req.Epss, "a reported member that is not a finite number must cost the entry")
+				return
+			}
+			require.NotNil(t, req.Epss)
+			require.NotNil(t, c.ExpectScore)
+			assert.InDelta(t, *c.ExpectScore, req.Epss.Score, 1e-9)
+			require.NotNil(t, c.ExpectPercentile)
+			assert.InDelta(t, *c.ExpectPercentile, req.Epss.Percentile, 1e-9)
+		})
+	}
+}

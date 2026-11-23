@@ -1,0 +1,222 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkDate": "23 Nov 2022",
+      "benchmarkRelease": "3",
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2022-10-06",
+      "conventionsVersion": "1.10.0",
+      "generatorVersion": "3.4.0.34222",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": ""
+        }
+      ],
+      "profiles": [
+        {
+          "id": "MAC-1_Classified",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "I - Mission Critical Classified"
+        },
+        {
+          "id": "MAC-1_Public",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "I - Mission Critical Public"
+        },
+        {
+          "id": "MAC-1_Sensitive",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "I - Mission Critical Sensitive"
+        },
+        {
+          "id": "MAC-2_Classified",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "II - Mission Support Classified"
+        },
+        {
+          "id": "MAC-2_Public",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "II - Mission Support Public"
+        },
+        {
+          "id": "MAC-2_Sensitive",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "II - Mission Support Sensitive"
+        },
+        {
+          "id": "MAC-3_Classified",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "III - Administrative Classified"
+        },
+        {
+          "id": "MAC-3_Public",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "III - Administrative Public"
+        },
+        {
+          "id": "MAC-3_Sensitive",
+          "selectedRuleIds": [
+            "SV-224314",
+            "SV-224315"
+          ],
+          "title": "III - Administrative Sensitive"
+        }
+      ],
+      "publisher": "DISA",
+      "releaseInfo": "Release: 3 Benchmark Date: 23 Nov 2022",
+      "source": "STIG.DOD.MIL"
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "V-224314",
+      "requirements": [
+        "SV-224314"
+      ],
+      "title": "SRG-OS-000259"
+    },
+    {
+      "id": "V-224315",
+      "requirements": [
+        "SV-224315"
+      ],
+      "title": "SRG-OS-000104"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "15142a60b007b34e5ee24dda136456d4a979e3ca69f9de0824e5be349c3f7827"
+  },
+  "name": "zos-ibm-health-checker-for-acf2",
+  "requirements": [
+    {
+      "controlType": "operational",
+      "descriptions": [
+        {
+          "data": "IBM Health Checker STC data sets have the ability to use privileged functions and/or have access to sensitive data. Failure to properly restrict access to these data sets could result in violating the integrity of the base product which could result in compromising the operating system or sensitive data.",
+          "label": "default"
+        },
+        {
+          "data": "Refer to the following report produced by the Data Set and Resource Data Collection:\n\n- SENSITVE.RPT(HCKSTC)\n\nAutomated Analysis\nRefer to the following report produced by the Data Set and Resource Data Collection:\n\n- PDI(ZHCK0001)\n\nVerify that the accesses to the IBM Health Checker STC data sets are properly restricted. If the following guidance is true, this is not a finding.\n\n___ The ACF2 data set rules for the data sets restricts READ access to auditors.\n\n___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to systems programming personnel.\n\n___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to the IBM Health Checker's STC(s) and/or batch user(s).",
+          "label": "check"
+        },
+        {
+          "data": "The ISSO will ensure that WRITE and/or greater access to IBM Health Checker STC data sets is limited to systems programmers and/or IBM Health Checker's STC(s) and/or batch user(s) only. READ access can be given to auditors.\n\nThe installing systems programmer will identify and document the product data sets and categorize them according to who will have WRITE and/or greater access and if required that all WRITE and/or greater access is logged. The installing systems programmer will identify if any additional groups have WRITE and/or greater access for specific data sets, and once documented will work with the ISSO to ensure they are properly restricted to the ACP (Access Control Program) active on the system. The dataset to be protected can be found in the HZSPROC STC member in HZSPDATA DD statement.\n\nData sets to be protected will be:\nSYS3.*.HZSPDATA\n\nThe following commands are provided as a sample for implementing data set controls:\n\n$KEY(S3A)\n$PREFIX(SYS3)\nMVA.HZSPDATA UID(syspaudt) R(A) W(A) A(A) E(A)\nMVA.HZSPDATA UID(Health Checker STCs) R(A) W(A) A(A) E(A)\nMVA.HZSPDATA UID(audtaudt) R(A) E(A)",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-224314",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "4123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-001499"
+        ],
+        "check_id": "C-25991r868163_chk",
+        "documentable": false,
+        "fix_id": "F-25979r868164_fix",
+        "gid": "V-224314",
+        "gtitle": "SRG-OS-000259",
+        "nist": [
+          "CM-5 (6)"
+        ],
+        "rid": "SV-224314r868165_rule",
+        "severity": "medium",
+        "stig_id": "ZHCKA001"
+      },
+      "title": "IBM Health Checker STC data sets will be properly protected."
+    },
+    {
+      "controlType": "technical",
+      "descriptions": [
+        {
+          "data": "IBM Health Checker requires a started task that will be restricted to certain resources, datasets and other system functions. By defining the started task as a userid to the system ACP, It allows the ACP to control the access and authorized users that require these capabilities. Failure to properly control these capabilities, could compromise of the operating system environment, ACP, and customer data.",
+          "label": "default"
+        },
+        {
+          "data": "Refer to the following report produced by the ACF2 Data Collection:\n\n-\tACF2CMDS.RPT(ATTSTC)\n\nVerify that the logonid(s) for the IBM Health Checker started task(s) is (are) properly defined.  If the following attributes are defined, this is not a finding.\n\nSTC",
+          "label": "check"
+        },
+        {
+          "data": "The IAO working with the systems programmer will ensure the IBM Health Checker Started Task(s) is properly identified and/or defined to the System ACP. \n\nIf the product requires a Started Task, verify that it is properly defined to the System ACP with the proper attributes.\n\nMost installation manuals will indicate how the Started Task is identified and any additional attributes that must be specified.\n\nThe following commands are provided as a sample for defining Started Task(s):\n\nSET LID\ninsert HZSPROC stc name('STC, IBM Health Checker')",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-224315",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": [
+            {
+              "identifier": "4123",
+              "publisher": "DISA",
+              "type": "DPMS Target"
+            }
+          ]
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000764"
+        ],
+        "check_id": "C-25992r520319_chk",
+        "documentable": false,
+        "fix_id": "F-25980r520320_fix",
+        "gid": "V-224315",
+        "gtitle": "SRG-OS-000104",
+        "nist": [
+          "IA-2"
+        ],
+        "rid": "SV-224315r520321_rule",
+        "severity": "medium",
+        "stig_id": "ZHCKA030"
+      },
+      "title": "IBM Health Checker Started Task name will be properly identified and/or defined to the system ACP."
+    }
+  ],
+  "status": "loaded",
+  "summary": "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DoD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.",
+  "title": "z/OS IBM Health Checker for ACF2 Security Technical Implementation Guide",
+  "version": "6"
+}

@@ -12,7 +12,8 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT="$script_dir/check-go-mod-tidy.sh"
 
-work="$(mktemp -d)"
+# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
+work="$(mktemp -d "${TMPDIR:-/tmp}/check-go-mod-tidy.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 export GOPROXY=off
 
