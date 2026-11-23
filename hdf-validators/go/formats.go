@@ -2,6 +2,7 @@ package hdfvalidators
 
 import (
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -212,10 +213,11 @@ var (
 	rxURIRef    = regexp.MustCompile(`\A(?:` + pURI + `|` + pRelativeRef + `)\z`)
 	rxScheme    = regexp.MustCompile(`\A` + pScheme + `\z`)
 	rxIPvFuture = regexp.MustCompile(`\A[vV][0-9A-Fa-f]+\.[` + cUnreserved + cSubDelims + `:]+\z`)
-	rxIPv6Group = regexp.MustCompile(`\A[0-9A-Fa-f]{1,4}\z`)
-	rxIPv4      = regexp.MustCompile(
-		`\A(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}` +
-			`(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\z`)
+	// RFC 4291 §2.2 writes an IPv6address in HEXDIG, ':' and '.' alone. Both platform
+	// parsers are looser in opposite directions — netip takes an RFC 6874 zone identifier,
+	// the WHATWG URL parser removes a tab, CR or LF from anywhere in its input — so each
+	// refuses the character before parsing, and the shared table pins both halves.
+	rxNotIPv6Char = regexp.MustCompile(`[^0-9A-Fa-f:.]`)
 )
 
 // IsURI reports whether s satisfies RFC 3986 §3's URI production, so a caller can refuse
@@ -253,8 +255,9 @@ func validIPLiteral(s string) bool {
 		return true
 	}
 	end := strings.Index(authority, "]")
-	// Unreachable while the pattern requires the closing bracket; kept because a looser
-	// pattern would make the slice below panic.
+	// REACHED, though the pattern requires a closing bracket: the pattern admits '/', '?'
+	// and '#' between the brackets while §3.2 ends the authority at the first of them, so
+	// the bracket can fall outside it and the slice below would panic. Pinned by the table.
 	if end < 0 {
 		return false
 	}
@@ -265,46 +268,13 @@ func validIPLiteral(s string) bool {
 	return validIPv6(body)
 }
 
-// validIPv6 implements RFC 4291 §2.2: eight 16-bit groups, at most one `::` run
-// standing for one or more zero groups, and an optional dotted quad standing for
-// the last two. The TypeScript peer counts the same way, so the two cannot drift.
+// validIPv6 delegates RFC 4291 §2.2 to net/netip, which counts the groups and reads a
+// trailing dotted quad already. Is6 is the guard netip needs: it parses a bare "1.2.3.4"
+// as an address, and §3.2.2 writes an IPv4 host without the brackets.
 func validIPv6(s string) bool {
-	halves := strings.SplitN(s, "::", 3)
-	if len(halves) > 2 {
+	if rxNotIPv6Char.MatchString(s) {
 		return false
 	}
-	total := 0
-	for i, half := range halves {
-		n, ok := ipv6GroupCount(half, i == len(halves)-1)
-		if !ok {
-			return false
-		}
-		total += n
-	}
-	if len(halves) == 2 {
-		return total <= 7
-	}
-	return total == 8
-}
-
-// ipv6GroupCount counts the groups on one side of the elision, reporting false on a
-// malformed one; a dotted quad counts for two. ls32 is the address's LAST 32 bits, so it
-// is accepted only in the trailing half — counting it on the left made 1.2.3.4::1 valid.
-func ipv6GroupCount(part string, trailing bool) (int, bool) {
-	if part == "" {
-		return 0, true
-	}
-	groups := strings.Split(part, ":")
-	count := 0
-	for i, g := range groups {
-		if trailing && i == len(groups)-1 && rxIPv4.MatchString(g) {
-			count += 2
-			continue
-		}
-		if !rxIPv6Group.MatchString(g) {
-			return 0, false
-		}
-		count++
-	}
-	return count, true
+	a, err := netip.ParseAddr(s)
+	return err == nil && a.Is6()
 }

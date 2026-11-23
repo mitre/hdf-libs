@@ -41,9 +41,11 @@ const RX_URI = new RegExp(`^(?:${URI})$`);
 const RX_URI_REFERENCE = new RegExp(`^(?:${URI}|${RELATIVE_REF})$`);
 const RX_SCHEME = new RegExp(`^${SCHEME}$`);
 const RX_IPV_FUTURE = new RegExp(`^[vV][0-9A-Fa-f]+\\.[${UNRESERVED}${SUB_DELIMS}:]+$`);
-const RX_IPV6_GROUP = /^[0-9A-Fa-f]{1,4}$/;
-const RX_IPV4 =
-  /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
+/** RFC 4291 §2.2 writes an IPv6address in HEXDIG, ':' and '.' alone. Both platform
+ * parsers are looser in opposite directions — the URL host parser removes a tab, CR or
+ * LF from anywhere in its input, Go's netip takes an RFC 6874 zone identifier — so each
+ * refuses the character before parsing, and the shared table pins both halves. */
+const RX_NOT_IPV6_CHAR = /[^0-9A-Fa-f:.]/;
 
 /** Whether value satisfies RFC 3986 §3's URI production. */
 export function isUri(value: string): boolean {
@@ -77,8 +79,10 @@ function validIpLiteral(value: string): boolean {
   }
   if (!authority.startsWith('[')) return true;
   const end = authority.indexOf(']');
-  // Unreachable while the pattern requires the closing bracket; kept so a looser
-  // pattern cannot turn this into a slice of the wrong extent.
+  // REACHED, though the pattern requires a closing bracket: the pattern admits '/', '?'
+  // and '#' between the brackets while §3.2 ends the authority at the first of them, so
+  // the bracket can fall outside it and the slice would read a shortened host as a valid
+  // one — '[::1'.slice(1, -1) is '::'. Go's peer would panic on the same value.
   if (end < 0) return false;
   const body = authority.slice(1, end);
   if (body.startsWith('v') || body.startsWith('V')) return RX_IPV_FUTURE.test(body);
@@ -86,36 +90,15 @@ function validIpLiteral(value: string): boolean {
 }
 
 /**
- * RFC 4291 §2.2: eight 16-bit groups, at most one `::` run standing for one or more
- * zero groups, and an optional dotted quad standing for the last two. The Go peer
- * counts the same way, so the two cannot drift.
+ * RFC 4291 §2.2, delegated to the URL host parser, which refuses a bracketed host that
+ * is not an IPv6address — including the bare dotted quad Go's netip accepts as one.
  */
 function validIpv6(value: string): boolean {
-  const halves = value.split('::');
-  if (halves.length > 2) return false;
-  let total = 0;
-  for (const [i, half] of halves.entries()) {
-    const count = ipv6GroupCount(half, i === halves.length - 1);
-    if (count === undefined) return false;
-    total += count;
+  if (RX_NOT_IPV6_CHAR.test(value)) return false;
+  try {
+    new URL(`http://[${value}]/`);
+    return true;
+  } catch {
+    return false;
   }
-  return halves.length === 2 ? total <= 7 : total === 8;
-}
-
-/** Groups on one side of the elision, or undefined if one is malformed; a dotted quad
- * counts for two. ls32 is the address's LAST 32 bits, so it is accepted only in the
- * trailing half — counting it on the left made 1.2.3.4::1 valid. */
-function ipv6GroupCount(part: string, trailing: boolean): number | undefined {
-  if (part === '') return 0;
-  const groups = part.split(':');
-  let count = 0;
-  for (const [i, group] of groups.entries()) {
-    if (trailing && i === groups.length - 1 && RX_IPV4.test(group)) {
-      count += 2;
-      continue;
-    }
-    if (!RX_IPV6_GROUP.test(group)) return undefined;
-    count += 1;
-  }
-  return count;
 }

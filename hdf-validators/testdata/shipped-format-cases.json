@@ -189,7 +189,7 @@
       "field": "systemRef",
       "value": "//[::ffff:192.0.2.1]/p",
       "valid": true,
-      "why": "RFC 4291 §2.2 form 3: a trailing dotted quad stands for the last two groups, which both languages must count the same way or they drift"
+      "why": "RFC 4291 §2.2 form 3: a trailing dotted quad stands for the last two groups. Each language delegates the address to its own platform parser, so this row is what holds the two to one verdict"
     },
     {
       "name": "ipvfuture literal host",
@@ -332,11 +332,88 @@
       "why": "RFC 4291 §2.2: '::' may appear once, since two runs of zeros leave the length ambiguous"
     },
     {
+      "name": "tab inside an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[::\t1]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2: an IPv6address is HEXDIG, ':' and '.' alone. The WHATWG URL host parser removes a tab from anywhere in its input and would read this as '::1', so the character has to be refused before any parser sees it"
+    },
+    {
+      "name": "carriage return inside an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[::\r1]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2, and the same removal the WHATWG URL parser applies to CR"
+    },
+    {
+      "name": "line feed inside an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[::\n1]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2, and the same removal the WHATWG URL parser applies to LF"
+    },
+    {
+      "name": "zone identifier in an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[fe80::1%eth0]/p",
+      "valid": false,
+      "why": "§3.2.2's IP-literal is an IPv6address or an IPvFuture and admits no zone; RFC 6874 adds one, which this dialect does not take. Both platform parsers accept a zone, so it is refused by the character rule"
+    },
+    {
+      "name": "percent-encoded zone identifier in an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[fe80::1%25eth0]/p",
+      "valid": false,
+      "why": "the RFC 6874 spelling of the row above, refused for the same reason"
+    },
+    {
+      "name": "bare dotted quad in brackets",
+      "field": "systemRef",
+      "value": "//[1.2.3.4]/p",
+      "valid": false,
+      "why": "§3.2.2: the brackets carry an IPv6address, and an IPv4 host is written without them. Go's netip parses it as a valid address, so an IPv6 one has to be required explicitly"
+    },
+    {
+      "name": "leading zeros in an ipv6 literal's dotted quad",
+      "field": "systemRef",
+      "value": "//[::ffff:192.168.000.1]/p",
+      "valid": false,
+      "why": "RFC 4291 §2.2 reads the trailing quad as IPv4address, whose dec-octet (RFC 3986 §3.2.2) has no leading zeros"
+    },
+    {
+      "name": "ipv6 literal host in an absolute uri",
+      "field": "refUri",
+      "value": "http://[::1]/p",
+      "valid": true,
+      "why": "§3.2.2 reached through a scheme, which is the path an implementation takes when it steps past the scheme to find the authority"
+    },
+    {
+      "name": "zone identifier in an absolute uri's ipv6 literal",
+      "field": "refUri",
+      "value": "http://[fe80::1%eth0]/p",
+      "valid": false,
+      "why": "the same refusal as the uri-reference row, asserted on the uri production too"
+    },
+    {
       "name": "empty ip literal",
       "field": "systemRef",
       "value": "//[]/p",
       "valid": false,
       "why": "§3.2.2: the brackets must carry something"
+    },
+    {
+      "name": "path separator inside an ipv6 literal",
+      "field": "systemRef",
+      "value": "//[::1/]/p",
+      "valid": false,
+      "why": "§3.2.2: the IP-literal's extent ends at the ']', while §3.2 ends the authority at the first '/', '?' or '#' — so a separator inside the brackets leaves the authority with no closing bracket and no host at all"
+    },
+    {
+      "name": "query separator inside an absolute uri's ipv6 literal",
+      "field": "refUri",
+      "value": "http://[::1?]/p",
+      "valid": false,
+      "why": "§3.2.2: the IP-literal's extent ends at the ']', while §3.2 ends the authority at the first '/', '?' or '#' — so a separator inside the brackets leaves the authority with no closing bracket and no host at all, reached here through a scheme"
     },
     {
       "name": "brackets around something that is not an address",
