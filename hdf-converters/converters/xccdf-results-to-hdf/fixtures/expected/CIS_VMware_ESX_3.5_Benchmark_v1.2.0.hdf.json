@@ -218,7 +218,7 @@
     {
       "descriptions": [
         {
-          "data": "Services enabled at ESX host startup should be limited to the vendor’s default services\n                and any authorized exceptions.Any additional services running on an ESX host beyond, added \n                or omitted, to the vendor’s default configuration, could diminish host performance or introduce an attack vector.\n                The assessor should also run the command chkconfig --list | grep on  and review all services schedule to start\n                at boot, particularly any services not on the benchmark recommended list of 25 for approval testing and agreement \n                with the organization's change control documentation\n            ",
+          "data": "Services enabled at ESX host startup should be limited to the vendor’s default services\n                and any authorized exceptions.\nAny additional services running on an ESX host beyond, added \n                or omitted, to the vendor’s default configuration, could diminish host performance or introduce an attack vector.\n                The assessor should also run the command chkconfig --list | grep on  and review all services schedule to start\n                at boot, particularly any services not on the benchmark recommended list of 25 for approval testing and agreement \n                with the organization's change control documentation\n            ",
           "label": "default"
         }
       ],

@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared table for whitespace-keeping tag removal, read by go/strings_test.go (StripHTMLTags) and test/string.test.ts (stripHtmlTags) so neither language can drift. Each <...> span is removed and nothing is inserted in its place, which leaves an element's text content; every other character, whitespace included, passes through. This is the prose-carrying counterpart of StripHTML/stripHtml, which collapses whitespace runs and trims.",
+  "$comment": "Shared table for whitespace-keeping tag removal, read by go/strings_test.go (StripHTMLTags) and test/string.test.ts (stripHtmlTags) so neither language can drift. Each <...> span is removed and nothing is inserted in its place, which leaves an element's text content, except that a <br> (ASCII letters, optional namespace prefix) with no line break on either side of it in the source, across spaces or tabs, becomes a line break; every other character, whitespace included, passes through. This is the prose-carrying counterpart of StripHTML/stripHtml, which collapses whitespace runs and trims.",
   "cases": [
     {"input": "", "stripped": "", "why": "empty stays empty"},
     {"input": "line vty 0 1\n access-class MANAGEMENT_NET in\n transport input ssh", "stripped": "line vty 0 1\n access-class MANAGEMENT_NET in\n transport input ssh", "why": "line breaks and the indentation after them are data"},
@@ -9,9 +9,20 @@
     {"input": "first\r\nsecond", "stripped": "first\r\nsecond", "why": "CRLF passes through unchanged"},
     {"input": "a\tb c", "stripped": "a\tb c", "why": "tab and NBSP pass through unchanged"},
     {"input": "The <xhtml:code>x</xhtml:code> package", "stripped": "The x package", "why": "an inline element leaves its text and the surrounding spaces"},
-    {"input": "one<br/>two", "stripped": "onetwo", "why": "a tag span becomes nothing, not a space"},
+    {"input": "one<span/>two", "stripped": "onetwo", "why": "a tag span becomes nothing, not a space"},
     {"input": "<p>\n  indented\n</p>", "stripped": "\n  indented\n", "why": "whitespace between tags is kept"},
     {"input": "x < y > z", "stripped": "x  z", "why": "a span runs from < to the first following >, as in StripHTML"},
-    {"input": "a < b", "stripped": "a < b", "why": "a < with no closing > stays literal"}
+    {"input": "a < b", "stripped": "a < b", "why": "a < with no closing > stays literal"},
+    {"input": "exceptions.<xhtml:br/>Any", "stripped": "exceptions.\nAny", "why": "an inline XHTML <br/> is a line break (CIS ESX 3.5)"},
+    {"input": "a<br>b", "stripped": "a\nb", "why": "an inline <br>"},
+    {"input": "a<BR />b", "stripped": "a\nb", "why": "case and a space before the slash"},
+    {"input": "a.<xhtml:br/>\n   The", "stripped": "a.\n   The", "why": "a <br/> the source already breaks after adds nothing"},
+    {"input": "GO   <br/>   \r\nNEXT", "stripped": "GO      \r\nNEXT", "why": "spaces before the source's CRLF still count as the line ending there"},
+    {"input": "compromised.\n      <xhtml:br/>These", "stripped": "compromised.\n      These", "why": "a <br> the source already breaks before adds nothing (CIS ESX 3.5)"},
+    {"input": "a\r   <br>b", "stripped": "a\r   b", "why": "a lone CR before counts as the line ending too"},
+    {"input": "end<br/>", "stripped": "end\n", "why": "a <br> at the end is a line break"},
+    {"input": "<bridge>x</bridge>", "stripped": "x", "why": "a tag that only starts with br is not a line break"},
+    {"input": "a<Kx:br>b", "stripped": "ab", "why": "the <br> match is ASCII-only: a Kelvin-sign prefix is not a br (Go's (?i) would fold it)"},
+    {"input": "a<ſvg:br/>b", "stripped": "ab", "why": "the <br> match is ASCII-only: a long-s prefix is not a br"}
   ]
 }
