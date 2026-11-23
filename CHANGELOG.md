@@ -63,6 +63,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`nessus-to-hdf` omits a score the scan did not report as a finite number, in Go and TypeScript.** Nessus reports every score as text and both languages' float parsers accept the IEEE spellings, so a `NaN` or an infinity in `cvss_temporal_score` reached the document: Go wrote it and the CLI's encoder then refused the whole conversion, while TypeScript substituted `0`, which is a real threat score. The threat score, computed score and computed severity are now absent instead, and an EPSS entry whose reported score or percentile is not a finite number is omitted whole, because the schema requires its members together. One shared case table holds both languages to it.
+
 - **STIX enrichment no longer treats an empty reference or a vulnerability without an `id` as an exploitation link.** Both languages indexed a vulnerability that has no `id` under the empty string; TypeScript then matched an empty `sighting_of_ref`, `target_ref` or `object_refs` entry to it and marked the vulnerability exploited. Go and TypeScript now index only vulnerabilities with an `id` and ignore empty references. A risk adjustment whose exploitation source has no `id` names it by its type (for example `STIX sighting object`) instead of empty parentheses.
 
 - **`hdf convert` no longer stamps `effectiveChecksum` onto baseline definitions.** The stamping is for requirements in results documents; on a baseline it produced a field the baseline schema does not declare.

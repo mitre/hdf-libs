@@ -1,0 +1,22 @@
+{
+  "_comment": "Nessus reports every score as text, and both languages' float parsers accept the IEEE spellings strconv.ParseFloat and Number.parseFloat allow, so a .nessus file can carry NaN or an infinity in a numeric field. The schema decides what absent can mean: Cvss requires only version, so a threat score is omitted; Epss requires score, percentile and date together, so an entry whose reported member is not a finite number is omitted whole rather than given a substitute. Each case names the raw text as the file would carry it; both suites build their own minimal scan around it. The finite rows are the controls: they pin that the ordinary path still fills the field.",
+  "temporalScore": [
+    { "name": "v2 NaN", "field": "cvss_temporal_score", "raw": "NaN", "expectPresent": false },
+    { "name": "v2 Inf", "field": "cvss_temporal_score", "raw": "Inf", "expectPresent": false },
+    { "name": "v2 Infinity", "field": "cvss_temporal_score", "raw": "Infinity", "expectPresent": false },
+    { "name": "v2 negative Inf", "field": "cvss_temporal_score", "raw": "-Inf", "expectPresent": false },
+    { "name": "v2 unparseable", "field": "cvss_temporal_score", "raw": "unknown", "expectPresent": false },
+    { "name": "v2 finite control", "field": "cvss_temporal_score", "raw": "6.1", "expectPresent": true, "expectScore": 6.1 },
+    { "name": "v3 NaN", "field": "cvss3_temporal_score", "raw": "NaN", "expectPresent": false },
+    { "name": "v3 finite control", "field": "cvss3_temporal_score", "raw": "7.2", "expectPresent": true, "expectScore": 7.2 }
+  ],
+  "epss": [
+    { "name": "score NaN", "score": "NaN", "percentile": "0.42", "expectEntry": false },
+    { "name": "score Infinity", "score": "Infinity", "percentile": "0.42", "expectEntry": false },
+    { "name": "percentile Inf", "score": "0.004", "percentile": "Inf", "expectEntry": false },
+    { "name": "percentile unparseable", "score": "0.004", "percentile": "n/a", "expectEntry": false },
+    { "name": "both absent", "score": "", "percentile": "", "expectEntry": false },
+    { "name": "score only, finite", "score": "0.004", "percentile": "", "expectEntry": true, "expectScore": 0.004, "expectPercentile": 0 },
+    { "name": "both finite", "score": "0.004", "percentile": "0.42", "expectEntry": true, "expectScore": 0.004, "expectPercentile": 0.42 }
+  ]
+}

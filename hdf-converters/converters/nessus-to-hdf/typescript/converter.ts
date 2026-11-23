@@ -367,13 +367,13 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
     baseVector = item.cvss3_vector || undefined;
     baseScore = parseFloatOrUndef(item.cvss3_base_score);
     threatVector = stripVersionPrefix(item.cvss3_temporal_vector);
-    threatScore = item.cvss3_temporal_score ? parseFloatSafe(item.cvss3_temporal_score) : undefined;
+    threatScore = parseFloatOrUndef(item.cvss3_temporal_score);
   } else {
     version = CvssVersion.The20;
     baseVector = stripV2Prefix(item.cvss_vector ?? '') || undefined;
     baseScore = parseFloatOrUndef(item.cvss_base_score);
     threatVector = stripV2Prefix(item.cvss_temporal_vector ?? '') || undefined;
-    threatScore = item.cvss_temporal_score ? parseFloatSafe(item.cvss_temporal_score) : undefined;
+    threatScore = parseFloatOrUndef(item.cvss_temporal_score);
   }
 
   // The shared builder omits an empty baseVector (it would fail the schema
@@ -409,12 +409,6 @@ function stripVersionPrefix(vector: string | undefined): string | undefined {
 
 function stripV2Prefix(vector: string): string {
   return vector.startsWith('CVSS2#') ? vector.slice('CVSS2#'.length) : vector;
-}
-
-function parseFloatSafe(s: string | undefined): number {
-  if (!s) return 0;
-  const f = Number.parseFloat(s);
-  return Number.isFinite(f) ? f : 0;
 }
 
 // parseFloatOrUndef returns the parsed number, or undefined when the source
@@ -462,8 +456,12 @@ function buildEpss(item: ReportItem, host: ReportHost): Epss | undefined {
   // non-deterministic "today".
   const date = epssDate(host);
   if (date === undefined) return undefined;
-  const score = hasScore ? parseFloatSafe(item.epss_score) : 0;
-  const percentile = hasPct ? parseFloatSafe(item.epss_percentile) : 0;
+  // Epss requires score, percentile and date together, so a member cannot be
+  // dropped on its own: a reported value that is not a finite number costs the
+  // entry rather than taking a substitute, since 0 is a real probability.
+  const score = hasScore ? parseFloatOrUndef(item.epss_score) : 0;
+  const percentile = hasPct ? parseFloatOrUndef(item.epss_percentile) : 0;
+  if (score === undefined || percentile === undefined) return undefined;
   return { date: date as unknown as Date, score, percentile };
 }
 

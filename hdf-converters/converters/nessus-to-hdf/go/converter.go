@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -684,7 +685,9 @@ func parseFloatPtr(s string) *float64 {
 		return nil
 	}
 	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+	// ParseFloat accepts NaN, Inf and Infinity, which no HDF numeric field can
+	// carry: the document would not serialize. Read them as absent.
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
 		return nil
 	}
 	return &f
@@ -731,18 +734,16 @@ func buildCweIDs(item *ReportItem) []string {
 // scan start in YYYY-MM-DD form. Returns nil when neither score nor
 // percentile is present.
 func buildEpss(item *ReportItem, host *ReportHost) *hdf.Epss {
-	scorePtr := parseFloatPtr(item.EPSSScore)
-	pctPtr := parseFloatPtr(item.EPSSPercentile)
-	if scorePtr == nil && pctPtr == nil {
+	score, scoreReported, scoreUsable := epssMember(item.EPSSScore)
+	pct, pctReported, pctUsable := epssMember(item.EPSSPercentile)
+	// Epss requires score, percentile and date together, so a member cannot be
+	// dropped on its own: a reported value that is not a finite number costs the
+	// entry rather than taking a substitute, since 0 is a real probability.
+	if !scoreUsable || !pctUsable {
 		return nil
 	}
-	score := 0.0
-	if scorePtr != nil {
-		score = *scorePtr
-	}
-	pct := 0.0
-	if pctPtr != nil {
-		pct = *pctPtr
+	if !scoreReported && !pctReported {
+		return nil
 	}
 	date := epssDate(host)
 	return &hdf.Epss{
@@ -750,6 +751,19 @@ func buildEpss(item *ReportItem, host *ReportHost) *hdf.Epss {
 		Score:      score,
 		Percentile: pct,
 	}
+}
+
+// epssMember reads one reported EPSS member. An omitted element is not
+// reported; a value that is not a finite number is reported and unusable.
+func epssMember(raw string) (value float64, reported, usable bool) {
+	if raw == "" {
+		return 0, false, true
+	}
+	f, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+		return 0, true, false
+	}
+	return f, true, true
 }
 
 // epssDate returns the host's scan start formatted as YYYY-MM-DD, or

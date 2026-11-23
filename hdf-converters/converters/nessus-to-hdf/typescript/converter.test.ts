@@ -1229,3 +1229,117 @@ describe('Nessus computed severity follows the entry version', () => {
     },
   );
 });
+
+// The shared table both language suites read, so Go and TypeScript cannot drift
+// on the same input. Go wrote NaN and failed the document's own serialization;
+// TypeScript wrote 0, which is a real threat score and a real probability.
+const nonFiniteCases = JSON.parse(
+  readFileSync(
+    join(__dirname, '..', '..', '..', 'shared', 'nessus-non-finite-cases.json'),
+    'utf-8',
+  ),
+) as {
+  temporalScore: {
+    name: string;
+    field: string;
+    raw: string;
+    expectPresent: boolean;
+    expectScore?: number;
+  }[];
+  epss: {
+    name: string;
+    score: string;
+    percentile: string;
+    expectEntry: boolean;
+    expectScore?: number;
+    expectPercentile?: number;
+  }[];
+};
+
+function syntheticNessusWithRawTemporal(field: string, raw: string): string {
+  const vector =
+    field === 'cvss3_temporal_score'
+      ? '        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</cvss3_vector>\n'
+      : '        <cvss_vector>AV:N/AC:L/Au:N/C:P/I:P/A:P</cvss_vector>\n';
+  return `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999995" pluginName="Synthetic Temporal" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99995</cvss_score_source>
+${vector}        <${field}>${raw}</${field}>
+        <description>Synthetic finding carrying a temporal score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+}
+
+function syntheticNessusWithRawEpss(score: string, percentile: string): string {
+  let el = '';
+  if (score !== '') el += `        <epss_score>${score}</epss_score>\n`;
+  if (percentile !== '') el += `        <epss_percentile>${percentile}</epss_percentile>\n`;
+  return `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999994" pluginName="Synthetic EPSS" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99994</cvss_score_source>
+        <cvss_base_score>5.0</cvss_base_score>
+${el}        <description>Synthetic finding carrying EPSS members.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+}
+
+describe('non-finite numbers the scan reports', () => {
+  it.each(nonFiniteCases.temporalScore)('temporal score: $name', async (c) => {
+    const result = await convertNessusToHdf(
+      syntheticNessusWithRawTemporal(c.field, c.raw),
+    );
+    expect(() => JSON.stringify(result)).not.toThrow();
+    const req = findReqAcrossBaselines(result, '999995');
+    expect(req).toBeDefined();
+    expect(req!.cvss).toHaveLength(1);
+    const entry = req!.cvss![0]!;
+    if (!c.expectPresent) {
+      expect(entry.threatScore).toBeUndefined();
+      expect(entry.computedScore).toBeUndefined();
+      expect(entry.computedSeverity).toBeUndefined();
+      return;
+    }
+    expect(entry.threatScore).toBeCloseTo(c.expectScore!, 9);
+    expect(entry.computedScore).toBeCloseTo(c.expectScore!, 9);
+    expect(entry.computedSeverity).toBeDefined();
+  });
+
+  it.each(nonFiniteCases.epss)('epss: $name', async (c) => {
+    const result = await convertNessusToHdf(
+      syntheticNessusWithRawEpss(c.score, c.percentile),
+    );
+    const req = findReqAcrossBaselines(result, '999994');
+    expect(req).toBeDefined();
+    if (!c.expectEntry) {
+      expect(req!.epss).toBeUndefined();
+      return;
+    }
+    expect(req!.epss).toBeDefined();
+    expect(req!.epss!.score).toBeCloseTo(c.expectScore!, 9);
+    expect(req!.epss!.percentile).toBeCloseTo(c.expectPercentile!, 9);
+  });
+});
