@@ -146,7 +146,7 @@ jobs:
       # `pnpm lint:workflows` runs; .github/jactionlint.yaml selects the profile.
       # shellcheck must be present or jactionlint only notes that it skipped
       # the shell rules.
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
           install_args: aqua:jdx/jactionlint shellcheck
@@ -437,7 +437,7 @@ jobs:
       # oapi-codegen at the version mise.toml pins (go install through mise,
       # verified through GOSUMDB), the release `pnpm run matrix` uses locally and
       # the one the baseline records. The shared setup above installed Node/pnpm.
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
           install_args: go go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
@@ -466,7 +466,7 @@ jobs:
       # releases the pre-commit hook runs: golangci-lint as the release binary
       # with its attestation check, govulncheck through go install with the Go
       # that go.work names. The shared setup above already installed Node/pnpm.
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
           install_args: go golangci-lint go:golang.org/x/vuln/cmd/govulncheck
