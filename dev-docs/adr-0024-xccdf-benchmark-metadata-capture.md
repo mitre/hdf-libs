@@ -347,11 +347,11 @@ descriptions when the text exists. The family part is:
 |---|---|---|---|
 | Stable key | SV number, revision-free (`SV-257777`) | benchmark slug, `-cis-`, recommendation number (`google-chrome-cis-1.1.11`; the number is parsed from the rule id as SAF CLI's `--idType cis` does); a rule whose id carries no number (all 29 rules of the 2007 ESX 3.5 benchmark) keeps its published id | rule short name (`accounts_password_minlen_login_defs`, after `_rule_`) |
 | InSpec control id | `SV-257777` | `<slug>-cis-1.1.11`, the form MITRE's CIS baselines use (`aws-foundations-cis-1.1`, `microsoft-sql-server-2017-cis-1.1`); `<slug>` is the benchmark title with the leading `CIS ` and trailing ` Benchmark` removed, kebab-cased (`google-chrome`) | the short name |
-| Identity tags | `stig_id`, `cci`, `nist` (from CCIs), `check_id`, `fix_id`, `legacy_id`, `cce`, `weight`, `role` | `cis_id` (`1.1.11`, the name MITRE's CIS baselines use), `cis_level` (`Level 1`, the lowest level whose profile selects the rule; Level 3 exists), `cis_profiles` (every selecting profile's title, keeping the Server/Workstation axis), `assessment_status` (`Automated` for `role="full"`, `Manual` for `unscored`), `cis_controls` (`[{ "8": ["5.4"], "7": ["4.1"] }]`, a one-element list holding the framework version to ids map, the form MITRE's CIS baselines write, from the ident `controlURI`s and the safeguards; the InSpec generators are taught to render a map as a Ruby hash; the catalog stays in `passthrough.cisSafeguards`), `cci` and `nist` from the CIS Controls to CCI mapping (card 15), `cce` when present | `cce`, and from `reference` by framework (cross-references to other publishers' ids, including the `stig_id` of the DISA rule an SSG rule implements): `nist`, `srg`, `stig_id`, `cis_controls` and the CIS benchmark number as tags, every other framework (ISO 27001, ISA 62443, COBIT, CSF, HIPAA, NERC CIP, PCI DSS, ANSSI, BSI, ISM, NIAP, CJIS) under `passthrough.references` grouped by framework; frameworks are matched by a table of URL patterns because the hrefs change between releases |
-| Descriptions | `default` from `VulnDiscussion`, `check`, `fix`; the ten sub-elements as tags | `default`, `rationale`, `fix`; `check` when inline content exists (the six CIS fixtures carry no separate audit, default-value or impact elements) | `default`, `rationale`, `warning`; `fix` is the shell `fix` script, because SSG publishes no `fixtext` (0 of 1,540 RHEL 9 rules), and every `fix` script is kept per system in passthrough for the hardening generator |
+| Identity tags | `stig_id`, `cci`, `nist` (from CCIs), `check_id`, `fix_id`, `legacy_id`, `cce`, `weight`, `role` | `cis_id` (`1.1.11`, the name MITRE's CIS baselines use), `cis_level` (`Level 1`, the lowest level whose profile selects the rule; Level 3 exists), `cis_profiles` (every selecting profile's title, keeping the Server/Workstation axis), `assessment_status` (`Automated` for `role="full"`, `Manual` for `unscored`), `cis_controls` (`[{ "8": ["5.4"], "7": ["4.1"] }]`, a one-element list holding the framework version to ids map, the form MITRE's CIS baselines write, from the ident `controlURI`s and the safeguards; the InSpec generators are taught to render a map as a Ruby hash; the catalog stays in `passthrough.cisSafeguards`), `cci` and `nist` from the CIS Controls to CCI mapping (card 15), `cce` when present | `cce`, and from `reference` by framework (cross-references to other publishers' ids, including the `stig_id` of the DISA rule an SSG rule implements): `nist` (the ids as SSG publishes them, 800-53 Revision 4, translated to the selected revision on output), `srg`, `stig_id` (a list: a rule can implement several DISA rules), `stig_rule_id` (the DISA requirement id of each, the `SV-` reference with its revision removed, `SV-258134`, which is that requirement's own id in a DISA Baseline; the `V-` reference carries the same digits and gets no tag), `cis_controls`, `cis_id` (a list of the CIS benchmark numbers the rule cites) and `cci` when the file cites one; every reference, these and those of every other framework (ISO 27001, ISA 62443, COBIT, CSF, HIPAA, NERC CIP, PCI DSS, ANSSI, BSI, ISM, NIAP, CJIS), stays in `refs` with its text and address, as the converter already writes them, so no second copy is kept; frameworks are matched by a table of URL patterns because the hrefs change between releases |
+| Descriptions | `default` from `VulnDiscussion`, `check`, `fix`; the ten sub-elements as tags | `default`, `rationale`, `fix`; `check` when inline content exists (the six CIS fixtures carry no separate audit, default-value or impact elements) | `default`, `rationale`, `warning`; `fix` is the shell `fix` script, because SSG publishes no `fixtext` (0 of 1,540 RHEL 9 rules), and the scripts for the other systems (Ansible and six smaller ones, about 5 MB in the RHEL 9 build) are not carried yet: where they live is deferred until the hardening generator needs them |
 | Severity model | `high`/`medium`/`low` → impact 0.7/0.5/0.3, CAT I/II/III | none in the file: `severity` medium and impact 0.5, the convention MITRE's CIS baselines use | `high`/`medium`/`low` as DISA; `unknown` (3% to 7% of rules in v0.1.82) becomes medium and 0.5, which is DISA's own rating for the four `unknown` rules in RHEL 9's STIG profile |
 | `inspec.yml` | `name` kebab of the benchmark id, `version` `<version>.<release>.0` | `name` the benchmark slug with `-cis` (`google-chrome-cis`), `version` as published (`2.1.0`) | `name` the id after `_benchmark_`, `version` as published |
-| Ansible (ADR-0018) | `cat1`–`cat3`, toggles `<role>_sv_NNNNNN` | `level1`–`level3`, toggles `<role>_rule_1_1_11`; upgrade matching needs the title tier because CIS renumbers sections between versions | the short name as key; decided with card 13 |
+| Ansible (ADR-0018) | `cat1`–`cat3`, toggles `<role>_sv_NNNNNN` | `level1`–`level3`, toggles `<role>_rule_1_1_11`; upgrade matching needs the title tier because CIS renumbers sections between versions | the short name as key (proposed); decided with the ADR-0018 work |
 
 **One builder, one table.** The family table is data: `hdf-converters/shared/xccdf-families.json`, loaded by both
 parsers and the InSpec generator, with a schema and a test that every row is exercised by a fixture. One
@@ -372,8 +372,9 @@ CCI-to-NIST table is a test cross-check on the crosswalk, not the source. A safe
 (one v7 sentinel) contributes nothing, so the tags are absent, never empty. The DISA family keeps every tag it
 has today. One DISA value changes: a rule with no CCI that carries DoD Instruction 8500.2 IA controls (the manuals
 of 2009 to 2015 and a few still published) gets `nist` from DoD CIO's 2014 crosswalk of those controls to SP 800-53
-Revision 4, vendored into `hdf-mappings`, and no `cci`, because DoD assigned none (register gap 18). How a DISA rule
-with neither is written is an open question; it carries `nist: []` today. The CIS and SSG
+Revision 4, vendored into `hdf-mappings`, and no `cci`, because DoD assigned none (register gap 18). A DISA rule
+with neither carries `nist: []` today; the proposal is to leave the tag out, as every other converter does for
+an unmapped requirement. The CIS and SSG
 rows are chosen to match the profiles already in use (MITRE's CIS baselines, SAF CLI's `--idType cis`), so the
 upgrade matcher meets prior work that looks like its own output.
 
@@ -419,10 +420,20 @@ upgrade matcher meets prior work that looks like its own output.
 - Settled 2026-11-20: the CIS slug is the benchmark title without the leading `CIS ` and trailing ` Benchmark`,
   kebab-cased (`google-chrome`); it never includes `-cis` itself. A requirement id is `<slug>-cis-<number>` and the
   `inspec.yml` name is `<slug>-cis`.
-- Settled 2026-11-20: SSG references become the tags `nist`, `srg`, `stig_id`, `cis_controls` and the CIS benchmark
-  number, and `passthrough.references` for every other framework. Still open: the tag name for the CIS benchmark
-  number on an SSG rule, whether the `SV-` and `V-` references are tags, how SSG's 800-53 revision 4 ids with
-  sub-part letters (`CM-6(a)`) are normalised, and the SSG Ansible key.
+- Settled 2026-11-20 and 2026-11-21: SSG references become the tags `nist`, `srg`, `stig_id`, `stig_rule_id`,
+  `cis_controls`, `cis_id` and, when cited, `cci`; every reference stays in `refs`. The CIS benchmark number on an SSG
+  rule uses the name a CIS rule uses for its own, `cis_id`, as a list (404 of 1,540 RHEL 9 rules cite one; 4 cite more
+  than one). The `SV-` reference becomes `stig_rule_id` without its revision; the `V-` reference is the same digits on
+  1,352 of 1,352 rules measured and gets no tag. SSG's 800-53 ids are written as published (`CM-6(a)`); the existing
+  revision translation and id normaliser already read them. The XCCDF severity `info` is `informational`, impact 0.0,
+  as the converter and the shared severity table already have it.
+- Proposed 2026-11-21 by the author, not yet decided by the owner; the maintainer may change them: the `cis_controls`
+  key is the major version as a string (`"6"`, `"7"`, `"8"`; the fixtures write only 6.1, 7.0 and 8.0, and the
+  crosswalk's v8 and v8.1 files agree on all 150 safeguards); a DISA rule with neither a CCI nor an IA control has no
+  `nist` tag (28 fixture rules; across the repository's other converters an unmapped requirement has the tag absent
+  on 37 and empty on none); the SSG key for the Ansible generator is decided with the ADR-0018 work.
+- Deferred 2026-11-21: where SSG's `fix` scripts for systems other than the shell live. A requirement has no
+  `extensions` member, the scripts total about 5 MB in one build, and nothing reads them yet.
 - Settled 2026-11-20, for now: a CIS rule's `cci` tag holds the primary CCI only; the supporting CCIs stay in the
   vendored data and the `hdf-mappings` lookup.
 
