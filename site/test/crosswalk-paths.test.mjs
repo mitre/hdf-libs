@@ -138,7 +138,7 @@ function noCounterpartPaths(markdown) {
   const out = [];
   let inSection = false;
   for (const line of markdown.split('\n')) {
-    if (line.startsWith('## ')) inSection = /no eMASS counterpart/i.test(line);
+    if (line.startsWith('## ')) inSection = /no counterpart/i.test(line);
     if (!inSection || !line.startsWith('|')) continue;
     const cell = line.split('|')[1] ?? '';
     if (/^\s*-+\s*$/.test(cell) || /^\s*HDF\s*$/.test(cell)) continue;
