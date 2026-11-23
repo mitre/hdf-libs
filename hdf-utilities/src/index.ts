@@ -58,7 +58,7 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { asciiLower, stripHtml, stripHtmlTags, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact, UNKNOWN_SEVERITY_IMPACT } from './severity/index.js';
+export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, cvssSeverityForVersion, isUnratedSeverity, roundImpact, UNKNOWN_SEVERITY_IMPACT } from './severity/index.js';
 
 // Canonical status ordering + effective-status computation
 export {
@@ -81,11 +81,13 @@ export {
   parseCvssVector,
   validateCvssVector,
   computeCvssScore,
+  normalizeCvssMetrics,
   computeCvss40Score,
   cvss40MacroVector,
   type ParsedCvssVector,
   type CvssValidationResult,
   type CvssScore,
+  type CvssMetrics,
 } from './cvss/index.js';
 
 // CWE identifier extraction (twin of go/cwe.go)

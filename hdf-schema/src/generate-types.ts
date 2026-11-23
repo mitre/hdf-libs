@@ -1,6 +1,6 @@
-import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   quicktype,
   InputData,
@@ -49,8 +49,8 @@ function preprocessSchemaForQuicktype(schemaJson: string): string {
     const obj = node as Record<string, unknown>;
 
     if (obj['type'] === 'boolean' && 'const' in obj) {
-      const { const: _, ...rest } = obj;
-      void _;
+      const rest = { ...obj };
+      delete rest.const;
       return walk(rest);
     }
 
@@ -61,8 +61,8 @@ function preprocessSchemaForQuicktype(schemaJson: string): string {
       );
       const hasRef = items.some((i) => '$ref' in i);
       if (hasBare && hasRef) {
-        const { oneOf: __, ...rest } = obj;
-        void __;
+        const rest = { ...obj };
+        delete rest.oneOf;
         return walk({ ...rest, description: obj['description'] });
       }
     }
@@ -146,7 +146,7 @@ function wrapComment(text: string, linePrefix: string): string[] {
       lines.push(cur);
       cur = linePrefix;
     }
-    cur += (cur === linePrefix ? ' ' : ' ') + w;
+    cur += ' ' + w;
   }
   lines.push(cur);
   return lines;
@@ -198,7 +198,13 @@ export function hostIdentityStringFields(compSchema: unknown): IdentityField[] {
   const props = (branch?.properties ?? {}) as Record<string, Record<string, unknown>>;
   return Object.entries(props)
     .filter(([, def]) => def?.type === 'string')
-    .map(([name, def]) => ({ name, description: String(def.description ?? '').replace(/\s+/g, ' ').trim() }));
+    .map(([name, def]) => {
+      const description = def.description;
+      if (description !== undefined && typeof description !== 'string') {
+        throw new Error(`Host_Component.${name} description must be a string`);
+      }
+      return { name, description: (description ?? '').replace(/\s+/g, ' ').trim() };
+    });
 }
 
 /**
@@ -217,7 +223,7 @@ export function insertComponentFields(tsSource: string, fields: IdentityField[])
   const block = tsSource.slice(bodyStart, close);
 
   const additions = fields
-    .filter((f) => !new RegExp(`\\n\\s*${f.name}\\?:`).test(block))
+    .filter((f) => !new RegExp(String.raw`\n\s*${f.name}\?:`).test(block))
     .map((f) => {
       const doc = f.description ? `    /**\n     * ${f.description}\n     */\n` : '';
       return `${doc}    ${f.name}?: string;`;
@@ -300,7 +306,7 @@ export async function generateTypes(): Promise<void> {
 
     const langSchemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
     for (const entry of preprocessed) {
-      await langSchemaInput.addSource(entry);
+      langSchemaInput.addSourceSync(entry);
     }
 
     const inputData = new InputData();

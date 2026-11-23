@@ -744,7 +744,7 @@ func buildCvss(v *Vulnerability) []hdf.Cvss {
 		if e.OverallScore != nil {
 			score := *e.OverallScore
 			entry.ComputedScore = &score
-			computed := shared.CvssSeverityFromScore(score)
+			computed := shared.CvssSeverityFromScore(entry.Version, score)
 			entry.ComputedSeverity = &computed
 		}
 		out = append(out, entry)

@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { assert, describe, it, expect } from 'vitest';
 import { validateResults } from './index.js';
 
 interface ShippedExtensionsCase {
@@ -74,7 +74,7 @@ describe('extensions migration hint', () => {
       const result = validateResults(documentFor(tc, atBaseline));
       expect(result.valid).toBe(false);
       expect(result.errors).not.toHaveLength(0);
-      expect(result.errors[0].message).toBe(table.migrationMessage);
+      expect(result.errors[0]?.message).toBe(table.migrationMessage);
       const prefix = atBaseline ? 'baselines.0.extensions.' : 'extensions.';
       const keys = tc.undeclaredKeys;
       if (!keys) throw new Error('Migration case must name its undeclared keys');
@@ -91,6 +91,7 @@ describe('extensions hint scope', () => {
   it.each([false, true])('does not hint on wrong-type extensions at baseline: %s', atBaseline => {
     const doc = documentFor({name: '', why: '', valid: true, extensions: {}}, atBaseline);
     const target = atBaseline ? (doc.baselines as Record<string, unknown>[])[0] : doc;
+    assert.isDefined(target);
     target.extensions = 'wrong type';
     const result = validateResults(doc);
     expect(result.valid).toBe(false);
@@ -100,8 +101,11 @@ describe('extensions hint scope', () => {
   it('does not hint on additionalProperties in a raw source record', () => {
     const doc = documentFor({name: '', why: '', valid: true, extensions: {}}, false);
     const baseline = (doc.baselines as Record<string, unknown>[])[0];
+    assert.isDefined(baseline);
     const requirement = (baseline.requirements as Record<string, unknown>[])[0];
+    assert.isDefined(requirement);
     const resultDoc = (requirement.results as Record<string, unknown>[])[0];
+    assert.isDefined(resultDoc);
     resultDoc.rawSourceRecord = {content: '{}', encoding: 'utf-8', mediaType: 'application/json', system_context: {}, alpha: 1};
     const result = validateResults(doc);
     expect(result.valid).toBe(false);

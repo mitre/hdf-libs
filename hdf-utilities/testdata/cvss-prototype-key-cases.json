@@ -1,0 +1,67 @@
+{
+  "_comment": "Keys that are also JavaScript object prototype members, in the two positions a CVSS lookup table is keyed by: the metric name and the version. A plain-object table resolves an inherited member for such a key, so TypeScript read a function where a metric's list of allowed values belongs (`toString` as a metric name) and tried to iterate one where the list of required metrics belongs (`constructor` as a version); Go's maps return not-found and were already correct. `ignoredMetricNames` pins that an unrecognized metric name is ignored for forward compatibility: every vector is a reference vector from the sibling cvssNN-vectors.json file with one extra segment appended, and must validate and score exactly as that reference vector does, whose base and temporal values are repeated here. `unsupportedVersions` pins that such a string passed as the explicit version argument is an ordinary unsupported-version result rather than a throw. Shared by go/cvss_test.go and test/cvss.test.ts so both languages hold the same behavior.",
+  "ignoredMetricNames": [
+    {
+      "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P/toString:x",
+      "equivalent": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+      "version": "2.0",
+      "base": 7.5,
+      "temporal": 7.5,
+      "note": "2.0, prefix-less, with Object.prototype.toString in the metric name position"
+    },
+    {
+      "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/constructor:x",
+      "equivalent": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "3.0",
+      "base": 9.8,
+      "temporal": 9.8,
+      "note": "3.0 with Object.prototype.constructor in the metric name position"
+    },
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/hasOwnProperty:x",
+      "equivalent": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "3.1",
+      "base": 9.8,
+      "temporal": 9.8,
+      "note": "3.1 with Object.prototype.hasOwnProperty in the metric name position"
+    },
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/__proto__:x",
+      "equivalent": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "3.1",
+      "base": 9.8,
+      "temporal": 9.8,
+      "note": "3.1 with __proto__ in the metric name position, which reads Object.prototype itself"
+    },
+    {
+      "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/toString:x",
+      "equivalent": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+      "version": "4.0",
+      "base": 9.3,
+      "temporal": 9.3,
+      "note": "4.0, which validates before the MacroVector engine runs"
+    }
+  ],
+  "unsupportedVersions": [
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "constructor",
+      "note": "Object.prototype.constructor as the explicit version argument"
+    },
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "toString",
+      "note": "Object.prototype.toString as the explicit version argument"
+    },
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "hasOwnProperty",
+      "note": "Object.prototype.hasOwnProperty as the explicit version argument"
+    },
+    {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "version": "__proto__",
+      "note": "__proto__ as the explicit version argument"
+    }
+  ]
+}

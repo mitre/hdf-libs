@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import {
   validate, validateResults, validateBaseline, validateSystem, validatePlan,
   validateAmendments, validateComparison, validateEvidencePackage,
@@ -38,7 +38,9 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function documentFor(tc: ConformanceCase): Record<string, unknown> {
-  const doc = structuredClone(table.documents[tc.document]);
+  const template = table.documents[tc.document];
+  assert.isDefined(template, `Conformance case names an unknown document: ${tc.document}`);
+  const doc = structuredClone(template);
   let target: unknown = doc;
   for (const key of tc.path) {
     if (typeof key === 'number') {

@@ -221,11 +221,12 @@ describe('snyk to HDF converter', async () => {
       expect(out[0]!.baseVector).toBeUndefined();
     });
 
-    it('sets vector and version without baseScore when only CVSSv3 is present', () => {
+    it('scores the vector when only CVSSv3 is present', () => {
       const out = buildSnykCvss({id: 'x', title: 't', description: 'd', severity: 'low', CVSSv3: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', identifiers: {}, from: []});
       expect(out).toHaveLength(1);
       expect(out[0]!.version).toBe('3.0');
-      expect(out[0]!.baseScore).toBeUndefined();
+      // A vector without a score is scored from the vector.
+      expect(out[0]!.baseScore).toBe(9.8);
       expect(out[0]!.baseVector).toBe('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
     });
   });

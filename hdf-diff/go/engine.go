@@ -222,58 +222,7 @@ func comparePair(
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
-	// Build baseline maps by name
-	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
-	for _, b := range oldDoc.Baselines {
-		oldBaselineMap[b.Name] = b
-	}
-	newBaselineMap := make(map[string]hdf.EvaluatedBaseline)
-	for _, b := range newDoc.Baselines {
-		newBaselineMap[b.Name] = b
-	}
-
-	// Compute baseline diffs
-	allBaselineNames := make(map[string]bool)
-	for name := range oldBaselineMap {
-		allBaselineNames[name] = true
-	}
-	for name := range newBaselineMap {
-		allBaselineNames[name] = true
-	}
-
-	var baselineDiffs []BaselineDiff
-	for name := range allBaselineNames {
-		oldB, oldExists := oldBaselineMap[name]
-		newB, newExists := newBaselineMap[name]
-
-		switch {
-		case oldExists && newExists:
-			oldVer := derefStr(oldB.Version)
-			newVer := derefStr(newB.Version)
-			state := StateUnchanged
-			if oldVer != newVer {
-				state = StateUpdated
-			}
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				OldVersion: oldVer,
-				NewVersion: newVer,
-				State:      state,
-			})
-		case oldExists:
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				OldVersion: derefStr(oldB.Version),
-				State:      StateAbsent,
-			})
-		case newExists:
-			baselineDiffs = append(baselineDiffs, BaselineDiff{
-				Name:       name,
-				NewVersion: derefStr(newB.Version),
-				State:      StateNew,
-			})
-		}
-	}
+	baselineDiffs := compareBaselineVersions(oldDoc.Baselines, newDoc.Baselines)
 
 	// Build requirement ID → baseline name maps for populating RequirementDiff.Baseline
 	oldReqBaselineMap := requirementBaselineMap(oldDoc)
@@ -386,6 +335,63 @@ func comparePair(
 	}
 
 	return baselineDiffs, requirementDiffs, nil
+}
+
+func compareBaselineVersions(oldBaselines, newBaselines []hdf.EvaluatedBaseline) []BaselineDiff {
+	// Build baseline maps by name
+	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
+	for _, b := range oldBaselines {
+		oldBaselineMap[b.Name] = b
+	}
+	newBaselineMap := make(map[string]hdf.EvaluatedBaseline)
+	for _, b := range newBaselines {
+		newBaselineMap[b.Name] = b
+	}
+
+	// Compute baseline diffs
+	allBaselineNames := make(map[string]bool)
+	for name := range oldBaselineMap {
+		allBaselineNames[name] = true
+	}
+	for name := range newBaselineMap {
+		allBaselineNames[name] = true
+	}
+
+	var baselineDiffs []BaselineDiff
+	for name := range allBaselineNames {
+		oldB, oldExists := oldBaselineMap[name]
+		newB, newExists := newBaselineMap[name]
+
+		switch {
+		case oldExists && newExists:
+			oldVer := derefStr(oldB.Version)
+			newVer := derefStr(newB.Version)
+			state := StateUnchanged
+			if oldVer != newVer {
+				state = StateUpdated
+			}
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				OldVersion: oldVer,
+				NewVersion: newVer,
+				State:      state,
+			})
+		case oldExists:
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				OldVersion: derefStr(oldB.Version),
+				State:      StateAbsent,
+			})
+		case newExists:
+			baselineDiffs = append(baselineDiffs, BaselineDiff{
+				Name:       name,
+				NewVersion: derefStr(newB.Version),
+				State:      StateNew,
+			})
+		}
+	}
+
+	return baselineDiffs
 }
 
 // extractDrift returns requirements whose effective status is unchanged but whose
@@ -563,43 +569,7 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 
 	// Matched pairs
 	for _, pair := range matchResult.Matched {
-		id := pair.NewReq.ID
-		if id == "" {
-			id = pair.OldReq.ID
-		}
-
-		fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
-
-		// For baseline evolution, state is determined by metadata changes only
-		state := StateUnchanged
-		if len(fieldChanges) > 0 {
-			state = StateUpdated
-		}
-
-		// Determine change reasons
-		changeReasons := classifyBaselineChangeReasons(pair.OldReq, pair.NewReq)
-
-		title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
-		oldImpact := pair.OldReq.Impact
-		newImpact := pair.NewReq.Impact
-		confidence := roundConfidence(pair.Confidence)
-
-		oldReqCopy := pair.OldReq
-		newReqCopy := pair.NewReq
-
-		requirementDiffs = append(requirementDiffs, RequirementDiff{
-			ID:              id,
-			Title:           title,
-			State:           state,
-			ChangeReasons:   changeReasons,
-			OldImpact:       &oldImpact,
-			NewImpact:       &newImpact,
-			FieldChanges:    fieldChanges,
-			Before:          &oldReqCopy,
-			After:           &newReqCopy,
-			MatchStrategy:   pair.Strategy,
-			MatchConfidence: &confidence,
-		})
+		requirementDiffs = append(requirementDiffs, matchedBaselineRequirement(pair, trackedFields))
 	}
 
 	// Unmatched old requirements (absent)
@@ -697,6 +667,46 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 		BaselineDiffs:    baselineDiffs,
 		RequirementDiffs: requirementDiffs,
 	}, nil
+}
+
+func matchedBaselineRequirement(pair matching.MatchPair, trackedFields []string) RequirementDiff {
+	id := pair.NewReq.ID
+	if id == "" {
+		id = pair.OldReq.ID
+	}
+
+	fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
+
+	// For baseline evolution, state is determined by metadata changes only
+	state := StateUnchanged
+	if len(fieldChanges) > 0 {
+		state = StateUpdated
+	}
+
+	// Determine change reasons
+	changeReasons := classifyBaselineChangeReasons(pair.OldReq, pair.NewReq)
+
+	title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
+	oldImpact := pair.OldReq.Impact
+	newImpact := pair.NewReq.Impact
+	confidence := roundConfidence(pair.Confidence)
+
+	oldReqCopy := pair.OldReq
+	newReqCopy := pair.NewReq
+
+	return RequirementDiff{
+		ID:              id,
+		Title:           title,
+		State:           state,
+		ChangeReasons:   changeReasons,
+		OldImpact:       &oldImpact,
+		NewImpact:       &newImpact,
+		FieldChanges:    fieldChanges,
+		Before:          &oldReqCopy,
+		After:           &newReqCopy,
+		MatchStrategy:   pair.Strategy,
+		MatchConfidence: &confidence,
+	}
 }
 
 // baselineReqsToEvaluated converts BaselineRequirement slices to EvaluatedRequirement slices

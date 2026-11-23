@@ -1,0 +1,18 @@
+{
+  "_comment": "CVSS 3.0 reference vectors for the score-compute engine. Base scores of the capture cases are the values NVD reports in a real Grype 0.121.3 scan of debian:12 (hdf-converters/converters/grype-to-hdf fixtures, debian@sha256:366a6da5...); every case's base and temporal values were also computed by pandatix/go-cvss v0.6.4 (MIT), used as an independent oracle and not as a dependency, and agree. Equations: FIRST CVSS v3.0 specification section 8 (https://www.first.org/cvss/v3.0/specification-document). Shared by go/cvss_test.go and test/cvss.test.ts.",
+  "cases": [
+    {"vector":"CVSS:3.0/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:H/A:N","base":4.7,"temporal":4.7,"note":"NVD base score for CVE-2017-18018 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:N","base":6.5,"temporal":6.5,"note":"NVD base score for CVE-2016-2781 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","base":9.8,"temporal":9.8,"note":"NVD base score for CVE-2019-1010022 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N","base":7.5,"temporal":7.5,"note":"NVD base score for CVE-2018-6829 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N","base":5.3,"temporal":5.3,"note":"NVD base score for CVE-2019-1010024 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H","base":7.5,"temporal":7.5,"note":"NVD base score for CVE-2018-20796 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H","base":8.8,"temporal":8.8,"note":"NVD base score for CVE-2019-1010023 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:U/RL:O/RC:U","base":9.8,"temporal":7.8,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N/E:P/RL:T/RC:R","base":6.4,"temporal":5.6,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"CVSS:3.0/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N/E:F/RL:W/RC:C","base":1.8,"temporal":1.7,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"CVSS:3.0/AV:P/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H/E:H/RL:U/RC:C","base":7.6,"temporal":7.6,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N","base":0,"temporal":0,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H/RC:U","base":10,"temporal":9.2,"note":"Round up of 10 x 0.92: floating point gives 9.200000000000001, which a ceil(x*10)/10 Round up turns into 9.3; the specification's definition gives 9.2"}
+  ]
+}

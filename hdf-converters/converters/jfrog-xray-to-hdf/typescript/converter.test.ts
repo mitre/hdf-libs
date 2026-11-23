@@ -291,7 +291,8 @@ describe('jfrog-xray to HDF converter', async () => {
       expect(req!.cvss).toHaveLength(1);
       expect(req!.cvss![0]!.version).toBe('2.0');
       expect(req!.cvss![0]!.baseScore).toBeCloseTo(10.0, 5);
-      expect(req!.cvss![0]!.baseSeverity).toBe('critical');
+      // CVSS 2.0 has no critical rating: 10.0 is high.
+      expect(req!.cvss![0]!.baseSeverity).toBe('high');
     });
 
     it('omits cvss[]/cwe[]/tags.cve when the finding has no cves', async () => {
@@ -303,7 +304,7 @@ describe('jfrog-xray to HDF converter', async () => {
       expect(req!.tags?.['cve']).toBeUndefined();
     });
 
-    it('keeps a vector-only v3 metric and skips an absent v2 (synthetic input)', async () => {
+    it('scores a vector-only v3 metric and skips an absent v2 (synthetic input)', async () => {
       const synthetic = JSON.stringify({
         data: [{
           id: 'x', severity: 'High', summary: 'synthetic vector-only',
@@ -317,7 +318,8 @@ describe('jfrog-xray to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.cvss).toHaveLength(1);
       expect(req.cvss![0]!.version).toBe('3.1');
-      expect(req.cvss![0]!.baseScore).toBeUndefined();
+      // An unparseable source score leaves the vector's own score.
+      expect(req.cvss![0]!.baseScore).toBe(9.8);
       expect(req.cvss![0]!.baseVector).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
       expect(req.tags?.['cve']).toEqual(['CVE-9999-0001']);
     });

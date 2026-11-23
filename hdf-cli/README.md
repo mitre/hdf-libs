@@ -526,6 +526,80 @@ On auto-detection the source format and a confidence score are reported on the `
 
 See [Supported Conversions](#supported-conversions) for the full list.
 
+#### convert --bundle
+
+Deliver one HDF assessment as searchable ECS, Splunk or OCSF findings together
+with its exact original source in a standard evidence-package ZIP:
+
+```bash
+hdf convert results.json --to ecs --bundle -o export.zip
+```
+
+Use `--to splunk` or `--to ocsf` for the other targets. The deterministic archive
+contains `evidence-package.json`, `events.ndjson`, byte-identical `source.json`
+and the existing SIEM `manifest.json`. The package records explicit SHA512
+checksums for all three artifacts. Empty assessments retain all four files,
+including a zero-byte event stream. No timestamp, system identity or completeness
+claim is invented for the package.
+
+Bundle mode requires one local source file and a file output. Directories,
+multiple inputs, stdin and transformation flags such as `--from`, `--force`,
+`--labels` and `--nist-rev` are rejected. `--overwrite` replaces an existing
+archive but never the input or its filesystem aliases; it requires `--bundle`.
+The archive is staged beside `-o` and published complete, the same way `hdf evidence
+bundle` publishes one: `--output-access private` (the default) or `inherit` sets who
+may read it, an `-o` that already exists or appears during the run is refused unless
+`--overwrite` is passed, and a failed run leaves `-o` untouched. [`evidence`](#evidence)
+describes what each access mode checks on Linux, macOS and Windows, and which
+filesystems cannot publish without `--overwrite`. Archive permissions do not travel
+inside the ZIP; move it between jobs with an authenticated artifact transfer.
+Ordinary conversion is unchanged, including for an input file named `bundle`.
+
+#### evidence resolve
+
+Verify the selected packaged export and recover the complete original source:
+
+```bash
+unzip export.zip -d retained
+head -n 1 retained/events.ndjson > retained/event.json
+hdf evidence resolve retained/evidence-package.json --event retained/event.json > recovered.json
+cmp retained/source.json recovered.json
+```
+
+This example requires at least one finding. Empty assessments have no event to
+resolve; their source remains in the archive and can be verified with
+`hdf evidence info retained/evidence-package.json --verify --require-checksums --require-reachable`.
+
+Recovery validates the package, selects one registered SIEM profile, verifies
+the source/events/manifest checksums and compares the finding's preserved
+requirement with its original occurrence. It writes the exact source bytes to
+stdout only after success. Missing or changed artifacts, unsupported checksums,
+wrong types/formats, ambiguous references and record disagreements fail.
+
+A package with multiple exports requires `--manifest` naming one registered
+package-relative profile URI. Keep each export in its own directory. References
+decode percent escapes exactly once, must agree between package and manifest,
+and remain within the package directory. Size limits and the configured symlink
+policy apply to all reads. Recovery does not fetch URLs or extract archives.
+It verifies the selected export, not unrelated package contents or completeness.
+Use `evidence info --verify` for whole-package verification.
+
+`--event` takes one complete event in the exporter's shape, not a vendor search
+response. For Elasticsearch, retain the raw `_source` JSON. For Splunk, retain
+the decoded `_raw` string and wrap that JSON as `{"event":<raw JSON>}` without
+parsing and reserializing its inner numbers. OCSF uses its complete event. Do not
+round numeric tokens through ordinary JavaScript object parsing before recovery.
+
+Retain the package and its artifacts for the lifetime of the finding events.
+NDJSON alone cannot recover baseline and document context. Checksums establish
+consistency with the supplied inventory, not authenticity of an unsigned
+package. Signatures are retained but not authenticated; source data is not
+automatically redacted. Shell redirection creates or truncates its destination
+before the command runs, so use a new recovery filename, never `source.json`.
+The initial `legacy-additive/1` profile retains native projections and legacy
+repeated fields. Real SIEM ingestion/readback remains separate integration
+verification.
+
 ### system
 
 View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and data flows.

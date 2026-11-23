@@ -279,3 +279,25 @@ func TestEvidenceSubcommands_StillAcceptDashForStdin(t *testing.T) {
 	assert.Error(t, evidencePackageArg(nil, []string{"   "}), "whitespace-only is refused too")
 	assert.NoError(t, evidencePackageArg(nil, []string{"pkg.json"}), "a real path passes")
 }
+
+func TestEvidenceInfoHumanSkipsNonobjectEntries(t *testing.T) {
+	capture, err := os.CreateTemp(t.TempDir(), "stdout")
+	require.NoError(t, err)
+	original := os.Stdout
+	os.Stdout = capture
+	t.Cleanup(func() { os.Stdout = original; _ = capture.Close() })
+	doc := map[string]interface{}{
+		"contents":         []interface{}{nil, map[string]interface{}{"type": "hdf-results", "uri": "source.json"}},
+		"externalEvidence": []interface{}{nil, map[string]interface{}{"format": "ecs", "uri": "events.ndjson"}},
+	}
+	require.NoError(t, outputEvidenceInfoHuman(doc))
+	os.Stdout = original
+	data, err := os.ReadFile(capture.Name())
+	require.NoError(t, err)
+	output := string(data)
+	require.Contains(t, output, "Contents (2):")
+	require.Contains(t, output, "source.json")
+	require.Contains(t, output, "External Evidence (2):")
+	require.Contains(t, output, "events.ndjson")
+	require.Equal(t, 2, strings.Count(output, "  hdf-results")+strings.Count(output, "  ecs"))
+}

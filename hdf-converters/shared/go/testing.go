@@ -28,6 +28,12 @@ func GetConvertersDir() string {
 	return filepath.Join(getSharedDir(), "..", "..", "converters")
 }
 
+// GetSharedDir returns the path to the shared/ directory, which holds the case
+// tables the Go and TypeScript suites both read.
+func GetSharedDir() string {
+	return filepath.Join(getSharedDir(), "..")
+}
+
 // GetBOMFixturesDir returns the path to the shared/bom-fixtures/ directory
 // (real BOM documents consumed by the shared bom parser tests and by hdf-cli
 // system-create tests).

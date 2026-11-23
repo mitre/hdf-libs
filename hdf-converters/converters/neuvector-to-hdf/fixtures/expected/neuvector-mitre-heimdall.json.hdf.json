@@ -7331,7 +7331,7 @@
           "cvss": [
             {
               "baseScore": 9.3,
-              "baseSeverity": "critical",
+              "baseSeverity": "high",
               "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
               "source": "NeuVector",
               "version": "2.0"
@@ -7395,7 +7395,7 @@
           "cvss": [
             {
               "baseScore": 9.3,
-              "baseSeverity": "critical",
+              "baseSeverity": "high",
               "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
               "source": "NeuVector",
               "version": "2.0"
@@ -7459,7 +7459,7 @@
           "cvss": [
             {
               "baseScore": 9.3,
-              "baseSeverity": "critical",
+              "baseSeverity": "high",
               "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
               "source": "NeuVector",
               "version": "2.0"
@@ -7578,7 +7578,7 @@
           "cvss": [
             {
               "baseScore": 9.3,
-              "baseSeverity": "critical",
+              "baseSeverity": "high",
               "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
               "source": "NeuVector",
               "version": "2.0"

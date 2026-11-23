@@ -99,7 +99,7 @@ jobs:
           persist-credentials: false
       # Node and pnpm at mise.lock's versions and checksums. No cache in a
       # publication workflow: a poisoned cache could tamper with what is built.
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
           install_args: node pnpm
@@ -265,7 +265,7 @@ jobs:
       # Node at mise.lock's version and checksum; this job runs npm only. The
       # publish, dist-tag and install commands name the registry themselves, and
       # npm authenticates through OIDC (id-token: write), so no .npmrc is written.
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
           install_args: node

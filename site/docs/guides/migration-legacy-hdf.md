@@ -226,8 +226,11 @@ if (isV1Format(doc)) {
 
 The normalizer detects v1 by checking for `profiles` at the top level (v2 uses `baselines`). It converts:
 - `profiles[].controls[]` to `baselines[].requirements[]`
-- `sha256` to `{ algorithm: "sha256", value: "..." }`
-- `attributes` to `inputs`
+- `groups[].controls` to `groups[].requirements`, keeping the member ID list
+- `sha256` to `integrity: { algorithm: "sha256", checksum: "..." }`
+- `supports` entries from InSpec's hyphenated keys to `platformFamily`, `platformName` and `release`
+- `attributes` to `extensions.passthrough.legacyAttributes`, not `inputs` -- the normalizer preserves them without claiming the typed `Input` shape, which is the converter's job
+- `desc` and `descriptions[]` to a `descriptions` array that always carries a `default` entry
 - `source_location` to `sourceLocation`
 - `code_desc` to `codeDesc`, `start_time` to `startTime`, `run_time` to `runTime`
 - `"skipped"` to `"notReviewed"`
