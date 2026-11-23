@@ -128,15 +128,15 @@
     {
       "descriptions": [
         {
-          "data": "Allows access to local files on the machine by allowing Google Chrome to display file selection dialogs.",
+          "data": "\n               Allows access to local files on the machine by allowing Google Chrome to display file selection dialogs.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Allow invocation of file selection dialogs Impact: If you enable this setting, users can open file selection dialogs as normal.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Allow invocation of file selection dialogs \n                     Impact:\n                     \n                        If you enable this setting, users can open file selection dialogs as normal.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Preventing users from uploading documents can help limit the loss of sensitive information.",
+          "data": "\n               Preventing users from uploading documents can help limit the loss of sensitive information.\n            ",
           "label": "rationale"
         }
       ],
@@ -154,15 +154,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome enables the use of outdated plugins. By disabling this feature Chrome will not prompt the user to use an outdated plugin.",
+          "data": "\n               Chrome enables the use of outdated plugins. By disabling this feature Chrome will not prompt the user to use an outdated plugin.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Allow running plugins that are outdated Impact: If you disable this setting, outdated plugins will not be used and users will not be asked for permission to run them.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Allow running plugins that are outdated \n                     Impact:\n                     \n                        If you disable this setting, outdated plugins will not be used and users will not be asked for permission to run them.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Running the most up-to-date version of a plugin can reduce the possibility of running a plugin that contains an exploit or security hole.",
+          "data": "\n               Running the most up-to-date version of a plugin can reduce the possibility of running a plugin that contains an exploit or security hole.\n            ",
           "label": "rationale"
         }
       ],
@@ -180,15 +180,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows plugins that are not outdated to run automatically. Disabling this setting allows the plugins to run only when permission is granted by the user.",
+          "data": "\n               Chrome allows plugins that are not outdated to run automatically. Disabling this setting allows the plugins to run only when permission is granted by the user.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Always runs plugins that require authorization Impact: If this setting is disabled or not set, users will be asked for permission to run plugins that require authorization. These are plugins that can potentially compromise security.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Always runs plugins that require authorization \n                     Impact:\n                     \n                        If this setting is disabled or not set, users will be asked for permission to run plugins that require authorization. These are plugins that can potentially compromise security.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Disabling plugins from automatically running can prevent unwanted and/or harmful plugins from running without the user’s consent, limiting unauthorized data/remote access.",
+          "data": "\n               Disabling plugins from automatically running can prevent unwanted and/or harmful plugins from running without the user’s consent, limiting unauthorized data/remote access.\n            ",
           "label": "rationale"
         }
       ],
@@ -206,15 +206,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows cookies to be set by web page elements that are not from the domain in the user's address bar. Enabling this feature prevents third party cookies from being set.",
+          "data": "\n               Chrome allows cookies to be set by web page elements that are not from the domain in the user's address bar. Enabling this feature prevents third party cookies from being set.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Block third party cookies Impact: Enabling this setting prevents cookies from being set by web page elements that are not from the domain that is in the browser's address bar.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Block third party cookies \n                     Impact:\n                     \n                        Enabling this setting prevents cookies from being set by web page elements that are not from the domain that is in the browser's address bar.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Blocking third party cookies can help protect a user's privacy by eliminating a number of website tracking cookies.",
+          "data": "\n               Blocking third party cookies can help protect a user's privacy by eliminating a number of website tracking cookies.\n            ",
           "label": "rationale"
         }
       ],
@@ -232,15 +232,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows for processes started while the browser is open to remain running once the browser has been closed. It also allows for background apps and the current browsing session to remain active after the browser has been closed. Disabling this feature will stop all processes and background applications when the browser window is closed.",
+          "data": "\n               Chrome allows for processes started while the browser is open to remain running once the browser has been closed. It also allows for background apps and the current browsing session to remain active after the browser has been closed. Disabling this feature will stop all processes and background applications when the browser window is closed.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Continue running background apps when Google Chrome is closed Impact: If this policy is set to Disabled, background mode is disabled and cannot be controlled by the user in the browser settings.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Continue running background apps when Google Chrome is closed \n                     Impact:\n                     \n                        If this policy is set to Disabled, background mode is disabled and cannot be controlled by the user in the browser settings.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is enabled, vulnerable or malicious plugins, apps and processes can continue running even after Chrome has closed.",
+          "data": "\n               If this setting is enabled, vulnerable or malicious plugins, apps and processes can continue running even after Chrome has closed.\n            ",
           "label": "rationale"
         }
       ],
@@ -258,15 +258,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows users to auto-complete web forms with saved information such as address, phone number and credit card numbers. Disabling this feature will prompt a user to enter all information manually.",
+          "data": "\n               Chrome allows users to auto-complete web forms with saved information such as address, phone number and credit card numbers. Disabling this feature will prompt a user to enter all information manually.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable AutoFill Impact: If this setting is disabled, AutoFill will be inaccessible to users.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable AutoFill \n                     Impact:\n                     \n                        If this setting is disabled, AutoFill will be inaccessible to users.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If an attacker gains access to a user's machine where the user has stored auto save data, information could be harvested or used to gain access to more systems.",
+          "data": "\n               If an attacker gains access to a user's machine where the user has stored auto save data, information could be harvested or used to gain access to more systems.\n            ",
           "label": "rationale"
         }
       ],
@@ -284,15 +284,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting enables Google Chrome to act as a proxy between Google Cloud Print and legacy printers connected to the machine.",
+          "data": "\n               This setting enables Google Chrome to act as a proxy between Google Cloud Print and legacy printers connected to the machine.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable Google Cloud Print Proxy Impact: If this setting is disabled, users cannot enable the proxy, and the machine will not be allowed to share its local printers with Google Cloud Print.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable Google Cloud Print Proxy \n                     Impact:\n                     \n                        If this setting is disabled, users cannot enable the proxy, and the machine will not be allowed to share its local printers with Google Cloud Print.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Disabling this option will prevent users from printing possible confidential enterprise documents through the cloud.",
+          "data": "\n               Disabling this option will prevent users from printing possible confidential enterprise documents through the cloud.\n            ",
           "label": "rationale"
         }
       ],
@@ -310,15 +310,15 @@
     {
       "descriptions": [
         {
-          "data": "This Setting controls anonymous reporting of usage and crash-related data about Google Chrome to Google.",
+          "data": "\n               This Setting controls anonymous reporting of usage and crash-related data about Google Chrome to Google.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable reporting of usage and crash-related data Impact: If this setting is disabled, this information is not sent to Google.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable reporting of usage and crash-related data \n                     Impact:\n                     \n                        If this setting is disabled, this information is not sent to Google.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Anonymous crash/usage data can be used to identify people, companies and information, which can be considered data ex-filtration from company systems.",
+          "data": "\n               Anonymous crash/usage data can be used to identify people, companies and information, which can be considered data ex-filtration from company systems.\n            ",
           "label": "rationale"
         }
       ],
@@ -336,15 +336,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting enables Google Chrome to submit documents to Google Cloud Print for printing. NOTE: This only affects Google Cloud Print support in Google Chrome. It does not prevent users from submitting print jobs on web sites.",
+          "data": "\n               This setting enables Google Chrome to submit documents to Google Cloud Print for printing. NOTE: This only affects Google Cloud Print support in Google Chrome. It does not prevent users from submitting print jobs on web sites.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable submission of documents to Google Cloud print Impact: If this setting is disabled, users cannot print to Google Cloud Print from the Chrome print dialog",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Enable submission of documents to Google Cloud print \n                     Impact:\n                     \n                        If this setting is disabled, users cannot print to Google Cloud Print from the Chrome print dialog\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Disabling this option will prevent users from printing possible confidential enterprise documents through the cloud.",
+          "data": "\n               Disabling this option will prevent users from printing possible confidential enterprise documents through the cloud.\n            ",
           "label": "rationale"
         }
       ],
@@ -362,15 +362,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls if saved passwords from the default browser can be imported.",
+          "data": "\n               This setting controls if saved passwords from the default browser can be imported.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Import saved passwords from default browser on first run Impact: If this setting is disabled, saved passwords from other browsers are not imported.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Import saved passwords from default browser on first run \n                     Impact:\n                     \n                        If this setting is disabled, saved passwords from other browsers are not imported.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "In Chrome, passwords can be stored in plain-text and revealed by clicking the “show” button next to the password field by going to chrome://settings/passwords/.",
+          "data": "\n               In Chrome, passwords can be stored in plain-text and revealed by clicking the “show” button next to the password field by going to chrome://settings/passwords/.\n            ",
           "label": "rationale"
         }
       ],
@@ -388,15 +388,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows for the automatic search and installation of missing plugins. Disabling this feature will stop plugins from being downloaded and installed without the user's consent or knowledge.",
+          "data": "\n               Chrome allows for the automatic search and installation of missing plugins. Disabling this feature will stop plugins from being downloaded and installed without the user's consent or knowledge.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Specify whether the plugin finder should be disabled Impact: If this settings is enabled, the automatic search and installation of missing plugins will be disabled in Google Chrome.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Specify whether the plugin finder should be disabled \n                     Impact:\n                     \n                        If this settings is enabled, the automatic search and installation of missing plugins will be disabled in Google Chrome.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Disabling the feature that allows plugins to automatically be installed prevents plugins that may have vulnerabilities or be against company policy from being introduced to the computer without anyone’s knowledge.",
+          "data": "\n               Disabling the feature that allows plugins to automatically be installed prevents plugins that may have vulnerabilities or be against company policy from being introduced to the computer without anyone’s knowledge.\n            ",
           "label": "rationale"
         }
       ],
@@ -414,15 +414,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows the user to configure a required host domain that is imposed on remote access hosts. When enabled, hosts can only be shared using accounts that are registered to the specified domain.",
+          "data": "\n               Chrome allows the user to configure a required host domain that is imposed on remote access hosts. When enabled, hosts can only be shared using accounts that are registered to the specified domain.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled and enter domain. Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Configure the required domain name for remote access hosts Impact: If this setting is enabled, hosts can be shared only using accounts registered on the specified domain name.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled and enter domain.\n                     Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Configure the required domain name for remote access hosts \n                     Impact:\n                     \n                        If this setting is enabled, hosts can be shared only using accounts registered on the specified domain name.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is disabled or not set, then hosts can be shared using any account.",
+          "data": "\n               If this setting is disabled or not set, then hosts can be shared using any account.\n            ",
           "label": "rationale"
         }
       ],
@@ -440,15 +440,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows the user to disable a remote user's physical input and output while the remote connection is in progress.",
+          "data": "\n               Chrome allows the user to disable a remote user's physical input and output while the remote connection is in progress.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable curtaining of remote access hosts Impact: If this setting is enabled, host's physical input and output devices are disabled while a remote connection is in progress.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable curtaining of remote access hosts \n                     Impact:\n                     \n                        If this setting is enabled, host's physical input and output devices are disabled while a remote connection is in progress.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is disabled or not set, then both local and remote users can interact with the host when it is being shared.",
+          "data": "\n               If this setting is disabled or not set, then both local and remote users can interact with the host when it is being shared.\n            ",
           "label": "rationale"
         }
       ],
@@ -466,15 +466,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome enables the usage of STUN servers which allows remote clients to discover and connect to a machine even if they are separated by a firewall. By disabling this feature, in conjunction with filtering outgoing UDP connections, the machine will only allow connections from machines within the local network.",
+          "data": "\n               Chrome enables the usage of STUN servers which allows remote clients to discover and connect to a machine even if they are separated by a firewall. By disabling this feature, in conjunction with filtering outgoing UDP connections, the machine will only allow connections from machines within the local network.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable firewall traversal from remote access host Impact: If this setting is disabled and outgoing UDP connections are filtered by the firewall, this machine will only allow connections from client machines within the local network.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                      Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable firewall traversal from remote access host \n                     Impact:\n                     \n                        If this setting is disabled and outgoing UDP connections are filtered by the firewall, this machine will only allow connections from client machines within the local network.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is enabled, remote clients can discover and connect to this machines even if they are separated by a firewall.",
+          "data": "\n               If this setting is enabled, remote clients can discover and connect to this machines even if they are separated by a firewall.\n            ",
           "label": "rationale"
         }
       ],
@@ -492,15 +492,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome enables a user to opt-out of using user-specified PIN authentication and instead pair clients and hosts during connection time.",
+          "data": "\n               Chrome enables a user to opt-out of using user-specified PIN authentication and instead pair clients and hosts during connection time.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to ``Disabled . Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable or disable PIN-less authentication Impact: If this setting is disabled, users will be required to enter PIN every time.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to ``Disabled.\n                     \n                     Computer Configuration\\Administrative Templates\\Classic Administative Templates (ADM)\\Google\\Google Chrome\\Configure remote access options\\Enable or disable PIN-less authentication \n                     Impact:\n                     \n                        If this setting is disabled, users will be required to enter PIN every time.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is enabled or not configured, users can opt to pair clients and hosts at connection time, eliminating the need to enter a PIN every time.",
+          "data": "\n               If this setting is enabled or not configured, users can opt to pair clients and hosts at connection time, eliminating the need to enter a PIN every time.\n            ",
           "label": "rationale"
         }
       ],
@@ -518,15 +518,15 @@
     {
       "descriptions": [
         {
-          "data": "Allows you to set whether websites are allowed to set local data. Setting local data can be either allowed for all websites or denied for all websites.",
+          "data": "\n               Allows you to set whether websites are allowed to set local data. Setting local data can be either allowed for all websites or denied for all websites.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Content Settings\\Default cookies setting Impact: If this setting is enabled, cookies will be cleared when the session closes.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Content Settings\\Default cookies setting \n                     Impact:\n                     \n                        If this setting is enabled, cookies will be cleared when the session closes.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this policy is left not set, 'AllowCookies' will be used and the user will be able to change it.",
+          "data": "\n               If this policy is left not set, 'AllowCookies' will be used and the user will be able to change it.\n            ",
           "label": "rationale"
         }
       ],
@@ -544,15 +544,15 @@
     {
       "descriptions": [
         {
-          "data": "Allows you to set whether websites are allowed to automatically run plugins. Automatically running plugins can be either allowed for all websites or denied for all websites.",
+          "data": "\n               Allows you to set whether websites are allowed to automatically run plugins. Automatically running plugins can be either allowed for all websites or denied for all websites.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled with click to play selected from the drop down. Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Content Settings\\Default Plugins Setting Impact: If this setting is enabled, users must click plugins to allow their execution",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabledwith click to play selected from the drop down.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Content Settings\\Default Plugins Setting \n                     Impact:\n                     \n                        If this setting is enabled, users must click plugins to allow their execution\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Malicious plugins can cause browser instability and erratic behavior so setting the value to click to play will allow a user to only run necessary plugins.",
+          "data": "\n               Malicious plugins can cause browser instability and erratic behavior so setting the value to click to play will allow a user to only run necessary plugins.\n            ",
           "label": "rationale"
         }
       ],
@@ -570,15 +570,15 @@
     {
       "descriptions": [
         {
-          "data": "Enabling this setting allows you to specify which extensions the users can NOT install. Extensions already installed will be removed if blacklisted.",
+          "data": "\n               Enabling this setting allows you to specify which extensions the users can NOT install. Extensions already installed will be removed if blacklisted.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Extensions\\Configure Extension Installation Blacklist Impact: Any installed extension will be removed unless it is specified on the extension whitelist.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Enabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Extensions\\Configure Extension Installation Blacklist \n                     Impact:\n                     \n                        Any installed extension will be removed unless it is specified on the extension whitelist.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "This can be used to block extensions that could potentially allow remote control of the system through the browser. If there are extensions needed for securing the browser or for enterprise use these can be enabled by configuring the extension whitelist.",
+          "data": "\n               This can be used to block extensions that could potentially allow remote control of the system through the browser. If there are extensions needed for securing the browser or for enterprise use these can be enabled by configuring the extension whitelist.\n            ",
           "label": "rationale"
         }
       ],
@@ -596,15 +596,15 @@
     {
       "descriptions": [
         {
-          "data": "Chrome will memorize passwords and automatically provide them when a user logs into a site. By disabling this feature the user will be prompted to enter their password each time they visit a website.",
+          "data": "\n               Chrome will memorize passwords and automatically provide them when a user logs into a site. By disabling this feature the user will be prompted to enter their password each time they visit a website.\n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled . Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Password manager\\Enable the password manager Impact: If this setting is disable, users are not able to save passwords or use previously saved passwords.",
+          "data": "\n               \n                  \n                     To establish the recommended configuration via Group Policy, set the following UI path to Disabled.\n                     Computer Configuration\\Administrative Templates\\Classic Administrative Template (ADM)\\Google\\Google Chrome\\Password manager\\Enable the password manager \n                     Impact:\n                     \n                        If this setting is disable, users are not able to save passwords or use previously saved passwords.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "If this setting is enabled, users can have Google Chrome memorize passwords and provide them automatically the next time they log in to a site. An intruder who has unrestricted access to your computer for even a minute can view and copy all of your saved passwords just by visiting an easy-to-remember settings page: chrome://settings/passwords.",
+          "data": "\n               If this setting is enabled, users can have Google Chrome memorize passwords and provide them automatically the next time they log in to a site. An intruder who has unrestricted access to your computer for even a minute can view and copy all of your saved passwords just by visiting an easy-to-remember settings page: chrome://settings/passwords.\n            ",
           "label": "rationale"
         }
       ],
@@ -621,7 +621,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser. This guide was tested against Google Chrome v59.0.3071.86. To obtain the latest version of this guide, please visit http://benchmarks.cisecurity.org . If you have questions, comments, or have identified ways to improve this guide, please write us at feedback@cisecurity.org .",
+  "summary": "\n      This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser. This guide was tested against Google Chrome v59.0.3071.86. To obtain the latest version of this guide, please visit http://benchmarks.cisecurity.org. If you have questions, comments, or have identified ways to improve this guide, please write us at feedback@cisecurity.org.\n   ",
   "title": "CIS Google Chrome Benchmark",
   "version": "1.2.0"
 }

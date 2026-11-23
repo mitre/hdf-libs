@@ -422,8 +422,8 @@ func buildRefs(refs []RuleReference) []hdf.Reference {
 // check's OVAL/SCE definition name (check-content-ref/@name), which SCAP content
 // carries instead of inline logic. Empty when the check has neither.
 func checkDescriptionData(check Check) string {
-	if cc := strings.TrimSpace(check.CheckContent); cc != "" {
-		return hdfutil.StripHTML(cc)
+	if strings.TrimSpace(check.CheckContent) != "" {
+		return hdfutil.StripHTMLTags(check.CheckContent)
 	}
 	return check.CheckContentRef.Name
 }
@@ -951,7 +951,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		Title:           hdfutil.Ptr(baselineName),
 		Version:         hdfutil.Ptr(benchmark.Version),
 		Status:          &status,
-		Summary:         hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
+		Summary:         hdfutil.Ptr(hdfutil.StripHTMLTags(string(benchmark.Description))),
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
@@ -1196,7 +1196,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Title:        hdfutil.Ptr(benchmark.Title),
 		Version:      hdfutil.Ptr(benchmark.Version),
 		Status:       &status,
-		Summary:      hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description))),
+		Summary:      hdfutil.Ptr(hdfutil.StripHTMLTags(string(benchmark.Description))),
 		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
@@ -1246,50 +1246,7 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 
 // buildBaselineDescriptions creates HDF Description entries for a baseline requirement.
 func buildBaselineDescriptions(rule *Rule) []hdf.Description {
-	var descriptions []hdf.Description
-
-	if rule.Description != "" {
-		descText := extractVulnDiscussion(string(rule.Description))
-		descriptions = append(descriptions, hdf.Description{
-			Label: "default",
-			Data:  hdfutil.StripHTML(descText),
-		})
-	} else {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "default",
-			Data:  "",
-		})
-	}
-
-	if data := checkDescriptionData(selectCheck(rule.Checks)); data != "" {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "check",
-			Data:  data,
-		})
-	}
-
-	if fix := rule.Fixtext.Text(); fix != "" {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "fix",
-			Data:  hdfutil.StripHTML(fix),
-		})
-	}
-
-	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "rationale",
-			Data:  hdfutil.StripHTML(r),
-		})
-	}
-
-	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
-		descriptions = append(descriptions, hdf.Description{
-			Label: "warning",
-			Data:  hdfutil.StripHTML(w),
-		})
-	}
-
-	return descriptions
+	return buildDescriptions(rule)
 }
 
 // buildBaselineTags constructs the tags map for a baseline requirement.
@@ -1536,7 +1493,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		}
 		if benchmark != nil {
 			baseline.Version = hdfutil.Ptr(benchmark.Version)
-			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(string(benchmark.Description)))
+			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTMLTags(string(benchmark.Description)))
 		}
 		baselines = append(baselines, baseline)
 
@@ -1794,7 +1751,7 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		descText := extractVulnDiscussion(string(rule.Description))
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
-			Data:  hdfutil.StripHTML(descText),
+			Data:  hdfutil.StripHTMLTags(descText),
 		})
 	} else {
 		descriptions = append(descriptions, hdf.Description{
@@ -1817,21 +1774,21 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 	if fix := rule.Fixtext.Text(); fix != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  hdfutil.StripHTML(fix),
+			Data:  hdfutil.StripHTMLTags(fix),
 		})
 	}
 
-	if r := strings.TrimSpace(string(rule.Rationale)); r != "" {
+	if strings.TrimSpace(string(rule.Rationale)) != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "rationale",
-			Data:  hdfutil.StripHTML(r),
+			Data:  hdfutil.StripHTMLTags(string(rule.Rationale)),
 		})
 	}
 
-	if w := strings.TrimSpace(string(rule.Warning)); w != "" {
+	if strings.TrimSpace(string(rule.Warning)) != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "warning",
-			Data:  hdfutil.StripHTML(w),
+			Data:  hdfutil.StripHTMLTags(string(rule.Warning)),
 		})
 	}
 

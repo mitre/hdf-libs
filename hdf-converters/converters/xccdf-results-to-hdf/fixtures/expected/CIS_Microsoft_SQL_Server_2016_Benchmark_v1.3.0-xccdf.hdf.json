@@ -111,15 +111,15 @@
     {
       "descriptions": [
         {
-          "data": "SQL Server patches contain program updates that fix security and product functionality issues found in the software. These patches can be installed with a hotfix which is a single patch, a cumulative update which is a small group of patches or a service pack which is a large collection of patches. The SQL Server version and patch levels should be the most recent compatible with the organizations' operational needs.",
+          "data": "\n        SQL Server patches contain program updates that fix security and product functionality issues found in the software. These patches can be installed with a hotfix which is a single patch, a cumulative update which is a small group of patches or a service pack which is a large collection of patches. The SQL Server version and patch levels should be the most recent compatible with the organizations' operational needs.\n      ",
           "label": "default"
         },
         {
-          "data": "Identify the current version and patch level of your SQL Server instances and ensure they contain the latest security fixes. Make sure to test these fixes in your test environments before updating production instances. The most recent SQL Server patches can be found here: Hotfixes and Cumulative updates: https://docs.microsoft.com/en-us/sql/database-engine/install-windows/latest-updates-for-microsoft-sql-server?view=sql-server-ver15\u0026viewFallbackFrom=sql-server-2016 Service Packs: https://support.microsoft.com/en-us/help/3177534/how-to-obtain-the-latest-service-pack-for-sql-server-2016",
+          "data": "\n        \n          \n            Identify the current version and patch level of your SQL Server instances and ensure they contain the latest security fixes. Make sure to test these fixes in your test environments before updating production instances.\n            The most recent SQL Server patches can be found here:\n            \n              \nHotfixes and Cumulative updates:                 https://docs.microsoft.com/en-us/sql/database-engine/install-windows/latest-updates-for-microsoft-sql-server?view=sql-server-ver15\u0026viewFallbackFrom=sql-server-2016\n              \n              \nService Packs:                 https://support.microsoft.com/en-us/help/3177534/how-to-obtain-the-latest-service-pack-for-sql-server-2016\n              \n            \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Using the most recent SQL Server software, along with all applicable patches can help limit the possibilities for vulnerabilities in the software. The installation version and/or patches applied during setup should be established according to the needs of the organization.",
+          "data": "\n        Using the most recent SQL Server software, along with all applicable patches can help limit the possibilities for vulnerabilities in the software. The installation version and/or patches applied during setup should be established according to the needs of the organization.\n      ",
           "label": "rationale"
         }
       ],
@@ -137,15 +137,15 @@
     {
       "descriptions": [
         {
-          "data": "It is recommended that SQL Server software be installed on a dedicated server. This architectural consideration affords security flexibility in that the database server can be placed on a separate subnet allowing access only from particular hosts and over particular protocols. Degrees of availability are easier to achieve as well - over time, an enterprise can move from a single database server to a failover to a cluster using load balancing or to some combination thereof.",
+          "data": "\n        It is recommended that SQL Server software be installed on a dedicated server. This architectural consideration affords security flexibility in that the database server can be placed on a separate subnet allowing access only from particular hosts and over particular protocols. Degrees of availability are easier to achieve as well - over time, an enterprise can move from a single database server to a failover to a cluster using load balancing or to some combination thereof.\n      ",
           "label": "default"
         },
         {
-          "data": "Uninstall excess tooling and/or remove unnecessary roles from the underlying operating system. Impact: It is difficult to see any reasonably adverse impact to making this architectural change, once the costs of making the change have been paid. Custom applications may need to be modified to accommodate database connections over the wire rather than on the host (i.e. using TCP/IP instead of Named Pipes). Additional hardware and operating system licenses may be required to make these architectural changes.",
+          "data": "\n        \n          \n            Uninstall excess tooling and/or remove unnecessary roles from the underlying operating system.\n            Impact:\n            \n              It is difficult to see any reasonably adverse impact to making this architectural change, once the costs of making the change have been paid. Custom applications may need to be modified to accommodate database connections over the wire rather than on the host (i.e. using TCP/IP instead of Named Pipes). Additional hardware and operating system licenses may be required to make these architectural changes.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "It is easier to manage (i.e. reduce) the attack surface of the server hosting SQL Server software if the only surfaces to consider are the underlying operating system, SQL Server itself, and any security/operational tooling that may additionally be installed. As noted in the description, availability can be more easily addressed if the database is on a dedicated server.",
+          "data": "\n        It is easier to manage (i.e. reduce) the attack surface of the server hosting SQL Server software if the only surfaces to consider are the underlying operating system, SQL Server itself, and any security/operational tooling that may additionally be installed. As noted in the description, availability can be more easily addressed if the database is on a dedicated server.\n      ",
           "label": "rationale"
         }
       ],
@@ -163,7 +163,7 @@
     {
       "descriptions": [
         {
-          "data": "Enabling Ad Hoc Distributed Queries allows users to query data and execute statements on external data sources. This functionality should be disabled.",
+          "data": "\n        Enabling Ad Hoc Distributed Queries allows users to query data and execute statements on external data sources. This functionality should be disabled.\n      ",
           "label": "default"
         },
         {
@@ -171,11 +171,11 @@
           "label": "check"
         },
         {
-          "data": "Run the following T-SQL command: EXECUTE sp_configure 'show advanced options', 1; RECONFIGURE; EXECUTE sp_configure 'Ad Hoc Distributed Queries', 0; RECONFIGURE; GO EXECUTE sp_configure 'show advanced options', 0; RECONFIGURE;",
+          "data": "\n        \n          \n            Run the following T-SQL command:\n            \nEXECUTE sp_configure 'show advanced options', 1;              \nRECONFIGURE;              \nEXECUTE sp_configure 'Ad Hoc Distributed Queries', 0;              \nRECONFIGURE;              \nGO              \nEXECUTE sp_configure 'show advanced options', 0;              \nRECONFIGURE; \n            \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "This feature can be used to remotely access and exploit vulnerabilities on remote SQL Server instances and to run unsafe Visual Basic for Application functions.",
+          "data": "\n        This feature can be used to remotely access and exploit vulnerabilities on remote SQL Server instances and to run unsafe Visual Basic for Application functions.\n      ",
           "label": "rationale"
         }
       ],
@@ -194,7 +194,7 @@
     {
       "descriptions": [
         {
-          "data": "The clr enabled option specifies whether user assemblies can be run by SQL Server.",
+          "data": "\n        \nThe           clr enabled\n option specifies whether user assemblies can be run by SQL Server.        \n      ",
           "label": "default"
         },
         {
@@ -202,11 +202,11 @@
           "label": "check"
         },
         {
-          "data": "Run the following T-SQL command: EXECUTE sp_configure 'clr enabled', 0; RECONFIGURE; Impact: If CLR assemblies are in use, applications may need to be rearchitected to eliminate their usage before disabling this setting. Alternatively, some organizations may allow this setting to be enabled 1 for assemblies created with the SAFE permission set, but disallow assemblies created with the riskier UNSAFE and EXTERNAL_ACCESS permission sets. To find user-created assemblies, run the following query in all databases, replacing with each database name: USE [ ] GO SELECT name AS Assembly_Name, permission_set_desc FROM sys.assemblies WHERE is_user_defined = 1; GO",
+          "data": "\n        \n          \n            Run the following T-SQL command:\n            \nEXECUTE sp_configure 'clr enabled', 0;              \nRECONFIGURE;\n            \n            Impact:\n            \n              \nIf CLR assemblies are in use, applications may need to be rearchitected to eliminate their usage before disabling this setting. Alternatively, some organizations may allow this setting to be enabled                 1\n for assemblies created with the                 SAFE\n permission set, but disallow assemblies created with the riskier                 UNSAFE\n and                 EXTERNAL_ACCESS\n permission sets. To find user-created assemblies, run the following query in all databases, replacing                 \n                  \n                \n with each database name:              \n              \nUSE []                \nGO                \nSELECT name AS Assembly_Name, permission_set_desc                \nFROM sys.assemblies                \nWHERE is_user_defined = 1;                \nGO\n              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Enabling use of CLR assemblies widens the attack surface of SQL Server and puts it at risk from both inadvertent and malicious assemblies.",
+          "data": "\n        Enabling use of CLR assemblies widens the attack surface of SQL Server and puts it at risk from both inadvertent and malicious assemblies.\n      ",
           "label": "rationale"
         }
       ],
@@ -225,15 +225,15 @@
     {
       "descriptions": [
         {
-          "data": "The remote access option controls the execution of local stored procedures on remote servers or remote stored procedures on local server.",
+          "data": "\n        \nThe           remote access\n option controls the execution of local stored procedures on remote servers or remote stored procedures on local server.        \n      ",
           "label": "default"
         },
         {
-          "data": "Run the following T-SQL command: EXECUTE sp_configure 'show advanced options', 1; RECONFIGURE; EXECUTE sp_configure 'remote access', 0; RECONFIGURE; GO EXECUTE sp_configure 'show advanced options', 0; RECONFIGURE; Restart the Database Engine. Impact: Per Microsoft: This feature will be removed in the next version of Microsoft SQL Server. Do not use this feature in new development work, and modify applications that currently use this feature as soon as possible. Use sp_addlinkedserver instead.",
+          "data": "\n        \n          \n            Run the following T-SQL command:\n            \nEXECUTE sp_configure 'show advanced options', 1;              \nRECONFIGURE;              \nEXECUTE sp_configure 'remote access', 0;              \nRECONFIGURE;              \nGO              \nEXECUTE sp_configure 'show advanced options', 0;              \nRECONFIGURE;\n            \n            Restart the Database Engine.\n            Impact:\n            \n              \nPer Microsoft: This feature will be removed in the next version of Microsoft SQL Server. Do not use this feature in new development work, and modify applications that currently use this feature as soon as possible. Use                 sp_addlinkedserver\n instead.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Functionality can be abused to launch a Denial-of-Service (DoS) attack on remote servers by off-loading query processing to a target.",
+          "data": "\n        Functionality can be abused to launch a Denial-of-Service (DoS) attack on remote servers by off-loading query processing to a target.\n      ",
           "label": "rationale"
         }
       ],
@@ -251,7 +251,7 @@
     {
       "descriptions": [
         {
-          "data": "The remote admin connections option controls whether a client application on a remote computer can use the Dedicated Administrator Connection (DAC).",
+          "data": "\n        \nThe           remote admin connections\n option controls whether a client application on a remote computer can use the Dedicated Administrator Connection (DAC).        \n      ",
           "label": "default"
         },
         {
@@ -259,11 +259,11 @@
           "label": "check"
         },
         {
-          "data": "Run the following T-SQL command on non-clustered installations: EXECUTE sp_configure 'remote admin connections', 0; RECONFIGURE; GO",
+          "data": "\n        \n          \n            Run the following T-SQL command on non-clustered installations:\n            \nEXECUTE sp_configure 'remote admin connections', 0;              \nRECONFIGURE;              \nGO\n            \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "The Dedicated Administrator Connection (DAC) lets an administrator access a running server to execute diagnostic functions or Transact-SQL statements, or to troubleshoot problems on the server, even when the server is locked or running in an abnormal state and not responding to a SQL Server Database Engine connection. In a cluster scenario, the administrator may not actually be logged on to the same node that is currently hosting the SQL Server instance and thus is considered \"remote\". Therefore, this setting should usually be enabled ( 1 ) for SQL Server failover clusters; otherwise, it should be disabled ( 0 ) which is the default.",
+          "data": "\n        \nThe Dedicated Administrator Connection (DAC) lets an administrator access a running server to execute diagnostic functions or Transact-SQL statements, or to troubleshoot problems on the server, even when the server is locked or running in an abnormal state and not responding to a SQL Server Database Engine connection. In a cluster scenario, the administrator may not actually be logged on to the same node that is currently hosting the SQL Server instance and thus is considered \"remote\". Therefore, this setting should usually be enabled (          1\n) for SQL Server failover clusters; otherwise, it should be disabled (          0\n) which is the default.        \n      ",
           "label": "rationale"
         }
       ],
@@ -282,15 +282,15 @@
     {
       "descriptions": [
         {
-          "data": "The scan for startup procs option, if enabled, causes SQL Server to scan for and automatically run all stored procedures that are set to execute upon service startup.",
+          "data": "\n        \nThe           scan for startup procs\n option, if enabled, causes SQL Server to scan for and automatically run all stored procedures that are set to execute upon service startup.        \n      ",
           "label": "default"
         },
         {
-          "data": "Run the following T-SQL command: EXECUTE sp_configure 'show advanced options', 1; RECONFIGURE; EXECUTE sp_configure 'scan for startup procs', 0; RECONFIGURE; GO EXECUTE sp_configure 'show advanced options', 0; RECONFIGURE; Restart the Database Engine. Impact: Setting Scan for Startup Procedures to 0 will prevent certain audit traces and other commonly used monitoring stored procedures from re-starting on start up. Additionally, replication requires this setting to be enabled ( 1 ) and will automatically change this setting if needed.",
+          "data": "\n        \n          \n            Run the following T-SQL command:\n            \nEXECUTE sp_configure 'show advanced options', 1;              \nRECONFIGURE;              \nEXECUTE sp_configure 'scan for startup procs', 0;              \nRECONFIGURE;              \nGO              \nEXECUTE sp_configure 'show advanced options', 0;              \nRECONFIGURE;\n            \n            Restart the Database Engine.\n            Impact:\n            \n              \nSetting Scan for Startup Procedures to                 0\n will prevent certain audit traces and other commonly used monitoring stored procedures from re-starting on start up. Additionally, replication requires this setting to be enabled (                1\n) and will automatically change this setting if needed.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Enforcing this control reduces the threat of an entity leveraging these facilities for malicious purposes.",
+          "data": "\n        Enforcing this control reduces the threat of an entity leveraging these facilities for malicious purposes.\n      ",
           "label": "rationale"
         }
       ],
@@ -308,7 +308,7 @@
     {
       "descriptions": [
         {
-          "data": "The TRUSTWORTHY database option allows database objects to access objects in other databases under certain circumstances.",
+          "data": "\n        \nThe           TRUSTWORTHY\n database option allows database objects to access objects in other databases under certain circumstances.        \n      ",
           "label": "default"
         },
         {
@@ -316,11 +316,11 @@
           "label": "check"
         },
         {
-          "data": "Execute the following T-SQL statement against the databases (replace below) returned by the Audit Procedure: ALTER DATABASE [ ] SET TRUSTWORTHY OFF;",
+          "data": "\n        \n          \n            \nExecute the following T-SQL statement against the databases (replace               \n                \n              \n below) returned by the Audit Procedure:            \n            ALTER DATABASE [] SET TRUSTWORTHY OFF;\n\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Provides protection from malicious CLR assemblies or extended procedures.",
+          "data": "\n        Provides protection from malicious CLR assemblies or extended procedures.\n      ",
           "label": "rationale"
         }
       ],
@@ -339,15 +339,15 @@
     {
       "descriptions": [
         {
-          "data": "SQL Server supports Shared Memory, Named Pipes, and TCP/IP protocols. However, SQL Server should be configured to use the bare minimum required based on the organization's needs.",
+          "data": "\n        SQL Server supports Shared Memory, Named Pipes, and TCP/IP protocols. However, SQL Server should be configured to use the bare minimum required based on the organization's needs.\n      ",
           "label": "default"
         },
         {
-          "data": "Open SQL Server Configuration Manager ; go to the SQL Server Network Configuration . Ensure that only required protocols are enabled. Disable protocols not necessary. Impact: The Database Engine (MSSQL and SQLAgent) services must be stopped and restarted for the change to take effect.",
+          "data": "\n        \n          \n            \nOpen               SQL Server Configuration Manager\n; go to the               SQL Server Network Configuration\n. Ensure that only required protocols are enabled. Disable protocols not necessary.            \n            Impact:\n            \n              The Database Engine (MSSQL and SQLAgent) services must be stopped and restarted for the change to take effect.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Using fewer protocols minimizes the attack surface of SQL Server and, in some cases, can protect it from remote attacks.",
+          "data": "\n        Using fewer protocols minimizes the attack surface of SQL Server and, in some cases, can protect it from remote attacks.\n      ",
           "label": "rationale"
         }
       ],
@@ -365,15 +365,15 @@
     {
       "descriptions": [
         {
-          "data": "If installed, a default SQL Server instance will be assigned a default port of TCP:1433 for TCP/IP communication. Administrators can also manually configure named instances to use TCP:1433 for communication. TCP:1433 is a widely known SQL Server port and this port assignment should be changed. In a multi-instance scenario, each instance must be assigned its own dedicated TCP/IP port.",
+          "data": "\n        \nIf installed, a default SQL Server instance will be assigned a default port of           TCP:1433\n for TCP/IP communication. Administrators can also manually configure named instances to use           TCP:1433\n for communication.           TCP:1433\n is a widely known SQL Server port and this port assignment should be changed. In a multi-instance scenario, each instance must be assigned its own dedicated TCP/IP port.        \n      ",
           "label": "default"
         },
         {
-          "data": "In SQL Server Configuration Manager , in the console pane, expand SQL Server Network Configuration , expand Protocols for , and then double-click the TCP/IP protocol In the TCP/IP Properties dialog box, on the IP Addresses tab, several IP addresses appear in the format IP1 , IP2 , up to IPAll . One of these is for the IP address of the loopback adapter, 127.0.0.1 . Additional IP addresses appear for each IP Address on the computer. Under IPAll , change the TCP Port field from 1433 to a non-standard port or leave the TCP Port field empty and set the TCP Dynamic Ports value to 0 to enable dynamic port assignment and then click OK . In the console pane, click SQL Server Services . In the details pane, right-click SQL Server ( ) and then click Restart , to stop and restart SQL Server. Impact: Changing the default port will force the DAC (Dedicated Administrator Connection) to listen on a random port. Also, it might make benign applications, such as application firewalls, require special configuration. In general, you should set a static port for consistent usage by applications, including firewalls, instead of using dynamic ports which will be chosen randomly at each SQL Server start up.",
+          "data": "\n        \n          \n            \n              \nIn                 SQL Server Configuration Manager\n, in the console pane, expand                 SQL Server Network Configuration\n, expand Protocols for                 \n                  \n                \n, and then double-click the TCP/IP protocol              \n              \nIn the                 TCP/IP Properties\n dialog box, on the                 IP Addresses\n tab, several IP addresses appear in the format                 IP1\n,                 IP2\n, up to                 IPAll\n. One of these is for the IP address of the loopback adapter,                 127.0.0.1\n. Additional IP addresses appear for each IP Address on the computer.              \n              \nUnder                 IPAll\n, change the                 TCP Port\n field from                 1433\n to a non-standard port or leave the                 TCP Port\n field empty and set the                 TCP Dynamic Ports\n value to                 0\n to enable dynamic port assignment and then click                 OK\n.              \n              \nIn the console pane, click                 SQL Server Services\n.              \n              \nIn the details pane, right-click                 \nSQL Server (                  \n)                \n and then click                 Restart\n, to stop and restart SQL Server.              \n            \n            Impact:\n            \n              Changing the default port will force the DAC (Dedicated Administrator Connection) to listen on a random port. Also, it might make benign applications, such as application firewalls, require special configuration. In general, you should set a static port for consistent usage by applications, including firewalls, instead of using dynamic ports which will be chosen randomly at each SQL Server start up.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Using a non-default port helps protect the database from attacks directed to the default port.",
+          "data": "\n        Using a non-default port helps protect the database from attacks directed to the default port.\n      ",
           "label": "rationale"
         }
       ],
@@ -391,7 +391,7 @@
     {
       "descriptions": [
         {
-          "data": "Non-clustered SQL Server instances within production environments should be designated as hidden to prevent advertisement by the SQL Server Browser service.",
+          "data": "\n        Non-clustered SQL Server instances within production environments should be designated as hidden to prevent advertisement by the SQL Server Browser service.\n      ",
           "label": "default"
         },
         {
@@ -399,11 +399,11 @@
           "label": "check"
         },
         {
-          "data": "Perform either the GUI or T-SQL method shown: GUI Method In SQL Server Configuration Manager , expand SQL Server Network Configuration , right-click Protocols for , and then select Properties . On the Flags tab, in the Hide Instance box, select Yes , and then click OK to close the dialog box. The change takes effect immediately for new connections. T-SQL Method Execute the following T-SQL to remediate: EXEC master.sys.xp_instance_regwrite @rootkey = N'HKEY_LOCAL_MACHINE', @key = N'SOFTWARE\\Microsoft\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib', @value_name = N'HideInstance', @type = N'REG_DWORD', @value = 1; Impact: This method only prevents the instance from being listed on the network. If the instance is hidden (not exposed by SQL Browser), then connections will need to specify the server and port in order to connect. It does not prevent users from connecting to server if they know the instance name and port. If you hide a clustered named instance, the cluster service may not be able to connect to the SQL Server. Please refer to the Microsoft documentation reference.",
+          "data": "\n        \n          \n            Perform either the GUI or T-SQL method shown:\n            GUI Method\n            \n              \nIn                 SQL Server Configuration Manager\n, expand                 SQL Server Network Configuration\n, right-click                 \nProtocols for                   \n                \n, and then select                 Properties\n.              \n              \nOn the                 Flags\n tab, in the                 Hide Instance\n box, select                 Yes\n, and then click                 OK\n to close the dialog box. The change takes effect immediately for new connections.              \n            \n            T-SQL Method\n            Execute the following T-SQL to remediate:\n            \nEXEC master.sys.xp_instance_regwrite              \n      @rootkey = N'HKEY_LOCAL_MACHINE',              \n      @key = N'SOFTWARE\\Microsoft\\Microsoft SQL Server\\MSSQLServer\\SuperSocketNetLib',              \n      @value_name = N'HideInstance',              \n      @type = N'REG_DWORD',              \n      @value = 1;\n            \n            Impact:\n            \n              This method only prevents the instance from being listed on the network. If the instance is hidden (not exposed by SQL Browser), then connections will need to specify the server and port in order to connect. It does not prevent users from connecting to server if they know the instance name and port.\n              If you hide a clustered named instance, the cluster service may not be able to connect to the SQL Server. Please refer to the Microsoft documentation reference.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Designating production SQL Server instances as hidden leads to a more secure installation because they cannot be enumerated. However, clustered instances may break if this option is selected.",
+          "data": "\n        Designating production SQL Server instances as hidden leads to a more secure installation because they cannot be enumerated. However, clustered instances may break if this option is selected.\n      ",
           "label": "rationale"
         }
       ],
@@ -422,7 +422,7 @@
     {
       "descriptions": [
         {
-          "data": "The sa account is a widely known and often widely used SQL Server account with sysadmin privileges. This is the original login created during installation and always has the principal_id=1 and sid=0x01 .",
+          "data": "\n        \nThe           sa\n account is a widely known and often widely used SQL Server account with sysadmin privileges. This is the original login created during installation and always has the           principal_id=1\n and           sid=0x01\n.        \n      ",
           "label": "default"
         },
         {
@@ -430,11 +430,11 @@
           "label": "check"
         },
         {
-          "data": "Execute the following T-SQL query: USE [master] GO DECLARE @tsql nvarchar(max) SET @tsql = 'ALTER LOGIN ' + SUSER_NAME(0x01) + ' DISABLE' EXEC (@tsql) GO Impact: It is not a good security practice to code applications or scripts to use the sa account. However, if this has been done, disabling the sa account will prevent scripts and applications from authenticating to the database server and executing required tasks or functions.",
+          "data": "\n        \n          \n            Execute the following T-SQL query:\n            \nUSE [master]              \nGO              \nDECLARE @tsql nvarchar(max)              \nSET @tsql = 'ALTER LOGIN ' + SUSER_NAME(0x01) + ' DISABLE'              \nEXEC (@tsql)              \nGO\n            \n            Impact:\n            \n              \nIt is not a good security practice to code applications or scripts to use the                 sa\n account. However, if this has been done, disabling the                 sa\n account will prevent scripts and applications from authenticating to the database server and executing required tasks or functions.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Enforcing this control reduces the probability of an attacker executing brute force attacks against a well-known principal.",
+          "data": "\n        Enforcing this control reduces the probability of an attacker executing brute force attacks against a well-known principal.\n      ",
           "label": "rationale"
         }
       ],
@@ -453,15 +453,15 @@
     {
       "descriptions": [
         {
-          "data": "The sa account is a widely known and often widely used SQL Server login with sysadmin privileges. The sa login is the original login created during installation and always has principal_id=1 and sid=0x01 .",
+          "data": "\n        \nThe           sa\n account is a widely known and often widely used SQL Server login with sysadmin privileges. The           sa\n login is the original login created during installation and always has           principal_id=1\n and           sid=0x01\n.        \n      ",
           "label": "default"
         },
         {
-          "data": "Replace the value within the below syntax and execute to rename the sa login. ALTER LOGIN sa WITH NAME = ; Impact: It is not a good security practice to code applications or scripts to use the sa login. However, if this has been done, renaming the sa login will prevent scripts and applications from authenticating to the database server and executing required tasks or functions.",
+          "data": "\n        \n          \n            \nReplace the               \n                \n              \n value within the below syntax and execute to rename the               sa\n login.            \n            ALTER LOGIN sa WITH NAME = ;\n\n            Impact:\n            \n              \nIt is not a good security practice to code applications or scripts to use the                 sa\n login. However, if this has been done, renaming the                 sa\n login will prevent scripts and applications from authenticating to the database server and executing required tasks or functions.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "It is more difficult to launch password-guessing and brute-force attacks against the sa login if the name is not known.",
+          "data": "\n        \nIt is more difficult to launch password-guessing and brute-force attacks against the           sa\n login if the name is not known.        \n      ",
           "label": "rationale"
         }
       ],
@@ -479,7 +479,7 @@
     {
       "descriptions": [
         {
-          "data": "The sa login (e.g. principal) is a widely known and often widely used SQL Server account. Therefore, there should not be a login called sa even when the original sa login ( principal_id = 1 ) has been renamed.",
+          "data": "\n        \nThe           sa\n login (e.g. principal) is a widely known and often widely used SQL Server account. Therefore, there should not be a login called           sa\n even when the original           sa\n login (          principal_id = 1\n) has been renamed.        \n      ",
           "label": "default"
         },
         {
@@ -487,11 +487,11 @@
           "label": "check"
         },
         {
-          "data": "Execute the appropriate ALTER or DROP statement below based on the principal_id returned for the login named sa . Replace the value within the below syntax and execute to rename the sa login. USE [master] GO -- If principal_id = 1 or the login owns database objects, rename the sa login ALTER LOGIN [sa] WITH NAME = ; GO -- If the login owns no database objects, then drop it -- Do NOT drop the login if it is principal_id = 1 DROP LOGIN sa Impact: It is not a good security practice to code applications or scripts to use the sa account. Given that it is a best practice to rename and disable the sa account, some 3rd party applications check for the existence of a login named sa and if it doesn't exist, creates one. Removing the sa login will prevent these scripts and applications from authenticating to the database server and executing required tasks or functions.",
+          "data": "\n        \n          \n            \nExecute the appropriate               ALTER\n or               DROP\n statement below based on the               principal_id\n returned for the login named               sa\n. Replace the               \n                \n              \n value within the below syntax and execute to rename the               sa\n login.            \n            \nUSE [master]              \nGO              \n-- If principal_id = 1 or the login owns database objects, rename the sa login               \nALTER LOGIN [sa] WITH NAME = ;              \nGO              \n-- If the login owns no database objects, then drop it                \n-- Do NOT drop the login if it is principal_id = 1              \nDROP LOGIN sa\n            \n            Impact:\n            \n              \nIt is not a good security practice to code applications or scripts to use the                 sa\n account. Given that it is a best practice to rename and disable the                 sa\n account, some 3rd party applications check for the existence of a login named                 sa\n and if it doesn't exist, creates one. Removing the                 sa\n login will prevent these scripts and applications from authenticating to the database server and executing required tasks or functions.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Enforcing this control reduces the probability of an attacker executing brute force attacks against a well-known principal name.",
+          "data": "\n        Enforcing this control reduces the probability of an attacker executing brute force attacks against a well-known principal name.\n      ",
           "label": "rationale"
         }
       ],
@@ -510,15 +510,15 @@
     {
       "descriptions": [
         {
-          "data": "The service account and/or service SID used by the MSSQLSERVER service for a default instance or MSSQL$ service for a named instance should not be a member of the Windows Administrator group either directly or indirectly (via a group). This also means that the account known as LocalSystem (aka NT AUTHORITY\\SYSTEM ) should not be used for the MSSQL service as this account has higher privileges than the SQL Server service requires.",
+          "data": "\n        \nThe service account and/or service           SID\n used by the           MSSQLSERVER\n service for a default instance or           MSSQL$\n          \n            \n          \n service for a named instance should not be a member of the Windows Administrator group either directly or indirectly (via a group). This also means that the account known as           LocalSystem\n (aka           NT AUTHORITY\\SYSTEM\n) should not be used for the           MSSQL\n service as this account has higher privileges than the SQL Server service requires.        \n      ",
           "label": "default"
         },
         {
-          "data": "In the case where LocalSystem is used, use SQL Server Configuration Manager to change to a less privileged account. Otherwise, remove the account or service SID from the Administrators group. You may need to run the SQL Server Configuration Manager if underlying permissions had been changed or if SQL Server Configuration Manager was not originally used to set the service account. Impact: The SQL Server Configuration Manager tool should always be used to change the SQL Server’s service account. This will ensure that the account has the necessary privileges. If the service needs access to resources other than the standard Microsoft defined directories and registry, then additional permissions may need to be granted separately to those resources.",
+          "data": "\n        \n          \n            \nIn the case where               LocalSystem\n is used, use               SQL Server Configuration Manager\n to change to a less privileged account. Otherwise, remove the account or service               SID\n from the Administrators group. You may need to run the               SQL Server Configuration Manager\n if underlying permissions had been changed or if               SQL Server Configuration Manager\n was not originally used to set the service account.            \n            Impact:\n            \n              \nThe                 SQL Server Configuration Manager\n tool should always be used to change the SQL Server’s service account. This will ensure that the account has the necessary privileges. If the service needs access to resources other than the standard Microsoft defined directories and registry, then additional permissions may need to be granted separately to those resources.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Following the principle of least privilege, the service account should have no more privileges than required to do its job. For SQL Server services, the SQL Server Setup will assign the required permissions directly to the service SID . No additional permissions or privileges should be necessary.",
+          "data": "\n        \nFollowing the principle of least privilege, the service account should have no more privileges than required to do its job. For SQL Server services, the SQL Server Setup will assign the required permissions directly to the service           SID\n. No additional permissions or privileges should be necessary.        \n      ",
           "label": "rationale"
         }
       ],
@@ -536,7 +536,7 @@
     {
       "descriptions": [
         {
-          "data": "Prior to SQL Server 2008, the BUILTIN\\Administrators group was added as a SQL Server login with sysadmin privileges during installation by default. Best practices promote creating an Active Directory level group containing approved DBA staff accounts and using this controlled AD group as the login with sysadmin privileges. The AD group should be specified during SQL Server installation and the BUILTIN\\Administrators group would therefore have no need to be a login.",
+          "data": "\n        \nPrior to SQL Server 2008, the           BUILTIN\\Administrators\n group was added as a SQL Server login with sysadmin privileges during installation by default. Best practices promote creating an Active Directory level group containing approved DBA staff accounts and using this controlled AD group as the login with sysadmin privileges. The AD group should be specified during SQL Server installation and the           BUILTIN\\Administrators\n group would therefore have no need to be a login.        \n      ",
           "label": "default"
         },
         {
@@ -544,11 +544,11 @@
           "label": "check"
         },
         {
-          "data": "For each BUILTIN login, if needed create a more restrictive AD group containing only the required user accounts. Add the AD group or individual Windows accounts as a SQL Server login and grant it the permissions required. Drop the BUILTIN login using the syntax below after replacing in [BUILTIN\\ ] . USE [master] GO DROP LOGIN [BUILTIN\\ ] GO Impact: Before dropping the BUILTIN group logins, ensure that alternative AD Groups or Windows logins have been added with equivalent permissions. Otherwise, the SQL Server instance may become totally inaccessible.",
+          "data": "\n        \n          \n            \n              \nFor each                 BUILTIN\n login, if needed create a more restrictive AD group containing only the required user accounts.              \n              Add the AD group or individual Windows accounts as a SQL Server login and grant it the permissions required.\n              \nDrop the                 BUILTIN\n login using the syntax below after replacing                 \n                  \n                \n in                 [BUILTIN\\\n                \n                  \n                \n                ]\n.\n                USE [master]\nGO\nDROP LOGIN [BUILTIN\\]\nGO\n\n              \n            \n            Impact:\n            \n              \nBefore dropping the                 BUILTIN\n group logins, ensure that alternative AD Groups or Windows logins have been added with equivalent permissions. Otherwise, the SQL Server instance may become totally inaccessible.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "The BUILTIN groups (Administrators, Everyone, Authenticated Users, Guests, etc.) generally contain very broad memberships which would not meet the best practice of ensuring only the necessary users have been granted access to a SQL Server instance. These groups should not be used for any level of access into a SQL Server Database Engine instance.",
+          "data": "\n        \nThe           BUILTIN\n groups (Administrators, Everyone, Authenticated Users, Guests, etc.) generally contain very broad memberships which would not meet the best practice of ensuring only the necessary users have been granted access to a SQL Server instance. These groups should not be used for any level of access into a SQL Server Database Engine instance.        \n      ",
           "label": "rationale"
         }
       ],
@@ -567,15 +567,15 @@
     {
       "descriptions": [
         {
-          "data": "Whenever this option is set to ON , SQL Server will prompt for an updated password the first time the new or altered login is used.",
+          "data": "\n        \nWhenever this option is set to           ON\n, SQL Server will prompt for an updated password the first time the new or altered login is used.        \n      ",
           "label": "default"
         },
         {
-          "data": "Set the MUST_CHANGE option for SQL Authenticated logins when creating a login initially: CREATE LOGIN WITH PASSWORD = ' ' MUST_CHANGE, CHECK_EXPIRATION = ON, CHECK_POLICY = ON; Set the MUST_CHANGE option for SQL Authenticated logins when resetting a password: ALTER LOGIN WITH PASSWORD = ' ' MUST_CHANGE; Impact: CHECK_EXPIRATION and CHECK_POLICY options must both be ON . End users must have the means (application) to change the password when forced.",
+          "data": "\n        \n          \n            \nSet the               MUST_CHANGE\n option for SQL Authenticated logins when creating a login initially:            \n            CREATE LOGIN  WITH PASSWORD = '' MUST_CHANGE, CHECK_EXPIRATION = ON, CHECK_POLICY = ON;\n\n            \nSet the               MUST_CHANGE\n option for SQL Authenticated logins when resetting a password:            \n            ALTER LOGIN  WITH PASSWORD = '' MUST_CHANGE;\n\n            Impact:\n            \n              \n                CHECK_EXPIRATION\n and                 CHECK_POLICY\n options must both be                 ON\n. End users must have the means (application) to change the password when forced.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Enforcing a password change after a reset or new login creation will prevent the account administrators or anyone accessing the initial password from misuse of the SQL login created without being noticed.",
+          "data": "\n        Enforcing a password change after a reset or new login creation will prevent the account administrators or anyone accessing the initial password from misuse of the SQL login created without being noticed.\n      ",
           "label": "rationale"
         }
       ],
@@ -592,7 +592,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This document provides prescriptive guidance for establishing a secure configuration posture for Microsoft SQL Server 2016. This guide was tested against Microsoft SQL Server 2016. To obtain the latest version of this guide, please visit http://benchmarks.cisecurity.org . If you have questions, comments, or have identified ways to improve this guide, please write us at feedback@cisecurity.org .",
+  "summary": "\n    \nThis document provides prescriptive guidance for establishing a secure configuration posture for Microsoft SQL Server 2016. This guide was tested against Microsoft SQL Server 2016. To obtain the latest version of this guide, please visit       http://benchmarks.cisecurity.org\n. If you have questions, comments, or have identified ways to improve this guide, please write us at       feedback@cisecurity.org\n.    \n  ",
   "title": "CIS Microsoft SQL Server 2016 Benchmark",
   "version": "1.3.0"
 }

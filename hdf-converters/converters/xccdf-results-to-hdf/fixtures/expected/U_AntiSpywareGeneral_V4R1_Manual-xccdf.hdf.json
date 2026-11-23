@@ -362,11 +362,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Examine the machine to determine if an Antispyware program is installed. If it is installed, ensure that it is configured for on-access and on-demand detection. Criteria: If a program is installed and configured for on-access and on-demand detection, this is not a finding. Please Note: Antispyware products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista).",
+          "data": "Procedure:  Examine the machine to determine if an Antispyware program is installed.  If it is installed, ensure that it is configured for on-access and on-demand detection.\n\nCriteria: If a program is installed and configured for on-access and on-demand detection, this is not a finding.  \n\nPlease Note: Antispyware products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista). ",
           "label": "check"
         },
         {
-          "data": "Criteria: Install a program and configured for on-access and on-demand detection. Please Note: Products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista).",
+          "data": "Criteria: Install a program and configured for on-access and on-demand detection.  \n\nPlease Note: Products are available on JTF-GNO website for download, such as McAfee Antispyware Enterprise 8.5 and Symantec Antivirus Corporate Edition 10.1 and 10.2 (Vista). ",
           "label": "fix"
         }
       ],
@@ -396,11 +396,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help, then About. Criteria: Validate with the vendor’s website that this version of the product is on the supported products list. If it is on the list, this is not a finding.",
+          "data": "Procedure:  Note the version release level of the antispyware software.  This can normally be accomplished by opening the console and clicking on Help, then About. \n\nCriteria:  Validate with the vendor’s website that this version of the product is on the supported products list.  If it is on the list, this is not a finding.\n",
           "label": "check"
         },
         {
-          "data": "Upgrade to a supported version of the product.",
+          "data": "Upgrade to a supported version of the product. ",
           "label": "fix"
         }
       ],
@@ -430,11 +430,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help, then About. Criteria: Determine from the vendor’s web site, if the vendor has announced non-support dates for the software. If the vendor has announced a non-support date, ask the IOA for a copy of the migration plan. If a plan exists, this is not a finding. If the product has not been announced as going non-support, this finding is Not Applicable.",
+          "data": "Procedure:  Note the version release level of the antispyware software.  This can normally be accomplished by opening the console and clicking on Help, then About. \n\nCriteria:  Determine from the vendor’s web site, if the vendor has announced non-support dates for the software.    If the vendor has announced a non-support date, ask the IOA for a copy of the migration plan.  If a plan exists, this is not a finding.  If the product has not been announced as going non-support, this finding is Not Applicable.\n",
           "label": "check"
         },
         {
-          "data": "Create a migration plan for updating to a supported version of the product prior to its becoming non-supported.",
+          "data": "Create a migration plan for updating to a supported version of the product prior to its becoming non-supported.\n",
           "label": "fix"
         }
       ],
@@ -464,11 +464,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Note the version release level of the antispyware software. This can normally be accomplished by opening the console and clicking on Help then About. Criteria: Validate with the vendor’s website that contains the latest maintenance rollup or software update for this version. If it does, this is not a finding.",
+          "data": "Procedure:  Note the version release level of the antispyware software.  This can normally be accomplished by opening the console and clicking on Help then About. \n\nCriteria:  Validate with the vendor’s website that contains the latest maintenance rollup or software update for this version.  If it does, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Apply the latest maintenance rollup or software update for this version.",
+          "data": "Apply the latest maintenance rollup or software update for this version. ",
           "label": "fix"
         }
       ],
@@ -498,11 +498,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the configuration parameter that controls where the updates are downloaded from. Criteria: If this parameter is configured to pull from a trusted site such as the JTF –GNO , the DoD download server or from the vendor site, this is not a finding.",
+          "data": "Procedure:  Determine the configuration parameter that controls where the updates are downloaded from. \n\nCriteria:  If this parameter is configured to pull from a trusted site such as the JTF –GNO , the DoD download server or from the vendor site, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Configure the product to download updates from a trusted site such as the JTF –GNO, the DoD download server or from the vendor site.",
+          "data": "Configure the product to download updates from a trusted site such as the JTF –GNO,  the DoD download server or from the vendor site.",
           "label": "fix"
         }
       ],
@@ -532,11 +532,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the parameter that controls whether autoupdates of signatures are done and the frequency of automatic updates of signature files. (Depending upon the product this may be one parameter or multiple parameters. Criteria: If the parameter is set to manual updates, this is a finding. If the parameter is set to automatic updates and the frequency is more than weekly, this is a finding. If the parameter is set to automatic and the parameter is set to weekly (or less – daily recommended), this is not a finding.",
+          "data": "Procedure:  Determine the parameter that controls whether autoupdates of signatures are done and the frequency of automatic updates of signature files.  (Depending upon the product this may be one parameter or multiple parameters.\n\nCriteria:  If the parameter is set to manual updates, this is a finding.  If the parameter is set to automatic updates and the frequency is more than weekly, this is a finding.  If the parameter is set to automatic and the parameter is set to weekly (or less – daily recommended), this is not a finding. \n",
           "label": "check"
         },
         {
-          "data": "Configure the product to perform automatic updates and the frequency to weekly (or less – daily recommended).",
+          "data": "Configure the product to perform automatic updates and the frequency to weekly (or less – daily recommended).\n",
           "label": "fix"
         }
       ],
@@ -562,15 +562,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting is required for the antispyware software. Antispyware signatures files are updated on a daily basis by antispyware software vendors. It is mandatory that the antispyware signature file on the system be no older that 7 days. Note: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine, this is not a finding.",
+          "data": "This setting is required for the antispyware software. Antispyware signatures files are updated on a daily basis by antispyware software vendors. It is mandatory that the antispyware signature file on the system  be no older that 7 days. Note: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine, this is not a finding. ",
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the date of the signature files. Criteria: If they are less than 7 days old, this is not a finding. If they are older than 7 days, this is a finding. Note: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine, this is not a finding.",
+          "data": "Procedure:  Determine the date of the signature files.  \nCriteria:  If they are less than 7 days old, this is not a finding.  If they are older than 7 days, this is a finding.  \n\nNote: If the vendor or trusted site’s files are also older than 7 days and match the date of the signature files on the machine,  this is not a finding. \n",
           "label": "check"
         },
         {
-          "data": "Update the signature files to the most current available.",
+          "data": "Update the signature files to the most current available. \n",
           "label": "fix"
         }
       ],
@@ -596,15 +596,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting is required for the antispyware software. AntiSpyware signature or spyware definition files must be from a trusted source and in a production status. Beta or non-production files are prohibited.",
+          "data": "This setting is required for the antispyware software. AntiSpyware signature or spyware definition files must be from a trusted source and in a production status. Beta or non-production files are prohibited.  ",
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the date and version of the signature files. Criteria: Validate with the vendor’s website that this signature file is a production version. (Vendors normally have a special area for test/beta versions.) If the signature files are beta or non-production versions, this is a finding.",
+          "data": "Procedure:  Determine the date and version of the signature files.  \n\nCriteria:  Validate with the vendor’s website that this signature file is a production version.  (Vendors normally have a special area for test/beta versions.)  If the signature files are beta or non-production versions, this is a finding.\n",
           "label": "check"
         },
         {
-          "data": "Remove any Beta or non-production versions of signature files and replace with valid current signature files on production systems.",
+          "data": "Remove any Beta or non-production versions of signature files and replace with valid current signature files on production systems. \n\n",
           "label": "fix"
         }
       ],
@@ -634,11 +634,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the parameter that controls on-access antispyware protection. This is normally found as a high level setting on the initial screen of the Antispyware software. Criteria: Validate that the on-access protection is configured to start automatically when the machine is booted. If it is configured to start at boot time, this is not a finding.",
+          "data": "Procedure:  Determine the parameter that controls on-access antispyware protection.  This is normally found as a high level setting on the initial screen of the Antispyware software.   \n\nCriteria:  Validate that the on-access protection is configured to start automatically when the machine is booted.  If it is configured to start at boot time, this is not a finding. \n",
           "label": "check"
         },
         {
-          "data": "Configure on-access protection to start automatically when the machine is booted.",
+          "data": "Configure on-access protection to start automatically when the machine is booted. \n",
           "label": "fix"
         }
       ],
@@ -668,11 +668,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Check for a scheduled scan. Ensure all the local drives are included in the scan. Determine the frequency of the schedule. Normally, there is a scheduled scan section. Next, select the properties of each scan to see if there is at least one scan that meets the criteria listed below. Criteria: Ensure there is at least one scan that includes all the drives and is scheduled at least weekly. If one exists, this is not a finding. If a scan does not exist that meet this criterion, this is a finding. NOTE: Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations. This is highly recommended for machines that browse the web and are used as email clients regularly.",
+          "data": "Procedure:  Check for a scheduled scan.  Ensure all the local drives are included in the scan.  Determine the frequency of the schedule.  Normally, there is a scheduled scan section.  Next, select the properties of each scan to see if there is at least one scan that meets the criteria listed below. \n\nCriteria:  Ensure there is at least one scan that includes all the drives and is scheduled at least weekly.  If one exists, this is not a finding.  If a scan does not exist that meet this criterion, this is a finding.\n\nNOTE:  Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations.  This is highly recommended for machines that browse the web and are used as email clients regularly.\n",
           "label": "check"
         },
         {
-          "data": "Create a scheduled scan which includes all the local drives and is performed at least weekly. NOTE: Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations. This is highly recommended for machines that browse the web and are used as email clients regularly.",
+          "data": "Create a scheduled scan which includes all the local drives and is performed at least weekly.\n\nNOTE:  Scans at boot time (or daily) are recommended when this would not cause a significant impact to operations.  This is highly recommended for machines that browse the web and are used as email clients regularly.\n",
           "label": "fix"
         }
       ],
@@ -698,15 +698,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting is required for the antispyware software. A weekly scheduled antispyware scan is required to scan memory as well as all local hard drives. The indepth scan option must be enabled.",
+          "data": "This setting is required for the antispyware software. A weekly scheduled antispyware scan is required to scan memory as well as all local hard drives. The indepth scan option must be enabled. ",
           "label": "default"
         },
         {
-          "data": "Procedure: Refer to the scheduled or boot scans found for DTSG010. Criteria: If no scans were found in DTSG010, this (DTSG011) is also a finding. Validate if the scheduled (or boot) scan is configured to scan in memory, all drives. Also validate that in depth (sometimes called deep) scanning is also performed. If any of these are not being scanned as part of the scan from DTSG010, this is a finding.",
+          "data": "Procedure:  Refer to the scheduled or boot scans found for DTSG010.  \n\nCriteria:  If no scans were found in DTSG010, this (DTSG011) is also a finding. Validate if the scheduled (or boot) scan is configured to scan in memory, all drives.  Also validate that in depth (sometimes called deep) scanning is also performed.  If any of these are not being scanned as part of the scan from DTSG010, this is a finding.\n",
           "label": "check"
         },
         {
-          "data": "Create a scheduled scan which is configured to scan in memory, all drives, at least weekly. This scan also needs to perform in depth or deep scanning.",
+          "data": "Create a scheduled scan which is configured to scan in memory, all drives, at least weekly.  This scan also needs to perform in depth or deep scanning.\n\n",
           "label": "fix"
         }
       ],
@@ -732,15 +732,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting is required for the antispyware software. An automated reporting function is required to be enabled for the occurrence of any malicious activity or spyware. The SA or user is required to be informed via report, email, or report to a central monitoring system.",
+          "data": "This setting is required for the antispyware software. An automated reporting function is required to be enabled for the occurrence of any malicious activity or spyware. The SA or user is required to be informed  via report, email, or report to a central monitoring system.",
           "label": "default"
         },
         {
-          "data": "Procedure: Locate the parameters that control the on access scans. Criteria: If on access is not enabled (DTSG009 was a finding), this check (DTSG012) is also a finding. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "data": "Procedure:  Locate the parameters that control the on access scans. \n\nCriteria:  If on access is not enabled (DTSG009 was a finding), this check (DTSG012) is also a finding.  Locate the notification parameters configuration.  Ensure that the parameters are configured to either notify the user or remote to a central console.  If either notification is configured, this is not a finding.  Enabling both types of notification is recommended.\n",
           "label": "check"
         },
         {
-          "data": "Configure the on-access scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found. Enabling both types of notification is recommended.",
+          "data": "Configure the on-access scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found. \n\n\nEnabling both types of notification is recommended.\n",
           "label": "fix"
         }
       ],
@@ -770,11 +770,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Refer to the scheduled or boot scans found for DTSG010. Criteria: If no scans were found in DTSG010, this (DTSG013) is also a finding. Locate the parameters for the scheduled (or boot) scan. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "data": "Procedure:  Refer to the scheduled or boot scans found for DTSG010.  \n\nCriteria:  If no scans were found in DTSG010, this (DTSG013) is also a finding.  Locate the parameters for the scheduled (or boot) scan. Locate the notification parameters configuration.  Ensure that the parameters are configured to either notify the user or remote to a central console.  If either notification is configured, this is not a finding.  Enabling both types of notification is recommended.\n\n",
           "label": "check"
         },
         {
-          "data": "Configure the scheduled scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found. Enabling both types of notification is recommended.",
+          "data": "Configure the scheduled scan notification parameter to inform the user or send notification to a central monitoring console when malicious activity or spyware is found.   \n\nEnabling both types of notification is recommended.\n",
           "label": "fix"
         }
       ],
@@ -804,11 +804,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Locate the parameters (or the execution point for the on demand scanner. (DTSG001) Criteria: If the software is not capable of on demand scanning, this is a finding. Locate the notification parameters configuration. Ensure that the parameters are configured to either notify the user or remote to a central console. If either notification is configured, this is not a finding. Enabling both types of notification is recommended.",
+          "data": "Procedure:  Locate the parameters (or the execution point for the on demand scanner. (DTSG001)\n\nCriteria:  If the software is not capable of on demand scanning, this is a finding. Locate the notification parameters configuration.  Ensure that the parameters are configured to either notify the user or remote to a central console.  If either notification is configured, this is not a finding.  Enabling both types of notification is recommended.\n",
           "label": "check"
         },
         {
-          "data": "Configure the on demand scan notification parameter to inform the user or send notification to a central monitoring console when malicous activity or spyware is found. Enabling both types of notification is recommended.",
+          "data": "Configure the on demand scan notification parameter to inform the user or send notification to a central monitoring console when malicous activity or spyware is found.\n\nEnabling both types of notification is recommended.\n",
           "label": "fix"
         }
       ],
@@ -838,11 +838,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Determine the parameters that control the log retention. (This action might possibly be performed on the server.) Criteria: Validate the log retention is set to at least 30 days. If the logs are not being maintained or the retention is less than 30 days, this is a finding.",
+          "data": "Procedure:  Determine the parameters that control the log retention.  (This action might possibly be performed on the server.)\n\nCriteria:  Validate the log retention is set to at least 30 days.  If the logs are not being maintained or the retention is less than 30 days, this is a finding.\n",
           "label": "check"
         },
         {
-          "data": "Configure the log retention to at least 30 days.",
+          "data": "Configure the log retention to at least 30 days.  \n",
           "label": "fix"
         }
       ],
@@ -872,11 +872,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Ask the SA about the procedures for log review. Criteria: Validate that the logs are being reviewed. If the logs are not being reviewed, this is a finding.",
+          "data": "Procedure:  Ask the SA about the procedures for log review.\n\nCriteria:  Validate that the logs are being reviewed.  If the logs are not being reviewed, this is a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Create a procedure for reviewing the log data. Validate the logs are being reviewed.",
+          "data": "Create a procedure for reviewing the log data. Validate the logs are being reviewed.  \n",
           "label": "fix"
         }
       ],
@@ -906,11 +906,11 @@
           "label": "default"
         },
         {
-          "data": "Procedure: Ask for a copy of the incident response plan. Criteria: Ensure that Antispyware is included in the incident response plan. If it is not, this is a finding.",
+          "data": "Procedure:  Ask for a copy of the incident response plan.\n\nCriteria:  Ensure that Antispyware is included in the incident response plan.  If it is not, this is a finding.\n",
           "label": "check"
         },
         {
-          "data": "Ensure that Antispyware is included in the incident response plan.",
+          "data": "Ensure that Antispyware is included in the incident response plan. \n",
           "label": "fix"
         }
       ],

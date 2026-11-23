@@ -137,6 +137,7 @@ export function limitArray<T>(
 // Named stripHTML (uppercase H) for backwards compatibility with existing
 // converter imports; hdf-utilities exports stripHtml (lowercase h).
 export { stripHtml as stripHTML } from '@mitre/hdf-utilities';
+export { stripHtmlTags as stripHTMLTags } from '@mitre/hdf-utilities';
 export { chainOverrides } from './amendmentchain.js';
 export { rollUpRequirements } from './rollup.js';
 

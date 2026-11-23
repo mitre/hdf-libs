@@ -164,15 +164,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether Google Cast is able to connect to all IP Addresses or only private IP Addresses as defined in RFC1918 (IPv4) and RFC4193 (IPv6). Note that if the EnabledMediaRouter setting is set to Disabled there is no positive or negative effect for this setting. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        \nThis setting controls whether Google Cast is able to connect to all IP Addresses or only private IP Addresses as defined in RFC1918 (IPv4) and RFC4193 (IPv6). Note that if the           EnabledMediaRouter\n setting is set to           Disabled\n there is no positive or negative effect for this setting.        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow Google Cast to connect to Cast devices on all IP addresses Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow Google Cast to connect to Cast devices on all IP addresses\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Allowing Google Cast to connect to public IP addresses could allow media and other potentially sensitive data to be exposed to the public. Disabling this setting will ensure that Google Cast is only able to connect to private (ie: internal) IP addresses.",
+          "data": "\n        Allowing Google Cast to connect to public IP addresses could allow media and other potentially sensitive data to be exposed to the public. Disabling this setting will ensure that Google Cast is only able to connect to private (ie: internal) IP addresses.\n      ",
           "label": "rationale"
         }
       ],
@@ -190,15 +190,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether audio processes in Google Chrome run in a sandbox. NOTE: Security software setups within your environment might interfere with the sandbox. The recommended state for this setting is: Enabled (1)",
+          "data": "\n        This setting controls whether audio processes in Google Chrome run in a sandbox.\n        \n          NOTE:\n Security software setups within your environment might interfere with the sandbox.        \n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Enabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow the audio sandbox to run Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow the audio sandbox to run\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Having audio processes run in a sandbox ensures that if a website misuses audio processes that data may not be manipulated or exfiltrated from the system.",
+          "data": "\n        Having audio processes run in a sandbox ensures that if a website misuses audio processes that data may not be manipulated or exfiltrated from the system.\n      ",
           "label": "rationale"
         }
       ],
@@ -216,7 +216,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome offers to download files automatically to the default download directory without prompting. If this setting is enabled, users are always asked where to save each file before downloading. The recommended state for this setting is: Enabled (1)",
+          "data": "\n        Google Chrome offers to download files automatically to the default download directory without prompting.\n        If this setting is enabled, users are always asked where to save each file before downloading.\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
           "label": "default"
         },
         {
@@ -224,11 +224,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Ask where to save each file before downloading Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the\nfollowing UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Ask where to save each file before downloading\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Users shall be prevented from the drive-by-downloads threat.",
+          "data": "\n        Users shall be prevented from the drive-by-downloads threat.\n      ",
           "label": "rationale"
         }
       ],
@@ -247,7 +247,7 @@
     {
       "descriptions": [
         {
-          "data": "Chrome allows for processes started while the browser is open to remain running once the browser has been closed. It also allows for background apps and the current browsing session to remain active after the browser has been closed. With this setting Disabled, the browser will close its processes and will stop running background apps. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        Chrome allows for processes started while the browser is open to remain running once the browser has been closed. It also allows for background apps and the current browsing session to remain active after the browser has been closed.\n        With this setting Disabled, the browser will close its processes and will stop running background apps.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
@@ -255,11 +255,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Continue running background apps when Google Chrome is closed Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Continue running background apps when Google Chrome is closed\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "If this setting is enabled, vulnerable or malicious plugins, apps and processes can continue running even after Chrome has closed.",
+          "data": "\n        If this setting is enabled, vulnerable or malicious plugins, apps and processes can continue running even after Chrome has closed.\n      ",
           "label": "rationale"
         }
       ],
@@ -278,7 +278,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome can use the Google Safe Search API to classify URLs as pornographic or not. The recommended state for this setting is: Enabled with a value of Filter top level sites (but not embedded iframes) for adult content (1)",
+          "data": "\n        Google Chrome can use the Google Safe Search API to classify URLs as pornographic or not.\n        \nThe recommended state for this setting is:           Enabled\n with a value of           Filter top level sites (but not embedded iframes) for adult content\n (1)        \n      ",
           "label": "default"
         },
         {
@@ -286,11 +286,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled: Do not filter sites for adult content : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Control SafeSites adult content filtering. Impact: Users search results will be filtered and content such as adult text, videos and images will not be shown. NOTE: Using Googles Safe Search API may leak information which is typed/pasted by mistake into the omnibox, e.g. passwords, internal webservices, folder structures, etc.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Enabled: Do not filter sites for adult content\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Control SafeSites adult content filtering.\n\n            Impact:\n            \n              Users search results will be filtered and content such as adult text, videos and images will not be shown.\n              \n                NOTE:\n Using Googles Safe Search API may leak information which is typed/pasted by mistake into the omnibox, e.g. passwords, internal webservices, folder structures, etc.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.",
+          "data": "\n        Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.\n      ",
           "label": "rationale"
         }
       ],
@@ -309,15 +309,15 @@
     {
       "descriptions": [
         {
-          "data": "Configuring this setting allows specifying which variations are allowed to be applied in Google Chrome. Variations provide a means for Google to offer modifications to Google Chrome without shipping a new version of the browser by selectively enabling or disabling already existing features. Disabled (0): Allows all variations to be applied to the browser (also referred to as VariationsEnabled ). CriticalFixesOnly (1): Allows only variations considered critical security or stability fixes to be applied to Google Chrome. VariationsDisabled (2), prevent all variations from being applied to the browser. Please note that this mode can potentially prevent the Google Chrome developers from providing critical security fixes in a timely manner and is thus not recommended. The recommended state for this setting is: Disabled (0) NOTE: Google strongly believes there is no added security benefit for turning this to critical fixes as leaving it on increases the stability of the browser.",
+          "data": "\n        Configuring this setting allows specifying which variations are allowed to be applied in Google Chrome.\nVariations provide a means for Google to offer modifications to Google Chrome without shipping a new version of the browser by selectively enabling or disabling already existing features.\n        \n          \n            Disabled\n (0): Allows all variations to be applied to the browser (also referred to as             VariationsEnabled\n).          \n          \n            CriticalFixesOnly\n (1): Allows only variations considered critical security or stability fixes to be applied to Google Chrome.          \n          \n            VariationsDisabled\n (2), prevent all variations from being applied to the browser. Please note that this mode can potentially prevent the Google Chrome developers from providing critical security fixes in a timely manner and is thus not recommended.          \n        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n        \n          NOTE:\n Google strongly believes there is no added security benefit for turning this to critical fixes as leaving it on increases the stability of the browser.        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled (same as VariationsEnabled): Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Determine the availability of variations Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n (same as VariationsEnabled):            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Determine the availability of variations\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Google strongly recommends to leave this setting at the default (0 = Enable all variations), so fixes are gradually enabled (or if necessary, rapidly disabled) via the Chrome Variations framework.",
+          "data": "\n        Google strongly recommends to leave this setting at the default (0 = Enable all variations), so fixes are gradually enabled (or if necessary, rapidly disabled) via the Chrome Variations framework.\n      ",
           "label": "rationale"
         }
       ],
@@ -335,7 +335,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome can disable the enforcing of Certificate Transparency requirements for a list of Legacy Certificate Authorities. If this setting is disabled, certificates not properly publicly disclosed as required by Certificate Transparency are untrusted. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        Google Chrome can disable the enforcing of Certificate Transparency requirements for a list of Legacy Certificate Authorities.\n        If this setting is disabled, certificates not properly publicly disclosed as required by Certificate Transparency are untrusted.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
@@ -343,11 +343,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Disable Certificate Transparency enforcement for a list of Legacy Certificate Authorities Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Disable Certificate Transparency enforcement for a list of Legacy Certificate Authorities\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Legacy Certificate Authorities shall follow the Certificate Transparency policy.",
+          "data": "\n        Legacy Certificate Authorities shall follow the Certificate Transparency policy.\n      ",
           "label": "rationale"
         }
       ],
@@ -366,7 +366,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome's Component Updater updates several components of Google Chrome on a regular basis (applies only to Chrome browser components). The recommended state for this setting is: Enabled (1) NOTE: Updates to any component that does not contain executable code, does not significantly alter the behavior of the browser, or is critical for its security will not be disabled (E.g. certificate revocation lists and Safe Browsing data is updated regardless of this setting). FYI chrome://components lists all components, but not if they are are affected by this settings. NOTE: Google provided the following list of \"some of the components\" controlled by this settings: Recovery component Pnacl Floc Optimization hints SSL error assistant CRL set Origin trials SW reporter PKI metadata",
+          "data": "\n        Google Chrome's Component Updater updates several components of Google Chrome on a regular basis (applies only to Chrome browser components).\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n        \n          NOTE:\n Updates to any component that does not contain executable code, does not significantly alter the behavior of the browser, or is critical for its security will not be disabled (E.g. certificate revocation lists and Safe Browsing data is updated regardless of this setting). FYI chrome://components lists all components, but not if they are are affected by this settings.        \n        \n          NOTE:\n Google provided the following list of           \"some of the components\"\n controlled by this settings:        \n        \n          Recovery component\n          Pnacl\n          Floc\n          Optimization hints\n          SSL error assistant\n          CRL set\n          Origin trials\n          SW reporter\n          PKI metadata\n        \n      ",
           "label": "default"
         },
         {
@@ -374,11 +374,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Enable component updates in Google Chrome Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Enable component updates in Google Chrome\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Google Chrome Updater shall be used to keep the components bundled to Chrome up-to-date.",
+          "data": "\n        Google Chrome Updater shall be used to keep the components bundled to Chrome up-to-date.\n      ",
           "label": "rationale"
         }
       ],
@@ -397,15 +397,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting allows a list of names to be specified that will be exempt from HTTP Strict Transport Security (HSTS) policy checks then potentially upgraded from http:// to https://. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        This setting allows a list of names to be specified that will be exempt from HTTP Strict Transport Security (HSTS) policy checks then potentially upgraded from http:// to https://.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\List of names that will bypass the HSTS policy check Impact: None - This is the default behavior.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\List of names that will bypass the HSTS policy check\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Allowing hostnames to be exempt from HSTS checks could allow for protocol downgrade attacks and cookie hijackings.",
+          "data": "\n        Allowing hostnames to be exempt from HSTS checks could allow for protocol downgrade attacks and cookie hijackings.\n      ",
           "label": "rationale"
         }
       ],
@@ -423,7 +423,7 @@
     {
       "descriptions": [
         {
-          "data": "This setting prevents the display of lookalike URL warnings on the sites listed. These warnings are typically shown on sites that Google Chrome believes might be trying to spoof another site the user is familiar with. Disabled (0) or set to an empty list: Warnings may appear on any site the user visits. Enabled (1) and set to one or more domains: No lookalike warnings pages will be shown when the user visits pages on that domain. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        This setting prevents the display of lookalike URL warnings on the sites listed. These warnings are typically shown on sites that Google Chrome believes might be trying to spoof another site the user is familiar with.\n        \n          \n            Disabled\n (0) or set to an empty list: Warnings may appear on any site the user visits.          \n          \n            Enabled \n (1) and set to one or more domains: No lookalike warnings pages will be shown when the user visits pages on that domain.          \n        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
@@ -431,11 +431,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Suppress lookalike domain warnings on domains Impact: None - This is the default behavior. NOTE: The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Suppress lookalike domain warnings on domains\n\n            Impact:\n            \n              None - This is the default behavior.\n              \n                NOTE:\n The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.              \n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Look-alike domains are intentionally misleading to give users the false impression that they’re interacting with trusted brands, leading to significant reputation damage, financial losses, and data compromise for established enterprises. In addition, this technique is commonly use to host phishing sites, and often lead to account takeover attacks. Users are prompted to enter their credentials on a fake website, and scammers take control of their online accounts with little effort to engage in fraudulent activity.",
+          "data": "\n        Look-alike domains are intentionally misleading to give users the false impression that they’re interacting with trusted brands, leading to significant reputation damage, financial losses, and data compromise for established enterprises.\n        In addition, this technique is commonly use to host phishing sites, and often lead to account takeover attacks. Users are prompted to enter their credentials on a fake website, and scammers take control of their online accounts with little effort to engage in fraudulent activity.\n      ",
           "label": "rationale"
         }
       ],
@@ -454,15 +454,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)",
+          "data": "\n          This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled.\n          \nThe recommended state for this setting is:             Disabled\n (0)          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts\n\n              Impact:\n              \n                None - This is the default behavior.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "This setting is typically disabled to help combat phishing attempts.",
+          "data": "\n          This setting is typically disabled to help combat phishing attempts.\n        ",
           "label": "rationale"
         }
       ],
@@ -480,15 +480,15 @@
     {
       "descriptions": [
         {
-          "data": "The setting determines the functionality of Safe Browsing. Disabled (0): Safe Browsing protection applies to all resources Enabled (1), with a list of 1 or more sites: Means Safe Browsing will trust the domains you designate. It won't check them for dangerous resources such as phishing, malware, or unwanted software. The recommended state for this setting is: Disabled (0) NOTE: Safe Browsing's download protection service won't check downloads hosted on these domains, and its password protection service won't check for password reuse.",
+          "data": "\n          The setting determines the functionality of Safe Browsing.\n          \n            \n              Disabled\n (0): Safe Browsing protection applies to all resources            \n            \n              Enabled\n (1), with a list of 1 or more sites: Means Safe Browsing will trust the domains you designate. It won't check them for dangerous resources such as phishing, malware, or unwanted software.            \n          \n          \nThe recommended state for this setting is:             Disabled\n (0)          \n          \n            NOTE:\n Safe Browsing's download protection service won't check downloads hosted on these domains, and its password protection service won't check for password reuse.          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browsing settings\\Configure the list of domains on which Safe Browsing will not trigger warnings Impact: None - This is the default behavior. NOTE: The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browsing settings\\Configure the list of domains on which Safe Browsing will not trigger warnings\n\n              Impact:\n              \n                None - This is the default behavior.\n                \n                  NOTE:\n The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.                \n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files.",
+          "data": "\n          Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files.\n        ",
           "label": "rationale"
         }
       ],
@@ -506,7 +506,7 @@
     {
       "descriptions": [
         {
-          "data": "Control whether Google Chrome's Safe Browsing feature is enabled and the mode it operates in. If you set this setting as mandatory, users cannot change or override the Safe Browsing setting in Google Chrome. If this setting is left not set, Safe Browsing will operate in Standard Protection mode but users can change this setting. No Protection (0): Safe Browsing is never active Standard Protection (1): Safe Browsing is active in the standard mode Enhanced Protection (2): Safe Browsing is active in the enhanced mode The recommended state for this setting is: Standard Protection (1) or higher",
+          "data": "\n          Control whether Google Chrome's Safe Browsing feature is enabled and the mode it operates in. If you set this setting as mandatory, users cannot change or override the Safe Browsing setting in Google Chrome.\n          If this setting is left not set, Safe Browsing will operate in Standard Protection mode but users can change this setting.\n          \n            \n              No Protection\n (0): Safe Browsing is never active            \n            \n              Standard Protection\n (1): Safe Browsing is active in the standard mode            \n            \n              Enhanced Protection\n (2): Safe Browsing is active in the enhanced mode            \n          \n          \nThe recommended state for this setting is:             Standard Protection\n (1) or higher          \n        ",
           "label": "default"
         },
         {
@@ -514,11 +514,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled: Standard Protection : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browser settings\\Safe Browsing Protection Level Impact: None - This is the default behavior (Standard Protection).",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Standard Protection\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browser settings\\Safe Browsing Protection Level\n\n              Impact:\n              \n                None - This is the default behavior (Standard Protection).\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files. NOTE: Google recommend using Enhanced Safe Browsing Mode ( 2 ). Turning on Enhanced Safe Browsing will substantially increase protection from dangerous websites and downloads, but will share more date with Google. For more details please refer to the items in the References section below..",
+          "data": "\n          Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files.\n          \n            NOTE:\n Google recommend using Enhanced Safe Browsing Mode (            2\n). Turning on Enhanced Safe Browsing will substantially increase protection from dangerous websites and downloads, but will share more date with Google.          \n          For more details please refer to the items in the References section below..\n        ",
           "label": "rationale"
         }
       ],
@@ -537,15 +537,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether a user is able to proceed to a webpage when an invalid SSL certificate warning has occurred. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        This setting controls whether a user is able to proceed to a webpage when an invalid SSL certificate warning has occurred.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow proceeding from the SSL warning page Impact: Users will not be able to click past the invalid certificate error to view the website.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow proceeding from the SSL warning page\n\n            Impact:\n            \n              Users will not be able to click past the invalid certificate error to view the website.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Sites protected by SSL should always be recognized as valid in the web browser. Allowing a user to make the decision as to whether what appears to be an invalid certificate could open an organization up to users visiting a site that is otherwise not secure and or malicious in nature.",
+          "data": "\n        Sites protected by SSL should always be recognized as valid in the web browser. Allowing a user to make the decision as to whether what appears to be an invalid certificate could open an organization up to users visiting a site that is otherwise not secure and or malicious in nature.\n      ",
           "label": "rationale"
         }
       ],
@@ -563,15 +563,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting ensures that web search results with Google are performed with SafeSearch set to always active. Disabled means SafeSearch in Google Search is not enforced. The recommended state for this setting is: Enabled (1)",
+          "data": "\n        This setting ensures that web search results with Google are performed with SafeSearch set to always active. Disabled means SafeSearch in Google Search is not enforced.\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Enabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Force Google SafeSearch Impact: Users search results will be filtered and content such as adult text, videos and images will not be shown.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Force Google SafeSearch\n\n            Impact:\n            \n              Users search results will be filtered and content such as adult text, videos and images will not be shown.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.",
+          "data": "\n        Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.\n      ",
           "label": "rationale"
         }
       ],
@@ -589,7 +589,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome performs revocation checking for server certificates that successfully validate and are signed by locally-installed CA certificates. If Google Chrome is unable to obtain revocation status information, such certificates will be treated as revoked ('hard-fail'). Disabled : Google Chrome uses existing online revocation-checking settings. The recommended state for this setting is: Enabled (1)",
+          "data": "\n        Google Chrome performs revocation checking for server certificates that successfully validate and are signed by locally-installed CA certificates. If Google Chrome is unable to obtain revocation status information, such certificates will be treated as revoked ('hard-fail').\n        \n          Disabled\n: Google Chrome uses existing online revocation-checking settings.        \n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
           "label": "default"
         },
         {
@@ -597,11 +597,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled : Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Require online OCSP/CRL checks for local trust anchors Impact: A revocation check will be performed for server certificates that successfully validate and are signed by locally-installed CA certificates. if the OCSP server goes down, then this will hard-fail and prevent browsing to those sites.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the\nfollowing UI path to               Enabled\n:            \n            Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Require online OCSP/CRL checks for local trust anchors\n\n            Impact:\n            \n              A revocation check will be performed for server certificates that successfully validate and are signed by locally-installed CA certificates. if the OCSP server goes down, then this will hard-fail and prevent browsing to those sites.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Certificates shall always be validated.",
+          "data": "\n        Certificates shall always be validated.\n      ",
           "label": "rationale"
         }
       ],
@@ -620,7 +620,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome has an API which allows the access to nearby Bluetooth devices from the browser with users consent. Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API (2) Allow sites to ask the user to grant access to a nearby Bluetooth device (3) The recommended state for this setting is: Enabled with a value of Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API (2)",
+          "data": "\n          Google Chrome has an API which allows the access to nearby Bluetooth devices from the browser with users consent.\n          \n            \n              Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n (2)            \n            \n              Allow sites to ask the user to grant access to a nearby Bluetooth device\n (3)            \n          \n          \nThe recommended state for this setting is:             Enabled\n with a value of             Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n (2)          \n        ",
           "label": "default"
         },
         {
@@ -628,11 +628,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled: Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API : Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Control use of the Web Bluetooth API Impact: If this setting is configured, websites no longer can access nearby Bluetooth device via the API (this includes web cameras, headphones, and other Bluetooth devices) and the user will never be asked.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Control use of the Web Bluetooth API\n\n              Impact:\n              \n                If this setting is configured, websites no longer can access nearby Bluetooth device via the API (this includes web cameras, headphones, and other Bluetooth devices) and the user will never be asked.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "A malicious website could exploit a vulnerable Bluetooth device.",
+          "data": "\n          A malicious website could exploit a vulnerable Bluetooth device.\n        ",
           "label": "rationale"
         }
       ],
@@ -651,7 +651,7 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome offers websites to display desktop notifications. These are push messages which are sent from the website operator through Google infrastructure to Chrome. Allow sites to show desktop notifications (0) Do not allow any site to show desktop notifications (1) Ask every time a site wants to show desktop notifications (2) The recommended state for this setting is: Enabled with a value of Do not allow any site to show desktop notifications (1)",
+          "data": "\n          Google Chrome offers websites to display desktop notifications. These are push messages which are sent from the website operator through Google infrastructure to Chrome.\n          \n            \n              Allow sites to show desktop notifications\n (0)            \n            \n              Do not allow any site to show desktop notifications\n (1)            \n            \n              Ask every time a site wants to show desktop notifications\n (2)            \n          \n          \nThe recommended state for this setting is:             Enabled\n with a value of             Do not allow any site to show desktop notifications\n (1)          \n        ",
           "label": "default"
         },
         {
@@ -659,11 +659,11 @@
           "label": "check"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled: Do not allow any site to show desktop notifications selected from the drop down: Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Default notification setting Impact: If this setting is enabled and set to Do not allow any site to show desktop notifications , notifications will not be displayed for any sites and the user will not be asked.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Do not allow any site to show desktop notifications\n selected from the drop down:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Default notification setting\n\n              Impact:\n              \n                \nIf this setting is enabled and set to                   Do not allow any site to show desktop notifications\n, notifications will not be displayed for any sites and the user will not be asked.                \n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "If the website operator decides to send messages unencrypted Google's servers may process it as plain text. Furthermore, potentially compromised or faked notifications might trick users into clicking on a malicious link.",
+          "data": "\n          If the website operator decides to send messages unencrypted Google's servers may process it as plain text. Furthermore, potentially compromised or faked notifications might trick users into clicking on a malicious link.\n        ",
           "label": "rationale"
         }
       ],
@@ -682,15 +682,15 @@
     {
       "descriptions": [
         {
-          "data": "Enabling this setting allows you to specify which app/extensions types are allowed. Disabled (0): Results in no restrictions on the acceptable extension and app types. The recommended state for this setting is: Enabled with the values of extension , hosted_app , platform_app , theme",
+          "data": "\n          Enabling this setting allows you to specify which app/extensions types are allowed.\n          \n            Disabled\n (0): Results in no restrictions on the acceptable extension and app types.          \n          \nThe recommended state for this setting is:             Enabled\n with the values of             extension\n,             hosted_app\n,             platform_app\n,             theme\n          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Enabled: extension, hosted_app, platform_app, theme : Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Extensions\\Configure allowed app/extension types Impact: Extensions already installed will be removed if it's type is denylisted and the extension itself is not allowlisted.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: extension, hosted_app, platform_app, theme\n:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Extensions\\Configure allowed app/extension types\n\n              Impact:\n              \n                Extensions already installed will be removed if it's type is denylisted and the extension itself is not allowlisted.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "App or extension types that could be misused or are deprecated shall no longer be installed. NOTE: Google has removed support for Chrome Apps which includes the types hosted_app and platform_app. The blog post indicates that these types will require a setting to be enabled for continued use through June 2022.",
+          "data": "\n          App or extension types that could be misused or are deprecated shall no longer be installed.\n          \n            NOTE:\n Google has removed support for Chrome Apps which includes the types hosted_app and platform_app. The blog post indicates that these types will require a setting to be enabled for continued use through June 2022.          \n        ",
           "label": "rationale"
         }
       ],
@@ -708,15 +708,15 @@
     {
       "descriptions": [
         {
-          "data": "Google Chrome has a built in password manager to store passwords for users. Chrome will use local authentication to allow users to gain access to these passwords. The recommended state for this setting is: Explicitly set to Enabled (1) or Disabled (0) based on the organization's needs. NOTE: If you choose to Enable this setting please review Disable synchronization of data with Google and ensure this setting is configured to meet organizational requirements.",
+          "data": "\n          Google Chrome has a built in password manager to store passwords for users. Chrome will use local authentication to allow users to gain access to these passwords.\n          \nThe recommended state for this setting is: Explicitly set to             Enabled\n (1) or             Disabled\n (0) based on the organization's needs.          \n          \n            NOTE:\n If you choose to Enable this setting please review             Disable synchronization of data with Google\n and ensure this setting is configured to meet organizational requirements.          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, configure the following setting to meet organizational requirements: Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Password manager\\Enable the password manager Impact: Organizationally dependent.",
+          "data": "\n          \n            \n              To establish the recommended configuration via Group Policy, configure the following setting to meet organizational requirements:\n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Password manager\\Enable the password manager\n\n              Impact:\n              \n                Organizationally dependent.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "The Google Chrome password manager is Enabled by default and each organization should review and determine if they want to allow users to store passwords in the Browser. If another solution is used instead of the built in Chrome option then an organization should configure the setting to Disabled .",
+          "data": "\n          \nThe Google Chrome password manager is             Enabled\n by default and each organization should review and determine if they want to allow users to store passwords in the Browser.  If another solution is used instead of the built in Chrome option then an organization should configure the setting to             Disabled\n.          \n        ",
           "label": "rationale"
         }
       ],
@@ -734,15 +734,15 @@
     {
       "descriptions": [
         {
-          "data": "This is a setting for Chrome Remote desktop. If this setting is Disabled, the remote access host service cannot be started or configured to accept incoming connections. Disabled (0): Prevent remote access connections to this machine Enabled (1): Allow remote access connections to this machine The recommended state for this setting is: Disabled (0)",
+          "data": "\n          This is a setting for Chrome Remote desktop. If this setting is Disabled, the remote access host service cannot be started or configured to accept incoming connections.\n          \n            \n              Disabled\n (0): Prevent remote access connections to this machine            \n            \n              Enabled\n (1): Allow remote access connections to this machine            \n          \n          \nThe recommended state for this setting is:             Disabled\n (0)          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via Group Policy, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Remote Access\\Allow remote access connections to this machine Impact: This setting will disable Chrome Remote Desktop. In general, Chrome Remote Desktop is not used by most businesses, so disabling it should have no impact.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Remote Access\\Allow remote access connections to this machine\n\n              Impact:\n              \n                This setting will disable Chrome Remote Desktop. In general, Chrome Remote Desktop is not used by most businesses, so disabling it should have no impact.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "Only approved remote access systems should be used. NOTE: If Chrome Remote Desktop is approved and required for use, then this setting can be ignored.",
+          "data": "\n          Only approved remote access systems should be used.\n          \n            NOTE:\n If Chrome Remote Desktop is approved and required for use, then this setting can be ignored.          \n        ",
           "label": "rationale"
         }
       ],
@@ -760,15 +760,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting allows access to local files by allowing file selection dialogs in Google Chrome. The recommended state for this setting is: Disabled (0)",
+          "data": "\n        This setting allows access to local files by allowing file selection dialogs in Google Chrome.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow invocation of file selection dialogs Impact: If you disable this setting users will no longer be prompted when performing actions which would trigger a file selection dialog. Instead, the file selection dialog box assumes the user clicked \"Cancel\". Being as this is not the default behavior, impact to the user will be noticeable, and the user will not be able to upload and download files.",
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow invocation of file selection dialogs\n\n            Impact:\n            \n              If you disable this setting users will no longer be prompted when performing actions which would trigger a file selection dialog. Instead, the file selection dialog box assumes the user clicked \"Cancel\". Being as this is not the default behavior, impact to the user will be noticeable, and the user will not be able to upload and download files.\n            \n          \n        \n      ",
           "label": "fix"
         },
         {
-          "data": "Allowing users to import favorites, uploading files, and savings links could pose potential security risks by allowing data to be uploaded to external sites or by downloading malicious files. By not allowing the file selection dialog the end-user will not be prompted for uploads/downloads preventing data exfiltration and possible system infection by malware.",
+          "data": "\n        Allowing users to import favorites, uploading files, and savings links could pose potential security risks by allowing data to be uploaded to external sites or by downloading malicious files. By not allowing the file selection dialog the end-user will not be prompted for uploads/downloads preventing data exfiltration and possible system infection by malware.\n      ",
           "label": "rationale"
         }
       ],
@@ -786,15 +786,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether Google Chrome can use screen-share APIs including web-based online meetings, video, or screen sharing. The recommended state for this setting is: Disabled (0) NOTE: This setting is not considered (and a site will be allowed to use screen-share APIs) if the site matches an origin pattern in any of the following other settings: ScreenCaptureAllowedByOrigins , WindowCaptureAllowedByOrigins , TabCaptureAllowedByOrigins , SameOriginTabCaptureAllowedByOrigins .",
+          "data": "\n          This setting controls whether Google Chrome can use screen-share APIs including web-based online meetings, video, or screen sharing.\n          \nThe recommended state for this setting is:             Disabled\n (0)          \n          \n            NOTE:\n This setting is not considered (and a site will be allowed to use screen-share APIs) if the site matches an origin pattern in any of the following other settings:             ScreenCaptureAllowedByOrigins\n,             WindowCaptureAllowedByOrigins\n,             TabCaptureAllowedByOrigins\n,             SameOriginTabCaptureAllowedByOrigins\n.          \n        ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow or deny screen capture\\Allow or deny screen capture Impact: Users will be unable to utilize APIs which support web-based meetings (video conferencing screen sharing), video, and screen capture. This could potentially have disruption to users who may have utilized these abilities in the past.",
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow or deny screen capture\\Allow or deny screen capture\n\n              Impact:\n              \n                Users will be unable to utilize APIs which support web-based meetings (video conferencing screen sharing), video, and screen capture.  This could potentially have disruption to users who may have utilized these abilities in the past.\n              \n            \n          \n        ",
           "label": "fix"
         },
         {
-          "data": "Allowing screen-share APIs within Google Chrome could potentially allow for sensitive data to be shared via screen captures.",
+          "data": "\n          Allowing screen-share APIs within Google Chrome could potentially allow for sensitive data to be shared via screen captures.\n        ",
           "label": "rationale"
         }
       ],
@@ -811,7 +811,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser. This guide was tested against Google Chrome v96. To obtain the latest version of this guide, please visit http://benchmarks.cisecurity.org . If you have questions, comments, or have identified ways to improve this guide, please write us at feedback@cisecurity.org . IMPORTANT NOTE: This Benchmark assumes the installation of the Goggle Chrome and Google Update ADMX/ADML templates into the Active Directory policy store for the domain(s) of interest. These can be obtained at the following web locations: Chrome Google Update --- USAGE NOTES --- Some helpful guidance on using this Benchmark. Recommendation Order This Benchmark has high-level sections based on various security related concerns (Enforced Defaults, Privacy, etc.). Within each of these major sections the recommendations are ordered alphabetically, and are grouped in the relevant sub-section where the setting is located in the Google Chrome GPO as shown in the Microsoft Group Policy Management Editor when the GPO is sorted alphabetically by setting (Clicking the Setting column in the Microsoft Group Policy Management Editor right pane view). Enforced Defaults Many of the settings specified in this Benchmark are also the default settings for the browser. These are specified for the following reasons: The default (Unset) setting may have the same effect as what is prescribed, but they allow the user to change these settings at any time. Actually configuring the browser setting to the prescribed value will prevent the user from changing it. Many organizations want the ability to scan systems for Benchmark compliance and configuration drift using CIS (CIS-CAT) or CIS certified third party tools ( CIS Vendor Partners ). Having these settings specified in the Benchmark allows for this. Viewing the Resulting \"Policies\" in Chrome This benchmark is designed to use Windows Group Policy on a domain joined system to set the appropriate Windows registry values that pertain to Google Chrome. In the end, these settings change the internal \"policy\" configuration of Google Chrome. These \"Policy\" settings can be viewed in Google Chrome directly by typing chrome://policy/ directly into the Google Chrome address box.",
+  "summary": "\n    \nThis document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser. This guide was tested against Google Chrome v96. To obtain the latest version of this guide, please visit       http://benchmarks.cisecurity.org\n. If you have questions, comments, or have identified ways to improve this guide, please write us at       feedback@cisecurity.org\n.    \n    \n      IMPORTANT NOTE:\n This Benchmark assumes the installation of the Goggle Chrome and Google Update ADMX/ADML templates into the Active Directory policy store for the domain(s) of interest. These can be obtained at the following web locations:    \n    \n      \n        Chrome\n      \n      \n        Google Update\n      \n    \n    \n      --- USAGE NOTES ---\n    \n    Some helpful guidance on using this Benchmark.\n    \n      Recommendation Order\n    \n    \nThis Benchmark has high-level sections based on various security related concerns (Enforced Defaults, Privacy, etc.). Within each of these major sections the recommendations are ordered alphabetically, and are grouped in the relevant sub-section where the setting is located in the Google Chrome GPO as shown in the Microsoft Group Policy Management Editor when the GPO is sorted alphabetically by setting (Clicking the       Setting\n column in the Microsoft Group Policy Management Editor right pane view).    \n    \n      Enforced Defaults\n    \n    Many of the settings specified in this Benchmark are also the default settings for the browser. These are specified for the following reasons:\n    \n      The default (Unset) setting may have the same effect as what is prescribed, but they allow the user to change these settings at any time. Actually configuring the browser setting to the prescribed value will prevent the user from changing it.\n      \nMany organizations want the ability to scan systems for Benchmark compliance and configuration drift using CIS (CIS-CAT) or CIS certified third party tools (        CIS Vendor Partners\n). Having these settings specified in the Benchmark allows for this.      \n    \n    \n      Viewing the Resulting \"Policies\" in Chrome\n    \n    \nThis benchmark is designed to use Windows Group Policy on a domain joined system to set the appropriate Windows registry values that pertain to Google Chrome. In the end, these settings change the internal \"policy\" configuration of Google Chrome. These \"Policy\" settings can be viewed in Google Chrome directly by typing       chrome://policy/\n directly into the Google Chrome address box.    \n  ",
   "title": "CIS Google Chrome Benchmark",
   "version": "2.1.0"
 }

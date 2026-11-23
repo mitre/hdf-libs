@@ -1805,17 +1805,20 @@ describe('extractCheckContentRef', () => {
 // content carries its text inside XHTML children, so a parser that reads only
 // an element's own text drops every word. Text on both sides of the span
 // proves document order is kept.
+// Words are compared here, not whitespace, which the prose readback tests pin.
+const words = (s: string | undefined): string => (s ?? '').split(/\s+/).filter(Boolean).join(' ');
+
 describe('prose inside xhtml children', () => {
   it('carries text inside xhtml children', async () => {
     const baseline = await parseBaseline('CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml');
-    expect(baseline.summary?.startsWith('This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser.'), baseline.summary).toBe(true);
+    expect(words(baseline.summary).startsWith('This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser.'), baseline.summary).toBe(true);
 
     const req = findBaselineReq(baseline, 'xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled');
     expect(req).toBeDefined();
     const descriptions = Object.fromEntries(req!.descriptions.map((d) => [d.label, d.data]));
-    expect(descriptions['default']).toBe('This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)');
-    expect(descriptions['rationale']).toBe('This setting is typically disabled to help combat phishing attempts.');
-    expect(descriptions['fix']).toBe('To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.');
+    expect(words(descriptions['default'])).toBe('This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)');
+    expect(words(descriptions['rationale'])).toBe('This setting is typically disabled to help combat phishing attempts.');
+    expect(words(descriptions['fix'])).toBe('To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.');
   });
 });
 
@@ -1838,7 +1841,7 @@ describe('prose pipeline edges', () => {
     expect(baseline.requirements).toHaveLength(1);
     const descriptions = Object.fromEntries(baseline.requirements[0]!.descriptions.map((d) => [d.label, d.data]));
     expect(descriptions).toEqual({
-      default: 'a & A B "q" \'p\' \uFFFD line1 line2 in s out c &amp; end',
+      default: 'a  & A B "q" \'p\' \uFFFD line1\nline2 in s out   c &amp;  end',
       fix: 'run cmd',
       rationale: 'why it matters',
       warning: 'careful x',

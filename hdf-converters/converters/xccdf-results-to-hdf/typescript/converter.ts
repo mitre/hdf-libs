@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, stripHTMLTags, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -391,7 +391,7 @@ const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtex
 
 // trimValues would strip each text node before the parser concatenates them, so
 // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-// came back as "Thepackage". Keep the whitespace and let stripHTML collapse it.
+// came back as "Thepackage". Keep the whitespace, which is the source's prose.
 const PARSE_OPTIONS = { trimValues: false, stopNodes: PROSE_STOP_NODES };
 
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
@@ -551,7 +551,7 @@ async function convertBenchmarkResultsToHdf(
   baseline.title = baselineName;
   baseline.version = extractVersion(benchmark.version);
   baseline.status = 'loaded';
-  baseline.summary = stripHTML(proseText(benchmark.description));
+  baseline.summary = stripHTMLTags(proseText(benchmark.description));
 
   const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
   const toolVersion = parseCpeVersion(testResult['test-system']);
@@ -807,7 +807,7 @@ async function convertBenchmarkToBaselineJson(
     title: extractText(benchmark.title),
     version: extractVersion(benchmark.version),
     status: 'loaded',
-    summary: stripHTML(proseText(benchmark.description)),
+    summary: stripHTMLTags(proseText(benchmark.description)),
     integrity,
     requirements,
     groups,
@@ -835,31 +835,8 @@ function ruleToBaselineRequirement(
   const severity = (rule.severity ?? '').toLowerCase();
   const impact = severity ? severityToImpact(severity) : 0.5;
 
-  const descriptions: Description[] = [{
-    label: 'default',
-    data: stripHTML(extractVulnDiscussion(proseText(rule.description))),
-  }];
-
+  const descriptions = buildRuleDescriptions(rule);
   const check = selectCheck(rule.check);
-  const checkDesc = checkDescriptionData(check);
-  if (checkDesc) {
-    descriptions.push({ label: 'check', data: checkDesc });
-  }
-
-  const fixtext = proseText(rule.fixtext);
-  if (fixtext) {
-    descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
-  }
-
-  const rationale = proseText(rule.rationale).trim();
-  if (rationale) {
-    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
-  }
-
-  const warning = proseText(rule.warning).trim();
-  if (warning) {
-    descriptions.push({ label: 'warning', data: stripHTML(warning) });
-  }
 
   const tags = buildCciNistTags(extractCCIs(rule.ident ?? []));
   const nistTags = tags['nist'] as string[];
@@ -1014,7 +991,7 @@ async function convertArfCollection(
     baseline.status = 'loaded';
     if (benchmark) {
       baseline.version = extractVersion(benchmark.version);
-      baseline.summary = stripHTML(proseText(benchmark.description));
+      baseline.summary = stripHTMLTags(proseText(benchmark.description));
     }
     baselines.push(baseline);
 
@@ -1176,27 +1153,8 @@ function ruleResultToRequirement(
   // high-severity rule that simply was not evaluated.
   const impact = severity ? severityToImpact(severity) : 0.5;
 
-  const descriptions: Description[] = [{
-    label: 'default',
-    data: stripHTML(extractVulnDiscussion(proseText(ruleDef?.description))),
-  }];
+  const descriptions = buildRuleDescriptions(ruleDef);
   const check = selectCheck(ruleDef?.check);
-  const checkDesc = checkDescriptionData(check);
-  if (checkDesc) {
-    descriptions.push({ label: 'check', data: checkDesc });
-  }
-  const fixtext = proseText(ruleDef?.fixtext);
-  if (fixtext) {
-    descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
-  }
-  const rationale = proseText(ruleDef?.rationale).trim();
-  if (rationale) {
-    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
-  }
-  const warning = proseText(ruleDef?.warning).trim();
-  if (warning) {
-    descriptions.push({ label: 'warning', data: stripHTML(warning) });
-  }
 
   const status = STATUS_MAP[xccdfResult] ?? ResultStatus.Error;
 
@@ -1329,7 +1287,7 @@ const NAMED_ENTITIES: Record<string, string> = {
 // The shared XML parser runs with processEntities off as XXE defense-in-depth,
 // so character references arrive undecoded; Go's encoding/xml decodes them for
 // free. STIG fix texts rely on this (an entity-encoded "<partition>" must
-// become a real tag before stripHTML can drop it). Only predefined and numeric
+// become a real tag before stripHTMLTags can drop it). Only predefined and numeric
 // references are decoded; document-defined entities stay untouched. A
 // reference to no valid code point becomes U+FFFD, as it does in Go.
 function decodeXmlEntities(s: string): string {
@@ -1365,7 +1323,7 @@ function proseText(field: string | TextElement | FixtextElement | undefined): st
 // bytes: line endings folded to LF (XML 1.0 §2.11), CDATA sections literal,
 // comments and processing instructions dropped (stripHTML would stop at the
 // first ">" inside one), and the predefined and numeric entities decoded
-// everywhere else. Element tags stay in place for stripHTML.
+// everywhere else. Element tags stay in place for stripHTMLTags.
 function proseFromInnerXml(inner: string): string {
   return inner
     .replace(/\r\n?/g, '\n')
@@ -1491,15 +1449,43 @@ export function extractCheckContentRef(
 }
 
 /**
+ * The default, check, fix, rationale and warning descriptions of a Rule, with
+ * tags removed and the source's whitespace kept. Mirrors the Go buildDescriptions.
+ */
+function buildRuleDescriptions(rule: RuleElement | undefined): Description[] {
+  const descriptions: Description[] = [{
+    label: 'default',
+    data: stripHTMLTags(extractVulnDiscussion(proseText(rule?.description))),
+  }];
+  const checkDesc = checkDescriptionData(selectCheck(rule?.check));
+  if (checkDesc) {
+    descriptions.push({ label: 'check', data: checkDesc });
+  }
+  const fixtext = proseText(rule?.fixtext);
+  if (fixtext) {
+    descriptions.push({ label: 'fix', data: stripHTMLTags(fixtext) });
+  }
+  const rationale = proseText(rule?.rationale);
+  if (rationale.trim()) {
+    descriptions.push({ label: 'rationale', data: stripHTMLTags(rationale) });
+  }
+  const warning = proseText(rule?.warning);
+  if (warning.trim()) {
+    descriptions.push({ label: 'warning', data: stripHTMLTags(warning) });
+  }
+  return descriptions;
+}
+
+/**
  * Text for the "check" description: the inline <check-content> when the content
  * author embedded it, else the automated check's OVAL/SCE definition name
  * (check-content-ref/@name), which SCAP content carries instead of inline logic.
  * Empty when the check has neither. Mirrors the Go checkDescriptionData.
  */
 function checkDescriptionData(check: CheckElement | undefined): string {
-  const content = extractCheckContent(check).trim();
-  if (content) {
-    return stripHTML(content);
+  const content = extractCheckContent(check);
+  if (content.trim()) {
+    return stripHTMLTags(content);
   }
   return extractCheckContentRef(check).name;
 }

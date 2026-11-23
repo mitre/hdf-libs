@@ -1801,13 +1801,14 @@ func TestConvertXccdfBenchmark_UnknownSeverityOmitted(t *testing.T) {
 // XCCDF prose elements are htmlTextWithSubType: CIS and SCAP Security Guide
 // content carries its text inside XHTML children, so a parser that reads only
 // an element's own character data drops every word. Text on both sides of the
-// span proves document order is kept.
+// span proves document order is kept. Words are compared, not whitespace, which
+// the prose readback tests pin against the source.
 func TestConvertBenchmark_CarriesTextInsideXhtmlChildren(t *testing.T) {
 	baseline, err := ConvertXccdfBenchmarkToHDF(loadFixture(t, "CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml"), converterVersion)
 	require.NoError(t, err)
 
 	require.NotNil(t, baseline.Summary)
-	require.True(t, strings.HasPrefix(*baseline.Summary, "This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser."), "summary: %q", *baseline.Summary)
+	require.True(t, strings.HasPrefix(words(*baseline.Summary), "This document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser."), "summary: %q", *baseline.Summary)
 
 	const ruleID = "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled"
 	var req *hdf.BaselineRequirement
@@ -1822,9 +1823,14 @@ func TestConvertBenchmark_CarriesTextInsideXhtmlChildren(t *testing.T) {
 	for _, d := range req.Descriptions {
 		descriptions[d.Label] = d.Data
 	}
-	require.Equal(t, "This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)", descriptions["default"])
-	require.Equal(t, "This setting is typically disabled to help combat phishing attempts.", descriptions["rationale"])
-	require.Equal(t, `To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\Policies\Administrative Templates\Google\Google Chrome\HTTP authentication\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.`, descriptions["fix"])
+	require.Equal(t, "This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled. The recommended state for this setting is: Disabled (0)", words(descriptions["default"]))
+	require.Equal(t, "This setting is typically disabled to help combat phishing attempts.", words(descriptions["rationale"]))
+	require.Equal(t, `To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\Policies\Administrative Templates\Google\Google Chrome\HTTP authentication\Cross-origin HTTP Authentication prompts Impact: None - This is the default behavior.`, words(descriptions["fix"]))
+}
+
+// words joins the whitespace-separated words of s with single spaces.
+func words(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 // The prose pipeline's edges, which no committed fixture carries: the five
@@ -1851,7 +1857,7 @@ func TestConvertBenchmark_ProseEdges(t *testing.T) {
 		descriptions[d.Label] = d.Data
 	}
 	require.Equal(t, map[string]string{
-		"default":   "a & A B \"q\" 'p' \uFFFD line1 line2 in s out c &amp; end",
+		"default":   "a  & A B \"q\" 'p' \uFFFD line1\nline2 in s out   c &amp;  end",
 		"fix":       "run cmd",
 		"rationale": "why it matters",
 		"warning":   "careful x",

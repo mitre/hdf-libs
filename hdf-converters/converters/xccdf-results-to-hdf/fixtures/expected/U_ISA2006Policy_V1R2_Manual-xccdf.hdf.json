@@ -262,15 +262,15 @@
     {
       "descriptions": [
         {
-          "data": "A regular review of current security policies and procedures is necessary to maintain the desired security posture of application proxies and firewalls such as Microsoft Internet Security and Acceleration (ISA). Policies and procedures should be measured against current Department of Defense (DoD) policy, Security Technical Implementation Guide (STIG) direction, vendor-specific guidance and recommendations, and site-specific or other security policy.",
+          "data": "A regular review of current security policies and procedures is necessary to maintain the desired security posture of application proxies and firewalls such as Microsoft Internet Security and Acceleration (ISA).  Policies and procedures should be measured against current Department of Defense (DoD) policy, Security Technical Implementation Guide (STIG) direction, vendor-specific guidance and recommendations, and site-specific or other security policy.",
           "label": "default"
         },
         {
-          "data": "Review procedures and implementation evidence of annual reviews of ISA 2006 Information Assurance (IA) policy and procedures. Procedures must exist, be complete, and are implemented. They must be executed at least annually or more frequently. Procedure: Criteria: If complete review procedures exist, and are executed at least annually, this is not a finding.",
+          "data": "Review procedures and implementation evidence of annual reviews of ISA 2006  Information Assurance (IA) policy and procedures.  Procedures must exist, be complete, and are implemented.  They must be executed at least annually or more frequently. \n\nProcedure: \nCriteria:  If complete review procedures exist, and are  executed at least annually, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Ensure that procedures exist, and that annual reviews are scheduled and completed.",
+          "data": "Procedure:  Ensure that procedures exist, and that annual reviews are scheduled and completed.  ",
           "label": "fix"
         }
       ],
@@ -297,15 +297,15 @@
     {
       "descriptions": [
         {
-          "data": "Functional Architecture documentation must be developed and maintained for ISA servers at each location. For example, if the ISA server is performing an Exchange 2003 Proxy role vs. an Exchange 2007 Proxy role, the specifics of that implementation should be documented. The chosen network interface model with pertinent private and public addresses, as well as protected assets shielded by each ISA server must be documented in the system security plan and other relevant network schematics. If additional content filtering, encryption (at rest or in motion), or other handling is implemented, they should also be described. The risk of missing or inaccurate ISA server system documentation could result in other network devices being misconfigured. If traffic is allowed to bypass the ISA server, the result could be compromised applications or servers. If traffic is blocked in error, the result could be inadvertant Denial of Service to applications or servers.",
+          "data": "Functional Architecture documentation must be developed and maintained for ISA servers at each location.  For example, if the ISA server is performing an Exchange 2003 Proxy role vs. an Exchange 2007 Proxy role, the specifics of that implementation should be documented.  The chosen network interface model with pertinent private and public addresses, as well as protected assets shielded by each ISA server must be documented in the system security plan and other relevant network schematics.  \n\nIf additional content filtering, encryption (at rest or in motion), or other handling is implemented, they should also be described.  The risk of missing or inaccurate ISA server system documentation could result in other network devices being misconfigured.  If traffic is allowed to bypass the ISA server, the result could be compromised applications or servers.  If traffic is blocked in error, the result could be inadvertant Denial of Service to applications or servers.   ",
           "label": "default"
         },
         {
-          "data": "Interview the ISA Server Administrator or IAO. Review documentation that describes unique security requirements for ISA Servers implemented at the site. Included should be information such as firewall model, number of network interfaces, network location and ISA server role in the network. Criteria: If unique security requirements are documented in the System Security plan, this is not a finding.",
+          "data": "Interview the ISA Server Administrator or IAO.  Review documentation that describes unique security requirements for ISA Servers implemented at the site.  Included should be information such as firewall model, number\nof network interfaces, network location and ISA server role in the network.\n\nCriteria:  If unique security requirements are documented in the System Security plan, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Ensure that unique security requirements for ISA Servers are in the System Security Plan. Procedure: Update the System Security plan. Include information such as firewall model, number of network interfaces, network location and ISA server role in the network.",
+          "data": "Ensure that unique security requirements for ISA Servers are in the System Security Plan.  \nProcedure:  Update the System Security plan.  Include information such as firewall model, number of network interfaces, network location and ISA server role in the network.    \n",
           "label": "fix"
         }
       ],
@@ -332,15 +332,15 @@
     {
       "descriptions": [
         {
-          "data": "Uncontrolled, untested, or unmanaged changes result in an unreliable security posture. All software libraries related to ISA services need to be reviewed, considered, and the responsibility for CM assigned. CM responsibilities may appear to cross boundaries. It is important, however, for the boundaries of CM responsibility to be clearly defined and assigned to ensure no libraries or configurations are left unaddressed.",
+          "data": "Uncontrolled, untested, or unmanaged changes result in an unreliable security posture.  All software libraries related to ISA services need to be reviewed, considered, and the responsibility for CM assigned.  CM responsibilities may appear to cross boundaries.  It is important, however, for the boundaries of CM responsibility to be clearly defined and assigned to ensure no libraries or configurations are left unaddressed.  \n\n",
           "label": "default"
         },
         {
-          "data": "Interview the ISA Server Administrator or the IAO to ask if configuration management procedures are in place to prevent untested and uncontrolled software modifications to the production system. Access documentation demonstrating the process, scheduling, and signoff procedures for ISA configuration management. Criteria: If configuration management procedures are documented and implemented, this is not a finding.",
+          "data": "Interview the ISA Server Administrator or the IAO to ask if configuration management procedures are in place to prevent untested and uncontrolled software modifications to the production system. Access documentation demonstrating the process, scheduling, and signoff procedures for ISA configuration management.  \n \nCriteria:  If configuration management procedures are documented and implemented, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Implement Configuration Management procedures; document them and follow them. Ensure that patches, configurations, and upgrades are addressed. Process steps should have specific procedures and responsibilities assigned.",
+          "data": "Procedure: \nImplement Configuration Management procedures; document them and follow them. Ensure that patches, configurations, and upgrades are addressed. \n\nProcess steps should have specific procedures and responsibilities assigned.",
           "label": "fix"
         }
       ],
@@ -367,15 +367,15 @@
     {
       "descriptions": [
         {
-          "data": "Separation of roles supports operational security for application as well as human resources. Roles accompanied by elevated privileges, such as that of the Firewall Administrator, must be carefully regulated and monitored. All appointments to IA roles, such as DAA, IAM, and IAO must be in writing, and include assigned duties and appointment criteria such as training, clearance and IT designation. The ISA Firewall Administrator Role is assigned and controlled by the IAM. The IAM role owns the responsibility to document responsibilities, privileges, training and scope for the ISA Firewall Administrator role. It is with this definition that the IAO is able to monitor assigned resources, ensuring that intended tasks are completed, and that elevated privileges are not used for purposes beyond their intended tasks. The default roles for ISA server administrators are as follows: 1 – ISA Server Enterprise Administrator – Full control of enterprise, array configurations, and the ability to assign other roles. 2 – ISA Server Enterprise Auditor – View all configurations. 3 – ISA Server Administrator – ISA server tasks such as rules configuration, apply network templates, and monitor server activity. 4 – ISA Server Array Auditor – All monitoring tasks such as log configuration, alert definitions, and monitoring functions in a basic monitoring role. 5 – ISA Server Array Monitoring Auditor – Monitor one ISA server, monitor network activity, no permissions to create monitoring configuration.",
+          "data": "Separation of roles supports operational security for application as well as human resources.   Roles accompanied by elevated privileges, such as that of the Firewall Administrator, must be carefully regulated and monitored.\n\nAll appointments to IA roles, such as DAA, IAM, and IAO must be in writing, and include assigned duties and appointment criteria such as training, clearance and IT designation.  The ISA Firewall Administrator Role is assigned and controlled by the IAM.  The IAM role owns the responsibility to document responsibilities, privileges, training and scope for the ISA Firewall Administrator role.  It is with this definition that the IAO is able to monitor assigned resources, ensuring that intended tasks are completed, and that elevated privileges are not used for purposes beyond their intended tasks.    \n\nThe default roles for ISA server administrators are as follows: \n1 – ISA Server Enterprise Administrator – Full control of enterprise, array configurations, and the ability to assign other roles. \n2 – ISA Server Enterprise Auditor – View all configurations. \n3 – ISA Server Administrator – ISA server tasks such as rules configuration, apply network templates, and monitor server activity. \n4 – ISA Server Array Auditor – All monitoring tasks such as log configuration, alert definitions, and monitoring functions in a basic monitoring role. \n5 – ISA Server Array Monitoring Auditor – Monitor one ISA server, monitor network activity, no permissions to create monitoring configuration. \n",
           "label": "default"
         },
         {
-          "data": "Interview the IAO. Ensure that roles assignments are written and controlled. Procedure: Review the documented procedures for approval and granting of ISA Server Administrator privileges. Review implementation evidence for the procedures. Criteria: If the ISA Server Administrator role is documented and authorized by the IAO, this is not a finding.",
+          "data": "Interview the IAO.  Ensure that roles assignments are written and controlled. \nProcedure:  Review the documented procedures for approval and granting of ISA Server Administrator privileges.  Review implementation evidence for the procedures. \n\nCriteria:  If the ISA Server Administrator role is documented and authorized by the IAO, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Establish a procedure that ensures that the ISA Server Administrator role is defined and authorized (assigned) as documented by the IAO.",
+          "data": "Procedure:  Establish a procedure that ensures that the ISA Server Administrator role is defined and authorized (assigned) as documented by the IAO.   \n\n",
           "label": "fix"
         }
       ],
@@ -402,15 +402,15 @@
     {
       "descriptions": [
         {
-          "data": "A System Security Plan defines the security procedures and policies applicable to the AIS. It includes definition of responsibilities and qualifications for those responsible for administering the AIS security. For ISA services, this includes specifically the ISA Fire Wall Administrator in addition to the standard SA and IAO roles. Without a security plan, unqualified personnel may be assigned responsibilities that they are incapable of meeting and ISA proxy security is prone to an inconsistent or incomplete implementation. Security controls applicable to ISA services may not be documented, tracked, or followed if not identified in the System Security Plan. Any omission of security control consideration could lead to an exploit of ISA services vulnerabilities or configurations.",
+          "data": "A System Security Plan defines the security procedures and policies applicable to the AIS.  It includes definition of responsibilities and qualifications for those responsible for administering the AIS security.  For ISA services, this includes specifically the ISA Fire Wall Administrator in addition to the standard SA and IAO roles.  Without a security plan, unqualified personnel may be assigned responsibilities that they are incapable of meeting and ISA proxy security is prone to an inconsistent or incomplete implementation.\n\nSecurity controls applicable to ISA services may not be documented, tracked, or followed if not identified in the System Security Plan.  Any omission of security control consideration could lead to an exploit of ISA services vulnerabilities or configurations.\n\n",
           "label": "default"
         },
         {
-          "data": "Review the System Security Plan for ISA services. Review coverage of the following in the System Security Plan: - Technical, administrative, and procedural IA program and policies that govern ISA services - Identification of all IA roles and assignments(IAM, IAO, FWA) - Specific IA requirements and objectives such as unique security considerations and outage contingency plans. Criteria: If ISA services are documented in the System Security Plan, this is not a finding.",
+          "data": "Review the System Security Plan for ISA services.  Review coverage of the following in the System Security Plan:\n  - Technical, administrative, and procedural IA program and policies that govern ISA services\n  - Identification of all IA roles and assignments(IAM, IAO, FWA)\n  - Specific IA requirements and objectives such as unique security considerations and outage contingency plans. \n\nCriteria:  If ISA services are documented in the System Security Plan, this is not a finding.  \n\n",
           "label": "check"
         },
         {
-          "data": "Procedure: Establish a System Security Plan ISA services component. Ensure that the following types of information are covered in the plan: - Technical, administrative, and procedural IA program and policies that govern ISA services - Identification of all IA roles and assignments(IAM, IAO, FWA) - Specific IA requirements and objectives such as unique security considerations and outage contingency plans.",
+          "data": "Procedure:  Establish a System Security Plan ISA services component.   Ensure that the following types of information  are covered in the plan:  \n - Technical, administrative, and procedural IA program and policies that govern ISA services\n  - Identification of all IA roles and assignments(IAM, IAO, FWA)\n  - Specific IA requirements and objectives such as unique security considerations and outage contingency plans.  ",
           "label": "fix"
         }
       ],
@@ -437,15 +437,15 @@
     {
       "descriptions": [
         {
-          "data": "All automated information systems are at risk of data loss due to disaster or compromise. Failure to provide adequate protection to the backup and recovery data exposes it to risk of potential theft or damage that may ultimately prevent a successful restoration, should the need become necessary. Adequate protection ensures that backup components can be used to provide transparent or easy recovery from losses or operations outages. Backup files need the same protections against unauthorized access when stored on backup media as when online and actively in use by the ISA system. Included in this category are physical media, online configuration file copies, and any user data that will need to be restored.",
+          "data": "All automated information systems are at risk of data loss due to disaster or compromise.  Failure to provide adequate protection to the backup and recovery data exposes it to risk of potential theft or damage that may ultimately prevent a successful restoration, should the need become necessary.  \n\nAdequate protection ensures that backup components can be used to provide transparent or easy recovery from losses or operations outages.  Backup files need the same protections against unauthorized access when stored on backup media as when online and actively in use by the ISA system.  Included in this category are physical media, online configuration file copies, and any user data that will need to be restored.  \n",
           "label": "default"
         },
         {
-          "data": "Ensure that critical ISA recovery files are restricted to Administrators and Backup/Recovery processes. Procedure: Interview the ISA Server Administrator or the IAO. Access the System Security Plan documentation that describes protection for the backup and recovery data. Direct access of any kind must be restricted only to personnel and processes that are authorized to handle that data. Criteria: If ISA Critical recovery files are restricted to Administrators and Backup/Recovery processes, this is not a finding.",
+          "data": "Ensure that critical ISA recovery files are restricted to Administrators and Backup/Recovery processes.\n\nProcedure: \nInterview the ISA Server Administrator or the IAO.  Access the System Security Plan documentation that describes protection for the backup and recovery data.  Direct access of any kind must be restricted only to personnel and processes that are authorized to handle that data.  \n \nCriteria:  If ISA Critical recovery files are restricted to Administrators and Backup/Recovery processes, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Create or modify recovery data access procedures. Ensure that access to ISA Recovery Data is restricted to ISA Server Administrators, System Administrators, or Backup/Recovery processes.",
+          "data": "Procedure:  Create or modify recovery data access procedures.  Ensure that access to ISA Recovery Data is restricted to ISA Server Administrators, System Administrators, or Backup/Recovery processes.  ",
           "label": "fix"
         }
       ],
@@ -472,15 +472,15 @@
     {
       "descriptions": [
         {
-          "data": "Monitors are automated “process watchers” that respond to performance changes, and can be useful in detecting outages and alerting administrators where attention is needed. ISA 2006 built-in monitors enable the administrator to generate alerts if thresholds are reached, better enabling them to react in a timely fashion. Log files help establish a history of activities, and can be useful in detecting attack attempts or determining tuning adjustments to improve availability. However, audit record collection may quickly overwhelm storage resources and an auditor’s ability to review it in a productive manner. Add to that, an audit trail that is not monitored for detection of suspicious activities provides little value. Regular or daily review of audit logs not only leads to the earliest possible notice of a compromise, but can also minimize the extent of the compromise. Automated Log Monitoring gives the additional boost to the monitoring process, in that noteworthy events are more immediately detected, provided they have been defined to the automated monitoring process. Log data can be mined for specific events, and upon detection, they can be analyzed and summarized by such tools to provide choices for alert methods, reports, trend analyses, attack scenario solutions.",
+          "data": "Monitors are automated “process watchers” that respond to performance changes, and can be useful in detecting outages and alerting administrators where attention is needed.  ISA 2006 built-in monitors enable the administrator to generate alerts if thresholds are reached, better enabling them to react in a timely fashion.  \n\nLog files help establish a history of activities, and can be useful in detecting attack attempts or determining tuning adjustments to improve availability. However, audit record collection may quickly overwhelm storage resources and an auditor’s ability to review it in a productive manner. Add to that, an audit trail that is not monitored for detection of suspicious activities provides little value. Regular or daily review of audit logs not only leads to the earliest possible notice of a compromise, but can also minimize the extent of the compromise. \n\nAutomated Log Monitoring gives the additional boost to the monitoring process, in that noteworthy events are more immediately detected, provided they have been defined to the automated monitoring process. Log data can be mined for specific events, and upon detection, they can be analyzed and summarized by such tools to provide choices for alert methods, reports, trend analyses, attack scenario solutions.\n",
           "label": "default"
         },
         {
-          "data": "Interview the IAO or the ISA Server Administrator. Review automated tool usage for reporting on audit trail data. Criteria: If automated tools are available for review and reporting on ISA Service audit records, this is not a finding.",
+          "data": "Interview the IAO or the ISA Server Administrator.  Review automated tool usage for reporting on audit trail data.\n\nCriteria:  \nIf automated tools are available for review and reporting on ISA Service audit records, this is not a finding.  \n\n",
           "label": "check"
         },
         {
-          "data": "Procedure: Ensure that automated tools are implemented and available for review and reporting on ISA Service audit records.",
+          "data": "Procedure:  Ensure that automated tools are implemented and available for review and reporting on ISA Service audit records.",
           "label": "fix"
         }
       ],
@@ -511,11 +511,11 @@
           "label": "default"
         },
         {
-          "data": "Interview the IAO or ISA Server Administrator. Access the documentation that describes data retention for audit records. Criteria: If ISA audit records are retained for at least 1 year, this is not a finding.",
+          "data": "Interview the IAO or ISA Server Administrator.  Access the documentation that describes data retention for audit records.  \n\nCriteria:  \nIf ISA audit records are retained for at least 1 year, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Ensure that ISA audit records are retained for 1 year. Update System Security Plans and any related Backup / Restore and Recovery procedures.",
+          "data": "Procedure:  Ensure that ISA audit records are retained for 1 year.  Update System Security Plans and any related Backup / Restore and Recovery procedures. ",
           "label": "fix"
         }
       ],
@@ -546,11 +546,11 @@
           "label": "default"
         },
         {
-          "data": "Interview the ISA Server Administrator. Access the documentation that describes inclusion of ISA audit data with the periodic backups. Verify that this directory is included in a backup strategy to preserve log history. Criteria: If ISA Audit logs are backed up at least weekly on to a different system or media, this is not a finding.",
+          "data": "Interview the ISA Server Administrator.  Access the documentation that describes inclusion of ISA audit data with the periodic backups. Verify that this directory is included in a backup strategy to preserve log history. \n\nCriteria:  \nIf ISA Audit logs are backed up at least weekly on to a different system or media, this is not a finding.  \n",
           "label": "check"
         },
         {
-          "data": "Procedure: Ensure that ISA audit records are backed up at least weekly on to a different system or media.",
+          "data": "Procedure:  Ensure that ISA audit records are backed up at least weekly on to a different system or media.",
           "label": "fix"
         }
       ],
@@ -577,15 +577,15 @@
     {
       "descriptions": [
         {
-          "data": "All automated information systems are at risk of data loss due to disaster or compromise. Threat identification and risk analysis serve to define elements of a comprehensive Disaster Recovery Plan with objectives that provide for the smooth transfer of all mission or business essential functions. Alternate site locations may be identified for the duration of an event, data transfer with little or no loss of operational continuity, communications and acceptance plans, and recovery back to original locations are typical elements in a Disaster Recovery Plan. Not to be overlooked, plan testing must be performed periodically to ensure that the plan is viable and that system components (such as backups) are intact. INFOCON instructions contain requirements for testing frequency.",
+          "data": "All automated information systems are at risk of data loss due to disaster or compromise.  Threat identification and risk analysis serve to define elements of a comprehensive Disaster Recovery Plan with objectives that provide for the smooth transfer of all mission or business essential functions.  Alternate site locations may be identified for the duration of an event, data transfer with little or no loss of operational continuity, communications and acceptance plans, and recovery back to original locations are typical elements in a Disaster Recovery Plan.  Not to be overlooked, plan testing must be performed periodically to ensure that the plan is viable and that system components (such as backups) are intact.  INFOCON instructions contain requirements for testing frequency. ",
           "label": "default"
         },
         {
-          "data": "Procedure: Interview the ISA Server Administrator or the IAO. Access the System Security Plan or other documentation that describes the backup and recovery strategy for ISA 2006 servers. The plan should detail specifically what files and data stores are saved, including the frequency and schedules of the saves (as required by INFOCON levels), and recovery plans (should they become necessary). The recovery plan should also state a periodic recovery rehearsal to ensure the backup strategy is sound. Criteria: If the ISA Backup and Recovery strategy is documented and periodically tested according to the INFOCON recommended frequency, this is not a finding.",
+          "data": "Procedure: Interview the ISA Server Administrator or the IAO.  Access the System Security Plan or other documentation that describes the backup and recovery strategy for ISA 2006 servers. The plan should detail specifically what files and data stores are saved, including the frequency and schedules of the saves (as required by INFOCON levels), and recovery plans (should they become necessary). The recovery plan should also state a periodic recovery rehearsal to ensure the backup strategy is sound. \n\nCriteria: If the ISA Backup and Recovery strategy is documented and periodically tested according to the INFOCON recommended frequency, this is not a finding. \n",
           "label": "check"
         },
         {
-          "data": "Ensure that the ISA Backup and Recovery Strategy is documented in the site Disaster Recovery Plan, with components, locations and directions, and is tested according to INFOCON frequency requirements.",
+          "data": "Ensure that the ISA Backup and Recovery Strategy is documented in the site Disaster Recovery Plan, with components, locations and directions, and is tested  according to INFOCON frequency requirements.",
           "label": "fix"
         }
       ],
@@ -612,15 +612,15 @@
     {
       "descriptions": [
         {
-          "data": "There is always potential that accidental loss can cause system loss and that restoration will be needed. In the event that the installation site is compromised, damaged or destroyed, copies of critical software media may be needed to recover the systems and become operational. Copies of the OS and other critical software such as E-mail services applications must be created and stored off site in a fire rated container. If a site experiences loss or compromise of the installed software libraries, available copies can reduce the risk and shorten the time period for a successful ISA services recovery.",
+          "data": "There is always potential that accidental loss can cause system loss and that restoration will be needed.  In the event that the installation site is compromised, damaged or destroyed, copies of critical software media may be needed to recover the systems and become operational.  \n\nCopies of the OS and other critical software such as E-mail services applications must be created and stored off site in a fire rated container.   If a site experiences loss or compromise of the installed software libraries, available copies can reduce the risk and shorten the time period for a successful ISA services recovery. \n",
           "label": "default"
         },
         {
-          "data": "Interview the ISA Administrator or IAO. Reference a copy of the System Security Plan. Procedure: Review the application software baseline procedures and implementation evidence. Review the list of files and directories included in the baseline procedure for completeness. Criteria: If ISA software copy exists to serve as a baseline and is available for comparison during scanning efforts, this is not a finding.",
+          "data": "Interview the ISA Administrator or IAO. Reference a copy of the System Security Plan. \n\nProcedure: Review the application software baseline procedures and implementation evidence. Review the list of files and directories included in the baseline procedure for completeness.\n\nCriteria: If ISA software copy exists to serve as a baseline and is available for comparison during scanning efforts, this is not a finding.",
           "label": "check"
         },
         {
-          "data": "Procedure: Assure that ISA critical software copies are created and are stored offsite, and described in the ISA System Security plan.",
+          "data": "Procedure:  \nAssure that ISA critical software copies are created and are stored offsite, and described in the ISA System Security plan.\n",
           "label": "fix"
         }
       ],

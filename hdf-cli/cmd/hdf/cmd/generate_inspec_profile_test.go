@@ -4,6 +4,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -260,4 +261,65 @@ func TestGenerateCmd_Help(t *testing.T) {
 	_, stderr, err := executeCommand("generate", "--help")
 	assert.NoError(t, err)
 	_ = stderr // help goes to stdout
+}
+
+func ciscoNDMFixture() string {
+	return filepath.Join("..", "..", "..", "..",
+		"hdf-converters", "converters", "xccdf-results-to-hdf",
+		"fixtures", "input", "benchmark-stig-cisco-iosxe-router-ndm.xml")
+}
+
+func TestGenerateInSpecProfile_IDType(t *testing.T) {
+	for idType, want := range map[string]string{"rule": "SV-215807", "group": "V-215807", "version": "CISC-ND-000010"} {
+		t.Run(idType, func(t *testing.T) {
+			outputDir := filepath.Join(t.TempDir(), "profile")
+			_, _, err := executeCommand("generate", "inspec-profile", ciscoNDMFixture(), outputDir, "--id-type", idType)
+			require.NoError(t, err)
+			ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", want+".rb"))
+			require.NoError(t, err)
+			assert.True(t, strings.HasPrefix(string(ctrl), "control '"+want+"' do"))
+		})
+	}
+}
+
+func TestGenerateInSpecProfile_IDTypeUnknownIsAUsageError(t *testing.T) {
+	outputDir := filepath.Join(t.TempDir(), "profile")
+	_, _, err := executeCommand("generate", "inspec-profile", ciscoNDMFixture(), outputDir, "--id-type", "cis")
+	require.Error(t, err)
+	code, _ := ExitStatus(err)
+	assert.Equal(t, exitUsage, code)
+	assert.Contains(t, err.Error(), `unknown --id-type "cis"; use rule, group or version`)
+	assert.NoDirExists(t, outputDir)
+}
+
+// The SSG benchmark carries no STIG ids, so keying on them fails, naming the
+// requirements, and writes nothing.
+func TestGenerateInSpecProfile_IDTypeMissingIdentifierFails(t *testing.T) {
+	fixture := filepath.Join("..", "..", "..", "..",
+		"hdf-converters", "converters", "xccdf-results-to-hdf",
+		"fixtures", "input", "benchmark-ssg-nested-groups.xml")
+	outputDir := filepath.Join(t.TempDir(), "profile")
+	_, _, err := executeCommand("generate", "inspec-profile", fixture, outputDir, "--id-type", "version")
+	require.Error(t, err)
+	code, _ := ExitStatus(err)
+	assert.Equal(t, 1, code)
+	assert.Contains(t, err.Error(), "have no version id (tags.stig_id): ")
+	assert.NoDirExists(t, outputDir)
+}
+
+// Two requirements sharing a control id fail the run, name both, and write
+// nothing, whatever the id type.
+func TestGenerateInSpecProfile_DuplicateIDFails(t *testing.T) {
+	inputPath := filepath.Join(t.TempDir(), "dup.json")
+	doc := `{"name":"dup","requirements":[` +
+		`{"id":"SV-7031","impact":0.7,"tags":{"gid":"V-6806","stig_id":"MFD08.002"},"descriptions":[{"label":"default","data":"a"}]},` +
+		`{"id":"SV-7031","impact":0.7,"tags":{"gid":"V-6807","stig_id":"MFD09.001"},"descriptions":[{"label":"default","data":"b"}]}]}`
+	require.NoError(t, os.WriteFile(inputPath, []byte(doc), 0o600))
+	outputDir := filepath.Join(t.TempDir(), "profile")
+	_, _, err := executeCommand("generate", "inspec-profile", inputPath, outputDir)
+	require.Error(t, err)
+	code, _ := ExitStatus(err)
+	assert.Equal(t, 1, code)
+	assert.Contains(t, err.Error(), "SV-7031 (group V-6806, version MFD08.002), SV-7031 (group V-6807, version MFD09.001); id type group or version tells them apart")
+	assert.NoDirExists(t, outputDir)
 }

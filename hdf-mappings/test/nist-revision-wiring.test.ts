@@ -41,6 +41,23 @@ describe('nistControlsAtRevision', () => {
   it('dedups convergent redirects preserving first-seen order', () => {
     expect(nistControlsAtRevision(['IA-2(7)', 'IA-2(11)', 'IA-2(6)'], 4, 5)).toEqual(['IA-2(6)']);
   });
+
+  // DISA's CCI list writes an enhancement with a space ("AU-8 (1)"); it is the
+  // same control as the crosswalk's "AU-8(1)", and a redirect keeps the input's
+  // spacing. Same cases as the Go TestAtRevision_SpacedEnhancements.
+  it.each([
+    ['AU-8 (1)', 4, 5, ['SC-45 (1)']],
+    ['CA-3 (1)', 4, 5, ['SC-7 (25)']],
+    ['AU-2 (3)', 4, 5, ['AU-2']],
+    ['AU-8 (1) (a)', 4, 5, ['SC-45 (1)']],
+    ['AC-17 (2)', 4, 5, ['AC-17 (2)']],
+    ['MA-4 (4) (b) (2)', 5, 4, ['MA-4 (4) (b) (2)']],
+    ['AU-8(1)', 4, 5, ['SC-45(1)']],
+    // An enhancement the crosswalk does not list follows its base control.
+    ['DI-1 (2)', 4, 5, ['PM-22', 'SI-18']],
+  ] as const)('translates %s from Rev %d to Rev %d', (input, from, to, want) => {
+    expect(nistControlsAtRevision([input], from, to)).toEqual(want);
+  });
 });
 
 describe('revision-aware mapping lookups', () => {

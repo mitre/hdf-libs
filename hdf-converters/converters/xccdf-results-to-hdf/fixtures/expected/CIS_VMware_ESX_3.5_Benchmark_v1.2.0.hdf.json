@@ -146,7 +146,7 @@
     {
       "descriptions": [
         {
-          "data": "The default installation option will combine the Virtual Machine network with the virtual infrastructure Service Console management network. This could potentially allow network-based access to the Service Console to a wider population of users than just system administrators, possibly allowing access to sensitive configuration traffic. The Service Console management traffic should always be isolated on a separate network. The results of the next three checks should be compared to your organization's network configuration and policies for appropriate segregation of production, managment, data (i.e. iSCSI), VMotion and other networks.",
+          "data": "The default installation option will combine the Virtual Machine network with\n                the virtual infrastructure Service Console management network. This could potentially allow \n                network-based access to the Service Console to a wider population of users than just system administrators,\n                possibly allowing access to sensitive configuration traffic. The Service Console management traffic \n                should always be isolated on a separate network.\n                The results of the next three checks should be compared to your organization's network configuration\n                and policies for appropriate segregation of production, managment, data (i.e. iSCSI), VMotion\n                and other networks. \n                \n            ",
           "label": "default"
         }
       ],
@@ -164,7 +164,7 @@
     {
       "descriptions": [
         {
-          "data": "During installation, the following 7 (/, /boot, /tmp, /home, /var, /var/log, /var/core file system structures should be configured on their own disk partitions with each having a minimum size greater than or equal to 5000 1K-blocks.",
+          "data": "During installation, the following 7 (/, /boot, /tmp, /home, /var, /var/log, /var/core  file \n                system structures should be configured on their own disk partitions with each having a minimum size greater than\n                or equal to 5000 1K-blocks. \n                \n            ",
           "label": "default"
         }
       ],
@@ -182,7 +182,7 @@
     {
       "descriptions": [
         {
-          "data": "Applying vendor supported patches minimizes vulnerabilities, utilizes the vendor’s security research and their product knowledge regarding compatibility of changes with other components of the console operating system. Review the installed patch list below and match those to the vendor's recommended patches relevant to your environment.",
+          "data": "Applying vendor supported patches minimizes vulnerabilities, utilizes the vendor’s security research and \n                their product knowledge regarding compatibility of changes with other components of the console operating system.\n                \n                Review the installed patch list below and match those to the vendor's recommended patches relevant to your environment.\n                \n            ",
           "label": "default"
         }
       ],
@@ -200,7 +200,7 @@
     {
       "descriptions": [
         {
-          "data": "Providing access control to the BIOS and limiting boot sources can reduce the risk that the physical server’s BIOS can be insecurely configured or that an organization’s storage or network resources may be accessed by a non-conforming operating system. Manually review the ESX host's BIOS settings as an administrator boots the machine.",
+          "data": "Providing access control to the BIOS and limiting boot sources can reduce the risk that the physical server’s BIOS can be insecurely configured\n                or that an organization’s storage or network resources may be accessed by a non-conforming operating system.\n                Manually review the ESX host's BIOS settings as an administrator boots the machine.\n                ",
           "label": "default"
         }
       ],
@@ -218,7 +218,7 @@
     {
       "descriptions": [
         {
-          "data": "Services enabled at ESX host startup should be limited to the vendor’s default services and any authorized exceptions. Any additional services running on an ESX host beyond, added or omitted, to the vendor’s default configuration, could diminish host performance or introduce an attack vector. The assessor should also run the command chkconfig --list | grep on and review all services schedule to start at boot, particularly any services not on the benchmark recommended list of 25 for approval testing and agreement with the organization's change control documentation",
+          "data": "Services enabled at ESX host startup should be limited to the vendor’s default services\n                and any authorized exceptions.Any additional services running on an ESX host beyond, added \n                or omitted, to the vendor’s default configuration, could diminish host performance or introduce an attack vector.\n                The assessor should also run the command chkconfig --list | grep on  and review all services schedule to start\n                at boot, particularly any services not on the benchmark recommended list of 25 for approval testing and agreement \n                with the organization's change control documentation\n            ",
           "label": "default"
         }
       ],
@@ -236,7 +236,7 @@
     {
       "descriptions": [
         {
-          "data": "Keeping your systems synchronized to a local or remote NTP server ensures log entries are date and time stamped consistently across systems allowing for accurate event correlation. This also ensures proper functioning on the system given its interaction to other systems (e.g. vCenter). The default installation of an ESX host does not configure NTP, since the location of your NTP server varies by organization.",
+          "data": "Keeping your systems synchronized to a local or remote NTP server ensures log entries \n                are date and time stamped consistently across systems allowing for accurate event correlation. This also\n                ensures proper functioning on the system given its interaction to other systems (e.g. vCenter). \n                The default installation of an ESX host does not configure NTP, since the location of your NTP server\n                varies by organization.\n            ",
           "label": "default"
         }
       ],
@@ -254,7 +254,7 @@
     {
       "descriptions": [
         {
-          "data": "Remote shell access to the console operating system should protect both the authentication credentials of the administrator and the content communicated between the ESX host and the administrator using secure shell (SSH).",
+          "data": "Remote shell access to the console operating system should protect both the authentication credentials of the \n                administrator and the content communicated between the ESX host and the administrator using secure shell (SSH).\n            ",
           "label": "default"
         }
       ],
@@ -272,7 +272,7 @@
     {
       "descriptions": [
         {
-          "data": "SUDO enables associating users with powerful administrative commands and allowing root privileges. Further, SUDO provides logging of those users who access these advanced capabilities. SUDO is not configured on the default ESX installation. This element of the benchmark was categorized as not scorable because the accounts and groups to be included vary by organization. This check lists the current contents of the /etc/sudoers file for off-line analysis by the assessor.",
+          "data": "SUDO enables associating users with powerful administrative commands and \n                allowing root privileges. Further, SUDO provides logging of those users who access these \n                advanced capabilities.  SUDO is not configured on the default ESX installation. This element\n                of the benchmark was categorized as not scorable because the accounts and groups to be \n                included vary by organization. This check lists the current contents of the /etc/sudoers\n                file for off-line analysis by the assessor.\n            ",
           "label": "default"
         }
       ],
@@ -291,7 +291,7 @@
     {
       "descriptions": [
         {
-          "data": "Retain a history of previous passwords used and configure the authentication controls to validate new passwords against greater than or equal to 10 recently used credentials. Maintaining a history file containing previously used credentials for each user, limits continual reuse of recent or favorite passwords. Combined with minimum and maximum password life, this control helps maintain password effectiveness.",
+          "data": "Retain a history of previous passwords used and configure the authentication\n                controls to validate new passwords against greater than or equal to 10 recently used credentials.\n                Maintaining a history file containing previously used credentials for each user, \n                limits continual reuse of recent or favorite passwords. Combined with minimum and maximum password life,\n                this control helps maintain password effectiveness.\n            ",
           "label": "default"
         }
       ],
@@ -310,7 +310,7 @@
     {
       "descriptions": [
         {
-          "data": "The user should create a password that consists of a mix of character classes from the four choices; upper case, lower case, numeric, or special to reduce the use of common words as passwords and increase the difficulty of an unauthorized user guessing their credential. Note: The default installation of ESX uses the pam_cracklib.so plug-in for both password complexity (default is not configured) and number of failed login attempts before account lockout (default setting is 3.) This plug-in does not check the root account for complexity. You should use the pam_passwdqc.so library to handle password complexity for all accounts (including the root account).",
+          "data": "The user should create a password that consists of a mix of character classes\n                from the four choices; upper case, lower case, numeric, or special to reduce the use of \n                common words as passwords and increase the difficulty of an unauthorized user guessing their credential.\n                Note: The default installation of ESX uses the pam_cracklib.so plug-in for both password complexity \n                (default is not configured) and number of failed login attempts before account lockout (default setting is 3.)\n                This plug-in does not check the root account for complexity. You should use the pam_passwdqc.so library\n                to handle password complexity for all accounts (including the root account).\n            ",
           "label": "default"
         }
       ],
@@ -328,7 +328,7 @@
     {
       "descriptions": [
         {
-          "data": "For user accounts, setting the failed attempt number at a low level discourages repetitive tries, which may be automated, to guess a user’s password.",
+          "data": "For user accounts, setting the failed attempt number at a low level\n                discourages repetitive tries, which may be automated, to guess a user’s password.",
           "label": "default"
         }
       ],
@@ -347,7 +347,7 @@
     {
       "descriptions": [
         {
-          "data": "Minimizing the life of a credential reduces the likelihood that the password will become compromised. These are recommended starting values. Some regulated industries require more restrictive values - ensure they comply with your enterprise security policy.",
+          "data": "Minimizing the life of a credential reduces the likelihood that the password will become compromised.\n                These are recommended starting values. Some regulated industries require more restrictive values - ensure they\n                comply with your enterprise security policy.",
           "label": "default"
         }
       ],
@@ -366,7 +366,7 @@
     {
       "descriptions": [
         {
-          "data": "Combined with the history setting (see section 1.3.4), the minimum days setting will cause multiple days to transpire before a user can return to a favorite password, discouraging password reuse.",
+          "data": "Combined with the history setting (see section 1.3.4), the minimum days\n                setting will cause multiple days to transpire before a user can return to a\n                favorite password, discouraging password reuse.",
           "label": "default"
         }
       ],
@@ -385,7 +385,7 @@
     {
       "descriptions": [
         {
-          "data": "The longer the total character length of a password, the more difficult it is to guess by unauthorized users.",
+          "data": "The longer the total character length of a password, \n                the more difficult it is to guess by unauthorized users.",
           "label": "default"
         }
       ],
@@ -404,7 +404,7 @@
     {
       "descriptions": [
         {
-          "data": "The larger the log file the more events will be captured to help research system performance or security issues. Compression will allow more events to be captured in the file space provided.xhtml:br/\u003e",
+          "data": "The larger the log file the more events will be captured to help\n                research system performance or security issues. Compression will allow more events\n                to be captured in the file space provided.xhtml:br/\u003e\n            ",
           "label": "default"
         }
       ],
@@ -422,7 +422,7 @@
     {
       "descriptions": [
         {
-          "data": "Reviewing logs in a timely manner may detect a performance or security issue in its early stages, enabling the organization to take countermeasures to reduce the event’s impact.",
+          "data": "Reviewing logs in a timely manner may detect a performance or security issue\n                in its early stages, enabling the organization to take countermeasures to reduce the event’s impact.\n            ",
           "label": "default"
         }
       ],
@@ -440,7 +440,7 @@
     {
       "descriptions": [
         {
-          "data": "Remote logging is essential in detecting intrusion and monitoring multiple servers simultaneously. If an intruder is able to obtain root on a host, they may be able to edit the system logs to remove all traces of the attack. If a copy of the logs is stored off the machine that cannot be accessed with the compromised host’s credentials, those logs can be analyzed for anomalies and used for prosecuting the attacker.",
+          "data": "Remote logging is essential in detecting intrusion and monitoring multiple servers simultaneously.\n                If an intruder is able to obtain root on a host, they may be able to edit the system logs to remove all traces\n                of the attack.  If a copy of the logs is stored off the machine that cannot be accessed with the compromised \n                host’s credentials, those logs can be analyzed for anomalies and used for prosecuting the attacker.\n            ",
           "label": "default"
         }
       ],
@@ -458,7 +458,7 @@
     {
       "descriptions": [
         {
-          "data": "The recommended settings provide the ability to prevent guests from changing virtual MAC addresses, and to drop incoming and outgoing guest network packets if a guest MAC address in a packet is different from the MAC address specified in the guest configuration file (vmx), and stop the ability to read packets not destined for a guest.",
+          "data": "The recommended settings provide the ability to prevent guests from changing virtual MAC addresses, and to drop incoming \n                and outgoing guest network packets if a guest MAC address in a packet is different from the MAC address specified in the\n                guest configuration file (vmx), and stop the ability to read packets not destined for a guest.\n            ",
           "label": "default"
         }
       ],
@@ -477,7 +477,7 @@
     {
       "descriptions": [
         {
-          "data": "Configure the built-in firewall to ensure only authorized ports and related network traffic sources are allowed to and from the ESX host. If unauthorized ports are opened to the ESX host by a firewall change, traffic containing disruptive or malicious payloads may negatively impact the host’s performance or security. The services controlled by vCenter are listed in the section 'Enabled services' of the output of the esxcfg-firewall -q command. Six default services are listed, (CIMSLP, VCB, CIMHttpsServer, vpxHeartbeats, LicenseClient, sshServer) plus ntpClient as recommended in section 1.2.4 are initially configured. Other services (such as syslog see section 1.4.3) will be shown in the output under 'Opened ports' section of escfg-firewall -q command output. NOTE: some of the failures below may be the result of allowed exceptions applicable to your organization, the output of the esxcfg-firewall -q command will list all services open, compare that list to allowed exception documentation in your change mangement process.",
+          "data": "Configure the built-in firewall to ensure only authorized ports and related\n                network traffic sources are allowed to and from the ESX host. If unauthorized ports are opened\n                to the ESX host by a firewall change, traffic containing disruptive or malicious payloads may \n                negatively impact the host’s performance or security. The services controlled by vCenter are listed\n                in the section 'Enabled services' of the output of the esxcfg-firewall -q command. Six default \n                services are listed, (CIMSLP, VCB, CIMHttpsServer, vpxHeartbeats, LicenseClient, sshServer) plus ntpClient\n                as recommended in section  1.2.4 are initially configured.  \n                  Other services (such as syslog see section 1.4.3)\n                will be shown in the output under 'Opened ports' section of escfg-firewall -q command output.\n                NOTE: some of the failures below may be the result of allowed exceptions applicable to your organization,\n                the output of the esxcfg-firewall -q command will list all services open, compare that list to allowed \n                exception documentation in your change mangement process.\n            ",
           "label": "default"
         }
       ],
@@ -495,7 +495,7 @@
     {
       "descriptions": [
         {
-          "data": "Use of the CHAP protocol ensures ESX hosts and storage devices are communicating with known endpoints.",
+          "data": "Use of the CHAP protocol ensures ESX hosts and storage devices are communicating \n                with known endpoints.\n            ",
           "label": "default"
         }
       ],
@@ -513,7 +513,7 @@
     {
       "descriptions": [
         {
-          "data": "Presenting some sort of statutory warning message prior to the normal user logon may assist the prosecution of trespassers on the computer system. Changing some of these login banners also has the side effect of hiding OS version information and other detailed system information from attackers attempting to target specific attacks at a system (though there are other mechanisms available for acquiring this information). Guidelines published by the US Department of Defense require that warning messages include at least the name of the organization that owns the system, the fact that the system is subject to monitoring and that such monitoring is in compliance with local statutes, and that use of the system implies consent to such monitoring. The organization's local legal counsel and/or site security administrator should review the content of all messages before any system modifications are made, as these warning messages are inherently site-specific. NOTE: The checks for this rule will determine the existance of a banner file, but can not assess the content of the warning banner file.",
+          "data": "Presenting some sort of statutory warning message prior to the normal user logon\n                may assist the prosecution of trespassers on the computer system. Changing some of these login\n                banners also has the side effect of hiding OS version information and other detailed system information\n                from attackers attempting to target specific attacks at a system (though there are other mechanisms \n                available for acquiring this information). Guidelines published by the US Department of Defense require\n                that warning messages include at least the name of the organization that owns the system, the fact that\n                the system is subject to monitoring and that such monitoring is in compliance with local statutes, and\n                that use of the system implies consent to such monitoring. The organization's local legal counsel and/or\n                site security administrator should review the content of all messages before any system modifications are\n                made, as these warning messages are inherently site-specific.  NOTE: The checks for this rule will determine\n                the existance of a banner file, but can not assess the content of the warning banner file.\n            ",
           "label": "default"
         }
       ],
@@ -531,7 +531,7 @@
     {
       "descriptions": [
         {
-          "data": "The contents of the .vmx file for each guest should contain the following configuration setting to disable the ability of the guest to control devices (i.e. CD, floppy, ...) isolation.device.connectable.disable = \"true\"",
+          "data": "\n                The contents of the .vmx file for each guest should contain the following configuration\n                    setting\tto disable the ability of the guest to control devices (i.e. CD, floppy, ...)\n                    isolation.device.connectable.disable = \"true\"\n                \n            ",
           "label": "default"
         }
       ],
@@ -550,7 +550,7 @@
     {
       "descriptions": [
         {
-          "data": "SetInfo messages have an unlimited length. A malformed message, or messages, of extreme length could overwhelm the host creating a denial of service situation.",
+          "data": "\n                SetInfo messages have an unlimited length. A malformed message, or messages,\n                    of extreme length could overwhelm the host creating a denial of service situation.\n                \n            ",
           "label": "default"
         }
       ],
@@ -569,7 +569,7 @@
     {
       "descriptions": [
         {
-          "data": "The cut and paste capability provides the ability to place executable files on a destination without logging to trace actions to users.",
+          "data": "\n                The cut and paste capability provides the ability to place executable files on a \n                    destination without logging to trace actions to users. \n            ",
           "label": "default"
         }
       ],
@@ -587,7 +587,7 @@
     {
       "descriptions": [
         {
-          "data": "Set the maximum size of each log file and number of log files to retain in each guest directory under /vmfs/volumes/yourstoragedevice/ to: a.) Rotate the current log file when the size is less than or equal to 10000000 Bytes. b.) Retain less than or equal to 30 historical log files. Reducing the chance of log files filling up reduces the chance of denial of service attacks or reduced performance due to flawed processes creating run-away logging.",
+          "data": "\n                Set the maximum size of each log file and number of log files to retain in each\n                    guest directory under /vmfs/volumes/yourstoragedevice/ to: a.) Rotate the current log file when the size is less than or equal to 10000000 Bytes.\n                    b.) Retain less than or equal to 30 historical log files.\n                    Reducing the chance of log files filling up reduces the chance of denial of service attacks\n                    or reduced performance due to flawed processes creating run-away logging.\n                 \n            ",
           "label": "default"
         }
       ],
@@ -605,7 +605,7 @@
     {
       "descriptions": [
         {
-          "data": "Disabling write file permissions for configuration files helps prevent accidental or malicious changes to the system.",
+          "data": "Disabling write file permissions for configuration files helps prevent \n                accidental or malicious changes to the system.\n            ",
           "label": "default"
         }
       ],
@@ -624,7 +624,7 @@
     {
       "descriptions": [
         {
-          "data": "Disabling write file permissions for configuration files helps prevent accidental or malicious changes to the system.",
+          "data": "Disabling write file permissions for configuration files helps prevent \n                accidental or malicious changes to the system.\n            ",
           "label": "default"
         }
       ],
@@ -643,7 +643,7 @@
     {
       "descriptions": [
         {
-          "data": "Restricting file ownership for configuration files helps prevent accidental or malicious changes to the system.",
+          "data": "Restricting file ownership for configuration files helps prevent accidental\n                or malicious changes to the system.\n            ",
           "label": "default"
         }
       ],
@@ -661,7 +661,7 @@
     {
       "descriptions": [
         {
-          "data": "Restricting file ownership for virtual disk files helps prevent accidental or malicious changes to the system.",
+          "data": "Restricting file ownership for virtual disk files helps prevent accidental\n                or malicious changes to the system.\n            ",
           "label": "default"
         }
       ],
@@ -678,7 +678,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This document, Security Configuration Benchmark for VMware ESX 3.5, provides prescriptive guidance for establishing a secure configuration posture for VMware ESX 3.5 running on hardware compliant with the vendor compatibility guide http://www.vmware.com/resources/compatibility/search.php?action=base\u0026deviceCategory=server. This guide was tested against VMware ESX 3.5 as installed by a vendor evaluation ISO containing Update 3, build number 153875 downloaded from http://www.vmware.com.",
+  "summary": "This document, Security Configuration Benchmark for VMware ESX 3.5, provides prescriptive guidance for establishing a secure configuration posture for VMware ESX 3.5 running on hardware compliant with the vendor compatibility guide http://www.vmware.com/resources/compatibility/search.php?action=base\u0026deviceCategory=server.  This guide was tested against VMware ESX 3.5 as installed by a vendor evaluation ISO containing Update 3, build number 153875 downloaded from http://www.vmware.com.",
   "title": "CIS VMware ESX 3.5 Benchmark",
   "version": "1.2.0.3"
 }

@@ -182,6 +182,24 @@ XCCDF 1.2 with `cc6`, `cc7`, `cc8` and `controls` namespaces; every one of its
 Rules, 10 `Value`s, two Profiles (Level 1 selects 3, Level 2 all 6); 5
 `complex-check`s; `status` `interim` dated 2025-09-18.
 
+### `benchmark-stig-cisco-iosxe-router-ndm.xml`
+Derived from DISA's Cisco IOS XE Router NDM STIG, Version 3 Release 7 (Benchmark Date 01 Apr 2026), retrieved 2026-11-20 from
+`https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_Cisco_IOS-XE_Router_Y26M04_STIG.zip`
+(sha256 `01900ad03d8972698160db7c1fdfc71b64a3c7188ee53c4f1047fc827986f36d`). The source is that archive's member
+`U_Cisco_IOS-XE_Router_NDM_V3R7_Manual_STIG/U_Cisco_IOS-XE_Router_NDM_STIG_V3R7_Manual-xccdf.xml` as extracted
+(146,633 bytes, sha256 `748fab27a38ba2e980250338c8140bdc0eb00fc19cc269bc326a60185b8dd956`; UTF-8, no BOM, LF line endings except
+67 CRLFs, all inside Groups `V-215833` (22) and `V-215854` (45), which the trim dropped, so the fixture is LF throughout).
+Trimmed 2026-11-20 from 42 Groups to 9: whole elements dropped, no string edited. Kept, in document order: `V-215807` and
+`V-215808` (the first two medium rules), `V-215812` (pinned by the prose readback tests), `V-215823` and `V-215832`
+(the first two high rules), `V-215844`, `V-215845` and `V-215856` (the three fixtexts that end in a newline in the
+source), and `V-220140` (the one single-line fixtext). The source has no low-severity rule and no rationale or warning
+element. The `select` entries in the nine Profiles that named a dropped Group were removed with it (378 to 81), so every
+remaining `idref` resolves; the Benchmark metadata, every kept Group and every kept `select` are byte-identical to the source.
+Field map. Asserted byte-for-byte by `go/prose_readback_test.go` and `typescript/prose-readback.test.ts`:
+`Rule/description` text between `<VulnDiscussion>` and `</VulnDiscussion>` (entity-decoded) → `descriptions[default]`;
+`Rule/check/check-content` → `descriptions[check]`; `Rule/fixtext` → `descriptions[fix]`. Pinned by the golden only:
+`Benchmark/description` → `summary`.
+
 ### `empty.xml`
 Synthetic by construction: an empty or no-findings document used to
 exercise the nothing-to-convert path. Not sourced from anywhere.
@@ -549,6 +567,7 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `U_Multifunction_Device_and_Network_Printers_STIG_V2R15_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MULTI-FUNCTION_DEVICE` version 2, `plain-text id="release-info"` `Release: 15 Benchmark Date: 30 Jan 2025`, `status` `accepted` dated 2024-10-10. The file carries no generator field, so the tool that produced it is not determinable from file content.
 - `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `SuSe_zLinux` version 1, `plain-text id="release-info"` `Release: 12 Benchmark Date: 26 Oct 2018`, `status` `accepted` dated 2018-09-19. The file carries no generator field, so the tool that produced it is not determinable from file content.
 - `U_RHEL_9_STIG_V2R9_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `RHEL_9_STIG` version 2, `plain-text id="release-info"` `Release: 9 Benchmark Date: 01 Jul 2026`, `status` `accepted` dated 2026-05-20; producer from `plain-text id="generator"`: `3.5.2` (no tool name given), `plain-text id="conventionsVersion"`: `1.10.0`.
+- `benchmark-stig-cisco-iosxe-router-ndm.xml` — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `Cisco_IOS-XE_Router_NDM_STIG` version 3, `plain-text id="release-info"`: `Release: 7 Benchmark Date: 01 Apr 2026`.
 - `benchmark-ssg-nested-groups.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.ssgproject.content_benchmark_RHEL-8` version 0.1.81.
 - `empty.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
 - `minimal.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
@@ -612,6 +631,10 @@ XCCDF 1.2 files against the vendored `xccdf_1.2.xsd`:
 - `U_ISA2006Policy_V1R2_Manual-xccdf.xml` fails: its Benchmark id,
   `Microsoft_ISA_Server_(OWA_Proxy)`, is not an `xs:NCName`. DISA's published
   content, kept as published.
+The Cisco benchmark declares XCCDF 1.1. It was validated against NIST's complete schema bundle for that release,
+https://csrc.nist.gov/schema/xccdf/1.1.4/xccdf-1.1.4-schema-bundle-20071011.zip (sha256 as retrieved 2026-11-20
+`9fa7bcbac4fef7e288d26073c59fa9bce44a681d7a02f56a48a3da17327c38c7`; not vendored here), with
+`xmllint --nonet --schema` (libxml2 2.9.13) on 2026-11-20: the trimmed fixture and the full DISA source both validate.
 
 ### `rule-result-dispositions.xml`
 

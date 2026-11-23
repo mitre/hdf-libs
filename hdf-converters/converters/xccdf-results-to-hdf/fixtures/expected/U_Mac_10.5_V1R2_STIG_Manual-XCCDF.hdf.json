@@ -216,15 +216,15 @@
     {
       "descriptions": [
         {
-          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access permissions to file objects is a DoD policy requirement.",
+          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access\npermissions to file objects is a DoD policy requirement.",
           "label": "default"
         },
         {
-          "data": "OSX00005-1. Click on Finder icon 2. Click on Applications 3. Under Utilities, click on Terminal. 4. Enter command: diskutil info / 5. Ensure File System is Journaled HFS+",
+          "data": "OSX00005-1. Click on Finder icon   2. Click on Applications  3. Under Utilities, click on Terminal.   4. Enter command: diskutil info /   5. Ensure File System is Journaled HFS+",
           "label": "check"
         },
         {
-          "data": "OSX00005-Manual option during image build process. Choose HFS+ formatted drive.",
+          "data": "OSX00005-Manual option during image build process. \nChoose HFS+ formatted drive.",
           "label": "fix"
         }
       ],
@@ -251,15 +251,15 @@
     {
       "descriptions": [
         {
-          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access permissions to file objects is a DoD policy requirement.",
+          "data": "This is a category 1 finding because the ability to set access permissions and audit critical directories and files is only available by using the HFS+ file system. The capability to assign access\npermissions to file objects is a DoD policy requirement.",
           "label": "default"
         },
         {
-          "data": "OSX00005-1. Click on Finder icon 2. Click on Applications 3. Under Utilities, click on Terminal. 4. Enter command: diskutil info / 5. Ensure File System is Journaled HFS+",
+          "data": "OSX00005-1. Click on Finder icon   2. Click on Applications  3. Under Utilities, click on Terminal.   4. Enter command: diskutil info /   5. Ensure File System is Journaled HFS+",
           "label": "check"
         },
         {
-          "data": "OSX00005-Manual option during image build process. Choose HFS+ formatted drive.",
+          "data": "OSX00005-Manual option during image build process. \nChoose HFS+ formatted drive.",
           "label": "fix"
         }
       ],
@@ -290,7 +290,7 @@
           "label": "default"
         },
         {
-          "data": "1. Select Finder. 2. Select Applications. 3. Select System Preferences. 4. Select Accounts. 5. Verify there are no easy to guess administrator account names. If any accounts have easy to guess names, then this is a finding.",
+          "data": "1. Select Finder.  2.  Select Applications.  3.  Select System Preferences.  4. Select Accounts.  5. Verify there are no easy to guess administrator account names.   If any accounts have easy to guess names, then this is a finding. ",
           "label": "check"
         },
         {
@@ -321,15 +321,15 @@
     {
       "descriptions": [
         {
-          "data": "The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the passwords. Further, scheduled changing of passwords hinders the ability of unauthorized system users to crack passwords and gain access to a system.",
+          "data": "The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the passwords. Further, scheduled changing of passwords hinders the ability of\nunauthorized system users to crack passwords and gain access to a system.\n",
           "label": "default"
         },
         {
-          "data": "Open a terminal session and use the following command to view the setting for Maximum password age: sudo pwpolicy -n -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword. If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding. Note: If the command returns a response of: password server is not configured, the system is not managed. Use the following command for non-managed systems: pwpolicy -n /Local/Default -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword. If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding.",
+          "data": "Open a terminal session and use the following command to view the setting for Maximum password age: sudo pwpolicy -n  -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword.  If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding. \n\nNote: If the command returns a response of: password server is not configured, the system is not managed. Use the following command for non-managed systems:  pwpolicy -n /Local/Default -getglobalpolicy | tr \" \" \"\\n\" | grep maxMinutesUntilChangePassword.  If the value of maxMinutesUntilChangePassword is greater than 86400, then this is a finding.\n",
           "label": "check"
         },
         {
-          "data": "Open a terminal session and use the following command to set the value for maximum password age: sudo pwpolicy -n -setglobalpolicy “maxMinutesUntilChangePassword=86400”. Note: For non-managed system, use the command: pwpolicy -n /Local/Default -setglobalpolicy \"maxMinutesUntilChangePassword=86400\".",
+          "data": "Open a terminal session and use the following command to set the value for maximum password age: sudo pwpolicy -n  -setglobalpolicy “maxMinutesUntilChangePassword=86400”. \n\nNote: For non-managed system, use the command: pwpolicy -n /Local/Default -setglobalpolicy \"maxMinutesUntilChangePassword=86400\". \n",
           "label": "fix"
         }
       ],
@@ -360,7 +360,7 @@
           "label": "default"
         },
         {
-          "data": "Open a terminal session and enter the following command: sudo softwareupdate --list or sudo softwareupdate --list --all Review the result for proper versions and current patch level. GUI procedures: 1. Choose Apple (?) \u003e Software Update. 2. Select 'Scheduled Check \u0026 Installed Updates' 3. Verify all current software updates are installed. If the current software updates are not installed, then this is a finding. Note: This check does not show 3rd party software or updates.",
+          "data": "Open a terminal session and enter the following command:  sudo softwareupdate --list or sudo softwareupdate --list --all  Review the result for proper versions and current patch level.   GUI procedures: 1. Choose Apple (?) \u003e Software Update. 2. Select  'Scheduled Check \u0026 Installed Updates'  3. Verify all current software updates are installed.  If the current software updates are not installed, then this is a finding. Note: This check does not show 3rd party software or updates.\n",
           "label": "check"
         },
         {
@@ -392,15 +392,15 @@
     {
       "descriptions": [
         {
-          "data": "PowerPC-based computers use Open Firmware to control hardware. This is similar to the BIOS on an x86 PC. Open Firmware is the hardware base layer for Mac OS X and is a possible point of intrusion. By protecting it from unauthorized access, you can prevent attackers from gaining access to your computer.",
+          "data": "PowerPC-based computers use Open Firmware to control hardware. This is similar to the BIOS on an x86 PC. Open Firmware is the hardware base layer for Mac OS X and is a possible point of intrusion. By protecting it from unauthorized access, you can prevent attackers from gaining access to your computer.\n",
           "label": "default"
         },
         {
-          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/) 2 Verify the \"Require password to change Open Firmware settings\" is selected.",
+          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/)\n2 Verify the \"Require password to change Open Firmware settings\" is selected.  \n",
           "label": "check"
         },
         {
-          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/). 2. Click Change. 3. Select “Require password to change Open Firmware settings.” 4. In the Password and Verify fields, enter a new Open Firmware or EFI password, and click OK. This password can be up to eight characters. Do not use the capital letter “U” in an Open Firmware password. If you do, your password will not be recognized during the startup process. 5. Close the Firmware Password Utility.",
+          "data": "1. Log in with an administrator account and open the Firmware Password Utility (located on the Mac OS X installation disc in /Applications/Utilities/). \n2. Click Change. \n3. Select “Require password to change Open Firmware settings.” \n4. In the Password and Verify fields, enter a new Open Firmware or EFI password, and click OK.  This password can be up to eight characters.  Do not use the capital letter “U” in an Open Firmware password. If you do, your password will not be recognized during the startup process. \n5. Close the Firmware Password Utility.\n",
           "label": "fix"
         }
       ],
@@ -427,15 +427,15 @@
     {
       "descriptions": [
         {
-          "data": "Reduces the time allowed to authenticate to 30 seconds.",
+          "data": "Reduces the time allowed to authenticate to 30 seconds.\n",
           "label": "default"
         },
         {
-          "data": "1. Open a terminal session and enter the following command: more /etc/sshd_config 2. Ensure the value LoginGraceTime is set to 30 or less. If the value LoginGraceTime is not set to 30 or less, then this is a finding.",
+          "data": "1. Open a terminal session and enter the following command: more /etc/sshd_config   \n2. Ensure the value LoginGraceTime is set to 30 or less.  If the value LoginGraceTime is not set to 30 or less, then this is a finding. ",
           "label": "check"
         },
         {
-          "data": "1. Open a terminal session and enter the following command: sudo pico /etc/sshd_config 2. Edit the value: LoginGraceTime to 30. 3. Save the file.",
+          "data": "1. Open a terminal session and enter the following command: sudo pico /etc/sshd_config \n2. Edit the value: LoginGraceTime to 30.\n3. Save the file.\n",
           "label": "fix"
         }
       ],
@@ -462,15 +462,15 @@
     {
       "descriptions": [
         {
-          "data": "Correct date and time settings are required for authentication protocols, like Kerberos. Incorrect date and time settings can cause security issues.",
+          "data": "Correct date and time settings are required for authentication protocols, like Kerberos. Incorrect date and time settings can cause security issues.\n",
           "label": "default"
         },
         {
-          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel. 2. Ensure the correct date and time is set. If the date and time are not correct, then this is a finding.",
+          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel.  2. Ensure the correct date and time is set. If the date and time are not correct, then this is a finding.   ",
           "label": "check"
         },
         {
-          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel. 2. Set the correct date and time.",
+          "data": "1. Open System Preferences-\u003eDate\u0026Time Panel.  2. Set the correct date and time.   ",
           "label": "fix"
         }
       ],
@@ -501,11 +501,11 @@
           "label": "default"
         },
         {
-          "data": "1. Open a terminal session and enter one of the following commands: sudo softwareupdate --list or sudo softwareupdate --list --all. 2. Review the results and verify the current approved software patches are applied.",
+          "data": "1. Open a terminal session and enter one of the following commands: sudo softwareupdate --list or sudo softwareupdate --list --all.  2. Review the results and verify the current approved software patches are applied.\n",
           "label": "check"
         },
         {
-          "data": "Install the current OS updates and patches.",
+          "data": "Install the current OS updates and patches. ",
           "label": "fix"
         }
       ],

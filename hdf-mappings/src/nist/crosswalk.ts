@@ -202,9 +202,38 @@ export function nistRosterSize(rev: number): number {
 
 /**
  * A NIST-shaped base at the start of a longer reference, e.g. "AC-1 a",
- * "AC-1.2 (i)", "SA-12 b 1" — DISA-CCI statement-reference styles.
+ * "AC-1.2 (i)", "SA-12 b 1", "AU-8 (1) (a)" — DISA-CCI statement-reference
+ * styles, which write an enhancement with a space before its parenthesis.
  */
-const BASE_CONTROL = /^([A-Z]{2}-\d+(?:\(\d+\))?)/;
+const BASE_CONTROL = /^([A-Z]{2}-\d+)(?:( ?)\((\d+)\))?/;
+
+/** A crosswalk target's enhancement, "SC-45(1)". */
+const SPACED_ENHANCEMENT = /^([A-Z]{2}-\d+)\((\d+)\)/;
+
+/**
+ * Translates the control a longer reference starts with. A spaced enhancement
+ * ("AU-8 (1) (a)") is tried as "AU-8(1)" and, when the crosswalk does not list
+ * it, as its base control "AU-8"; redirect targets keep the reference's
+ * spacing. Undefined when no candidate is known, so the caller passes the
+ * reference through. Mirrors the Go translateBase.
+ */
+function translateBase(c: string, nativeRev: number, rev: number): string[] | undefined {
+  const m = BASE_CONTROL.exec(c);
+  if (!m) return undefined;
+  const [, family, space, enhancement] = m;
+  const spaced = space === ' ';
+  const candidates: string[] = [];
+  if (enhancement) candidates.push(`${family}(${enhancement})`);
+  if (!enhancement || spaced) candidates.push(family!);
+  for (const base of candidates) {
+    if (base === c) continue;
+    const btr = translateNistControl(base, nativeRev, rev);
+    if (btr.relation === 'identity') return [c];
+    if (btr.relation === 'unknown') continue;
+    return btr.targets.map((t) => (spaced ? t.replace(SPACED_ENHANCEMENT, '$1 ($2)') : t));
+  }
+  return undefined;
+}
 
 /**
  * Translates a control list authored against `nativeRev` into `rev`. Identity
@@ -238,17 +267,10 @@ export function nistControlsAtRevision(
       tr.targets.forEach(add);
       continue;
     }
-    const base = BASE_CONTROL.exec(c)?.[1];
-    if (base && base !== c) {
-      const btr = translateNistControl(base, nativeRev, rev);
-      if (btr.relation === 'identity') {
-        add(c);
-        continue;
-      }
-      if (btr.relation !== 'unknown') {
-        btr.targets.forEach(add);
-        continue;
-      }
+    const targets = translateBase(c, nativeRev, rev);
+    if (targets) {
+      targets.forEach(add);
+      continue;
     }
     add(c);
   }

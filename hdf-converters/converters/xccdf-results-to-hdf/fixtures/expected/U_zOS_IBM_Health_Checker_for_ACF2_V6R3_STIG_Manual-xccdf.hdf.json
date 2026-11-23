@@ -126,11 +126,11 @@
           "label": "default"
         },
         {
-          "data": "Refer to the following report produced by the Data Set and Resource Data Collection: - SENSITVE.RPT(HCKSTC) Automated Analysis Refer to the following report produced by the Data Set and Resource Data Collection: - PDI(ZHCK0001) Verify that the accesses to the IBM Health Checker STC data sets are properly restricted. If the following guidance is true, this is not a finding. ___ The ACF2 data set rules for the data sets restricts READ access to auditors. ___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to systems programming personnel. ___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to the IBM Health Checker's STC(s) and/or batch user(s).",
+          "data": "Refer to the following report produced by the Data Set and Resource Data Collection:\n\n- SENSITVE.RPT(HCKSTC)\n\nAutomated Analysis\nRefer to the following report produced by the Data Set and Resource Data Collection:\n\n- PDI(ZHCK0001)\n\nVerify that the accesses to the IBM Health Checker STC data sets are properly restricted. If the following guidance is true, this is not a finding.\n\n___ The ACF2 data set rules for the data sets restricts READ access to auditors.\n\n___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to systems programming personnel.\n\n___ The ACF2 data set rules for the data sets restricts WRITE and/or greater access to the IBM Health Checker's STC(s) and/or batch user(s).",
           "label": "check"
         },
         {
-          "data": "The ISSO will ensure that WRITE and/or greater access to IBM Health Checker STC data sets is limited to systems programmers and/or IBM Health Checker's STC(s) and/or batch user(s) only. READ access can be given to auditors. The installing systems programmer will identify and document the product data sets and categorize them according to who will have WRITE and/or greater access and if required that all WRITE and/or greater access is logged. The installing systems programmer will identify if any additional groups have WRITE and/or greater access for specific data sets, and once documented will work with the ISSO to ensure they are properly restricted to the ACP (Access Control Program) active on the system. The dataset to be protected can be found in the HZSPROC STC member in HZSPDATA DD statement. Data sets to be protected will be: SYS3.*.HZSPDATA The following commands are provided as a sample for implementing data set controls: $KEY(S3A) $PREFIX(SYS3) MVA.HZSPDATA UID(syspaudt) R(A) W(A) A(A) E(A) MVA.HZSPDATA UID(Health Checker STCs) R(A) W(A) A(A) E(A) MVA.HZSPDATA UID(audtaudt) R(A) E(A)",
+          "data": "The ISSO will ensure that WRITE and/or greater access to IBM Health Checker STC data sets is limited to systems programmers and/or IBM Health Checker's STC(s) and/or batch user(s) only. READ access can be given to auditors.\n\nThe installing systems programmer will identify and document the product data sets and categorize them according to who will have WRITE and/or greater access and if required that all WRITE and/or greater access is logged. The installing systems programmer will identify if any additional groups have WRITE and/or greater access for specific data sets, and once documented will work with the ISSO to ensure they are properly restricted to the ACP (Access Control Program) active on the system. The dataset to be protected can be found in the HZSPROC STC member in HZSPDATA DD statement.\n\nData sets to be protected will be:\nSYS3.*.HZSPDATA\n\nThe following commands are provided as a sample for implementing data set controls:\n\n$KEY(S3A)\n$PREFIX(SYS3)\nMVA.HZSPDATA UID(syspaudt) R(A) W(A) A(A) E(A)\nMVA.HZSPDATA UID(Health Checker STCs) R(A) W(A) A(A) E(A)\nMVA.HZSPDATA UID(audtaudt) R(A) E(A)",
           "label": "fix"
         }
       ],
@@ -158,8 +158,7 @@
         "gid": "V-224314",
         "gtitle": "SRG-OS-000259",
         "nist": [
-          "CM-5 (6)",
-          "CM-5 (6).1"
+          "CM-5 (6)"
         ],
         "rid": "SV-224314r868165_rule",
         "severity": "medium",
@@ -175,11 +174,11 @@
           "label": "default"
         },
         {
-          "data": "Refer to the following report produced by the ACF2 Data Collection: - ACF2CMDS.RPT(ATTSTC) Verify that the logonid(s) for the IBM Health Checker started task(s) is (are) properly defined. If the following attributes are defined, this is not a finding. STC",
+          "data": "Refer to the following report produced by the ACF2 Data Collection:\n\n-\tACF2CMDS.RPT(ATTSTC)\n\nVerify that the logonid(s) for the IBM Health Checker started task(s) is (are) properly defined.  If the following attributes are defined, this is not a finding.\n\nSTC",
           "label": "check"
         },
         {
-          "data": "The IAO working with the systems programmer will ensure the IBM Health Checker Started Task(s) is properly identified and/or defined to the System ACP. If the product requires a Started Task, verify that it is properly defined to the System ACP with the proper attributes. Most installation manuals will indicate how the Started Task is identified and any additional attributes that must be specified. The following commands are provided as a sample for defining Started Task(s): SET LID insert HZSPROC stc name('STC, IBM Health Checker')",
+          "data": "The IAO working with the systems programmer will ensure the IBM Health Checker Started Task(s) is properly identified and/or defined to the System ACP. \n\nIf the product requires a Started Task, verify that it is properly defined to the System ACP with the proper attributes.\n\nMost installation manuals will indicate how the Started Task is identified and any additional attributes that must be specified.\n\nThe following commands are provided as a sample for defining Started Task(s):\n\nSET LID\ninsert HZSPROC stc name('STC, IBM Health Checker')",
           "label": "fix"
         }
       ],
@@ -207,8 +206,7 @@
         "gid": "V-224315",
         "gtitle": "SRG-OS-000104",
         "nist": [
-          "IA-2",
-          "IA-2.1"
+          "IA-2"
         ],
         "rid": "SV-224315r520321_rule",
         "severity": "medium",

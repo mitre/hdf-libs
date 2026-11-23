@@ -79,15 +79,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting controls integration with Model Context Protocol (MCP) servers. The recommended state for this setting is: Disabled .",
+          "data": "\n               This policy setting controls integration with Model Context Protocol (MCP) servers.\n               \nThe recommended state for this setting is:             Disabled\n.          \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Chat\\ChatMCP Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: Users will not be able to use MCP server integrations.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Chat\\ChatMCP\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        Users will not be able to use MCP server integrations.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Integration with third-party MCP servers may result in unintended disclosure of information to the party running the server.",
+          "data": "\n               Integration with third-party MCP servers may result in unintended disclosure of information to the party running the server.\n            ",
           "label": "rationale"
         }
       ],
@@ -105,15 +105,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting controls auto-approval for agent mode chat tools. The recommended state for this setting is: Disabled .",
+          "data": "\n               This policy setting controls auto-approval for agent mode chat tools.\n               \nThe recommended state for this setting is:             Disabled\n.          \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Chat\\ChatToolsAutoApprove Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: Users will need to manually approve agent mode before it can be used.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Chat\\ChatToolsAutoApprove\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        Users will need to manually approve agent mode before it can be used.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Automatic activation of agent mode tools may result in inadvertent disclosure of sensitive data to third-party servers backing the chat tool or unexpected modification to project files.",
+          "data": "\n               Automatic activation of agent mode tools may result in inadvertent disclosure of sensitive data to third-party servers backing the chat tool or unexpected modification to project files.\n            ",
           "label": "rationale"
         }
       ],
@@ -131,15 +131,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting configures a list of extension selectors that determine which extensions are allowed or blocked. The recommended state for this setting is: Enabled with a list of allowed extensions.",
+          "data": "\n               This policy setting configures a list of extension selectors that determine which extensions are allowed or blocked.\n               \nThe recommended state for this setting is:             Enabled\n with a list of allowed extensions.          \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Enabled along with a JSON string defining the approved extensions: Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Extensions\\AllowedExtensions Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: IT administrators will need to maintain the list of allow-listed extensions. Depending on individual end-user needs, it may not be practical to allow specific extensions. Allowing by publisher may be more practical.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Enabled\n along with a JSON string defining the approved extensions:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Extensions\\AllowedExtensions\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        IT administrators will need to maintain the list of allow-listed extensions. Depending on individual end-user needs, it may not be practical to allow specific extensions. Allowing by publisher may be more practical.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Allowing users to install any extension may result in unintended information disclosure to third parties, or the installation of malware.",
+          "data": "\n               Allowing users to install any extension may result in unintended information disclosure to third parties, or the installation of malware.\n            ",
           "label": "rationale"
         }
       ],
@@ -157,15 +157,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting controls feedback mechanisms, such as the issue reporter and surveys. The recommended state for this setting is: Disabled .",
+          "data": "\n               This policy setting controls feedback mechanisms, such as the issue reporter and surveys.\n               \nThe recommended state for this setting is:             Disabled\n.          \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Disabled : Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Telemetry\\EnableFeedback Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: Users will not be able to use in-application feedback tools.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Telemetry\\EnableFeedback\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        Users will not be able to use in-application feedback tools.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "The VS Code issue reporter can be configured to submit context such as basic system configuration and application settings. This may inadvertently disclose information that some organizations consider confidential.",
+          "data": "\n               The VS Code issue reporter can be configured to submit context such as basic system configuration and application settings. This may inadvertently disclose information that some organizations consider confidential.\n            ",
           "label": "rationale"
         }
       ],
@@ -183,15 +183,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting controls telemetry for VS Code and extensions. The recommended state for this setting is: Enabled: off .",
+          "data": "\n               This policy setting controls telemetry for VS Code and extensions.\n               \nThe recommended state for this setting is:             Enabled: off\n.          \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Enabled: off : Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Telemetry\\TelemetryLevel Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: Data will not be shared with Microsoft or extension developers.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Enabled: off\n:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Telemetry\\TelemetryLevel\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        Data will not be shared with Microsoft or extension developers.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Enabling this feature sends data to Microsoft and potentially third-party extension developers, which could lead to sensitive data being exposed.",
+          "data": "\n               Enabling this feature sends data to Microsoft and potentially third-party extension developers, which could lead to sensitive data being exposed.\n            ",
           "label": "rationale"
         }
       ],
@@ -209,15 +209,15 @@
     {
       "descriptions": [
         {
-          "data": "This policy setting controls whether VS Code automatically updates when a new version is released. The recommended state for this setting is: Enabled: Enable Automatic Update Checks. Code will check for updates automatically and periodically.",
+          "data": "\n               This policy setting controls whether VS Code automatically updates when a new version is released.\n               \nThe recommended state for this setting is:             Enabled: Enable Automatic Update Checks. Code will check for updates automatically and periodically.\n               \n            ",
           "label": "default"
         },
         {
-          "data": "To establish the recommended configuration via GP, set the following UI path to Enabled: Enable Automatic Update Checks. Code will check for updates automatically and periodically. : Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Update\\UpdateMode Note : This Group Policy path may not exist by default. It is provided by the Group Policy template VScode.admx , which is available in the VS Code installation directory under the policies folder. Impact: None; this is the default behavior.",
+          "data": "\n               \n                  \n                     \nTo establish the recommended configuration via GP, set the following UI path to                 Enabled: Enable Automatic Update Checks. Code will check for updates automatically and periodically.\n:              \n                     Computer Configuration\\Policies\\Administrative Templates\\Visual Studio Code\\Update\\UpdateMode\n\n                     \n                        Note\n: This Group Policy path may not exist by default. It is provided by the Group Policy template                 VScode.admx\n, which is available in the VS Code installation directory under the                 policies\n folder.              \n                     Impact:\n                     \n                        None; this is the default behavior.\n                     \n                  \n               \n            ",
           "label": "fix"
         },
         {
-          "data": "Software needs to be patched regularly to address vulnerabilities.",
+          "data": "\n               Software needs to be patched regularly to address vulnerabilities.\n            ",
           "label": "rationale"
         }
       ],
@@ -234,7 +234,7 @@
     }
   ],
   "status": "loaded",
-  "summary": "This document provides prescriptive guidance for establishing a secure configuration posture for Visual Studio Code. This guide was tested against VS Code version XXXX on a Windows Server 2025 operating system. To obtain the latest version of this guide, please visit http://benchmarks.cisecurity.org . If you have questions, comments, or have identified ways to improve this guide, please write us at feedback@cisecurity.org .",
+  "summary": "\n      \nThis document provides prescriptive guidance for establishing a secure configuration posture for Visual Studio Code. This guide was tested against VS Code version XXXX on a Windows Server 2025 operating system. To obtain the latest version of this guide, please visit       http://benchmarks.cisecurity.org\n. If you have questions, comments, or have identified ways to improve this guide, please write us at       feedback@cisecurity.org\n.    \n   ",
   "title": "CIS Visual Studio Code GPO Benchmark",
   "version": "1.0.0"
 }

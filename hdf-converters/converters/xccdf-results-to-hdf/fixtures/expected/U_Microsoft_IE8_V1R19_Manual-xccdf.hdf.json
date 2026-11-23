@@ -234,7 +234,7 @@
     {
       "descriptions": [
         {
-          "data": "This setting enforces consistent security zone settings to all users of the computer. Security zones control browser behavior at various web sites and it is desirable to maintain a consistent policy for all users of a machine.",
+          "data": "This setting enforces consistent security zone settings to all users of the computer.  Security zones control browser behavior at various web sites and it is desirable to maintain a consistent policy for all users of a machine.",
           "label": "default"
         },
         {
@@ -281,7 +281,7 @@
     {
       "descriptions": [
         {
-          "data": "This setting prevents users from changing the Internet Explorer policies on the machine. Policy changes should be made by administrators only, so this setting should be enabled.",
+          "data": "This setting prevents users from changing the Internet Explorer policies on the machine.  Policy changes should be made by administrators only, so this setting should be enabled.",
           "label": "default"
         },
         {
@@ -289,7 +289,7 @@
           "label": "check"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Do not allow users to change policies” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: Set the value Security_options_edit to REG_DWORD = 1.",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Security Zones: Do not allow users to change policies” will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key:\nHKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings Criteria: Set the value Security_options_edit to REG_DWORD = 1.",
           "label": "fix"
         }
       ],
@@ -332,11 +332,11 @@
           "label": "default"
         },
         {
-          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: If the value ProxySettingsPerUser is REG_DWORD = 1, this is not a finding.",
+          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: If the value ProxySettingsPerUser is REG_DWORD = 1, this is not a finding. ",
           "label": "check"
         },
         {
-          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: Set the value ProxySettingsPerUser to REG_DWORD = 1.",
+          "data": "Configure the policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Make proxy settings per-machine (rather than per user)” to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ Criteria: Set the value ProxySettingsPerUser to REG_DWORD = 1. ",
           "label": "fix"
         }
       ],
@@ -378,7 +378,7 @@
           "label": "default"
         },
         {
-          "data": "The policy for User Configuration -\u003e Policies -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer \"Disable changing home page settings\" must be \"Enable\" and specify the URL for the home page. Procedure: Use the Windows Registry Editor to navigate to the following key: HKCU\\Software\\Microsoft\\Internet Explorer\\Main Criteria: If the value Start Page is about:blank or a trusted site this is not a finding.",
+          "data": "The policy for User Configuration -\u003e Policies -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer \"Disable changing home page settings\" must be \"Enable\" and specify the URL for the home page.\n\nProcedure:  Use the Windows Registry Editor to navigate to the following key: HKCU\\Software\\Microsoft\\Internet Explorer\\Main\n\nCriteria: If the value Start Page is about:blank or a trusted site this is not a finding.  \n",
           "label": "check"
         },
         {
@@ -428,7 +428,7 @@
           "label": "check"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Internet Control Panel -\u003e Security Page -\u003e Internet Zone -\u003e \"Download signed ActiveX controls\" will be set to “Enabled” and \"Disable\". Change the registry key HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3 Criteria:Set the value 1001 to REG_DWORD = 3 (Disabled = 3).",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Internet Control Panel -\u003e Security Page -\u003e Internet Zone -\u003e \"Download signed ActiveX controls\" will be set to “Enabled” and \"Disable\".  Change the registry key HKLM\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3 Criteria:Set the value 1001 to REG_DWORD = 3 (Disabled = 3).",
           "label": "fix"
         }
       ],
@@ -470,11 +470,11 @@
           "label": "default"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: If the value NoExtensionManagement “does not” exist or the value is set to REG_DWORD = 0, this is not a finding. If the value NoExtensionManagement “does” exist and is set to REG_DWORD = 1 (decimal), this is a finding.",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: If the value NoExtensionManagement “does not” exist or the value is set to REG_DWORD = 0, this is not a finding. If the value NoExtensionManagement “does” exist and is set to REG_DWORD = 1 (decimal), this is a finding. ",
           "label": "check"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: Remove the value NoExtensionManagement or set to REG_DWORD = 0 (decimal).",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer “Do Not Allow Users to enable or Disable Add-Ons” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Restrictions Criteria: Remove the value NoExtensionManagement or set to REG_DWORD = 0 (decimal). ",
           "label": "fix"
         }
       ],
@@ -512,7 +512,7 @@
     {
       "descriptions": [
         {
-          "data": "This setting specifies to automatically detect the proxy server settings used to connect to the Internet and customize Internet Explorer. This setting specifies that Internet Explorer use the configuration settings provided in a file by the system administrator. If you enable this policy setting, the user will not be able to do automatic configuration. You can import your current connection settings from your machine using Internet Explorer Maintenance under Admin Templates using group policy editor. If you disable or do no configure this policy setting, the user will have the freedom to automatically configure these settings.",
+          "data": "This setting specifies to automatically detect the proxy server settings used to connect to the Internet and customize Internet Explorer. This setting specifies that Internet Explorer use the configuration settings provided in a file by the system administrator.  If you enable this policy setting, the user will not be able to do automatic configuration. You can import your current connection settings from your machine using Internet Explorer Maintenance under Admin Templates using group policy editor.  If you disable or do no configure this policy setting, the user will have the freedom to automatically configure these settings.",
           "label": "default"
         },
         {
@@ -520,7 +520,7 @@
           "label": "check"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Disable changing Automatic Configuration settings\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Control Panel Criteria: Set the value Autoconfig to REG_DWORD = 1 (Hex).",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Disable changing Automatic Configuration settings\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\Control Panel Criteria: Set the value Autoconfig to REG_DWORD = 1 (Hex). ",
           "label": "fix"
         }
       ],
@@ -559,15 +559,15 @@
     {
       "descriptions": [
         {
-          "data": "This setting controls whether users can participate in the Microsoft Customer Experience Improvement Program to help improve Microsoft applications. When users choose to participate in the Customer Experience Improvement Program (CEIP), applications automatically send information to Microsoft about how the applications are used. This information is combined with other CEIP data to help Microsoft solve problems and to improve the products and features customers use most often. This feature does not collect users' names, addresses, or any other identifying information except the IP address that is used to send the data. By default, users have the opportunity to opt into participation in the CEIP the first time they run an application. If your organization has policies that govern the use of external resources such as the CEIP, allowing users to opt in to the program might cause them to violate these policies.",
+          "data": "This setting controls whether users can participate in the Microsoft Customer Experience Improvement Program to help improve Microsoft applications.\nWhen users choose to participate in the Customer Experience Improvement Program (CEIP), applications automatically send information to Microsoft about how the applications are used. This information is combined with other CEIP data to help Microsoft solve problems and to improve the products and features customers use most often. This feature does not collect users' names, addresses, or any other identifying information except the IP address that is used to send the data.\nBy default, users have the opportunity to opt into participation in the CEIP the first time they run an application. If your organization has policies that govern the use of external resources such as the CEIP, allowing users to opt in to the program might cause them to violate these policies.\n",
           "label": "default"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM Criteria: If the value DisableCustomerImprovementProgram is REG_DWORD = 0, this is not a finding.",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer  -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”.\n\nProcedure:  Use the Windows Registry Editor to navigate to the following key: \n\nHKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM\n\nCriteria: If the value DisableCustomerImprovementProgram is REG_DWORD = 0, this is not a finding.\n",
           "label": "check"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM Criteria: Set the value DisableCustomerImprovementProgram to REG_DWORD = 0.",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer  -\u003e \"Prevent participation in the Customer Experience Improvement Program\" will be set to “Enabled”.\n\nProcedure:  Use the Windows Registry Editor to navigate to the following key: \n\nHKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\SQM\n\nCriteria: Set the value DisableCustomerImprovementProgram to REG_DWORD = 0.\n",
           "label": "fix"
         }
       ],
@@ -606,11 +606,11 @@
     {
       "descriptions": [
         {
-          "data": "This policy controls the Web site compatibility lists provided by Microsoft. If you do not configure this setting, the Microsoft Web site list will not be active. The user can enable the functionality using the Compatibility View Settings dialog box.",
+          "data": "This policy controls the Web site compatibility lists provided by Microsoft.  If you do not configure this setting, the Microsoft Web site list will not be active.  The user can enable the functionality using the Compatibility View Settings dialog box.",
           "label": "default"
         },
         {
-          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Compatibility View -\u003e “Include updated Web site lists from Microsoft” will be set to “Disabled”. Procedure: Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\BrowserEmulation Criteria: If the value MSCompatibilityMode is REG_DWORD = 0, this is not a finding.",
+          "data": "The policy value for Computer Configuration -\u003e Administrative Templates -\u003e Windows Components -\u003e Internet Explorer -\u003e Compatibility View -\u003e “Include updated Web site lists from Microsoft” will be set to “Disabled”.  Procedure:  Use the Windows Registry Editor to navigate to the following key: HKLM\\Software\\Policies\\Microsoft\\Internet Explorer\\BrowserEmulation  Criteria: If the value MSCompatibilityMode is REG_DWORD = 0, this is not a finding.\n",
           "label": "check"
         },
         {
