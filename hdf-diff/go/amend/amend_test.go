@@ -1484,3 +1484,68 @@ func TestMergeAmendments_NamesUnmatchedOverrides(t *testing.T) {
 		assert.Empty(t, res.Unmatched)
 	})
 }
+
+// requirementAfterMerge applies overrides to AC-1 of a timestamped minimal document
+// and returns the merged requirement.
+func requirementAfterMerge(t *testing.T, overrides string) map[string]interface{} {
+	t.Helper()
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalResults), &doc))
+	doc["timestamp"] = "2026-06-01T00:00:00Z"
+	results, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	merged, err := mergeBytes(results, []byte(`{"name": "conflicting", "overrides": `+overrides+`}`))
+	require.NoError(t, err)
+	var out map[string]interface{}
+	require.NoError(t, json.Unmarshal(merged, &out))
+	baseline := out["baselines"].([]interface{})[0].(map[string]interface{})
+	return baseline["requirements"].([]interface{})[0].(map[string]interface{})
+}
+
+// The cached effective fields are resolved from every override the requirement
+// carries, so the answer does not depend on the order overrides are applied in.
+func TestMergeAmendments_GoverningOverrideSetsTheEffectiveFields(t *testing.T) {
+	const applier = `"appliedBy": {"type": "email", "identifier": "admin@example.com"}`
+
+	t.Run("the newer override governs status and disposition when it is applied first", func(t *testing.T) {
+		req := requirementAfterMerge(t, `[
+			{"type": "attestation", "requirementId": "AC-1", "status": "failed", "reason": "Re-tested, still failing", `+applier+`,
+			 "appliedAt": "2026-05-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"},
+			{"type": "waiver", "requirementId": "AC-1", "status": "passed", "reason": "Risk accepted", `+applier+`,
+			 "appliedAt": "2026-04-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"}
+		]`)
+
+		require.Len(t, req["statusOverrides"], 2)
+		assert.Equal(t, "failed", req["effectiveStatus"])
+		assert.Equal(t, "attestation", req["disposition"])
+	})
+
+	t.Run("the newer impact override governs when it is applied first", func(t *testing.T) {
+		req := requirementAfterMerge(t, `[
+			{"type": "riskAdjustment", "requirementId": "AC-1", "reason": "Internet-facing", `+applier+`,
+			 "impact": {"value": 0.9, "justification": "Exposed"},
+			 "appliedAt": "2026-05-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"},
+			{"type": "riskAdjustment", "requirementId": "AC-1", "reason": "Isolated network", `+applier+`,
+			 "impact": {"value": 0.3, "justification": "Air-gapped"},
+			 "appliedAt": "2026-04-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"}
+		]`)
+
+		assert.InDelta(t, 0.9, req["effectiveImpact"], 1e-9)
+		assert.Equal(t, "riskAdjustment", req["disposition"])
+		assert.NotContains(t, req, "effectiveStatus", "an impact-only override does not write a status")
+	})
+
+	t.Run("an override that expired before the document timestamp governs nothing", func(t *testing.T) {
+		req := requirementAfterMerge(t, `[
+			{"type": "waiver", "requirementId": "AC-1", "status": "passed", "reason": "Risk accepted", `+applier+`,
+			 "impact": {"value": 0.1, "justification": "Compensating control"},
+			 "appliedAt": "2026-01-01T00:00:00Z", "expiresAt": "2026-03-01T00:00:00Z"}
+		]`)
+
+		require.Len(t, req["statusOverrides"], 1, "the lapsed override stays on the record")
+		assert.Equal(t, "failed", req["effectiveStatus"])
+		assert.NotContains(t, req, "effectiveImpact")
+		assert.NotContains(t, req, "disposition")
+	})
+}
