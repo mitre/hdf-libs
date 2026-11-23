@@ -178,6 +178,7 @@ const EXHAUSTIVE_LEVELS = [
   ['hdf-amendments', ['overrides', 'cvss']],
   ['hdf-amendments', ['overrides', 'impact']],
   ['hdf-amendments', ['overrides', 'appliedBy']],
+  ['hdf-results', ['baselines', 'requirements', 'poams', 'milestones']],
 ];
 
 // Walk to a level and return its property names, expanding composition.
@@ -258,6 +259,24 @@ const { paths, bare } = citedPaths(readFileSync(pagePath, 'utf-8'));
 const arrays = arrayness();
 const noCounterpart = noCounterpartPaths(readFileSync(pagePath, 'utf-8'));
 const vocab = vocabulary();
+
+test('every markdown table row has the column count its block uses', () => {
+  // A dropped trailing pipe renders as one cell and vitepress builds it happily.
+  const broken = [];
+  let block = [];
+  const flush = () => {
+    const counts = block.map(([, n]) => n);
+    const mode = counts.sort((a, b) => counts.filter((c) => c === b).length - counts.filter((c) => c === a).length)[0];
+    block.filter(([, n]) => n !== mode).forEach(([line, n]) => broken.push(`line ${line}: ${n} cells, block uses ${mode}`));
+    block = [];
+  };
+  readFileSync(pagePath, 'utf-8').split('\n').forEach((line, i) => {
+    if (line.startsWith('|')) block.push([i + 1, (line.match(/\|/g) ?? []).length - 1]);
+    else if (block.length) flush();
+  });
+  if (block.length) flush();
+  assert.deepEqual(broken, [], `malformed table rows: ${broken.join('; ')}`);
+});
 
 test('the crosswalk cites enough HDF paths for the check to mean something', () => {
   assert.ok(paths.length > 12, `only ${paths.length} HDF paths cited`);
