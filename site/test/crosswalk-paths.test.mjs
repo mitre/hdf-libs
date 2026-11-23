@@ -142,12 +142,17 @@ function noCounterpartPaths(markdown) {
     if (!inSection || !line.startsWith('|')) continue;
     const cell = line.split('|')[1] ?? '';
     if (/^\s*-+\s*$/.test(cell) || /^\s*HDF\s*$/.test(cell)) continue;
+    // A row may name which document's root it covers; the three roots share
+    // property names, so without that an unqualified token satisfies all three.
+    const root = /\((results|evidence-package|amendments) root\)/.exec(line);
+    const prefix = root ? `hdf-${root[1]}.` : '';
     let parent = null;
     for (const [, token] of cell.matchAll(/`([A-Za-z.][A-Za-z0-9_.[\]-]*)`/g)) {
       if (token.startsWith('.')) {
         if (parent) out.push({ cited: token, path: parent + token });
       } else {
-        out.push({ cited: token, path: token });
+        out.push({ cited: token, path: token, doc: root ? `hdf-${root[1]}` : null });
+        if (prefix && !token.includes('.')) out.push({ cited: token, path: prefix + token });
         if (token.includes('.')) parent = token.replace(/\.[A-Za-z0-9_]+(\[\])?$/, '');
       }
     }
@@ -170,6 +175,7 @@ const EXHAUSTIVE_LEVELS = [
   ['hdf-amendments', []],
   ['hdf-amendments', ['overrides']],
   ['hdf-amendments', ['overrides', 'milestones']],
+  ['hdf-amendments', ['overrides', 'cvss']],
 ];
 
 // Walk to a level and return its property names, expanding composition.
@@ -256,29 +262,39 @@ test('the crosswalk cites enough HDF paths for the check to mean something', () 
 });
 
 test('every property at a level the page covers exhaustively is accounted for', () => {
-  // Matched against the full cited paths, not a bag of segment names: a
-  // page-global name check passes `contents[].description` purely because
-  // `description` occurs elsewhere, which is how that defect survived.
   const strip = (path) => path.replace(/\[\]/g, '');
-  const citedFull = new Set();
+
+  // Terminal citations and the parents the page descends through, kept apart:
+  // a parent is accounted for by the rows beneath it, a terminal only by itself.
+  const terminal = new Set();
+  const descended = new Set();
   for (const { path } of [...paths, ...noCounterpart]) {
     const segments = strip(path).split('.');
-    // Record every prefix: a property the page descends THROUGH is accounted
-    // for by the rows beneath it, and so is one cited as a bare sub-property.
-    for (let i = 1; i <= segments.length; i += 1) citedFull.add(segments.slice(0, i).join('.'));
+    terminal.add(segments.join('.'));
+    for (let i = 1; i < segments.length; i += 1) descended.add(segments.slice(0, i).join('.'));
   }
-  const citedBare = new Set(bare.map((t) => t.replace(/\[\]$/, '')));
+
+  // The three document roots share property names, so a row naming one root
+  // counts only for that document; an unlabeled row counts for any.
+  const rootAny = new Set();
+  const rootByDoc = new Map();
+  for (const { path, doc } of noCounterpart) {
+    if (path.includes('.')) continue;
+    const name = strip(path);
+    if (!doc) rootAny.add(name);
+    else rootByDoc.set(doc, (rootByDoc.get(doc) ?? new Set()).add(name));
+  }
 
   const missing = [];
   for (const [doc, segments] of EXHAUSTIVE_LEVELS) {
     const names = propertiesAt(doc, segments);
     assert.ok(names && names.size > 0, `level ${doc}.${segments.join('.')} resolved to nothing — the level list is stale`);
     for (const name of names) {
-      // A document root's properties are cited as bare names; a nested level's
-      // must appear as the full path, so the citation is pinned to this level.
       const full = [...segments, name].join('.');
-      const ok = segments.length === 0 ? citedBare.has(name) || citedFull.has(full) : citedFull.has(full);
-      if (!ok) missing.push(`${doc}.${[...segments, name].join('.')}`);
+      const ok = segments.length === 0
+        ? rootAny.has(name) || rootByDoc.get(doc)?.has(name) || descended.has(name)
+        : terminal.has(full) || descended.has(full);
+      if (!ok) missing.push(`${doc}.${full}`);
     }
   }
   assert.deepEqual(missing, [], `HDF properties neither mapped nor listed at their level: ${missing.join(', ')}`);
@@ -303,7 +319,7 @@ test('the no-counterpart tables were actually found', () => {
 test('every field in the no-counterpart tables is a real HDF property', () => {
   const unresolved = noCounterpart
     .filter(({ path }) => {
-      const segments = path.replace(/^hdf-(system|results|amendments|plan)\./, '').split('.').filter(Boolean);
+      const segments = path.replace(/^hdf-(system|results|amendments|evidence-package|plan)\./, '').split('.').filter(Boolean);
       if (DOCUMENTS.some((name) => resolves(segments, docs[name]))) return false;
       // A single token may be a sub-property named in parentheses or an enum
       // value, neither of which resolves from a document root.
@@ -320,7 +336,7 @@ test('every HDF path the crosswalk cites resolves through a bundled schema', () 
   const unresolved = paths
     .filter(({ path }) => {
       const segments = path
-        .replace(/^hdf-(system|results|amendments)\./, '')
+        .replace(/^hdf-(system|results|amendments|evidence-package)\./, '')
         .split('.')
         .filter(Boolean);
       return !DOCUMENTS.some((name) => resolves(segments, docs[name]));
