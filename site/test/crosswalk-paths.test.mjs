@@ -1,8 +1,8 @@
 // Every HDF path the crosswalk cites must resolve segment by segment through the
 // bundled schemas, following $refs, array items and composition. A name-existence
 // check is not enough: it passes `statusOverrides[].milestones[]`, where both
-// names exist but `Status_Override` has no `milestones`. The eMASS half of the
-// page is verified against the specification itself.
+// names exist but `Status_Override` has no `milestones`. Nothing here reads the
+// eMASS specification: that half rests on review, and on the push's own checks.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
