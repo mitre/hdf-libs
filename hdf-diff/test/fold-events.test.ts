@@ -142,7 +142,7 @@ describe('foldChangeEventsIntoComparison', () => {
     await foldLawCheck('scan-before.json', 'scan-with-override.json');
   });
 
-  it('labels repeated ids across real seed baselines as (multiple)', async () => {
+  it('labels a repeated id (multiple) in the fold, while the batch names each baseline', async () => {
     // Unmodified published InSpec output; only the event is derived here.
     const seedJson = results.inspecMultilayered.read();
     const doc = JSON.parse(seedJson) as Req;
@@ -165,11 +165,22 @@ describe('foldChangeEventsIntoComparison', () => {
     expect(warnings).toEqual([]);
     const diffs = comparison['requirementDiffs'] as RequirementDiff[];
     expect(diffs).toHaveLength(1);
+    // §6's companion law wants the fold's requirementDiffs to equal the batch's. They
+    // diverge on an id several baselines carry: the event key (§1) has no baseline, so
+    // the fold emits ONE diff with the sentinel while the batch emits one per baseline.
+    // Pinned so the open decision flips this test. Go peer: go/fold_events_test.go.
     expect(diffs[0].baseline).toBe('(multiple)');
     const batch = diffHdf(doc, doc, { comparisonMode: 'temporal' });
     const matching = batch.requirementDiffs.filter((d) => d.id === req['id']);
     expect(matching.length).toBeGreaterThan(0);
-    for (const d of matching) expect(d.baseline).toBe(diffs[0].baseline);
+    expect(matching.map((d) => d.baseline)).toEqual([
+      'metawrapper',
+      'wrapper',
+      'k8s-node-stig-baseline',
+    ]);
+    for (const d of matching) {
+      expect(d.id).toBe(diffs[0]!.id);
+    }
     const newEvent = (await deriveStream(load('scan-before.json'), load('scan-after.json')))
       .find((e) => e['state'] === 'new');
     if (!newEvent) throw new Error('scan pair must emit a new requirement');

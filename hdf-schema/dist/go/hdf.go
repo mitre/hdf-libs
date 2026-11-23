@@ -1744,9 +1744,12 @@ type RequirementDiff struct {
 	AfterSensitive                                                                               map[string]interface{} `json:"afterSensitive,omitempty"`
 	// IDs of annotations attached to this requirement diff.
 	AnnotationIDS                                                                                []string               `json:"annotationIds,omitempty"`
-	// Name of the baseline the requirement belongs to, so a consumer can group diffs the way
-	// hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one
-	// baseline of the same document.
+	// Name of the baseline the requirement was matched in, so a consumer can group diffs the
+	// way hdf diff --group-by baseline does. A batch comparison matches requirements within
+	// their baseline, so an id several baselines carry produces one diff per baseline, each
+	// naming its own; the name is not unique, since one document may carry several baselines of
+	// the same name. '(multiple)' appears only from the event-fold path, whose event key
+	// carries no baseline.
 	Baseline                                                                                     *string                `json:"baseline,omitempty"`
 	// The requirement as it appeared in the old/reference source. Null when state is 'new'.
 	Before                                                                                       interface{}            `json:"before"`

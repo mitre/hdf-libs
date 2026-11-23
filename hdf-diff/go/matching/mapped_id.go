@@ -28,50 +28,55 @@ func (s *MappedIDStrategy) Name() string {
 func (s *MappedIDStrategy) Match(oldReqs, newReqs []hdf.EvaluatedRequirement) MatchResult {
 	result := MatchResult{}
 
-	newByID, duplicateNewIDs := buildUniqueIDIndex(newReqs)
-	_, duplicateOldIDs := buildUniqueIDIndex(oldReqs)
+	oldByID := buildIDIndex(oldReqs)
+	newByID := buildIDIndex(newReqs)
 
-	// Track which new reqs have been matched
-	matchedNewIDs := make(map[string]bool)
-
-	// Try to match old requirements using the mapping table (skip duplicate old IDs)
+	// As in ExactIDStrategy: document order, one id at a time, occurrences paired
+	// among themselves.
+	pairedWith := make(map[int]int, len(oldReqs))
+	pairedNew := make(map[int]bool, len(newReqs))
+	seen := make(map[string]bool, len(oldByID))
 	for _, oldReq := range oldReqs {
 		oldID := oldReq.ID
-		if duplicateOldIDs[oldID] {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+		if seen[oldID] {
 			continue
 		}
-
+		seen[oldID] = true
 		mappedNewID, hasMapped := s.mapping[oldID]
 		if !hasMapped {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
 			continue
 		}
-
-		// Skip if the mapped new ID is a duplicate
-		if duplicateNewIDs[mappedNewID] {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
-			continue
+		// Several old ids may map to one new id, so an occurrence another id already
+		// claimed is not offered again, or one entry is matched twice.
+		candidates := make([]int, 0, len(newByID[mappedNewID]))
+		for _, i := range newByID[mappedNewID] {
+			if !pairedNew[i] {
+				candidates = append(candidates, i)
+			}
 		}
-
-		newIdx, found := newByID[mappedNewID]
-		if found && !matchedNewIDs[mappedNewID] {
-			result.Matched = append(result.Matched, MatchPair{
-				OldReq:     oldReq,
-				NewReq:     newReqs[newIdx],
-				Strategy:   "mappedId",
-				Confidence: 0.95,
-			})
-			matchedNewIDs[mappedNewID] = true
-		} else {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+		pairs, _, _ := pairOccurrences(oldByID[oldID], candidates, oldReqs, newReqs)
+		for _, p := range pairs {
+			pairedWith[p[0]] = p[1]
+			pairedNew[p[1]] = true
 		}
 	}
 
-	// Collect unmatched new requirements (including all duplicates)
-	for _, req := range newReqs {
-		id := req.ID
-		if duplicateNewIDs[id] || !matchedNewIDs[id] {
+	for i, oldReq := range oldReqs {
+		newIdx, ok := pairedWith[i]
+		if !ok {
+			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+			continue
+		}
+		result.Matched = append(result.Matched, MatchPair{
+			OldReq:     oldReq,
+			NewReq:     newReqs[newIdx],
+			Strategy:   "mappedId",
+			Confidence: 0.95,
+		})
+	}
+
+	for i, req := range newReqs {
+		if !pairedNew[i] {
 			result.UnmatchedNew = append(result.UnmatchedNew, req)
 		}
 	}

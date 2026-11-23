@@ -10,7 +10,7 @@ import { computeEffectiveStatus, classifyChangeReasons, classifyDiffStatus } fro
 import { computeSummary } from './summary.js';
 import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
-import type { MatchOptions } from './matching/index.js';
+import type { MatchOptions, MatchResult } from './matching/index.js';
 import { validateComparison } from './validate.js';
 import { compareCodePoint, parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
 
@@ -347,23 +347,6 @@ export function recordRequirementBaseline(map: Map<string, string>, id: string, 
   }
 }
 
-function requirementBaselineMap(baselines: BaselineLike[]): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const baseline of baselines) {
-    for (const req of baseline.requirements) {
-      const id = (req as unknown as Record<string, unknown>)['id'];
-      if (typeof id !== 'string') continue;
-      recordRequirementBaseline(map, id, baseline.name);
-    }
-  }
-  return map;
-}
-
-/** The new document's baseline for the id, else the old one's; undefined if neither. */
-function resolveBaseline(id: string, newMap: Map<string, string>, oldMap: Map<string, string>): string | undefined {
-  return newMap.get(id) ?? oldMap.get(id);
-}
-
 /**
  * Core pairwise comparison between two normalized HDF documents.
  * Returns baseline diffs and requirement diffs without sorting or wrapping.
@@ -422,27 +405,72 @@ function comparePair(
     }
   }
 
-  const oldReqBaseline = requirementBaselineMap(oldBaselines);
-  const newReqBaseline = requirementBaselineMap(newBaselines);
-
-  // Collect all requirements across all baselines
-  const oldReqs: Record<string, unknown>[] = [];
-  for (const baseline of oldBaselines) {
-    for (const req of baseline.requirements) {
-      oldReqs.push(req as unknown as Record<string, unknown>);
-    }
-  }
-  const newReqs: Record<string, unknown>[] = [];
-  for (const baseline of newBaselines) {
-    for (const req of baseline.requirements) {
-      newReqs.push(req as unknown as Record<string, unknown>);
-    }
+  const requirementDiffs: RequirementDiff[] = [];
+  for (const pairing of pairBaselinesByName(oldBaselines, newBaselines)) {
+    const matchResult = matchRequirements(pairing.oldReqs, pairing.newReqs, matchOpts);
+    requirementDiffs.push(
+      ...requirementDiffsFor(
+        matchResult,
+        pairing.name,
+        oldTimestamp,
+        newTimestamp,
+        trackedFields,
+      ),
+    );
   }
 
-  // Use the matching system to pair requirements
-  const matchResult = matchRequirements(oldReqs, newReqs, matchOpts);
+  return { baselineDiffs, requirementDiffs };
+}
 
-  // Build requirement diffs from match results
+interface BaselinePairing {
+  name: string;
+  oldReqs: Record<string, unknown>[];
+  newReqs: Record<string, unknown>[];
+}
+
+/**
+ * Pairs baselines by name, as the baseline-diff loop above pairs them, so a requirement
+ * is compared with its counterpart in the SAME baseline. Pooling them made an overlay
+ * chain look like rival entries sharing an id, and a self-comparison then reported every
+ * layer absent AND new.
+ *
+ * Two baselines sharing a name are gathered as one: the name is the only identity the
+ * comparison has. Go peer: pairBaselinesByName.
+ */
+function pairBaselinesByName(
+  oldBaselines: BaselineLike[],
+  newBaselines: BaselineLike[],
+): BaselinePairing[] {
+  const byName = new Map<string, BaselinePairing>();
+  const order: string[] = [];
+  const gather = (baselines: BaselineLike[], old: boolean): void => {
+    for (const baseline of baselines) {
+      let pairing = byName.get(baseline.name);
+      if (!pairing) {
+        pairing = { name: baseline.name, oldReqs: [], newReqs: [] };
+        byName.set(baseline.name, pairing);
+        order.push(baseline.name);
+      }
+      const into = old ? pairing.oldReqs : pairing.newReqs;
+      for (const req of baseline.requirements) {
+        into.push(req as unknown as Record<string, unknown>);
+      }
+    }
+  };
+  gather(oldBaselines, true);
+  gather(newBaselines, false);
+  return order.map((name) => byName.get(name)!);
+}
+
+/** Turns one baseline's match result into requirement diffs, each naming the baseline
+ * it was matched in. */
+function requirementDiffsFor(
+  matchResult: MatchResult,
+  baselineName: string,
+  oldTimestamp: string | undefined,
+  newTimestamp: string | undefined,
+  trackedFields: string[],
+): RequirementDiff[] {
   const requirementDiffs: RequirementDiff[] = [];
 
   // Matched pairs
@@ -474,7 +502,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title ?? oldReq.title,
-      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
+      baseline: baselineName,
       state: diffState,
       oldEffectiveStatus: oldStatus,
       newEffectiveStatus: newStatus,
@@ -500,7 +528,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: oldReq.title,
-      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
+      baseline: baselineName,
       state: 'absent',
       oldEffectiveStatus: oldStatus,
       changeReasons: [],
@@ -522,7 +550,7 @@ function comparePair(
     requirementDiffs.push({
       id,
       title: newReq.title,
-      baseline: resolveBaseline(id, newReqBaseline, oldReqBaseline),
+      baseline: baselineName,
       state: 'new',
       newEffectiveStatus: newStatus,
       changeReasons: [],
@@ -533,7 +561,7 @@ function comparePair(
     });
   }
 
-  return { baselineDiffs, requirementDiffs };
+  return requirementDiffs;
 }
 
 /** Field names handled by dedicated CVE-ecosystem diff handlers (not generic JSON compare). */

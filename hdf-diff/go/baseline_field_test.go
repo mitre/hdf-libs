@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Every requirement diff names its baseline, `(multiple)` when the id sits in
-// more than one, and the document stays schema-valid with the field present.
+// Every requirement diff names the baseline it was matched in, one diff per baseline for
+// an id several of them carry, and the document stays schema-valid with the field
+// present.
 func TestRequirementDiff_CarriesBaselineAndValidates(t *testing.T) {
 	shared := makeRequirement("SV-001", hdf.Failed, 0.7)
 	only := makeRequirement("SV-002", hdf.Passed, 0.5)
@@ -27,12 +28,15 @@ func TestRequirementDiff_CarriesBaselineAndValidates(t *testing.T) {
 
 	comp := mustDiffHdf(t, old, []hdf.HDFResults{updated}, defaultOpts())
 
-	byID := map[string]string{}
+	byID := map[string][]string{}
 	for _, rd := range comp.RequirementDiffs {
-		byID[rd.ID] = rd.Baseline
+		byID[rd.ID] = append(byID[rd.ID], rd.Baseline)
 	}
-	assert.Equal(t, baselineMultiple, byID["SV-001"], "an id in two baselines reports the sentinel")
-	assert.Equal(t, "alpha", byID["SV-002"], "an id in one baseline reports that baseline")
+	assert.ElementsMatch(t, []string{"alpha", "beta"}, byID["SV-001"],
+		"an id in two baselines is compared in each, and each diff names its own")
+	assert.Equal(t, []string{"alpha"}, byID["SV-002"], "an id in one baseline reports that baseline")
+	assert.NotContains(t, byID["SV-001"], baselineMultiple,
+		"the sentinel is for the fold path, whose event key carries no baseline")
 
 	raw, err := json.Marshal(comp)
 	require.NoError(t, err)

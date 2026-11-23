@@ -166,10 +166,15 @@ func TestExactIdStrategy_DuplicateNewIDs(t *testing.T) {
 
 	result := s.Match(oldReqs, newReqs)
 
-	// Ambiguous: two new reqs share the same ID -> neither can be matched
-	assert.Len(t, result.Matched, 0)
-	assert.Len(t, result.UnmatchedOld, 1)
-	assert.Len(t, result.UnmatchedNew, 2)
+	// Superseded: a second occurrence no longer makes the id unusable. The old
+	// entry's content matches neither new one, so position pairs it with the first and the
+	// second is reported new.
+	require.Len(t, result.Matched, 1)
+	assert.Equal(t, "Old", *result.Matched[0].OldReq.Title)
+	assert.Equal(t, "New A", *result.Matched[0].NewReq.Title)
+	assert.Empty(t, result.UnmatchedOld)
+	require.Len(t, result.UnmatchedNew, 1)
+	assert.Equal(t, "New B", *result.UnmatchedNew[0].Title)
 }
 
 func TestExactIdStrategy_DuplicateOldIDs(t *testing.T) {
@@ -182,10 +187,13 @@ func TestExactIdStrategy_DuplicateOldIDs(t *testing.T) {
 
 	result := s.Match(oldReqs, newReqs)
 
-	// Ambiguous: two old reqs share the same ID -> neither can be matched
-	assert.Len(t, result.Matched, 0)
-	assert.Len(t, result.UnmatchedOld, 2)
-	assert.Len(t, result.UnmatchedNew, 1)
+	// Superseded: one occurrence pairs, the surplus is reported absent, rather
+	// than every occurrence being abandoned.
+	require.Len(t, result.Matched, 1)
+	assert.Equal(t, "Old A", *result.Matched[0].OldReq.Title)
+	require.Len(t, result.UnmatchedOld, 1)
+	assert.Equal(t, "Old B", *result.UnmatchedOld[0].Title)
+	assert.Empty(t, result.UnmatchedNew)
 }
 
 func TestExactIdStrategy_MixedMatchAndUnmatched(t *testing.T) {
@@ -208,4 +216,96 @@ func TestExactIdStrategy_MixedMatchAndUnmatched(t *testing.T) {
 	assert.Equal(t, "SV-002", result.UnmatchedOld[0].ID)
 	assert.Len(t, result.UnmatchedNew, 1)
 	assert.Equal(t, "SV-004", result.UnmatchedNew[0].ID)
+}
+
+// A duplicated id is N occurrences of one requirement, paired by content key with
+// document position as the tie-break. It was once called ambiguous, so a
+// self-comparison reported every duplicated entry absent AND new.
+
+func TestExactIdStrategy_IdenticalDuplicateIDsOnBothSides(t *testing.T) {
+	s := NewExactIDStrategy()
+	reqs := []hdf.EvaluatedRequirement{
+		reqWithIDAndTitle("SV-001", "A"),
+		reqWithIDAndTitle("SV-001", "B"),
+	}
+
+	result := s.Match(reqs, reqs)
+
+	require.Len(t, result.Matched, 2)
+	assert.Empty(t, result.UnmatchedOld)
+	assert.Empty(t, result.UnmatchedNew)
+	// The pairing, not just the counts: crossing the pair passes a count assertion.
+	for _, pair := range result.Matched {
+		assert.Equal(t, *pair.OldReq.Title, *pair.NewReq.Title)
+	}
+}
+
+func TestExactIdStrategy_DuplicateIDsPairByContentWhenReordered(t *testing.T) {
+	s := NewExactIDStrategy()
+	oldReqs := []hdf.EvaluatedRequirement{
+		reqWithIDAndTitle("SV-001", "A"),
+		reqWithIDAndTitle("SV-001", "B"),
+	}
+	newReqs := []hdf.EvaluatedRequirement{
+		reqWithIDAndTitle("SV-001", "B"),
+		reqWithIDAndTitle("SV-001", "A"),
+	}
+
+	result := s.Match(oldReqs, newReqs)
+
+	require.Len(t, result.Matched, 2)
+	assert.Empty(t, result.UnmatchedOld)
+	assert.Empty(t, result.UnmatchedNew)
+	// Content decides, so a producer that reorders its output reports no change.
+	for _, pair := range result.Matched {
+		assert.Equal(t, *pair.OldReq.Title, *pair.NewReq.Title)
+	}
+}
+
+func TestExactIdStrategy_DuplicateIDsSurplusOnNewSide(t *testing.T) {
+	s := NewExactIDStrategy()
+	oldReqs := []hdf.EvaluatedRequirement{reqWithIDAndTitle("SV-001", "A")}
+	newReqs := []hdf.EvaluatedRequirement{
+		reqWithIDAndTitle("SV-001", "A"),
+		reqWithIDAndTitle("SV-001", "B"),
+	}
+
+	result := s.Match(oldReqs, newReqs)
+
+	require.Len(t, result.Matched, 1)
+	assert.Equal(t, "A", *result.Matched[0].OldReq.Title)
+	assert.Equal(t, "A", *result.Matched[0].NewReq.Title)
+	assert.Empty(t, result.UnmatchedOld)
+	require.Len(t, result.UnmatchedNew, 1)
+	assert.Equal(t, "B", *result.UnmatchedNew[0].Title)
+}
+
+func TestExactIdStrategy_DuplicateIDsSurplusOnOldSide(t *testing.T) {
+	s := NewExactIDStrategy()
+	oldReqs := []hdf.EvaluatedRequirement{
+		reqWithIDAndTitle("SV-001", "A"),
+		reqWithIDAndTitle("SV-001", "B"),
+	}
+	newReqs := []hdf.EvaluatedRequirement{reqWithIDAndTitle("SV-001", "A")}
+
+	result := s.Match(oldReqs, newReqs)
+
+	require.Len(t, result.Matched, 1)
+	assert.Equal(t, "A", *result.Matched[0].OldReq.Title)
+	require.Len(t, result.UnmatchedOld, 1)
+	assert.Equal(t, "B", *result.UnmatchedOld[0].Title)
+	assert.Empty(t, result.UnmatchedNew)
+}
+
+func TestExactIdStrategy_IndistinguishableDuplicatesPairByPosition(t *testing.T) {
+	s := NewExactIDStrategy()
+	// Byte-identical occurrences: no content key can separate them, so position decides —
+	// which is right here, because the entries are interchangeable.
+	reqs := []hdf.EvaluatedRequirement{reqWithID("SV-001"), reqWithID("SV-001")}
+
+	result := s.Match(reqs, reqs)
+
+	assert.Len(t, result.Matched, 2)
+	assert.Empty(t, result.UnmatchedOld)
+	assert.Empty(t, result.UnmatchedNew)
 }

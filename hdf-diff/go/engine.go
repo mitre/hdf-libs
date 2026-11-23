@@ -95,8 +95,9 @@ func DiffHdf(ctx context.Context, oldResults hdf.HDFResults, newResults []hdf.HD
 		return HdfComparison{}, err
 	}
 
-	// Sort by ID
-	sort.Slice(requirementDiffs, func(i, j int) bool {
+	// Sort by ID, STABLY: an id carried by several baselines ties, and the TypeScript peer
+	// sorts stably, so an unstable sort would order the two languages' output differently.
+	sort.SliceStable(requirementDiffs, func(i, j int) bool {
 		return requirementDiffs[i].ID < requirementDiffs[j].ID
 	})
 
@@ -179,7 +180,7 @@ func diffFleet(
 	}
 
 	// Sort by ID, then by sourceIndex
-	sort.Slice(allRequirementDiffs, func(i, j int) bool {
+	sort.SliceStable(allRequirementDiffs, func(i, j int) bool {
 		if allRequirementDiffs[i].ID != allRequirementDiffs[j].ID {
 			return allRequirementDiffs[i].ID < allRequirementDiffs[j].ID
 		}
@@ -224,29 +225,73 @@ func comparePair(
 	}
 	baselineDiffs := compareBaselineVersions(oldDoc.Baselines, newDoc.Baselines)
 
-	// Build requirement ID → baseline name maps for populating RequirementDiff.Baseline
-	oldReqBaselineMap := requirementBaselineMap(oldDoc)
-	newReqBaselineMap := requirementBaselineMap(newDoc)
-
-	var oldReqs []hdf.EvaluatedRequirement
-	for _, baseline := range oldDoc.Baselines {
-		oldReqs = append(oldReqs, baseline.Requirements...)
-	}
-	var newReqs []hdf.EvaluatedRequirement
-	for _, baseline := range newDoc.Baselines {
-		newReqs = append(newReqs, baseline.Requirements...)
-	}
-
-	// Use the matching system to pair requirements
-	matchResult, err := matching.MatchRequirementsWithError(oldReqs, newReqs, matchOpts)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, nil, err
+	var requirementDiffs []RequirementDiff
+	for _, pairing := range pairBaselinesByName(oldDoc.Baselines, newDoc.Baselines) {
+		matchResult, err := matching.MatchRequirementsWithError(pairing.oldReqs, pairing.newReqs, matchOpts)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+		requirementDiffs = append(requirementDiffs,
+			requirementDiffsFor(matchResult, pairing.name, oldTimestamp, newTimestamp, trackedFields)...)
 	}
 
-	// Build requirement diffs from match results
+	return baselineDiffs, requirementDiffs, nil
+}
+
+// baselinePairing holds one baseline's requirements from each side.
+type baselinePairing struct {
+	name    string
+	oldReqs []hdf.EvaluatedRequirement
+	newReqs []hdf.EvaluatedRequirement
+}
+
+// pairBaselinesByName pairs baselines by name, as compareBaselineVersions does, so a
+// requirement is compared with its counterpart in the SAME baseline. Pooling them made an
+// overlay chain look like rival entries sharing an id, and a self-comparison
+// then reported every layer absent AND new.
+//
+// Two baselines sharing a name are gathered as one: the name is the only identity the
+// comparison has, and keying on position would tie pairing to document order, which the
+// schema does not fix.
+func pairBaselinesByName(oldBaselines, newBaselines []hdf.EvaluatedBaseline) []baselinePairing {
+	byName := make(map[string]*baselinePairing, len(oldBaselines)+len(newBaselines))
+	order := make([]string, 0, len(oldBaselines)+len(newBaselines))
+	gather := func(baselines []hdf.EvaluatedBaseline, old bool) {
+		for _, baseline := range baselines {
+			pairing, seen := byName[baseline.Name]
+			if !seen {
+				pairing = &baselinePairing{name: baseline.Name}
+				byName[baseline.Name] = pairing
+				order = append(order, baseline.Name)
+			}
+			if old {
+				pairing.oldReqs = append(pairing.oldReqs, baseline.Requirements...)
+				continue
+			}
+			pairing.newReqs = append(pairing.newReqs, baseline.Requirements...)
+		}
+	}
+	gather(oldBaselines, true)
+	gather(newBaselines, false)
+
+	pairings := make([]baselinePairing, 0, len(order))
+	for _, name := range order {
+		pairings = append(pairings, *byName[name])
+	}
+	return pairings
+}
+
+// requirementDiffsFor turns one baseline's match result into requirement diffs, each
+// naming the baseline it was matched in.
+func requirementDiffsFor(
+	matchResult matching.MatchResult,
+	baselineName string,
+	oldTimestamp, newTimestamp string,
+	trackedFields []string,
+) []RequirementDiff {
 	var requirementDiffs []RequirementDiff
 
 	// Matched pairs
@@ -277,7 +322,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, RequirementDiff{
 			ID:                 id,
 			Title:              title,
-			Baseline:           resolveBaseline(id, newReqBaselineMap, oldReqBaselineMap),
+			Baseline:           baselineName,
 			State:              diffState,
 			OldEffectiveStatus: oldStatus,
 			NewEffectiveStatus: newStatus,
@@ -302,7 +347,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, RequirementDiff{
 			ID:                 oldReq.ID,
 			Title:              title,
-			Baseline:           resolveBaseline(oldReq.ID, newReqBaselineMap, oldReqBaselineMap),
+			Baseline:           baselineName,
 			State:              StateAbsent,
 			OldEffectiveStatus: oldStatus,
 			ChangeReasons:      []ChangeReason{},
@@ -323,7 +368,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, RequirementDiff{
 			ID:                 newReq.ID,
 			Title:              title,
-			Baseline:           resolveBaseline(newReq.ID, newReqBaselineMap, oldReqBaselineMap),
+			Baseline:           baselineName,
 			State:              StateNew,
 			NewEffectiveStatus: newStatus,
 			ChangeReasons:      []ChangeReason{},
@@ -334,7 +379,7 @@ func comparePair(
 		})
 	}
 
-	return baselineDiffs, requirementDiffs, nil
+	return requirementDiffs
 }
 
 func compareBaselineVersions(oldBaselines, newBaselines []hdf.EvaluatedBaseline) []BaselineDiff {
@@ -608,8 +653,9 @@ func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfC
 		})
 	}
 
-	// Sort by ID
-	sort.Slice(requirementDiffs, func(i, j int) bool {
+	// Sort by ID, stably for the same reason as the results path: ties must not be ordered
+	// by the sort implementation, because the TypeScript peer's is stable.
+	sort.SliceStable(requirementDiffs, func(i, j int) bool {
 		return requirementDiffs[i].ID < requirementDiffs[j].ID
 	})
 
@@ -770,29 +816,4 @@ func recordRequirementBaseline(m map[string]string, id, name string) {
 	} else {
 		m[id] = name
 	}
-}
-
-// requirementBaselineMap returns a map from requirement ID to the name of the
-// baseline that contains it. If the same ID appears in multiple baselines,
-// the value is set to "(multiple)" to avoid implying a single correct baseline.
-func requirementBaselineMap(doc hdf.HDFResults) map[string]string {
-	m := make(map[string]string)
-	for _, baseline := range doc.Baselines {
-		for _, req := range baseline.Requirements {
-			recordRequirementBaseline(m, req.ID, baseline.Name)
-		}
-	}
-	return m
-}
-
-// resolveBaseline returns the baseline name for a requirement ID, preferring
-// the new document's mapping (the requirement may have moved between baselines).
-func resolveBaseline(id string, newMap, oldMap map[string]string) string {
-	if name, ok := newMap[id]; ok {
-		return name
-	}
-	if name, ok := oldMap[id]; ok {
-		return name
-	}
-	return ""
 }

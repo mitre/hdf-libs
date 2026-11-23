@@ -227,7 +227,8 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 		})
 	}
 
-	sort.Slice(diffs, func(i, j int) bool { return diffs[i].ID < diffs[j].ID })
+	// Stable, as the TypeScript peer's sort is: a repeated id ties.
+	sort.SliceStable(diffs, func(i, j int) bool { return diffs[i].ID < diffs[j].ID })
 	if diffs == nil {
 		diffs = []RequirementDiff{}
 	}

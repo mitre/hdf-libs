@@ -347,17 +347,27 @@ func TestFoldChangeEvents_MultipleRealBaselines(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, result.Warnings)
 	require.Len(t, result.Comparison.RequirementDiffs, 1)
-	assert.Equal(t, "(multiple)", result.Comparison.RequirementDiffs[0].Baseline)
+	// §6's companion law wants the fold's requirementDiffs to equal the batch's. They
+	// diverge on an id several baselines carry: the event key (§1) has no baseline, so the
+	// fold emits ONE diff with the sentinel while the batch emits one per baseline, each
+	// named. Pinned here so the open decision flips this test rather than sliding under it.
+	folded := result.Comparison.RequirementDiffs[0]
+	assert.Equal(t, baselineMultiple, folded.Baseline)
 	batch, err := DiffHdf(context.Background(), doc, []hdf.HDFResults{doc}, Options{ComparisonMode: ModeSystemDrift})
 	require.NoError(t, err)
-	found := false
+	var layers []string
 	for _, d := range batch.RequirementDiffs {
-		if d.ID == req.ID {
-			found = true
-			assert.Equal(t, d.Baseline, result.Comparison.RequirementDiffs[0].Baseline)
+		if d.ID != req.ID {
+			continue
 		}
+		layers = append(layers, d.Baseline)
+		assert.Equal(t, folded.ID, d.ID)
+		assert.NotEqual(t, baselineMultiple, d.Baseline,
+			"the batch comparison names the baseline it matched the requirement in")
 	}
-	require.True(t, found)
+	require.NotEmpty(t, layers, "the batch comparison must carry this requirement")
+	assert.Equal(t, []string{"metawrapper", "wrapper", "k8s-node-stig-baseline"}, layers,
+		"one diff per baseline carrying the id, in the order the baselines are paired")
 	events := aeDeriveStream(t, aeLoadFixture(t, "scan-before.json"), aeLoadFixture(t, "scan-after.json"))
 	var newEvent *hdf.HDFRequirementChangeEvent
 	for _, e := range events {

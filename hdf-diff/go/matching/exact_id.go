@@ -18,42 +18,49 @@ func (s *ExactIDStrategy) Name() string {
 	return exactIDStrategyName
 }
 
-// Match matches old requirements against new requirements by exact ID.
-// Duplicate IDs on either side are treated as ambiguous and left unmatched.
+// Match pairs requirements by exact ID. An id carried by several entries names one
+// requirement reported several times, so pairOccurrences pairs those among
+// themselves rather than abandoning them as ambiguous.
 func (s *ExactIDStrategy) Match(oldReqs, newReqs []hdf.EvaluatedRequirement) MatchResult {
 	result := MatchResult{}
 
-	newByID, duplicateNewIDs := buildUniqueIDIndex(newReqs)
-	_, duplicateOldIDs := buildUniqueIDIndex(oldReqs)
+	oldByID := buildIDIndex(oldReqs)
+	newByID := buildIDIndex(newReqs)
 
-	// Track which new reqs have been matched
-	matchedNewIDs := make(map[string]bool)
-
-	// Match old requirements against new by ID (skip duplicate old IDs)
+	// Document order, one id at a time: the result's order must not depend on map
+	// iteration, because the TypeScript half emits the same one.
+	pairedWith := make(map[int]int, len(oldReqs))
+	pairedNew := make(map[int]bool, len(newReqs))
+	seen := make(map[string]bool, len(oldByID))
 	for _, oldReq := range oldReqs {
 		id := oldReq.ID
-		if duplicateOldIDs[id] {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+		if seen[id] {
 			continue
 		}
-
-		if newIdx, ok := newByID[id]; ok {
-			result.Matched = append(result.Matched, MatchPair{
-				OldReq:     oldReq,
-				NewReq:     newReqs[newIdx],
-				Strategy:   exactIDStrategyName,
-				Confidence: 1.0,
-			})
-			matchedNewIDs[id] = true
-		} else {
-			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+		seen[id] = true
+		pairs, _, _ := pairOccurrences(oldByID[id], newByID[id], oldReqs, newReqs)
+		for _, p := range pairs {
+			pairedWith[p[0]] = p[1]
+			pairedNew[p[1]] = true
 		}
 	}
 
-	// Collect unmatched new requirements (including all duplicates)
-	for _, req := range newReqs {
-		id := req.ID
-		if duplicateNewIDs[id] || !matchedNewIDs[id] {
+	for i, oldReq := range oldReqs {
+		newIdx, ok := pairedWith[i]
+		if !ok {
+			result.UnmatchedOld = append(result.UnmatchedOld, oldReq)
+			continue
+		}
+		result.Matched = append(result.Matched, MatchPair{
+			OldReq:     oldReq,
+			NewReq:     newReqs[newIdx],
+			Strategy:   exactIDStrategyName,
+			Confidence: 1.0,
+		})
+	}
+
+	for i, req := range newReqs {
+		if !pairedNew[i] {
 			result.UnmatchedNew = append(result.UnmatchedNew, req)
 		}
 	}

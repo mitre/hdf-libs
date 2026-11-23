@@ -153,33 +153,33 @@ func TestMappedIdStrategy_DuplicateIDs(t *testing.T) {
 				{ID: "V-001-new", Impact: 0.7, Title: strPtr("New A")},
 				{ID: "V-001-new", Impact: 0.5, Title: strPtr("New B")},
 			},
-			wantMatched: 0,
-			wantOldUnm:  1,
-			wantNewUnm:  2,
+			wantMatched: 1,
+			wantOldUnm:  0,
+			wantNewUnm:  1,
 		},
 		{
-			name:    "duplicate old IDs - ambiguous source",
+			name:    "duplicate old IDs - the surplus occurrence is absent",
 			mapping: map[string]string{"V-001-old": "V-001-new"},
 			oldReqs: []hdf.EvaluatedRequirement{
 				{ID: "V-001-old", Impact: 0.7, Title: strPtr("Old A")},
 				{ID: "V-001-old", Impact: 0.5, Title: strPtr("Old B")},
 			},
 			newReqs:     []hdf.EvaluatedRequirement{{ID: "V-001-new", Impact: 0.7}},
-			wantMatched: 0,
-			wantOldUnm:  2,
-			wantNewUnm:  1,
+			wantMatched: 1,
+			wantOldUnm:  1,
+			wantNewUnm:  0,
 		},
 		{
-			name:    "mapped target points to duplicate new ID",
+			name:    "mapped target has several occurrences - one pairs, the rest are new",
 			mapping: map[string]string{"V-001-old": "V-DUP"},
 			oldReqs: []hdf.EvaluatedRequirement{{ID: "V-001-old", Impact: 0.7}},
 			newReqs: []hdf.EvaluatedRequirement{
 				{ID: "V-DUP", Impact: 0.7, Title: strPtr("A")},
 				{ID: "V-DUP", Impact: 0.5, Title: strPtr("B")},
 			},
-			wantMatched: 0,
-			wantOldUnm:  1,
-			wantNewUnm:  2,
+			wantMatched: 1,
+			wantOldUnm:  0,
+			wantNewUnm:  1,
 		},
 	}
 
@@ -238,7 +238,7 @@ func TestMappedIdStrategy_AlreadyMatchedNewID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Coverage: exact_id with triple duplicate old IDs
+// Coverage: exact_id with three occurrences of one id against a single new entry
 // ---------------------------------------------------------------------------
 
 func TestExactIdStrategy_TripleDuplicateOldIDs(t *testing.T) {
@@ -254,8 +254,9 @@ func TestExactIdStrategy_TripleDuplicateOldIDs(t *testing.T) {
 
 	result := s.Match(oldReqs, newReqs)
 
-	// All 3 old are duplicate IDs -> all unmatched
-	assert.Len(t, result.Matched, 0)
-	assert.Len(t, result.UnmatchedOld, 3)
-	assert.Len(t, result.UnmatchedNew, 1)
+	// Superseded: three occurrences against one pair the first and report the
+	// other two absent, rather than abandoning all four entries.
+	assert.Len(t, result.Matched, 1)
+	assert.Len(t, result.UnmatchedOld, 2)
+	assert.Empty(t, result.UnmatchedNew)
 }

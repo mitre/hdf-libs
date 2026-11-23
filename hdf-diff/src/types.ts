@@ -120,7 +120,8 @@ export interface RequirementDiff {
 
   /** The requirement title (from whichever evaluation has it) */
   title?: string;
-  /** Name of the owning baseline; '(multiple)' when the id appears in more than one */
+  /** Name of the baseline the requirement was matched in; '(multiple)' only from the
+   * fold path, whose event key carries no baseline */
   baseline?: string;
   /** Effective status in the old evaluation (undefined if new) */
   oldEffectiveStatus?: string;
