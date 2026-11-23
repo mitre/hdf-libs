@@ -286,3 +286,28 @@ func TestRosterCounts(t *testing.T) {
 		t.Errorf("unsupported rev roster = %d, want 0", RosterSize(6))
 	}
 }
+
+// DISA's CCI list writes an enhancement with a space ("AU-8 (1)"); it is the
+// same control as the crosswalk's "AU-8(1)", and a redirect keeps the input's
+// spacing.
+func TestAtRevision_SpacedEnhancements(t *testing.T) {
+	tests := []struct {
+		in   string
+		from int
+		to   int
+		want []string
+	}{
+		{"AU-8 (1)", 4, 5, []string{"SC-45 (1)"}},
+		{"CA-3 (1)", 4, 5, []string{"SC-7 (25)"}},
+		{"AU-2 (3)", 4, 5, []string{"AU-2"}},
+		{"AU-8 (1) (a)", 4, 5, []string{"SC-45 (1)"}},
+		{"AC-17 (2)", 4, 5, []string{"AC-17 (2)"}},
+		{"MA-4 (4) (b) (2)", 5, 4, []string{"MA-4 (4) (b) (2)"}},
+		{"AU-8(1)", 4, 5, []string{"SC-45(1)"}},
+		// An enhancement the crosswalk does not list follows its base control.
+		{"DI-1 (2)", 4, 5, []string{"PM-22", "SI-18"}},
+	}
+	for _, tt := range tests {
+		require.Equal(t, tt.want, AtRevision([]string{tt.in}, tt.from, tt.to), "%s Rev %d -> %d", tt.in, tt.from, tt.to)
+	}
+}

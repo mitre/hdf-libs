@@ -8,7 +8,7 @@
           "controlType": "operational",
           "descriptions": [
             {
-              "data": "An operating system release is considered \"supported\" if the vendor continues to provide security patches for the product. With an unsupported release, it will not be possible to resolve security issues discovered in the system software. Red Hat offers the Extended Update Support (EUS) ad-on to a Red Hat Enterprise Linux subscription, for a fee, for those customers who wish to standardize on a specific minor release for an extended period. The RHEL 8 minor releases eligible for EUS are 8.1, 8.2, 8.4, 8.6, and 8.8. Each RHEL 8 EUS stream is available for 24 months from the availability of the minor release. RHEL 8.10 will be the final minor release overall. For more details on the Red Hat Enterprise Linux Life Cycle visit https://access.redhat.com/support/policy/updates/errata.",
+              "data": "An operating system release is considered \"supported\" if the vendor continues to provide security patches for the product. With an unsupported release, it will not be possible to resolve security issues discovered in the system software.\n\nRed Hat offers the Extended Update Support (EUS) ad-on to a Red Hat Enterprise Linux subscription, for a fee, for those customers who wish to standardize on a specific minor release for an extended period. The RHEL 8 minor releases eligible for EUS are 8.1, 8.2, 8.4, 8.6, and 8.8. Each RHEL 8 EUS stream is available for 24 months from the availability of the minor release. RHEL 8.10 will be the final minor release overall. For more details on the Red Hat Enterprise Linux Life Cycle  visit https://access.redhat.com/support/policy/updates/errata.",
               "label": "default"
             },
             {
@@ -48,8 +48,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230221",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-010000"
           },
@@ -60,7 +59,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Use of weak or untested encryption algorithms undermines the purposes of using encryption to protect data. The operating system must implement cryptographic modules adhering to the higher standards approved by the Federal Government since this provides assurance they have been tested and validated. RHEL 8 utilizes GRUB 2 as the default bootloader. Note that GRUB 2 command-line parameters are defined in the \"kernelopts\" variable of the /boot/grub2/grubenv file for all kernel boot entries. The command \"fips-mode-setup\" modifies the \"kernelopts\" variable, which in turn updates all kernel boot entries. The fips=1 kernel option needs to be added to the kernel command line during system installation so that key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Users must also ensure the system has plenty of entropy during the installation process by moving the mouse around, or if no mouse is available, ensuring that many keystrokes are typed. The recommended amount of keystrokes is 256 and more. Less than 256 keystrokes may generate a non-unique key. Satisfies: SRG-OS-000033-GPOS-00014, SRG-OS-000125-GPOS-00065, SRG-OS-000396-GPOS-00176, SRG-OS-000423-GPOS-00187, SRG-OS-000478-GPOS-00223",
+              "data": "Use of weak or untested encryption algorithms undermines the purposes of using encryption to protect data. The operating system must implement cryptographic modules adhering to the higher standards approved by the Federal Government since this provides assurance they have been tested and validated.\n\nRHEL 8 utilizes GRUB 2 as the default bootloader. Note that GRUB 2 command-line parameters are defined in the \"kernelopts\" variable of the /boot/grub2/grubenv file for all kernel boot entries.  The command \"fips-mode-setup\" modifies the \"kernelopts\" variable, which in turn updates all kernel boot entries. \n\nThe fips=1 kernel option needs to be added to the kernel command line during system installation so that key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Users must also ensure the system has plenty of entropy during the installation process by moving the mouse around, or if no mouse is available, ensuring that many keystrokes are typed. The recommended amount of keystrokes is 256 and more. Less than 256 keystrokes may generate a non-unique key.\n\nSatisfies: SRG-OS-000033-GPOS-00014, SRG-OS-000125-GPOS-00065, SRG-OS-000396-GPOS-00176, SRG-OS-000423-GPOS-00187, SRG-OS-000478-GPOS-00223",
               "label": "default"
             },
             {
@@ -68,7 +67,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to implement DoD-approved encryption by following the steps below: To enable strict FIPS compliance, the fips=1 kernel option needs to be added to the kernel boot parameters during system installation so key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Enable FIPS mode after installation (not strict FIPS compliant) with the following command: $ sudo fips-mode-setup --enable Reboot the system for the changes to take effect.",
+              "data": "Configure the operating system to implement DoD-approved encryption by following the steps below:\n\nTo enable strict FIPS compliance, the fips=1 kernel option needs to be added to the kernel boot parameters during system installation so key generation is done with FIPS-approved algorithms and continuous monitoring tests in place.\n\nEnable FIPS mode after installation (not strict FIPS compliant) with the following command:\n\n$ sudo fips-mode-setup --enable\n\nReboot the system for the changes to take effect.",
               "label": "fix"
             }
           ],
@@ -100,8 +99,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230223",
             "gtitle": "SRG-OS-000033-GPOS-00014",
             "nist": [
-              "AC-17 (2)",
-              "AC-17 (2).1"
+              "AC-17 (2)"
             ],
             "stig_id": "RHEL-08-010020"
           },
@@ -112,7 +110,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Unapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised. FIPS 140-2 is the current standard for validating that mechanisms used to access cryptographic modules utilize authentication that meets DoD requirements.",
+              "data": "Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.\n\nUnapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised.\n\nFIPS 140-2 is the current standard for validating that mechanisms used to access cryptographic modules utilize authentication that meets DoD requirements.",
               "label": "default"
             },
             {
@@ -120,7 +118,7 @@
               "label": "check"
             },
             {
-              "data": "Configure RHEL 8 to encrypt all stored passwords. Edit/Modify the following line in the \"/etc/login.defs\" file and set \"[ENCRYPT_METHOD]\" to SHA512. ENCRYPT_METHOD SHA512",
+              "data": "Configure RHEL 8 to encrypt all stored passwords. \n\nEdit/Modify the following line in the \"/etc/login.defs\" file and set \"[ENCRYPT_METHOD]\" to SHA512.\n\nENCRYPT_METHOD SHA512",
               "label": "fix"
             }
           ],
@@ -152,8 +150,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230231",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010110"
           },
@@ -164,7 +161,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "The system must use a strong hashing algorithm to store the password. Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.",
+              "data": "The system must use a strong hashing algorithm to store the password.\n\nPasswords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.",
               "label": "default"
             },
             {
@@ -204,8 +201,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230232",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010120"
           },
@@ -216,7 +212,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "The system must use a strong hashing algorithm to store the password. The system must use a sufficient number of hashing rounds to ensure the required level of entropy. Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.",
+              "data": "The system must use a strong hashing algorithm to store the password. The system must use a sufficient number of hashing rounds to ensure the required level of entropy.\n\nPasswords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.",
               "label": "default"
             },
             {
@@ -224,7 +220,7 @@
               "label": "check"
             },
             {
-              "data": "Configure RHEL 8 to encrypt all stored passwords with a strong cryptographic hash. Edit/modify the following line in the \"/etc/pam.d/password-auth\" file and set \"rounds\" to a value no lower than \"5000\": password sufficient pam_unix.so sha512 rounds=5000",
+              "data": "Configure RHEL 8 to encrypt all stored passwords with a strong cryptographic hash.\n\nEdit/modify the following line in the \"/etc/pam.d/password-auth\" file and set \"rounds\" to a value no lower than \"5000\":\n\npassword sufficient pam_unix.so sha512 rounds=5000",
               "label": "fix"
             }
           ],
@@ -256,8 +252,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230233",
             "gtitle": "SRG-OS-000073-GPOS-00041",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "stig_id": "RHEL-08-010130"
           },
@@ -276,7 +271,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the system to require a grub bootloader password for the grub superusers account with the grub2-setpassword command, which creates/overwrites the /boot/efi/EFI/redhat/user.cfg file. Generate an encrypted grub2 password for the grub superusers account with the following command: $ sudo grub2-setpassword Enter password: Confirm password:",
+              "data": "Configure the system to require a grub bootloader password for the grub superusers account with the grub2-setpassword command, which creates/overwrites the /boot/efi/EFI/redhat/user.cfg file.\n\nGenerate an encrypted grub2 password for the grub superusers account with the following command:\n\n$ sudo grub2-setpassword\nEnter password:\nConfirm password:",
               "label": "fix"
             }
           ],
@@ -308,8 +303,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230234",
             "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
-              "AC-3",
-              "AC-3.1"
+              "AC-3"
             ],
             "stig_id": "RHEL-08-010140"
           },
@@ -328,7 +322,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the system to require authentication upon booting into rescue mode by adding the following line to the \"/usr/lib/systemd/system/rescue.service\" file. ExecStart=-/usr/lib/systemd/systemd-sulogin-shell rescue",
+              "data": "Configure the system to require authentication upon booting into rescue mode by adding the following line to the \"/usr/lib/systemd/system/rescue.service\" file.\n\nExecStart=-/usr/lib/systemd/systemd-sulogin-shell rescue",
               "label": "fix"
             }
           ],
@@ -360,8 +354,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230236",
             "gtitle": "SRG-OS-000080-GPOS-00048",
             "nist": [
-              "AC-3",
-              "AC-3.1"
+              "AC-3"
             ],
             "stig_id": "RHEL-08-010151"
           },
@@ -372,7 +365,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Without verification of the security functions, security functions may not operate correctly and the failure may go unnoticed. Security function is defined as the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. Security functionality includes, but is not limited to, establishing system accounts, configuring access authorizations (i.e., permissions, privileges), setting events to be audited, and setting intrusion detection parameters. Policycoreutils contains the policy core utilities that are required for basic operation of an SELinux-enabled system. These utilities include load_policy to load SELinux policies, setfile to label filesystems, newrole to switch roles, and run_init to run /etc/init.d scripts in the proper context.",
+              "data": "Without verification of the security functions, security functions may not operate correctly and the failure may go unnoticed. Security function is defined as the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. Security functionality includes, but is not limited to, establishing system accounts, configuring access authorizations (i.e., permissions, privileges), setting events to be audited, and setting intrusion detection parameters.\n\nPolicycoreutils contains the policy core utilities that are required for basic operation of an SELinux-enabled system. These utilities include load_policy to load SELinux policies, setfile to label filesystems, newrole to switch roles, and run_init to run /etc/init.d scripts in the proper context.",
               "label": "default"
             },
             {
@@ -380,7 +373,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to have the policycoreutils package installed with the following command: $ sudo yum install policycoreutils",
+              "data": "Configure the operating system to have the policycoreutils package installed with the following command:\n\n$ sudo yum install policycoreutils",
               "label": "fix"
             }
           ],
@@ -412,8 +405,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230241",
             "gtitle": "SRG-OS-000134-GPOS-00068",
             "nist": [
-              "SC-3",
-              "SC-3.1 (ii)"
+              "SC-3"
             ],
             "stig_id": "RHEL-08-010171"
           },
@@ -424,7 +416,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Terminating an idle SSH session within a short time period reduces the window of opportunity for unauthorized personnel to take control of a management session enabled on the console or console port that has been left unattended. In addition, quickly terminating an idle SSH session will also free up resources committed by the managed network element. Terminating network connections associated with communications sessions includes, for example, de-allocating associated TCP/IP address/port pairs at the operating system level and de-allocating networking assignments at the application level if multiple application sessions are using a single operating system-level network connection. This does not mean that the operating system terminates all sessions or network access; it only ends the inactive session and releases the resources associated with that session. RHEL 8 utilizes /etc/ssh/sshd_config for configurations of OpenSSH. Within the sshd_config the product of the values of \"ClientAliveInterval\" and \"ClientAliveCountMax\" are used to establish the inactivity threshold. The \"ClientAliveInterval\" is a timeout interval in seconds after which if no data has been received from the client, sshd will send a message through the encrypted channel to request a response from the client. The \"ClientAliveCountMax\" is the number of client alive messages that may be sent without sshd receiving any messages back from the client. If this threshold is met, sshd will disconnect the client. For more information on these settings and others, refer to the sshd_config man pages. Satisfies: SRG-OS-000163-GPOS-00072, SRG-OS-000126-GPOS-00066, SRG-OS-000279-GPOS-00109",
+              "data": "Terminating an idle SSH session within a short time period reduces the window of opportunity for unauthorized personnel to take control of a management session enabled on the console or console port that has been left unattended. In addition, quickly terminating an idle SSH session will also free up resources committed by the managed network element.\n\nTerminating network connections associated with communications sessions includes, for example, de-allocating associated TCP/IP address/port pairs at the operating system level and de-allocating networking assignments at the application level if multiple application sessions are using a single operating system-level network connection. This does not mean that the operating system terminates all sessions or network access; it only ends the inactive session and releases the resources associated with that session.\n\nRHEL 8 utilizes /etc/ssh/sshd_config for configurations of OpenSSH. Within the sshd_config the product of the values of \"ClientAliveInterval\" and \"ClientAliveCountMax\" are used to establish the inactivity threshold. The \"ClientAliveInterval\" is a timeout interval in seconds after which if no data has been received from the client, sshd will send a message through the encrypted channel to request a response from the client. The \"ClientAliveCountMax\" is the number of client alive messages that may be sent without sshd receiving any messages back from the client. If this threshold is met, sshd will disconnect the client. For more information on these settings and others, refer to the sshd_config man pages.\n\nSatisfies: SRG-OS-000163-GPOS-00072, SRG-OS-000126-GPOS-00066, SRG-OS-000279-GPOS-00109",
               "label": "default"
             },
             {
@@ -432,7 +424,7 @@
               "label": "check"
             },
             {
-              "data": "Configure RHEL 8 to automatically terminate all network connections associated with SSH traffic at the end of a session or after 10 minutes of inactivity. Modify or append the following lines in the \"/etc/ssh/sshd_config\" file: ClientAliveCountMax 0 In order for the changes to take effect, the SSH daemon must be restarted. $ sudo systemctl restart sshd.service",
+              "data": "Configure RHEL 8 to automatically terminate all network connections associated with SSH traffic at the end of a session or after 10 minutes of inactivity.\n\nModify or append the following lines in the \"/etc/ssh/sshd_config\" file:\n\nClientAliveCountMax 0\n\nIn order for the changes to take effect, the SSH daemon must be restarted.\n\n$ sudo systemctl restart sshd.service",
               "label": "fix"
             }
           ],
@@ -464,8 +456,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230244",
             "gtitle": "SRG-OS-000163-GPOS-00072",
             "nist": [
-              "SC-10",
-              "SC-10.1 (ii)"
+              "SC-10"
             ],
             "stig_id": "RHEL-08-010200"
           },
@@ -476,7 +467,7 @@
           "controlType": "operational",
           "descriptions": [
             {
-              "data": "The most important characteristic of a random number generator is its randomness, namely its ability to deliver random numbers that are impossible to predict. Entropy in computer security is associated with the unpredictability of a source of randomness. The random source with high entropy tends to achieve a uniform distribution of random values. Random number generators are one of the most important building blocks of cryptosystems. The SSH implementation in RHEL8 uses the OPENSSL library, which does not use high-entropy sources by default. By using the SSH_USE_STRONG_RNG environment variable the OPENSSL random generator is reseeded from /dev/random. This setting is not recommended on computers without the hardware random generator because insufficient entropy causes the connection to be blocked until enough entropy is available.",
+              "data": "The most important characteristic of a random number generator is its randomness, namely its ability to deliver random numbers that are impossible to predict.  Entropy in computer security is associated with the unpredictability of a source of randomness.  The random source with high entropy tends to achieve a uniform distribution of random values.  Random number generators are one of the most important building blocks of cryptosystems.\n\nThe SSH implementation in RHEL8 uses the OPENSSL library, which does not use high-entropy sources by default.  By using the SSH_USE_STRONG_RNG environment variable the OPENSSL random generator is reseeded from /dev/random.  This setting is not recommended on computers without the hardware random generator because insufficient entropy causes the connection to be blocked until enough entropy is available.",
               "label": "default"
             },
             {
@@ -484,7 +475,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system SSH server to use strong entropy. Add or modify the following line in the \"/etc/sysconfig/sshd\" file. SSH_USE_STRONG_RNG=32 The SSH service must be restarted for changes to take effect.",
+              "data": "Configure the operating system SSH server to use strong entropy.\n\nAdd or modify the following line in the \"/etc/sysconfig/sshd\" file.\n\nSSH_USE_STRONG_RNG=32\n\nThe SSH service must be restarted for changes to take effect.",
               "label": "fix"
             }
           ],
@@ -516,8 +507,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230253",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-010292"
           },
@@ -528,7 +518,7 @@
           "controlType": "operational",
           "descriptions": [
             {
-              "data": "Changes to any software components can have significant effects on the overall security of the operating system. This requirement ensures the software has not been tampered with and that it has been provided by a trusted vendor. Accordingly, patches, service packs, device drivers, or operating system components must be signed with a certificate recognized and approved by the organization. Verifying the authenticity of the software prior to installation validates the integrity of the patch or upgrade received from a vendor. This verifies the software has not been tampered with and that it has been provided by a trusted vendor. Self-signed certificates are disallowed by this requirement. The operating system should not have to verify the software again. This requirement does not mandate DoD certificates for this purpose; however, the certificate used to verify the software must be from an approved CA.",
+              "data": "Changes to any software components can have significant effects on the overall security of the operating system. This requirement ensures the software has not been tampered with and that it has been provided by a trusted vendor.\n\nAccordingly, patches, service packs, device drivers, or operating system components must be signed with a certificate recognized and approved by the organization.\n\nVerifying the authenticity of the software prior to installation validates the integrity of the patch or upgrade received from a vendor. This verifies the software has not been tampered with and that it has been provided by a trusted vendor. Self-signed certificates are disallowed by this requirement. The operating system should not have to verify the software again. This requirement does not mandate DoD certificates for this purpose; however, the certificate used to verify the software must be from an approved CA.",
               "label": "default"
             },
             {
@@ -536,7 +526,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to remove all software components after updated versions have been installed. Set the \"localpkg_gpgcheck\" option to \"True\" in the \"/etc/dnf/dnf.conf\" file: localpkg_gpgcheck=True",
+              "data": "Configure the operating system to remove all software components after updated versions have been installed.\n\nSet the \"localpkg_gpgcheck\" option to \"True\" in the \"/etc/dnf/dnf.conf\" file:\n\nlocalpkg_gpgcheck=True",
               "label": "fix"
             }
           ],
@@ -568,7 +558,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230265",
             "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
-              "CM-5 (3)"
+              "CM-14"
             ],
             "stig_id": "RHEL-08-010371"
           },
@@ -579,7 +569,7 @@
           "controlType": "operational",
           "descriptions": [
             {
-              "data": "Changes to any software components can have significant effects on the overall security of the operating system. This requirement ensures the software has not been tampered with and that it has been provided by a trusted vendor. Disabling kexec_load prevents an unsigned kernel image (that could be a windows kernel or modified vulnerable kernel) from being loaded. Kexec can be used subvert the entire secureboot process and should be avoided at all costs especially since it can load unsigned kernel images. The sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored. /etc/sysctl.d/*.conf /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf Based on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
+              "data": "Changes to any software components can have significant effects on the overall security of the operating system. This requirement ensures the software has not been tampered with and that it has been provided by a trusted vendor.\n\nDisabling kexec_load prevents an unsigned kernel image (that could be a windows kernel or modified vulnerable kernel) from being loaded. Kexec can be used subvert the entire secureboot process and should be avoided at all costs especially since it can load unsigned kernel images.\n\nThe sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored.\n/etc/sysctl.d/*.conf\n/run/sysctl.d/*.conf\n/usr/local/lib/sysctl.d/*.conf\n/usr/lib/sysctl.d/*.conf\n/lib/sysctl.d/*.conf\n/etc/sysctl.conf\nBased on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
               "label": "default"
             },
             {
@@ -587,7 +577,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to disable kernel image loading. Add or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory: kernel.kexec_load_disabled = 1 Load settings from all system configuration files with the following command: $ sudo sysctl --system",
+              "data": "Configure the operating system to disable kernel image loading.\n\nAdd or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory:\n\nkernel.kexec_load_disabled = 1\n\nLoad settings from all system configuration files with the following command:\n\n$ sudo sysctl --system",
               "label": "fix"
             }
           ],
@@ -619,7 +609,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230266",
             "gtitle": "SRG-OS-000366-GPOS-00153",
             "nist": [
-              "CM-5 (3)"
+              "CM-14"
             ],
             "stig_id": "RHEL-08-010372"
           },
@@ -630,7 +620,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Preventing unauthorized information transfers mitigates the risk of information, including encrypted representations of information, produced by the actions of prior users/roles (or the actions of processes acting on behalf of prior users/roles) from being available to any current users/roles (or current processes) that obtain access to shared system resources (e.g., registers, main memory, hard disks) after those resources have been released back to information systems. The control of information in shared resources is also commonly referred to as object reuse and residual information protection. This requirement generally applies to the design of an information technology product, but it can also apply to the configuration of particular information system components that are, or use, such products. This can be verified by acceptance/validation processes in DoD or other government agencies. There may be shared resources with configurable protections (e.g., files in storage) that may be assessed on specific information system components. Restricting access to the kernel message buffer limits access to only root. This prevents attackers from gaining additional system information as a non-privileged user. The sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored. /etc/sysctl.d/*.conf /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf Based on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
+              "data": "Preventing unauthorized information transfers mitigates the risk of information, including encrypted representations of information, produced by the actions of prior users/roles (or the actions of processes acting on behalf of prior users/roles) from being available to any current users/roles (or current processes) that obtain access to shared system resources (e.g., registers, main memory, hard disks) after those resources have been released back to information systems. The control of information in shared resources is also commonly referred to as object reuse and residual information protection.\n\nThis requirement generally applies to the design of an information technology product, but it can also apply to the configuration of particular information system components that are, or use, such products. This can be verified by acceptance/validation processes in DoD or other government agencies.\n\nThere may be shared resources with configurable protections (e.g., files in storage) that may be assessed on specific information system components.\n\nRestricting access to the kernel message buffer limits access to only root. This prevents attackers from gaining additional system information as a non-privileged user.\n\nThe sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored.\n/etc/sysctl.d/*.conf\n/run/sysctl.d/*.conf\n/usr/local/lib/sysctl.d/*.conf\n/usr/lib/sysctl.d/*.conf\n/lib/sysctl.d/*.conf\n/etc/sysctl.conf\n\nBased on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
               "label": "default"
             },
             {
@@ -638,7 +628,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to restrict access to the kernel message buffer. Add or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory: kernel.dmesg_restrict = 1 Load settings from all system configuration files with the following command: $ sudo sysctl --system",
+              "data": "Configure the operating system to restrict access to the kernel message buffer.\n\nAdd or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory:\n\nkernel.dmesg_restrict = 1\n\nLoad settings from all system configuration files with the following command:\n\n$ sudo sysctl --system",
               "label": "fix"
             }
           ],
@@ -670,8 +660,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230269",
             "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
-              "SC-4",
-              "SC-4.1"
+              "SC-4"
             ],
             "stig_id": "RHEL-08-010375"
           },
@@ -682,7 +671,7 @@
           "controlType": "technical",
           "descriptions": [
             {
-              "data": "Preventing unauthorized information transfers mitigates the risk of information, including encrypted representations of information, produced by the actions of prior users/roles (or the actions of processes acting on behalf of prior users/roles) from being available to any current users/roles (or current processes) that obtain access to shared system resources (e.g., registers, main memory, hard disks) after those resources have been released back to information systems. The control of information in shared resources is also commonly referred to as object reuse and residual information protection. This requirement generally applies to the design of an information technology product, but it can also apply to the configuration of particular information system components that are, or use, such products. This can be verified by acceptance/validation processes in DoD or other government agencies. There may be shared resources with configurable protections (e.g., files in storage) that may be assessed on specific information system components. Setting the kernel.perf_event_paranoid kernel parameter to \"2\" prevents attackers from gaining additional system information as a non-privileged user. The sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored. /etc/sysctl.d/*.conf /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf Based on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
+              "data": "Preventing unauthorized information transfers mitigates the risk of information, including encrypted representations of information, produced by the actions of prior users/roles (or the actions of processes acting on behalf of prior users/roles) from being available to any current users/roles (or current processes) that obtain access to shared system resources (e.g., registers, main memory, hard disks) after those resources have been released back to information systems. The control of information in shared resources is also commonly referred to as object reuse and residual information protection.\n\nThis requirement generally applies to the design of an information technology product, but it can also apply to the configuration of particular information system components that are, or use, such products. This can be verified by acceptance/validation processes in DoD or other government agencies.\n\nThere may be shared resources with configurable protections (e.g., files in storage) that may be assessed on specific information system components.\n\nSetting the kernel.perf_event_paranoid kernel parameter to \"2\" prevents attackers from gaining additional system information as a non-privileged user.\n\nThe sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored.\n/etc/sysctl.d/*.conf\n/run/sysctl.d/*.conf\n/usr/local/lib/sysctl.d/*.conf\n/usr/lib/sysctl.d/*.conf\n/lib/sysctl.d/*.conf\n/etc/sysctl.conf\n\nBased on the information above, if a configuration file that begins with \"99-\" is created in the \"/etc/sysctl.d/\" directory, it will take precedence over any other configuration file on the system.",
               "label": "default"
             },
             {
@@ -690,7 +679,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to prevent kernel profiling by unprivileged users. Add or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory: kernel.perf_event_paranoid = 2 Load settings from all system configuration files with the following command: $ sudo sysctl --system",
+              "data": "Configure the operating system to prevent kernel profiling by unprivileged users.\n\nAdd or edit the following line in a system configuration file, which begins with \"99-\", in the \"/etc/sysctl.d/\" directory:\n\nkernel.perf_event_paranoid = 2\n\nLoad settings from all system configuration files with the following command:\n\n$ sudo sysctl --system",
               "label": "fix"
             }
           ],
@@ -722,8 +711,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230270",
             "gtitle": "SRG-OS-000138-GPOS-00069",
             "nist": [
-              "SC-4",
-              "SC-4.1"
+              "SC-4"
             ],
             "stig_id": "RHEL-08-010376"
           },
@@ -742,7 +730,7 @@
               "label": "check"
             },
             {
-              "data": "Configure the operating system to remove all software components after updated versions have been installed. Set the \"clean_requirements_on_remove\" option to \"True\" in the \"/etc/dnf/dnf.conf\" file: clean_requirements_on_remove=True",
+              "data": "Configure the operating system to remove all software components after updated versions have been installed.\n\nSet the \"clean_requirements_on_remove\" option to \"True\" in the \"/etc/dnf/dnf.conf\" file:\n\nclean_requirements_on_remove=True",
               "label": "fix"
             }
           ],
@@ -793,7 +781,7 @@
               "label": "check"
             },
             {
-              "data": "Edit the following line in \"etc/ssh/sshd_config\" to prevent logons with empty passwords. PermitEmptyPasswords no The SSH daemon must be restarted for the changes to take effect. To restart the SSH daemon, run the following command: $ sudo systemctl restart sshd.service",
+              "data": "Edit the following line in \"etc/ssh/sshd_config\" to prevent logons with empty passwords.\n\nPermitEmptyPasswords no\n\nThe SSH daemon must be restarted for the changes to take effect. To restart the SSH daemon, run the following command:\n\n$ sudo systemctl restart sshd.service",
               "label": "fix"
             }
           ],
@@ -825,8 +813,7 @@
             "gid": "xccdf_mil.disa.stig_group_V-230380",
             "gtitle": "SRG-OS-000480-GPOS-00227",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "stig_id": "RHEL-08-020330"
           },

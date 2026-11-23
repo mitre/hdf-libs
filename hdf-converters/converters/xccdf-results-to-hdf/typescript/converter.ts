@@ -1,5 +1,5 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTML, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, stripHTMLTags, validateXmlInput, serializeHdf } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -356,7 +356,7 @@ export async function convertXccdfResultsToHdf(input: string, converterVersion =
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
+  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
   // way the Go converter does when it strips tags from the raw element text.
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
 
@@ -398,7 +398,7 @@ export async function convertXccdfBenchmarkToHdf(input: string, converterVersion
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
+  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
   // way the Go converter does when it strips tags from the raw element text.
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
   const xccdfParsed = parsed as XccdfBenchmark;
@@ -434,7 +434,7 @@ export async function convertXccdfToHdf(input: string, converterVersion = '1.0.0
 
   // trimValues would strip each text node before the parser concatenates them, so
   // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
-  // came back as "Thepackage". Keep the whitespace and let stripHTML collapse it, the
+  // came back as "Thepackage". Keep the whitespace, which is the source's prose, the
   // way the Go converter does when it strips tags from the raw element text.
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, { trimValues: false });
 
@@ -517,7 +517,7 @@ async function convertBenchmarkResultsToHdf(
   baseline.title = baselineName;
   baseline.version = extractVersion(benchmark.version);
   baseline.status = 'loaded';
-  baseline.summary = stripHTML(extractText(benchmark.description));
+  baseline.summary = stripHTMLTags(extractText(benchmark.description));
 
   const tool: HDFResults['tool'] = { name: 'XCCDF', format: 'XCCDF' };
   const toolVersion = parseCpeVersion(testResult['test-system']);
@@ -597,7 +597,7 @@ async function convertBenchmarkToBaselineJson(
     title: extractText(benchmark.title),
     version: extractVersion(benchmark.version),
     status: 'loaded',
-    summary: stripHTML(extractText(benchmark.description)),
+    summary: stripHTMLTags(extractText(benchmark.description)),
     integrity,
     requirements,
     groups,
@@ -621,31 +621,8 @@ function ruleToBaselineRequirement(
   const severity = (rule.severity ?? '').toLowerCase();
   const impact = severity ? severityToImpact(severity) : 0.5;
 
-  const descriptions: Description[] = [{
-    label: 'default',
-    data: stripHTML(extractVulnDiscussion(extractText(rule.description))),
-  }];
-
+  const descriptions = buildRuleDescriptions(rule);
   const check = selectCheck(rule.check);
-  const checkDesc = checkDescriptionData(check);
-  if (checkDesc) {
-    descriptions.push({ label: 'check', data: checkDesc });
-  }
-
-  const fixtext = extractFixtext(rule.fixtext);
-  if (fixtext) {
-    descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
-  }
-
-  const rationale = extractText(rule.rationale).trim();
-  if (rationale) {
-    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
-  }
-
-  const warning = extractText(rule.warning).trim();
-  if (warning) {
-    descriptions.push({ label: 'warning', data: stripHTML(warning) });
-  }
 
   const tags = buildCciNistTags(extractCCIs(rule.ident ?? []));
   const nistTags = tags['nist'] as string[];
@@ -799,7 +776,7 @@ async function convertArfCollection(
     baseline.status = 'loaded';
     if (benchmark) {
       baseline.version = extractVersion(benchmark.version);
-      baseline.summary = stripHTML(extractText(benchmark.description));
+      baseline.summary = stripHTMLTags(extractText(benchmark.description));
     }
     baselines.push(baseline);
 
@@ -961,27 +938,8 @@ function ruleResultToRequirement(
   // high-severity rule that simply was not evaluated.
   const impact = severity ? severityToImpact(severity) : 0.5;
 
-  const descriptions: Description[] = [{
-    label: 'default',
-    data: stripHTML(extractVulnDiscussion(extractText(ruleDef?.description))),
-  }];
+  const descriptions = buildRuleDescriptions(ruleDef);
   const check = selectCheck(ruleDef?.check);
-  const checkDesc = checkDescriptionData(check);
-  if (checkDesc) {
-    descriptions.push({ label: 'check', data: checkDesc });
-  }
-  const fixtext = extractFixtext(ruleDef?.fixtext);
-  if (fixtext) {
-    descriptions.push({ label: 'fix', data: stripHTML(fixtext) });
-  }
-  const rationale = extractText(ruleDef?.rationale).trim();
-  if (rationale) {
-    descriptions.push({ label: 'rationale', data: stripHTML(rationale) });
-  }
-  const warning = extractText(ruleDef?.warning).trim();
-  if (warning) {
-    descriptions.push({ label: 'warning', data: stripHTML(warning) });
-  }
 
   const status = STATUS_MAP[xccdfResult] ?? ResultStatus.Error;
 
@@ -1114,7 +1072,7 @@ const NAMED_ENTITIES: Record<string, string> = {
 // The shared XML parser runs with processEntities off as XXE defense-in-depth,
 // so character references arrive undecoded; Go's encoding/xml decodes them for
 // free. STIG fix texts rely on this (an entity-encoded "<partition>" must
-// become a real tag before stripHTML can drop it). Only predefined and numeric
+// become a real tag before stripHTMLTags can drop it). Only predefined and numeric
 // references are decoded; document-defined entities stay untouched.
 function decodeXmlEntities(s: string): string {
   return s.replace(
@@ -1259,15 +1217,43 @@ export function extractCheckContentRef(
 }
 
 /**
+ * The default, check, fix, rationale and warning descriptions of a Rule, with
+ * tags removed and the source's whitespace kept. Mirrors the Go buildDescriptions.
+ */
+function buildRuleDescriptions(rule: RuleElement | undefined): Description[] {
+  const descriptions: Description[] = [{
+    label: 'default',
+    data: stripHTMLTags(extractVulnDiscussion(extractText(rule?.description))),
+  }];
+  const checkDesc = checkDescriptionData(selectCheck(rule?.check));
+  if (checkDesc) {
+    descriptions.push({ label: 'check', data: checkDesc });
+  }
+  const fixtext = extractFixtext(rule?.fixtext);
+  if (fixtext) {
+    descriptions.push({ label: 'fix', data: stripHTMLTags(fixtext) });
+  }
+  const rationale = extractText(rule?.rationale);
+  if (rationale.trim()) {
+    descriptions.push({ label: 'rationale', data: stripHTMLTags(rationale) });
+  }
+  const warning = extractText(rule?.warning);
+  if (warning.trim()) {
+    descriptions.push({ label: 'warning', data: stripHTMLTags(warning) });
+  }
+  return descriptions;
+}
+
+/**
  * Text for the "check" description: the inline <check-content> when the content
  * author embedded it, else the automated check's OVAL/SCE definition name
  * (check-content-ref/@name), which SCAP content carries instead of inline logic.
  * Empty when the check has neither. Mirrors the Go checkDescriptionData.
  */
 function checkDescriptionData(check: CheckElement | undefined): string {
-  const content = extractCheckContent(check).trim();
-  if (content) {
-    return stripHTML(content);
+  const content = extractCheckContent(check);
+  if (content.trim()) {
+    return stripHTMLTags(content);
   }
   return extractCheckContentRef(check).name;
 }

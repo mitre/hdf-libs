@@ -1,4 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import rawCCIData from '../go/datasets/mappings/cci-mappings.json';
+import { setCurrentNistRevision, resetNistRevision } from '../src/nist/index.js';
 import {
   getCCIDescription,
   getCCINistMappings,
@@ -38,7 +40,7 @@ describe('CCI Mapping Functions', () => {
       expect(mappings).toBeDefined();
       expect(Array.isArray(mappings)).toBe(true);
       expect(mappings!.length).toBeGreaterThan(0);
-      expect(mappings).toContain('AC-1 a');
+      expect(mappings).toEqual(['AC-1 a 1']);
     });
 
     it('should return undefined for invalid CCI ID', () => {
@@ -233,5 +235,59 @@ describe('CCI Mapping Functions', () => {
       const mappings2 = getCCINistMappings('CCI-000001');
       expect(mappings1).toEqual(mappings2);
     });
+  });
+});
+
+// An 800-53 control identifier as DISA's CCI list writes it. The Go twin
+// (TestCCIToNISTReturnsControlIdentifiersOnly) and the generator carry the same
+// pattern.
+const CONTROL_IDENTIFIER = /^[A-Z]{2}-\d+(?: \(\d+\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$/;
+
+describe('CCI dataset', () => {
+  const table = rawCCIData as Record<string, { def: string; nist: Record<string, string[]> }>;
+
+  it('carries DISA\'s full list', () => {
+    expect(Object.keys(table).length).toBeGreaterThan(5000);
+  });
+
+  it('holds only 800-53 control identifiers, Rev 4 and Rev 5, without duplicates', () => {
+    for (const [id, item] of Object.entries(table)) {
+      expect(Object.keys(item).sort(), id).toEqual(['def', 'nist']);
+      for (const [rev, refs] of Object.entries(item.nist)) {
+        expect(['4', '5'], `${id} revision key`).toContain(rev);
+        expect(refs.length, `${id} Rev ${rev}`).toBeGreaterThan(0);
+        expect(new Set(refs).size, `${id} Rev ${rev} duplicates`).toBe(refs.length);
+        for (const ref of refs) expect(ref, `${id} Rev ${rev}`).toMatch(CONTROL_IDENTIFIER);
+      }
+    }
+  });
+});
+
+// Expected values are DISA's U_CCI_List.xml (version 2025-01-23) entries, or
+// NIST's crosswalk successor where DISA gives no reference. Same cases as the Go
+// TestGetCCINistMappingsForRevision_FromDISA.
+describe('getCCINistMappings at a revision', () => {
+  afterEach(() => resetNistRevision());
+
+  it.each([
+    ['CCI-000054', 5, ['AC-10']],
+    ['CCI-000054', 4, ['AC-10']],
+    ['CCI-001133', 5, ['SC-10']],
+    ['CCI-004192', 5, ['MA-4 (4) (b) (2)']],
+    ['CCI-004192', 4, ['MA-4 (4) (b) (2)']],
+    ['CCI-002153', 5, ['AC-3 (3)', 'AC-3 (15) (a)']],
+    ['CCI-000262', 5, ['SC-7 (25)']],
+    ['CCI-000127', 5, ['AU-2']],
+    ['CCI-000262', 4, ['CA-3 (1)']],
+    ['CCI-003658', 5, ['AC-3 (15) (a)']],
+    ['CCI-000504', 4, ['CP-4 (4)']],
+  ] as const)('%s at Rev %d', (cci, rev, want) => {
+    expect(getCCINistMappings(cci, rev)).toEqual(want);
+  });
+
+  it('defaults to the module-global revision', () => {
+    expect(getCCINistMappings('CCI-000262')).toEqual(['SC-7 (25)']);
+    setCurrentNistRevision(4);
+    expect(getCCINistMappings('CCI-000262')).toEqual(['CA-3 (1)']);
   });
 });
