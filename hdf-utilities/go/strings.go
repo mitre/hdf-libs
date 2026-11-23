@@ -21,6 +21,36 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(whitespaceRe.ReplaceAllString(stripped, " "))
 }
 
+// StripHTMLTags removes each <...> span and keeps every other character, so
+// prose keeps its line breaks, indentation and edge whitespace. A <br> becomes
+// a line break unless the source already breaks the line beside it, across
+// spaces or tabs only. Parity: stripHtmlTags (TypeScript).
+func StripHTMLTags(html string) string {
+	var b strings.Builder
+	last := 0
+	for _, m := range htmlTagRe.FindAllStringIndex(html, -1) {
+		b.WriteString(html[last:m[0]])
+		if brTagRe.MatchString(html[m[0]:m[1]]) && !lineEndsBefore(html[:m[0]]) && !lineEndsRe.MatchString(html[m[1]:]) {
+			b.WriteByte('\n')
+		}
+		last = m[1]
+	}
+	b.WriteString(html[last:])
+	return b.String()
+}
+
+// lineEndsBefore reports whether s ends in a line break followed by nothing
+// but spaces or tabs.
+func lineEndsBefore(s string) bool {
+	trimmed := strings.TrimRight(s, " \t")
+	return strings.HasSuffix(trimmed, "\n") || strings.HasSuffix(trimmed, "\r")
+}
+
+var (
+	brTagRe    = regexp.MustCompile(`^<(?:[A-Za-z][\w.-]*:)?[Bb][Rr]\b`) // ASCII only, as the TS twin; (?i) would fold Unicode
+	lineEndsRe = regexp.MustCompile(`^[ \t]*(?:\r?\n|\r)`)
+)
+
 // ASCIILower lowercases A-Z and nothing else. strings.ToLower and strings.EqualFold
 // apply Unicode tables that JavaScript's toLowerCase does not share, so this is the
 // one lowering both languages agree on. Parity: asciiLower (TypeScript).

@@ -26,6 +26,7 @@ func newGenerateInSpecProfileCmd() *cobra.Command {
 		profileVer    string
 		inspecVersion string
 		sourceType    string
+		idType        string
 	)
 
 	cmd := &cobra.Command{
@@ -40,6 +41,11 @@ Creates:
 
 By default, each requirement becomes its own .rb file.
 Use --single-file to put all controls in controls/controls.rb.
+
+Controls are keyed on the requirement's rule id by default. --id-type group
+keys them on the STIG group id (V-215812) and --id-type version on the STIG
+id (CISC-ND-000010), for both the control id and the filename. The run fails,
+naming the requirements, when one lacks the chosen identifier or two share it.
 
 Input format is auto-detected from file content: XML files are treated
 as XCCDF benchmarks, JSON files as HDF Baselines. Use --source-type
@@ -56,12 +62,22 @@ to override auto-detection.`,
   # All controls in a single file
   hdf generate inspec-profile baseline.json my-profile/ --single-file
 
+  # Key controls on the STIG group id (V-...) instead of the rule id
+  hdf generate inspec-profile benchmark.xml my-profile/ --id-type group
+
   # Override profile metadata
   hdf generate inspec-profile baseline.json my-profile/ --maintainer "MITRE SAF" --license Apache-2.0`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			inputPath := args[0]
 			outputDir := args[1]
+
+			switch idType {
+			case "rule", "group", "version":
+			default:
+				return &exitCodeError{code: exitUsage, report: true,
+					message: fmt.Sprintf("unknown --id-type %q; use rule, group or version", idType)}
+			}
 
 			data, err := readInputFile(inputPath)
 			if err != nil {
@@ -101,6 +117,7 @@ to override auto-detection.`,
 			// Build generator options
 			opts := &generators.GeneratorOptions{
 				SingleFile: singleFile,
+				IDType:     idType,
 			}
 			if inspecVersion != "" {
 				opts.InSpecVersion = inspecVersion
@@ -115,7 +132,10 @@ to override auto-detection.`,
 			}
 
 			// Generate profile
-			profile := generators.GenerateInSpecProfile(baseline, opts)
+			profile, err := generators.GenerateInSpecProfile(baseline, opts)
+			if err != nil {
+				return err
+			}
 
 			// Write output
 			return writeInSpecProfile(profile, outputDir)
@@ -123,11 +143,12 @@ to override auto-detection.`,
 	}
 
 	cmd.Flags().BoolVar(&singleFile, "single-file", false, "Put all controls in a single controls/controls.rb")
+	cmd.Flags().StringVar(&idType, "id-type", "rule", "Identifier each control is keyed on: rule (the requirement id), group (tags.gid, e.g. V-215812) or version (tags.stig_id, e.g. CISC-ND-000010)")
 	cmd.Flags().StringVar(&maintainer, "maintainer", "", "Override maintainer in inspec.yml")
 	cmd.Flags().StringVar(&copyright, "copyright", "", "Override copyright in inspec.yml")
 	cmd.Flags().StringVar(&license, "license", "", "Override license in inspec.yml")
 	cmd.Flags().StringVar(&profileVer, "version", "", "Override version in inspec.yml")
-	cmd.Flags().StringVar(&inspecVersion, "inspec-version", "", "InSpec version constraint (default: >=6.0)")
+	cmd.Flags().StringVar(&inspecVersion, "inspec-version", "", "InSpec version constraint (default: >= 7.0)")
 	cmd.Flags().StringVarP(&sourceType, "source-type", "s", "", "Input format: \"baseline\" (JSON) or \"xccdf\" (XML). Auto-detected if omitted.")
 
 	return cmd

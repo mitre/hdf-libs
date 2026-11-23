@@ -42,6 +42,11 @@ type ConverterFingerprint struct {
 	Direction   Direction
 	InputFamily InputFamily
 	OutputType  OutputType
+	// Source names the convert-registry source this fingerprint resolves to
+	// when the ID rule in SourceNameFor would pick the wrong converter: the
+	// XCCDF/ARF fingerprint matches benchmarks, results and ARF alike, and only
+	// the "xccdf" converter reads the whole document to tell them apart.
+	Source string
 	// Fingerprint returns a confidence score 0.0-1.0 for the given input.
 	// JSON input is passed as map[string]any or []any.
 	// XML/text input is passed as string.

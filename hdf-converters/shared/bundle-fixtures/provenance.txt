@@ -1,0 +1,37 @@
+# Source-preserving bundle cases — provenance
+Recorded 2026-11-07.
+
+## cases.json
+Authored contract mutation descriptors, not captured scanner output and not HDF
+input documents. Both language suites apply them to bundles produced from the
+existing hdf-to-ecs/fixtures/input/override.json schema-confirmed fixture; that
+fixture's provenance remains in its owning converter. Edits exercise version,
+identity, pointer, record and artifact failure handling. Deliberately invalid
+variants are rejection cases, never presented as schema-valid assessments.
+
+## Tool and version
+No producer version is declared by these mutation descriptors.
+
+## Schema
+The base HDF fixture is checked against the repository's hdf-results schema.
+The emitted manifest and envelope are checked against export-bundle.schema.json;
+OCSF output uses the existing pinned schemas under hdf-to-ocsf/schemas.
+
+## Schema-confirmed in-test boundary variants
+The shared Go/TS tests derive empty assessments by dropping whole baselines and
+duplicate-ID assessments by copying complete requirement/baseline objects; both
+validate with the HDF results validator before export. TypeScript's executable
+Go-parity test adds a requirement tags.future object with numeric-looking keys,
+an own __proto__ member, null/empty values, valid supplementary/replacement
+characters and literal escape text, then substitutes exact numeric source tokens
+9007199254740993, 1.0 and -0. It validates the resulting HDF shape before export.
+Numeric consistency tests use 1.0 in a schema-open tag (TS) and 0.70 impact (Go),
+validate first, then prove that changing only numeric spelling fails readback.
+These are authored boundary variants, not real scanner captures.
+
+The large-string regression adds a 10 MiB plain or escaped string beneath the
+baseline extensions.passthrough carrier and validates the HDF shape before export.
+It exercises the documented size boundary, not captured scanner prose. Its
+initial failing run demonstrated a tokenizer stack overflow. After replacing the
+regex with jsonc-parser's scanner, both variants pass exact-byte export and
+verified readback. These are schema-confirmed boundary cases, not real captures.

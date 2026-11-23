@@ -14,6 +14,7 @@ func TestXccdfFingerprint(t *testing.T) {
 		Direction:   registry.DirectionIngest,
 		InputFamily: registry.FamilyXML,
 		OutputType:  registry.OutputResults,
+		Source:      "xccdf",
 		Positive: []fptest.DetectionCase{
 			{
 				Name: "detects Benchmark root at confidence 1.0",

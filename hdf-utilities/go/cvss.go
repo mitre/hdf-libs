@@ -224,120 +224,104 @@ type CvssScore struct {
 	TemporalScore float64
 }
 
-// CVSS 3.1 metric weights (FIRST v3.1 specification §7). Privileges Required is
-// scope-dependent, hence two tables.
+// CVSS 3.x metric weights. CVSS 3.0 (specification §8.4) and 3.1 (§7.4) use
+// the same values; Privileges Required is scope-dependent, hence two tables.
 var (
-	cvss31AV          = map[string]float64{"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
-	cvss31AC          = map[string]float64{"L": 0.77, "H": 0.44}
-	cvss31UI          = map[string]float64{"N": 0.85, "R": 0.62}
-	cvss31CIA         = map[string]float64{"N": 0.0, "L": 0.22, "H": 0.56}
-	cvss31PRUnchanged = map[string]float64{"N": 0.85, "L": 0.62, "H": 0.27}
-	cvss31PRChanged   = map[string]float64{"N": 0.85, "L": 0.68, "H": 0.5}
-	cvss31E           = map[string]float64{"X": 1.0, "H": 1.0, "F": 0.97, "P": 0.94, "U": 0.91}
-	cvss31RL          = map[string]float64{"X": 1.0, "U": 1.0, "W": 0.97, "T": 0.96, "O": 0.95}
-	cvss31RC          = map[string]float64{"X": 1.0, "C": 1.0, "R": 0.96, "U": 0.92}
+	cvss3xAV          = map[string]float64{"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
+	cvss3xAC          = map[string]float64{"L": 0.77, "H": 0.44}
+	cvss3xUI          = map[string]float64{"N": 0.85, "R": 0.62}
+	cvss3xCIA         = map[string]float64{"N": 0.0, "L": 0.22, "H": 0.56}
+	cvss3xPRUnchanged = map[string]float64{"N": 0.85, "L": 0.62, "H": 0.27}
+	cvss3xPRChanged   = map[string]float64{"N": 0.85, "L": 0.68, "H": 0.5}
+	cvss3xE           = map[string]float64{"X": 1.0, "H": 1.0, "F": 0.97, "P": 0.94, "U": 0.91}
+	cvss3xRL          = map[string]float64{"X": 1.0, "U": 1.0, "W": 0.97, "T": 0.96, "O": 0.95}
+	cvss3xRC          = map[string]float64{"X": 1.0, "C": 1.0, "R": 0.96, "U": 0.92}
 )
 
-// ComputeCvssScore computes the CVSS 3.1 Base and Temporal (Threat) scores for a
-// vector string. Only CVSS 3.1 is supported here — CVSS 4.0's MacroVector engine
-// lives separately — so any other version returns an error rather than a wrong
-// number. The Temporal score equals the Base score when no temporal metrics
-// (E/RL/RC) are present (all default to X = 1.0), per the spec.
+// CVSS 2.0 metric weights (FIRST CVSS v2 guide §3.2.1 and §3.2.2). ND (not
+// defined) leaves a temporal score unchanged.
+var (
+	cvss20AV  = map[string]float64{"L": 0.395, "A": 0.646, "N": 1.0}
+	cvss20AC  = map[string]float64{"H": 0.35, "M": 0.61, "L": 0.71}
+	cvss20Au  = map[string]float64{"M": 0.45, "S": 0.56, "N": 0.704}
+	cvss20CIA = map[string]float64{"N": 0.0, "P": 0.275, "C": 0.660}
+	cvss20E   = map[string]float64{"U": 0.85, "POC": 0.9, "F": 0.95, "H": 1.0, "ND": 1.0}
+	cvss20RL  = map[string]float64{"OF": 0.87, "TF": 0.90, "W": 0.95, "U": 1.0, "ND": 1.0}
+	cvss20RC  = map[string]float64{"UC": 0.90, "UR": 0.95, "C": 1.0, "ND": 1.0}
+)
+
+// ComputeCvssScore is the scoring entry point for every CVSS version: it reads
+// the version the vector declares and scores it by that version's rules, the
+// equations of 2.0, 3.0 and 3.1 or the MacroVector engine of 4.0
+// (ComputeCvss40Score), and records that version, so a caller never chooses an
+// engine and checks CvssScore.Version when it supports only some versions.
+// TemporalScore is the Temporal score (2.0, 3.x) or the Threat score (4.0) and
+// equals BaseScore when the vector carries no such metric. A version CVSS does
+// not define, a missing required metric or an out-of-enum value returns an
+// error rather than a guessed number.
 func ComputeCvssScore(vector string) (CvssScore, error) {
+	if err := cvssVectorStructureError(vector); err != nil {
+		return CvssScore{}, err
+	}
 	version, m := ParseCvssVector(vector)
-	if version != "3.1" {
-		return CvssScore{}, fmt.Errorf("cvss: score compute supports only CVSS 3.1, got %q", version)
-	}
-	for _, k := range []string{"AV", "AC", "PR", "UI", "S", "C", "I", "A"} {
-		if _, ok := m[k]; !ok {
-			return CvssScore{}, fmt.Errorf("cvss: missing required 3.1 base metric %q", k)
-		}
-	}
-	scopeChanged := m["S"] == "C"
-	if m["S"] != "C" && m["S"] != "U" {
-		return CvssScore{}, fmt.Errorf("cvss: invalid 3.1 Scope value %q", m["S"])
-	}
-
-	prTable := cvss31PRUnchanged
-	if scopeChanged {
-		prTable = cvss31PRChanged
-	}
-	lookup := func(table map[string]float64, key string) (float64, error) {
-		v, ok := table[m[key]]
-		if !ok {
-			return 0, fmt.Errorf("cvss: invalid 3.1 metric value %s:%q", key, m[key])
-		}
-		return v, nil
-	}
-	av, err := lookup(cvss31AV, "AV")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	ac, err := lookup(cvss31AC, "AC")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	ui, err := lookup(cvss31UI, "UI")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	pr, err := lookup(prTable, "PR")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	c, err := lookup(cvss31CIA, "C")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	i, err := lookup(cvss31CIA, "I")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	a, err := lookup(cvss31CIA, "A")
-	if err != nil {
-		return CvssScore{}, err
-	}
-
-	iss := 1 - (1-c)*(1-i)*(1-a)
-	var impact float64
-	if scopeChanged {
-		impact = 7.52*(iss-0.029) - 3.25*math.Pow(iss-0.02, 15)
-	} else {
-		impact = 6.42 * iss
-	}
-	exploitability := 8.22 * av * ac * pr * ui
-
-	var base float64
-	switch {
-	case impact <= 0:
-		base = 0.0
-	case scopeChanged:
-		base = roundUp31(math.Min(1.08*(impact+exploitability), 10))
+	switch version {
+	case "4.0":
+		return ComputeCvss40Score(vector)
+	case "3.0", "3.1":
+		return cvss3xScore(m, version)
+	case "2.0":
+		return cvss20Score(m)
 	default:
-		base = roundUp31(math.Min(impact+exploitability, 10))
+		return CvssScore{}, fmt.Errorf("cvss: score compute supports CVSS 2.0, 3.0, 3.1 and 4.0, got %q", version)
 	}
-
-	e, err := cvss31TemporalWeight(cvss31E, m, "E")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	rl, err := cvss31TemporalWeight(cvss31RL, m, "RL")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	rc, err := cvss31TemporalWeight(cvss31RC, m, "RC")
-	if err != nil {
-		return CvssScore{}, err
-	}
-	temporal := roundUp31(base * e * rl * rc)
-
-	return CvssScore{Version: "3.1", BaseScore: base, TemporalScore: temporal}, nil
 }
 
-// cvss31TemporalWeight returns the weight for a present temporal metric, 1.0 when
-// absent (defaults to X), and errors on a present-but-invalid value (no silent
+// cvssVectorStructureError refuses a vector that scoring would otherwise have
+// to guess at: ParseCvssVector skips a segment that is not NAME:VALUE and keeps
+// the last of a repeated metric, which is right for reading but would turn an
+// empty value into "not defined" or pick one of two conflicting values.
+func cvssVectorStructureError(vector string) error {
+	seen := map[string]bool{}
+	first := true
+	for _, seg := range strings.Split(vector, "/") {
+		if seg == "" {
+			continue
+		}
+		if first && strings.HasPrefix(seg, "CVSS:") {
+			first = false
+			continue
+		}
+		first = false
+		colon := strings.Index(seg, ":")
+		if colon <= 0 || colon == len(seg)-1 {
+			return fmt.Errorf("cvss: malformed metric %q in vector", seg)
+		}
+		name := seg[:colon]
+		if seen[name] {
+			return fmt.Errorf("cvss: metric %q appears more than once", name)
+		}
+		seen[name] = true
+	}
+	return nil
+}
+
+// cvssWeight returns the weight of a required metric, or an error naming the
+// metric when it is absent or out of enum.
+func cvssWeight(table map[string]float64, m map[string]string, key, version string) (float64, error) {
+	v, present := m[key]
+	if !present {
+		return 0, fmt.Errorf("cvss: missing required %s base metric %q", version, key)
+	}
+	if w, ok := table[v]; ok {
+		return w, nil
+	}
+	return 0, fmt.Errorf("cvss: invalid %s metric value %s:%q", version, key, v)
+}
+
+// cvssTemporalWeight returns the weight for a present temporal metric, 1.0 when
+// absent (not defined), and errors on a present-but-invalid value (no silent
 // fabrication).
-func cvss31TemporalWeight(table map[string]float64, m map[string]string, key string) (float64, error) {
+func cvssTemporalWeight(table map[string]float64, m map[string]string, key, version string) (float64, error) {
 	v, present := m[key]
 	if !present {
 		return 1.0, nil
@@ -345,13 +329,131 @@ func cvss31TemporalWeight(table map[string]float64, m map[string]string, key str
 	if w, ok := table[v]; ok {
 		return w, nil
 	}
-	return 0, fmt.Errorf("cvss: invalid 3.1 %s value %q", key, v)
+	return 0, fmt.Errorf("cvss: invalid %s %s value %q", version, key, v)
 }
 
-// roundUp31 implements the CVSS 3.1 Roundup (spec §7.4): the smallest number, to
-// one decimal place, that is >= the input — via integer math to avoid the
-// floating-point edge cases the 3.0 rounding suffered.
-func roundUp31(x float64) float64 {
+// cvss3xScore scores a CVSS 3.0 or 3.1 vector. The two versions share every
+// Base and Temporal equation, every weight and the definition of Round up; they
+// differ only in the Environmental equations, which are not computed here.
+func cvss3xScore(m map[string]string, version string) (CvssScore, error) {
+	if _, ok := m["S"]; !ok {
+		return CvssScore{}, fmt.Errorf("cvss: missing required %s base metric %q", version, "S")
+	}
+	if m["S"] != "C" && m["S"] != "U" {
+		return CvssScore{}, fmt.Errorf("cvss: invalid %s Scope value %q", version, m["S"])
+	}
+	scopeChanged := m["S"] == "C"
+	prTable := cvss3xPRUnchanged
+	if scopeChanged {
+		prTable = cvss3xPRChanged
+	}
+
+	weights := map[string]float64{}
+	for _, metric := range []struct {
+		key   string
+		table map[string]float64
+	}{
+		{"AV", cvss3xAV}, {"AC", cvss3xAC}, {"PR", prTable}, {"UI", cvss3xUI},
+		{"C", cvss3xCIA}, {"I", cvss3xCIA}, {"A", cvss3xCIA},
+	} {
+		w, err := cvssWeight(metric.table, m, metric.key, version)
+		if err != nil {
+			return CvssScore{}, err
+		}
+		weights[metric.key] = w
+	}
+
+	iss := 1 - (1-weights["C"])*(1-weights["I"])*(1-weights["A"])
+	var impact float64
+	if scopeChanged {
+		impact = 7.52*(iss-0.029) - 3.25*math.Pow(iss-0.02, 15)
+	} else {
+		impact = 6.42 * iss
+	}
+	exploitability := 8.22 * weights["AV"] * weights["AC"] * weights["PR"] * weights["UI"]
+
+	var base float64
+	switch {
+	case impact <= 0:
+		base = 0.0
+	case scopeChanged:
+		base = roundUp3x(math.Min(1.08*(impact+exploitability), 10))
+	default:
+		base = roundUp3x(math.Min(impact+exploitability, 10))
+	}
+
+	temporalProduct := base
+	for _, metric := range []struct {
+		key   string
+		table map[string]float64
+	}{{"E", cvss3xE}, {"RL", cvss3xRL}, {"RC", cvss3xRC}} {
+		w, err := cvssTemporalWeight(metric.table, m, metric.key, version)
+		if err != nil {
+			return CvssScore{}, err
+		}
+		temporalProduct *= w
+	}
+
+	return CvssScore{Version: version, BaseScore: base, TemporalScore: roundUp3x(temporalProduct)}, nil
+}
+
+// cvss20Score scores a CVSS 2.0 vector with the base equation (formula version
+// 2.10) and the temporal equation of the FIRST CVSS v2 guide §3.2.
+func cvss20Score(m map[string]string) (CvssScore, error) {
+	const version = "2.0"
+	weights := map[string]float64{}
+	for _, metric := range []struct {
+		key   string
+		table map[string]float64
+	}{
+		{"AV", cvss20AV}, {"AC", cvss20AC}, {"Au", cvss20Au},
+		{"C", cvss20CIA}, {"I", cvss20CIA}, {"A", cvss20CIA},
+	} {
+		w, err := cvssWeight(metric.table, m, metric.key, version)
+		if err != nil {
+			return CvssScore{}, err
+		}
+		weights[metric.key] = w
+	}
+
+	impact := 10.41 * (1 - (1-weights["C"])*(1-weights["I"])*(1-weights["A"]))
+	exploitability := 20 * weights["AV"] * weights["AC"] * weights["Au"]
+	// f(Impact) is 0 when Impact is 0, which zeroes the score; returning 0
+	// directly keeps a negative bracket from producing -0.
+	base := 0.0
+	if impact != 0 {
+		base = roundTo1Decimal20(((0.6 * impact) + (0.4 * exploitability) - 1.5) * 1.176)
+	}
+
+	temporalProduct := base
+	for _, metric := range []struct {
+		key   string
+		table map[string]float64
+	}{{"E", cvss20E}, {"RL", cvss20RL}, {"RC", cvss20RC}} {
+		w, err := cvssTemporalWeight(metric.table, m, metric.key, version)
+		if err != nil {
+			return CvssScore{}, err
+		}
+		temporalProduct *= w
+	}
+
+	return CvssScore{Version: version, BaseScore: base, TemporalScore: roundTo1Decimal20(temporalProduct)}, nil
+}
+
+// roundTo1Decimal20 is the CVSS 2.0 round_to_1_decimal. The guide does not
+// define it; rounding half away from zero reproduces the base scores NVD
+// publishes for every 2.0 vector in testdata/cvss20-vectors.json.
+func roundTo1Decimal20(x float64) float64 {
+	return math.Round(x*10) / 10
+}
+
+// roundUp3x is the CVSS 3.x Round up, defined in the same words by the 3.0
+// specification (§8.1, note 4) and 3.1 (§7): the smallest number, to one
+// decimal place, equal to or higher than its input. It works on the input
+// scaled by 100,000 as 3.1 Appendix A advises, because ceil(x × 10) / 10, the
+// form FIRST's v3.0 calculator uses, rounds floating-point error up (10 × 0.92
+// is 9.200000000000001 and would become 9.3, not 9.2).
+func roundUp3x(x float64) float64 {
 	intInput := int(math.Round(x * 100000))
 	if intInput%10000 == 0 {
 		return float64(intInput) / 100000.0
@@ -672,13 +774,17 @@ func anyNegative(vals ...float64) bool {
 	return false
 }
 
-// ComputeCvss40Score computes the CVSS 4.0 score for a vector string, splitting
+// ComputeCvss40Score is the CVSS 4.0 arithmetic behind ComputeCvssScore, which
+// callers should use. It computes the CVSS 4.0 score for a vector string, splitting
 // it into a Base score (BaseScore, computed with Exploit Maturity stripped to its
 // worst-case default E:A) and a Threat score (TemporalScore, computed with the E
 // value present in the vector). For a base-only vector the two are equal. Only
 // CVSS 4.0 vectors are accepted; any other version, a missing required base
 // metric, or an out-of-enum value returns an error (never a fabricated number).
 func ComputeCvss40Score(vector string) (CvssScore, error) {
+	if err := cvssVectorStructureError(vector); err != nil {
+		return CvssScore{}, err
+	}
 	version, _ := ParseCvssVector(vector)
 	if version != "4.0" {
 		return CvssScore{}, fmt.Errorf("cvss: 4.0 score compute supports only CVSS 4.0, got %q", version)
@@ -704,4 +810,80 @@ func cvss40StripExploitMaturity(vector string) string {
 		out = append(out, s)
 	}
 	return strings.Join(out, "/")
+}
+
+// CvssMetrics is the exposure view of a CVSS vector: the four base metrics in
+// one vocabulary, the FIRST CVSS 3.x JSON schema names, whatever the version.
+// A field is "unknown" when the version has no such metric or the value is
+// absent or not one of the version's values. BaseScore is set when the vector
+// scores through ComputeCvssScore. ParseCvssVector keeps the exact values.
+type CvssMetrics struct {
+	Version            string
+	AttackVector       string
+	AttackComplexity   string
+	PrivilegesRequired string
+	UserInteraction    string
+	BaseScore          *float64
+}
+
+// cvssNormalizedField is one field of CvssMetrics for one CVSS version: the
+// vector metric it reads and the 3.x name of each of that metric's values.
+type cvssNormalizedField struct {
+	metric string
+	names  map[string]string
+}
+
+// cvssNormalizedFields maps each version's metrics onto the 3.x names, only
+// where the 3.x name has the same meaning; a field a version lacks is absent.
+// 4.0 renamed ADJACENT_NETWORK to ADJACENT (same definition) and split user
+// interaction into PASSIVE and ACTIVE, both REQUIRED in 3.x terms; its Attack
+// Requirements metric has no 3.x counterpart and is not read. 2.0 has no user
+// interaction metric, and its Access Complexity MEDIUM has no 3.x equivalent.
+// 2.0 Authentication counts logins rather than naming a privilege level, so
+// NONE is NONE and SINGLE or MULTIPLE, an account of some kind, is LOW: a
+// library convention, not a FIRST rule.
+var cvssNormalizedFields = func() map[string][4]*cvssNormalizedField {
+	av3 := map[string]string{"N": "NETWORK", "A": "ADJACENT_NETWORK", "L": "LOCAL", "P": "PHYSICAL"}
+	acLH := map[string]string{"L": "LOW", "H": "HIGH"}
+	pr := map[string]string{"N": "NONE", "L": "LOW", "H": "HIGH"}
+	v3 := [4]*cvssNormalizedField{
+		{"AV", av3}, {"AC", acLH}, {"PR", pr},
+		{"UI", map[string]string{"N": "NONE", "R": "REQUIRED"}},
+	}
+	return map[string][4]*cvssNormalizedField{
+		"2.0": {
+			{"AV", map[string]string{"N": "NETWORK", "A": "ADJACENT_NETWORK", "L": "LOCAL"}},
+			{"AC", map[string]string{"L": "LOW", "M": "MEDIUM", "H": "HIGH"}},
+			{"Au", map[string]string{"N": "NONE", "S": "LOW", "M": "LOW"}},
+			nil,
+		},
+		"3.0": v3,
+		"3.1": v3,
+		"4.0": {
+			{"AV", av3}, {"AC", acLH}, {"PR", pr},
+			{"UI", map[string]string{"N": "NONE", "P": "REQUIRED", "A": "REQUIRED"}},
+		},
+	}
+}()
+
+// NormalizeCvssMetrics returns the exposure view of a vector of any CVSS
+// version (see CvssMetrics). It reads the vector through ParseCvssVector and
+// scores it through ComputeCvssScore, never panics, and returns "unknown" for
+// every field of malformed input or a version CVSS does not define.
+func NormalizeCvssMetrics(vector string) CvssMetrics {
+	version, metrics := ParseCvssVector(vector)
+	out := CvssMetrics{Version: version}
+	fields := cvssNormalizedFields[version]
+	for i, dst := range []*string{&out.AttackVector, &out.AttackComplexity, &out.PrivilegesRequired, &out.UserInteraction} {
+		*dst = "unknown"
+		if f := fields[i]; f != nil {
+			if name, ok := f.names[metrics[f.metric]]; ok {
+				*dst = name
+			}
+		}
+	}
+	if s, err := ComputeCvssScore(vector); err == nil {
+		out.BaseScore = &s.BaseScore
+	}
+	return out
 }

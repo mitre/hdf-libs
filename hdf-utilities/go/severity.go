@@ -100,6 +100,27 @@ func CvssScoreToSeverity(score float64) string {
 	}
 }
 
+// CvssSeverityForVersion maps a CVSS score to the severity of the scale its
+// version uses: NVD's CVSS v2 ranges for "2.0" (low 0.0–3.9, medium 4.0–6.9,
+// high 7.0–10.0; 2.0 has no none or critical rating), and the specification's
+// qualitative scale (CvssScoreToSeverity) for 3.0, 3.1 and 4.0. A negative or
+// non-finite score is "none", no rating.
+func CvssSeverityForVersion(version string, score float64) string {
+	if version != "2.0" {
+		return CvssScoreToSeverity(score)
+	}
+	switch {
+	case math.IsNaN(score) || math.IsInf(score, 0) || score < 0:
+		return "none"
+	case score < 4.0:
+		return "low"
+	case score < 7.0:
+		return "medium"
+	default:
+		return "high"
+	}
+}
+
 // ImpactToSeverity maps an HDF impact score (0.0–1.0) to a severity string.
 // This is the inverse of SeverityToImpact. Threshold ranges:
 //

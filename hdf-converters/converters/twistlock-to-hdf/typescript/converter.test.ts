@@ -446,13 +446,13 @@ describe('twistlock to HDF converter', async () => {
     });
 
     it('cvssSeverityFromScore returns FIRST bands', () => {
-      expect(cvssSeverityFromScore(0)).toBe(CVSSSeverity.None);
-      expect(cvssSeverityFromScore(0.1)).toBe(CVSSSeverity.Low);
-      expect(cvssSeverityFromScore(3.9)).toBe(CVSSSeverity.Low);
-      expect(cvssSeverityFromScore(4.0)).toBe(CVSSSeverity.Medium);
-      expect(cvssSeverityFromScore(7.0)).toBe(CVSSSeverity.High);
-      expect(cvssSeverityFromScore(9.0)).toBe(CVSSSeverity.Critical);
-      expect(cvssSeverityFromScore(10.0)).toBe(CVSSSeverity.Critical);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 0)).toBe(CVSSSeverity.None);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 0.1)).toBe(CVSSSeverity.Low);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 3.9)).toBe(CVSSSeverity.Low);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 4.0)).toBe(CVSSSeverity.Medium);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 7.0)).toBe(CVSSSeverity.High);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 9.0)).toBe(CVSSSeverity.Critical);
+      expect(cvssSeverityFromScore(CvssVersion.The31, 10.0)).toBe(CVSSSeverity.Critical);
     });
 
     it('buildCvss returns undefined for vulns lacking score+vector', () => {
@@ -466,10 +466,11 @@ describe('twistlock to HDF converter', async () => {
       expect(cv?.baseVector).toBeUndefined();
     });
 
-    it('buildCvss omits baseScore when only a vector is present', () => {
+    it('buildCvss scores the vector when only a vector is present', () => {
       const cv = buildCvss({ id: 'CVE-1', cve: 'CVE-1', severity: 'high', description: '', vector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' });
       expect(cv).toBeDefined();
-      expect(cv?.baseScore).toBeUndefined();
+      // A vector without a score is scored from the vector.
+      expect(cv?.baseScore).toBe(7.5);
       expect(cv?.baseVector).toBe('AV:N/AC:L/Au:N/C:P/I:P/A:P');
     });
 

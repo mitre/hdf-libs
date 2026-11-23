@@ -2,7 +2,6 @@ package generators
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -14,8 +13,11 @@ type GeneratorOptions struct {
 	SingleFile bool
 	// Override baseline metadata in the generated inspec.yml.
 	Metadata *ProfileMetadata
-	// InSpec version constraint for inspec.yml. Default: "~>6.0".
+	// InSpec version constraint for inspec.yml. Default: ">= 7.0".
 	InSpecVersion string
+	// Identifier each control is keyed on: "rule" (default), "group"
+	// (tags.gid) or "version" (tags.stig_id). It sets the control id and filename.
+	IDType string
 }
 
 // ProfileMetadata provides metadata overrides for the generated inspec.yml.
@@ -32,6 +34,22 @@ type InSpecProfile struct {
 	InSpecYml string
 	// Map of filename (e.g. "controls/SV-238196.rb") to Ruby source code.
 	Controls map[string]string
+}
+
+// benchmarkRelease is extensions.passthrough.benchmarkRelease when it is an unsigned
+// integer, else "": DISA releases are integers, and anything else joined into
+// <version>.<release>.0 fails InSpec's semver check.
+func benchmarkRelease(baseline hdf.HDFBaseline) string {
+	if baseline.Extensions == nil {
+		return ""
+	}
+	release, _ := baseline.Extensions.Passthrough["benchmarkRelease"].(string)
+	for _, r := range release {
+		if r < '0' || r > '9' {
+			return ""
+		}
+	}
+	return release
 }
 
 // GenerateInSpecYml generates an inspec.yml YAML string from an HDF Baseline and options.
@@ -73,6 +91,10 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 	}
 
 	version := ptrOr(baseline.Version, "")
+	// <version>.<release>.0 is SAF CLI's profileVersion shape, so both tools agree.
+	if release := benchmarkRelease(baseline); release != "" && version != "" {
+		version = version + "." + release + ".0"
+	}
 	if opts != nil && opts.Metadata != nil && opts.Metadata.Version != "" {
 		version = opts.Metadata.Version
 	}
@@ -80,7 +102,7 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		lines = append(lines, fmt.Sprintf("version: '%s'", version))
 	}
 
-	inspecVersion := ">=6.0"
+	inspecVersion := ">= 7.0"
 	if opts != nil && opts.InSpecVersion != "" {
 		inspecVersion = opts.InSpecVersion
 	}
@@ -170,34 +192,36 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 }
 
 // GenerateInSpecProfile generates an in-memory InSpec profile from an HDF Baseline.
-func GenerateInSpecProfile(baseline hdf.HDFBaseline, opts *GeneratorOptions) InSpecProfile {
+// It fails when a requirement lacks the identifier opts.IDType selects, or when
+// two requirements would share a control id or a control file.
+func GenerateInSpecProfile(baseline hdf.HDFBaseline, opts *GeneratorOptions) (InSpecProfile, error) {
+	if opts == nil {
+		opts = &GeneratorOptions{}
+	}
 	inspecYml := GenerateInSpecYml(baseline, opts)
 	controls := make(map[string]string)
 
-	if len(baseline.Requirements) == 0 {
-		return InSpecProfile{InSpecYml: inspecYml, Controls: controls}
+	reqs, err := keyRequirements(baseline.Requirements, opts.IDType, !opts.SingleFile)
+	if err != nil {
+		return InSpecProfile{}, err
+	}
+	if len(reqs) == 0 {
+		return InSpecProfile{InSpecYml: inspecYml, Controls: controls}, nil
 	}
 
-	if opts != nil && opts.SingleFile {
+	if opts.SingleFile {
 		var stubs []string
-		for _, req := range baseline.Requirements {
+		for _, req := range reqs {
 			stubs = append(stubs, GenerateControlStub(req))
 		}
 		controls["controls/controls.rb"] = strings.Join(stubs, "\n")
 	} else {
-		for _, req := range baseline.Requirements {
-			// Sanitize ID for use as filename — strip path separators and
-			// reject traversal attempts to prevent writing outside output dir.
-			safeID := filepath.Base(strings.ReplaceAll(req.ID, "..", ""))
-			if safeID == "." || safeID == "" {
-				safeID = "unknown"
-			}
-			filename := fmt.Sprintf("controls/%s.rb", safeID)
-			controls[filename] = GenerateControlStub(req)
+		for _, req := range reqs {
+			controls[controlFilename(req.ID)] = GenerateControlStub(req)
 		}
 	}
 
-	return InSpecProfile{InSpecYml: inspecYml, Controls: controls}
+	return InSpecProfile{InSpecYml: inspecYml, Controls: controls}, nil
 }
 
 // ptrOr returns the dereferenced string pointer or the default value.

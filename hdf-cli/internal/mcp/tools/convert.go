@@ -541,10 +541,7 @@ func resolveConverter(from string, data []byte) (convreg.Converter, *mcperr.Erro
 			return nil, mcperr.New(mcperr.NoConverter, "no confident source-format match", nil).
 				WithNextCall("pass from explicitly (see the hdf://catalog/converters resource)")
 		}
-		format = best.Fingerprint.ID
-		if idx := strings.Index(format, "-to-"); idx > 0 {
-			format = format[:idx]
-		}
+		format = registry.SourceNameFor(best.Fingerprint)
 	}
 	conv, err := convreg.GetConverter(format, "hdf")
 	if err != nil {
@@ -561,6 +558,12 @@ func refuseInvalidResults(hdfBytes []byte) *mcperr.Error {
 	vr := validators.ValidateResults(hdfBytes)
 	if vr.Valid {
 		return nil
+	}
+	// A converter that yields an HDF baseline (an XCCDF benchmark, say) did its
+	// job; the document is the wrong type for this tool, not a converter defect.
+	if validators.ValidateBaseline(hdfBytes).Valid {
+		return mcperr.New(mcperr.WrongDocType, "the converted document is an HDF baseline; hdf_convert returns hdf-results only", nil).
+			WithNextCall("convert it with the CLI instead: hdf convert <file> -o baseline.json")
 	}
 	return mcperr.New(mcperr.SchemaInvalid, "the converted document does not validate as hdf-results: "+vr.Error(), nil).
 		WithNextCall("this indicates a converter defect; do not rely on the output")

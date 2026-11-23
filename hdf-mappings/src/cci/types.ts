@@ -4,8 +4,11 @@
 export interface CCIItem {
   /** Definition/description of the CCI */
   def: string;
-  /** Array of NIST control references this CCI maps to */
-  nist: string[];
+  /**
+   * DISA's NIST SP 800-53 references keyed by revision ("4", "5"), as
+   * published; a revision DISA gives no reference for is absent
+   */
+  nist: Partial<Record<string, string[]>>;
 }
 
 /**

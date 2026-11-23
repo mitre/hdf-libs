@@ -97,7 +97,33 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 
 	components, _ := sysDoc["components"].([]interface{})
 
-	// Build assessments from components
+	assessments := assessmentsFromComponents(components)
+
+	if len(assessments) == 0 {
+		return fmt.Errorf("no assessments generated: system has no components with baselineRefs")
+	}
+
+	// Build plan
+	if planID == "" {
+		planID = uuid.New().String()
+	}
+	planName := hdfutil.ToKebabCase(sysName) + "-assessment-plan"
+	plan := map[string]interface{}{
+		"planId":      planID,
+		"name":        planName,
+		"systemRef":   filepath.ToSlash(systemFile), // schema requires uri-reference
+		"assessments": assessments,
+		"generator": map[string]interface{}{
+			"name":    "hdf-cli",
+			"version": version,
+		},
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	return writePlanOutput(plan, outputPath)
+}
+
+func assessmentsFromComponents(components []interface{}) []map[string]interface{} {
 	assessments := make([]map[string]interface{}, 0)
 	for _, cRaw := range components {
 		comp, ok := cRaw.(map[string]interface{})
@@ -123,28 +149,7 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 		}
 	}
 
-	if len(assessments) == 0 {
-		return fmt.Errorf("no assessments generated: system has no components with baselineRefs")
-	}
-
-	// Build plan
-	if planID == "" {
-		planID = uuid.New().String()
-	}
-	planName := hdfutil.ToKebabCase(sysName) + "-assessment-plan"
-	plan := map[string]interface{}{
-		"planId":      planID,
-		"name":        planName,
-		"systemRef":   filepath.ToSlash(systemFile), // schema requires uri-reference
-		"assessments": assessments,
-		"generator": map[string]interface{}{
-			"name":    "hdf-cli",
-			"version": version,
-		},
-		"createdAt": time.Now().UTC().Format(time.RFC3339),
-	}
-
-	return writePlanOutput(plan, outputPath)
+	return assessments
 }
 
 func writePlanOutput(plan map[string]interface{}, outputPath string) error {

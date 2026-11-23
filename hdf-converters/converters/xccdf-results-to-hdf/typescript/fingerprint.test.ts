@@ -7,6 +7,7 @@ runFingerprintTests({
   direction: 'ingest',
   inputFamily: 'xml',
   outputType: 'results',
+  source: 'xccdf',
   fingerprint: xccdfFingerprint,
   register,
   positive: [

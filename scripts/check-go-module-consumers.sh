@@ -119,7 +119,8 @@ is_published() {
 # go writes progress ("go: downloading ...") to stderr. Capturing it into the
 # package list fed those lines to `go list -deps` as arguments — harmless on a
 # warm cache, a false alarm on CI's cold one.
-stderr_file="$(mktemp)"
+# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
+stderr_file="$(mktemp "${TMPDIR:-/tmp}/check-go-module-consumers.stderr.XXXXXX")"
 trap 'rm -f "$stderr_file"' EXIT
 
 failed=0

@@ -52,6 +52,12 @@ const profile = generateInSpecProfile(baseline, {
 // profile.controls  — Map<string, string> of filename → Ruby control code
 ```
 
+`idType` chooses the identifier each control is keyed on, for both the control
+id and the filename: `'rule'` (default, the requirement id), `'group'`
+(`tags.gid`, e.g. `V-215812`) or `'version'` (`tags.stig_id`, e.g.
+`CISC-ND-000010`). Generation throws, naming the requirements, when one lacks
+the chosen identifier or two resolve to the same control id or file.
+
 ### Individual stubs
 
 ```typescript
@@ -69,12 +75,16 @@ const yml = generateInSpecYml(baseline, { metadata: { maintainer: 'Team', licens
 ```go
 import generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
 
-profile := generators.GenerateInSpecProfile(baseline, &generators.GeneratorOptions{
+profile, err := generators.GenerateInSpecProfile(baseline, &generators.GeneratorOptions{
+    IDType: "group", // or "rule" (default), "version"
     Metadata: &generators.ProfileMetadata{
         Maintainer: "MITRE SAF",
         License:    "Apache-2.0",
     },
 })
+if err != nil {
+    // a requirement lacks the chosen identifier, or two share a control id or file
+}
 // profile.InSpecYml — string
 // profile.Controls  — map[string]string
 ```
@@ -85,6 +95,7 @@ profile := generators.GenerateInSpecProfile(baseline, &generators.GeneratorOptio
 hdf generate inspec-profile baseline.json output-dir/
 hdf generate inspec-profile baseline.json output-dir/ --maintainer "MITRE SAF"
 hdf generate inspec-profile baseline.json output-dir/ --single-file
+hdf generate inspec-profile benchmark.xml output-dir/ --id-type group
 ```
 
 ## License

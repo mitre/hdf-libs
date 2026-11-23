@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "..",
+    "lib": [
+      "es2024"
+    ],
+    "allowJs": true
+  },
+  "include": [
+    "src/**/*",
+    "converters/**/*.ts",
+    "fetchers/**/*.ts",
+    "shared/**/*.ts",
+    "test/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

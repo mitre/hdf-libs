@@ -6,6 +6,7 @@ import (
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func makeBaseline(name string, reqs []hdf.BaselineRequirement) hdf.HDFBaseline {
@@ -21,7 +22,7 @@ func TestGenerateInSpecYml_MinimalBaseline(t *testing.T) {
 	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
 	yml := GenerateInSpecYml(baseline, nil)
 	assert.Contains(t, yml, "name: my-profile")
-	assert.Contains(t, yml, "inspec_version: '>=6.0'")
+	assert.Contains(t, yml, "inspec_version: '>= 7.0'")
 }
 
 func TestGenerateInSpecYml_CustomInSpecVersion(t *testing.T) {
@@ -69,6 +70,57 @@ func TestGenerateInSpecYml_MetadataOverrides(t *testing.T) {
 	assert.Contains(t, yml, "license: Apache-2.0")
 	assert.Contains(t, yml, "version: '2.0.0'")
 	assert.NotContains(t, yml, "version: '1.0.0'")
+}
+
+func TestGenerateInSpecYml_VersionFromBenchmarkRelease(t *testing.T) {
+	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
+	baseline.Version = ptr("2")
+	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"benchmarkRelease": "9"}}
+	yml := GenerateInSpecYml(baseline, nil)
+	assert.Contains(t, yml, "version: '2.9.0'")
+	assert.NotContains(t, yml, "version: '2'\n")
+}
+
+func TestGenerateInSpecYml_VersionWithoutBenchmarkRelease(t *testing.T) {
+	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
+	baseline.Version = ptr("2")
+	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"releaseInfo": "Release: 9 Benchmark Date: 01 Jul 2026"}}
+	yml := GenerateInSpecYml(baseline, nil)
+	assert.Contains(t, yml, "version: '2'\n")
+}
+
+func TestGenerateInSpecYml_NonIntegerReleaseLeavesVersionPlain(t *testing.T) {
+	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
+	baseline.Version = ptr("3")
+	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"benchmarkRelease": "3.5"}}
+	yml := GenerateInSpecYml(baseline, nil)
+	assert.Contains(t, yml, "version: '3'\n")
+	assert.NotContains(t, yml, "3.3.5")
+}
+
+// Shared with the TypeScript suite: one Baseline, the same bytes in both languages.
+func TestGenerateInSpecYml_ParityVector(t *testing.T) {
+	baseline := makeBaseline("rhel-9-stig", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
+	baseline.Title = ptr("Red Hat Enterprise Linux 9 Security Technical Implementation Guide")
+	baseline.Summary = ptr("Comments go to: disa.stig_spt@mail.mil. It's required.")
+	baseline.Version = ptr("2")
+	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"benchmarkRelease": "9"}}
+	expected := "name: rhel-9-stig\n" +
+		"title: Red Hat Enterprise Linux 9 Security Technical Implementation Guide\n" +
+		"summary: 'Comments go to: disa.stig_spt@mail.mil. It''s required.'\n" +
+		"version: '2.9.0'\n" +
+		"inspec_version: '>= 7.0'\n"
+	assert.Equal(t, expected, GenerateInSpecYml(baseline, nil))
+}
+
+func TestGenerateInSpecYml_MetadataVersionBeatsBenchmarkRelease(t *testing.T) {
+	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
+	baseline.Version = ptr("2")
+	baseline.Extensions = &hdf.Extensions{Passthrough: map[string]any{"benchmarkRelease": "9"}}
+	opts := &GeneratorOptions{Metadata: &ProfileMetadata{Version: "3.0.0"}}
+	yml := GenerateInSpecYml(baseline, opts)
+	assert.Contains(t, yml, "version: '3.0.0'")
+	assert.NotContains(t, yml, "version: '2.9.0'")
 }
 
 func TestGenerateInSpecYml_WithSupports(t *testing.T) {
@@ -126,7 +178,8 @@ func TestGenerateInSpecProfile_OneFilePerControl(t *testing.T) {
 		makeRequirement("SV-001", 0.5),
 		makeRequirement("SV-002", 0.7),
 	})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "name: test-profile")
 	assert.Len(t, profile.Controls, 2)
 	assert.Contains(t, profile.Controls, "controls/SV-001.rb")
@@ -139,7 +192,8 @@ func TestGenerateInSpecProfile_SingleFile(t *testing.T) {
 		makeRequirement("SV-002", 0.7),
 	})
 	opts := &GeneratorOptions{SingleFile: true}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 	assert.Len(t, profile.Controls, 1)
 	content, ok := profile.Controls["controls/controls.rb"]
 	assert.True(t, ok)
@@ -149,7 +203,8 @@ func TestGenerateInSpecProfile_SingleFile(t *testing.T) {
 
 func TestGenerateInSpecProfile_EmptyRequirements(t *testing.T) {
 	baseline := makeBaseline("empty-profile", []hdf.BaselineRequirement{})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "name: empty-profile")
 	assert.Len(t, profile.Controls, 0)
 }
@@ -159,7 +214,8 @@ func TestGenerateInSpecProfile_ValidRubyOutput(t *testing.T) {
 	req.Title = ptr("Test Control")
 	req.Tags = map[string]interface{}{"nist": []interface{}{"AC-2"}}
 	baseline := makeBaseline("test-profile", []hdf.BaselineRequirement{req})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	ruby := profile.Controls["controls/SV-001.rb"]
 	assert.True(t, strings.HasPrefix(ruby, "control 'SV-001' do\n"))
 	assert.True(t, strings.HasSuffix(ruby, "end\n"))
@@ -170,7 +226,8 @@ func TestGenerateInSpecProfile_WithMetadata(t *testing.T) {
 	opts := &GeneratorOptions{
 		Metadata: &ProfileMetadata{Maintainer: "Test Team", License: "MIT"},
 	}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "maintainer: Test Team")
 	assert.Contains(t, profile.InSpecYml, "license: MIT")
 }

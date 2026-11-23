@@ -19,7 +19,8 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT="$script_dir/set-go-module-versions.sh"
 
-work="$(mktemp -d)"
+# A template that names ${TMPDIR} is portable: macOS mktemp ignores TMPDIR without one.
+work="$(mktemp -d "${TMPDIR:-/tmp}/set-go-module-versions.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
 pass=0

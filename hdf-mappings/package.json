@@ -23,6 +23,8 @@
     "clean": "rimraf dist",
     "mappings:awsconfig": "node scripts/generate-awsconfig-mappings.mjs",
     "mappings:awsconfig:check": "node scripts/generate-awsconfig-mappings.mjs --check",
+    "mappings:cci": "node scripts/generate-cci-mappings.mjs",
+    "mappings:cci:check": "node scripts/generate-cci-mappings.mjs --check",
     "mappings:crosswalk": "node scripts/generate-nist-crosswalk.mjs",
     "mappings:crosswalk:check": "node scripts/generate-nist-crosswalk.mjs --check",
     "mappings:descriptions": "node scripts/generate-nist-descriptions.mjs",
@@ -34,7 +36,8 @@
     "test:go": "cd go && go test ./...",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc -p tsconfig.lib.json --noEmit",
+    "type-check:tests": "tsc -p tsconfig.test.json"
   },
   "repository": {
     "type": "git",
