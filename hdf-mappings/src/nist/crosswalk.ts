@@ -236,11 +236,11 @@ function translateBase(c: string, nativeRev: number, rev: number): string[] | un
   return undefined;
 }
 
-/**
- * A whole Revision 3 reference as DISA writes it: a control, an optional spaced
- * enhancement, then statement parts ("a", "1", "(a)"), the CCI table's grammar.
- */
-const REV3_REFERENCE = /^([A-Z]{2}-\d+)(?: \((\d+)\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$/;
+/** The control and optional spaced enhancement a Revision 3 reference starts with. */
+const REV3_CONTROL = /^([A-Z]{2}-\d+)(?: \((\d+)\))?/;
+
+/** What may follow it: statement parts ("a", "1", "(a)"), the CCI table's grammar. */
+const STATEMENT_PARTS = /^(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$/;
 
 const rev4Withdrawn = new Map<string, string[]>(
   Object.entries((rawRev4Withdrawn as { withdrawn: Record<string, string[]> }).withdrawn)
@@ -252,8 +252,8 @@ const rev4Withdrawn = new Map<string, string[]>(
  * lists a few identifiers Revision 4 withdrew. Mirrors the Go placeRev3AtRev4.
  */
 function placeRev3AtRev4(c: string): string[] {
-  const m = REV3_REFERENCE.exec(c);
-  if (!m) return [];
+  const m = REV3_CONTROL.exec(c);
+  if (!m || !STATEMENT_PARTS.test(c.slice(m[0].length))) return [];
   const [, family, enhancement] = m;
   const spaced = (ids: string[]): string[] => ids.map((id) => id.replace(SPACED_ENHANCEMENT, '$1 ($2)'));
   const key = enhancement ? `${family}(${enhancement})` : family!;

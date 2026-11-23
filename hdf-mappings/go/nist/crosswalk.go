@@ -265,9 +265,13 @@ func translateBase(c string, nativeRev, rev int) (targets []string, ok bool) {
 	return nil, false
 }
 
-// A whole Revision 3 reference as DISA writes it: a control, an optional spaced
-// enhancement, then statement parts ("a", "1", "(a)"), the CCI table's grammar.
-var rev3Reference = regexp.MustCompile(`^([A-Z]{2}-\d+)(?: \((\d+)\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$`)
+// The control and optional spaced enhancement a Revision 3 reference starts
+// with, and what may follow it: statement parts ("a", "1", "(a)"), the CCI
+// table's grammar.
+var (
+	rev3Control    = regexp.MustCompile(`^([A-Z]{2}-\d+)(?: \((\d+)\))?`)
+	statementParts = regexp.MustCompile(`^(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$`)
+)
 
 // AtRevisionFromRev3 reads 800-53 Revision 3 references, in DISA's spacing, at
 // rev, as a control or enhancement: a Revision 3 statement letter is not kept,
@@ -300,8 +304,8 @@ func AtRevisionFromRev3(controls []string, rev int) []string {
 // spacing. The withdrawn table is read before the roster: the crosswalk's
 // Revision 4 roster lists a few identifiers Revision 4 withdrew.
 func placeRev3AtRev4(c string, withdrawn map[string][]string) []string {
-	m := rev3Reference.FindStringSubmatch(c)
-	if m == nil {
+	m := rev3Control.FindStringSubmatch(c)
+	if m == nil || !statementParts.MatchString(c[len(m[0]):]) {
 		return nil
 	}
 	spaced := func(ids ...string) []string {

@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, '..', 'go', 'datasets', 'mappings', 'cci-mappings.json');
 
-const REVISIONS = ['3', '4', '5'];
+const REVISIONS = new Set(['3', '4', '5']);
 
 // Family-number, an optional enhancement, then statement parts ("a", "1",
 // "(a)"), space-separated as DISA writes them. Mirrored by the dataset tests.
@@ -48,6 +48,32 @@ function child(body, name, id) {
   return all.length ? decode(all[0][1] ?? '') : undefined;
 }
 
+// One item's NIST 800-53 references keyed by revision. A reference that is not a
+// control identifier is reported and left out; a Rev 3 one keeps its leading
+// control or enhancement, since Rev 3 is read at that level only.
+function itemReferences(id, body, rejected, reduced) {
+  const nist = {};
+  for (const m of body.matchAll(/<reference\s[^>]*\/>/g)) {
+    const ref = attrs(m[0]);
+    if (ref.creator !== 'NIST' || !REVISIONS.has(ref.version) || ref.title?.endsWith('53A')) continue;
+    let index = ref.index;
+    if (!CONTROL_IDENTIFIER.test(index)) {
+      const lead = ref.version === '3' ? REV3_LEAD.exec(index)?.[0] : undefined;
+      if (!lead) {
+        rejected.push(`${id} Rev ${ref.version}: ${JSON.stringify(ref.index)}`);
+        continue;
+      }
+      reduced.push(`${id} Rev 3: ${JSON.stringify(ref.index)} kept as ${JSON.stringify(lead)}`);
+      index = lead;
+    }
+    const list = (nist[ref.version] ??= []);
+    if (!list.includes(index)) list.push(index);
+  }
+  // Rev 3 is the fallback only: an item with a later reference does not carry it.
+  if (nist['4'] || nist['5']) delete nist['3'];
+  return nist;
+}
+
 export function parseCciList(xml) {
   const version = child(xml.slice(0, xml.indexOf('<cci_items>')), 'version', 'metadata');
   const items = [...xml.matchAll(/<cci_item id="([^"]+)">([\s\S]*?)<\/cci_item>/g)];
@@ -62,27 +88,7 @@ export function parseCciList(xml) {
     if (id in table) throw new Error(`${id}: duplicate cci_item`);
     const status = child(body, 'status', id) ?? '';
     statuses[status] = (statuses[status] ?? 0) + 1;
-    const nist = {};
-    for (const m of body.matchAll(/<reference\s[^>]*\/>/g)) {
-      const ref = attrs(m[0]);
-      if (ref.creator !== 'NIST' || !REVISIONS.includes(ref.version) || ref.title?.endsWith('53A')) continue;
-      let index = ref.index;
-      if (!CONTROL_IDENTIFIER.test(index)) {
-        // A Rev 3 reference is read as its control or enhancement only, so one
-        // with malformed statement parts keeps that leading identifier.
-        const lead = ref.version === '3' ? REV3_LEAD.exec(index)?.[0] : undefined;
-        if (!lead) {
-          rejected.push(`${id} Rev ${ref.version}: ${JSON.stringify(ref.index)}`);
-          continue;
-        }
-        reduced.push(`${id} Rev 3: ${JSON.stringify(ref.index)} kept as ${JSON.stringify(lead)}`);
-        index = lead;
-      }
-      const list = (nist[ref.version] ??= []);
-      if (!list.includes(index)) list.push(index);
-    }
-    // Rev 3 is the fallback only: an item with a later reference does not carry it.
-    if (nist['4'] || nist['5']) delete nist['3'];
+    const nist = itemReferences(id, body, rejected, reduced);
     table[id] = { def: child(body, 'definition', id) ?? '', nist };
   }
   return { version, table, rejected, reduced, statuses };
