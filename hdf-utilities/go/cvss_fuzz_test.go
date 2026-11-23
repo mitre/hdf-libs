@@ -16,6 +16,7 @@ func FuzzParseCvssVector(f *testing.F) {
 	seeds := []string{
 		"AV:N/AC:L/Au:N/C:C/I:C/A:C",                                                     // legacy 2.0
 		"AV:N/AC:M/Au:S/C:P/I:P/A:N/E:POC/RL:OF/RC:C/CDP:LM/TD:H/CR:M",                   // 2.0 with temporal + environmental
+		"AV:L/AC:H/Au:M/C:N/I:N/A:N",                                                     // 2.0 zero impact, negative bracket
 		"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",                                   // 3.0
 		"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H/E:F/RL:O/RC:C",                     // 3.1 scope changed + temporal
 		"CVSS:3.1/AV:P/AC:H/PR:H/UI:R/S:U/C:N/I:N/A:N",                                   // 3.1 all-minimal
@@ -69,7 +70,7 @@ func FuzzParseCvssVector(f *testing.F) {
 		}
 
 		if sc, err := ComputeCvssScore(s); err == nil {
-			assertCvssScoreBounds(t, s, sc, "3.1")
+			assertCvssScoreBounds(t, s, sc, version)
 			if sc.TemporalScore > sc.BaseScore {
 				t.Errorf("ComputeCvssScore(%q) temporal %v exceeds base %v", s, sc.TemporalScore, sc.BaseScore)
 			}
@@ -94,8 +95,8 @@ func assertCvssScoreBounds(t *testing.T, input string, sc CvssScore, wantVersion
 		t.Errorf("score for %q has version %q, want %q", input, sc.Version, wantVersion)
 	}
 	for _, score := range []float64{sc.BaseScore, sc.TemporalScore} {
-		if score < 0 || score > 10 {
-			t.Errorf("score for %q out of range [0,10]: %v", input, score)
+		if score < 0 || score > 10 || math.Signbit(score) {
+			t.Errorf("score for %q out of range [0,10] or negative zero: %v", input, score)
 		}
 		if math.Abs(score*10-math.Round(score*10)) > 1e-9 {
 			t.Errorf("score for %q not rounded to one decimal: %v", input, score)

@@ -1,6 +1,10 @@
 package shared
 
 import (
+	"encoding/json"
+	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -75,7 +79,7 @@ func TestCvssSeverityFromScore(t *testing.T) {
 		{10.0, hdf.CVSSSeverityCritical},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.want, CvssSeverityFromScore(tc.score))
+		assert.Equal(t, tc.want, CvssSeverityFromScore(hdf.The31, tc.score))
 	}
 }
 
@@ -100,13 +104,13 @@ func TestBuildCvss(t *testing.T) {
 		assert.Equal(t, "CVE-2021-44228", *cv.Source)
 	})
 
-	t.Run("score only, no vector or source", func(t *testing.T) {
+	t.Run("score only, no vector or source; CVSS 2.0 has no none rating", func(t *testing.T) {
 		cv := BuildCvss(CvssInput{Version: hdf.The20, BaseScore: floatPtr(0.0)})
 		assert.Equal(t, hdf.The20, cv.Version)
 		require.NotNil(t, cv.BaseScore)
 		assert.InDelta(t, 0.0, *cv.BaseScore, 0.001)
 		require.NotNil(t, cv.BaseSeverity)
-		assert.Equal(t, hdf.None, *cv.BaseSeverity)
+		assert.Equal(t, hdf.CVSSSeverityLow, *cv.BaseSeverity)
 		assert.Nil(t, cv.BaseVector)
 		assert.Nil(t, cv.Source)
 	})
@@ -129,4 +133,88 @@ func TestBuildCvss(t *testing.T) {
 		assert.Nil(t, cv.BaseVector)
 		assert.Nil(t, cv.Source)
 	})
+}
+
+type cvssBuildCases struct {
+	BuildCases []struct {
+		Name  string `json:"name"`
+		Input struct {
+			Version    hdf.Version `json:"version"`
+			BaseScore  *float64    `json:"baseScore"`
+			BaseVector string      `json:"baseVector"`
+		} `json:"input"`
+		Want struct {
+			BaseScore    *float64          `json:"baseScore"`
+			BaseSeverity *hdf.CVSSSeverity `json:"baseSeverity"`
+		} `json:"want"`
+	} `json:"buildCases"`
+	VersionCases []struct {
+		Vector   string      `json:"vector"`
+		Fallback hdf.Version `json:"fallback"`
+		Want     hdf.Version `json:"want"`
+	} `json:"versionCases"`
+}
+
+func loadCvssBuildCases(t *testing.T) cvssBuildCases {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(getSharedDir(), "..", "cvss-build-cases.json"))
+	require.NoError(t, err)
+	var doc cvssBuildCases
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.BuildCases, "shared table is empty — the run would pass vacuously")
+	require.NotEmpty(t, doc.VersionCases, "shared table is empty — the run would pass vacuously")
+	return doc
+}
+
+func TestBuildCvss_SharedCases(t *testing.T) {
+	for _, c := range loadCvssBuildCases(t).BuildCases {
+		t.Run(c.Name, func(t *testing.T) {
+			got := BuildCvss(CvssInput{Version: c.Input.Version, BaseScore: c.Input.BaseScore, BaseVector: c.Input.BaseVector})
+			assert.Equal(t, c.Want.BaseScore, got.BaseScore, "baseScore")
+			assert.Equal(t, c.Want.BaseSeverity, got.BaseSeverity, "baseSeverity")
+		})
+	}
+}
+
+func TestCvssVersionFromVector_SharedCases(t *testing.T) {
+	for _, c := range loadCvssBuildCases(t).VersionCases {
+		var got hdf.Version
+		if c.Fallback == "" {
+			got = CvssVersionFromVector(c.Vector)
+		} else {
+			got = CvssVersionFromVector(c.Vector, c.Fallback)
+		}
+		assert.Equal(t, c.Want, got, "vector %q fallback %q", c.Vector, c.Fallback)
+	}
+}
+
+// A source can hand the builder a non-finite score: strconv.ParseFloat accepts
+// NaN, Inf and Infinity. json.Marshal refuses one, so a single such score would
+// fail the whole document; the TypeScript peer has always read it as absent.
+func TestBuildCvss_NonFiniteScoreReadsAsAbsent(t *testing.T) {
+	for name, score := range map[string]float64{
+		"NaN":               math.NaN(),
+		"positive infinity": math.Inf(1),
+		"negative infinity": math.Inf(-1),
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Run("with a vector, the vector supplies the score", func(t *testing.T) {
+				got := BuildCvss(CvssInput{Version: hdf.The20, BaseScore: &score, BaseVector: "AV:N/AC:L/Au:N/C:C/I:C/A:C"})
+				require.NotNil(t, got.BaseScore)
+				assert.InDelta(t, 10.0, *got.BaseScore, 1e-9)
+				require.NotNil(t, got.BaseSeverity)
+				assert.Equal(t, hdf.CVSSSeverityHigh, *got.BaseSeverity)
+				_, err := json.Marshal(got)
+				require.NoError(t, err)
+			})
+
+			t.Run("without a vector, the entry carries no score", func(t *testing.T) {
+				got := BuildCvss(CvssInput{Version: hdf.The20, BaseScore: &score})
+				assert.Nil(t, got.BaseScore)
+				assert.Nil(t, got.BaseSeverity)
+				_, err := json.Marshal(got)
+				require.NoError(t, err)
+			})
+		})
+	}
 }

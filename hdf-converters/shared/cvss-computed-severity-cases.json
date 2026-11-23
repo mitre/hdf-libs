@@ -1,0 +1,37 @@
+{
+  "_comment": "Computed (post-threat) CVSS scores that land where the 2.0 and 3.x severity scales part company, so a converter passing the wrong version to CvssSeverityFromScore / cvssSeverityFromScore is caught. The two scales differ in two places: below 0.1, where NVD's v2 ranges say low and the 3.x scale says none, and at or above 9.0, where v2 says high (it publishes no critical band) and 3.x says critical. Each case gives the version the entry declares, a base vector of that version with the base score it computes to, a computed score the version's temporal equation can reach from that base, and the severity that version's scale gives the computed score. Read by the nessus-to-hdf and gitlab-vulnerabilities-to-hdf tests in both languages, each building an input that carries the case's version and scores.",
+  "cases": [
+    {
+      "version": "2.0",
+      "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+      "baseScore": 10,
+      "computedScore": 9.5,
+      "computedSeverity": "high",
+      "note": "2.0 tops out at high from 7.0; the 3.x scale would call 9.5 critical"
+    },
+    {
+      "version": "2.0",
+      "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:N",
+      "baseScore": 0,
+      "computedScore": 0,
+      "computedSeverity": "low",
+      "note": "2.0 has no none band; the 3.x scale would call 0 none"
+    },
+    {
+      "version": "3.1",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "baseScore": 9.8,
+      "computedScore": 9.5,
+      "computedSeverity": "critical",
+      "note": "the 3.x top band, which 2.0 does not define"
+    },
+    {
+      "version": "3.1",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+      "baseScore": 0,
+      "computedScore": 0,
+      "computedSeverity": "none",
+      "note": "the 3.x bottom band, which 2.0 does not define"
+    }
+  ]
+}
