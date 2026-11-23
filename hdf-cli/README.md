@@ -859,6 +859,7 @@ SUBCOMMANDS
 EXAMPLES
   hdf generate inspec-profile baseline.json my-profile/           # <input> <output-dir>
   hdf generate inspec-profile U_RHEL_9_STIG_xccdf.xml rhel9-stig/  # XCCDF auto-detected
+  hdf generate inspec-profile benchmark.xml my-profile/ --id-type group  # key controls on V-...
   hdf generate threshold results.json -o threshold.yml
   hdf generate upgrade profile/ new-stig-xccdf.xml               # <current> <upstream>
 ```

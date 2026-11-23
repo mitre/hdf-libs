@@ -2,13 +2,16 @@ import type { BaselineRequirement, HDFBaseline } from '@mitre/hdf-schema';
 import type { GeneratorOptions, InSpecProfile } from './types.js';
 import { generateControlStub } from './control-stub.js';
 import { generateInSpecYml } from './inspec-yml.js';
+import { controlFilename, keyRequirements } from './id-type.js';
 
 /**
  * Generate an in-memory InSpec profile from an HDF Baseline.
  *
  * Returns an InSpecProfile with inspec.yml content and a Map of
  * control filenames to Ruby source code. No file I/O — the CLI
- * is responsible for writing files to disk.
+ * is responsible for writing files to disk. Throws when a requirement lacks
+ * the identifier `options.idType` selects, or when two requirements would
+ * share a control id or a control file.
  */
 export function generateInSpecProfile(
   baseline: HDFBaseline,
@@ -16,21 +19,17 @@ export function generateInSpecProfile(
 ): InSpecProfile {
   const inspecYml = generateInSpecYml(baseline, options);
   const controls = new Map<string, string>();
+  const reqs = keyRequirements(baseline.requirements, options?.idType, !options?.singleFile);
 
-  if (baseline.requirements.length === 0) {
+  if (reqs.length === 0) {
     return { inspecYml, controls };
   }
 
   if (options?.singleFile) {
-    // All controls in a single file
-    const stubs = baseline.requirements.map((req: BaselineRequirement) => generateControlStub(req));
-    controls.set('controls/controls.rb', stubs.join('\n'));
+    controls.set('controls/controls.rb', reqs.map((req: BaselineRequirement) => generateControlStub(req)).join('\n'));
   } else {
-    // One file per control — sanitize ID for safe filenames
-    for (const req of baseline.requirements) {
-      const safeId = req.id.replace(/\.\./g, '').replace(/[/\\]/g, '') || 'unknown';
-      const filename = `controls/${safeId}.rb`;
-      controls.set(filename, generateControlStub(req));
+    for (const req of reqs) {
+      controls.set(controlFilename(req.id), generateControlStub(req));
     }
   }
 

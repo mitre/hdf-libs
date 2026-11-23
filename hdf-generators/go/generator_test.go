@@ -6,6 +6,7 @@ import (
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func makeBaseline(name string, reqs []hdf.BaselineRequirement) hdf.HDFBaseline {
@@ -126,7 +127,8 @@ func TestGenerateInSpecProfile_OneFilePerControl(t *testing.T) {
 		makeRequirement("SV-001", 0.5),
 		makeRequirement("SV-002", 0.7),
 	})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "name: test-profile")
 	assert.Len(t, profile.Controls, 2)
 	assert.Contains(t, profile.Controls, "controls/SV-001.rb")
@@ -139,7 +141,8 @@ func TestGenerateInSpecProfile_SingleFile(t *testing.T) {
 		makeRequirement("SV-002", 0.7),
 	})
 	opts := &GeneratorOptions{SingleFile: true}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 	assert.Len(t, profile.Controls, 1)
 	content, ok := profile.Controls["controls/controls.rb"]
 	assert.True(t, ok)
@@ -149,7 +152,8 @@ func TestGenerateInSpecProfile_SingleFile(t *testing.T) {
 
 func TestGenerateInSpecProfile_EmptyRequirements(t *testing.T) {
 	baseline := makeBaseline("empty-profile", []hdf.BaselineRequirement{})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "name: empty-profile")
 	assert.Len(t, profile.Controls, 0)
 }
@@ -159,7 +163,8 @@ func TestGenerateInSpecProfile_ValidRubyOutput(t *testing.T) {
 	req.Title = ptr("Test Control")
 	req.Tags = map[string]interface{}{"nist": []interface{}{"AC-2"}}
 	baseline := makeBaseline("test-profile", []hdf.BaselineRequirement{req})
-	profile := GenerateInSpecProfile(baseline, nil)
+	profile, err := GenerateInSpecProfile(baseline, nil)
+	require.NoError(t, err)
 	ruby := profile.Controls["controls/SV-001.rb"]
 	assert.True(t, strings.HasPrefix(ruby, "control 'SV-001' do\n"))
 	assert.True(t, strings.HasSuffix(ruby, "end\n"))
@@ -170,7 +175,8 @@ func TestGenerateInSpecProfile_WithMetadata(t *testing.T) {
 	opts := &GeneratorOptions{
 		Metadata: &ProfileMetadata{Maintainer: "Test Team", License: "MIT"},
 	}
-	profile := GenerateInSpecProfile(baseline, opts)
+	profile, err := GenerateInSpecProfile(baseline, opts)
+	require.NoError(t, err)
 	assert.Contains(t, profile.InSpecYml, "maintainer: Test Team")
 	assert.Contains(t, profile.InSpecYml, "license: MIT")
 }
