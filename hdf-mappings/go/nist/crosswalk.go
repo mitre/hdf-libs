@@ -265,6 +265,88 @@ func translateBase(c string, nativeRev, rev int) (targets []string, ok bool) {
 	return nil, false
 }
 
+// A whole Revision 3 reference as DISA writes it: a control, an optional spaced
+// enhancement, then statement parts ("a", "1", "(a)"), the CCI table's grammar.
+var rev3Reference = regexp.MustCompile(`^([A-Z]{2}-\d+)(?: \((\d+)\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$`)
+
+// AtRevisionFromRev3 reads 800-53 Revision 3 references, in DISA's spacing, at
+// rev, as a control or enhancement: a Revision 3 statement letter is not kept,
+// because Revision 4 re-letters. Each is first placed at Revision 4 from NIST's
+// Revision 4 catalog: redirected where that catalog lists it as withdrawn (an
+// enhancement of a withdrawn control follows the control), kept where Revision
+// 4 still has it. Then it is translated as any Revision 4 reference is. A
+// reference Revision 4 does not know, or withdrew with no control successor, is
+// dropped.
+func AtRevisionFromRev3(controls []string, rev int) []string {
+	if !supportedRevision(rev) {
+		return []string{}
+	}
+	loadCrosswalk()
+	withdrawn := loadRev4Withdrawn()
+	seen := make(map[string]bool)
+	atRev4 := make([]string, 0, len(controls))
+	for _, c := range controls {
+		for _, placed := range placeRev3AtRev4(c, withdrawn) {
+			if !seen[placed] {
+				seen[placed] = true
+				atRev4 = append(atRev4, placed)
+			}
+		}
+	}
+	return AtRevision(atRev4, 4, rev)
+}
+
+// placeRev3AtRev4 is one Revision 3 reference as Revision 4 names it, in DISA's
+// spacing. The withdrawn table is read before the roster: the crosswalk's
+// Revision 4 roster lists a few identifiers Revision 4 withdrew.
+func placeRev3AtRev4(c string, withdrawn map[string][]string) []string {
+	m := rev3Reference.FindStringSubmatch(c)
+	if m == nil {
+		return nil
+	}
+	spaced := func(ids ...string) []string {
+		out := make([]string, len(ids))
+		for i, id := range ids {
+			out[i] = spacedEnhancement.ReplaceAllString(id, "$1 ($2)")
+		}
+		return out
+	}
+	key := m[1]
+	if m[2] != "" {
+		key = m[1] + "(" + m[2] + ")"
+	}
+	if targets, ok := withdrawn[key]; ok {
+		return spaced(targets...)
+	}
+	if xwRosters[4][key] {
+		return spaced(key)
+	}
+	if targets, ok := withdrawn[m[1]]; ok && key != m[1] {
+		return spaced(targets...)
+	}
+	return nil
+}
+
+var (
+	rev4Withdrawn     map[string][]string
+	rev4WithdrawnOnce sync.Once
+)
+
+// loadRev4Withdrawn parses the embedded table once. A parse failure is a build
+// defect in an embedded asset, handled as the crosswalk's is.
+func loadRev4Withdrawn() map[string][]string {
+	rev4WithdrawnOnce.Do(func() {
+		var doc struct {
+			Withdrawn map[string][]string `json:"withdrawn"`
+		}
+		if err := json.Unmarshal(datasets.NISTRev4Withdrawn, &doc); err != nil {
+			panic(fmt.Errorf("embedded nist-rev4-withdrawn.json: %w", err))
+		}
+		rev4Withdrawn = doc.Withdrawn
+	})
+	return rev4Withdrawn
+}
+
 // RosterSize returns the number of control IDs in the crosswalk's catalog for
 // the given revision, or 0 for unsupported revisions.
 func RosterSize(rev int) int {

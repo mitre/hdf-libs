@@ -311,3 +311,33 @@ func TestAtRevision_SpacedEnhancements(t *testing.T) {
 		require.Equal(t, tt.want, AtRevision([]string{tt.in}, tt.from, tt.to), "%s Rev %d -> %d", tt.in, tt.from, tt.to)
 	}
 }
+
+// A Revision 3 reference is placed at Revision 4 first, then translated.
+func TestAtRevisionFromRev3(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		rev  int
+		want []string
+	}{
+		{"withdrawn by Rev 4, successor at both", []string{"AC-17 (8)"}, 5, []string{"CM-7"}},
+		{"withdrawn by Rev 4, successor at both", []string{"AC-17 (8)"}, 4, []string{"CM-7"}},
+		{"statement letter not kept", []string{"AC-2 a"}, 5, []string{"AC-2"}},
+		{"enhancement kept, its statement letter not", []string{"AU-9 (4) (b)"}, 4, []string{"AU-9 (4)"}},
+		{"a Rev 4 enhancement that Rev 5 moved", []string{"AU-8 (1)"}, 4, []string{"AU-8 (1)"}},
+		{"a Rev 4 enhancement that Rev 5 moved", []string{"AU-8 (1)"}, 5, []string{"SC-45 (1)"}},
+		{"enhancement Rev 4 retired and Rev 5 renumbered: its base", []string{"SI-2 (4)"}, 5, []string{"SI-2"}},
+		{"enhancement of a control Rev 4 withdrew", []string{"SA-6 (1) (a)"}, 5, []string{"CM-10", "SI-7"}},
+		{"two targets", []string{"PE-7"}, 4, []string{"PE-2", "PE-3"}},
+		{"withdrawn with no successor", []string{"CP-10 (3)"}, 5, []string{}},
+		{"duplicates collapse", []string{"AC-2 a", "AC-2 c"}, 5, []string{"AC-2"}},
+		{"not a control identifier", []string{"UM-1x"}, 5, []string{}},
+		{"a known control with trailing junk", []string{"AC-2xyz"}, 5, []string{}},
+		{"a known enhancement with trailing junk", []string{"AU-9 (4)x"}, 4, []string{}},
+		{"unsupported revision", []string{"AC-2"}, 3, []string{}},
+		{"no references", nil, 5, []string{}},
+	}
+	for _, tt := range tests {
+		require.Equal(t, tt.want, AtRevisionFromRev3(tt.in, tt.rev), "%s: %v at Rev %d", tt.name, tt.in, tt.rev)
+	}
+}

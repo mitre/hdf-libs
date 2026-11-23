@@ -4,10 +4,11 @@
 //   node scripts/generate-cci-mappings.mjs <path/to/U_CCI_List.xml> [--check]
 //
 // --check exits 1 if regenerating from that file would change the table. Each item
-// keeps its definition and DISA's Rev 4 and Rev 5 references exactly as published;
-// Rev 3 and 800-53A are dropped, deprecated items kept, and a reference that is not
-// an 800-53 control identifier is printed and rejected, never repaired. Provenance
-// and refresh steps: hdf-mappings/README.md, "CCI table provenance".
+// keeps its definition and DISA's Rev 4 and Rev 5 references exactly as published,
+// or its Rev 3 references when DISA gives neither, so a referenced item is not left
+// without one; 800-53A is dropped, deprecated items kept, and a reference that is not
+// an 800-53 control identifier is printed and rejected, never repaired (a Rev 3 one
+// keeps its leading control). Provenance: hdf-mappings/README.md.
 
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -17,11 +18,14 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, '..', 'go', 'datasets', 'mappings', 'cci-mappings.json');
 
-const REVISIONS = ['4', '5'];
+const REVISIONS = ['3', '4', '5'];
 
 // Family-number, an optional enhancement, then statement parts ("a", "1",
 // "(a)"), space-separated as DISA writes them. Mirrored by the dataset tests.
 const CONTROL_IDENTIFIER = /^[A-Z]{2}-\d+(?: \(\d+\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$/;
+
+// The control or enhancement a reference starts with, followed by a space.
+const REV3_LEAD = /^[A-Z]{2}-\d+(?: \(\d+\))?(?= )/;
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
@@ -52,6 +56,7 @@ export function parseCciList(xml) {
 
   const table = {};
   const rejected = [];
+  const reduced = [];
   const statuses = {};
   for (const [, id, body] of items) {
     if (id in table) throw new Error(`${id}: duplicate cci_item`);
@@ -61,16 +66,26 @@ export function parseCciList(xml) {
     for (const m of body.matchAll(/<reference\s[^>]*\/>/g)) {
       const ref = attrs(m[0]);
       if (ref.creator !== 'NIST' || !REVISIONS.includes(ref.version) || ref.title?.endsWith('53A')) continue;
-      if (!CONTROL_IDENTIFIER.test(ref.index)) {
-        rejected.push(`${id} Rev ${ref.version}: ${JSON.stringify(ref.index)}`);
-        continue;
+      let index = ref.index;
+      if (!CONTROL_IDENTIFIER.test(index)) {
+        // A Rev 3 reference is read as its control or enhancement only, so one
+        // with malformed statement parts keeps that leading identifier.
+        const lead = ref.version === '3' ? REV3_LEAD.exec(index)?.[0] : undefined;
+        if (!lead) {
+          rejected.push(`${id} Rev ${ref.version}: ${JSON.stringify(ref.index)}`);
+          continue;
+        }
+        reduced.push(`${id} Rev 3: ${JSON.stringify(ref.index)} kept as ${JSON.stringify(lead)}`);
+        index = lead;
       }
       const list = (nist[ref.version] ??= []);
-      if (!list.includes(ref.index)) list.push(ref.index);
+      if (!list.includes(index)) list.push(index);
     }
+    // Rev 3 is the fallback only: an item with a later reference does not carry it.
+    if (nist['4'] || nist['5']) delete nist['3'];
     table[id] = { def: child(body, 'definition', id) ?? '', nist };
   }
-  return { version, table, rejected, statuses };
+  return { version, table, rejected, reduced, statuses };
 }
 
 function serialize(table) {
@@ -87,15 +102,16 @@ function main() {
     process.exit(2);
   }
   const bytes = readFileSync(input);
-  const { version, table, rejected, statuses } = parseCciList(bytes.toString('utf8').replace(/^\uFEFF/, ''));
+  const { version, table, rejected, reduced, statuses } = parseCciList(bytes.toString('utf8').replace(/^\uFEFF/, ''));
   const out = serialize(table);
 
   const ids = Object.keys(table);
   const at = (rev) => ids.filter((id) => table[id].nist[rev]).length;
   console.log(`CCI list version ${version}, sha256 ${createHash('sha256').update(bytes).digest('hex')}`);
   console.log(`${ids.length} items; statuses ${JSON.stringify(statuses)}`);
-  console.log(`with Rev 5 references: ${at('5')}; with Rev 4: ${at('4')}; with neither: ${ids.filter((id) => !Object.keys(table[id].nist).length).length}`);
+  console.log(`with Rev 5 references: ${at('5')}; with Rev 4: ${at('4')}; Rev 3 only: ${at('3')}; with none: ${ids.filter((id) => !Object.keys(table[id].nist).length).length}`);
   for (const r of rejected) console.log(`rejected (not an 800-53 control identifier): ${r}`);
+  for (const r of reduced) console.log(`malformed statement parts: ${r}`);
 
   if (check) {
     const current = readFileSync(OUT, 'utf8');

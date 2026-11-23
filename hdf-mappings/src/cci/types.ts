@@ -5,8 +5,8 @@ export interface CCIItem {
   /** Definition/description of the CCI */
   def: string;
   /**
-   * DISA's NIST SP 800-53 references keyed by revision ("4", "5"), as
-   * published; a revision DISA gives no reference for is absent
+   * DISA's NIST SP 800-53 references keyed by revision, as published: "4" and
+   * "5" where DISA gives them, and "3" only for an item with neither
    */
   nist: Partial<Record<string, string[]>>;
 }

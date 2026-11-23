@@ -36,6 +36,12 @@ var NISTDescriptionsRev5 []byte
 //go:embed mappings/nist-revision-crosswalk.json
 var NISTRevisionCrosswalk []byte
 
+// NISTRev4Withdrawn is the controls NIST's Rev 4 catalog lists as withdrawn, each with
+// the controls it was incorporated into.
+//
+//go:embed mappings/nist-rev4-withdrawn.json
+var NISTRev4Withdrawn []byte
+
 // CCIMappings is DISA's CCI list keyed by CCI, carrying each item's definition and its
 // NIST 800-53 references.
 //

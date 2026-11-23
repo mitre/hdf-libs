@@ -7,6 +7,7 @@
  */
 
 import rawCrosswalk from '../../go/datasets/mappings/nist-revision-crosswalk.json';
+import rawRev4Withdrawn from '../../go/datasets/mappings/nist-rev4-withdrawn.json';
 
 /**
  * Relations a translation can carry. `identity` means the control exists at
@@ -233,6 +234,49 @@ function translateBase(c: string, nativeRev: number, rev: number): string[] | un
     return btr.targets.map((t) => (spaced ? t.replace(SPACED_ENHANCEMENT, '$1 ($2)') : t));
   }
   return undefined;
+}
+
+/**
+ * A whole Revision 3 reference as DISA writes it: a control, an optional spaced
+ * enhancement, then statement parts ("a", "1", "(a)"), the CCI table's grammar.
+ */
+const REV3_REFERENCE = /^([A-Z]{2}-\d+)(?: \((\d+)\))?(?: (?:[a-z]{1,2}|\d+|\([a-z0-9]+\)))*$/;
+
+const rev4Withdrawn = new Map<string, string[]>(
+  Object.entries((rawRev4Withdrawn as { withdrawn: Record<string, string[]> }).withdrawn)
+);
+
+/**
+ * One Revision 3 reference as Revision 4 names it, in DISA's spacing. The
+ * withdrawn table is read before the roster: the crosswalk's Revision 4 roster
+ * lists a few identifiers Revision 4 withdrew. Mirrors the Go placeRev3AtRev4.
+ */
+function placeRev3AtRev4(c: string): string[] {
+  const m = REV3_REFERENCE.exec(c);
+  if (!m) return [];
+  const [, family, enhancement] = m;
+  const spaced = (ids: string[]): string[] => ids.map((id) => id.replace(SPACED_ENHANCEMENT, '$1 ($2)'));
+  const key = enhancement ? `${family}(${enhancement})` : family!;
+  const own = rev4Withdrawn.get(key);
+  if (own) return spaced(own);
+  if (rosters.get(4)?.has(key)) return spaced([key]);
+  const parent = enhancement ? rev4Withdrawn.get(family!) : undefined;
+  return parent ? spaced(parent) : [];
+}
+
+/**
+ * Reads 800-53 Revision 3 references, in DISA's spacing, at `rev`, as a control
+ * or enhancement: a Revision 3 statement letter is not kept, because Revision 4
+ * re-letters. Each is first placed at Revision 4 from NIST's Revision 4 catalog:
+ * redirected where that catalog lists it as withdrawn (an enhancement of a
+ * withdrawn control follows the control), kept where Revision 4 still has it.
+ * Then it is translated as any Revision 4 reference is. A reference Revision 4
+ * does not know, or withdrew with no control successor, is dropped.
+ */
+export function nistControlsFromRev3(controls: string[], rev: number): string[] {
+  if (!SUPPORTED.has(rev)) return [];
+  const atRev4 = [...new Set(controls.flatMap(placeRev3AtRev4))];
+  return nistControlsAtRevision(atRev4, 4, rev);
 }
 
 /**

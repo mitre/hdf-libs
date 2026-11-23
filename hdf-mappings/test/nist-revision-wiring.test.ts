@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   nistControlsAtRevision,
+  nistControlsFromRev3,
   setCurrentNistRevision,
   resetNistRevision,
   translateNistControl,
@@ -123,5 +124,29 @@ describe('revision-neutrality guards', () => {
       'scoutsuite',
       getAllScoutsuiteMappings().flatMap((m) => m['NIST-ID'].split('|'))
     );
+  });
+});
+
+// Same cases as the Go TestAtRevisionFromRev3.
+describe('nistControlsFromRev3', () => {
+  it.each([
+    [['AC-17 (8)'], 5, ['CM-7']],
+    [['AC-17 (8)'], 4, ['CM-7']],
+    [['AC-2 a'], 5, ['AC-2']],
+    [['AU-9 (4) (b)'], 4, ['AU-9 (4)']],
+    [['AU-8 (1)'], 4, ['AU-8 (1)']],
+    [['AU-8 (1)'], 5, ['SC-45 (1)']],
+    [['SI-2 (4)'], 5, ['SI-2']],
+    [['SA-6 (1) (a)'], 5, ['CM-10', 'SI-7']],
+    [['PE-7'], 4, ['PE-2', 'PE-3']],
+    [['CP-10 (3)'], 5, []],
+    [['AC-2 a', 'AC-2 c'], 5, ['AC-2']],
+    [['UM-1x'], 5, []],
+    [['AC-2xyz'], 5, []],
+    [['AU-9 (4)x'], 4, []],
+    [['AC-2'], 3, []],
+    [[], 5, []],
+  ] as const)('%j at Rev %d', (refs, rev, want) => {
+    expect(nistControlsFromRev3([...refs], rev)).toEqual(want);
   });
 });

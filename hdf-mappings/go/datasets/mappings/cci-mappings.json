@@ -61,7 +61,11 @@
   },
   "CCI-000007": {
     "def": "The organization manages information system accounts by identifying account types (i.e., individual, group, system, application, guest/anonymous, and temporary).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 a"
+      ]
+    }
   },
   "CCI-000008": {
     "def": "The organization establishes conditions for group membership.",
@@ -73,7 +77,11 @@
   },
   "CCI-000009": {
     "def": "The organization manages information system accounts by identifying authorized users of the information system and specifying access privileges.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 c"
+      ]
+    }
   },
   "CCI-000010": {
     "def": "Require approvals by organization-defined personnel or roles for requests to create accounts.",
@@ -110,11 +118,19 @@
   },
   "CCI-000013": {
     "def": "The organization manages information system accounts by notifying account managers when temporary accounts are no longer required and when information system users are terminated, transferred, or information system usage or need-to-know/need-to-share changes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 g"
+      ]
+    }
   },
   "CCI-000014": {
     "def": "The organization manages information system accounts by granting access to the system based on a valid access authorization; intended system usage; and other attributes as required by the organization or associated missions/business functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 i"
+      ]
+    }
   },
   "CCI-000015": {
     "def": "Support the management of system accounts using organization-defined automated mechanisms.",
@@ -173,7 +189,11 @@
   },
   "CCI-000020": {
     "def": "The information system dynamically manages user privileges and associated access authorizations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 (6)"
+      ]
+    }
   },
   "CCI-000021": {
     "def": "Enforce dual authorization for organization-defined privileged commands and/or other organization-defined actions.",
@@ -188,11 +208,19 @@
   },
   "CCI-000022": {
     "def": "The information system enforces one or more organization-defined nondiscretionary access control policies over an organization-defined set of users and resources.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (3) (a)"
+      ]
+    }
   },
   "CCI-000023": {
     "def": "The organization develops an organization-wide information security program plan that provides sufficient information about the program management controls and common controls (including specification of parameters for any assignment and selection operations either explicitly or by reference) to enable an implementation that is unambiguously compliant with the intent of the plan, and a determination of the risk to be incurred if the plan is implemented as intended.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PM-1 a"
+      ]
+    }
   },
   "CCI-000024": {
     "def": "Prevent access to organization-defined security-relevant information except during secure, non-operable system states.",
@@ -207,7 +235,11 @@
   },
   "CCI-000025": {
     "def": "The information system enforces information flow control using explicit security attributes on information, source, and destination objects as a basis for flow control decisions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (1)"
+      ]
+    }
   },
   "CCI-000026": {
     "def": "Use protected processing domains to enforce organization-defined information flow control policies as a basis for flow control decisions.",
@@ -288,7 +320,11 @@
   },
   "CCI-000033": {
     "def": "The information system enforces the use of human review for organization-defined security policy filters when the system is not capable of making an information flow control decision.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (9)"
+      ]
+    }
   },
   "CCI-000034": {
     "def": "Provide the capability for privileged administrators to enable and disable organization-defined security or privacy filters under organization-defined conditions.",
@@ -322,11 +358,19 @@
   },
   "CCI-000037": {
     "def": "The organization implements separation of duties through assigned information system access authorizations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-5 c"
+      ]
+    }
   },
   "CCI-000038": {
     "def": "The organization explicitly authorizes access to organization-defined security functions and security-relevant information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-6 (1)"
+      ]
+    }
   },
   "CCI-000039": {
     "def": "Require that users of system accounts, or roles, with access to organization-defined security functions or security-relevant information, use non-privileged accounts or roles, when accessing nonsecurity functions.",
@@ -341,7 +385,11 @@
   },
   "CCI-000040": {
     "def": "The organization audits any use of privileged accounts, or roles, with access to organization-defined security functions or security-relevant information, when accessing other system functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-6 (2)"
+      ]
+    }
   },
   "CCI-000041": {
     "def": "Authorize network access to organization-defined privileged commands only for organization-defined compelling operational needs.",
@@ -389,15 +437,27 @@
   },
   "CCI-000045": {
     "def": "The organization defines in the security plan, explicitly or by reference, the time period for lock out mode or delay period.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 b"
+      ]
+    }
   },
   "CCI-000046": {
     "def": "The organization selects either a lock out mode for the organization-defined time period or delays the next login prompt for the organization-defined delay period for information system responses to consecutive invalid access attempts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 b"
+      ]
+    }
   },
   "CCI-000047": {
     "def": "The information system delays next login prompt according to the organization-defined delay algorithm, when the maximum number of unsuccessful attempts is exceeded, automatically locks the account/node for an organization-defined time period or locks the account/node until released by an Administrator IAW organizational policy.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 b"
+      ]
+    }
   },
   "CCI-000048": {
     "def": "Display an organization-defined system use notification message or banner to users before granting access to the system that provides privacy and security notices consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidelines.",
@@ -412,7 +472,11 @@
   },
   "CCI-000049": {
     "def": "The organization defines a system use notification message or banner displayed before granting access to the system that provides privacy and security notices consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance and states that: (i) users are accessing a U.S. Government information system; (ii) system usage may be monitored, recorded, and subject to audit; (iii) unauthorized use of the system is prohibited and subject to criminal and civil penalties; and (iv) use of the system indicates consent to monitoring and recording.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-8 a"
+      ]
+    }
   },
   "CCI-000050": {
     "def": "Retain the notification message or banner on the screen until users acknowledge the usage conditions and take explicit actions to log on to or further access the system.",
@@ -427,7 +491,11 @@
   },
   "CCI-000051": {
     "def": "The organization approves the information system use notification message before its use.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-8 a"
+      ]
+    }
   },
   "CCI-000052": {
     "def": "Notify the user, upon successful logon (access) to the system, of the date and time of the last logon (access).",
@@ -538,7 +606,11 @@
   },
   "CCI-000062": {
     "def": "The organization permits actions to be performed without identification and authentication only to the extent necessary to accomplish mission/business objectives.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-14 (1)"
+      ]
+    }
   },
   "CCI-000063": {
     "def": "The organization defines allowed methods of remote access to the information system.",
@@ -550,7 +622,11 @@
   },
   "CCI-000064": {
     "def": "The organization establishes usage restrictions and implementation guidance for each allowed remote access method.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 b"
+      ]
+    }
   },
   "CCI-000065": {
     "def": "Authorize remote access to the system prior to allowing such connections.",
@@ -565,7 +641,11 @@
   },
   "CCI-000066": {
     "def": "The organization enforces requirements for remote connections to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 e"
+      ]
+    }
   },
   "CCI-000067": {
     "def": "Employ automated mechanisms to monitor remote access methods.",
@@ -613,7 +693,11 @@
   },
   "CCI-000071": {
     "def": "The organization monitors for unauthorized remote connections to the information system on an organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (5)"
+      ]
+    }
   },
   "CCI-000072": {
     "def": "Protect information about remote access mechanisms from unauthorized use and disclosure.",
@@ -691,7 +775,11 @@
   },
   "CCI-000079": {
     "def": "The organization ensures that remote sessions for accessing an organization-defined list of security functions and security-relevant information employ organization-defined additional security measures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (7)"
+      ]
+    }
   },
   "CCI-000080": {
     "def": "Include the resources needed to implement the information security programs in capital planning and investment requests and document all exceptions to this requirement.",
@@ -744,35 +832,67 @@
   },
   "CCI-000085": {
     "def": "The organization monitors for unauthorized connections of mobile devices to organizational information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 c"
+      ]
+    }
   },
   "CCI-000086": {
     "def": "The organization enforces requirements for the connection of mobile devices to organizational information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 d"
+      ]
+    }
   },
   "CCI-000087": {
     "def": "The organization disables information system functionality that provides the capability for automatic execution of code on mobile devices without user direction.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 e"
+      ]
+    }
   },
   "CCI-000088": {
     "def": "The organization issues specially configured mobile devices to individuals traveling to locations that the organization deems to be of significant risk in accordance with organizational policies and procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 f"
+      ]
+    }
   },
   "CCI-000089": {
     "def": "The organization applies organization-defined inspection and preventative measures to mobile devices returning from locations that the organization deems to be of significant risk in accordance with organizational policies and procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 g"
+      ]
+    }
   },
   "CCI-000090": {
     "def": "The organization restricts the use of writable, removable media in organizational information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 (1)"
+      ]
+    }
   },
   "CCI-000091": {
     "def": "The organization prohibits the use of personally-owned, removable media in organizational information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 (2)"
+      ]
+    }
   },
   "CCI-000092": {
     "def": "The organization prohibits the use of removable media in organizational information systems when the media has no identifiable owner.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 (3)"
+      ]
+    }
   },
   "CCI-000093": {
     "def": "Establish organization-defined terms and conditions, and/or identify organization-defined controls asserted to be implemented on external systems, consistent with the trust relationships established with other organizations owning, operating, and/or maintaining external systems, allowing authorized individuals to access the system from the external systems.",
@@ -787,15 +907,27 @@
   },
   "CCI-000094": {
     "def": "The organization establishes terms and conditions, consistent with any trust relationships established with other organizations owning, operating, and/or maintaining external information systems, allowing authorized individuals to process organization-controlled information using the external information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 b"
+      ]
+    }
   },
   "CCI-000095": {
     "def": "The organization prohibits authorized individuals from using an external information system to access the information system except in situations where the organization can verify the implementation of required security controls on the external system as specified in the organization's information security policy and security plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 (1) (a)"
+      ]
+    }
   },
   "CCI-000096": {
     "def": "The organization prohibits authorized individuals from using an external information system to access the information system or to process, store, or transmit organization-controlled information except in situations where the organization has approved information system connection or processing agreements with the organizational entity hosting the external information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 (1) (b)"
+      ]
+    }
   },
   "CCI-000097": {
     "def": "Restrict the use of organization-controlled portable storage devices by authorized individuals on external systems using organization-defined restrictions.",
@@ -991,11 +1123,19 @@
   },
   "CCI-000115": {
     "def": "The organization establishes contact with selected groups and associations within the security community to facilitate ongoing security education and training; to stay up to date with the latest recommended security practices, techniques, and technologies; and to share current security-related information including threats, vulnerabilities, and incidents.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AT-5"
+      ]
+    }
   },
   "CCI-000116": {
     "def": "The organization institutionalizes contact with selected groups and associations within the security community to facilitate ongoing security education and training; to stay up to date with the latest recommended security practices, techniques, and technologies; and to share current security-related information including threats, vulnerabilities, and incidents.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AT-5"
+      ]
+    }
   },
   "CCI-000117": {
     "def": "Develop and document an organization-level; mission/business process-level; and/or system-level audit and accountability policy that addresses purpose, scope, roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
@@ -1010,7 +1150,11 @@
   },
   "CCI-000118": {
     "def": "The organization disseminates a formal, documented, audit and accountability policy to elements within the organization having associated audit and accountability roles and responsibilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-1 a"
+      ]
+    }
   },
   "CCI-000119": {
     "def": "Review and update the current audit and accountability policy on an organization-defined frequency.",
@@ -1036,7 +1180,11 @@
   },
   "CCI-000121": {
     "def": "The organization disseminates formal, documented, procedures to elements within the organization having associated audit and accountability roles and responsibilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-1 b"
+      ]
+    }
   },
   "CCI-000122": {
     "def": "Review and update the current audit and accountability procedures on an organization-defined frequency.",
@@ -1103,11 +1251,19 @@
   },
   "CCI-000128": {
     "def": "The organization includes execution of privileged functions in the list of events to be audited by the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-2 (4)"
+      ]
+    }
   },
   "CCI-000129": {
     "def": "The organization defines in the auditable events that the information system must be capable of auditing based on a risk assessment and mission/business needs.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-2 a"
+      ]
+    }
   },
   "CCI-000130": {
     "def": "Ensure that audit records contain information that establishes what type of event occurred.",
@@ -1177,15 +1333,27 @@
   },
   "CCI-000136": {
     "def": "The organization centrally manages the content of audit records generated by organization-defined information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-3 (2)"
+      ]
+    }
   },
   "CCI-000137": {
     "def": "The organization allocates audit record storage capacity.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-4"
+      ]
+    }
   },
   "CCI-000138": {
     "def": "The organization configures auditing to reduce the likelihood of storage capacity being exceeded.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-4"
+      ]
+    }
   },
   "CCI-000139": {
     "def": "Alert organization-defined personnel or roles within an organization-defined time period in the event of an audit logging process failure.",
@@ -1233,11 +1401,19 @@
   },
   "CCI-000143": {
     "def": "The information system provides a warning when allocated audit record storage volume reaches an organization-defined percentage of maximum audit record storage capacity.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-5 (1)"
+      ]
+    }
   },
   "CCI-000144": {
     "def": "The information system provides a real-time alert when organization-defined audit failure events occur.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-5 (2)"
+      ]
+    }
   },
   "CCI-000145": {
     "def": "Enforce configurable network communications traffic volume thresholds reflecting limits on audit log storage capacity by delaying or rejecting network traffic above those organization-defined thresholds.",
@@ -1252,7 +1428,11 @@
   },
   "CCI-000146": {
     "def": "The organization defines the percentage of maximum audit record storage capacity that when exceeded, a warning is provided.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-5 (1)"
+      ]
+    }
   },
   "CCI-000147": {
     "def": "Defines the audit logging failure events requiring real-time alerts.",
@@ -1289,7 +1469,11 @@
   },
   "CCI-000150": {
     "def": "The organization adjusts the level of audit review, analysis, and reporting within the information system when there is a change in risk to organizational operations, organizational assets, individuals, other organizations, or the Nation based on law enforcement information, intelligence information, or other credible sources of information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 b"
+      ]
+    }
   },
   "CCI-000151": {
     "def": "Defines the frequency for the review and analysis of system audit records for organization-defined inappropriate or unusual activity.",
@@ -1304,7 +1488,11 @@
   },
   "CCI-000152": {
     "def": "The information system integrates audit review, analysis, and reporting processes to support organizational processes for investigation and response to suspicious activities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (1)"
+      ]
+    }
   },
   "CCI-000153": {
     "def": "Analyze and correlate audit records across different repositories to gain organization-wide situational awareness.",
@@ -1330,15 +1518,27 @@
   },
   "CCI-000155": {
     "def": "The organization integrates analysis of audit records with analysis of vulnerability scanning information, performance data, and network monitoring information to further enhance the ability to identify inappropriate or unusual activity.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (5)"
+      ]
+    }
   },
   "CCI-000156": {
     "def": "The information system provides an audit reduction capability.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-7"
+      ]
+    }
   },
   "CCI-000157": {
     "def": "The information system provides a report generation capability.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-7"
+      ]
+    }
   },
   "CCI-000158": {
     "def": "Provide the capability to process, sort, and search audit records for events of interest based on organization-defined audit fields within audit records.",
@@ -1364,7 +1564,11 @@
   },
   "CCI-000160": {
     "def": "The information system synchronizes internal information system clocks on an organization-defined frequency with an organization-defined authoritative time source.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-8 (1)"
+      ]
+    }
   },
   "CCI-000161": {
     "def": "The organization defines the frequency for the synchronization of internal information system clocks.",
@@ -1519,7 +1723,11 @@
   },
   "CCI-000175": {
     "def": "The organization manages information system authenticators for users and devices by verifying, as part of the initial authenticator distribution, the identity of the individual and/or device receiving the authenticator.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 a"
+      ]
+    }
   },
   "CCI-000176": {
     "def": "Manage system authenticators by establishing initial authenticator content for authenticators issued by the organization.",
@@ -1534,11 +1742,19 @@
   },
   "CCI-000177": {
     "def": "The organization manages information system authenticators for users and devices by establishing and implementing administrative procedures for initial authenticator distribution, for lost/compromised, or damaged authenticators, and for revoking authenticators.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 d"
+      ]
+    }
   },
   "CCI-000178": {
     "def": "The organization manages information system authenticators for users and devices by changing default content of authenticators upon information system installation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 e"
+      ]
+    }
   },
   "CCI-000179": {
     "def": "The organization manages information system authenticators by establishing minimum lifetime restrictions for authenticators.",
@@ -1632,19 +1848,35 @@
   },
   "CCI-000188": {
     "def": "The organization requires that the registration process to receive an organizational-defined type of authenticator be carried out in person before a designated registration authority with authorization by a designated organizational official (e.g., a supervisor).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 (3)"
+      ]
+    }
   },
   "CCI-000189": {
     "def": "The organization employs automated tools to determine if authenticators are sufficiently strong to resist attacks intended to discover or otherwise compromise the authenticators.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 (4)"
+      ]
+    }
   },
   "CCI-000190": {
     "def": "The organization requires vendors/manufacturers of information system components to provide unique authenticators or change default authenticators prior to delivery.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 (5)"
+      ]
+    }
   },
   "CCI-000191": {
     "def": "The organization enforces password complexity by the number of special characters used.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 (1) (a)"
+      ]
+    }
   },
   "CCI-000192": {
     "def": "The information system enforces password complexity by the minimum number of upper case characters used.",
@@ -1788,7 +2020,11 @@
   },
   "CCI-000208": {
     "def": "The organization determines normal time-of-day and duration usage for information system accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 (5) (b)"
+      ]
+    }
   },
   "CCI-000209": {
     "def": "Develop the results of information security measures of performance.",
@@ -1847,11 +2083,19 @@
   },
   "CCI-000214": {
     "def": "The organization establishes a Discretionary Access Control (DAC) policy that limits propagation of access rights.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4) (b)"
+      ]
+    }
   },
   "CCI-000215": {
     "def": "The organization establishes a Discretionary Access Control (DAC) policy that includes or excludes access to the granularity of a single user.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4) (c)"
+      ]
+    }
   },
   "CCI-000216": {
     "def": "Address information security issues in the development and documentation of a critical infrastructure and key resources protection plan.",
@@ -1877,7 +2121,11 @@
   },
   "CCI-000218": {
     "def": "The information system, when transferring information between different security domains, identifies information flows by data type specification and usage.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (12)"
+      ]
+    }
   },
   "CCI-000219": {
     "def": "When transferring information between different security domains, decompose information into organization-defined policy-relevant subcomponents for submission to policy enforcement mechanisms.",
@@ -1896,7 +2144,11 @@
   },
   "CCI-000221": {
     "def": "The information system enforces security policies regarding information on interconnected systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (16)"
+      ]
+    }
   },
   "CCI-000222": {
     "def": "The information system uniquely identifies and authenticates source and destination domains for information transfer.",
@@ -1904,11 +2156,19 @@
   },
   "CCI-000223": {
     "def": "The information system binds security attributes to information to facilitate information flow policy enforcement.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (b)"
+      ]
+    }
   },
   "CCI-000224": {
     "def": "The information system tracks problems associated with the security attribute binding.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (c)"
+      ]
+    }
   },
   "CCI-000225": {
     "def": "Employ the principle of least privilege, allowing only authorized accesses for users (or processes acting on behalf of users) which are necessary to accomplish assigned organizational tasks.",
@@ -1923,7 +2183,11 @@
   },
   "CCI-000226": {
     "def": "The information system provides the capability for a privileged administrator to configure organization-defined security policy filters to support different security policies.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-6 (4)"
+      ]
+    }
   },
   "CCI-000227": {
     "def": "Develop a comprehensive strategy to manage security risk to organizational operations and assets, individuals, other organizations, and the Nation associated with the operation and use of information systems.",
@@ -2028,7 +2292,11 @@
   },
   "CCI-000237": {
     "def": "The organization manages information system accounts by specifically authorizing and monitoring the use of guest/anonymous accounts and temporary accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 f"
+      ]
+    }
   },
   "CCI-000238": {
     "def": "Defines the frequency to review and update the current assessment, authorization, and monitoring policy.",
@@ -2150,11 +2418,19 @@
   },
   "CCI-000249": {
     "def": "The organizations security assessment plan describes the assessment team.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-2 a"
+      ]
+    }
   },
   "CCI-000250": {
     "def": "The organization's security assessment plan describes assessment roles and responsibilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-2 a"
+      ]
+    }
   },
   "CCI-000251": {
     "def": "Assess the controls in the systems and its environment of operation on an organization-defined frequency, to determine the extent to which the controls are implemented correctly, operating as intended, and producing the desired outcome with respect to meeting the security requirements.",
@@ -2262,7 +2538,11 @@
   },
   "CCI-000261": {
     "def": "The organization monitors the information system connections on an ongoing basis to verify enforcement of security requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-3 c"
+      ]
+    }
   },
   "CCI-000262": {
     "def": "The organization prohibits the direct connection of an organization-defined unclassified, national security system to an external network without the use of an organization-defined boundary protection device.",
@@ -2403,19 +2683,35 @@
   },
   "CCI-000275": {
     "def": "The organization implements a continuous monitoring program that includes a configuration management process for the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 a"
+      ]
+    }
   },
   "CCI-000276": {
     "def": "The organization implements a continuous monitoring program that includes a configuration management process for the information system constituent components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 a"
+      ]
+    }
   },
   "CCI-000277": {
     "def": "The organization implements a continuous monitoring program that includes a determination of the security impact of changes to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 b"
+      ]
+    }
   },
   "CCI-000278": {
     "def": "The organization implements a continuous monitoring program that includes a determination of the security impact of changes to the environment of operation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 b"
+      ]
+    }
   },
   "CCI-000279": {
     "def": "Implement ongoing control assessments in accordance with the continuous monitoring strategy.",
@@ -2463,15 +2759,27 @@
   },
   "CCI-000283": {
     "def": "The organization plans announced or unannounced assessments (in-depth monitoring, malicious user testing, penetration testing, red team exercises, or other organization-defined forms of security assessment), on an organization-defined frequency, to ensure compliance with all vulnerability mitigation procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 (2)"
+      ]
+    }
   },
   "CCI-000284": {
     "def": "The organization schedules announced or unannounced assessments (in-depth monitoring, malicious user testing, penetration testing, red team exercises, or other organization-defined forms of security assessment), on an organization-defined frequency, to ensure compliance with all vulnerability mitigation procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 (2)"
+      ]
+    }
   },
   "CCI-000285": {
     "def": "The organization conducts announced or unannounced assessments (in-depth monitoring, malicious user testing, penetration testing, red team exercises, or other organization-defined forms of security assessment), on an organization-defined frequency, to ensure compliance with all vulnerability mitigation procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-7 (2)"
+      ]
+    }
   },
   "CCI-000286": {
     "def": "Defines the frequency with which to review and update the configuration management policies.",
@@ -2497,7 +2805,11 @@
   },
   "CCI-000288": {
     "def": "The organization disseminates formal, documented configuration management policy to elements within the organization having associated configuration management roles and responsibilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-1 a"
+      ]
+    }
   },
   "CCI-000289": {
     "def": "Review and update, on an organization-defined frequency, the configuration management policy.",
@@ -2523,7 +2835,11 @@
   },
   "CCI-000291": {
     "def": "The organization disseminates formal, documented procedures to facilitate the implementation of the configuration management policy and associated configuration management controls.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-1 b"
+      ]
+    }
   },
   "CCI-000292": {
     "def": "Review and update, on an organization-defined frequency, the procedures to facilitate the implementation of the organization-level; mission/business process-level; and/or system-level configuration management policy and associated configuration management controls.",
@@ -2658,27 +2974,55 @@
   },
   "CCI-000305": {
     "def": "The organization develops a list of software programs not authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (4) (a)",
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-000306": {
     "def": "The organization maintains the list of software programs not authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (4) (a)",
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-000307": {
     "def": "The organization employs an allow-all, deny-by-exception authorization policy to identify software allowed to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (4) (b)"
+      ]
+    }
   },
   "CCI-000308": {
     "def": "The organization develops the list of software programs authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (5) (a)",
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-000309": {
     "def": "The organization maintains the list of software programs authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (5) (a)",
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-000310": {
     "def": "The organization employs a deny-all, permit-by-exception authorization policy to identify software allowed to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-2 (5) (b)"
+      ]
+    }
   },
   "CCI-000311": {
     "def": "Maintain a baseline configuration for system development environments that is managed separately from the operational baseline configuration.",
@@ -2726,7 +3070,11 @@
   },
   "CCI-000315": {
     "def": "The organization documents approved configuration-controlled changes to the system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-3 c"
+      ]
+    }
   },
   "CCI-000316": {
     "def": "Retain records of configuration-controlled changes to the system for an organization-defined time period.",
@@ -2741,7 +3089,11 @@
   },
   "CCI-000317": {
     "def": "The organization reviews records of configuration-controlled changes to the system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-3 d"
+      ]
+    }
   },
   "CCI-000318": {
     "def": "Monitor and review activities associated with configuration-controlled changes to the system.",
@@ -2921,7 +3273,11 @@
   },
   "CCI-000334": {
     "def": "The organization analyzes new software in a separate test environment before installation in an operational environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-4 (1)"
+      ]
+    }
   },
   "CCI-000335": {
     "def": "After system changes, verify that the impacted controls are implemented correctly, meeting the security requirements for the system.",
@@ -3034,11 +3390,19 @@
   },
   "CCI-000346": {
     "def": "The organization employs automated mechanisms to enforce access restrictions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (1)"
+      ]
+    }
   },
   "CCI-000347": {
     "def": "The organization employs automated mechanisms to support auditing of the enforcement actions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (1)"
+      ]
+    }
   },
   "CCI-000348": {
     "def": "The organization defines a frequency with which to conduct reviews of information system changes.",
@@ -3066,11 +3430,19 @@
   },
   "CCI-000351": {
     "def": "The organization defines critical software programs that the information system will prevent from being installed if such software programs are not signed with a recognized and approved certificate.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (3)"
+      ]
+    }
   },
   "CCI-000352": {
     "def": "The information system prevents the installation of organization-defined critical software programs that are not signed with a certificate that is recognized and approved by the organization.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (3)"
+      ]
+    }
   },
   "CCI-000353": {
     "def": "Defines system components requiring enforcement of a dual authorization for system changes.",
@@ -3096,35 +3468,67 @@
   },
   "CCI-000355": {
     "def": "The organization limits information system developer/integrator privileges to change hardware components directly within a production environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (a)"
+      ]
+    }
   },
   "CCI-000356": {
     "def": "The organization limits information system developer/integrator privileges to change software components directly within a production environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (a)"
+      ]
+    }
   },
   "CCI-000357": {
     "def": "The organization limits information system developer/integrator privileges to change firmware components directly within a production environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (a)"
+      ]
+    }
   },
   "CCI-000358": {
     "def": "The organization limits information system developer/integrator privileges to change system information directly within a production environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (a)"
+      ]
+    }
   },
   "CCI-000359": {
     "def": "The organization defines the frequency to review information system developer/integrator privileges.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (b)"
+      ]
+    }
   },
   "CCI-000360": {
     "def": "The organization defines the frequency to reevaluate information system developer/integrator privileges.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (b)"
+      ]
+    }
   },
   "CCI-000361": {
     "def": "The organization reviews information system developer/integrator privileges per organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (b)"
+      ]
+    }
   },
   "CCI-000362": {
     "def": "The organization reevaluates information system developer/integrator privileges per organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (5) (b)"
+      ]
+    }
   },
   "CCI-000363": {
     "def": "The organization defines security configuration checklists to be used to establish and document configuration settings for the information system technology products employed.",
@@ -3229,31 +3633,59 @@
   },
   "CCI-000373": {
     "def": "The organization defines configuration settings for which unauthorized changes are responded to by automated mechanisms.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (2)"
+      ]
+    }
   },
   "CCI-000374": {
     "def": "The organization employs automated mechanisms to respond to unauthorized changes to organization-defined configuration settings.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (2)"
+      ]
+    }
   },
   "CCI-000375": {
     "def": "The organization incorporates detection of unauthorized, security-relevant configuration changes into the organizations incident response capability.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (3)"
+      ]
+    }
   },
   "CCI-000376": {
     "def": "The organization ensures unauthorized, security-relevant configuration changes detected are monitored.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (3)"
+      ]
+    }
   },
   "CCI-000377": {
     "def": "The organization ensures unauthorized, security-relevant configuration changes detected are corrected.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (3)"
+      ]
+    }
   },
   "CCI-000378": {
     "def": "The organization ensures unauthorized, security-relevant configuration changes detected are available for historical purposes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (3)"
+      ]
+    }
   },
   "CCI-000379": {
     "def": "The information system (including modifications to the baseline configuration) demonstrates conformance to security configuration guidance (i.e., security checklists) prior to being introduced into a production environment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (4)"
+      ]
+    }
   },
   "CCI-000380": {
     "def": "Defines prohibited or restricted functions, system ports, protocols, software and/or services for the system.",
@@ -3290,7 +3722,11 @@
   },
   "CCI-000383": {
     "def": "The organization defines the frequency of information system reviews to identify and eliminate unnecessary functions, ports, protocols and/or services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (1)"
+      ]
+    }
   },
   "CCI-000384": {
     "def": "Review the system per organization-defined frequency to identify unnecessary and nonsecure functions, ports, protocols, software, and services.",
@@ -3305,11 +3741,19 @@
   },
   "CCI-000385": {
     "def": "The organization reviews the information system per organization-defined frequency to eliminate unnecessary functions, ports, protocols, and/or services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (1)"
+      ]
+    }
   },
   "CCI-000386": {
     "def": "The organization employs automated mechanisms to prevent program execution on the information system in accordance with the organization-defined specifications.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-000387": {
     "def": "Defines registration requirements for functions, ports, protocols, and services.",
@@ -3351,7 +3795,11 @@
   },
   "CCI-000391": {
     "def": "The organization maintains an inventory of information system components that accurately reflects the current information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 a"
+      ]
+    }
   },
   "CCI-000392": {
     "def": "The organization develops an inventory of information system components that includes all components within the authorization boundary of the information system.",
@@ -3371,7 +3819,11 @@
   },
   "CCI-000394": {
     "def": "The organization maintains an inventory of information system components that is consistent with the authorization boundary of the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 b"
+      ]
+    }
   },
   "CCI-000395": {
     "def": "The organization develops an inventory of information system components that is at the level of granularity deemed necessary for tracking and reporting.",
@@ -3391,7 +3843,11 @@
   },
   "CCI-000397": {
     "def": "The organization maintains an inventory of information system components that is at the level of granularity deemed necessary for tracking and reporting.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 c"
+      ]
+    }
   },
   "CCI-000398": {
     "def": "Defines information deemed necessary to achieve effective system component accountability.",
@@ -3422,31 +3878,59 @@
   },
   "CCI-000401": {
     "def": "The organization maintains an inventory of information system components that includes organization-defined information deemed necessary to achieve effective property accountability.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 d"
+      ]
+    }
   },
   "CCI-000402": {
     "def": "The organization develops an inventory of information system components that is available for review by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000403": {
     "def": "The organization documents an inventory of information system components that is available for review by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000404": {
     "def": "The organization maintains an inventory of information system components that is available for review by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000405": {
     "def": "The organization develops an inventory of information system components that is available for audit by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000406": {
     "def": "The organization documents an inventory of information system components that is available for audit by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000407": {
     "def": "The organization maintains an inventory of information system components that is available for audit by designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 e"
+      ]
+    }
   },
   "CCI-000408": {
     "def": "Update the inventory of system components as part of component installations.",
@@ -3549,7 +4033,11 @@
   },
   "CCI-000417": {
     "def": "The organization disables network access by unauthorized components/devices or notifies designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-8 (3) (b)"
+      ]
+    }
   },
   "CCI-000418": {
     "def": "Include in the system component inventory information, a means for identifying by name, position, and/or role, individuals responsible and accountable for administering those components.",
@@ -3637,39 +4125,75 @@
   },
   "CCI-000427": {
     "def": "The organization develops a configuration management plan for the information system when in the system development life cycle the configuration items are placed under configuration management.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 b"
+      ]
+    }
   },
   "CCI-000428": {
     "def": "The organization documents a configuration management plan for the information system when in the system development life cycle the configuration items are placed under configuration management.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 b"
+      ]
+    }
   },
   "CCI-000429": {
     "def": "The organization implements a configuration management plan for the information system when in the system development life cycle the configuration items are placed under configuration management.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 b"
+      ]
+    }
   },
   "CCI-000430": {
     "def": "The organization develops a configuration management plan for the information system that establishes the means for identifying configuration items throughout the system development life cycle.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000431": {
     "def": "The organization documents a configuration management plan for the information system that establishes the means for identifying configuration items throughout the system development life cycle.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000432": {
     "def": "The organization implements a configuration management plan for the information system that establishes the means for identifying configuration items throughout the system development life cycle.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000433": {
     "def": "The organization develops a configuration management plan for the information system that establishes a process for managing the configuration of the configuration items.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000434": {
     "def": "The organization documents a configuration management plan for the information system that establishes a process for managing the configuration of the configuration items.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000435": {
     "def": "The organization implements a configuration management plan for the information system that establishes a process for managing the configuration of the configuration items.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-9 c"
+      ]
+    }
   },
   "CCI-000436": {
     "def": "Assign responsibility for developing the configuration management process to organizational personnel that are not directly involved in system development.",
@@ -4234,7 +4758,11 @@
   },
   "CCI-000491": {
     "def": "The organization defines the frequency to exercise the contingency plan for the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4"
+      ]
+    }
   },
   "CCI-000492": {
     "def": "Defines the contingency plan tests to be conducted for the system.",
@@ -4249,7 +4777,11 @@
   },
   "CCI-000493": {
     "def": "The organization defines contingency plan exercises to be conducted for the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4"
+      ]
+    }
   },
   "CCI-000494": {
     "def": "Test the contingency plan for the system in accordance with organization-defined frequency using organization-defined tests to determine the effectiveness of the plan and the organizational readiness to execute the plan.",
@@ -4264,7 +4796,11 @@
   },
   "CCI-000495": {
     "def": "The organization exercises the contingency plan using organization-defined exercises in accordance with organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4 a"
+      ]
+    }
   },
   "CCI-000496": {
     "def": "Review the contingency plan test results.",
@@ -4301,7 +4837,11 @@
   },
   "CCI-000499": {
     "def": "The organization coordinates contingency plan exercises with organizational elements responsible for related plans.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4 (1)"
+      ]
+    }
   },
   "CCI-000500": {
     "def": "Test the contingency plan at the alternate processing site to familiarize contingency personnel with the facility and available resources.",
@@ -4316,7 +4856,11 @@
   },
   "CCI-000501": {
     "def": "The organization exercises the contingency plan at the alternate processing site to familiarize contingency personnel with the facility and available resources and to evaluate the site's capabilities to support contingency operations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4 (2)"
+      ]
+    }
   },
   "CCI-000502": {
     "def": "Test the contingency plan using organization-defined automated mechanisms.",
@@ -4331,7 +4875,11 @@
   },
   "CCI-000503": {
     "def": "The organization employs automated mechanisms to more thoroughly and effectively exercise the contingency plan by providing more complete coverage of contingency issues, selecting more realistic exercise scenarios and environments, and more effectively stressing the information and supported missions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-4 (3)"
+      ]
+    }
   },
   "CCI-000504": {
     "def": "Include a full recovery and reconstitution of the system to a known state as part of contingency plan testing.",
@@ -4354,7 +4902,11 @@
   },
   "CCI-000506": {
     "def": "The organization initiates necessary alternate storage site agreements to permit the storage and recovery of information system backup information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-6"
+      ]
+    }
   },
   "CCI-000507": {
     "def": "Identify an alternate storage site that is sufficiently separated from the primary storage site to reduce susceptibility to the same threats.",
@@ -4402,11 +4954,19 @@
   },
   "CCI-000511": {
     "def": "The organization defines the time period for achieving the recovery time objectives for business functions within which processing must be resumed at the alternate processing site.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-7"
+      ]
+    }
   },
   "CCI-000512": {
     "def": "The organization establishes an alternate processing site.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-7 a"
+      ]
+    }
   },
   "CCI-000513": {
     "def": "Establish an alternate processing site including necessary agreements to permit the transfer and resumption of organization-defined system operations for essential mission functions within an organization-defined time period consistent with recovery time and recovery point objectives when the primary processing capabilities are unavailable.",
@@ -4742,15 +5302,27 @@
   },
   "CCI-000544": {
     "def": "The organization stores backup copies of the operating system in a separate facility or in a fire-rated container that is not colocated with the operational system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-9 (3)"
+      ]
+    }
   },
   "CCI-000545": {
     "def": "The organization stores backup copies of critical information system software in a separate facility or in a fire-rated container that is not colocated with the operational system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-9 (3)"
+      ]
+    }
   },
   "CCI-000546": {
     "def": "The organization stores backup copies of the information system inventory (including hardware, software, and firmware components) in a separate facility or in a fire-rated container that is not colocated with the operational system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-9 (3)"
+      ]
+    }
   },
   "CCI-000547": {
     "def": "Defines the time-period and transfer rate of the system backup information to the alternate storage site consistent with the recovery time and recovery point objectives.",
@@ -4822,11 +5394,19 @@
   },
   "CCI-000554": {
     "def": "The organization defines in the security plan, explicitly or by reference, the circumstances that can inhibit recovery and reconstitution of the information system to a known state.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-10 (3)"
+      ]
+    }
   },
   "CCI-000555": {
     "def": "The organization provides compensating security controls for organization-defined circumstances that can inhibit recovery and reconstitution of the information system to a known state.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-10 (3)"
+      ]
+    }
   },
   "CCI-000556": {
     "def": "Defines restoration time periods within which to restore system components from configuration-controlled and integrity-protected information representing a known, operational state for the components.",
@@ -4920,7 +5500,11 @@
   },
   "CCI-000565": {
     "def": "The organization reviews/updates, per organization-defined frequency, a formal, documented security planning policy.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-1 a"
+      ]
+    }
   },
   "CCI-000566": {
     "def": "Develop and document procedures to facilitate the implementation of the planning policy and associated planning controls.",
@@ -4961,7 +5545,11 @@
   },
   "CCI-000570": {
     "def": "The organization develops a security plan for the information system that is consistent with the organization's enterprise architecture; explicitly defines the authorization boundary for the system; describes the operational context of the information system in terms of mission and business processes; provides the security category and impact level of the information system, including supporting rationale; describes the operational environment for the information system; describes relationships with, or connections to, other information systems; provides an overview of the security requirements for the system; and describes the security controls in place or planned for meeting those requirements, including a rationale for the tailoring and supplemental decisions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 a"
+      ]
+    }
   },
   "CCI-000571": {
     "def": "Develop security and privacy plans for the system that are reviewed and approved by the authorizing official or designated representative prior to plan implementation.",
@@ -5013,7 +5601,11 @@
   },
   "CCI-000576": {
     "def": "The organization develops a security Concept of Operations (CONOPS) for the information system containing, at a minimum: the purpose of the system; a description of the system architecture; the security authorization schedule; and the security categorization and associated factors considered in determining the categorization.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (1) (a)"
+      ]
+    }
   },
   "CCI-000577": {
     "def": "Defines the frequency with which to review and update the CONOPS.",
@@ -5043,51 +5635,99 @@
   },
   "CCI-000580": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains external interfaces.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (a)"
+      ]
+    }
   },
   "CCI-000581": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains the information being exchanged across the interfaces.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (a)"
+      ]
+    }
   },
   "CCI-000582": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains the protection mechanisms associated with each interface.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (a)"
+      ]
+    }
   },
   "CCI-000583": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains user roles.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (b)"
+      ]
+    }
   },
   "CCI-000584": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains the access privileges assigned to each role.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (b)"
+      ]
+    }
   },
   "CCI-000585": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains unique security requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (c)"
+      ]
+    }
   },
   "CCI-000586": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains types of information processed by the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (d)"
+      ]
+    }
   },
   "CCI-000587": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains types of information stored by the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (d)"
+      ]
+    }
   },
   "CCI-000588": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains types of information transmitted by the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (d)"
+      ]
+    }
   },
   "CCI-000589": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains any specific protection needs in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (d)"
+      ]
+    }
   },
   "CCI-000590": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains restoration priority of information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (e)"
+      ]
+    }
   },
   "CCI-000591": {
     "def": "The organization develops a functional architecture for the information system that identifies and maintains restoration priority of information system services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-2 (2) (e)"
+      ]
+    }
   },
   "CCI-000592": {
     "def": "Establish the rules that describe their responsibilities and expected behavior, for information and system usage, for individuals requiring access to the system.",
@@ -5135,23 +5775,43 @@
   },
   "CCI-000596": {
     "def": "The organization includes in the rules of behavior, explicit restrictions on sharing information system account information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-4 (1)"
+      ]
+    }
   },
   "CCI-000597": {
     "def": "The organization conducts a privacy impact assessment on the information system in accordance with OMB policy.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-5"
+      ]
+    }
   },
   "CCI-000598": {
     "def": "The organization plans and coordinates security-related activities affecting the information system before conducting such activities in order to reduce the impact on organizational operations (i.e., mission, functions, image, and reputation).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-6"
+      ]
+    }
   },
   "CCI-000599": {
     "def": "The organization plans and coordinates security-related activities affecting the information system before conducting such activities in order to reduce the impact on organizational assets.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-6"
+      ]
+    }
   },
   "CCI-000600": {
     "def": "The organization plans and coordinates security-related activities affecting the information system before conducting such activities in order to reduce the impact on organizational individuals.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PL-6"
+      ]
+    }
   },
   "CCI-000601": {
     "def": "Defines the frequency with which to review and update the current system and services acquisition policy.",
@@ -5232,11 +5892,19 @@
   },
   "CCI-000608": {
     "def": "The organization includes a determination of information security requirements for the information system in mission process planning.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-2 a"
+      ]
+    }
   },
   "CCI-000609": {
     "def": "The organization includes a determination of information security requirements for the information system in business process planning.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-2 a"
+      ]
+    }
   },
   "CCI-000610": {
     "def": "Determine the resources required to protect the system or system service as part of the organizational capital planning and investment control process.",
@@ -5317,7 +5985,11 @@
   },
   "CCI-000617": {
     "def": "The organization documents information system security roles and responsibilities throughout the system development life cycle.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-3 b"
+      ]
+    }
   },
   "CCI-000618": {
     "def": "Identify individuals having information system security roles and responsibilities.",
@@ -5332,15 +6004,27 @@
   },
   "CCI-000619": {
     "def": "The organization includes security functional requirements/specifications, explicitly or by reference, in information system acquisition contracts based on an assessment of risk and in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 a"
+      ]
+    }
   },
   "CCI-000620": {
     "def": "The organization includes security-related documentation requirements, explicitly or by reference, in information system acquisition contracts based on an assessment of risk and in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 b"
+      ]
+    }
   },
   "CCI-000621": {
     "def": "The organization includes developmental and evaluation-related assurance requirements, explicitly or by reference, in information system acquisition contracts based on an assessment of risk and in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 c"
+      ]
+    }
   },
   "CCI-000622": {
     "def": "The organization includes the following requirements and/or specifications, explicitly or by reference, in information system acquisition contracts based on an assessment of risk and in accordance with applicable federal laws, Executive Orders, directives.",
@@ -5359,31 +6043,59 @@
   },
   "CCI-000624": {
     "def": "The organization requires in acquisition documents that vendors/contractors provide information describing the design details of the security controls to be employed within the information system, information system components, or information system services (including functional interfaces among control components) in sufficient detail to permit analysis and testing of the controls.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (2)"
+      ]
+    }
   },
   "CCI-000625": {
     "def": "The organization requires in acquisition documents that vendors/contractors provide information describing the implementation details of the security controls to be employed within the information system, information system components, or information system services (including functional interfaces among control components) in sufficient detail to permit analysis and testing of the controls.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (2)"
+      ]
+    }
   },
   "CCI-000626": {
     "def": "The organization requires software vendors/manufacturers to minimize flawed or malformed software by demonstrating that their software development process employs state-of-the-practice software and security engineering methods.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (3)"
+      ]
+    }
   },
   "CCI-000627": {
     "def": "The organization requires software vendors/manufacturers to minimize flawed or malformed software by demonstrating that their software development process employs quality control processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (3)"
+      ]
+    }
   },
   "CCI-000628": {
     "def": "The organization requires software vendors/manufacturers to minimize flawed or malformed software by demonstrating that their software development processes employ validation techniques.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (3)"
+      ]
+    }
   },
   "CCI-000629": {
     "def": "The organization ensures each information system component acquired is explicitly assigned to an information system, and that the owner of the system acknowledges this assignment.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (4)"
+      ]
+    }
   },
   "CCI-000630": {
     "def": "The organization requires in acquisition documents, that information system components are delivered in a secure, documented configuration, and that the secure configuration is the default configuration for any software reinstalls or upgrades.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (5)"
+      ]
+    }
   },
   "CCI-000631": {
     "def": "Employ only government off-the-shelf or commercial off-the-shelf information assurance and information assurance-enabled information technology products that compose an NSA-approved solution to protect classified information when the networks used to transmit the information are at a lower classification level than the information being transmitted.",
@@ -5398,7 +6110,11 @@
   },
   "CCI-000632": {
     "def": "The organization employs only commercial off-the-shelf (COTS) information assurance (IA) and IA-enabled information technology products that compose an NSA-approved solution to protect classified information when the networks used to transmit the information are at a lower classification level than the information being transmitted.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (6) (a)"
+      ]
+    }
   },
   "CCI-000633": {
     "def": "Ensure that government off-the-shelf or commercial-off-the-shelf information assurance and information assurance-enabled information technology products have been evaluated and/or validated by NSA or in accordance with NSA-approved procedures.",
@@ -5435,27 +6151,51 @@
   },
   "CCI-000636": {
     "def": "The organization obtains administrator documentation for the information system that describes secure configuration, installation, and operation of the information system; effective use and maintenance of the security features/functions; and known vulnerabilities regarding configuration and use of administrative (i.e., privileged) functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 a"
+      ]
+    }
   },
   "CCI-000637": {
     "def": "The organization protects, as required, administrator documentation for the information system that describes secure configuration, installation, and operation of the information system; effective use and maintenance of the security features/functions; and known vulnerabilities regarding configuration and use of administrative (i.e., privileged) functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 a"
+      ]
+    }
   },
   "CCI-000638": {
     "def": "The organization makes available to authorized personnel administrator documentation for the information system that describes secure configuration, installation, and operation of the information system; effective use and maintenance of the security features/functions; and known vulnerabilities regarding configuration and use of administrative (i.e., privileged) functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 a"
+      ]
+    }
   },
   "CCI-000639": {
     "def": "The organization obtains user documentation for the information system that describes user-accessible security features/functions and how to effectively use those security features/functions; methods for user interaction with the information system, which enables individuals to use the system in a more secure manner; and user responsibilities in maintaining the security of the information and information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 b"
+      ]
+    }
   },
   "CCI-000640": {
     "def": "The organization protects, as required, user documentation for the information system that describes user-accessible security features/functions and how to effectively use those security features/functions; methods for user interaction with the information system, which enables individuals to use the system in a more secure manner; and user responsibilities in maintaining the security of the information and information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 b"
+      ]
+    }
   },
   "CCI-000641": {
     "def": "The organization makes available to authorized personnel user documentation for the information system that describes user-accessible security features/functions and how to effectively use those security features/functions; methods for user interaction with the information system, which enables individuals to use the system in a more secure manner; and user responsibilities in maintaining the security of the information and information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 b"
+      ]
+    }
   },
   "CCI-000642": {
     "def": "Document attempts to obtain system, system component, or system service documentation when such documentation is either unavailable or nonexistent.",
@@ -5470,27 +6210,51 @@
   },
   "CCI-000643": {
     "def": "The organization obtains vendor/manufacturer documentation that describes the functional properties of the security controls employed within the information system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (1)"
+      ]
+    }
   },
   "CCI-000644": {
     "def": "The organization protects, as required, vendor/manufacturer documentation that describes the functional properties of the security controls employed within the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (1)"
+      ]
+    }
   },
   "CCI-000645": {
     "def": "The organization makes available to authorized personnel vendor/manufacturer documentation that describes the functional properties of the security controls employed within the information system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (2)"
+      ]
+    }
   },
   "CCI-000646": {
     "def": "The organization obtains vendor/manufacturer documentation that describes the security-relevant external interfaces to the information system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (2)"
+      ]
+    }
   },
   "CCI-000647": {
     "def": "The organization obtains vendor/manufacturer documentation that describes the high-level design of the information system in terms of subsystems and implementation details of the security controls employed within the system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (3)"
+      ]
+    }
   },
   "CCI-000648": {
     "def": "The organization protects, as required, vendor/manufacturer documentation that describes the high-level design of the information system in terms of subsystems and implementation details of the security controls employed within the system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (3)"
+      ]
+    }
   },
   "CCI-000649": {
     "def": "The organization obtains, protects as required, and makes available to authorized personnel, vendor/manufacturer documentation that describes the high-level design of the information system in terms of implementation details of the security controls emplo.",
@@ -5498,11 +6262,19 @@
   },
   "CCI-000650": {
     "def": "The organization obtains vendor/manufacturer documentation that describes the low-level design of the information system in terms of modules and implementation details of the security controls employed within the system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (4)"
+      ]
+    }
   },
   "CCI-000651": {
     "def": "The organization protects, as required, vendor/manufacturer documentation that describes the low-level design of the information system in terms of modules and implementation details of the security controls employed within the system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (4)"
+      ]
+    }
   },
   "CCI-000652": {
     "def": "The organization obtains, protects as required, and makes available to authorized personnel, vendor/manufacturer documentation that describes the low-level design of the information system in terms of implementation details of the security controls employ.",
@@ -5510,47 +6282,91 @@
   },
   "CCI-000653": {
     "def": "The organization obtains the source code for the information system to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (5)"
+      ]
+    }
   },
   "CCI-000654": {
     "def": "The organization protects, as required, the source code for the information system to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (5)"
+      ]
+    }
   },
   "CCI-000655": {
     "def": "The organization uses software and associated documentation in accordance with contract agreements and copyright laws.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 a"
+      ]
+    }
   },
   "CCI-000656": {
     "def": "The organization employs tracking systems for software and associated documentation protected by quantity licenses to control copying and distribution.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 b"
+      ]
+    }
   },
   "CCI-000657": {
     "def": "The organization controls the use of peer-to-peer file sharing technology to ensure this capability is not used for the unauthorized distribution, display, performance, or reproduction of copyrighted work.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 c"
+      ]
+    }
   },
   "CCI-000658": {
     "def": "The organization documents the use of peer-to-peer file sharing technology to ensure this capability is not used for the unauthorized distribution, display, performance, or reproduction of copyrighted work.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 c"
+      ]
+    }
   },
   "CCI-000659": {
     "def": "The organization prohibits the use of binary executable code from sources with limited or no warranty without accompanying source code.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 (1) (a)"
+      ]
+    }
   },
   "CCI-000660": {
     "def": "The organization prohibits the use of machine executable code from sources with limited or no warranty without accompanying source code.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 (1) (a)"
+      ]
+    }
   },
   "CCI-000661": {
     "def": "The organization provides exceptions to the source code requirement only when no alternative solutions are available to support compelling mission/operational requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 (1) (b)"
+      ]
+    }
   },
   "CCI-000662": {
     "def": "The organization obtains express written consent of the authorizing official for exceptions to the source code requirement.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-6 (1) (b)"
+      ]
+    }
   },
   "CCI-000663": {
     "def": "The organization (or information system) enforces explicit rules governing the installation of software by users.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-7"
+      ]
+    }
   },
   "CCI-000664": {
     "def": "Apply organization-defined systems security and privacy engineering principles in the specification of the system and system components.",
@@ -5660,71 +6476,139 @@
   },
   "CCI-000675": {
     "def": "The organization monitors security control compliance by external service providers.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 c"
+      ]
+    }
   },
   "CCI-000676": {
     "def": "The organization conducts an organizational assessment of risk prior to the acquisition of dedicated information security services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (a)"
+      ]
+    }
   },
   "CCI-000677": {
     "def": "The organization conducts an organizational assessment of risk prior to the outsourcing of dedicated information security services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (a)"
+      ]
+    }
   },
   "CCI-000678": {
     "def": "The organization defines the senior organizational official designated to approve acquisition of dedicated information security services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (b)"
+      ]
+    }
   },
   "CCI-000679": {
     "def": "The organization defines the senior organizational official designated to approve outsourcing of dedicated information security services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (b)"
+      ]
+    }
   },
   "CCI-000680": {
     "def": "The organization ensures the acquisition of dedicated information security services is approved by an organization-designated senior organizational official.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (b)"
+      ]
+    }
   },
   "CCI-000681": {
     "def": "The organization ensures the outsourcing of dedicated information security services is approved by an organization-designated senior organizational official.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-9 (1) (b)"
+      ]
+    }
   },
   "CCI-000682": {
     "def": "The organization requires information system developers to perform configuration management during information system design.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000683": {
     "def": "The organization requires information system developers to perform configuration management during information system development.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000684": {
     "def": "The organization requires information system developers to perform configuration management during information system implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000685": {
     "def": "The organization requires information system developers to perform configuration management during information system operation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000686": {
     "def": "The organization requires information system integrators to perform configuration management during information system design.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000687": {
     "def": "The organization requires information system integrators to perform configuration management during information system development.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000688": {
     "def": "The organization requires information system integrators to perform configuration management during information system implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000689": {
     "def": "The organization requires information system integrators to perform configuration management during information system operation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (a)"
+      ]
+    }
   },
   "CCI-000690": {
     "def": "The organization requires information system developers to manage and control changes to the information system during design.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-000691": {
     "def": "The organization requires information system integrators to manage and control changes to the information system during design.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-000692": {
     "def": "Require the developer of the system, system component, or system service to implement only organization-approved changes to the system, component, or service.",
@@ -5739,7 +6623,11 @@
   },
   "CCI-000693": {
     "def": "The organization requires information system integrators to implement only organization-approved changes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (c)"
+      ]
+    }
   },
   "CCI-000694": {
     "def": "Require the developer of the system, system component, or system service to document approved changes to the system, component, or service.",
@@ -5754,15 +6642,27 @@
   },
   "CCI-000695": {
     "def": "The organization requires information system integrators to document approved changes to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (d)"
+      ]
+    }
   },
   "CCI-000696": {
     "def": "The organization requires that information system developers track security flaws and flaw resolution.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (e)"
+      ]
+    }
   },
   "CCI-000697": {
     "def": "The organization requires information system integrators to track security flaws and flaw resolution.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (e)"
+      ]
+    }
   },
   "CCI-000698": {
     "def": "Require the developer of the system, system component, or system service to enable integrity verification of software and firmware components.",
@@ -5777,7 +6677,11 @@
   },
   "CCI-000699": {
     "def": "The organization requires information system integrators to provide an integrity check of software to facilitate organizational verification of software integrity after delivery.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (1)"
+      ]
+    }
   },
   "CCI-000700": {
     "def": "Provide an alternate configuration management process using organizational personnel in the absence of a dedicated developer configuration management team.",
@@ -5792,87 +6696,171 @@
   },
   "CCI-000701": {
     "def": "The organization provides an alternative configuration management process with organizational personnel in the absence of a dedicated integrator configuration management team.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (2)"
+      ]
+    }
   },
   "CCI-000702": {
     "def": "The organization requires information system developers, in consultation with associated security personnel (including security engineers), to create a security test and evaluation plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (a)"
+      ]
+    }
   },
   "CCI-000703": {
     "def": "The organization requires information system developers, in consultation with associated security personnel (including security engineers), to implement a security test and evaluation plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (a)"
+      ]
+    }
   },
   "CCI-000704": {
     "def": "The organization requires information system integrators, in consultation with associated security personnel (including security engineers), to create a security test and evaluation plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (a)"
+      ]
+    }
   },
   "CCI-000705": {
     "def": "The organization requires information system integrators, in consultation with associated security personnel (including security engineers), to implement a security test and evaluation plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (a)"
+      ]
+    }
   },
   "CCI-000706": {
     "def": "The organization requires information system developers, in consultation with associated security personnel (including security engineers), to implement a verifiable flaw remediation process to correct weaknesses and deficiencies identified during the security testing and evaluation process.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (b)"
+      ]
+    }
   },
   "CCI-000707": {
     "def": "The organization requires information system integrators, in consultation with associated security personnel (including security engineers), to implement a verifiable flaw remediation process to correct weaknesses and deficiencies identified during the security testing and evaluation process.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (b)"
+      ]
+    }
   },
   "CCI-000708": {
     "def": "The organization requires information system developers, in consultation with associated security personnel (including security engineers), to document the results of the security testing/evaluation processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (c)"
+      ]
+    }
   },
   "CCI-000709": {
     "def": "The organization requires information system developers, in consultation with associated security personnel (including security engineers), to document the results of the security flaw remediation processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (c)"
+      ]
+    }
   },
   "CCI-000710": {
     "def": "The organization requires information system integrators, in consultation with associated security personnel (including security engineers), to document the results of the security testing/evaluation processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (c)"
+      ]
+    }
   },
   "CCI-000711": {
     "def": "The organization requires information system integrators, in consultation with associated security personnel (including security engineers), to document the results of the security flaw remediation processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (c)"
+      ]
+    }
   },
   "CCI-000712": {
     "def": "The organization requires information system developers to employ code analysis tools to examine software for common flaws and document the results of the analysis.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (1)"
+      ]
+    }
   },
   "CCI-000713": {
     "def": "The organization requires information system integrators to employ code analysis tools to examine software for common flaws and document the results of the analysis.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (1)"
+      ]
+    }
   },
   "CCI-000714": {
     "def": "The organization requires information system developers to perform a vulnerability analysis to document vulnerabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000715": {
     "def": "The organization requires information system developers to perform a vulnerability analysis to document exploitation potential.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000716": {
     "def": "The organization requires information system developers to perform a vulnerability analysis to document risk mitigations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000717": {
     "def": "The organization requires information system integrators to perform a vulnerability analysis to document vulnerabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000718": {
     "def": "The organization requires information system integrators to perform a vulnerability analysis to document exploitation potential.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000719": {
     "def": "The organization requires information system integrators perform a vulnerability analysis to document risk mitigations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (2)"
+      ]
+    }
   },
   "CCI-000720": {
     "def": "The organization requires information system developers implement the security test and evaluation plan under the witness of an independent verification and validation agent.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (3)"
+      ]
+    }
   },
   "CCI-000721": {
     "def": "The organization requires information system integrators to implement the security test and evaluation plan under the witness of an independent verification and validation agent.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-11 (3)"
+      ]
+    }
   },
   "CCI-000722": {
     "def": "The organization defines the security safeguards to employ to protect against supply chain threats to the information system, system component, or information system service.",
@@ -5892,131 +6880,259 @@
   },
   "CCI-000724": {
     "def": "The organization purchases all anticipated information system components and spares in the initial acquisition.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (1)"
+      ]
+    }
   },
   "CCI-000725": {
     "def": "The organization conducts a due diligence review of suppliers prior to entering into contractual agreements to acquire information system hardware.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (2)"
+      ]
+    }
   },
   "CCI-000726": {
     "def": "The organization conducts a due diligence review of suppliers prior to entering into contractual agreements to acquire information system software.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (2)"
+      ]
+    }
   },
   "CCI-000727": {
     "def": "The organization conducts a due diligence review of suppliers prior to entering into contractual agreements to acquire information system firmware.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (2)"
+      ]
+    }
   },
   "CCI-000728": {
     "def": "The organization conducts a due diligence review of suppliers prior to entering into contractual agreements to acquire information system services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (2)"
+      ]
+    }
   },
   "CCI-000729": {
     "def": "The organization uses trusted shipping for information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000730": {
     "def": "The organization uses trusted shipping for information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000731": {
     "def": "The organization uses trusted shipping for information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000732": {
     "def": "The organization uses trusted warehousing for information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000733": {
     "def": "The organization uses trusted warehousing for information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000734": {
     "def": "The organization uses trusted warehousing for information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (3)"
+      ]
+    }
   },
   "CCI-000735": {
     "def": "The organization employs a diverse set of suppliers for information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (4)"
+      ]
+    }
   },
   "CCI-000736": {
     "def": "The organization employs a diverse set of suppliers for information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (4)"
+      ]
+    }
   },
   "CCI-000737": {
     "def": "The organization employs a diverse set of suppliers for information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (4)"
+      ]
+    }
   },
   "CCI-000738": {
     "def": "The organization employs a diverse set of suppliers for information system services.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (4)"
+      ]
+    }
   },
   "CCI-000739": {
     "def": "The organization employs standard configurations for information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (5)"
+      ]
+    }
   },
   "CCI-000740": {
     "def": "The organization employs standard configurations for information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (5)"
+      ]
+    }
   },
   "CCI-000741": {
     "def": "The organization employs standard configurations for information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (5)"
+      ]
+    }
   },
   "CCI-000742": {
     "def": "The organization minimizes the time between purchase decisions and delivery of information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (6)"
+      ]
+    }
   },
   "CCI-000743": {
     "def": "The organization minimizes the time between purchase decisions and delivery of information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (6)"
+      ]
+    }
   },
   "CCI-000744": {
     "def": "The organization minimizes the time between purchase decisions and delivery of information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (6)"
+      ]
+    }
   },
   "CCI-000745": {
     "def": "The organization employs independent analysis and penetration testing against delivered information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (7)"
+      ]
+    }
   },
   "CCI-000746": {
     "def": "The organization employs independent analysis and penetration testing against delivered information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (7)"
+      ]
+    }
   },
   "CCI-000747": {
     "def": "The organization employs independent analysis and penetration testing against delivered information technology products.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-12 (7)"
+      ]
+    }
   },
   "CCI-000748": {
     "def": "The organization defines level of trustworthiness for the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-13"
+      ]
+    }
   },
   "CCI-000749": {
     "def": "The organization requires that the information system meets the organization-defined level of trustworthiness.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-13"
+      ]
+    }
   },
   "CCI-000750": {
     "def": "The organization defines the list of critical information system components that require re-implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14"
+      ]
+    }
   },
   "CCI-000751": {
     "def": "The organization determines the organization-defined list of critical information system components that require re-implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14 a"
+      ]
+    }
   },
   "CCI-000752": {
     "def": "The organization re-implements organization-defined critical information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14 b"
+      ]
+    }
   },
   "CCI-000753": {
     "def": "The organization identifies information system components for which alternative sourcing is not viable.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14 (1) (a)"
+      ]
+    }
   },
   "CCI-000754": {
     "def": "The organization defines measures to be employed to prevent critical security controls for information system components from being compromised.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14 (1) (b)"
+      ]
+    }
   },
   "CCI-000755": {
     "def": "The organization employs organization-defined measures to ensure critical security controls for the information system components are not compromised.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-14 (1) (b)"
+      ]
+    }
   },
   "CCI-000756": {
     "def": "The organization develops an identification and authentication policy that addresses purpose, scope, roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
@@ -6148,7 +7264,11 @@
   },
   "CCI-000769": {
     "def": "The organization allows the use of group authenticators only when used in conjunction with an individual/unique authenticator.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (5) (a)"
+      ]
+    }
   },
   "CCI-000770": {
     "def": "The organization requires individuals to be authenticated with an individual authenticator when a group authenticator is employed.",
@@ -6160,27 +7280,51 @@
   },
   "CCI-000771": {
     "def": "The information system uses multifactor authentication for network access to privileged accounts where one of the factors is provided by a device separate from the information system being accessed.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (6)"
+      ]
+    }
   },
   "CCI-000772": {
     "def": "The information system uses multifactor authentication for network access to non-privileged accounts where one of the factors is provided by a device separate from the information system being accessed.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (7)"
+      ]
+    }
   },
   "CCI-000773": {
     "def": "The organization defines replay-resistant authentication mechanisms to be used for network access to privileged accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (8)"
+      ]
+    }
   },
   "CCI-000774": {
     "def": "The information system uses organization-defined replay-resistant authentication mechanisms for network access to privileged accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (8)"
+      ]
+    }
   },
   "CCI-000775": {
     "def": "The organization defines replay-resistant authentication mechanisms to be used for network access to non-privileged accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (9)"
+      ]
+    }
   },
   "CCI-000776": {
     "def": "The information system uses organization-defined replay-resistant authentication mechanisms for network access to non-privileged accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-2 (9)"
+      ]
+    }
   },
   "CCI-000777": {
     "def": "Defines devices and/or types of devices for which identification and authentication is required before establishing a connection.",
@@ -6206,19 +7350,35 @@
   },
   "CCI-000779": {
     "def": "The information system authenticates devices before establishing remote network connections using bidirectional authentication between devices that is cryptographically based.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-3 (1)"
+      ]
+    }
   },
   "CCI-000780": {
     "def": "The information system authenticates devices before establishing wireless network connections using bidirectional authentication between devices that is cryptographically based.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-3 (1)"
+      ]
+    }
   },
   "CCI-000781": {
     "def": "The information system authenticates devices before establishing network connections using bidirectional authentication between devices that is cryptographically based.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-3 (2)"
+      ]
+    }
   },
   "CCI-000782": {
     "def": "The organization standardizes, with regard to dynamic address allocation, Dynamic Host Control Protocol (DHCP) lease information and the time assigned to DHCP-enabled devices.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-3 (3)"
+      ]
+    }
   },
   "CCI-000783": {
     "def": "Audit lease information when assigned to a device.",
@@ -6233,43 +7393,83 @@
   },
   "CCI-000784": {
     "def": "The organization manages information system identifiers for users and devices by receiving authorization from a designated organizational official to assign a user identifier.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 a"
+      ]
+    }
   },
   "CCI-000785": {
     "def": "The organization manages information system identifiers for users and devices by receiving authorization from a designated organizational official to assign a device identifier.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 a"
+      ]
+    }
   },
   "CCI-000786": {
     "def": "The organization manages information system identifiers for users and devices by selecting an identifier that uniquely identifies an individual.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 b"
+      ]
+    }
   },
   "CCI-000787": {
     "def": "The organization manages information system identifiers for users and devices by selecting an identifier that uniquely identifies a device.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 b"
+      ]
+    }
   },
   "CCI-000788": {
     "def": "The organization manages information system identifiers for users and devices by assigning the user identifier to the intended party.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 c"
+      ]
+    }
   },
   "CCI-000789": {
     "def": "The organization manages information system identifiers for users and devices by assigning the device identifier to the intended device.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 c"
+      ]
+    }
   },
   "CCI-000790": {
     "def": "The organization defines a time period for which the reuse of user identifiers is prohibited.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 d"
+      ]
+    }
   },
   "CCI-000791": {
     "def": "The organization defines a time period for which the reuse of device identifiers is prohibited.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 d"
+      ]
+    }
   },
   "CCI-000792": {
     "def": "The organization manages information system identifiers for users and devices by preventing reuse of user identifiers for an organization-defined time period.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 d"
+      ]
+    }
   },
   "CCI-000793": {
     "def": "The organization manages information system identifiers for users and devices by preventing reuse of device identifiers for an organization-defined time period.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 d"
+      ]
+    }
   },
   "CCI-000794": {
     "def": "The organization defines a time period of inactivity after which the identifier is disabled.",
@@ -6300,11 +7500,19 @@
   },
   "CCI-000797": {
     "def": "The organization requires that registration to receive a user ID and password include authorization by a supervisor.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 (2)"
+      ]
+    }
   },
   "CCI-000798": {
     "def": "The organization requires that registration to receive a user ID and password be done in person before a designated registration authority.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 (2)"
+      ]
+    }
   },
   "CCI-000799": {
     "def": "The organization requires multiple forms of certification of individual identification, such as documentary evidence or a combination of documents and biometrics, be presented to the registration authority.",
@@ -6338,7 +7546,11 @@
   },
   "CCI-000802": {
     "def": "The information system dynamically manages identifiers, attributes, and associated access authorizations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-4 (5)"
+      ]
+    }
   },
   "CCI-000803": {
     "def": "Implement mechanisms for authentication to a cryptographic module that meet the requirements of applicable laws, Executive Orders, directives, policies, regulations, standards, and guidance for such authentication.",
@@ -6773,7 +7985,11 @@
   },
   "CCI-000843": {
     "def": "The organization develops an incident response plan that provides the organization with a roadmap for implementing its incident response capability; describes the structure and organization of the incident response capability; provides a high-level approach for how the incident response capability fits into the overall organization; meets the unique requirements of the organization, which relate to mission, size, structure, and functions; defines reportable incidents; provides metrics for measuring the incident response capability within the organization; and defines the resources and management support needed to effectively maintain and mature an incident response capability.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IR-8 a"
+      ]
+    }
   },
   "CCI-000844": {
     "def": "Develop an incident response plan that is reviewed and approved by organization-defined personnel or roles on an organization-defined frequency.",
@@ -6925,7 +8141,11 @@
   },
   "CCI-000858": {
     "def": "The organization schedules, performs, documents, and reviews records of maintenance and repairs on information system components in accordance with manufacturer or vendor specifications and/or organizational requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-2 a"
+      ]
+    }
   },
   "CCI-000859": {
     "def": "The organization approves and monitors all maintenance activities, whether performed on site or remotely and whether the equipment is serviced on site or removed to another location.",
@@ -6970,11 +8190,19 @@
   },
   "CCI-000863": {
     "def": "The organization maintains maintenance records for the information system that include the date and time of maintenance, the name of the individual performing the maintenance, the name of escort, if necessary, a description of the maintenance performed, and a list of equipment removed or replaced (including identification numbers, if applicable).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-2 (1)"
+      ]
+    }
   },
   "CCI-000864": {
     "def": "The organization employs automated mechanisms to schedule, conduct, and document maintenance and repairs as required.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-2 (2)"
+      ]
+    }
   },
   "CCI-000865": {
     "def": "Approve the use of system maintenance tools.",
@@ -7011,7 +8239,11 @@
   },
   "CCI-000868": {
     "def": "The organization maintains, on an ongoing basis, information system maintenance tools.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-3"
+      ]
+    }
   },
   "CCI-000869": {
     "def": "Inspect the maintenance tools used by maintenance personnel for improper or unauthorized modifications.",
@@ -7048,7 +8280,11 @@
   },
   "CCI-000872": {
     "def": "The organization employs automated mechanisms to restrict the use of maintenance tools to authorized personnel only.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-3 (4)"
+      ]
+    }
   },
   "CCI-000873": {
     "def": "Approve nonlocal maintenance and diagnostic activities.",
@@ -7074,7 +8310,11 @@
   },
   "CCI-000875": {
     "def": "The organization controls non-local maintenance and diagnostic activities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 a"
+      ]
+    }
   },
   "CCI-000876": {
     "def": "Allow the use of nonlocal maintenance and diagnostic tools only as consistent with organizational policy and documented in the security plan for the system.",
@@ -7119,7 +8359,11 @@
   },
   "CCI-000880": {
     "def": "The organization audits non-local maintenance and diagnostic sessions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 (1)"
+      ]
+    }
   },
   "CCI-000881": {
     "def": "The organization documents, in the security plan for the information system, the policies and procedures for the establishment and use of nonlocal maintenance and diagnostic connections.",
@@ -7164,7 +8408,11 @@
   },
   "CCI-000885": {
     "def": "The organization requires that maintenance personnel notify organization-defined personnel when non-local maintenance is planned (i.e., date/time).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 (5) (a)"
+      ]
+    }
   },
   "CCI-000886": {
     "def": "Defines the personnel or roles to be notified of the date and time of planned nonlocal maintenance.",
@@ -7190,11 +8438,19 @@
   },
   "CCI-000888": {
     "def": "The organization employs cryptographic mechanisms to protect the integrity and confidentiality of non-local maintenance and diagnostic communications.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 (6)"
+      ]
+    }
   },
   "CCI-000889": {
     "def": "The organization employs remote disconnect verification at the termination of non-local maintenance and diagnostic sessions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 (7)"
+      ]
+    }
   },
   "CCI-000890": {
     "def": "Establish a process for maintenance personnel authorization.",
@@ -7220,7 +8476,11 @@
   },
   "CCI-000892": {
     "def": "The organization ensures that personnel performing maintenance on the information system have required access authorizations or designates organizational personnel with required access authorizations and technical competence deemed necessary to supervise information system maintenance.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-5 b"
+      ]
+    }
   },
   "CCI-000893": {
     "def": "Implement procedures for the use of maintenance personnel that lack appropriate security clearances or are not U.S. citizens.",
@@ -7257,7 +8517,11 @@
   },
   "CCI-000896": {
     "def": "The organization requires that in the event an information system component cannot be sanitized, the procedures contained in the security plan for the system be enforced.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-5 (1) (c)"
+      ]
+    }
   },
   "CCI-000897": {
     "def": "Verify that personnel performing maintenance and diagnostic activities on a system processing, storing, or transmitting classified information possess security clearances and formal access approvals for at least the highest classification level and for all compartments of information on the system.",
@@ -7305,11 +8569,19 @@
   },
   "CCI-000901": {
     "def": "The organization defines a list of security-critical information system components and/or key information technology components for which it will obtain maintenance support and/or spare parts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-6"
+      ]
+    }
   },
   "CCI-000902": {
     "def": "The organization defines a time period for obtaining maintenance support and/or spare parts for security-critical information system components and/or key information technology components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-6"
+      ]
+    }
   },
   "CCI-000903": {
     "def": "Obtain maintenance support and/or spare parts for organization-defined system components within an organization-defined time period of failure.",
@@ -7478,7 +8750,11 @@
   },
   "CCI-000918": {
     "def": "The organization restricts physical access to the facility containing an information system that processes classified information to authorized personnel with appropriate clearances and access authorizations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-2 (3)"
+      ]
+    }
   },
   "CCI-000919": {
     "def": "The organization enforces physical access authorizations at organization-defined entry/exit points to the facility where the information system resides.",
@@ -7509,7 +8785,11 @@
   },
   "CCI-000922": {
     "def": "The organization controls access to areas officially designated as publicly accessible in accordance with the organization's assessment of risk.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-3 d"
+      ]
+    }
   },
   "CCI-000923": {
     "def": "Secure keys, combinations, and other physical access devices.",
@@ -7672,7 +8952,11 @@
   },
   "CCI-000938": {
     "def": "The organization monitors physical access to the information system to detect and respond to physical security incidents.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-6 a"
+      ]
+    }
   },
   "CCI-000939": {
     "def": "Review physical access logs in accordance with organization-defined frequency.",
@@ -7720,19 +9004,35 @@
   },
   "CCI-000943": {
     "def": "The organization employs automated mechanisms to recognize potential intrusions and initiate designated response actions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-6 (2)"
+      ]
+    }
   },
   "CCI-000944": {
     "def": "The organization controls physical access to the information system by authenticating visitors before authorizing access to the facility where the information system resides other than areas designated as publicly accessible.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-7"
+      ]
+    }
   },
   "CCI-000945": {
     "def": "The organization escorts visitors and monitors visitor activity, when required.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-7 (1)"
+      ]
+    }
   },
   "CCI-000946": {
     "def": "The organization requires two forms of identification for visitor access to the facility.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-7 (2)"
+      ]
+    }
   },
   "CCI-000947": {
     "def": "Maintain visitor access records to the facility where the system resides for an organization-defined time period.",
@@ -7780,7 +9080,11 @@
   },
   "CCI-000951": {
     "def": "The organization maintains a record of all physical access, both visitor and authorized individuals.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-8 (2)"
+      ]
+    }
   },
   "CCI-000952": {
     "def": "Protect power equipment and power cabling for the system from damage and destruction.",
@@ -7795,7 +9099,11 @@
   },
   "CCI-000953": {
     "def": "The organization employs redundant and parallel power cabling paths.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-9 (1)"
+      ]
+    }
   },
   "CCI-000954": {
     "def": "Employ automatic voltage controls for organization-defined critical system components.",
@@ -7865,7 +9173,11 @@
   },
   "CCI-000960": {
     "def": "The organization provides a short-term uninterruptible power supply to facilitate an orderly shutdown of the information system in the event of a primary power source loss.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-11"
+      ]
+    }
   },
   "CCI-000961": {
     "def": "Provide an alternate power supply for the system that is activated manually or automatically and that can maintain minimally required operational capability in the event of an extended loss of the primary power source.",
@@ -7880,7 +9192,11 @@
   },
   "CCI-000962": {
     "def": "The organization provides a long-term alternate power supply for the information system that is self-contained and not reliant on external power generation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-11 (2)"
+      ]
+    }
   },
   "CCI-000963": {
     "def": "Employ and maintains automatic emergency lighting for the information system that activates in the event of a power outage or disruption and that covers emergency exits and evacuation routes within the facility.",
@@ -7895,7 +9211,11 @@
   },
   "CCI-000964": {
     "def": "The organization provides emergency lighting for all areas within the facility supporting essential missions and business functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-12 (1)"
+      ]
+    }
   },
   "CCI-000965": {
     "def": "Employ and maintain fire detection and suppression systems that are supported by an independent energy source.",
@@ -7910,11 +9230,19 @@
   },
   "CCI-000966": {
     "def": "The organization employs fire detection devices/systems for the information system that activate automatically and notify the organization and emergency responders in the event of a fire.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-13 (1)"
+      ]
+    }
   },
   "CCI-000967": {
     "def": "The organization employs fire suppression devices/systems for the information system that provide automatic notification of any activation to the organization and emergency responders.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-13 (2)"
+      ]
+    }
   },
   "CCI-000968": {
     "def": "Employ an automatic fire suppression capability for the system when the facility is not staffed on a continuous basis.",
@@ -7929,11 +9257,19 @@
   },
   "CCI-000969": {
     "def": "The organization ensures that the facility undergoes, on an organization-defined frequency, fire marshal inspections and promptly resolves identified deficiencies.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-13 (4)"
+      ]
+    }
   },
   "CCI-000970": {
     "def": "The organization defines a frequency for fire marshal inspections.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-13 (4)"
+      ]
+    }
   },
   "CCI-000971": {
     "def": "Maintain temperature; humidity; pressure; radiation; and/or organization-defined environmental control levels within the facility where the system resides at organization-defined acceptable levels.",
@@ -8036,7 +9372,11 @@
   },
   "CCI-000980": {
     "def": "The organization employs mechanisms that, without the need for manual intervention, protect the information system from water damage in the event of a water leak.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-15 (1)"
+      ]
+    }
   },
   "CCI-000981": {
     "def": "Authorize organization-defined types of system components entering and exiting the facility.",
@@ -8092,7 +9432,11 @@
   },
   "CCI-000986": {
     "def": "The organization defines management, operational, and technical information system security controls to be employed at alternate work sites.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-17 a"
+      ]
+    }
   },
   "CCI-000987": {
     "def": "Assess as feasible, the effectiveness of controls at alternate work sites.",
@@ -8129,7 +9473,11 @@
   },
   "CCI-000990": {
     "def": "The organization positions information system components within the facility to minimize potential damage from environmental hazards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-18"
+      ]
+    }
   },
   "CCI-000991": {
     "def": "Position system components within the facility to minimize the opportunity for unauthorized access.",
@@ -8144,7 +9492,11 @@
   },
   "CCI-000992": {
     "def": "The organization plans the location or site of the facility where the information system resides with regard to physical and environmental hazards, and for existing facilities, considers the physical and environmental hazards in its risk mitigation strategy.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-18 (1)"
+      ]
+    }
   },
   "CCI-000993": {
     "def": "Protect the system from information leakage due to electromagnetic signals emanations.",
@@ -8288,7 +9640,11 @@
   },
   "CCI-001006": {
     "def": "The organization defines security measures for restricting access to media.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-2"
+      ]
+    }
   },
   "CCI-001007": {
     "def": "Restrict access to media storage areas using organization-defined automated mechanisms.",
@@ -8314,7 +9670,11 @@
   },
   "CCI-001009": {
     "def": "The information system uses cryptographic mechanisms to protect and restrict access to information on portable digital media.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-2 (2)"
+      ]
+    }
   },
   "CCI-001010": {
     "def": "Mark system media indicating the distribution limitations, handling caveats, and applicable security markings (if any) of the information.",
@@ -8392,7 +9752,11 @@
   },
   "CCI-001017": {
     "def": "The organization defines security measures for securing media storage.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-4 a"
+      ]
+    }
   },
   "CCI-001018": {
     "def": "The organization protects information system media until the media are destroyed or sanitized using approved equipment, techniques, and procedures.",
@@ -8404,7 +9768,11 @@
   },
   "CCI-001019": {
     "def": "The organization employs cryptographic mechanisms to protect information in storage.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-4 (1)"
+      ]
+    }
   },
   "CCI-001020": {
     "def": "The organization protects and controls organization-defined types of information system media during transport outside of controlled areas using organization-defined security safeguards.",
@@ -8501,7 +9869,11 @@
   },
   "CCI-001029": {
     "def": "The organization tracks, documents, and verifies media sanitization and disposal actions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-6 (1)"
+      ]
+    }
   },
   "CCI-001030": {
     "def": "The organization tests sanitization equipment and procedures in accordance with the organization-defined frequency to verify that the intended sanitization is being achieved.",
@@ -8546,15 +9918,27 @@
   },
   "CCI-001034": {
     "def": "The organization sanitizes information system media containing Controlled Unclassified Information (CUI) or other sensitive information in accordance with applicable organizational and/or federal standards and policies.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-6 (4)"
+      ]
+    }
   },
   "CCI-001035": {
     "def": "The organization sanitizes information system media containing classified information in accordance with NSA standards and policies.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-6 (5)"
+      ]
+    }
   },
   "CCI-001036": {
     "def": "The organization destroys information system media that cannot be sanitized.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-6 (6)"
+      ]
+    }
   },
   "CCI-001037": {
     "def": "Develop and document an organization-level; mission/business process-level; system-level risk assessment policy that addresses purpose, scope, roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
@@ -8860,7 +10244,11 @@
   },
   "CCI-001065": {
     "def": "The organization employs vulnerability scanning procedures that can demonstrate the breadth of coverage (i.e., information system components scanned).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (3)"
+      ]
+    }
   },
   "CCI-001066": {
     "def": "Determine information about the system that is discoverable.",
@@ -8897,11 +10285,19 @@
   },
   "CCI-001069": {
     "def": "The organization employs automated mechanisms to detect the presence of unauthorized software on organizational information systems and notify designated organizational officials in accordance with the organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (7)"
+      ]
+    }
   },
   "CCI-001070": {
     "def": "The organization defines a frequency for employing automated mechanisms to detect the presence of unauthorized software on organizational information systems and notify designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (7)"
+      ]
+    }
   },
   "CCI-001071": {
     "def": "Review historic audit logs to determine if a vulnerability identified in the organization-defined system has been previously exploited within an organization-defined time period.",
@@ -8916,11 +10312,19 @@
   },
   "CCI-001072": {
     "def": "The organization employs an independent penetration agent or penetration team to conduct a vulnerability analysis on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (9) (a)"
+      ]
+    }
   },
   "CCI-001073": {
     "def": "The organization employs an independent penetration agent or penetration team to perform penetration testing on the information system based on the vulnerability analysis to determine the exploitability of identified vulnerabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (9) (b)"
+      ]
+    }
   },
   "CCI-001074": {
     "def": "The organization develops a system and communications protection policy that addresses purpose, scope, roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
@@ -9061,11 +10465,19 @@
   },
   "CCI-001087": {
     "def": "The organization implements an information system isolation boundary to minimize the number of nonsecurity functions included within the boundary containing security functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-3 (3)"
+      ]
+    }
   },
   "CCI-001088": {
     "def": "The organization implements security functions as largely independent modules that avoid unnecessary interactions between modules.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-3 (4)"
+      ]
+    }
   },
   "CCI-001089": {
     "def": "Implement security functions as a layered structure minimizing interactions between layers of the design and avoiding any dependence by lower layers on the functionality or correctness of higher layers.",
@@ -9091,11 +10503,19 @@
   },
   "CCI-001091": {
     "def": "The information system does not share resources that are used to interface with systems operating at different security levels.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-4 (1)"
+      ]
+    }
   },
   "CCI-001092": {
     "def": "The information system protects against or limits the effects of the organization-defined or referenced types of denial of service attacks.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-5"
+      ]
+    }
   },
   "CCI-001093": {
     "def": "Defines the types of denial-of-service events for protecting against or limiting the effects of the denial-of-service events.",
@@ -9132,7 +10552,11 @@
   },
   "CCI-001096": {
     "def": "The information system limits the use of resources by priority.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-6"
+      ]
+    }
   },
   "CCI-001097": {
     "def": "Monitor and control communications at the external managed interfaces to the system and at key managed interfaces within the system.",
@@ -9158,11 +10582,19 @@
   },
   "CCI-001099": {
     "def": "The organization physically allocates publicly accessible information system components to separate subnetworks with separate physical network interfaces.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (1)"
+      ]
+    }
   },
   "CCI-001100": {
     "def": "The information system prevents public access into the organization's internal networks except as appropriately mediated by managed interfaces employing boundary protection devices.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (2)"
+      ]
+    }
   },
   "CCI-001101": {
     "def": "Limit the number of external network connections to the system.",
@@ -9199,7 +10631,11 @@
   },
   "CCI-001104": {
     "def": "The organization employs security controls as needed to protect the confidentiality and integrity of the information being transmitted.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (4) (c)"
+      ]
+    }
   },
   "CCI-001105": {
     "def": "Document each exception to the traffic flow policy with a supporting mission or business need and duration of that need.",
@@ -9258,11 +10694,19 @@
   },
   "CCI-001110": {
     "def": "The organization prevents the unauthorized release of information outside of the information system boundary or any unauthorized communication through the information system boundary when there is an operational failure of the boundary protection mechanisms.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (6)"
+      ]
+    }
   },
   "CCI-001111": {
     "def": "The information system prevents remote devices that have established a non-remote connection with the system from communicating outside of that communications path with resources in external networks.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (7)"
+      ]
+    }
   },
   "CCI-001112": {
     "def": "Route organization-defined internal communications traffic to organization-defined external networks through authenticated proxy servers at managed interfaces.",
@@ -9299,7 +10743,11 @@
   },
   "CCI-001115": {
     "def": "The information system, at managed interfaces, denies network traffic and audits internal users (or malicious code) posing a threat to external information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (9)"
+      ]
+    }
   },
   "CCI-001116": {
     "def": "Prevent the exfiltration of information.",
@@ -9314,11 +10762,19 @@
   },
   "CCI-001117": {
     "def": "The information system checks incoming communications to ensure the communications are coming from an authorized source and routed to an authorized destination.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (11)"
+      ]
+    }
   },
   "CCI-001118": {
     "def": "The information system implements host-based boundary protection mechanisms for servers, workstations, and mobile devices.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (12)"
+      ]
+    }
   },
   "CCI-001119": {
     "def": "Isolate organization-defined information security tools, mechanisms, and support components from other internal system components by implementing physically separate subnetworks with managed interfaces to other components of the system.",
@@ -9407,27 +10863,51 @@
   },
   "CCI-001127": {
     "def": "The information system protects the integrity of transmitted information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-8"
+      ]
+    }
   },
   "CCI-001128": {
     "def": "The organization employs cryptographic mechanisms to recognize changes to information during transmission unless otherwise protected by alternative physical measures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-8 (1)"
+      ]
+    }
   },
   "CCI-001129": {
     "def": "The information system maintains the integrity of information during aggregation, packaging, and transformation in preparation for transmission.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-8 (2)"
+      ]
+    }
   },
   "CCI-001130": {
     "def": "The information system protects the confidentiality of transmitted information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-9"
+      ]
+    }
   },
   "CCI-001131": {
     "def": "The organization employs cryptographic mechanisms to prevent unauthorized disclosure of information during transmission unless otherwise protected by alternative physical measures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-9 (1)"
+      ]
+    }
   },
   "CCI-001132": {
     "def": "The information system maintains the confidentiality of information during aggregation, packaging, and transformation in preparation for transmission.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-9 (2)"
+      ]
+    }
   },
   "CCI-001133": {
     "def": "Terminate the network connection associated with a communications session at the end of the session or after an organization-defined time period of inactivity.",
@@ -9464,15 +10944,27 @@
   },
   "CCI-001136": {
     "def": "The organization defines security functions include information system authentication and reauthentication.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-11"
+      ]
+    }
   },
   "CCI-001137": {
     "def": "The organization establishes cryptographic keys for required cryptography employed within the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12"
+      ]
+    }
   },
   "CCI-001138": {
     "def": "The organization manages cryptographic keys for required cryptography employed within the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12"
+      ]
+    }
   },
   "CCI-001139": {
     "def": "Maintain availability of information in the event of the loss of cryptographic keys by users.",
@@ -9487,43 +10979,84 @@
   },
   "CCI-001140": {
     "def": "The organization produces, controls, and distributes symmetric cryptographic keys using NIST-approved or NSA-approved key management technology and processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12 (2)"
+      ]
+    }
   },
   "CCI-001141": {
     "def": "The organization produces, controls, and distributes symmetric and asymmetric cryptographic keys using NSA-approved key management technology and processes.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12 (3)"
+      ]
+    }
   },
   "CCI-001142": {
     "def": "The organization produces, controls, and distributes asymmetric cryptographic keys using approved PKI Class 3 certificates or prepositioned keying material.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12 (4)"
+      ]
+    }
   },
   "CCI-001143": {
     "def": "The organization produces, controls, and distributes asymmetric cryptographic keys using approved PKI Class 3 or Class 4 certificates and hardware security tokens that protect the user's private key.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-12 (5)"
+      ]
+    }
   },
   "CCI-001144": {
     "def": "The information system implements required cryptographic protections using cryptographic modules that comply with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-13"
+      ]
+    }
   },
   "CCI-001145": {
     "def": "The organization employs, at a minimum, FIPS-validated cryptography to protect unclassified information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-13 (1)"
+      ]
+    }
   },
   "CCI-001146": {
     "def": "The organization employs NSA-approved cryptography to protect classified information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-13 (2)"
+      ]
+    }
   },
   "CCI-001147": {
     "def": "The organization employs, at a minimum, FIPS-validated cryptography to protect information when such information must be separated from individuals who have the necessary clearances yet lack the necessary access approvals.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-13 (3)"
+      ]
+    }
   },
   "CCI-001148": {
     "def": "The organization employs FIPS-validated or NSA-approved cryptography to implement digital signatures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-13 (4)",
+        "AU-10 (5)"
+      ]
+    }
   },
   "CCI-001149": {
     "def": "The information system protects the integrity and availability of publicly available information and applications.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-14"
+      ]
+    }
   },
   "CCI-001150": {
     "def": "Prohibit remote activation of collaborative computing devices and applications, excluding the organization-defined exceptions where remote activation is to be allowed.",
@@ -9571,7 +11104,11 @@
   },
   "CCI-001154": {
     "def": "The information system or supporting environment blocks both inbound and outbound traffic between instant messaging clients that are independently configured by end users and external service providers.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-15 (2)"
+      ]
+    }
   },
   "CCI-001155": {
     "def": "Disable or remove collaborative computing devices and applications from organization-defined systems or system components in organization-defined secure work areas.",
@@ -9829,11 +11366,19 @@
   },
   "CCI-001180": {
     "def": "The information system performs data origin authentication and data integrity verification on the name/address resolution responses the system receives from authoritative sources when requested by client systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-21"
+      ]
+    }
   },
   "CCI-001181": {
     "def": "The information system performs data origin authentication and data integrity verification on all resolution responses received whether or not local client systems explicitly request this service.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-21 (1)"
+      ]
+    }
   },
   "CCI-001182": {
     "def": "Ensure the systems that collectively provide name/address resolution service for an organization are fault-tolerant.",
@@ -9881,11 +11426,19 @@
   },
   "CCI-001186": {
     "def": "The information system provides a readily observable logout capability whenever authentication is used to gain access to web pages.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-23 (2)"
+      ]
+    }
   },
   "CCI-001187": {
     "def": "The information system generates a unique session identifier for each session.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-23 (3)"
+      ]
+    }
   },
   "CCI-001188": {
     "def": "Generate a unique session identifier for each session with organization-defined randomness requirements.",
@@ -10021,7 +11574,11 @@
   },
   "CCI-001200": {
     "def": "The organization employs cryptographic mechanisms to prevent unauthorized disclosure of information at rest unless otherwise protected by alternative physical measures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-28 (1)"
+      ]
+    }
   },
   "CCI-001201": {
     "def": "Employ a diverse set of information technologies for organization-defined system components in the implementation of the system.",
@@ -10036,7 +11593,11 @@
   },
   "CCI-001202": {
     "def": "The organization employs virtualization techniques to present information system components as other types of components, or components with differing configurations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-30"
+      ]
+    }
   },
   "CCI-001203": {
     "def": "Employ virtualization techniques to support the deployment of a diversity of operating systems that are changed on an organization-defined frequency.",
@@ -10062,11 +11623,19 @@
   },
   "CCI-001205": {
     "def": "The organization employs randomness in the implementation of the virtualization techniques.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-30 (2)"
+      ]
+    }
   },
   "CCI-001206": {
     "def": "The organization requires that information system developers/integrators perform a covert channel analysis to identify those aspects of system communication that are potential avenues for covert storage and timing channels.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-31"
+      ]
+    }
   },
   "CCI-001207": {
     "def": "Test a subset of the identified covert channels to determine which channels are exploitable.",
@@ -10081,11 +11650,19 @@
   },
   "CCI-001208": {
     "def": "The organization partitions the information system into components residing in separate physical domains (or environments) as deemed necessary.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-32"
+      ]
+    }
   },
   "CCI-001209": {
     "def": "The information system protects the integrity of information during the processes of data aggregation, packaging, and transformation in preparation for transmission.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-33"
+      ]
+    }
   },
   "CCI-001210": {
     "def": "For organization-defined system components, load and execute the operating environment from hardware-enforced, read-only media.",
@@ -10328,7 +11905,11 @@
   },
   "CCI-001232": {
     "def": "The organization installs software updates automatically.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-2 (1)"
+      ]
+    }
   },
   "CCI-001233": {
     "def": "The organization employs automated mechanisms on an organization-defined frequency to determine the state of information system components with regard to flaw remediation.",
@@ -10370,15 +11951,27 @@
   },
   "CCI-001237": {
     "def": "The organization employs automated patch management tools to facilitate flaw remediation to organization-defined information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-2 (4)"
+      ]
+    }
   },
   "CCI-001238": {
     "def": "The organization defines information system components for which automated patch management tools are to be employed to facilitate flaw remediation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-2 (4)"
+      ]
+    }
   },
   "CCI-001239": {
     "def": "The organization employs malicious code protection mechanisms at information system entry and exit points to detect and eradicate malicious code transported by electronic mail, electronic mail attachments, web accesses, removable media, or other common means or inserted through the exploitation of information system vulnerabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-3 a"
+      ]
+    }
   },
   "CCI-001240": {
     "def": "The organization updates malicious code protection mechanisms whenever new releases are available in accordance with organizational configuration management policy and procedures.",
@@ -10458,7 +12051,11 @@
   },
   "CCI-001248": {
     "def": "The information system prevents non-privileged users from circumventing malicious code protection capabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-3 (3)"
+      ]
+    }
   },
   "CCI-001249": {
     "def": "Update malicious code protection mechanisms only when directed by a privileged user.",
@@ -10473,7 +12070,11 @@
   },
   "CCI-001250": {
     "def": "The organization does not allow users to introduce removable media into the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-3 (5)"
+      ]
+    }
   },
   "CCI-001251": {
     "def": "Test malicious code protection mechanisms on an organization-defined frequency by introducing a known benign code into the system.",
@@ -10488,7 +12089,11 @@
   },
   "CCI-001252": {
     "def": "The organization monitors events on the information system in accordance with organization-defined monitoring objectives and detects information system attacks.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 a"
+      ]
+    }
   },
   "CCI-001253": {
     "def": "Defines the objectives of monitoring for attacks and indicators of potential attacks on the system.",
@@ -10503,7 +12108,11 @@
   },
   "CCI-001254": {
     "def": "The organization identifies unauthorized use of the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 b"
+      ]
+    }
   },
   "CCI-001255": {
     "def": "Invoke internal monitoring capabilities or deploy monitoring devices strategically within the system to collect organization-determined essential information.",
@@ -10551,7 +12160,11 @@
   },
   "CCI-001259": {
     "def": "The organization interconnects and configures individual intrusion detection tools into a systemwide intrusion detection system using common protocols.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (1)"
+      ]
+    }
   },
   "CCI-001260": {
     "def": "Employ automated tools to support near real-time analysis of events.",
@@ -10566,15 +12179,27 @@
   },
   "CCI-001261": {
     "def": "The organization employs automated tools to integrate intrusion detection tools into access control and flow control mechanisms for rapid response to attacks by enabling reconfiguration of these mechanisms in support of attack isolation and elimination.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (3)"
+      ]
+    }
   },
   "CCI-001262": {
     "def": "The information system monitors inbound and outbound communications for unusual or unauthorized activities or conditions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (4)"
+      ]
+    }
   },
   "CCI-001263": {
     "def": "The information system provides near real-time alerts when any of the organization-defined list of compromise or potential compromise indicators occurs.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (5)"
+      ]
+    }
   },
   "CCI-001264": {
     "def": "Defines the indicators of compromise or potential compromise which will result in system alerts being provided to organization-defined personnel or roles.",
@@ -10589,7 +12214,11 @@
   },
   "CCI-001265": {
     "def": "The information system prevents non-privileged users from circumventing intrusion detection and prevention capabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (6)"
+      ]
+    }
   },
   "CCI-001266": {
     "def": "Notify an organization-defined incident response personnel (identified by name and/or by role) of detected suspicious events.",
@@ -10626,7 +12255,11 @@
   },
   "CCI-001269": {
     "def": "The organization protects information obtained from intrusion monitoring tools from unauthorized access, modification, and deletion.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (8)"
+      ]
+    }
   },
   "CCI-001270": {
     "def": "Test intrusion monitoring tools at an organization-defined frequency.",
@@ -10652,7 +12285,11 @@
   },
   "CCI-001272": {
     "def": "The organization makes provisions so encrypted traffic is visible to information system monitoring tools.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (10)"
+      ]
+    }
   },
   "CCI-001273": {
     "def": "Analyze outbound communications traffic at the external interfaces to the system to discover anomalies.",
@@ -10711,19 +12348,35 @@
   },
   "CCI-001278": {
     "def": "The organization uses the traffic/event profiles in tuning system monitoring devices to reduce the number of false positives to an organization-defined measure of false positives and the number of false negatives to an organization-defined measure of false negatives.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (13) (c)"
+      ]
+    }
   },
   "CCI-001279": {
     "def": "The organization defines the respective measurements to which the organization must tune system monitoring devices to reduce the number of false positives.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (13) (c)"
+      ]
+    }
   },
   "CCI-001280": {
     "def": "The organization defines the respective measurements to which the organization must tune system monitoring devices to reduce the number of false negatives.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (13) (c)"
+      ]
+    }
   },
   "CCI-001281": {
     "def": "The organization employs a wireless intrusion detection system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (14)"
+      ]
+    }
   },
   "CCI-001282": {
     "def": "Employ an intrusion detection system to monitor wireless communications traffic as the traffic passes from wireless to wireline networks.",
@@ -10826,15 +12479,27 @@
   },
   "CCI-001291": {
     "def": "The information system verifies the correct operation of security functions in accordance with organization-defined conditions and in accordance with organization-defined frequency (if periodic verification).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-6"
+      ]
+    }
   },
   "CCI-001292": {
     "def": "The organization defines the appropriate conditions, including the system transitional states if applicable, for verifying the correct operation of security functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-6"
+      ]
+    }
   },
   "CCI-001293": {
     "def": "The organization defines the information system responses and alternative action(s) to anomalies discovered during security function verification.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-6"
+      ]
+    }
   },
   "CCI-001294": {
     "def": "Alert organization-defined personnel or roles of failed security verification tests.",
@@ -10871,15 +12536,27 @@
   },
   "CCI-001297": {
     "def": "The information system detects unauthorized changes to software and information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7"
+      ]
+    }
   },
   "CCI-001298": {
     "def": "The organization reassesses the integrity of software and information by performing, on an organization-defined frequency, integrity scans of the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7 (1)"
+      ]
+    }
   },
   "CCI-001299": {
     "def": "The organization defines the frequency of integrity scans to be performed on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7 (1)"
+      ]
+    }
   },
   "CCI-001300": {
     "def": "Employ automated tools that provide notification to organization-defined personnel or roles upon discovering discrepancies during integrity verification.",
@@ -10905,19 +12582,35 @@
   },
   "CCI-001302": {
     "def": "The organization requires use of tamper-evident packaging for organization-defined information system components during organization-defined conditions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7 (4)"
+      ]
+    }
   },
   "CCI-001303": {
     "def": "The organization defines information system components that require tamper-evident packaging.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7 (4)"
+      ]
+    }
   },
   "CCI-001304": {
     "def": "The organization defines conditions (i.e., transportation from vendor to operational site, during operation, both) under which tamper-evident packaging must be used for organization-defined information system components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-7 (4)"
+      ]
+    }
   },
   "CCI-001305": {
     "def": "The organization employs spam protection mechanisms at information system entry and exit points to detect and take action on unsolicited messages transported by electronic mail, electronic mail attachments, web accesses, removable media, or other common means.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-8 a"
+      ]
+    }
   },
   "CCI-001306": {
     "def": "The organization updates spam protection mechanisms when new releases are available in accordance with organizational configuration management policy and procedures.",
@@ -10948,7 +12641,11 @@
   },
   "CCI-001309": {
     "def": "The organization restricts the capability to input information to the information system to authorized personnel.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-9"
+      ]
+    }
   },
   "CCI-001310": {
     "def": "Checks the validity of organization-defined information inputs to the system.",
@@ -10963,7 +12660,11 @@
   },
   "CCI-001311": {
     "def": "The information system identifies potentially security-relevant error conditions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-11 a"
+      ]
+    }
   },
   "CCI-001312": {
     "def": "Generate error messages that provide information necessary for corrective actions without revealing information that could be exploited.",
@@ -10978,7 +12679,11 @@
   },
   "CCI-001313": {
     "def": "The organization defines sensitive or potentially harmful information that should not be contained in error logs and administrative messages.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-11 b"
+      ]
+    }
   },
   "CCI-001314": {
     "def": "Reveal error messages only to organization-defined personnel or roles.",
@@ -11004,11 +12709,19 @@
   },
   "CCI-001316": {
     "def": "The organization protects the information system from harm by considering mean time to failure rates for an organization-defined list of information system components in specific environments of operation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-13 a"
+      ]
+    }
   },
   "CCI-001317": {
     "def": "The organization defines a list of information system components for which mean time to failure rates should be considered to protect the information system from harm.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-13 a"
+      ]
+    }
   },
   "CCI-001318": {
     "def": "Provide substitute system components.",
@@ -11226,11 +12939,19 @@
   },
   "CCI-001338": {
     "def": "The information system associates the identity of the information producer with the information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-10 (1)"
+      ]
+    }
   },
   "CCI-001339": {
     "def": "The information system validates the binding of the information producer's identity to the information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-10 (2)"
+      ]
+    }
   },
   "CCI-001340": {
     "def": "Maintain reviewer or releaser identity and credentials within the established chain of custody for all information reviewed or released.",
@@ -11256,27 +12977,51 @@
   },
   "CCI-001342": {
     "def": "The organization employs either FIPS-validated or NSA-approved cryptography to implement digital signatures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-10 (5)"
+      ]
+    }
   },
   "CCI-001343": {
     "def": "The information system invokes a system shutdown in the event of an audit failure, unless an alternative audit capability exists.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-5 (4)"
+      ]
+    }
   },
   "CCI-001344": {
     "def": "The organization specifies the permitted actions for each authorized information system process, role, and/or user in the audit and accountability policy.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (7)"
+      ]
+    }
   },
   "CCI-001345": {
     "def": "The organization employs automated mechanisms to alert security personnel of any organization-defined inappropriate or unusual activities with security implications.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (8)"
+      ]
+    }
   },
   "CCI-001346": {
     "def": "The organization defines a list of inappropriate or unusual activities with security implications that are to result in alerts to security personnel.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (8)"
+      ]
+    }
   },
   "CCI-001347": {
     "def": "The organization performs, in a physically dedicated information system, full-text analysis of privileged functions executed.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-6 (9)"
+      ]
+    }
   },
   "CCI-001348": {
     "def": "Store audit records on an organization-defined frequency in a repository that is part of a physically different system or system component than the system or component being audited.",
@@ -11324,7 +13069,11 @@
   },
   "CCI-001352": {
     "def": "The organization protects the audit records of non-local accesses to privileged accounts and the execution of privileged functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-9 (4) (b)"
+      ]
+    }
   },
   "CCI-001353": {
     "def": "Produce a system-wide (logical or physical) audit trail composed of audit records in a standardized format.",
@@ -11339,19 +13088,35 @@
   },
   "CCI-001354": {
     "def": "The organization manages information system accounts by deactivating temporary accounts that are no longer required.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 h"
+      ]
+    }
   },
   "CCI-001355": {
     "def": "The organization manages information system accounts by deactivating accounts of terminated or transferred users.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 h"
+      ]
+    }
   },
   "CCI-001356": {
     "def": "The organization monitors for atypical usage of information system accounts.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 (5) (c)"
+      ]
+    }
   },
   "CCI-001357": {
     "def": "The organization reports atypical usage to designated organizational officials.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 (5) (d)"
+      ]
+    }
   },
   "CCI-001358": {
     "def": "Establish privileged user accounts in accordance with a role-based access scheme; or an attribute-based access scheme.",
@@ -11366,7 +13131,11 @@
   },
   "CCI-001359": {
     "def": "The organization tracks privileged role assignments.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-2 (7) (b)"
+      ]
+    }
   },
   "CCI-001360": {
     "def": "Monitor privileged role assignments.",
@@ -11392,11 +13161,19 @@
   },
   "CCI-001362": {
     "def": "The information system enforces a Discretionary Access Control (DAC) policy that allows users to specify and control sharing by named individuals or groups of individuals, or by both.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4)"
+      ]
+    }
   },
   "CCI-001363": {
     "def": "The organization establishes a Discretionary Access Control (DAC) policy that allows users to specify and control sharing by named individuals or groups of individuals, or by both.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4) (a)"
+      ]
+    }
   },
   "CCI-001364": {
     "def": "The organization establishes a Discretionary Access Control (DAC) policy that limits propagation of access rights.",
@@ -11415,11 +13192,19 @@
   },
   "CCI-001366": {
     "def": "The organization defines user information to be encrypted or stored off-line in a secure location.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (6)"
+      ]
+    }
   },
   "CCI-001367": {
     "def": "The organization defines system information to be encrypted or stored off-line in a secure location.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (6)"
+      ]
+    }
   },
   "CCI-001368": {
     "def": "Enforce approved authorizations for controlling the flow of information within the system based on organization-defined information flow control policies.",
@@ -11490,11 +13275,19 @@
   },
   "CCI-001376": {
     "def": "The information system uniquely identifies source domains for information transfer.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (a)"
+      ]
+    }
   },
   "CCI-001377": {
     "def": "The information system uniquely authenticates source domains for information transfer.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (a)"
+      ]
+    }
   },
   "CCI-001378": {
     "def": "The information system binds security attributes to information to facilitate information flow policy enforcement.",
@@ -11518,11 +13311,19 @@
   },
   "CCI-001382": {
     "def": "The organization defines the number of consecutive, unsuccessful login attempts to the mobile device.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 (2)"
+      ]
+    }
   },
   "CCI-001383": {
     "def": "The information system provides additional protection for mobile devices accessed via login by purging information from the device after an organization-defined number of consecutive, unsuccessful login attempts to the mobile device.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 (2)"
+      ]
+    }
   },
   "CCI-001384": {
     "def": "For publicly accessible systems, display system use information with organization-defined conditions before granting further access to the publicly accessible system.",
@@ -11658,31 +13459,59 @@
   },
   "CCI-001396": {
     "def": "The organization defines security attributes for which the information system supports and maintains the bindings for information in storage.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001397": {
     "def": "The organization defines security attributes for which the information system supports and maintains the bindings for information in process.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001398": {
     "def": "The organization defines security attributes for which the information system supports and maintains the bindings for information in transmission.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001399": {
     "def": "The information system supports and maintains the binding of organization-defined security attributes to information in storage.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001400": {
     "def": "The information system supports and maintains the binding of organization-defined security attributes to information in process.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001401": {
     "def": "The information system supports and maintains the binding of organization-defined security attributes to information in transmission.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16"
+      ]
+    }
   },
   "CCI-001402": {
     "def": "The organization monitors for unauthorized remote access to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 c"
+      ]
+    }
   },
   "CCI-001403": {
     "def": "Automatically audit account modification actions.",
@@ -11752,11 +13581,19 @@
   },
   "CCI-001409": {
     "def": "The organization defines nondiscretionary access control policies to be enforced over the organization-defined set of users and resources, where the rule set for each policy specifies access control information employed by the policy rule set (e.g., position, nationality, age, project, time of day) and required relationships among the access control information to permit access.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (3)"
+      ]
+    }
   },
   "CCI-001410": {
     "def": "The organization defines the set of users and resources over which the information system is to enforce nondiscretionary access control policies.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (3)"
+      ]
+    }
   },
   "CCI-001411": {
     "def": "Defines security-relevant information to which the system prevents access except during secure, non-operable system states.",
@@ -11771,11 +13608,19 @@
   },
   "CCI-001412": {
     "def": "The organization encrypts or stores off-line, in a secure location, organization-defined user information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (6)"
+      ]
+    }
   },
   "CCI-001413": {
     "def": "The organization encrypts or stores off-line, in a secure location, organization-defined system information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (6)"
+      ]
+    }
   },
   "CCI-001414": {
     "def": "Enforce approved authorizations for controlling the flow of information between connected systems based on organization-defined information flow control policies.",
@@ -11820,7 +13665,11 @@
   },
   "CCI-001418": {
     "def": "The organization defines security policy filters for which the information system enforces the use of human review.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (9)"
+      ]
+    }
   },
   "CCI-001419": {
     "def": "Defines the security functions or security-relevant information to which users of system accounts, or roles, have access.",
@@ -11846,7 +13695,11 @@
   },
   "CCI-001421": {
     "def": "The organization limits authorization to super user accounts on the information system to designated system administration personnel.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-6 (5)"
+      ]
+    }
   },
   "CCI-001422": {
     "def": "Prohibit privileged access to the system by non-organizational users.",
@@ -11894,11 +13747,19 @@
   },
   "CCI-001426": {
     "def": "The information system maintains the binding of security attributes to information with sufficient assurance that the information--attribute association can be used as the basis for automated policy actions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16 (3)"
+      ]
+    }
   },
   "CCI-001427": {
     "def": "The information system allows authorized users to associate security attributes with information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-16 (4)"
+      ]
+    }
   },
   "CCI-001428": {
     "def": "Display security attributes in human-readable form on each object that the system transmits to output devices to identify organization-identified special dissemination, handling, or distribution instructions using organization-identified human-readable, standard naming conventions.",
@@ -11935,31 +13796,59 @@
   },
   "CCI-001431": {
     "def": "The organization defines a frequency for monitoring for unauthorized remote connections to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (5)"
+      ]
+    }
   },
   "CCI-001432": {
     "def": "The organization takes appropriate action if an unauthorized remote connection to the information system is discovered.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (5)"
+      ]
+    }
   },
   "CCI-001433": {
     "def": "The organization defines a list of security functions and security-relevant information that for remote access sessions have organization-defined security measures employed and are audited.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (7)"
+      ]
+    }
   },
   "CCI-001434": {
     "def": "The organization defines additional security measures to be employed when an organization-defined list of security functions and security-relevant information is accessed remotely.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (7)"
+      ]
+    }
   },
   "CCI-001435": {
     "def": "The organization defines networking protocols within the information system deemed to be nonsecure.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (8)"
+      ]
+    }
   },
   "CCI-001436": {
     "def": "The organization disables organization-defined networking protocols within the information system deemed to be nonsecure except for explicitly identified components in support of specific operational requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (8)"
+      ]
+    }
   },
   "CCI-001437": {
     "def": "The organization documents the rationale for the execution of privileged commands and access to security-relevant information in the security plan for the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (4)"
+      ]
+    }
   },
   "CCI-001438": {
     "def": "The organization establishes usage restrictions for wireless access.",
@@ -11982,7 +13871,11 @@
   },
   "CCI-001440": {
     "def": "The organization monitors for unauthorized wireless access to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 b"
+      ]
+    }
   },
   "CCI-001441": {
     "def": "Authorize each type of wireless access to the system prior to allowing such connections.",
@@ -11997,7 +13890,11 @@
   },
   "CCI-001442": {
     "def": "The organization enforces requirements for wireless connections to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 d"
+      ]
+    }
   },
   "CCI-001443": {
     "def": "Protect wireless access to the system using authentication of users and/or devices.",
@@ -12023,19 +13920,35 @@
   },
   "CCI-001445": {
     "def": "The organization monitors for unauthorized wireless connections to the information system on an organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (2)"
+      ]
+    }
   },
   "CCI-001446": {
     "def": "The organization scans for unauthorized wireless access points on an organization-defined frequency.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (2)"
+      ]
+    }
   },
   "CCI-001447": {
     "def": "The organization defines a frequency of monitoring for unauthorized wireless connections to information system, including scans for unauthorized wireless access points.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (2)"
+      ]
+    }
   },
   "CCI-001448": {
     "def": "The organization takes appropriate action if an unauthorized wireless connection is discovered.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (2)"
+      ]
+    }
   },
   "CCI-001449": {
     "def": "Disable, when not intended for use, wireless networking capabilities internally embedded within system components prior to issuance and deployment.",
@@ -12050,7 +13963,11 @@
   },
   "CCI-001450": {
     "def": "The organization does not allow users to independently configure wireless networking capabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (4)"
+      ]
+    }
   },
   "CCI-001451": {
     "def": "Select radio antennas and calibrate transmission power levels to reduce the probability that signals from wireless access points can be received outside of organization-controlled boundaries.",
@@ -12065,7 +13982,11 @@
   },
   "CCI-001452": {
     "def": "The information system enforces the organization-defined time period during which the limit of consecutive invalid access attempts by a user is counted.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-7 a"
+      ]
+    }
   },
   "CCI-001453": {
     "def": "Implement cryptographic mechanisms to protect the integrity of remote access sessions.",
@@ -12080,19 +14001,35 @@
   },
   "CCI-001454": {
     "def": "The organization ensures that remote sessions for accessing an organization-defined list of security functions and security-relevant information are audited.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (7)"
+      ]
+    }
   },
   "CCI-001455": {
     "def": "The organization explicitly identifies components needed in support of specific operational requirements.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (8)"
+      ]
+    }
   },
   "CCI-001456": {
     "def": "The organization defines locations that the organization deems to be of significant risk in accordance with organizational policies and procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 f"
+      ]
+    }
   },
   "CCI-001457": {
     "def": "The organization defines inspection and preventative measures to be applied on mobile devices returning from locations that the organization deems to be of significant risk in accordance with organizational policies and procedures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-19 g"
+      ]
+    }
   },
   "CCI-001458": {
     "def": "If classified information is found on mobile devices, the incident handling policy is to be followed.",
@@ -12148,7 +14085,11 @@
   },
   "CCI-001463": {
     "def": "The information system provides the capability to remotely view/hear all content related to an established user session in real time.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-14 b"
+      ]
+    }
   },
   "CCI-001464": {
     "def": "Initiates session audits automatically at system start-up.",
@@ -12163,23 +14104,43 @@
   },
   "CCI-001465": {
     "def": "The organization establishes terms and conditions, consistent with any trust relationships established with other organizations owning, operating, and/or maintaining external information systems, allowing authorized individuals to store organization-controlled information using the external information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 b"
+      ]
+    }
   },
   "CCI-001466": {
     "def": "The organization establishes terms and conditions, consistent with any trust relationships established with other organizations owning, operating, and/or maintaining external information systems, allowing authorized individuals to transmit organization-controlled information using the external information systems.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 b"
+      ]
+    }
   },
   "CCI-001467": {
     "def": "The organization prohibits authorized individuals from using an external information system to process organization-controlled information except in situations where the organization can verify the implementation of required security controls on the external system as specified in the organization's information security policy and security plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 (1) (a)"
+      ]
+    }
   },
   "CCI-001468": {
     "def": "The organization prohibits authorized individuals from using an external information system to store organization-controlled information except in situations where the organization can verify the implementation of required security controls on the external system as specified in the organization's information security policy and security plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 (1) (a)"
+      ]
+    }
   },
   "CCI-001469": {
     "def": "The organization prohibits authorized individuals from using an external information system to transmit organization-controlled information except in situations where the organization can verify the implementation of required security controls on the external system as specified in the organization's information security policy and security plan.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-20 (1) (a)"
+      ]
+    }
   },
   "CCI-001470": {
     "def": "Defines information sharing circumstances where user discretion is required.",
@@ -12383,7 +14344,11 @@
   },
   "CCI-001489": {
     "def": "The organization defines information system components for which generated audit records are centrally managed by the organization.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-3 (2)"
+      ]
+    }
   },
   "CCI-001490": {
     "def": "Defines the actions to be taken by the system upon audit failure, including shutting down the system, overwriting oldest audit records, and stopping the generation of audit records.",
@@ -12494,11 +14459,19 @@
   },
   "CCI-001500": {
     "def": "The information system automatically implements organization-defined safeguards and countermeasures if security functions (or mechanisms) are changed inappropriately.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (7)"
+      ]
+    }
   },
   "CCI-001501": {
     "def": "The organization defines safeguards and countermeasures to be employed by the information system if security functions (or mechanisms) are changed inappropriately.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-5 (7)"
+      ]
+    }
   },
   "CCI-001502": {
     "def": "The organization monitors changes to the configuration settings in accordance with organizational policies and procedures.",
@@ -12845,11 +14818,19 @@
   },
   "CCI-001534": {
     "def": "The organization ensures that access to information with special protection measures is granted only to individuals who have a valid access authorization that is demonstrated by assigned official government duties.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PS-6 (1) (a)"
+      ]
+    }
   },
   "CCI-001535": {
     "def": "The organization ensures that access to information with special protection measures is granted only to individuals who satisfy associated personnel security criteria.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PS-6 (1) (b)"
+      ]
+    }
   },
   "CCI-001536": {
     "def": "Verify that access to classified information requiring special protection is granted only to individuals who have a valid access authorization that is demonstrated by assigned official government duties.",
@@ -12927,7 +14908,11 @@
   },
   "CCI-001543": {
     "def": "The organization disseminates the most recent information security program plan to appropriate entities in the organization that includes roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PM-1 a"
+      ]
+    }
   },
   "CCI-001544": {
     "def": "Manage system authenticators by ensuring that authenticators have sufficient strength of mechanism for their intended use.",
@@ -13013,7 +14998,11 @@
   },
   "CCI-001552": {
     "def": "The organization defines policy that allows or disallows information flows based on changing conditions or operational considerations.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (3)"
+      ]
+    }
   },
   "CCI-001553": {
     "def": "Defines security or privacy policy filters that privileged administrators have the capability to enable and disable.",
@@ -13039,15 +15028,27 @@
   },
   "CCI-001555": {
     "def": "The information system uniquely identifies destination domains for information transfer.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (a)"
+      ]
+    }
   },
   "CCI-001556": {
     "def": "The information system uniquely authenticates destination domains for information transfer.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) (a)"
+      ]
+    }
   },
   "CCI-001557": {
     "def": "The information system tracks problems associated with the information transfer.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-4 (17) c"
+      ]
+    }
   },
   "CCI-001558": {
     "def": "Defines the security functions (deployed in hardware, software, and firmware) for which access must be authorized.",
@@ -13086,11 +15087,19 @@
   },
   "CCI-001562": {
     "def": "The organization defines the appropriate action(s) to be taken if an unauthorized remote connection is discovered.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-17 (5)"
+      ]
+    }
   },
   "CCI-001563": {
     "def": "The organization defines the appropriate action(s) to be taken if an unauthorized wireless connection is discovered.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-18 (2)"
+      ]
+    }
   },
   "CCI-001564": {
     "def": "Defines the frequency of security awareness and training policy reviews and updates.",
@@ -13204,7 +15213,11 @@
   },
   "CCI-001574": {
     "def": "The information system rejects or delays, as defined by the organization, network traffic which exceed the organization-defined thresholds.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AU-5 (3)"
+      ]
+    }
   },
   "CCI-001575": {
     "def": "The organization defines the system or system component for storing audit records that is a different system or system component than the system or component being audited.",
@@ -13246,11 +15259,19 @@
   },
   "CCI-001579": {
     "def": "The organization conducts security control assessments using organization-defined forms of testing in accordance with organization-defined frequency and assessment techniques.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-2 (2)"
+      ]
+    }
   },
   "CCI-001580": {
     "def": "The organization identifies connections to external information systems (i.e., information systems outside of the authorization boundary).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CA-3 b"
+      ]
+    }
   },
   "CCI-001581": {
     "def": "The organization defines personnel or roles to whom the security status of the organization and the information system should be reported.",
@@ -13314,7 +15335,11 @@
   },
   "CCI-001587": {
     "def": "The organization, when analyzing new software in a separate test environment, looks for security impacts due to flaws, weaknesses, incompatibility, or intentional malice.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-4 (1)"
+      ]
+    }
   },
   "CCI-001588": {
     "def": "The organization-defined security configuration checklists reflect the most restrictive mode consistent with operational requirements.",
@@ -13326,15 +15351,27 @@
   },
   "CCI-001589": {
     "def": "The organization incorporates detection of unauthorized, security-relevant configuration changes into the organization's incident response capability to ensure they are tracked.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-6 (3)"
+      ]
+    }
   },
   "CCI-001590": {
     "def": "The organization develops a list of software programs authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-001591": {
     "def": "The organization develops a list of software programs not authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-001592": {
     "def": "Defines the rules authorizing the terms and conditions of software program usage on the system.",
@@ -13349,15 +15386,27 @@
   },
   "CCI-001593": {
     "def": "The organization maintains a list of software programs authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-001594": {
     "def": "The organization maintains a list of software programs not authorized to execute on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-001595": {
     "def": "The organization maintains rules authorizing the terms and conditions of software program usage on the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CM-7 (2)"
+      ]
+    }
   },
   "CCI-001596": {
     "def": "Defines the frequency with which to review and update the current contingency planning procedures.",
@@ -13438,7 +15487,11 @@
   },
   "CCI-001603": {
     "def": "The contingency plan identifies the primary storage site hazards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-6 (1)"
+      ]
+    }
   },
   "CCI-001604": {
     "def": "Outline explicit mitigation actions for potential accessibility problems to the alternate storage site in the event of an area-wide disruption or disaster.",
@@ -13453,7 +15506,11 @@
   },
   "CCI-001605": {
     "def": "The contingency plan identifies the primary processing site hazards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-7 (1)"
+      ]
+    }
   },
   "CCI-001606": {
     "def": "Identify potential accessibility problems to outline explicit mitigation actions.",
@@ -13468,11 +15525,19 @@
   },
   "CCI-001607": {
     "def": "The organization establishes alternate telecommunications services to support the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-8 (2)"
+      ]
+    }
   },
   "CCI-001608": {
     "def": "The organization identifies the primary provider's telecommunications service hazards.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "CP-8 (3)"
+      ]
+    }
   },
   "CCI-001609": {
     "def": "Activate the redundant secondary system that is not collocated with the primary system without loss of information or disruption to operations.",
@@ -13570,7 +15635,11 @@
   },
   "CCI-001620": {
     "def": "The organization defines the types of and/or specific authenticators for which the registration process must be carried out in person before a designated registration authority with authorization by a designated organizational official (e.g., a supervisor).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IA-5 (3)"
+      ]
+    }
   },
   "CCI-001621": {
     "def": "Implement organization-defined security controls to manage the risk of compromise due to individuals having accounts on multiple systems.",
@@ -13585,11 +15654,19 @@
   },
   "CCI-001622": {
     "def": "The organization identifies personnel with incident response roles and responsibilities with respect to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IR-2"
+      ]
+    }
   },
   "CCI-001623": {
     "def": "The incident response training material addresses the procedures and activities necessary to fulfill identified organizational incident response roles and responsibilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "IR-2"
+      ]
+    }
   },
   "CCI-001624": {
     "def": "The organization documents the results of incident response tests.",
@@ -13639,11 +15716,19 @@
   },
   "CCI-001629": {
     "def": "The organization employs automated mechanisms to produce up-to-date, accurate, complete, and available records of all maintenance and repair actions needed, in process, and complete.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-2 (2)"
+      ]
+    }
   },
   "CCI-001630": {
     "def": "Designated organizational personnel review the maintenance records of the non-local maintenance and diagnostic sessions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MA-4 (1)"
+      ]
+    }
   },
   "CCI-001631": {
     "def": "After the service is performed, inspect and sanitize the component (for potentially malicious software) before reconnecting the component to the system.",
@@ -13669,11 +15754,19 @@
   },
   "CCI-001633": {
     "def": "The organization defines removable media types and information output requiring marking.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "MP-3 a"
+      ]
+    }
   },
   "CCI-001634": {
     "def": "The organization identifies authorized personnel with appropriate clearances and access authorizations for gaining physical access to the facility containing an information system that processes classified information.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "PE-2 (3)"
+      ]
+    }
   },
   "CCI-001635": {
     "def": "Remove individuals from the facility access list when access is no longer required.",
@@ -13773,7 +15866,11 @@
   },
   "CCI-001644": {
     "def": "The organization employs vulnerability scanning procedures that can demonstrate the depth of coverage (i.e., vulnerabilities checked).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "RA-5 (3)"
+      ]
+    }
   },
   "CCI-001645": {
     "def": "The organization identifies the information system components to which privileged access is authorized for selected organization-defined vulnerability scanning activities.",
@@ -13799,59 +15896,115 @@
   },
   "CCI-001647": {
     "def": "The organization requires the use of a FIPS-validated, cryptographic module for a technology product that relies on cryptographic functionality to enforce its security policy when no U.S. Government Protection Profile exists for such a specific technology type.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-4 (7) (b)"
+      ]
+    }
   },
   "CCI-001648": {
     "def": "The organization makes available to authorized personnel the source code for the information system to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (5)"
+      ]
+    }
   },
   "CCI-001649": {
     "def": "The organization identifies and documents (as appropriate) explicit rules to be enforced when governing the installation of software by users.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-7"
+      ]
+    }
   },
   "CCI-001650": {
     "def": "The organization requires the information system developers to manage and control changes to the information system during development.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001651": {
     "def": "The organization requires the information system integrators to manage and control changes to the information system during development.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001652": {
     "def": "The organization requires the information system developers to manage and control changes to the information system during implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001653": {
     "def": "The organization requires the information system integrators to manage and control changes to the information system during implementation.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001654": {
     "def": "The organization requires the information system developers to manage and control changes to the information system during modification.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001655": {
     "def": "The organization requires the information system integrators to manage and control changes to the information system during modification.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-10 (b)"
+      ]
+    }
   },
   "CCI-001656": {
     "def": "The organization defines the security functions of the information system to be isolated from nonsecurity functions.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-3"
+      ]
+    }
   },
   "CCI-001657": {
     "def": "The organization defines the external boundary of the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 a"
+      ]
+    }
   },
   "CCI-001658": {
     "def": "The organization defines key internal boundaries of the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 a"
+      ]
+    }
   },
   "CCI-001659": {
     "def": "The organization defines the mediation necessary for public access to the organization's internal networks.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (2)"
+      ]
+    }
   },
   "CCI-001660": {
     "def": "The organization defines the measures to protect against unauthorized physical connections across boundary protections implemented at organization-defined managed interfaces.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-7 (14)"
+      ]
+    }
   },
   "CCI-001661": {
     "def": "Defines the security functions, to at a minimum, include system authentication and re-authentication, for permitting users to invoke the trusted communications path.",
@@ -13910,15 +16063,27 @@
   },
   "CCI-001666": {
     "def": "The organization employs cryptographic mechanisms to prevent unauthorized modification of information at rest unless otherwise protected by alternative physical measures.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SC-28 (1)"
+      ]
+    }
   },
   "CCI-001667": {
     "def": "The organization compares the time measured between flaw identification and flaw remediation with organization-defined benchmarks.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-2 (3)"
+      ]
+    }
   },
   "CCI-001668": {
     "def": "The organization employs malicious code protection mechanisms at workstations, servers, or mobile computing devices on the network to detect and eradicate malicious code transported by electronic mail, electronic mail attachments, web accesses, removable media, or other common means or inserted through the exploitation of information system vulnerabilities.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-3 a"
+      ]
+    }
   },
   "CCI-001669": {
     "def": "Defines the frequency of testing malicious code protection mechanisms.",
@@ -13955,7 +16120,11 @@
   },
   "CCI-001672": {
     "def": "The organization employs a wireless intrusion detection system to identify rogue wireless devices.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-4 (14)"
+      ]
+    }
   },
   "CCI-001673": {
     "def": "Employ a wireless intrusion detection system to identify rogue wireless devices and to detect attack attempts and potential compromises or breaches to the system.",
@@ -13970,7 +16139,11 @@
   },
   "CCI-001674": {
     "def": "The information system responds to security function anomalies in accordance with organization-defined responses and alternative action(s).",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-6"
+      ]
+    }
   },
   "CCI-001675": {
     "def": "Defines the personnel or roles that are to receive reports on the results of security function verification.",
@@ -13985,11 +16158,19 @@
   },
   "CCI-001676": {
     "def": "The organization defines, for periodic security function verification, the frequency of the verifications.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-6"
+      ]
+    }
   },
   "CCI-001677": {
     "def": "The organization employs spam protection mechanisms at workstations, servers, or mobile computing devices on the network to detect and take action on unsolicited messages transported by electronic mail, electronic mail attachments, web accesses, removable media, or other common means.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-8 a"
+      ]
+    }
   },
   "CCI-001678": {
     "def": "Retain information within the system and information output from the system in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and operational requirements.",
@@ -14004,7 +16185,11 @@
   },
   "CCI-001679": {
     "def": "The organization provides a mechanism to exchange active and standby roles of the components.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-13 b"
+      ]
+    }
   },
   "CCI-001680": {
     "def": "Develop an organization-wide information security program plan that includes the identification and assignment of roles, responsibilities, management commitment, coordination among organizational entities, and compliance.",
@@ -14092,27 +16277,51 @@
   },
   "CCI-001689": {
     "def": "The organization, if an information system component failure is detected, automatically shuts down the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SI-13 (4) (b)"
+      ]
+    }
   },
   "CCI-001690": {
     "def": "The organization protects, as required, vendor/manufacturer documentation that describes the security-relevant external interfaces to the information system.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (1)"
+      ]
+    }
   },
   "CCI-001691": {
     "def": "The organization makes available to authorized personnel vendor/manufacturer documentation that describes the security-relevant external interfaces to the information system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (1)"
+      ]
+    }
   },
   "CCI-001692": {
     "def": "The organization makes available to authorized personnel vendor/manufacturer documentation that describes the low-level design of the information system in terms of modules and implementation details of the security controls employed within the system with sufficient detail to permit analysis and testing.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "SA-5 (4)"
+      ]
+    }
   },
   "CCI-001693": {
     "def": "The information system enforces a Discretionary Access Control (DAC) policy that limits propagation of access rights.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4)"
+      ]
+    }
   },
   "CCI-001694": {
     "def": "The information system enforces a Discretionary Access Control (DAC) policy that includes or excludes access to the granularity of a single user.",
-    "nist": {}
+    "nist": {
+      "3": [
+        "AC-3 (4)"
+      ]
+    }
   },
   "CCI-001695": {
     "def": "Prevent the execution of organization-defined unacceptable mobile code.",

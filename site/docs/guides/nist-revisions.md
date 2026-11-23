@@ -49,7 +49,7 @@ For explicit, side-effect-free selection, the revision-aware tables (AWS Config,
 | AWS Config | 4 + 5 (dual) | native rows per revision, crosswalk-backfilled to completeness (below) |
 | CWE | 4 + 5 (dual) | control IDs byte-identical across revisions |
 | Nessus | 4 | translated (e.g. AU-8(1) → SC-45(1) at Rev 5) |
-| CCI (DISA) | 4 | translated, statement suffixes preserved on identity |
+| CCI (DISA) | 4 + 5 (dual), 3 where DISA gives no later reference | DISA's own references at the selected revision; otherwise the other revision's, translated, statement suffixes preserved on identity; a Rev 3-only reference is read as its control or enhancement through NIST's Rev 4 catalog |
 | Nikto, OWASP, ScoutSuite | 4 | content identical at both revisions; a test guards the invariant |
 | Hipcheck | 5 | translated (SR-family controls drop at Rev 4 — no equivalent exists) |
 

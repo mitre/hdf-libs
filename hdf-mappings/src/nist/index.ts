@@ -216,6 +216,7 @@ export {
   translateNistControls,
   nistRosterSize,
   nistControlsAtRevision,
+  nistControlsFromRev3,
 } from './crosswalk.js';
 export type { NistControlTranslation, NistCrosswalkRelation } from './crosswalk.js';
 
