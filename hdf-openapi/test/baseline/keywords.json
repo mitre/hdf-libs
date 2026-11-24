@@ -20,10 +20,10 @@
     "examples": 63,
     "format": 77,
     "if": 16,
-    "items": 84,
+    "items": 86,
     "maximum": 18,
     "minimum": 61,
-    "minItems": 11,
+    "minItems": 13,
     "minLength": 5,
     "not": 5,
     "oneOf": 9,
@@ -32,7 +32,7 @@
     "required": 130,
     "then": 13,
     "title": 141,
-    "type": 661,
+    "type": 663,
     "unevaluatedProperties": 76
   },
   "lint": {
@@ -48,7 +48,7 @@
       },
       "waiverAbsorbs": {
         "no-empty-servers": 1,
-        "no-invalid-schema-examples": 328,
+        "no-invalid-schema-examples": 354,
         "no-required-schema-properties-undefined": 24,
         "no-unused-components": 8
       }

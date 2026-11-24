@@ -140,7 +140,7 @@ describe('MappedIdStrategy', () => {
     expect(result.unmatchedNew).toHaveLength(1);
   });
 
-  it('should treat duplicate new IDs as unresolvable — both go to unmatchedNew', () => {
+  it('pairs one occurrence of the mapped target and reports the surplus', () => {
     const mapping = { 'V-001-old': 'V-001-new' };
     const strategy = createMappedIdStrategy(mapping);
 
@@ -152,13 +152,14 @@ describe('MappedIdStrategy', () => {
 
     const result = strategy.match(oldReqs, newReqs);
 
-    // Ambiguous: two new reqs share the mapped target ID → neither can be matched
-    expect(result.matched).toHaveLength(0);
-    expect(result.unmatchedOld).toHaveLength(1);
-    expect(result.unmatchedNew).toHaveLength(2);
+    // Superseded: the mapped target having several occurrences no longer blocks
+    // the match; one pairs and the rest are reported new.
+    expect(result.matched).toHaveLength(1);
+    expect(result.unmatchedOld).toHaveLength(0);
+    expect(result.unmatchedNew).toHaveLength(1);
   });
 
-  it('should treat duplicate old IDs as unresolvable — both go to unmatchedOld', () => {
+  it('pairs one occurrence of the mapped source and reports the surplus absent', () => {
     const mapping = { 'V-001-old': 'V-001-new' };
     const strategy = createMappedIdStrategy(mapping);
 
@@ -170,9 +171,9 @@ describe('MappedIdStrategy', () => {
 
     const result = strategy.match(oldReqs, newReqs);
 
-    // Ambiguous: two old reqs share the same ID → neither can be matched
-    expect(result.matched).toHaveLength(0);
-    expect(result.unmatchedOld).toHaveLength(2);
-    expect(result.unmatchedNew).toHaveLength(1);
+    // Superseded: one occurrence pairs, the surplus is reported absent.
+    expect(result.matched).toHaveLength(1);
+    expect(result.unmatchedOld).toHaveLength(1);
+    expect(result.unmatchedNew).toHaveLength(0);
   });
 });

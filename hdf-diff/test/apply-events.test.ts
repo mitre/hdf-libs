@@ -9,6 +9,13 @@ import { computeEffectiveStatus } from '../src/status.js';
 import { applyChangeEvents, type ApplyInputs } from '../src/apply-events.js';
 import { ORDER_VECTORS, orderResultsDoc } from './order-vectors.js';
 
+/**
+ * Wraps requirements as the entry list the kernel takes; a single one is the one-entry
+ * case.
+ */
+const one = (...reqs: Record<string, unknown>[]): Record<string, unknown>[] => reqs;
+
+
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
 function loadFixture(name: string): string {
@@ -65,12 +72,17 @@ async function deriveStream(seedJson: string, nextJson: string): Promise<Req[]> 
     const id = r['id'] as string;
     const prev = prevByKey.get(id) ?? null;
     prevByKey.delete(id);
-    const ev = await changeEventFromPrevious(prev?.state ?? null, r, prev?.req ?? null, mkInputs(id));
+    const ev = await changeEventFromPrevious(
+      prev?.state ?? null,
+      one(r),
+      prev ? one(prev.req) : [],
+      mkInputs(id),
+    );
     if (ev) events.push(ev);
   }
   for (const id of [...prevByKey.keys()].sort()) {
     const prev = prevByKey.get(id)!;
-    const ev = await changeEventFromPrevious(prev.state, null, prev.req, mkInputs(id));
+    const ev = await changeEventFromPrevious(prev.state, [], one(prev.req), mkInputs(id));
     if (ev) events.push(ev);
   }
   return events;
@@ -145,15 +157,16 @@ describe('applyChangeEvents', () => {
     // event for the same key whose prior links to the dropped posture.
     const sv1 = events.find((e) => e['requirementId'] === 'SV-001')!;
     const rest = events.filter((e) => e['requirementId'] !== 'SV-001');
-    const after = sv1['after'] as Req;
+    const afterEntries = sv1['after'] as Req[];
+    const after = afterEntries[0]!;
     const followOn = await changeEventFromPrevious(
       {
         effectiveStatus: 'passed',
         effectiveImpact: 0.7,
         checksum: await computeEffectiveChecksum(after, '2026-07-22T14:03:11Z'),
       },
-      { ...after, results: [{ status: 'failed', codeDesc: 'regressed again', startTime: '2026-07-23T00:00:00Z' }] },
-      after,
+      one({ ...after, results: [{ status: 'failed', codeDesc: 'regressed again', startTime: '2026-07-23T00:00:00Z' }] }),
+      one(after),
       {
         eventId: '0190f6f2-0000-7000-8000-000000000099',
         source: 'inspec://fixture/scan',
@@ -189,8 +202,8 @@ describe('applyChangeEvents', () => {
           value: '704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021',
         },
       },
-      null,
-      null,
+      [],
+      [],
       {
         eventId: '0190f6f2-0000-7000-8000-000000000777',
         source: 'inspec://fixture/scan',
@@ -243,11 +256,13 @@ describe('applyChangeEvents defensive edges', () => {
       priorChecksum: null,
       state: 'new',
       before: null,
-      after: {
-        id: 'R-EDGE', impact: 0.5, tags: {},
-        descriptions: [{ label: 'default', data: 'd' }],
-        results: [{ status: 'passed', codeDesc: 't', startTime: '2026-07-02T00:00:00Z' }],
-      },
+      after: [
+        {
+          id: 'R-EDGE', impact: 0.5, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 't', startTime: '2026-07-02T00:00:00Z' }],
+        },
+      ],
       ...overrides,
     };
   }

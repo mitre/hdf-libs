@@ -61,24 +61,32 @@ func eventAfterChecksum(ev *hdf.HDFRequirementChangeEvent) string {
 	if ev.After == nil {
 		return ""
 	}
-	raw, err := json.Marshal(ev.After)
-	if err != nil {
+	entries, ok := typedRequirements(ev.After)
+	if !ok {
 		return ""
 	}
-	var typed hdf.EvaluatedRequirement
-	if err := json.Unmarshal(raw, &typed); err != nil {
+	// Folded, because the event's key covers every entry it carries: the chain link has to
+	// be the same value FoldEffectiveState gives the seed's entries for that id.
+	folded := FoldEffectiveState(entries, ev.Timestamp.UTC().Format(time.RFC3339Nano))
+	if folded == nil {
 		return ""
 	}
-	cs := ComputeEffectiveChecksum(typed, ev.Timestamp.UTC().Format(time.RFC3339Nano))
-	if cs == nil {
-		return ""
-	}
-	return cs.Value
+	return folded.Checksum.Value
 }
 
-// findRequirement locates a requirement by id across all baselines,
-// returning the baseline's requirements slice, the index, and true on hit.
-func findRequirement(doc map[string]interface{}, id string) (map[string]interface{}, []interface{}, int, bool) {
+// requirementSite is one place an id's entries sit: a baseline and the positions it
+// occupies in that baseline's requirements, in document order.
+type requirementSite struct {
+	baseline map[string]interface{}
+	indexes  []int
+}
+
+// findRequirementSites locates every entry an id carries, across all baselines. An id
+// names the requirement rather than the finding, so it may sit in several positions and
+// several baselines, and an event carries all of them; placing one payload on the first
+// hit overwrote a real entry's content.
+func findRequirementSites(doc map[string]interface{}, id string) []requirementSite {
+	var sites []requirementSite
 	baselines, _ := doc["baselines"].([]interface{})
 	for _, bRaw := range baselines {
 		b, ok := bRaw.(map[string]interface{})
@@ -86,17 +94,21 @@ func findRequirement(doc map[string]interface{}, id string) (map[string]interfac
 			continue
 		}
 		reqs, _ := b["requirements"].([]interface{})
+		var indexes []int
 		for i, rRaw := range reqs {
 			r, ok := rRaw.(map[string]interface{})
 			if !ok {
 				continue
 			}
 			if rid, _ := r["id"].(string); rid == id {
-				return b, reqs, i, true
+				indexes = append(indexes, i)
 			}
 		}
+		if len(indexes) > 0 {
+			sites = append(sites, requirementSite{baseline: b, indexes: indexes})
+		}
 	}
-	return nil, nil, 0, false
+	return sites
 }
 
 // ApplyChangeEvents reassembles the current posture from a seed hdf-results
@@ -135,7 +147,7 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 
 	for _, id := range keys {
 		chain := byKey[id]
-		_, _, _, inSeed := findRequirement(doc, id)
+		inSeed := len(findRequirementSites(doc, id)) > 0
 
 		// One warning per key, application anomalies taking priority over
 		// chain-link mismatches.
@@ -151,13 +163,8 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 
 		// Chain verification (shared with the fold): unanchored chains defer
 		// to the application outcome below.
-		var seedTyped *hdf.EvaluatedRequirement
-		if _, reqs, idx, ok := findRequirement(doc, id); ok {
-			if typed, tok := typedRequirement(reqs[idx]); tok {
-				seedTyped = &typed
-			}
-		}
-		verifyEventChain(chain, seedTyped, inSeed, keyWarn)
+		seedReqs, _ := seedEntries(doc, id)
+		verifyEventChain(chain, seedReqs, inSeed, keyWarn)
 		verifyLinks := inSeed || chain[0].State == hdf.EventRequirementStateNew
 
 		// Apply the winner.
@@ -169,12 +176,16 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 		}
 
 		if winner.State == hdf.EventRequirementStateAbsent {
-			if b, reqs, idx, ok := findRequirement(doc, id); ok {
-				b["requirements"] = append(reqs[:idx], reqs[idx+1:]...)
-				eventsApplied++
-			} else {
+			// The requirement left the assessment, so EVERY entry it carried goes: an
+			// absent event is about the id, and removing one of several left the rest
+			// behind as a requirement that had supposedly disappeared.
+			sites := findRequirementSites(doc, id)
+			if len(sites) == 0 {
 				keyWarn("absentUnknown", "absent event for a key not present in the document")
+				continue
 			}
+			placeEntries(sites, nil)
+			eventsApplied++
 			continue
 		}
 
@@ -187,18 +198,30 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 			keyWarn("chainGap", "winning event payload is not marshalable")
 			continue
 		}
-		var payload map[string]interface{}
-		if err := json.Unmarshal(raw, &payload); err != nil || payload == nil {
+		var payload []map[string]interface{}
+		if err := json.Unmarshal(raw, &payload); err != nil || len(payload) == 0 {
 			keyWarn("chainGap", "winning event carries no applicable after payload")
 			continue
 		}
 
-		if _, reqs, idx, ok := findRequirement(doc, id); ok {
-			reqs[idx] = payload
-			eventsApplied++
-		} else {
-			insertions = append(insertions, insertion{sequence: winner.Sequence, id: id, payload: payload})
+		sites := findRequirementSites(doc, id)
+		if len(sites) == 0 {
+			for _, entry := range payload {
+				insertions = append(insertions, insertion{sequence: winner.Sequence, id: id, payload: entry})
+			}
+			continue
 		}
+		// The event carries every entry of the id, so they replace every entry of the id.
+		// Only a change in their NUMBER leaves the arrangement undecidable, because the
+		// event cannot then say which belongs where; that case is reported, not done
+		// silently.
+		if siteEntryCount(sites) != len(payload) {
+			keyWarn("occurrenceMismatch",
+				"the event carries a different number of this id's entries than the seed; "+
+					"they are replaced in the first baseline that carries it")
+		}
+		placeEntries(sites, payload)
+		eventsApplied++
 	}
 
 	// Deterministic insertion order regardless of delivery order.
@@ -268,4 +291,78 @@ func ApplyChangeEvents(seed []byte, events []*hdf.HDFRequirementChangeEvent, in 
 	}
 	result.Results = out
 	return result, nil
+}
+
+// placeEntries writes an event's entries over the id's existing entries, because the
+// event's list is the whole truth about that id. Both the event's after[] and the sites
+// are in document order, so when the event carries as many entries as the seed holds
+// each site takes its own share and the seed's arrangement across baselines is
+// reproduced exactly. An empty payload removes them all, which is what absent means.
+func placeEntries(sites []requirementSite, payload []map[string]interface{}) {
+	shares := payloadShares(sites, payload)
+	for i, site := range sites {
+		reqs, _ := site.baseline["requirements"].([]interface{})
+		drop := map[int]bool{}
+		for _, j := range site.indexes {
+			drop[j] = true
+		}
+		kept := make([]interface{}, 0, len(reqs)+len(shares[i]))
+		written := false
+		for j, r := range reqs {
+			if !drop[j] {
+				kept = append(kept, r)
+				continue
+			}
+			if !written {
+				for _, entry := range shares[i] {
+					kept = append(kept, entry)
+				}
+				written = true
+			}
+		}
+		site.baseline["requirements"] = kept
+	}
+}
+
+// siteEntryCount is how many entries the id holds across every site.
+func siteEntryCount(sites []requirementSite) int {
+	total := 0
+	for _, site := range sites {
+		total += len(site.indexes)
+	}
+	return total
+}
+
+// payloadShares splits an event's entries across the sites the id occupies, one share
+// each. The shares match the seed's own counts when the number agrees; otherwise the
+// arrangement is undecidable and the first site takes everything, which the caller
+// reports.
+func payloadShares(sites []requirementSite, payload []map[string]interface{}) [][]map[string]interface{} {
+	shares := make([][]map[string]interface{}, len(sites))
+	if siteEntryCount(sites) != len(payload) {
+		shares[0] = payload
+		return shares
+	}
+	offset := 0
+	for i, site := range sites {
+		shares[i] = payload[offset : offset+len(site.indexes)]
+		offset += len(site.indexes)
+	}
+	return shares
+}
+
+// seedEntries returns every entry the id carries in the document that decodes to a
+// typed requirement. Presence is a separate question — an entry may be present and not
+// decode — so callers that need presence count findRequirementSites instead.
+func seedEntries(doc map[string]interface{}, id string) ([]hdf.EvaluatedRequirement, bool) {
+	var entries []hdf.EvaluatedRequirement
+	for _, site := range findRequirementSites(doc, id) {
+		reqs, _ := site.baseline["requirements"].([]interface{})
+		for _, i := range site.indexes {
+			if typed, ok := typedRequirement(reqs[i]); ok {
+				entries = append(entries, typed)
+			}
+		}
+	}
+	return entries, len(entries) > 0
 }

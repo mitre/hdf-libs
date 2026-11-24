@@ -1744,9 +1744,12 @@ type RequirementDiff struct {
 	AfterSensitive                                                                               map[string]interface{} `json:"afterSensitive,omitempty"`
 	// IDs of annotations attached to this requirement diff.
 	AnnotationIDS                                                                                []string               `json:"annotationIds,omitempty"`
-	// Name of the baseline the requirement belongs to, so a consumer can group diffs the way
-	// hdf diff --group-by baseline does. '(multiple)' when the id appears in more than one
-	// baseline of the same document.
+	// Name of the baseline the requirement was matched in, so a consumer can group diffs the
+	// way hdf diff --group-by baseline does. A batch comparison matches requirements within
+	// their baseline, so an id several baselines carry produces one diff per baseline, each
+	// naming its own; the name is not unique, since one document may carry several baselines of
+	// the same name. '(multiple)' appears only from the event-fold path, whose event key
+	// carries no baseline.
 	Baseline                                                                                     *string                `json:"baseline,omitempty"`
 	// The requirement as it appeared in the old/reference source. Null when state is 'new'.
 	Before                                                                                       interface{}            `json:"before"`
@@ -2444,36 +2447,39 @@ type ExternalEvidenceTimeRange struct {
 // before projection, and the full after requirement (the evidence a responder opens the event for).
 // Design: ADR-0005.
 type HDFRequirementChangeEvent struct {
-	// The full requirement as evaluated after the change — required and non-null for every
-	// state except absent (null there: the requirement left the assessment scope). Full content
-	// is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed
-	// result content from a projection) and triage (the failing results[] ARE the 'why' a
-	// responder opens the event for).
-	After                                                                                       interface{}           `json:"after"`
+	// Every entry the requirement id carries after the change, in document order — required and
+	// non-null for every state except absent (null there: the requirement left the assessment).
+	// An id names the requirement rather than the individual finding, so one scanner reporting
+	// one CVE against several packages produces several entries and all of them travel
+	// together: the event's state is their folded verdict, and this list is what makes
+	// replay-reconstruction of hdf-results possible, which §3 of ADR-0005 shows an
+	// effective-fields-only payload cannot do.
+	After                                                                                       []EvaluatedRequirement `json:"after"`
 	// Thin projection of the prior effective posture, for at-a-glance alerting without a
 	// state-store lookup. Null exactly when state is new (no prior posture exists). The full
 	// prior state is recoverable from the consumer's materialized state; the envelope's
 	// priorChecksum covers the integrity of that recovery.
-	Before                                                                                      interface{}           `json:"before"`
+	Before                                                                                      interface{}            `json:"before"`
 	// Why the state changed. An overrideExpired flip is a different triage than resultChanged:
 	// the control did not get worse, a waiver lapsed.
-	ChangeReasons                                                                               []EventChangeReason   `json:"changeReasons,omitempty"`
+	ChangeReasons                                                                               []EventChangeReason    `json:"changeReasons,omitempty"`
 	// Canonical requirement identifier — the same identity as Requirement_Diff.id and the
 	// requirement's id in hdf-results. Together with the envelope's (systemRef, componentId)
-	// this forms the durable entity key. A requirement renumbering is emitted as absent + new
-	// under the two keys, never an in-place key change; batch comparison reconciles renames via
-	// its oldId/newId matching.
-	RequirementID                                                                               string                `json:"requirementId"`
+	// this keys the event. It is NOT injective over a document's entries: an id may be carried
+	// by several entries of one baseline and by several baselines, and the event folds all of
+	// them into one state per key, carrying each entry in after[]. A requirement renumbering is
+	// emitted as absent + new under the two ids.
+	RequirementID                                                                               string                 `json:"requirementId"`
 	// The producer-computable subset of Requirement_State: new | absent | updated | fixed |
 	// regressed. fixed and regressed carry the direction SARIF's baselineState lacks; project
 	// down to SARIF's closed 4 values for external interop.
-	State                                                                                       EventRequirementState `json:"state"`
+	State                                                                                       EventRequirementState  `json:"state"`
 	// componentId of the system component this event concerns.
-	ComponentID                                                                                 string                `json:"componentId"`
+	ComponentID                                                                                 string                 `json:"componentId"`
 	// Identity of this event occurrence, unique per source. (source, eventId) is the
 	// deduplication key: consumers may treat events with identical source and eventId as
 	// duplicates. UUIDv7 (time-ordered) is recommended but not required.
-	EventID                                                                                     string                `json:"eventId"`
+	EventID                                                                                     string                 `json:"eventId"`
 	// The effectiveChecksum of the entity state this event supersedes, forming a per-key hash
 	// chain: a mismatch or gap against stored state is detectable, letting a consumer mark the
 	// key unverified instead of serving stale posture.
@@ -2482,24 +2488,24 @@ type HDFRequirementChangeEvent struct {
 	//
 	// The chain provides tamper/gap evidence given a trusted head; completeness is anchored
 	// out-of-band by periodic re-centering rescans.
-	PriorChecksum                                                                               interface{}           `json:"priorChecksum"`
+	PriorChecksum                                                                               interface{}            `json:"priorChecksum"`
 	// The versioned schema $id this event validates against, so events self-describe on
 	// heterogeneous streams. Recommended on every wire event.
-	SchemaRef                                                                                   *string               `json:"schemaRef,omitempty"`
+	SchemaRef                                                                                   *string                `json:"schemaRef,omitempty"`
 	// Monotonically increasing sequence number per entity key. The ONLY ordering authority for
 	// folding: consumers keep the greatest sequence per key regardless of arrival order or
 	// timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather
 	// than per-source.
-	Sequence                                                                                    int64                 `json:"sequence"`
+	Sequence                                                                                    int64                  `json:"sequence"`
 	// URI identifying the producer context that emitted this event (for example, a scanner
 	// instance and profile). eventId uniqueness and sequence numbering are scoped per source.
-	Source                                                                                      string                `json:"source"`
+	Source                                                                                      string                 `json:"source"`
 	// URI to the hdf-system document (authorization boundary) this event applies to. Resolves
 	// to the latest version of the evolving system document.
-	SystemRef                                                                                   string                `json:"systemRef"`
+	SystemRef                                                                                   string                 `json:"systemRef"`
 	// Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit
 	// metadata only — NEVER an ordering key; ordering is sequence's job.
-	Timestamp                                                                                   time.Time             `json:"timestamp"`
+	Timestamp                                                                                   time.Time              `json:"timestamp"`
 }
 
 // The type of identifier.

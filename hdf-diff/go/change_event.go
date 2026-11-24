@@ -70,26 +70,31 @@ func checksumMap(cs hdf.Checksum) map[string]interface{} {
 }
 
 // ChangeEventFromPrevious is the pure detection kernel (ADR-0005): compare a
-// requirement's resolved posture against the stored last-value state and emit
-// a Requirement_Change_Event when it moved, or nil when it did not.
+// requirement's resolved posture against the stored last-value state and emit a
+// Requirement_Change_Event when it moved, or nil when it did not.
 //
-//   - prev == nil        → state "new" (chain start: null before/priorChecksum)
-//   - newReq == nil      → state "absent" (after null, thin before preserved)
-//   - checksums match    → nil (no event; the steady-state majority)
-//   - otherwise          → fixed/regressed/updated per the effective-status
-//     transition, with the full after requirement as payload
+//   - prev == nil      → state "new" (chain start: null before/priorChecksum)
+//   - no newReqs       → state "absent" (after null, thin before preserved)
+//   - checksums match  → nil (no event; the steady-state majority)
+//   - otherwise        → fixed/regressed/updated per the effective-status
+//     transition, carrying every entry of the id as payload
 //
-// prevReq (optional) is the full prior requirement when the caller's
-// materialized state has it; it enables complete changeReasons classification
-// via the batch classifier, filtered to the event vocabulary. Without it,
-// only reasons provable from the thin state (impactChanged) are emitted.
+// newReqs and prevReqs are EVERY entry the id carries on each side, because an id
+// names the requirement rather than the finding. Their posture is folded by
+// FoldEffectiveState, and after[] carries them all, which is what lets a replay
+// reconstruct the document.
+//
+// prevReqs (optional) is the full prior state when the caller's materialized state
+// has it; it enables complete changeReasons classification via the batch classifier,
+// filtered to the event vocabulary. Without it, only reasons provable from the thin
+// state are emitted.
 func ChangeEventFromPrevious(
 	prev *KeyState,
-	newReq *hdf.EvaluatedRequirement,
-	prevReq *hdf.EvaluatedRequirement,
+	newReqs []hdf.EvaluatedRequirement,
+	prevReqs []hdf.EvaluatedRequirement,
 	in EventInputs,
 ) *hdf.HDFRequirementChangeEvent {
-	if prev == nil && newReq == nil {
+	if prev == nil && len(newReqs) == 0 {
 		return nil
 	}
 
@@ -108,7 +113,7 @@ func ChangeEventFromPrevious(
 
 	if prev == nil {
 		ev.State = hdf.EventRequirementStateNew
-		ev.After = newReq
+		ev.After = newReqs
 		return ev
 	}
 
@@ -118,19 +123,18 @@ func ChangeEventFromPrevious(
 		"effectiveImpact": prev.EffectiveImpact,
 	}
 
-	if newReq == nil {
+	if len(newReqs) == 0 {
 		ev.State = hdf.EventRequirementStateAbsent
 		ev.Before = before
 		return ev
 	}
 
-	newChecksum := ComputeEffectiveChecksum(*newReq, in.ReferenceTimestamp)
-	if newChecksum == nil || newChecksum.Value == prev.Checksum.Value {
+	newState := FoldEffectiveState(newReqs, in.ReferenceTimestamp)
+	if newState == nil || newState.Checksum.Value == prev.Checksum.Value {
 		return nil
 	}
 
-	newStatus := ComputeEffectiveStatus(*newReq, in.ReferenceTimestamp)
-	switch ClassifyDiffStatus(prev.EffectiveStatus, newStatus) {
+	switch ClassifyDiffStatus(prev.EffectiveStatus, newState.EffectiveStatus) {
 	case StateFixed:
 		ev.State = hdf.EventRequirementStateFixed
 	case StateRegressed:
@@ -143,9 +147,36 @@ func ChangeEventFromPrevious(
 	}
 
 	ev.Before = before
-	ev.After = newReq
-	ev.ChangeReasons = classifyEventReasons(prev, newReq, prevReq, in)
+	ev.After = newReqs
+	ev.ChangeReasons = foldEventReasons(prev, newReqs, prevReqs, in)
 	return ev
+}
+
+// foldEventReasons unions the reasons over the id's entries, paired by position. The
+// event is about the requirement, so a reason any entry shows is a reason the
+// requirement moved. For the single-entry case — every document without a repeated id —
+// this is exactly classifyEventReasons on that one pair.
+func foldEventReasons(
+	prev *KeyState,
+	newReqs []hdf.EvaluatedRequirement,
+	prevReqs []hdf.EvaluatedRequirement,
+	in EventInputs,
+) []hdf.EventChangeReason {
+	var reasons []hdf.EventChangeReason
+	seen := map[hdf.EventChangeReason]bool{}
+	for i := range newReqs {
+		var prevReq *hdf.EvaluatedRequirement
+		if i < len(prevReqs) {
+			prevReq = &prevReqs[i]
+		}
+		for _, r := range classifyEventReasons(prev, &newReqs[i], prevReq, in) {
+			if !seen[r] {
+				seen[r] = true
+				reasons = append(reasons, r)
+			}
+		}
+	}
+	return reasons
 }
 
 // classifyEventReasons produces the event-vocabulary changeReasons. With the

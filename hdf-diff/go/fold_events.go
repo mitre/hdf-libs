@@ -133,15 +133,12 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 		keyWarn := keyWarnFactory(id)
 
 		var seedTyped *hdf.EvaluatedRequirement
-		inSeed := false
-		if _, reqs, idx, ok := findRequirement(doc, id); ok {
-			if typed, tok := typedRequirement(reqs[idx]); tok {
-				seedTyped = &typed
-				inSeed = true
-			}
+		seedReqs, inSeed := seedEntries(doc, id)
+		if inSeed {
+			seedTyped = &seedReqs[0]
 		}
 
-		verifyEventChain(chain, seedTyped, inSeed, keyWarn)
+		verifyEventChain(chain, seedReqs, inSeed, keyWarn)
 
 		if winner.Timestamp.After(maxOccurred) {
 			maxOccurred = winner.Timestamp
@@ -155,13 +152,22 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			seedRef = newTs
 		}
 
+		// The requirement's prior posture is the fold over every entry it carried, as
+		// the new side is: worst status, highest impact. One entry gives its own.
+		oldStatus := ""
+		oldImpact := 0.0
+		if inSeed {
+			if seedFold := FoldEffectiveState(seedReqs, seedRef); seedFold != nil {
+				oldStatus = seedFold.EffectiveStatus
+			}
+			oldImpact = highestImpact(seedReqs)
+		}
+
 		if winner.State == hdf.EventRequirementStateAbsent {
 			if !inSeed {
 				keyWarn("absentUnknown", "absent event for a key not present in the seed")
 				continue
 			}
-			oldStatus := ComputeEffectiveStatus(*seedTyped, seedRef)
-			oldImpact := seedTyped.Impact
 			diffs = append(diffs, RequirementDiff{
 				ID:                 id,
 				Title:              resolveTitle(seedTyped.Title, nil),
@@ -177,13 +183,24 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			continue
 		}
 
-		afterTyped, tok := typedRequirement(winner.After)
+		// The event carries every entry of the id. The fold emits ONE requirementDiff per
+		// key, so the posture is the folded one and the representative entry is the first.
+		afterEntries, tok := typedRequirements(winner.After)
 		if !tok {
 			keyWarn("chainGap", "winning event carries no typeable after payload")
 			continue
 		}
-		newStatus := ComputeEffectiveStatus(afterTyped, newTs)
-		newImpact := afterTyped.Impact
+		afterTyped := afterEntries[0]
+		folded := FoldEffectiveState(afterEntries, newTs)
+		if folded == nil {
+			keyWarn("chainGap", "winning event's after payload has no resolvable posture")
+			continue
+		}
+		newStatus := folded.EffectiveStatus
+		// The impact a requirementDiff carries is the requirement's own, not its
+		// effective one — the batch comparison's contract — so the fold takes the
+		// highest of them.
+		newImpact := highestImpact(afterEntries)
 
 		// Content-bearing chain for a key the seed does not carry: the
 		// comparison vocabulary allows a null before only on new, so the
@@ -209,8 +226,6 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 			continue
 		}
 
-		oldStatus := ComputeEffectiveStatus(*seedTyped, seedRef)
-		oldImpact := seedTyped.Impact
 		diffs = append(diffs, RequirementDiff{
 			ID:                 id,
 			Title:              resolveTitle(seedTyped.Title, afterTyped.Title),
@@ -227,7 +242,8 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 		})
 	}
 
-	sort.Slice(diffs, func(i, j int) bool { return diffs[i].ID < diffs[j].ID })
+	// Stable, as the TypeScript peer's sort is: a repeated id ties.
+	sort.SliceStable(diffs, func(i, j int) bool { return diffs[i].ID < diffs[j].ID })
 	if diffs == nil {
 		diffs = []RequirementDiff{}
 	}
@@ -253,4 +269,30 @@ func FoldChangeEventsIntoComparison(seed []byte, events []*hdf.HDFRequirementCha
 		Drift:            nonNilDiffs(extractDrift(diffs)),
 	}
 	return result, nil
+}
+
+// highestImpact is the raw impact of the entry that scores highest, which is how the
+// fold takes an id's exposure. One entry gives exactly its own impact.
+func highestImpact(reqs []hdf.EvaluatedRequirement) float64 {
+	highest := 0.0
+	for _, req := range reqs {
+		if req.Impact > highest {
+			highest = req.Impact
+		}
+	}
+	return highest
+}
+
+// typedRequirements decodes an event's after[] into typed requirements. It reports
+// false on an empty or undecodable payload, which the caller treats as a chain gap.
+func typedRequirements(after interface{}) ([]hdf.EvaluatedRequirement, bool) {
+	raw, err := json.Marshal(after)
+	if err != nil {
+		return nil, false
+	}
+	var entries []hdf.EvaluatedRequirement
+	if err := json.Unmarshal(raw, &entries); err != nil || len(entries) == 0 {
+		return nil, false
+	}
+	return entries, true
 }

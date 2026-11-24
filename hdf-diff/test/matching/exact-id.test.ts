@@ -118,7 +118,7 @@ describe('ExactIdStrategy', () => {
     expect(result.matched[0]!.newReq['title']).toBe('New Title');
   });
 
-  it('should treat duplicate new IDs as unresolvable — both go to unmatchedNew', () => {
+  it('pairs one occurrence and reports the surplus new one', () => {
     const oldReqs = [{ id: 'SV-001', impact: 0.7, title: 'Old' }];
     const newReqs = [
       { id: 'SV-001', impact: 0.7, title: 'New A' },
@@ -127,13 +127,17 @@ describe('ExactIdStrategy', () => {
 
     const result = strategy.match(oldReqs, newReqs);
 
-    // Ambiguous: two new reqs share the same ID → neither can be matched
-    expect(result.matched).toHaveLength(0);
-    expect(result.unmatchedOld).toHaveLength(1);
-    expect(result.unmatchedNew).toHaveLength(2);
+    // Superseded: a second occurrence no longer makes the id unusable. The old
+    // entry's content matches neither new one, so position pairs it with the first.
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0]!.oldReq['title']).toBe('Old');
+    expect(result.matched[0]!.newReq['title']).toBe('New A');
+    expect(result.unmatchedOld).toHaveLength(0);
+    expect(result.unmatchedNew).toHaveLength(1);
+    expect(result.unmatchedNew[0]!['title']).toBe('New B');
   });
 
-  it('should treat duplicate old IDs as unresolvable — both go to unmatchedOld', () => {
+  it('pairs one occurrence and reports the surplus old one absent', () => {
     const oldReqs = [
       { id: 'SV-001', impact: 0.7, title: 'Old A' },
       { id: 'SV-001', impact: 0.5, title: 'Old B' },
@@ -142,9 +146,65 @@ describe('ExactIdStrategy', () => {
 
     const result = strategy.match(oldReqs, newReqs);
 
-    // Ambiguous: two old reqs share the same ID → neither can be matched
-    expect(result.matched).toHaveLength(0);
-    expect(result.unmatchedOld).toHaveLength(2);
-    expect(result.unmatchedNew).toHaveLength(1);
+    // Superseded: one occurrence pairs, the surplus is reported absent.
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0]!.oldReq['title']).toBe('Old A');
+    expect(result.unmatchedOld).toHaveLength(1);
+    expect(result.unmatchedOld[0]!['title']).toBe('Old B');
+    expect(result.unmatchedNew).toHaveLength(0);
+  });
+
+  // Peers of the Go tests in go/matching/exact_id_test.go, so both engines are shown to
+  // follow the same rule rather than assumed to.
+
+  it('matches every occurrence when both sides are identical', () => {
+    const reqs = [
+      { id: 'SV-001', impact: 0.7, title: 'A' },
+      { id: 'SV-001', impact: 0.5, title: 'B' },
+    ];
+
+    const result = strategy.match(reqs, reqs);
+
+    expect(result.matched).toHaveLength(2);
+    expect(result.unmatchedOld).toHaveLength(0);
+    expect(result.unmatchedNew).toHaveLength(0);
+    // The pairing, not just the counts: a rule that crosses the pair passes a count check.
+    for (const pair of result.matched) {
+      expect(pair.oldReq['title']).toBe(pair.newReq['title']);
+    }
+  });
+
+  it('pairs occurrences by content across a reorder', () => {
+    const oldReqs = [
+      { id: 'SV-001', impact: 0.7, title: 'A' },
+      { id: 'SV-001', impact: 0.5, title: 'B' },
+    ];
+    const newReqs = [
+      { id: 'SV-001', impact: 0.5, title: 'B' },
+      { id: 'SV-001', impact: 0.7, title: 'A' },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(2);
+    expect(result.unmatchedOld).toHaveLength(0);
+    expect(result.unmatchedNew).toHaveLength(0);
+    for (const pair of result.matched) {
+      expect(pair.oldReq['title']).toBe(pair.newReq['title']);
+    }
+  });
+
+  it('falls back to position when content cannot separate the occurrences', () => {
+    // Indistinguishable occurrences are interchangeable, so document order settles it.
+    const reqs = [
+      { id: 'SV-001', impact: 0.7 },
+      { id: 'SV-001', impact: 0.7 },
+    ];
+
+    const result = strategy.match(reqs, reqs);
+
+    expect(result.matched).toHaveLength(2);
+    expect(result.unmatchedOld).toHaveLength(0);
+    expect(result.unmatchedNew).toHaveLength(0);
   });
 });

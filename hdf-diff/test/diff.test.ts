@@ -169,7 +169,7 @@ describe('diffHdf', () => {
       expect(req!.matchConfidence).toBe(1.0);
     });
 
-    // --group-by baseline reads this and the schema declares it (parity: Go resolveBaseline).
+    // --group-by baseline reads this, and the schema declares it.
     it('should carry the owning baseline on every requirement diff', () => {
       expect(diff.requirementDiffs.length).toBeGreaterThan(0);
       for (const rd of diff.requirementDiffs) {
@@ -177,16 +177,23 @@ describe('diffHdf', () => {
       }
     });
 
-    it('should report (multiple) when the id sits in more than one baseline', () => {
+    it('names each baseline when the id sits in more than one, and self-diffs to no change', () => {
       const doc = JSON.parse(readFileSync(resolve(__dirname, 'fixtures', 'scan-before.json'), 'utf-8')) as {
         baselines: { name: string }[];
       };
       doc.baselines.push({ ...doc.baselines[0]!, name: 'overlay-baseline' });
       const twice = diffHdf(doc, doc);
       expect(twice.requirementDiffs.length).toBeGreaterThan(0);
+      // Superseded: requirements are matched within their baseline, so an id two
+      // baselines carry is compared in each. It reported the '(multiple)' sentinel while
+      // the baselines were pooled, and self-diffed as wholly absent and wholly new.
+      expect(new Set(twice.requirementDiffs.map((rd) => rd.baseline))).toEqual(
+        new Set(['rhel9-stig-baseline', 'overlay-baseline']),
+      );
       for (const rd of twice.requirementDiffs) {
-        expect(rd.baseline, rd.id).toBe('(multiple)');
+        expect(rd.state, rd.id).toBe('unchanged');
       }
+      expect(twice.summary.new + twice.summary.absent).toBe(0);
     });
   });
 

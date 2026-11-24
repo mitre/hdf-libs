@@ -94,13 +94,13 @@ func aeDeriveStream(t *testing.T, seedBytes, nextBytes []byte) []*hdf.HDFRequire
 		for i := range b.Requirements {
 			r := b.Requirements[i]
 			var prevState *KeyState
-			var prevReq *hdf.EvaluatedRequirement
+			var prevReqs []hdf.EvaluatedRequirement
 			if entry, ok := prevByKey[r.ID]; ok {
-				s, q := entry.state, entry.req
-				prevState, prevReq = &s, &q
+				s := entry.state
+				prevState, prevReqs = &s, one(entry.req)
 				delete(prevByKey, r.ID)
 			}
-			if ev := ChangeEventFromPrevious(prevState, &r, prevReq, mkInputs(r.ID)); ev != nil {
+			if ev := ChangeEventFromPrevious(prevState, one(r), prevReqs, mkInputs(r.ID)); ev != nil {
 				events = append(events, ev)
 			}
 		}
@@ -113,7 +113,7 @@ func aeDeriveStream(t *testing.T, seedBytes, nextBytes []byte) []*hdf.HDFRequire
 	for _, id := range removed {
 		entry := prevByKey[id]
 		s, q := entry.state, entry.req
-		if ev := ChangeEventFromPrevious(&s, nil, &q, mkInputs(id)); ev != nil {
+		if ev := ChangeEventFromPrevious(&s, nil, one(q), mkInputs(id)); ev != nil {
 			events = append(events, ev)
 		}
 	}
@@ -315,7 +315,7 @@ func aeTwoStepChain(t *testing.T) (seed []byte, e1, e2 *hdf.HDFRequirementChange
 	in1.ReferenceTimestamp = refTs
 	e1 = ChangeEventFromPrevious(&KeyState{
 		EffectiveStatus: "failed", EffectiveImpact: 0.5, Checksum: *seedCS,
-	}, &passing, &seedReq, in1)
+	}, one(passing), one(seedReq), in1)
 	require.NotNil(t, e1)
 
 	afterCS := ComputeEffectiveChecksum(passing, refTs)
@@ -327,7 +327,7 @@ func aeTwoStepChain(t *testing.T) (seed []byte, e1, e2 *hdf.HDFRequirementChange
 	in2.EventID = "0190f6f2-0000-7000-8000-000000000002"
 	e2 = ChangeEventFromPrevious(&KeyState{
 		EffectiveStatus: "passed", EffectiveImpact: 0.5, Checksum: *afterCS,
-	}, &failingAgain, &passing, in2)
+	}, one(failingAgain), one(passing), in2)
 	require.NotNil(t, e2)
 
 	return []byte(seedJSON), e1, e2
@@ -386,7 +386,7 @@ func TestApplyChangeEvents_Anomalies(t *testing.T) {
 		in := ceInputs()
 		in.RequirementID = "SV-100001"
 		in.Sequence = 9
-		fresh := ChangeEventFromPrevious(nil, &passing, nil, in)
+		fresh := ChangeEventFromPrevious(nil, one(passing), nil, in)
 		require.NotNil(t, fresh)
 
 		result, err := ApplyChangeEvents(seed, []*hdf.HDFRequirementChangeEvent{fresh}, aeInputs())

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -381,26 +380,30 @@ func deriveEventStream(prevDoc, nextDoc *hdf.HDFResults, id eventsDeriveIdentity
 	}
 	occurred := nextDoc.Timestamp.UTC()
 
+	// Grouped by id, not one entry per id: the id names the requirement, so several entries
+	// may carry it and the event folds them. Keyed on the id alone across every baseline,
+	// because ADR-0005 §1's entity key has no baseline in it.
 	type prevEntry struct {
 		state diff.KeyState
-		req   hdf.EvaluatedRequirement
+		reqs  []hdf.EvaluatedRequirement
 	}
-	prevByKey := map[string]prevEntry{}
+	prevReqsByID := map[string][]hdf.EvaluatedRequirement{}
+	prevOrder := make([]string, 0)
 	for _, b := range prevDoc.Baselines {
 		for _, r := range b.Requirements {
-			cs := diff.ComputeEffectiveChecksum(r, refTs)
-			if cs == nil {
-				continue
+			if _, seen := prevReqsByID[r.ID]; !seen {
+				prevOrder = append(prevOrder, r.ID)
 			}
-			prevByKey[r.ID] = prevEntry{
-				state: diff.KeyState{
-					EffectiveStatus: diff.ComputeEffectiveStatus(r, refTs),
-					EffectiveImpact: diff.ComputeEffectiveImpact(r, refTs),
-					Checksum:        *cs,
-				},
-				req: r,
-			}
+			prevReqsByID[r.ID] = append(prevReqsByID[r.ID], r)
 		}
+	}
+	prevByKey := map[string]prevEntry{}
+	for id, reqs := range prevReqsByID {
+		state := diff.FoldEffectiveState(reqs, refTs)
+		if state == nil {
+			continue
+		}
+		prevByKey[id] = prevEntry{state: *state, reqs: reqs}
 	}
 
 	seq := id.startSequence
@@ -423,35 +426,41 @@ func deriveEventStream(prevDoc, nextDoc *hdf.HDFResults, id eventsDeriveIdentity
 	}
 
 	var events []*hdf.HDFRequirementChangeEvent
-	emit := func(prev *diff.KeyState, newReq, prevReq *hdf.EvaluatedRequirement, reqID string) {
-		if ev := diff.ChangeEventFromPrevious(prev, newReq, prevReq, mkInputs(reqID)); ev != nil {
+	emit := func(prev *diff.KeyState, newReqs, prevReqs []hdf.EvaluatedRequirement, reqID string) {
+		if ev := diff.ChangeEventFromPrevious(prev, newReqs, prevReqs, mkInputs(reqID)); ev != nil {
 			events = append(events, ev)
 			seq++
 		}
 	}
 
+	nextReqsByID := map[string][]hdf.EvaluatedRequirement{}
+	nextOrder := make([]string, 0)
 	for _, b := range nextDoc.Baselines {
-		for i := range b.Requirements {
-			r := b.Requirements[i]
-			var prevState *diff.KeyState
-			var prevReq *hdf.EvaluatedRequirement
-			if entry, ok := prevByKey[r.ID]; ok {
-				s, q := entry.state, entry.req
-				prevState, prevReq = &s, &q
-				delete(prevByKey, r.ID)
+		for _, r := range b.Requirements {
+			if _, seen := nextReqsByID[r.ID]; !seen {
+				nextOrder = append(nextOrder, r.ID)
 			}
-			emit(prevState, &r, prevReq, r.ID)
+			nextReqsByID[r.ID] = append(nextReqsByID[r.ID], r)
 		}
 	}
-	removed := make([]string, 0, len(prevByKey))
-	for reqID := range prevByKey {
-		removed = append(removed, reqID)
+	for _, reqID := range nextOrder {
+		var prevState *diff.KeyState
+		var prevReqs []hdf.EvaluatedRequirement
+		if entry, ok := prevByKey[reqID]; ok {
+			s := entry.state
+			prevState, prevReqs = &s, entry.reqs
+			delete(prevByKey, reqID)
+		}
+		emit(prevState, nextReqsByID[reqID], prevReqs, reqID)
 	}
-	sort.Strings(removed)
-	for _, reqID := range removed {
-		entry := prevByKey[reqID]
-		s, q := entry.state, entry.req
-		emit(&s, nil, &q, reqID)
+	// Whatever the next document no longer carries, in the prior document's order.
+	for _, reqID := range prevOrder {
+		entry, ok := prevByKey[reqID]
+		if !ok {
+			continue
+		}
+		s := entry.state
+		emit(&s, nil, entry.reqs, reqID)
 	}
 	return events
 }

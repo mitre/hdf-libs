@@ -19,32 +19,34 @@
     "effectiveStatus": "failed",
     "effectiveImpact": 0.5
   },
-  "after": {
-    "id": "RHEL-09-255065",
-    "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
-    "impact": 0.5,
-    "tags": {
-      "severity": "medium",
-      "nist": [
-        "AC-17 (2)"
-      ]
-    },
-    "descriptions": [
-      {
-        "label": "default",
-        "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+  "after": [
+    {
+      "id": "RHEL-09-255065",
+      "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+      "impact": 0.5,
+      "tags": {
+        "severity": "medium",
+        "nist": [
+          "AC-17 (2)"
+        ]
+      },
+      "descriptions": [
+        {
+          "label": "default",
+          "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+        }
+      ],
+      "results": [
+        {
+          "status": "passed",
+          "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+          "startTime": "2026-07-22T14:03:11Z"
+        }
+      ],
+      "effectiveChecksum": {
+        "algorithm": "sha256",
+        "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
       }
-    ],
-    "results": [
-      {
-        "status": "passed",
-        "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
-        "startTime": "2026-07-22T14:03:11Z"
-      }
-    ],
-    "effectiveChecksum": {
-      "algorithm": "sha256",
-      "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
     }
-  }
+  ]
 }

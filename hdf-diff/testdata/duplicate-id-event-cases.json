@@ -1,0 +1,1298 @@
+{
+  "$comment": "Pins the Go and TypeScript event kernels to one another on what a requirement id's entries fold to, what event that produces, and what applying it back onto the seed leaves behind. Both halves read this file: go/shared_event_cases_test.go and test/shared-event-cases.test.ts. A requirement id names the requirement rather than the finding (maintainer ruling, 2026-09-20), so one id may carry several entries; the event unit is the requirement, and its N entries fold into one state (maintainer ruling, 2026-11-23). 'prev' is a list of baselines because the seed carries the entries at physical positions that apply has to reconcile; 'next' is flat because a producer hands the kernel every entry the id carries now, wherever they sit. Folded checksums are literal so neither language can move alone: the hash covers each entry's own effective checksum in document order, and a single entry keeps exactly the checksum it had before the fold. Entries are named by title, unique within each side of every case.",
+  "inputs": {
+    "eventId": "01JEVENTPARITY0000000000",
+    "source": "shared-case-table",
+    "sequence": 7,
+    "systemRef": "urn:hdf:system:parity",
+    "componentId": "11111111-2222-3333-4444-555555555555",
+    "requirementId": "SV-001",
+    "timestamp": "2026-01-01T00:00:00Z",
+    "referenceTimestamp": "2026-01-01T00:00:00Z"
+  },
+  "seedTimestamp": "2025-12-01T00:00:00Z",
+  "cases": [
+    {
+      "name": "a single entry is unchanged",
+      "why": "The one-entry case must be byte-identical to the pre-fold behaviour: the folded checksum IS ComputeEffectiveChecksum's value, so no stream over a document without repeated ids moves.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "singleEntryChecksum": true,
+      "event": null,
+      "applied": {
+        "baselines": [
+          [
+            "A"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": null
+    },
+    {
+      "name": "a single entry regresses",
+      "why": "The ordinary one-entry transition still reports the status move and the reason, unchanged by the fold.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.5,
+        "checksum": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "singleEntryChecksum": true,
+      "event": {
+        "state": "regressed",
+        "afterCount": 1,
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "before": {
+          "effectiveStatus": "passed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "regressed",
+        "oldEffectiveStatus": "passed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "three entries sharing an id are unchanged",
+      "why": "The case the shipped grype golden exhibits: comparing a document with an identical copy of itself must emit nothing. Before the fold every entry after the first produced a fabricated new event.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "C",
+            "impact": 0.0,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.3,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "C",
+          "impact": 0.0,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "a36762cb24f697eabcd17894e3f4ab66fab42a3c12c5c15a7bc22504cac35022"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "a36762cb24f697eabcd17894e3f4ab66fab42a3c12c5c15a7bc22504cac35022"
+      },
+      "event": null,
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B",
+            "C"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": null
+    },
+    {
+      "name": "one of three entries regresses",
+      "why": "Worst-wins over the entries is the roll-up hdf-engine already calls canonical for a requirement's results, so one failing entry regresses the requirement.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "C",
+            "impact": 0.0,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.3,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "C",
+          "impact": 0.0,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.5,
+        "checksum": "81849367663cbe3b12cde1c33a7b1006e060bb9d282ed5698d68319b99301dbb"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "756cff2153c5a6558dadc49323e2ec0d27ed5fbfd0ea7b5c14fd31301dd7cf95"
+      },
+      "event": {
+        "state": "regressed",
+        "afterCount": 3,
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "before": {
+          "effectiveStatus": "passed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B",
+            "C"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "regressed",
+        "oldEffectiveStatus": "passed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "the failing entry moves to another position",
+      "why": "The fold hashes each entry's checksum in document order, so which entry carries the failure is part of the requirement's state even when the roll-up does not move. Status is unchanged on both sides, so the transition is updated rather than fixed or regressed.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.4,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.4,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.4,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.4,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.4,
+        "checksum": "39fd879fd5e6fd2ef47c68af90008ca1c3ac48b4f90ae9f348b1e9dfc34c6427"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.4,
+        "checksum": "7b26b582d5e4f1f88fc71892fb87a27ada1c6ab1dc7bde1b9e03211e68e96158"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.4
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.4,
+        "newImpact": 0.4
+      }
+    },
+    {
+      "name": "the highest impact of the entries wins",
+      "why": "The requirement's exposure is the worst of its entries, so a re-score on one of them moves the requirement's effective impact.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.7,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.3,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.9,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.7,
+        "checksum": "01985c0e890bac59b4656ed7356bd17a7944c6cfe4e36ac15c7ca96f5d0ca194"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.9,
+        "checksum": "96ca733f1fe25ad21b18074391839dd9659db5e890337eec924184df4983fe38"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [
+          "impactChanged"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.7
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.7,
+        "newImpact": 0.9
+      }
+    },
+    {
+      "name": "every entry of the id disappears",
+      "why": "One requirement left the assessment, so one absent event covers it, and applying that event has to remove EVERY entry it carried — removing one left the rest behind as a requirement that had supposedly disappeared.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "1efb9bc296b688f37e43cb2604d4b205968c888e908b530572ddcd609278f879"
+      },
+      "nextFold": null,
+      "event": {
+        "state": "absent",
+        "afterCount": 0,
+        "changeReasons": [],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          []
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "absent",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": null,
+        "oldImpact": 0.5,
+        "newImpact": null
+      }
+    },
+    {
+      "name": "the id loses one of its three entries",
+      "why": "The roll-up and the impact are both unchanged, so nothing but the arity moved — and the fold still reports it, because the event's after[] is the whole truth about the id and a replay has to reconstruct two entries rather than three.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "C",
+            "impact": 0.2,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.3,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "3c5d3f5d6d88454129868697ac123ab6ee7327110c2044e6d2ce9071a7ff1254"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "1efb9bc296b688f37e43cb2604d4b205968c888e908b530572ddcd609278f879"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": [
+          "occurrenceMismatch"
+        ]
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "an id new to the stream carries all its entries",
+      "why": "A chain starts with null before and null priorChecksum, and after[] carries every entry at once so the first event alone reconstructs the requirement.",
+      "prev": [
+        []
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.0,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": null,
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "dc455fdbd84f2d6401acdcf3ba415891d82a312d359a4cac35136307ea3b2e6b"
+      },
+      "event": {
+        "state": "new",
+        "afterCount": 2,
+        "changeReasons": [],
+        "before": null
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "new",
+        "oldEffectiveStatus": null,
+        "newEffectiveStatus": "failed",
+        "oldImpact": null,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "the entries sit in two baselines",
+      "why": "An overlay chain spreads one id over several baselines, so the fold covers them in document order across all of them. Both the event's after[] and the seed's sites are in document order, so when their number agrees each baseline takes its own share back and the arrangement survives the round trip.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.9,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "1efb9bc296b688f37e43cb2604d4b205968c888e908b530572ddcd609278f879"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.9,
+        "checksum": "6caa1da728a0912f0ab8fdb22156693918f6a724ed4c4d927194b1b3c33396d8"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [
+          "impactChanged"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A"
+          ],
+          [
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.9
+      }
+    },
+    {
+      "name": "an id spread over two baselines loses one of its entries",
+      "why": "Only a change in the NUMBER of entries leaves the arrangement undecidable: the event cannot say which baseline lost one, so the survivors go to the first baseline that carried the id and the rest is cleared, reported rather than done silently.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "1efb9bc296b688f37e43cb2604d4b205968c888e908b530572ddcd609278f879"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 1,
+        "changeReasons": [],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A"
+          ],
+          []
+        ],
+        "warnings": [
+          "occurrenceMismatch"
+        ]
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "an entry with no results rolls up to notReviewed",
+      "why": "The empty roll-up is notReviewed, which the canonical severity ordering ranks BELOW passed, so one evaluated entry carries the fold and an unevaluated sibling does not drag it down.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.2,
+            "results": []
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.2,
+            "results": []
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.2,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.2,
+          "results": []
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "notReviewed",
+        "effectiveImpact": 0.2,
+        "checksum": "aadb3d903c80eb920e2e6f16f40ca38787aa281c14ac1db4a3f9bc3a5666b16b"
+      },
+      "nextFold": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.2,
+        "checksum": "f4564fc634f7d559fa38a88b02babfdd587dd8eb29d95fbdd69a6c6a53fd97cc"
+      },
+      "event": {
+        "state": "fixed",
+        "afterCount": 2,
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "before": {
+          "effectiveStatus": "notReviewed",
+          "effectiveImpact": 0.2
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "fixed",
+        "oldEffectiveStatus": "notReviewed",
+        "newEffectiveStatus": "passed",
+        "oldImpact": 0.2,
+        "newImpact": 0.2
+      }
+    },
+    {
+      "name": "a status override governs its own entry before the fold",
+      "why": "Each entry resolves its own effective posture first and the fold runs over the results, so a waiver on one entry cannot waive the requirement while another entry still fails.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.5,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.3,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.5,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.3,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "notApplicable",
+              "justification": "Accepted risk, tracked outside this assessment.",
+              "appliedAt": "2025-12-15T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "1efb9bc296b688f37e43cb2604d4b205968c888e908b530572ddcd609278f879"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5,
+        "checksum": "583114ba901b2543281b899a77af8acc9d43c7e5390e8d90162fd4527e8fc4f4"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [
+          "overrideAdded"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.5
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.5,
+        "newImpact": 0.5
+      }
+    },
+    {
+      "name": "an impact override lowers one entry's effective impact",
+      "why": "The event's folded state carries the EFFECTIVE impact, which an override moves, while a requirementDiff carries the requirement's OWN impact, which it does not — the batch comparison's contract. The two must not be confused, and on a repeated id each is the highest of the entries'.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.9,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.4,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.9,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.1
+              },
+              "justification": "Compensating control in place; residual risk accepted.",
+              "appliedAt": "2025-12-15T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.4,
+          "results": [
+            {
+              "status": "failed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.9,
+        "checksum": "977d9b97d407856ac18b5feb8d3982bd66e751b0d2504bb7f8289a12c047ea55"
+      },
+      "nextFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.4,
+        "checksum": "cc899e7b80b0516e5d88c9908269d9cde45121e9d93078fe50b387fb8764c243"
+      },
+      "event": {
+        "state": "updated",
+        "afterCount": 2,
+        "changeReasons": [
+          "overrideAdded"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.9
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "updated",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "failed",
+        "oldImpact": 0.9,
+        "newImpact": 0.9
+      }
+    },
+    {
+      "name": "the first entry of the id is not the one that fails",
+      "why": "Both sides of a requirementDiff are folds over every entry the id carries, so neither may be read off the first entry: here the first entry passes throughout and only the second one moves.",
+      "prev": [
+        [
+          {
+            "id": "SV-001",
+            "title": "A",
+            "impact": 0.2,
+            "results": [
+              {
+                "status": "passed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "SV-001",
+            "title": "B",
+            "impact": 0.6,
+            "results": [
+              {
+                "status": "failed",
+                "startTime": "2025-12-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      ],
+      "next": [
+        {
+          "id": "SV-001",
+          "title": "A",
+          "impact": 0.2,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-001",
+          "title": "B",
+          "impact": 0.6,
+          "results": [
+            {
+              "status": "passed",
+              "startTime": "2025-12-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "prevFold": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.6,
+        "checksum": "003df345666ebc5ae0d948f2b8f1a20f041488cd14e9d7f170d2dd38f73a39e8"
+      },
+      "nextFold": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.6,
+        "checksum": "66b309d0c513ecaa4a9e1ef1c1ca3bf53ee47e24f7f10f9fa29c4c6b046a8029"
+      },
+      "event": {
+        "state": "fixed",
+        "afterCount": 2,
+        "changeReasons": [
+          "resultChanged"
+        ],
+        "before": {
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.6
+        }
+      },
+      "applied": {
+        "baselines": [
+          [
+            "A",
+            "B"
+          ]
+        ],
+        "warnings": []
+      },
+      "foldedDiff": {
+        "state": "fixed",
+        "oldEffectiveStatus": "failed",
+        "newEffectiveStatus": "passed",
+        "oldImpact": 0.6,
+        "newImpact": 0.6
+      }
+    }
+  ]
+}

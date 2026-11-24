@@ -1676,8 +1676,10 @@ func TestRequirementDiff_BaselineField_FleetMode(t *testing.T) {
 	}
 }
 
-func TestRequirementDiff_BaselineField_DuplicateIDsAcrossBaselines(t *testing.T) {
-	// Same requirement ID in two baselines → Baseline should be "(multiple)"
+func TestRequirementDiff_BaselineField_SameIDInTwoBaselines(t *testing.T) {
+	// One id carried by two baselines is compared within each, so each diff names its own
+	// baseline. It reported the "(multiple)" sentinel while every
+	// baseline's requirements were pooled into one slice before matching.
 	baselineA := makeBaseline("rhel9-stig", version100,
 		makeRequirement("SV-001", hdf.Failed, 0.7),
 	)
@@ -1689,11 +1691,105 @@ func TestRequirementDiff_BaselineField_DuplicateIDsAcrossBaselines(t *testing.T)
 
 	comp := mustDiffHdf(t, oldResults, []hdf.HDFResults{newResults}, defaultOpts())
 
-	sv001 := findReq(comp.RequirementDiffs, "SV-001")
-	if sv001 == nil {
-		t.Fatal("SV-001 not found")
+	var baselines []string
+	for _, d := range comp.RequirementDiffs {
+		if d.ID == "SV-001" {
+			baselines = append(baselines, d.Baseline)
+		}
 	}
-	if sv001.Baseline != baselineMultiple {
-		t.Errorf("SV-001: expected baseline %q for duplicate ID, got %q", baselineMultiple, sv001.Baseline)
+	if len(baselines) != 2 {
+		t.Fatalf("expected one SV-001 diff per baseline, got %d: %v", len(baselines), baselines)
+	}
+	for _, want := range []string{"rhel9-stig", "container-stig"} {
+		found := false
+		for _, got := range baselines {
+			if got == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("expected a diff naming %q, got %v", want, baselines)
+		}
+	}
+}
+
+// An overlay chain carries one requirement at several depths, so one id appears in each
+// layer's baseline. Pooling the baselines made those layers rivals for that id, and a
+// self-comparison reported all of them absent AND new.
+
+func TestDiffHdf_SameIDInTwoBaselinesIsMatchedWithinItsBaseline(t *testing.T) {
+	doc := makeResults(
+		makeBaseline("overlay", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+		makeBaseline("base", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+	)
+
+	comp := mustDiffHdf(t, doc, []hdf.HDFResults{doc}, defaultOpts())
+
+	for _, d := range comp.RequirementDiffs {
+		if d.State != StateUnchanged {
+			t.Errorf("SV-001 in baseline %q: expected %q, got %q", d.Baseline, StateUnchanged, d.State)
+		}
+	}
+	if len(comp.RequirementDiffs) != 2 {
+		t.Errorf("expected one diff per baseline, got %d", len(comp.RequirementDiffs))
+	}
+	// Each diff names the baseline it was matched in, not a sentinel.
+	baselines := map[string]bool{}
+	for _, d := range comp.RequirementDiffs {
+		baselines[d.Baseline] = true
+	}
+	if !baselines["overlay"] || !baselines["base"] {
+		t.Errorf("expected a diff for each baseline, got %v", baselines)
+	}
+}
+
+func TestDiffHdf_ChangeIsReportedAgainstItsOwnBaseline(t *testing.T) {
+	oldDoc := makeResults(
+		makeBaseline("overlay", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+		makeBaseline("base", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+	)
+	newDoc := makeResults(
+		makeBaseline("overlay", version100, makeRequirement("SV-001", hdf.ResultStatus(statusPassed), 0.7)),
+		makeBaseline("base", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+	)
+
+	comp := mustDiffHdf(t, oldDoc, []hdf.HDFResults{newDoc}, defaultOpts())
+
+	byBaseline := map[string]RequirementState{}
+	for _, d := range comp.RequirementDiffs {
+		byBaseline[d.Baseline] = d.State
+	}
+	if byBaseline["overlay"] != StateFixed {
+		t.Errorf("the changed layer: expected %q, got %q", StateFixed, byBaseline["overlay"])
+	}
+	if byBaseline["base"] != StateUnchanged {
+		t.Errorf("the untouched layer: expected %q, got %q", StateUnchanged, byBaseline["base"])
+	}
+}
+
+func TestDiffHdf_RequirementInAOneSidedBaselineIsAbsentOrNew(t *testing.T) {
+	oldDoc := makeResults(
+		makeBaseline("base", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+		makeBaseline("retired", version100, makeRequirement("SV-002", hdf.ResultStatus(statusFailed), 0.7)),
+	)
+	newDoc := makeResults(
+		makeBaseline("base", version100, makeRequirement("SV-001", hdf.ResultStatus(statusFailed), 0.7)),
+		makeBaseline("added", version100, makeRequirement("SV-003", hdf.ResultStatus(statusFailed), 0.7)),
+	)
+
+	comp := mustDiffHdf(t, oldDoc, []hdf.HDFResults{newDoc}, defaultOpts())
+
+	states := map[string]RequirementState{}
+	for _, d := range comp.RequirementDiffs {
+		states[d.ID] = d.State
+	}
+	if states["SV-001"] != StateUnchanged {
+		t.Errorf("SV-001: expected %q, got %q", StateUnchanged, states["SV-001"])
+	}
+	if states["SV-002"] != StateAbsent {
+		t.Errorf("SV-002 in an old-only baseline: expected %q, got %q", StateAbsent, states["SV-002"])
+	}
+	if states["SV-003"] != StateNew {
+		t.Errorf("SV-003 in a new-only baseline: expected %q, got %q", StateNew, states["SV-003"])
 	}
 }

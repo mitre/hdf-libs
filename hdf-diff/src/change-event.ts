@@ -1,9 +1,9 @@
 import {
-  computeEffectiveChecksum,
+  foldEffectiveState,
   computeEffectiveImpact,
   type EffectiveChecksum,
 } from './effective-checksum.js';
-import { computeEffectiveStatus, classifyChangeReasons, classifyDiffStatus } from './status.js';
+import { classifyChangeReasons, classifyDiffStatus } from './status.js';
 import type { ChangeReason } from './types.js';
 
 /**
@@ -79,10 +79,10 @@ function classifyEventReasons(
  * Requirement_Change_Event when it moved, or null when it did not.
  *
  * - prev null      → state "new" (chain start: null before/priorChecksum)
- * - newReq null    → state "absent" (after null, thin before preserved)
+ * - no newReqs     → state "absent" (after null, thin before preserved)
  * - checksum match → null (no event; the steady-state majority)
  * - otherwise      → fixed/regressed/updated per the effective-status
- *   transition, with the full after requirement as payload
+ *   transition, carrying every entry of the id as payload
  *
  * prevReq (optional) is the full prior requirement when the caller's
  * materialized state has it; it enables complete changeReasons
@@ -93,11 +93,11 @@ function classifyEventReasons(
  */
 export async function changeEventFromPrevious(
   prev: KeyState | null,
-  newReq: Record<string, unknown> | null,
-  prevReq: Record<string, unknown> | null,
+  newReqs: readonly Record<string, unknown>[],
+  prevReqs: readonly Record<string, unknown>[],
   inputs: EventInputs,
 ): Promise<Record<string, unknown> | null> {
-  if (!prev && !newReq) {
+  if (!prev && newReqs.length === 0) {
     return null;
   }
 
@@ -113,7 +113,7 @@ export async function changeEventFromPrevious(
   };
 
   if (!prev) {
-    return { ...envelope, priorChecksum: null, state: 'new', before: null, after: newReq };
+    return { ...envelope, priorChecksum: null, state: 'new', before: null, after: [...newReqs] };
   }
 
   const before = {
@@ -121,7 +121,7 @@ export async function changeEventFromPrevious(
     effectiveImpact: prev.effectiveImpact,
   };
 
-  if (!newReq) {
+  if (newReqs.length === 0) {
     return {
       ...envelope,
       priorChecksum: { ...prev.checksum },
@@ -131,23 +131,34 @@ export async function changeEventFromPrevious(
     };
   }
 
-  const newChecksum = await computeEffectiveChecksum(newReq, inputs.referenceTimestamp);
-  if (newChecksum.value === prev.checksum.value) {
+  const folded = await foldEffectiveState(newReqs, inputs.referenceTimestamp);
+  if (!folded || folded.checksum.value === prev.checksum.value) {
     return null;
   }
 
-  const newStatus = computeEffectiveStatus(newReq, inputs.referenceTimestamp);
-  const transition = classifyDiffStatus(prev.effectiveStatus, newStatus);
+  const transition = classifyDiffStatus(prev.effectiveStatus, folded.effectiveStatus);
   // Status unchanged but the checksum moved: impact or disposition shifted.
   const state = transition === 'fixed' || transition === 'regressed' ? transition : 'updated';
 
-  const changeReasons = classifyEventReasons(prev, newReq, prevReq, inputs);
+  // Unioned over the id's entries, paired by position: the event is about the
+  // requirement, so a reason any entry shows is a reason it moved. One entry gives
+  // exactly the old result.
+  const seen = new Set<string>();
+  const changeReasons: string[] = [];
+  for (const [i, requirement] of newReqs.entries()) {
+    for (const reason of classifyEventReasons(prev, requirement, prevReqs[i] ?? null, inputs)) {
+      if (!seen.has(reason)) {
+        seen.add(reason);
+        changeReasons.push(reason);
+      }
+    }
+  }
   return {
     ...envelope,
     priorChecksum: { ...prev.checksum },
     state,
     ...(changeReasons.length > 0 ? { changeReasons } : {}),
     before,
-    after: newReq,
+    after: [...newReqs],
   };
 }

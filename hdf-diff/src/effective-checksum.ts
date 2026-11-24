@@ -1,4 +1,9 @@
-import { governingOverrideIndex, sha256, type StatusOverrideInput } from '@mitre/hdf-utilities';
+import {
+  governingOverrideIndex,
+  sha256,
+  worstStatus,
+  type StatusOverrideInput,
+} from '@mitre/hdf-utilities';
 import { computeEffectiveStatus } from './status.js';
 
 interface ImpactOverrideLike {
@@ -25,15 +30,15 @@ function overrideWindows(overrides: readonly OverrideLike[]): StatusOverrideInpu
 }
 
 /**
- * Resolves a requirement's impact for the effective checksum: the governing
- * impact override when one exists, else the requirement's own. With no
- * overrides at all it honours a stored effectiveImpact — deliberately, and
- * unlike computeEffectiveImpact in @mitre/hdf-utilities, which never reads the
- * cache. The checksum is an epoch-sensitive contract: a document whose producer
- * recorded a re-score without the override detail would otherwise change its
- * checksum on upgrade with nothing in it having changed. The field is a
- * fallback, not a source: any override at all makes it unread. Pinned by the
- * "stored fallback" test. (Go parity: ComputeEffectiveImpact in go/effective_checksum.go.)
+ * Resolves a requirement's impact for the effective checksum: the governing impact
+ * override when one exists, else the requirement's own. With no overrides at all it
+ * honours a stored effectiveImpact — deliberately, and unlike computeEffectiveImpact in
+ * @mitre/hdf-utilities, which never reads the cache. The checksum is an epoch-sensitive
+ * contract: a document whose producer recorded a re-score without the override detail
+ * would otherwise change its checksum on upgrade with nothing in it having changed. The
+ * field is a fallback, not a source: any override at all makes it unread. Pinned by the
+ * "stored fallback" test. (Go parity: ComputeEffectiveImpact in
+ * go/effective_checksum.go.)
  */
 export function computeEffectiveImpact(
   requirement: Record<string, unknown>,
@@ -114,4 +119,45 @@ export async function computeEffectiveChecksum(
     disposition: computeDisposition(requirement, referenceTimestamp),
   });
   return { algorithm: 'sha256', value: await sha256(canonical) };
+}
+
+/** The folded posture of every entry one requirement id carries. */
+export interface FoldedState {
+  effectiveStatus: string;
+  effectiveImpact: number;
+  checksum: EffectiveChecksum;
+}
+
+/**
+ * Folds every entry an id carries into the single state an event is keyed on. The
+ * status is worstStatus over the entries — the roll-up hdf-engine already applies to a
+ * requirement's results — the impact is the highest, and the checksum covers each
+ * entry's own checksum in document order. A single entry keeps exactly the checksum
+ * computeEffectiveChecksum gives it, so a document without repeated ids produces the
+ * same stream as before the fold. Peer of the Go FoldEffectiveState.
+ */
+export async function foldEffectiveState(
+  requirements: readonly Record<string, unknown>[],
+  referenceTimestamp?: string,
+): Promise<FoldedState | null> {
+  if (requirements.length === 0) {
+    return null;
+  }
+  const statuses: string[] = [];
+  const values: string[] = [];
+  let impact = 0;
+  for (const requirement of requirements) {
+    statuses.push(computeEffectiveStatus(requirement, referenceTimestamp));
+    const own = computeEffectiveImpact(requirement, referenceTimestamp);
+    if (own > impact) {
+      impact = own;
+    }
+    values.push((await computeEffectiveChecksum(requirement, referenceTimestamp)).value);
+  }
+  const value = values.length === 1 ? values[0]! : await sha256(JSON.stringify(values));
+  return {
+    effectiveStatus: worstStatus(statuses),
+    effectiveImpact: impact,
+    checksum: { algorithm: 'sha256', value },
+  };
 }

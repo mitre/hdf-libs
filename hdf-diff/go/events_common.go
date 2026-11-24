@@ -57,7 +57,7 @@ func groupEventChains(events []*hdf.HDFRequirementChangeEvent) (map[string][]*hd
 // unanchored chains are left to the caller's application outcome.
 func verifyEventChain(
 	chain []*hdf.HDFRequirementChangeEvent,
-	seedTyped *hdf.EvaluatedRequirement,
+	seedReqs []hdf.EvaluatedRequirement,
 	inSeed bool,
 	keyWarn func(kind, message string),
 ) {
@@ -68,11 +68,13 @@ func verifyEventChain(
 		return
 	}
 
+	// Folded, because an event's key covers every entry the id carries: the chain head is
+	// what FoldEffectiveState gives the seed's entries, not the first entry's own checksum.
 	expected := ""
-	if seedTyped != nil {
+	if len(seedReqs) > 0 {
 		ref := chain[0].Timestamp.UTC().Format(time.RFC3339Nano)
-		if cs := ComputeEffectiveChecksum(*seedTyped, ref); cs != nil {
-			expected = cs.Value
+		if folded := FoldEffectiveState(seedReqs, ref); folded != nil {
+			expected = folded.Checksum.Value
 		}
 	}
 	for _, ev := range chain {

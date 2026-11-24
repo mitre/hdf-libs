@@ -595,7 +595,7 @@ A reference to external native-format evidence (a log or telemetry corpus, or an
 
 ## 8. Requirement Change Event *(v3.5.0)*
 
-A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. The [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
+A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. The key is durable but not an instance key (see Conventions, Requirement identity): where several entries carry one id, their postures fold into the one state the key holds — worst status, highest impact, and a checksum over each entry's own `effectiveChecksum` in document order — and `after` carries every one of them, which is what lets a replay reconstruct the document. The [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
 
 **Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0`
 
@@ -619,7 +619,7 @@ Event body:
 | requirementId | string | **yes** | The requirement whose posture changed |
 | state | Event_Requirement_State | **yes** | `new` \| `absent` \| `updated` \| `fixed` \| `regressed` |
 | before | Effective_Projection \| null | **yes** | Thin prior posture (`effectiveStatus`, `effectiveImpact`); null for `new` |
-| after | Evaluated_Requirement | **yes** | Full after-state (absent except for a tombstone `absent` event) |
+| after | Evaluated_Requirement[] \| null | **yes** | Every entry the id carries after the change, in document order (`minItems: 1`); null only for a tombstone `absent` event |
 | changeReasons | Change_Reason[] | no | Why the posture changed (same vocabulary as the comparison diff) |
 
 ### Derivation *(v3.5.0)*

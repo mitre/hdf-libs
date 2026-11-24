@@ -30,7 +30,11 @@
       "else": {
         "properties": {
           "after": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.8.0#/$defs/Evaluated_Requirement"
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.8.0#/$defs/Evaluated_Requirement"
+            }
           }
         }
       }
@@ -71,7 +75,7 @@
   "properties": {
     "requirementId": {
       "type": "string",
-      "description": "Canonical requirement identifier — the same identity as Requirement_Diff.id and the requirement's id in hdf-results. Together with the envelope's (systemRef, componentId) this forms the durable entity key. A requirement renumbering is emitted as absent + new under the two keys, never an in-place key change; batch comparison reconciles renames via its oldId/newId matching."
+      "description": "Canonical requirement identifier — the same identity as Requirement_Diff.id and the requirement's id in hdf-results. Together with the envelope's (systemRef, componentId) this keys the event. It is NOT injective over a document's entries: an id may be carried by several entries of one baseline and by several baselines, and the event folds all of them into one state per key, carrying each entry in after[]. A requirement renumbering is emitted as absent + new under the two ids."
     },
     "state": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.8.0#/$defs/Event_Requirement_State",
@@ -98,16 +102,20 @@
     "after": {
       "oneOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.8.0#/$defs/Evaluated_Requirement"
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.8.0#/$defs/Evaluated_Requirement"
+          }
         },
         {
           "type": "null"
         }
       ],
-      "description": "The full requirement as evaluated after the change — required and non-null for every state except absent (null there: the requirement left the assessment scope). Full content is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed result content from a projection) and triage (the failing results[] ARE the 'why' a responder opens the event for)."
+      "description": "Every entry the requirement id carries after the change, in document order — required and non-null for every state except absent (null there: the requirement left the assessment). An id names the requirement rather than the individual finding, so one scanner reporting one CVE against several packages produces several entries and all of them travel together: the event's state is their folded verdict, and this list is what makes replay-reconstruction of hdf-results possible, which §3 of ADR-0005 shows an effective-fields-only payload cannot do."
     }
   },
-  "$comment": "Examples, in order: 1) fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link); 2) regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record; 3) new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents; 4) absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views; 5) updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture.",
+  "$comment": "Examples, in order: 1) fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link); 2) regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record; 3) new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents; 4) absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views; 5) updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture. 6) updated — one CVE matched against two copies of the same library in one image, so the id carries two entries and after[] holds both. One was upgraded and the other was not, and worst-wins over the entries keeps the requirement failed, so the state is updated rather than fixed. priorChecksum is the fold of the two previously failing entries; each entry keeps its own effectiveChecksum.",
   "examples": [
     {
       "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
@@ -130,34 +138,36 @@
         "effectiveStatus": "failed",
         "effectiveImpact": 0.5
       },
-      "after": {
-        "id": "RHEL-09-255065",
-        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
-        "impact": 0.5,
-        "tags": {
-          "severity": "medium",
-          "nist": [
-            "AC-17 (2)"
-          ]
-        },
-        "descriptions": [
-          {
-            "label": "default",
-            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+      "after": [
+        {
+          "id": "RHEL-09-255065",
+          "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+          "impact": 0.5,
+          "tags": {
+            "severity": "medium",
+            "nist": [
+              "AC-17 (2)"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+              "startTime": "2026-07-22T14:03:11Z"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
           }
-        ],
-        "results": [
-          {
-            "status": "passed",
-            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
-            "startTime": "2026-07-22T14:03:11Z"
-          }
-        ],
-        "effectiveChecksum": {
-          "algorithm": "sha256",
-          "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
         }
-      }
+      ]
     },
     {
       "eventId": "0190f6f2-3b6c-7f5e-c2d9-5a3f7b9c1e23",
@@ -180,48 +190,50 @@
         "effectiveStatus": "passed",
         "effectiveImpact": 0.5
       },
-      "after": {
-        "id": "SV-230365",
-        "title": "RHEL 9 passwords must have a minimum of 15 characters",
-        "impact": 0.5,
-        "tags": {
-          "severity": "medium",
-          "nist": [
-            "IA-5 (1) (a)"
-          ]
-        },
-        "descriptions": [
-          {
-            "label": "default",
-            "data": "Verify pwquality.conf minlen is 15 or greater."
+      "after": [
+        {
+          "id": "SV-230365",
+          "title": "RHEL 9 passwords must have a minimum of 15 characters",
+          "impact": 0.5,
+          "tags": {
+            "severity": "medium",
+            "nist": [
+              "IA-5 (1) (a)"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Verify pwquality.conf minlen is 15 or greater."
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+              "startTime": "2026-07-20T02:00:00Z",
+              "message": "expected 8 to be >= 15"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "passed",
+              "reason": "Compensating control: PIV/CAC smart card authentication enforced, password login disabled",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "ao@agency.gov"
+              },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2026-07-20T00:00:00Z"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
           }
-        ],
-        "results": [
-          {
-            "status": "failed",
-            "codeDesc": "pwquality.conf minlen is expected to be >= 15",
-            "startTime": "2026-07-20T02:00:00Z",
-            "message": "expected 8 to be >= 15"
-          }
-        ],
-        "statusOverrides": [
-          {
-            "type": "waiver",
-            "status": "passed",
-            "reason": "Compensating control: PIV/CAC smart card authentication enforced, password login disabled",
-            "appliedBy": {
-              "type": "email",
-              "identifier": "ao@agency.gov"
-            },
-            "appliedAt": "2026-01-20T10:00:00Z",
-            "expiresAt": "2026-07-20T00:00:00Z"
-          }
-        ],
-        "effectiveChecksum": {
-          "algorithm": "sha256",
-          "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
         }
-      }
+      ]
     },
     {
       "eventId": "0190f6f2-4c7d-8a6f-d3ea-6b4a8c0d2f34",
@@ -235,34 +247,36 @@
       "requirementId": "RHEL-09-671010",
       "state": "new",
       "before": null,
-      "after": {
-        "id": "RHEL-09-671010",
-        "title": "RHEL 9 must implement DoD-approved encryption in the OpenSSL package",
-        "impact": 0.7,
-        "tags": {
-          "severity": "high",
-          "nist": [
-            "SC-13"
-          ]
-        },
-        "descriptions": [
-          {
-            "label": "default",
-            "data": "Verify the system-wide crypto policy is FIPS."
+      "after": [
+        {
+          "id": "RHEL-09-671010",
+          "title": "RHEL 9 must implement DoD-approved encryption in the OpenSSL package",
+          "impact": 0.7,
+          "tags": {
+            "severity": "high",
+            "nist": [
+              "SC-13"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Verify the system-wide crypto policy is FIPS."
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "update-crypto-policies --show is expected to eq FIPS",
+              "startTime": "2026-07-22T14:03:12Z"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "4171cbc81dd74dedba74d3d51bf854602c1bd870d386dad1f830df9272d95557"
           }
-        ],
-        "results": [
-          {
-            "status": "passed",
-            "codeDesc": "update-crypto-policies --show is expected to eq FIPS",
-            "startTime": "2026-07-22T14:03:12Z"
-          }
-        ],
-        "effectiveChecksum": {
-          "algorithm": "sha256",
-          "value": "4171cbc81dd74dedba74d3d51bf854602c1bd870d386dad1f830df9272d95557"
         }
-      }
+      ]
     },
     {
       "eventId": "0190f6f2-5d8e-9b7a-e4fb-7c5b9d1e3a45",
@@ -306,51 +320,147 @@
         "effectiveStatus": "failed",
         "effectiveImpact": 0.5
       },
-      "after": {
-        "id": "RHEL-09-255065",
-        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
-        "impact": 0.5,
-        "tags": {
-          "severity": "medium",
-          "nist": [
-            "AC-17 (2)"
-          ]
-        },
-        "descriptions": [
-          {
-            "label": "default",
-            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+      "after": [
+        {
+          "id": "RHEL-09-255065",
+          "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+          "impact": 0.5,
+          "tags": {
+            "severity": "medium",
+            "nist": [
+              "AC-17 (2)"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+              "startTime": "2026-07-22T14:03:11Z"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.2
+              },
+              "reason": "Network segmentation limits exposure; management interface not internet-reachable",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "isso@agency.gov"
+              },
+              "appliedAt": "2026-07-24T10:15:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ],
+          "effectiveImpact": 0.2,
+          "disposition": "riskAdjustment",
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "872635e1dd14903c660ae7e863c599d31f55bfa60be19394a629c63f851841c4"
           }
-        ],
-        "results": [
-          {
-            "status": "failed",
-            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
-            "startTime": "2026-07-22T14:03:11Z"
-          }
-        ],
-        "statusOverrides": [
-          {
-            "type": "riskAdjustment",
-            "impact": {
-              "value": 0.2
-            },
-            "reason": "Network segmentation limits exposure; management interface not internet-reachable",
-            "appliedBy": {
-              "type": "email",
-              "identifier": "isso@agency.gov"
-            },
-            "appliedAt": "2026-07-24T10:15:00Z",
-            "expiresAt": "2099-12-31T00:00:00Z"
-          }
-        ],
-        "effectiveImpact": 0.2,
-        "disposition": "riskAdjustment",
-        "effectiveChecksum": {
-          "algorithm": "sha256",
-          "value": "872635e1dd14903c660ae7e863c599d31f55bfa60be19394a629c63f851841c4"
         }
-      }
+      ]
+    },
+    {
+      "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c06",
+      "source": "grype://registry.example.gov/apptier@sha256:9f1c",
+      "sequence": 418,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:11Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "6121549df431d786b0964a618b46c76445d0e9f5fd4122636de476ad5250d0dc"
+      },
+      "requirementId": "CVE-2021-44228",
+      "state": "updated",
+      "changeReasons": [
+        "resultChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.9
+      },
+      "after": [
+        {
+          "id": "CVE-2021-44228",
+          "title": "log4j-core is vulnerable to remote code execution (Log4Shell)",
+          "impact": 0.9,
+          "tags": {
+            "severity": "critical",
+            "nist": [
+              "SI-2"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "JNDI lookups in log message parameters allow an attacker who controls log content to load remote code."
+            }
+          ],
+          "affectedPackages": [
+            {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "version": "2.17.1",
+              "ecosystem": "maven"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "installed log4j-core version is expected to be at or above 2.17.1",
+              "startTime": "2026-07-22T14:03:11Z"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "b97f7b1f006aa28ca3d9745f16b4855e124ad98c64279b53fc9f74d4fea2cae7"
+          }
+        },
+        {
+          "id": "CVE-2021-44228",
+          "title": "log4j-core is vulnerable to remote code execution (Log4Shell)",
+          "impact": 0.9,
+          "tags": {
+            "severity": "critical",
+            "nist": [
+              "SI-2"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "JNDI lookups in log message parameters allow an attacker who controls log content to load remote code."
+            }
+          ],
+          "affectedPackages": [
+            {
+              "name": "org.apache.logging.log4j:log4j-core",
+              "version": "2.14.1",
+              "ecosystem": "maven"
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "installed log4j-core version is expected to be at or above 2.17.1",
+              "startTime": "2026-07-22T14:03:11Z"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "19ba59455f6c3c91f6030e2b97d6a26a1027b1c57ccf968ff913450ee6e4b4ba"
+          }
+        }
+      ]
     }
   ]
 }
