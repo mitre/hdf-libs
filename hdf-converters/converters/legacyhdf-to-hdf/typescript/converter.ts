@@ -271,7 +271,6 @@ export interface V2Baseline {
   parentBaseline?: string;
   status?: string;
   statusMessage?: string;
-  skipMessage?: string;
   [key: string]: unknown;
 }
 
@@ -771,9 +770,6 @@ function convertProfile(v1Profile: LegacyProfile): V2Baseline {
   }
   if (present(v1Profile.status_message)) {
     v2Baseline.statusMessage = v1Profile.status_message;
-  }
-  if (present(v1Profile.skip_message)) {
-    v2Baseline.skipMessage = v1Profile.skip_message;
   }
 
   // Transform groups (controls → requirements). Omit when empty to match the

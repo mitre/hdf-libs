@@ -647,7 +647,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');
       expect(baseline.statusMessage).toBe('Status message');
-      expect(baseline.skipMessage).toBe('Skip message');
+      expect(baseline).not.toHaveProperty('skipMessage');
     });
 
     it('should drop unknown fields in results (closed v2 shape)', () => {
@@ -2239,7 +2239,7 @@ describe('a legacy null is omitted, not copied through', () => {
     expect(baseline.summary).toBe('s');
     expect(baseline.status).toBe('loaded');
     expect(baseline.statusMessage).toBe('sm');
-    expect(baseline.skipMessage).toBe('skm');
+    expect(baseline).not.toHaveProperty('skipMessage');
     expect(baseline.parentBaseline).toBe('pp');
     expect((baseline.groups as Array<Record<string, unknown>>)[0]!.title).toBe('');
     expect((out.statistics as Record<string, unknown>).duration).toBe(0);
