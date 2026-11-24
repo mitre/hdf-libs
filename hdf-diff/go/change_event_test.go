@@ -59,13 +59,13 @@ func assertValidEvent(t *testing.T, ev *hdf.HDFRequirementChangeEvent) {
 
 func TestChangeEventFromPrevious_NoChangeReturnsNil(t *testing.T) {
 	req := ceValid(ecFailingReq()) // failed @ 0.5 → checksum matches cePrevFailing
-	ev := ChangeEventFromPrevious(cePrevFailing(), &req, nil, ceInputs())
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(req), nil, ceInputs())
 	assert.Nil(t, ev, "matching checksum must emit no event")
 }
 
 func TestChangeEventFromPrevious_NewKey(t *testing.T) {
 	req := cePassingReq()
-	ev := ChangeEventFromPrevious(nil, &req, nil, ceInputs())
+	ev := ChangeEventFromPrevious(nil, one(req), nil, ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateNew, ev.State)
 	assert.Nil(t, ev.Before, "no prior posture for a new key")
@@ -95,7 +95,7 @@ func TestChangeEventFromPrevious_BothNilReturnsNil(t *testing.T) {
 
 func TestChangeEventFromPrevious_FailedToPassedIsFixed(t *testing.T) {
 	req := cePassingReq()
-	ev := ChangeEventFromPrevious(cePrevFailing(), &req, nil, ceInputs())
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(req), nil, ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateFixed, ev.State)
 	prior, ok := ev.PriorChecksum.(map[string]interface{})
@@ -114,7 +114,7 @@ func TestChangeEventFromPrevious_PassedToFailedIsRegressed(t *testing.T) {
 		Checksum:        hdf.Checksum{Algorithm: hdf.Sha256, Value: ecVectorPassedHalf},
 	}
 	req := ceValid(ecFailingReq())
-	ev := ChangeEventFromPrevious(prev, &req, nil, ceInputs())
+	ev := ChangeEventFromPrevious(prev, one(req), nil, ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateRegressed, ev.State)
 	assertValidEvent(t, ev)
@@ -131,7 +131,7 @@ func TestChangeEventFromPrevious_ImpactOnlyChangeIsUpdated(t *testing.T) {
 		AppliedAt: time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC),
 		ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
 	}}
-	ev := ChangeEventFromPrevious(cePrevFailing(), &req, nil, ceInputs())
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(req), nil, ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateUpdated, ev.State, "same status, changed impact → updated")
 	assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonImpactChanged,
@@ -144,7 +144,7 @@ func TestChangeEventFromPrevious_EnvelopeEchoesInputs(t *testing.T) {
 	in := ceInputs()
 	schemaRef := "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0"
 	in.SchemaRef = schemaRef
-	ev := ChangeEventFromPrevious(cePrevFailing(), &req, nil, in)
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(req), nil, in)
 	require.NotNil(t, ev)
 	assert.Equal(t, in.EventID, ev.EventID)
 	assert.Equal(t, in.Source, ev.Source)
@@ -171,7 +171,7 @@ func TestChangeEventFromPrevious_RicherReasonsWithPrevRequirement(t *testing.T) 
 		ExpiresAt time.Time
 	}{Type: "waiver", Status: hdf.Passed})}
 
-	ev := ChangeEventFromPrevious(cePrevFailing(), &newReq, &prevReq, ceInputs())
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(newReq), one(prevReq), ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateFixed, ev.State)
 	assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonOverrideAdded)
@@ -187,7 +187,7 @@ func TestChangeEventFromPrevious_FiltersNonEventReasons(t *testing.T) {
 	newReq := cePassingReq()
 	newReq.Title = stPtrString("Renamed control title")
 
-	ev := ChangeEventFromPrevious(cePrevFailing(), &newReq, &prevReq, ceInputs())
+	ev := ChangeEventFromPrevious(cePrevFailing(), one(newReq), one(prevReq), ceInputs())
 	require.NotNil(t, ev)
 	for _, r := range ev.ChangeReasons {
 		assert.NotEqual(t, "metadataChanged", string(r),
@@ -212,7 +212,7 @@ func TestChangeEventFromPrevious_MappedImpactReasons(t *testing.T) {
 		materialized := 0.2
 		newReq.EffectiveImpact = &materialized
 
-		ev := ChangeEventFromPrevious(cePrevFailing(), &newReq, &prevReq, ceInputs())
+		ev := ChangeEventFromPrevious(cePrevFailing(), one(newReq), one(prevReq), ceInputs())
 		require.NotNil(t, ev)
 		assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonOverrideAdded)
 		count := 0
@@ -230,7 +230,7 @@ func TestChangeEventFromPrevious_MappedImpactReasons(t *testing.T) {
 		newReq := ceValid(ecFailingReq())
 		newReq.Impact = 0.3
 
-		ev := ChangeEventFromPrevious(cePrevFailing(), &newReq, &prevReq, ceInputs())
+		ev := ChangeEventFromPrevious(cePrevFailing(), one(newReq), one(prevReq), ceInputs())
 		require.NotNil(t, ev)
 		assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonImpactChanged)
 		assertValidEvent(t, ev)
@@ -264,7 +264,7 @@ func TestChangeEventFromPrevious_OverrideExpiredAcrossWindow(t *testing.T) {
 	in.PrevReferenceTimestamp = "2026-07-20T00:00:00Z"
 	in.ReferenceTimestamp = "2026-07-22T14:03:11Z"
 
-	ev := ChangeEventFromPrevious(prev, &newReq, &prevReq, in)
+	ev := ChangeEventFromPrevious(prev, one(newReq), one(prevReq), in)
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateRegressed, ev.State)
 	assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonOverrideExpired)
@@ -289,9 +289,13 @@ func TestChangeEventFromPrevious_OverrideRemoved(t *testing.T) {
 		EffectiveImpact: 0.5,
 		Checksum:        hdf.Checksum{Algorithm: hdf.Sha256, Value: "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"},
 	}
-	ev := ChangeEventFromPrevious(prev, &newReq, &prevReq, ceInputs())
+	ev := ChangeEventFromPrevious(prev, one(newReq), one(prevReq), ceInputs())
 	require.NotNil(t, ev)
 	assert.Equal(t, hdf.EventRequirementStateRegressed, ev.State)
 	assert.Contains(t, ev.ChangeReasons, hdf.EventChangeReasonOverrideRemoved)
 	assertValidEvent(t, ev)
 }
+
+// one wraps requirements as the entry list the kernel takes: an id may carry several,
+// and a test that passes a single requirement is the one-entry case.
+func one(reqs ...hdf.EvaluatedRequirement) []hdf.EvaluatedRequirement { return reqs }

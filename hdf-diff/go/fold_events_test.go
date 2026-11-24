@@ -187,7 +187,7 @@ func TestFoldChangeEvents_Anomalies(t *testing.T) {
 		orphan := ChangeEventFromPrevious(&KeyState{
 			EffectiveStatus: "failed", EffectiveImpact: 0.5,
 			Checksum: hdf.Checksum{Algorithm: hdf.Sha256, Value: ecVectorFailedHalf},
-		}, &passing, nil, in)
+		}, one(passing), nil, in)
 		require.NotNil(t, orphan)
 
 		result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{orphan})
@@ -299,7 +299,7 @@ func TestFoldChangeEvents_TimestampLessSeedAnchorsToEventOccurrence(t *testing.T
 	in.PrevReferenceTimestamp = refTs
 
 	t.Run("absent branch", func(t *testing.T) {
-		ev := ChangeEventFromPrevious(prev, nil, &seedReq, in)
+		ev := ChangeEventFromPrevious(prev, nil, one(seedReq), in)
 		require.NotNil(t, ev)
 		result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{ev})
 		require.NoError(t, err)
@@ -312,7 +312,7 @@ func TestFoldChangeEvents_TimestampLessSeedAnchorsToEventOccurrence(t *testing.T
 	t.Run("content branch", func(t *testing.T) {
 		next := seedReq
 		next.Impact = 0.6
-		ev := ChangeEventFromPrevious(prev, &next, &seedReq, in)
+		ev := ChangeEventFromPrevious(prev, one(next), one(seedReq), in)
 		require.NotNil(t, ev)
 		require.Equal(t, hdf.EventRequirementStateUpdated, ev.State)
 		result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{ev})
@@ -332,16 +332,26 @@ func TestFoldChangeEvents_MultipleRealBaselines(t *testing.T) {
 	require.NoError(t, json.Unmarshal(seed, &doc))
 	req := doc.Baselines[0].Requirements[0]
 	refTs := "2026-03-25T22:56:27.736808Z"
-	cs := ComputeEffectiveChecksum(req, refTs)
-	require.NotNil(t, cs)
-	prev := &KeyState{EffectiveStatus: ComputeEffectiveStatus(req, refTs), EffectiveImpact: ComputeEffectiveImpact(req, refTs), Checksum: *cs}
+	// Several baselines carry this id, so a producer's state for the key is the fold over
+	// every entry of it, and that fold is the chain head the event links back to.
+	var entries []hdf.EvaluatedRequirement
+	for _, baseline := range doc.Baselines {
+		for _, r := range baseline.Requirements {
+			if r.ID == req.ID {
+				entries = append(entries, r)
+			}
+		}
+	}
+	require.Greater(t, len(entries), 1)
+	prev := FoldEffectiveState(entries, refTs)
+	require.NotNil(t, prev)
 	in := ceInputs()
 	in.RequirementID = req.ID
 	in.Timestamp, err = time.Parse(time.RFC3339Nano, refTs)
 	require.NoError(t, err)
 	in.ReferenceTimestamp = refTs
 	in.PrevReferenceTimestamp = refTs
-	event := ChangeEventFromPrevious(prev, nil, &req, in)
+	event := ChangeEventFromPrevious(prev, nil, entries, in)
 	require.NotNil(t, event)
 	result, err := FoldChangeEventsIntoComparison(seed, []*hdf.HDFRequirementChangeEvent{event})
 	require.NoError(t, err)

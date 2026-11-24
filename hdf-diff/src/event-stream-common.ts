@@ -1,5 +1,5 @@
 import { compareCodePoint } from '@mitre/hdf-utilities';
-import { computeEffectiveChecksum } from './effective-checksum.js';
+import { foldEffectiveState } from './effective-checksum.js';
 
 type Doc = Record<string, unknown>;
 
@@ -10,9 +10,15 @@ export function eventPriorValue(ev: Doc): string {
 }
 
 /** Effective checksum of a requirement ('' when absent). */
-export async function requirementChecksum(req: Doc | null, referenceTimestamp: string): Promise<string> {
-  if (!req) return '';
-  return (await computeEffectiveChecksum(req, referenceTimestamp)).value;
+export async function requirementChecksum(
+  reqs: readonly Doc[] | null,
+  referenceTimestamp: string,
+): Promise<string> {
+  if (!reqs || reqs.length === 0) return '';
+  // Folded, because an event's key covers every entry it carries: the chain link has to be
+  // the value foldEffectiveState gives the seed's entries for that id.
+  const folded = await foldEffectiveState(reqs, referenceTimestamp);
+  return folded ? folded.checksum.value : '';
 }
 
 /**
@@ -66,7 +72,7 @@ export function groupEventChains(events: Doc[]): { byKey: Map<string, Doc[]>; ke
  */
 export async function verifyEventChain(
   chain: Doc[],
-  seedReq: Doc | null,
+  seedReqs: readonly Doc[] | null,
   inSeed: boolean,
   keyWarn: (kind: string, message: string) => void,
 ): Promise<void> {
@@ -75,8 +81,8 @@ export async function verifyEventChain(
   if (!inSeed && first['state'] !== 'new') return;
 
   let expected = '';
-  if (seedReq) {
-    expected = await requirementChecksum(seedReq, first['timestamp'] as string);
+  if (seedReqs && seedReqs.length > 0) {
+    expected = await requirementChecksum(seedReqs, first['timestamp'] as string);
   }
   for (const ev of chain) {
     const prior = eventPriorValue(ev);
@@ -96,6 +102,6 @@ export async function verifyEventChain(
         `priorChecksum "${prior}" does not match expected chain state "${expected}" — either events are missing from this chain, or it was derived under an older effective-status semantics (see status-determination.md); re-derive from a fresh rescan to re-anchor`,
       );
     }
-    expected = await requirementChecksum(ev['after'] as Doc | null, ev['timestamp'] as string);
+    expected = await requirementChecksum(ev['after'] as Doc[] | null, ev['timestamp'] as string);
   }
 }

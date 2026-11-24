@@ -985,15 +985,17 @@ describe('HDF Requirement Change Event Validation', () => {
     state: 'fixed',
     changeReasons: ['resultChanged'],
     before: { effectiveStatus: 'failed', effectiveImpact: 0.5 },
-    after: {
-      id: 'RHEL-09-255065',
-      impact: 0.5,
-      tags: {},
-      descriptions: [{ label: 'default', data: 'SSH FIPS ciphers' }],
-      results: [
-        { status: 'passed', codeDesc: 'ciphers ok', startTime: '2026-07-22T14:03:11Z' },
-      ],
-    },
+    after: [
+      {
+        id: 'RHEL-09-255065',
+        impact: 0.5,
+        tags: {},
+        descriptions: [{ label: 'default', data: 'SSH FIPS ciphers' }],
+        results: [
+          { status: 'passed', codeDesc: 'ciphers ok', startTime: '2026-07-22T14:03:11Z' },
+        ],
+      },
+    ],
   };
 
   it('validates a well-formed change event', () => {

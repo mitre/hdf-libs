@@ -180,3 +180,47 @@ func StampEffectiveChecksums(doc map[string]interface{}, referenceTimestamp stri
 	}
 	return nil
 }
+
+// FoldEffectiveState resolves the posture of every entry one requirement id carries and
+// folds them into the single state an event is keyed on. An id names the requirement
+// rather than the finding, so several entries may share it. The status is
+// hdfutil.WorstStatus over the entries, which is the roll-up hdf-engine already calls
+// canonical for a requirement's results; the impact is the highest; and the checksum
+// covers each entry's own effective checksum in document order, so a change in any one
+// of them moves it.  A single entry keeps exactly the checksum ComputeEffectiveChecksum
+// gives it, so every stream over a document without repeated ids is byte-identical to
+// before the fold.
+func FoldEffectiveState(reqs []hdf.EvaluatedRequirement, referenceTimestamp string) *KeyState {
+	if len(reqs) == 0 {
+		return nil
+	}
+	statuses := make([]string, 0, len(reqs))
+	values := make([]string, 0, len(reqs))
+	impact := 0.0
+	for _, req := range reqs {
+		cs := ComputeEffectiveChecksum(req, referenceTimestamp)
+		if cs == nil {
+			return nil
+		}
+		statuses = append(statuses, ComputeEffectiveStatus(req, referenceTimestamp))
+		if i := ComputeEffectiveImpact(req, referenceTimestamp); i > impact {
+			impact = i
+		}
+		values = append(values, cs.Value)
+	}
+
+	folded := hdf.Checksum{Algorithm: hdf.Sha256, Value: values[0]}
+	if len(values) > 1 {
+		raw, err := json.Marshal(values)
+		if err != nil {
+			return nil
+		}
+		hash := sha256.Sum256(raw)
+		folded.Value = hex.EncodeToString(hash[:])
+	}
+	return &KeyState{
+		EffectiveStatus: hdfutil.WorstStatus(statuses),
+		EffectiveImpact: impact,
+		Checksum:        folded,
+	}
+}

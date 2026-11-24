@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { validateRequirementChangeEvent } from '@mitre/hdf-validators';
 import { changeEventFromPrevious, type KeyState, type EventInputs } from '../src/change-event.js';
 
+/**
+ * Wraps requirements as the entry list the kernel takes; a single one is the one-entry
+ * case.
+ */
+const one = (...reqs: Record<string, unknown>[]): Record<string, unknown>[] => reqs;
+
+
 // Pinned vectors shared with the Go suite (effective_checksum_test.go).
 const VECTOR_FAILED_HALF = '704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021';
 const VECTOR_PASSED_HALF = '73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217';
@@ -57,16 +64,16 @@ function assertValidEvent(ev: Record<string, unknown>): void {
 
 describe('changeEventFromPrevious', () => {
   it('returns null when the checksum matches (no change)', async () => {
-    const ev = await changeEventFromPrevious(prevFailing(), makeReq('failed'), null, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(makeReq('failed')), [], inputs());
     expect(ev).toBeNull();
   });
 
   it('returns null when both prev and new are absent', async () => {
-    expect(await changeEventFromPrevious(null, null, null, inputs())).toBeNull();
+    expect(await changeEventFromPrevious(null, [], [], inputs())).toBeNull();
   });
 
   it('emits new for an unseen key (chain start)', async () => {
-    const ev = await changeEventFromPrevious(null, makeReq('passed'), null, inputs());
+    const ev = await changeEventFromPrevious(null, one(makeReq('passed')), [], inputs());
     expect(ev).not.toBeNull();
     expect(ev!.state).toBe('new');
     expect(ev!.before).toBeNull();
@@ -76,7 +83,7 @@ describe('changeEventFromPrevious', () => {
   });
 
   it('emits absent when the requirement leaves scope', async () => {
-    const ev = await changeEventFromPrevious(prevFailing(), null, null, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), [], [], inputs());
     expect(ev).not.toBeNull();
     expect(ev!.state).toBe('absent');
     expect(ev!.after).toBeNull();
@@ -86,7 +93,7 @@ describe('changeEventFromPrevious', () => {
   });
 
   it('classifies failed→passed as fixed with the chain link', async () => {
-    const ev = await changeEventFromPrevious(prevFailing(), makeReq('passed'), null, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(makeReq('passed')), [], inputs());
     expect(ev).not.toBeNull();
     expect(ev!.state).toBe('fixed');
     expect((ev!.priorChecksum as Record<string, unknown>).value).toBe(VECTOR_FAILED_HALF);
@@ -99,7 +106,7 @@ describe('changeEventFromPrevious', () => {
       effectiveImpact: 0.5,
       checksum: { algorithm: 'sha256', value: VECTOR_PASSED_HALF },
     };
-    const ev = await changeEventFromPrevious(prev, makeReq('failed'), null, inputs());
+    const ev = await changeEventFromPrevious(prev, one(makeReq('failed')), [], inputs());
     expect(ev!.state).toBe('regressed');
     assertValidEvent(ev!);
   });
@@ -111,7 +118,7 @@ describe('changeEventFromPrevious', () => {
       ],
     });
     delete (req.statusOverrides as Record<string, unknown>[])[0].status;
-    const ev = await changeEventFromPrevious(prevFailing(), req, null, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(req), [], inputs());
     expect(ev!.state).toBe('updated');
     expect(ev!.changeReasons).toContain('impactChanged');
     assertValidEvent(ev!);
@@ -119,7 +126,7 @@ describe('changeEventFromPrevious', () => {
 
   it('echoes all envelope inputs', async () => {
     const i = { ...inputs(), schemaRef: 'https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.4.0' };
-    const ev = await changeEventFromPrevious(prevFailing(), makeReq('passed'), null, i);
+    const ev = await changeEventFromPrevious(prevFailing(), one(makeReq('passed')), [], i);
     expect(ev!.eventId).toBe(i.eventId);
     expect(ev!.source).toBe(i.source);
     expect(ev!.sequence).toBe(i.sequence);
@@ -134,7 +141,7 @@ describe('changeEventFromPrevious', () => {
   it('attributes an override-driven flip when the full prior requirement is given', async () => {
     const prevReq = makeReq('failed');
     const newReq = makeReq('failed', { statusOverrides: [makeOverride()] });
-    const ev = await changeEventFromPrevious(prevFailing(), newReq, prevReq, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(newReq), one(prevReq), inputs());
     expect(ev!.state).toBe('fixed');
     expect(ev!.changeReasons).toContain('overrideAdded');
     expect(ev!.changeReasons).not.toContain('resultChanged');
@@ -144,14 +151,14 @@ describe('changeEventFromPrevious', () => {
   it('filters batch-only reasons out of the wire vocabulary', async () => {
     const prevReq = makeReq('failed');
     const newReq = makeReq('passed', { title: 'Renamed control title' });
-    const ev = await changeEventFromPrevious(prevFailing(), newReq, prevReq, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(newReq), one(prevReq), inputs());
     expect(ev!.changeReasons).toContain('resultChanged');
     expect(ev!.changeReasons).not.toContain('metadataChanged');
     assertValidEvent(ev!);
   });
 
   it('matches the Go kernel field-for-field on the shared fixed-transition case', async () => {
-    const ev = await changeEventFromPrevious(prevFailing(), makeReq('passed'), null, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(makeReq('passed')), [], inputs());
     // Mirror of TestChangeEventFromPrevious_FailedToPassedIsFixed — the Go
     // suite asserts the same state/priorChecksum/envelope values.
     expect({
@@ -181,7 +188,7 @@ describe('mapped and window-dependent change reasons', () => {
     });
     delete (newReq.statusOverrides as Record<string, unknown>[])[0].status;
 
-    const ev = await changeEventFromPrevious(prevFailing(), newReq, prevReq, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(newReq), one(prevReq), inputs());
     expect(ev).not.toBeNull();
     expect(ev!.changeReasons).toContain('overrideAdded');
     const impactCount = (ev!.changeReasons as string[]).filter((r) => r === 'impactChanged').length;
@@ -192,7 +199,7 @@ describe('mapped and window-dependent change reasons', () => {
   it('maps a base impact change to impactChanged', async () => {
     const prevReq = makeReq('failed');
     const newReq = makeReq('failed', { impact: 0.3 });
-    const ev = await changeEventFromPrevious(prevFailing(), newReq, prevReq, inputs());
+    const ev = await changeEventFromPrevious(prevFailing(), one(newReq), one(prevReq), inputs());
     expect(ev!.changeReasons).toContain('impactChanged');
     assertValidEvent(ev!);
   });
@@ -209,7 +216,7 @@ describe('mapped and window-dependent change reasons', () => {
       effectiveImpact: 0.5,
       checksum: { algorithm: 'sha256', value: WAIVED_CHECKSUM },
     };
-    const ev = await changeEventFromPrevious(prev, waived(), waived(), {
+    const ev = await changeEventFromPrevious(prev, one(waived()), one(waived()), {
       ...inputs(),
       prevReferenceTimestamp: '2026-07-20T00:00:00Z',
       referenceTimestamp: '2026-07-22T14:03:11Z',
@@ -229,7 +236,7 @@ describe('mapped and window-dependent change reasons', () => {
       effectiveImpact: 0.5,
       checksum: { algorithm: 'sha256', value: WAIVED_CHECKSUM },
     };
-    const ev = await changeEventFromPrevious(prev, newReq, prevReq, inputs());
+    const ev = await changeEventFromPrevious(prev, one(newReq), one(prevReq), inputs());
     expect(ev!.state).toBe('regressed');
     expect(ev!.changeReasons).toContain('overrideRemoved');
     assertValidEvent(ev!);

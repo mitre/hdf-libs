@@ -1,6 +1,6 @@
 import { compareCodePoint, formatTimestamp, parseTimestamp } from '@mitre/hdf-utilities';
 import { computeSummary } from './summary.js';
-import { computeEffectiveStatus } from './status.js';
+import { foldEffectiveState } from './effective-checksum.js';
 import { computeFieldChanges, extractDrift, DEFAULT_TRACKED_FIELDS, recordRequirementBaseline } from './diff.js';
 import { dedupEvents, groupEventChains, verifyEventChain } from './event-stream-common.js';
 import type { ApplyWarning } from './apply-events.js';
@@ -14,14 +14,28 @@ export interface FoldResult {
   warnings: ApplyWarning[];
 }
 
-function findSeedRequirement(doc: Doc, id: string): Doc | null {
+/**
+ * The raw impact of the entry that scores highest, which is how the fold takes an id's
+ * exposure. One entry gives exactly its own impact.
+ */
+function highestImpact(reqs: readonly Doc[]): number | undefined {
+  const impacts = reqs.map((r) => r['impact']).filter((i): i is number => typeof i === 'number');
+  return impacts.length > 0 ? Math.max(...impacts) : undefined;
+}
+
+/**
+ * Every entry the id carries in the seed, across all baselines, in document order. An
+ * id names the requirement rather than the finding, so resolving it to the first entry
+ * made the fold describe one of several. Peer of the Go seedEntries.
+ */
+function findSeedRequirements(doc: Doc, id: string): Doc[] {
   const baselines = (doc['baselines'] as Doc[] | undefined) ?? [];
+  const entries: Doc[] = [];
   for (const baseline of baselines) {
     const requirements = (baseline['requirements'] as Doc[] | undefined) ?? [];
-    const hit = requirements.find((r) => r['id'] === id);
-    if (hit) return hit;
+    entries.push(...requirements.filter((r) => r['id'] === id));
   }
-  return null;
+  return entries;
 }
 
 /**
@@ -80,9 +94,10 @@ export async function foldChangeEventsIntoComparison(
       }
     };
 
-    const seedReq = findSeedRequirement(doc, id);
-    const inSeed = seedReq !== null;
-    await verifyEventChain(chain, seedReq, inSeed, keyWarn);
+    const seedReqs = findSeedRequirements(doc, id);
+    const seedReq = seedReqs[0] ?? null;
+    const inSeed = seedReqs.length > 0;
+    await verifyEventChain(chain, seedReqs, inSeed, keyWarn);
 
     // parseTimestamp + formatTimestamp keep the occurrence host-independent
     // and render timestamps as trimmed UTC, matching the Go peer's
@@ -98,6 +113,12 @@ export async function foldChangeEventsIntoComparison(
     // seed must never fall through to the wall clock.
     const seedRef = docTimestamp !== '' ? docTimestamp : newTs;
 
+    // The requirement's prior posture is the fold over every entry it carried, as the new
+    // side is: worst status, highest impact. One entry gives its own.
+    const seedFolded = inSeed ? await foldEffectiveState(seedReqs, seedRef) : null;
+    const oldStatus = seedFolded ? seedFolded.effectiveStatus : '';
+    const oldImpact = highestImpact(seedReqs);
+
     if (winner['state'] === 'absent') {
       if (!seedReq) {
         keyWarn('absentUnknown', 'absent event for a key not present in the seed');
@@ -108,9 +129,9 @@ export async function foldChangeEventsIntoComparison(
         title: seedReq['title'] as string | undefined,
         baseline: baselineByReq.get(id),
         state: 'absent',
-        oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
+        oldEffectiveStatus: oldStatus,
         changeReasons: [],
-        oldImpact: seedReq['impact'] as number | undefined,
+        oldImpact,
         fieldChanges: [],
         before: seedReq,
         after: null,
@@ -118,12 +139,16 @@ export async function foldChangeEventsIntoComparison(
       continue;
     }
 
-    const after = winner['after'] as Doc | null;
-    if (!after) {
+    // The event carries every entry of the id. The fold emits ONE requirementDiff per key,
+    // so the posture is the folded one and the representative entry is the first.
+    const afterEntries = winner['after'] as Doc[] | null;
+    const after = afterEntries?.[0] ?? null;
+    const afterFolded = afterEntries ? await foldEffectiveState(afterEntries, newTs) : null;
+    if (!after || !afterFolded) {
       keyWarn('chainGap', 'winning event carries no applicable after payload');
       continue;
     }
-    const newStatus = computeEffectiveStatus(after, newTs);
+    const newStatus = afterFolded.effectiveStatus;
 
     // Content-bearing chain for a key the seed does not carry: the
     // comparison vocabulary allows a null before only on new, so the entry
@@ -140,7 +165,7 @@ export async function foldChangeEventsIntoComparison(
         state: 'new',
         newEffectiveStatus: newStatus,
         changeReasons: [],
-        newImpact: after['impact'] as number | undefined,
+        newImpact: highestImpact(afterEntries ?? []),
         fieldChanges: [],
         before: null,
         after,
@@ -153,11 +178,13 @@ export async function foldChangeEventsIntoComparison(
       title: (after['title'] as string | undefined) ?? (seedReq['title'] as string | undefined),
       baseline: baselineByReq.get(id),
       state: winner['state'] as RequirementState,
-      oldEffectiveStatus: computeEffectiveStatus(seedReq, seedRef),
+      oldEffectiveStatus: oldStatus,
       newEffectiveStatus: newStatus,
       changeReasons: ((winner['changeReasons'] as string[] | undefined) ?? []) as ChangeReason[],
-      oldImpact: seedReq['impact'] as number | undefined,
-      newImpact: after['impact'] as number | undefined,
+      oldImpact,
+      // The impact a requirementDiff carries is the requirement's own, not its effective
+      // one — the batch comparison's contract — so the fold takes the highest of them.
+      newImpact: highestImpact(afterEntries ?? []),
       fieldChanges: computeFieldChanges(
         seedReq as FieldChangesInput,
         after as FieldChangesInput,

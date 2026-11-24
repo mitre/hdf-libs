@@ -229,9 +229,11 @@ export function changeEvent(reqId, opts = {}) {
     source: 'test',
     sequence: 1,
     timestamp: DEFAULT_START_TIME,
+    // Default to a "new" event: nothing existed before, and after carries every
+    // entry the id has, which for a test document is one.
     state: opts.state ?? 'new',
     before: opts.before ?? null,
-    after: opts.after ?? req(reqId),
+    after: opts.after ?? [req(reqId)],
     priorChecksum: opts.priorChecksum ?? null,
   });
 }

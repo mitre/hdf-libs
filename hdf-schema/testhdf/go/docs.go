@@ -173,11 +173,11 @@ func ChangeEvent(reqID string, opts ...EventOption) hdf.HDFRequirementChangeEven
 		Source:        "test",
 		Sequence:      1,
 		Timestamp:     DefaultStartTime,
-		// Default to a "new" event: nothing existed before, and after is a full
-		// requirement (the shape the schema's per-state oneOf requires).
+		// Default to a "new" event: nothing existed before, and after carries every
+		// entry the id has, which for a test document is one.
 		State:         hdf.EventRequirementStateNew,
 		Before:        nil,
-		After:         Req(reqID),
+		After:         []hdf.EvaluatedRequirement{Req(reqID)},
 		PriorChecksum: nil,
 	}
 	for _, o := range opts {
@@ -191,8 +191,8 @@ func EventState(s hdf.EventRequirementState) EventOption {
 	return func(e *hdf.HDFRequirementChangeEvent) { e.State = s }
 }
 
-// EventBeforeAfter sets the before/after payloads.
-func EventBeforeAfter(before, after any) EventOption {
+// EventBeforeAfter sets the before projection and the after entries.
+func EventBeforeAfter(before any, after []hdf.EvaluatedRequirement) EventOption {
 	return func(e *hdf.HDFRequirementChangeEvent) { e.Before = before; e.After = after }
 }
 

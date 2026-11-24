@@ -781,13 +781,13 @@ func TestValidateRequirementChangeEvent(t *testing.T) {
 		"state": "fixed",
 		"changeReasons": ["resultChanged"],
 		"before": { "effectiveStatus": "failed", "effectiveImpact": 0.5 },
-		"after": {
+		"after": [{
 			"id": "RHEL-09-255065",
 			"impact": 0.5,
 			"tags": {},
 			"descriptions": [{ "label": "default", "data": "SSH FIPS ciphers" }],
 			"results": [{ "status": "passed", "codeDesc": "ciphers ok", "startTime": "2026-07-22T14:03:11Z" }]
-		}
+		}]
 	}`)
 
 	t.Run("should validate a well-formed change event", func(t *testing.T) {

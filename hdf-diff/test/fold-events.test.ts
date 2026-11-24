@@ -11,8 +11,16 @@ import type { RequirementDiff, ChangeReason } from '../src/types.js';
 import { changeEventFromPrevious, type KeyState } from '../src/change-event.js';
 import { computeEffectiveChecksum, computeEffectiveImpact } from '../src/effective-checksum.js';
 import { computeEffectiveStatus } from '../src/status.js';
+import { foldEffectiveState } from '../src/effective-checksum.js';
 import { foldChangeEventsIntoComparison } from '../src/fold-events.js';
 import { ORDER_VECTORS, orderResultsDoc } from './order-vectors.js';
+
+/**
+ * Wraps requirements as the entry list the kernel takes; a single one is the one-entry
+ * case.
+ */
+const one = (...reqs: Record<string, unknown>[]): Record<string, unknown>[] => reqs;
+
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const load = (name: string): string => readFileSync(join(FIXTURES, name), 'utf-8');
@@ -60,12 +68,17 @@ async function deriveStream(seedJson: string, nextJson: string): Promise<Req[]> 
     const id = r['id'] as string;
     const prev = prevByKey.get(id) ?? null;
     prevByKey.delete(id);
-    const ev = await changeEventFromPrevious(prev?.state ?? null, r, prev?.req ?? null, mkInputs(id));
+    const ev = await changeEventFromPrevious(
+      prev?.state ?? null,
+      one(r),
+      prev ? one(prev.req) : [],
+      mkInputs(id),
+    );
     if (ev) events.push(ev);
   }
   for (const id of [...prevByKey.keys()].sort()) {
     const prev = prevByKey.get(id)!;
-    const ev = await changeEventFromPrevious(prev.state, null, prev.req, mkInputs(id));
+    const ev = await changeEventFromPrevious(prev.state, [], one(prev.req), mkInputs(id));
     if (ev) events.push(ev);
   }
   return events;
@@ -148,11 +161,11 @@ describe('foldChangeEventsIntoComparison', () => {
     const doc = JSON.parse(seedJson) as Req;
     const req = requirementsOf(doc)[0]!;
     const timestamp = '2026-03-25T22:56:27.736808Z';
-    const event = await changeEventFromPrevious({
-      effectiveStatus: computeEffectiveStatus(req, timestamp),
-      effectiveImpact: computeEffectiveImpact(req, timestamp),
-      checksum: await computeEffectiveChecksum(req, timestamp),
-    }, null, req, {
+    // The key covers every entry of the id — three baselines carry this one — so the prior
+    // state is the folded one, which is what the chain verifier compares against.
+    const entries = requirementsOf(doc).filter((r) => r['id'] === req['id']);
+    const prev = (await foldEffectiveState(entries, timestamp))!;
+    const event = await changeEventFromPrevious(prev, [], entries, {
       eventId: '0190f6f2-0000-7000-8000-000000000001',
       source: 'inspec://fixture/scan', sequence: 1,
       systemRef: 'fixture.hdf-system.json',
@@ -231,15 +244,15 @@ describe('foldChangeEventsIntoComparison', () => {
     const events = await deriveStream(seedJson, load('scan-after.json'));
     const withoutSv1 = events.filter((e) => e['requirementId'] !== 'SV-001');
     const sv1 = events.find((e) => e['requirementId'] === 'SV-001')!;
-    const after = sv1['after'] as Req;
+    const after = (sv1['after'] as Req[])[0]!;
     const followOn = await changeEventFromPrevious(
       {
         effectiveStatus: 'passed',
         effectiveImpact: 0.7,
         checksum: await computeEffectiveChecksum(after, '2024-02-01T00:00:00Z'),
       },
-      { ...after, results: [{ status: 'failed', codeDesc: 'regressed again', startTime: '2024-03-01T00:00:00Z' }] },
-      after,
+      one({ ...after, results: [{ status: 'failed', codeDesc: 'regressed again', startTime: '2024-03-01T00:00:00Z' }] }),
+      one(after),
       {
         eventId: '0190f6f2-0000-7000-8000-000000000099',
         source: 'inspec://fixture/scan',
@@ -292,11 +305,13 @@ describe('foldChangeEventsIntoComparison defensive edges', () => {
       priorChecksum: null,
       state: 'new',
       before: null,
-      after: {
-        id: 'R-EDGE', impact: 0.5, tags: {},
-        descriptions: [{ label: 'default', data: 'd' }],
-        results: [{ status: 'passed', codeDesc: 't', startTime: '2026-07-02T00:00:00Z' }],
-      },
+      after: [
+        {
+          id: 'R-EDGE', impact: 0.5, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 't', startTime: '2026-07-02T00:00:00Z' }],
+        },
+      ],
       ...overrides,
     };
   }
@@ -412,7 +427,7 @@ describe('foldChangeEventsIntoComparison — timestamp-less seed', () => {
 
   it('absent branch anchors the seed-side status to the event occurrence', async () => {
     const { seedJson, seedReq } = timestampLessSeed();
-    const ev = await changeEventFromPrevious(await seedState(seedReq), null, seedReq, inputs);
+    const ev = await changeEventFromPrevious(await seedState(seedReq), [], one(seedReq), inputs);
     expect(ev).not.toBeNull();
 
     const result = await foldChangeEventsIntoComparison(seedJson, [ev as Req]);
@@ -425,7 +440,7 @@ describe('foldChangeEventsIntoComparison — timestamp-less seed', () => {
   it('content branch anchors the seed-side status to the event occurrence', async () => {
     const { seedJson, seedReq } = timestampLessSeed();
     const next = { ...seedReq, impact: 0.6 };
-    const ev = await changeEventFromPrevious(await seedState(seedReq), next, seedReq, inputs);
+    const ev = await changeEventFromPrevious(await seedState(seedReq), one(next), one(seedReq), inputs);
     expect(ev).not.toBeNull();
     expect((ev as Req)['state']).toBe('updated');
 

@@ -439,8 +439,8 @@ Example loop (real output):
 $ hdf events derive --prev scan-before.json --next scan-after.json \
     --system-ref prod.hdf-system.json --component-id 6e0f2a3b-... -o events.ndjson
 $ cut -c1-80 events.ndjson | head -2
-{"after":{"descriptions":[{"data":"The system must disable root SSH login","labe
-{"after":{"descriptions":[{"data":"The audit subsystem must be active","label":"
+{"after":[{"descriptions":[{"data":"The system must disable root SSH login","lab
+{"after":[{"descriptions":[{"data":"The audit subsystem must be active","label":
 $ hdf events apply --seed scan-before.json events.ndjson -o reconciled.hdf.json
 $ hdf validate reconciled.hdf.json
 ✓ reconciled.hdf.json is a valid HDF results file

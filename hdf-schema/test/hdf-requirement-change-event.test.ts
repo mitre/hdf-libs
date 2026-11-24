@@ -37,7 +37,7 @@ function createMinimalChangeEvent(): Record<string, unknown> {
     state: 'fixed',
     changeReasons: ['resultChanged'],
     before: { effectiveStatus: 'failed', effectiveImpact: 0.5 },
-    after: createMinimalAfterRequirement(),
+    after: [createMinimalAfterRequirement()],
   };
 }
 
@@ -159,8 +159,26 @@ describe('hdf-requirement-change-event.schema.json', () => {
 
     it('rejects a thin after (must be a full Evaluated_Requirement)', () => {
       const doc = createMinimalChangeEvent();
-      doc.after = { effectiveStatus: 'passed', effectiveImpact: 0.5 };
+      doc.after = [{ effectiveStatus: 'passed', effectiveImpact: 0.5 }];
       expect(validate(doc)).toBe(false);
+    });
+
+    it('rejects a single after object outside the array', () => {
+      const doc = createMinimalChangeEvent();
+      doc.after = createMinimalAfterRequirement();
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('rejects an empty after array for a non-absent state', () => {
+      const doc = createMinimalChangeEvent();
+      doc.after = [];
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('accepts several after entries, which is what a repeated requirement id carries', () => {
+      const doc = createMinimalChangeEvent();
+      doc.after = [createMinimalAfterRequirement(), createMinimalAfterRequirement()];
+      expect(validate(doc)).toBe(true);
     });
   });
 

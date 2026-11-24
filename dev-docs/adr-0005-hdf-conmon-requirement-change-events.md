@@ -1,7 +1,7 @@
 # ADR-0005: HDF continuous-monitoring requirement-change-event stream — schema + kernel (speculative build)
 
 - **Status:** Accepted — implemented and merged (PR #161); shipping in v3.5.0
-- **Date:** 2026-07-22 (revised 2026-07-26)
+- **Date:** 2026-07-22 (revised 2026-07-26; amended 2026-11-23 — see [Amendment](#amendment--2026-11-23-a-requirement-id-names-the-requirement-not-one-entry))
 - **Deciders:** Will Dower
 - **Supersedes the deferral in:** **[ADR-0003](adr-0003-hdf-conmon-streaming.md)** (which recorded the target architecture but gated the build on an event producer existing). This ADR follows up on ADR-0003: we are now picking up the streaming direction and advancing it to ADR-0003's "Phase 2 — streaming design ADR + delta-event schema."
 - **Builds on:** **[ADR-0002](adr-0002-hdf-to-ecs-export.md)** (HDF → ECS export) and the shipped `hdf-to-ocsf` exporter (native OCSF Compliance Finding, class 2003) — the SIEM *projection* substrate reused inside every event.
@@ -27,11 +27,23 @@ ADR-0003 already settled the architecture (change events, not a raw-result fireh
 
 **Build, speculatively and library-only: (a) a `Requirement_Change_Event` schema — a new document type that reuses the `hdf-comparison` vocabulary but is not a `Requirement_Diff`; and (b) three pure, stateless kernel functions: `changeEventFromPrevious(prevState, newRequirement) → Requirement_Change_Event | null`, `foldChangeEventsIntoComparison(events[], seedResults) → hdf-comparison`, and `applyChangeEvents(seedResults, events[]) → hdf-results`.** No runtime, no broker, no producer in this repo.
 
+## Amendment — 2026-11-23: a requirement id names the requirement, not one entry
+
+The owner's ruling of 2026-09-20 makes `requirementId` **non-injective over a document's entries**: an id names the requirement, several entries of one baseline may carry it (six shipped converters produce such output today), several baselines may each carry it, and no per-entry instance key is added to the schema. §§1 and 4 below read the key as injective, and the kernel was built on that reading — `derive` keyed prior state on the id, flat across every baseline and last-wins on load, so a document with a repeated id produced a fabricated `new` event for every entry after the first (41 of them on one shipped golden comparing a document with an identical copy of itself), and `apply` then replayed those events onto the first matching entry, destroying real finding content.
+
+Two things follow, settled by the owner on 2026-11-23. The sentences they supersede are corrected in place below, marked *(amended 2026-11-23)*, so this section and the original decision are both readable.
+
+1. **The event unit is the requirement, and the N entries one id carries fold into one state.** The key's `effectiveStatus` is `WorstStatus` over the entries — the roll-up `hdf-engine` already treats as canonical for a requirement's results — its `effectiveImpact` is the highest of them, and its checksum covers each entry's own effective checksum **in document order**, so a change in any one of them moves the key. A single entry keeps exactly the checksum `ComputeEffectiveChecksum` gives it, which is what makes every stream over a document without a repeated id byte-identical to the one this ADR originally specified.
+
+2. **`after` carries every entry of the id, as an array** (a schema minor: `after` moves from one `Evaluated_Requirement` to a non-empty array of them, `null` only for `absent`). §3's argument forces it — an event that cannot reproduce the changed requirement's content makes replay-reconstruction unachievable, and with N entries per id one entry is no longer that content.
+
+What this does **not** change is the entity key. `(systemRef, componentId, requirementId)` is still durable across events and still the only detection key: the ruling declined a per-entry discriminator (its clause (iv)) and declined rejecting duplicate-id documents at derive time (clause (iii), because six shipped converters emit them). Durable and injective are the two properties §1 originally conflated; only the first holds.
+
 ### 1. The event is anchored to a **system**, keyed by `(systemRef, componentId, requirementId)`
 
-The stateful entity a cATO pipeline monitors is a **system's authorization boundary** — exactly what `hdf-system` (≈ OSCAL SSP) defines and what `hdf-comparison`'s `systemDrift` mode already diffs against via `systemRef`. The detection key is `(systemRef, componentId, requirementId)` → last-value `{ effectiveStatus, effectiveImpact, checksum }` — ADR-0003's keyed compaction made concrete against the system anchor. This entity key is durable across events; it is deliberately distinct from the per-event identity (§4). Precedent: OCSF's Compliance Finding formalizes the same split (`finding_info.uid` = durable finding vs `metadata.uid` = this event occurrence); SARIF splits `correlationGuid` (equivalence class) from `guid` (occurrence).
+The stateful entity a cATO pipeline monitors is a **system's authorization boundary** — exactly what `hdf-system` (≈ OSCAL SSP) defines and what `hdf-comparison`'s `systemDrift` mode already diffs against via `systemRef`. The detection key is `(systemRef, componentId, requirementId)` → last-value `{ effectiveStatus, effectiveImpact, checksum }` — ADR-0003's keyed compaction made concrete against the system anchor. This entity key is durable across events and deliberately distinct from the per-event identity (§4). It is durable but **not injective over a document's entries** *(amended 2026-11-23)*: an id names the requirement, so several entries of one baseline and several baselines may each carry it, and the event folds all of them into one state per key, carrying each of them in `after[]`. Precedent: OCSF's Compliance Finding formalizes the same split (`finding_info.uid` = durable finding vs `metadata.uid` = this event occurrence); SARIF splits `correlationGuid` (equivalence class) from `guid` (occurrence).
 
-A requirement *renumbering* is emitted as `absent` + `new` under the two keys — never an in-place key mutation (Debezium's rule for primary-key changes). The batch comparison later reconciles the rename via its `oldId`/`newId` matching machinery.
+A requirement *renumbering* is emitted as `absent` + `new` under the two ids — never an in-place key mutation (Debezium's rule for primary-key changes) — and the `absent` event retires **every** entry the old id carried *(amended 2026-11-23)*. The batch comparison later reconciles the rename via its `oldId`/`newId` matching machinery.
 
 ### 2. The event is a **new type** — a projection of the comparison vocabulary, not a `Requirement_Diff`
 
@@ -58,7 +70,7 @@ Measured against real fixture requirements (median OpenSCAP RHEL8 requirement �
 | Full `before` + full `after` (a literal `Requirement_Diff` payload) | ~3.7 KB (817 KB worst case) |
 | **Thin `before` projection + full `after`** (chosen) | **~2.1 KB** |
 
-- **`after`** is a full **`Evaluated_Requirement`**, required and non-null for every state except `absent` (where it is null by definition). This is not an optimization choice — it is forced by the reassembly-parity invariant (§6): an effective-fields-only event can flip a status but cannot reproduce the changed requirement's content (result messages, codeDesc, override state), so replay-reconstruction of `hdf-results` would be unachievable by construction. Since events fire only on change, essentially every event is content-bearing; there is no meaningful "thin tier." The full row is also *the point*: a responder opens a `regressed` event for the failing `results[]`, not for the enum. (Debezium's full-after-row CDC model, arrived at from the parity requirement.)
+- **`after`** is a non-empty array of full **`Evaluated_Requirement`** objects — every entry the id carries, in document order *(amended 2026-11-23; originally a single object)* — required and non-null for every state except `absent` (where it is null by definition). The sizes measured above are per entry, so an id carried by N entries costs N `after` rows. This is not an optimization choice — it is forced by the reassembly-parity invariant (§6): an effective-fields-only event can flip a status but cannot reproduce the changed requirement's content (result messages, codeDesc, override state), so replay-reconstruction of `hdf-results` would be unachievable by construction. Since events fire only on change, essentially every event is content-bearing; there is no meaningful "thin tier." The full row is also *the point*: a responder opens a `regressed` event for the failing `results[]`, not for the enum. (Debezium's full-after-row CDC model, arrived at from the parity requirement.)
 - **`before`** is a lightweight effective-fields projection (`{ effectiveStatus, effectiveImpact }`): enough for at-a-glance alerting without a lookup. The full prior state is recoverable from the reconciler's materialized state, and the `priorChecksum` chain (§4) covers integrity of that recovery.
 - The stream's economy therefore comes from **sparsity in time** (only changed keys, only when they change), not payload thinness.
 - Patches were considered and rejected as the wire form: RFC 6902 is order-dependent and non-idempotent; RFC 7386 cannot patch array elements or represent null — both fatal on a compacted, at-least-once stream. Full-state-carrying events with a derived `fieldChanges` hint (the `Requirement_Diff` split) remain the model at fold time.
@@ -76,7 +88,7 @@ The envelope answers the review's identity/ordering/idempotency finding. Fields,
 | `schemaRef` | uri | The versioned schema `$id` this event validates against. | CloudEvents `dataschema`; our hosted versioned `$id` URLs are already exactly this. |
 | `systemRef` | uri-reference | The `hdf-system` document (authorization boundary). Resolves to the **latest version** of an evolving document. | House convention (same field on hdf-comparison/amendments/evidence-package/results). Resolve-to-latest semantics per STIX `*_ref`. |
 | `componentId` | string (uuid) | Component within the system. | House convention (`componentId`/`componentRef`). |
-| `requirementId` | string | Canonical requirement identifier (natural key, same as `Requirement_Diff.id`). | Kimball durable-key; renumber = `absent`+`new` per §1. |
+| `requirementId` | string | Canonical requirement identifier (natural key, same as `Requirement_Diff.id`). Durable, but **not injective over a document's entries**: the event folds every entry the id carries into one state and carries them all in `after[]` *(amended 2026-11-23)*. | Kimball durable-key; renumber = `absent`+`new` per §1. |
 | `priorChecksum` | Checksum object, nullable | Per-requirement effective-fields checksum (§8) of the state this event supersedes — the house `{algorithm, value}` Checksum shape, matching `effectiveChecksum`. Null at chain start (seed). | **Documented divergence:** no event standard has a hash chain. Grounded in AWS CloudTrail digest chaining (`previousDigestHashValue`, null at chain start) and RFC 6962/9162 transparency logs. See the honesty note below. |
 
 **What the hash chain does and does not guarantee** (per the RFC 6962/9162 framing, written here so nobody oversells it): given a trusted head, a broken chain detects tampering, reordering, and mid-chain gaps — so the reconciler can mark a key's state *unverified* instead of confidently serving stale posture. It does **not** by itself prove completeness or prevent a split view. The out-of-band anchor that closes that gap is structural in this design: the periodic re-centering rescan (§7) plus the reconciled document's derivation block act as the signed checkpoint — CloudTrail's cadence-plus-digest pattern.
@@ -104,8 +116,9 @@ Two residuals define the (small, fully documented) mask:
 - **Changed requirements match exactly** — the last event for the key carried B's full row verbatim.
 - **Unchanged requirements carry A's content**, differing from B only in per-run volatile fields (`results[].startTime`/`runTime`, run-varying message text). This is the *correct* semantic — the reconciled document honestly reports last observed state — and it is the entirety of the requirement-level mask.
 - Document-level metadata (`generator`, document `timestamp`, `statistics.duration`, `resultsChecksum`) legitimately differs; parity is requirement-level, never byte-level.
+- **An id whose number of entries changed is reassembled into the first baseline that carried it** *(amended 2026-11-23)*. Both the event's `after[]` and the seed's sites are in document order, so where the count agrees each baseline takes its own share back and the arrangement survives exactly: measured on the shared `duplicate-baselines` fixture, whose changed id is carried by six entries across four baselines, every requirement entry returns byte-identical and in place. Only a change in the count leaves the arrangement undecidable — the event cannot say which baseline lost or gained one — and `apply` then places them all in the first site and reports an `occurrenceMismatch` warning rather than doing it silently.
 
-A companion law ties stream to batch: `foldChangeEventsIntoComparison(derive(A→B), A)` produces the same `requirementDiffs` as the batch `diff(A, B)`, modulo the batch-only states (§2).
+A companion law ties stream to batch, and the amendment narrows it *(amended 2026-11-23)*. Where every id is carried by exactly one entry, `foldChangeEventsIntoComparison(derive(A→B), A)` produces the same `requirementDiffs` as the batch `diff(A, B)`, modulo the batch-only states (§2). Where an id is carried by several entries the two diverge by construction, in arity and in naming: the event key carries no baseline (§1), so the fold emits **one** diff per key with the `(multiple)` baseline sentinel, while the batch compares within each baseline and emits one diff per baseline carrying the id, each naming it. On the shipped five-baseline `inspec-multilayered` fixture that is 1 against 3. The divergence is pinned by test rather than papered over, so narrowing it later flips a failing assertion instead of sliding past one.
 
 The invariant is conditional on the **producer contract**, which is part of this design, not an aspiration:
 
@@ -166,7 +179,7 @@ The pieces referenced below: the pure kernel functions (hdf-libs, this ADR); the
 …
 ```
 
-The `checksum` is the new per-requirement effective-fields checksum (§8). There is now a baseline to compare against. No events yet.
+The `checksum` is the new per-requirement effective-fields checksum (§8). Where a document carries several entries under one id — a CVE matched against several packages, or an overlay chain whose layers each carry the rule — the row holds the fold over all of them *(amended 2026-11-23)*, never the first one found. There is now a baseline to compare against. No events yet.
 
 **Step 4 — Steady state: re-evaluate and emit only what moved.** On a cadence (or on config-change triggers), the producer re-runs InSpec on `web01`. For each evaluated requirement, `changeEventFromPrevious(prevState[key], newRequirement)`:
 
@@ -185,7 +198,7 @@ The `checksum` is the new per-requirement effective-fields checksum (§8). There
     "state": "fixed",
     "changeReasons": ["resultChanged"],
     "before": { "effectiveStatus": "failed", "effectiveImpact": 0.5 },
-    "after": { /* full Evaluated_Requirement: id, tags, descriptions, results[] with the passing check output, … */ },
+    "after": [ /* every entry this id carries, each a full Evaluated_Requirement: id, tags, descriptions, results[] with the passing check output, … */ ],
     "priorChecksum": "9f2a…",
     "timestamp": "2026-07-22T14:03:11Z"
   }
@@ -194,7 +207,7 @@ The `checksum` is the new per-requirement effective-fields checksum (§8). There
   The reconciler dedups on `(source, eventId)`, orders on `sequence`, verifies `priorChecksum` against its stored state (chain intact), and updates the stored last-value for the key.
 
 **Step 5 — Fan-out.** Each event goes two places:
-- **SOC / SIEM:** projected through the shipped `hdf-to-ocsf` / `hdf-to-ecs` mapping (OCSF Compliance Finding, class 2003 — whose required `activity_id` Create/Update/Close maps naturally from `state`) so the change shows up next to operational telemetry and is alertable. The full `after` row means the alert carries the failing/passing check output — the "why" — not just an enum flip.
+- **SOC / SIEM:** projected through the shipped `hdf-to-ocsf` / `hdf-to-ecs` mapping (OCSF Compliance Finding, class 2003 — whose required `activity_id` Create/Update/Close maps naturally from `state`) so the change shows up next to operational telemetry and is alertable. The full `after` rows mean the alert carries the failing/passing check output — the "why" — not just an enum flip.
 - **Governance reconciler:** appended to the running window for `AppTier`.
 
 **Step 6 — Materialize current posture (the "continually updating" part).** On demand or on a cadence — two pure, deterministic outputs, neither of which mutates a document in place:
@@ -209,7 +222,7 @@ The `checksum` is the new per-requirement effective-fields checksum (§8). There
 
 **Step 8 — Boundary change.** When `web01` is decommissioned, the `hdf-system` document is updated to remove the component (a rare, deliberate edit), the reconciler drops its keys, and `state: "absent"` events (thin `before`, `after: null`) mark the disappearance so downstream views stop expecting it.
 
-**Why the loop holds together:** stable `componentId` + `requirementId` are the join keys across every scan; the per-requirement checksum decides what moved; `changeEventFromPrevious` turns "moved" into an event; `foldChangeEventsIntoComparison` and `applyChangeEvents` turn a window of events back into the batch artifacts governance already understands. Everything hdf-libs owns is a pure function over those keys — the state store, cadence, and transport are the external producer/reconciler's job.
+**Why the loop holds together:** stable `componentId` + `requirementId` are the join keys across every scan — one key per requirement, however many entries carry it *(amended 2026-11-23)*; the per-requirement checksum decides what moved; `changeEventFromPrevious` turns "moved" into an event; `foldChangeEventsIntoComparison` and `applyChangeEvents` turn a window of events back into the batch artifacts governance already understands. Everything hdf-libs owns is a pure function over those keys — the state store, cadence, and transport are the external producer/reconciler's job.
 
 ## Alternatives Considered
 

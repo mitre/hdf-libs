@@ -11,7 +11,10 @@ import {
  * wall clock, no RNG. Go parity: ApplyInputs in hdf-diff/go/apply_events.go.
  */
 export interface ApplyInputs {
-  /** Names the reconciling tool — a reconciled document never masquerades as scanner output. */
+  /**
+   * Names the reconciling tool — a reconciled document never masquerades as scanner
+   * output.
+   */
   generator: { name: string; version: string };
   /** Locates the seed snapshot; its checksum is computed from the seed text. */
   seedUri: string;
@@ -38,19 +41,80 @@ export interface ApplyResult {
 
 type Doc = Record<string, unknown>;
 
-function findRequirement(
-  doc: Doc,
-  id: string,
-): { baseline: Doc; requirements: Doc[]; index: number } | null {
+interface RequirementSite {
+  baseline: Doc;
+  indexes: number[];
+}
+
+/**
+ * Every place an id's entries sit, across all baselines. An id names the requirement
+ * rather than the finding, so it may occupy several positions and an event carries all
+ * of them; placing one payload on the first hit overwrote a real entry's content. Peer
+ * of the Go findRequirementSites.
+ */
+function findRequirementSites(doc: Doc, id: string): RequirementSite[] {
+  const sites: RequirementSite[] = [];
   const baselines = (doc['baselines'] as Doc[] | undefined) ?? [];
   for (const baseline of baselines) {
     const requirements = (baseline['requirements'] as Doc[] | undefined) ?? [];
-    const index = requirements.findIndex((r) => r['id'] === id);
-    if (index >= 0) {
-      return { baseline, requirements, index };
+    const indexes = requirements.flatMap((r, i) => (r['id'] === id ? [i] : []));
+    if (indexes.length > 0) {
+      sites.push({ baseline, indexes });
     }
   }
-  return null;
+  return sites;
+}
+
+/** How many entries the id holds across every site. */
+function siteEntryCount(sites: readonly RequirementSite[]): number {
+  return sites.reduce((total, site) => total + site.indexes.length, 0);
+}
+
+/**
+ * Splits an event's entries across the sites the id occupies, one share each. The shares
+ * match the seed's own counts when the number agrees; otherwise the arrangement is
+ * undecidable and the first site takes everything, which the caller reports.
+ */
+function payloadShares(sites: readonly RequirementSite[], payload: readonly Doc[]): Doc[][] {
+  const shares: Doc[][] = sites.map(() => []);
+  if (siteEntryCount(sites) !== payload.length) {
+    shares[0] = [...payload];
+    return shares;
+  }
+  let offset = 0;
+  for (const [i, site] of sites.entries()) {
+    shares[i] = payload.slice(offset, offset + site.indexes.length);
+    offset += site.indexes.length;
+  }
+  return shares;
+}
+
+/**
+ * Writes an event's entries over the id's existing entries, because the event's list is
+ * the whole truth about that id. Both the event's after[] and the sites are in document
+ * order, so when the event carries as many entries as the seed holds each site takes
+ * its own share and the seed's arrangement across baselines is reproduced exactly. An
+ * empty payload removes them all, which is what absent means.
+ */
+function placeEntries(sites: readonly RequirementSite[], payload: readonly Doc[]): void {
+  const shares = payloadShares(sites, payload);
+  for (const [i, site] of sites.entries()) {
+    const requirements = (site.baseline['requirements'] as Doc[] | undefined) ?? [];
+    const drop = new Set(site.indexes);
+    const kept: Doc[] = [];
+    let written = false;
+    for (const [j, requirement] of requirements.entries()) {
+      if (!drop.has(j)) {
+        kept.push(requirement);
+        continue;
+      }
+      if (!written) {
+        kept.push(...(shares[i] ?? []));
+        written = true;
+      }
+    }
+    site.baseline['requirements'] = kept;
+  }
 }
 
 /**
@@ -87,7 +151,7 @@ export async function applyChangeEvents(
     const first = chain[0];
     const winner = chain[chain.length - 1];
     if (!first || !winner) continue;
-    const inSeed = findRequirement(doc, id) !== null;
+    const inSeed = findRequirementSites(doc, id).length > 0;
 
     // One warning per key, application anomalies taking priority over
     // chain-link mismatches.
@@ -101,8 +165,12 @@ export async function applyChangeEvents(
 
     // Chain verification (shared with the fold): unanchored chains defer
     // to the application outcome below.
-    const located = findRequirement(doc, id);
-    await verifyEventChain(chain, located ? (located.requirements[located.index] ?? null) : null, inSeed, keyWarn);
+    const sites = findRequirementSites(doc, id);
+    const seedEntries = sites.flatMap((site) => {
+      const reqs = (site.baseline['requirements'] as Doc[] | undefined) ?? [];
+      return site.indexes.flatMap((i) => (reqs[i] ? [reqs[i]] : []));
+    }) as Doc[];
+    await verifyEventChain(chain, seedEntries, inSeed, keyWarn);
     const verifyLinks = inSeed || first['state'] === 'new';
 
     // Apply the winner.
@@ -118,13 +186,14 @@ export async function applyChangeEvents(
     }
 
     if (winner['state'] === 'absent') {
-      const hit = findRequirement(doc, id);
-      if (hit) {
-        hit.requirements.splice(hit.index, 1);
-        eventsApplied++;
-      } else {
+      // The requirement left the assessment, so EVERY entry it carried goes: removing one
+      // of several left the rest behind as a requirement that had supposedly disappeared.
+      if (sites.length === 0) {
         keyWarn('absentUnknown', 'absent event for a key not present in the document');
+        continue;
       }
+      placeEntries(sites, []);
+      eventsApplied++;
       continue;
     }
 
@@ -132,18 +201,29 @@ export async function applyChangeEvents(
       keyWarn('chainGap', 'non-new chain for a key the seed does not carry');
     }
 
-    const payload = winner['after'] as Doc | null;
-    if (!payload) {
+    const payload = winner['after'] as Doc[] | null;
+    if (!payload || payload.length === 0) {
       keyWarn('chainGap', 'winning event carries no applicable after payload');
       continue;
     }
-    const hit = findRequirement(doc, id);
-    if (hit) {
-      hit.requirements[hit.index] = structuredClone(payload);
-      eventsApplied++;
-    } else {
-      insertions.push({ sequence: winnerSeq, id, payload: structuredClone(payload) });
+    if (sites.length === 0) {
+      for (const entry of payload) {
+        insertions.push({ sequence: winnerSeq, id, payload: structuredClone(entry) });
+      }
+      continue;
     }
+    // The event carries every entry of the id, so they replace every entry of the id. Only
+    // a change in their NUMBER leaves the arrangement undecidable, because the event cannot
+    // then say which belongs where; that case is reported, not done silently.
+    if (siteEntryCount(sites) !== payload.length) {
+      keyWarn(
+        'occurrenceMismatch',
+        'the event carries a different number of this id\'s entries than the seed; ' +
+          'they are replaced in the first baseline that carries it',
+      );
+    }
+    placeEntries(sites, payload.map((entry) => structuredClone(entry)));
+    eventsApplied++
   }
 
   // Deterministic insertion order regardless of delivery order.
