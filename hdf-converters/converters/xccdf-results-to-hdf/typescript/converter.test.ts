@@ -57,12 +57,12 @@ describe('xccdf-results-to-hdf ground-truth anchors', () => {
   // Benchmark-only mode: <Rule>s nested inside nested <Group>s must all be
   // flattened (the nhia regression). One requirement per source <Rule>.
   it('emits one requirement per <Rule> across nested groups (SSG)', async () => {
-    const input = loadFixture('benchmark-ssg-nested-groups.xml');
+    const input = loadFixture('ssg-rhel9-xccdf.xml');
     const result = await convertXccdfBenchmarkToHdf(input);
     assertRequirementCount(
       result,
       countXmlElements(input, 'Rule'),
-      'benchmark-ssg-nested-groups.xml: one requirement per <Rule> across all nested groups',
+      'ssg-rhel9-xccdf.xml: one requirement per <Rule> across all nested groups',
     );
   });
 
@@ -705,9 +705,9 @@ describe('xccdf-results-to-hdf converter', async () => {
     });
 
     // Baseline path: rationale and warning descriptions must be emitted when the
-    // source Rule carries them. Pinned against benchmark-ssg-nested-groups.
+    // source Rule carries them. Pinned against ssg-rhel9-xccdf.
     it('emits rationale and warning descriptions in the baseline path', async () => {
-      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
       const dnsmasq = findBaselineReq(
         baseline,
         'xccdf_org.ssgproject.content_rule_package_dnsmasq_removed'
@@ -748,15 +748,27 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(req!.refs![0]!.url).toBeUndefined();
     });
 
+    // An attribute value is XML text too: an escaped ampersand in an href is a
+    // plain ampersand in the URL.
+    it('decodes character references in a reference href', async () => {
+      const baseline = await parseBaseline('ssg-ubuntu2004-xccdf.xml');
+      const req = findBaselineReq(baseline, 'accounts_umask_etc_bashrc');
+      const urls = (req!.refs ?? []).map((r) => r.url);
+      expect(urls).toContain(
+        'https://www.isa.org/templates/one-column.aspx?pageid=111294&productId=116731'
+      );
+      expect(urls.filter((u) => u?.includes('&amp;'))).toEqual([]);
+    });
+
     // SSG/CIS text-body reference with an href → ref string + url.
     it('emits a text-body reference as a string with its href as url in the baseline path', async () => {
-      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
       const req = findBaselineReq(
         baseline,
         'xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled'
       );
       expect(req!.refs).toBeDefined();
-      expect(req!.refs![0]!.ref).toBe('2.1.6');
+      expect(req!.refs![0]!.ref).toBe('2.1.5');
       expect(req!.refs![0]!.url).toBe(
         'https://www.cisecurity.org/benchmark/red_hat_linux/'
       );
@@ -1167,7 +1179,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 describe('xccdf-benchmark-to-hdf converter', async () => {
   describe('multi-check rules prefer the automated OVAL check', () => {
     it('sets check_id to the OVAL system, not whichever check comes last', async () => {
-      const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+      const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
       const ovalSystem = 'http://oval.mitre.org/XMLSchema/oval-definitions-5';
       for (const rid of [
         'xccdf_org.ssgproject.content_rule_package_dnsmasq_removed',
@@ -1657,17 +1669,18 @@ describe('convertXccdfToHdf auto-detect', async () => {
 describe('nested and multi-rule Groups', () => {
   // Real SCAP Security Guide content nests Groups and puts many Rules in one
   // Group. Treating a Group as a flat, single-rule container silently discarded
-  // ~99% of the rules in an ssg-rhel8 benchmark.
+  // ~99% of the rules in an SSG benchmark.
   //
-  // Fixture shape (verbatim from ComplianceAsCode v0.1.81, ssg-rhel8):
-  //   Benchmark > Group services > Group dns (2 rules)
-  //                                  ├── Group disabling_dns_server  (2 rules)
-  //                                  └── Group dns_server_protection (3 rules)
+  // Fixture shape (ComplianceAsCode v0.1.82, ssg-rhel9, two of its subtrees):
+  //   Group services > Group dns (2 rules) > Group disabling_dns_server (2 rules)
+  //   Group network-firewalld (3 rules)
+  //     ├── Group firewalld_activation  (2 rules)
+  //     └── Group ruleset_modifications (5 rules)
   it('keeps every rule at every depth', async () => {
-    const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+    const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
     const ids = baseline.requirements.map(r => r.id);
 
-    expect(ids).toHaveLength(7);
+    expect(ids).toHaveLength(17);
 
     // Rules directly on a Group that also has nested Groups.
     expect(ids).toContain('xccdf_org.ssgproject.content_rule_package_dnsmasq_removed');
@@ -1675,22 +1688,26 @@ describe('nested and multi-rule Groups', () => {
     // A nested Group with 2 rules — the second proves we keep more than the last.
     expect(ids).toContain('xccdf_org.ssgproject.content_rule_package_bind_removed');
     expect(ids).toContain('xccdf_org.ssgproject.content_rule_service_named_disabled');
-    // A sibling nested Group with 3 rules.
-    expect(ids).toContain('xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers');
-    expect(ids).toContain('xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates');
-    expect(ids).toContain('xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers');
+    // Two sibling nested Groups under a Group that has rules of its own.
+    expect(ids).toContain('xccdf_org.ssgproject.content_rule_firewalld-backend');
+    expect(ids).toContain('xccdf_org.ssgproject.content_rule_package_firewalld_installed');
+    expect(ids).toContain('xccdf_org.ssgproject.content_rule_service_firewalld_enabled');
+    expect(ids).toContain('xccdf_org.ssgproject.content_rule_configure_firewalld_ports');
+    expect(ids).toContain('xccdf_org.ssgproject.content_rule_set_firewalld_default_zone');
   });
 
   it('emits one group per XCCDF Group, carrying all of its rules', async () => {
-    const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+    const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
     const byId = new Map((baseline.groups ?? []).map(g => [g.id, g.requirements]));
 
     expect(byId.get('xccdf_org.ssgproject.content_group_dns')).toHaveLength(2);
     expect(byId.get('xccdf_org.ssgproject.content_group_disabling_dns_server')).toHaveLength(2);
-    expect(byId.get('xccdf_org.ssgproject.content_group_dns_server_protection')).toHaveLength(3);
+    expect(byId.get('xccdf_org.ssgproject.content_group_network-firewalld')).toHaveLength(3);
+    expect(byId.get('xccdf_org.ssgproject.content_group_firewalld_activation')).toHaveLength(2);
+    expect(byId.get('xccdf_org.ssgproject.content_group_ruleset_modifications')).toHaveLength(5);
 
     const total = [...byId.values()].reduce((n, reqs) => n + reqs.length, 0);
-    expect(total, 'no rule dropped or duplicated across groups').toBe(7);
+    expect(total, 'no rule dropped or duplicated across groups').toBe(17);
   });
 });
 
@@ -1699,7 +1716,7 @@ describe('XCCDF severity mapping', () => {
   // critical|high|medium|low|informational. Casting straight across emitted
   // schema-invalid HDF for the two XCCDF values HDF lacks.
   it('omits severity="unknown" rather than downgrading it', async () => {
-    const baseline = await parseBaseline('benchmark-ssg-nested-groups.xml');
+    const baseline = await parseBaseline('ssg-rhel9-xccdf.xml');
 
     const counts: Record<string, number> = {};
     for (const req of baseline.requirements) {
@@ -1707,10 +1724,10 @@ describe('XCCDF severity mapping', () => {
       counts[key] = (counts[key] ?? 0) + 1;
     }
 
-    // The fixture holds 2 low, 3 medium, and 2 severity="unknown" rules.
-    expect(counts['low']).toBe(2);
-    expect(counts['medium']).toBe(3);
-    expect(counts['<omitted>'], 'severity="unknown" must not be emitted').toBe(2);
+    // The fixture holds 3 low, 13 medium, and 1 severity="unknown" rule.
+    expect(counts['low']).toBe(3);
+    expect(counts['medium']).toBe(13);
+    expect(counts['<omitted>'], 'severity="unknown" must not be emitted').toBe(1);
     expect(counts['unknown'], 'raw XCCDF severity must never reach HDF').toBeUndefined();
   });
 });

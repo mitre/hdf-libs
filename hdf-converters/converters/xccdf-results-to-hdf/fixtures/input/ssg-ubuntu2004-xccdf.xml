@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="UBUNTU_20-04" resolved="1" xml:lang="en-US" style="SCAP_1.1">
+  <status date="2021-10-06">draft</status>
+  <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Guide to the Secure Configuration of Ubuntu 20.04</title>
+  <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+    This guide presents a catalog of security-relevant
+configuration settings for Ubuntu 20.04. It is a rendering of
+content structured in the eXtensible Configuration Checklist Description Format (XCCDF)
+in order to support security automation.  The SCAP content is
+is available in the
+    <html:code xmlns:html="http://www.w3.org/1999/xhtml">scap-security-guide</html:code>
+    package which is developed at
+    <html:a xmlns:html="http://www.w3.org/1999/xhtml" href="https://www.open-scap.org/security-policies/scap-security-guide">https://www.open-scap.org/security-policies/scap-security-guide</html:a>
+    .
+    <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+    <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+    Providing system administrators with such guidance informs them how to securely
+configure systems under their control in a variety of network roles. Policy
+makers and baseline creators can use this catalog of settings, with its
+associated references to higher-level security control catalogs, in order to
+assist them in security baseline creation. This guide is a
+    <html:em xmlns:html="http://www.w3.org/1999/xhtml">catalog, not a
+checklist</html:em>
+    , and satisfaction of every item is not likely to be possible or
+sensible in many operational scenarios. However, the XCCDF format enables
+granular selection and adjustment of settings, and their association with OVAL
+and OCIL content provides an automated checking capability. Transformations of
+this document, and its associated automated checking content, are capable of
+providing baselines that meet a diverse set of policy objectives. Some example
+XCCDF
+    <html:em xmlns:html="http://www.w3.org/1999/xhtml">Profiles</html:em>
+    , which are selections of items that form checklists and
+can be used as baselines, are available with this guide. They can be
+processed, in an automated fashion, with tools that support the Security
+Content Automation Protocol (SCAP). The DISA STIG, which provides required
+settings for US Department of Defense systems, is one example of a baseline
+created from this guidance.
+  </description>
+  <notice xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" id="terms_of_use">Do not attempt to implement any of the settings in
+this guide without first testing them in a non-operational environment. The
+creators of this guidance assume no responsibility whatsoever for its use by
+other parties, and makes no guarantees, expressed or implied, about its
+quality, reliability, or any other characteristic.
+</notice>
+  <front-matter xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+    The SCAP Security Guide Project
+    <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+
+    <html:a xmlns:html="http://www.w3.org/1999/xhtml" href="https://www.open-scap.org/security-policies/scap-security-guide">https://www.open-scap.org/security-policies/scap-security-guide</html:a>
+  </front-matter>
+  <rear-matter xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Red Hat and Red Hat Enterprise Linux are either registered
+trademarks or trademarks of Red Hat, Inc. in the United States and other
+countries. All other names are registered trademarks or trademarks of their
+respective companies.
+</rear-matter>
+  <platform idref="cpe:/o:canonical:ubuntu_linux:20.04::~~lts~~~" />
+  <version update="https://github.com/ComplianceAsCode/content/releases/latest">0.1.58</version>
+  <metadata xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <dc:publisher xmlns:dc="http://purl.org/dc/elements/1.1/">SCAP Security Guide Project</dc:publisher>
+    <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">SCAP Security Guide Project</dc:creator>
+    <dc:source xmlns:dc="http://purl.org/dc/elements/1.1/">https://github.com/ComplianceAsCode/content/releases/latest</dc:source>
+  </metadata>
+  <model system="urn:xccdf:scoring:default" />
+  <Profile id="cis_level1_server">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">CIS Ubuntu 20.04 Level 1 Server Benchmark</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This baseline aligns to the Center for Internet Security
+Ubuntu 20.04 LTS Benchmark, v1.0.0, released 07-21-2020.</description>
+    <select idref="accounts_umask_etc_bashrc" selected="true" />
+    <select idref="accounts_umask_etc_csh_cshrc" selected="true" />
+    <select idref="accounts_umask_etc_login_defs" selected="true" />
+    <select idref="accounts_umask_etc_profile" selected="true" />
+    <select idref="accounts_umask_interactive_users" selected="true" />
+  </Profile>
+  <Profile id="cis_level1_workstation">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">CIS Ubuntu 20.04 Level 1 Workstation Benchmark</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This baseline aligns to the Center for Internet Security
+Ubuntu 20.04 LTS Benchmark, v1.0.0, released 07-21-2020.</description>
+    <select idref="accounts_umask_etc_bashrc" selected="true" />
+    <select idref="accounts_umask_etc_csh_cshrc" selected="true" />
+    <select idref="accounts_umask_etc_login_defs" selected="true" />
+    <select idref="accounts_umask_etc_profile" selected="true" />
+    <select idref="accounts_umask_interactive_users" selected="true" />
+  </Profile>
+  <Profile id="cis_level2_server">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">CIS Ubuntu 20.04 Level 2 Server Benchmark</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This baseline aligns to the Center for Internet Security
+Ubuntu 20.04 LTS Benchmark, v1.0.0, released 07-21-2020.</description>
+    <select idref="accounts_umask_etc_bashrc" selected="true" />
+    <select idref="accounts_umask_etc_csh_cshrc" selected="true" />
+    <select idref="accounts_umask_etc_login_defs" selected="true" />
+    <select idref="accounts_umask_etc_profile" selected="true" />
+    <select idref="accounts_umask_interactive_users" selected="true" />
+  </Profile>
+  <Profile id="cis_level2_workstation">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">CIS Ubuntu 20.04 Level 2 Workstation Benchmark</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This baseline aligns to the Center for Internet Security
+Ubuntu 20.04 LTS Benchmark, v1.0.0, released 07-21-2020.</description>
+    <select idref="accounts_umask_etc_bashrc" selected="true" />
+    <select idref="accounts_umask_etc_csh_cshrc" selected="true" />
+    <select idref="accounts_umask_etc_login_defs" selected="true" />
+    <select idref="accounts_umask_etc_profile" selected="true" />
+    <select idref="accounts_umask_interactive_users" selected="true" />
+  </Profile>
+  <Profile id="standard">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">Standard System Security Profile for Ubuntu 20.04</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This profile contains rules to ensure standard security baseline of an Ubuntu 20.04 system. Regardless of your system's workload all of these checks should pass.</description>
+    <select idref="accounts-restrictions" selected="false" />
+    <select idref="account_expiration" selected="false" />
+    <select idref="user_umask" selected="false" />
+  </Profile>
+  <Profile id="stig">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">Canonical Ubuntu 20.04 LTS Security Technical Implementation Guide (STIG) V1R1</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">This Security Technical Implementation Guide is published as a tool to
+improve the security of Department of Defense (DoD) information systems.
+The requirements are derived from the National Institute of Standards and
+Technology (NIST) 800-53 and related documents.</description>
+    <select idref="accounts_umask_etc_login_defs" selected="true" />
+    <select idref="ensure_rtc_utc_configuration" selected="true" />
+    <select idref="policy_temp_passwords_immediate_change" selected="true" />
+    <refine-value idref="var_accounts_user_umask" selector="077" />
+  </Profile>
+  <Group id="system">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">System Settings</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Contains rules that check correct system settings.</description>
+    <Group id="accounts">
+      <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Account and Access Control</title>
+      <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">In traditional Unix security, if an attacker gains
+shell access to a certain login account, they can perform any action
+or access any file to which that account has access. Therefore,
+making it more difficult for unauthorized people to gain shell
+access to accounts, particularly to privileged accounts, is a
+necessary part of securing a system. This section introduces
+mechanisms for restricting access to accounts under
+Ubuntu 20.04.</description>
+      <Group id="accounts-restrictions">
+        <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Protect Accounts by Restricting Password-Based Login</title>
+        <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+          Conventionally, Unix shell accounts are accessed by
+providing a username and password to a login program, which tests
+these values for correctness using the
+          <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/passwd</html:code>
+          and
+          <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/shadow</html:code>
+          files. Password-based login is vulnerable to
+guessing of weak passwords, and to sniffing and man-in-the-middle
+attacks against passwords entered over a network or at an insecure
+console. Therefore, mechanisms for accessing accounts by entering
+usernames and passwords should be restricted to those which are
+operationally necessary.
+        </description>
+        <Group id="account_expiration">
+          <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Set Account Expiration Parameters</title>
+          <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+            Accounts can be configured to be automatically disabled
+after a certain time period,
+meaning that they will require administrator interaction to become usable again.
+Expiration of accounts after inactivity can be set for all accounts by default
+and also on a per-account basis, such as for accounts that are known to be temporary.
+To configure automatic expiration of an account following
+the expiration of its password (that is, after the password has expired and not been changed),
+run the following command, substituting
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">
+              <html:i>NUM_DAYS</html:i>
+            </html:code>
+            and
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">
+              <html:i>USER</html:i>
+            </html:code>
+            appropriately:
+            <html:pre xmlns:html="http://www.w3.org/1999/xhtml">
+              $ sudo chage -I
+              <html:i>NUM_DAYS USER</html:i>
+            </html:pre>
+            Accounts, such as temporary accounts, can also be configured to expire on an explicitly-set date with the
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">-E</html:code>
+            option.
+The file
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/default/useradd</html:code>
+            controls
+default settings for all newly-created accounts created with the system's
+normal command line utilities.
+          </description>
+          <warning xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" category="general">This will only apply to newly created accounts</warning>
+          <Rule id="policy_temp_passwords_immediate_change" selected="false" severity="medium">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Policy Requires Immediate Change of Temporary Passwords</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Temporary passwords for Ubuntu 20.04 operating system logons must
+require an immediate change to a permanent password.
+
+Verify that a policy exists that ensures when a user is created, it is
+creating using a method that forces a user to change their password upon
+their next login.</description>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-002041</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000380-GPOS-00165</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux">UBTU-20-010440</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Without providing this capability, an account may be created without a
+password. Nonrepudiation cannot be guaranteed once an account is created if
+a user is not forced to change the temporary password upon initial logon.
+
+Temporary passwords are typically used to allow access when new accounts
+are created or passwords are changed. It is common practice for
+administrators to create temporary passwords for user accounts that allow
+the users to log on, yet force them to change the password once they have
+successfully authenticated.</rationale>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-policy_temp_passwords_immediate_change_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+        </Group>
+      </Group>
+      <Group id="accounts-session">
+        <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Secure Session Configuration Files for Login Accounts</title>
+        <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">When a user logs into a Unix account, the system
+configures the user's session by reading a number of files. Many of
+these files are located in the user's home directory, and may have
+weak permissions as a result of user error or misconfiguration. If
+an attacker can modify or even read certain types of account
+configuration information, they can often gain full access to the
+affected user's account. Therefore, it is important to test and
+correct configuration file permissions for interactive accounts,
+particularly those of privileged users such as root or system
+administrators.</description>
+        <Group id="user_umask">
+          <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure that Users Have Sensible Umask Values</title>
+          <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+            The umask setting controls the default permissions
+for the creation of new files.
+With a default
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+            setting of 077, files and directories
+created by users will not be readable by any other user on the
+system. Users who wish to make specific files group- or
+world-readable can accomplish this by using the chmod command.
+Additionally, users can make all their files readable to their
+group by default by setting a
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+            of 027 in their shell
+configuration files. If default per-user groups exist (that is, if
+every user has a default group whose name is the same as that
+user's username and whose only member is the user), then it may
+even be safe for users to select a
+            <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+            of 007, making it very
+easy to intentionally share files with groups of which the user is
+a member.
+            <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+            <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+          </description>
+          <Value id="var_accounts_user_umask" type="string">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Sensible umask</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Enter default user umask</description>
+            <value selector="007">007</value>
+            <value selector="022">022</value>
+            <value selector="027">027</value>
+            <value selector="077">077</value>
+            <value>027</value>
+          </Value>
+          <Rule id="accounts_umask_etc_bashrc" selected="false" severity="medium">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure the Default Bash Umask is Set Correctly</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+              To ensure the default umask for users of the Bash shell is set properly,
+add or correct the
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+              setting in
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/bashrc</html:code>
+              to read
+as follows:
+              <html:pre xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1">
+                umask
+                <xccdf-1.1:sub idref="var_accounts_user_umask" />
+              </html:pre>
+            </description>
+            <reference href="http://www.ssi.gouv.fr/administration/bonnes-pratiques/">BP28(R35)</reference>
+            <reference href="https://www.cisecurity.org/benchmark/ubuntu_linux/">5.4.4</reference>
+            <reference href="https://www.cisecurity.org/controls/">18</reference>
+            <reference href="https://www.isaca.org/resources/cobit">APO13.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.02</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.03</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-000366</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116731">4.3.4.3.3</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.1.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.5</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.6.1.5</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-004-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.2</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.2</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">AC-6(1)</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+            <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-2</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00228</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00227</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">The umask value influences the permissions assigned to files when they are created.
+A misconfigured umask value could result in files with excessive permissions that can be read or
+written to by unauthorized users.</rationale>
+            <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="accounts_umask_etc_bashrc" system="urn:xccdf:fix:script:ansible" complexity="low" disruption="low" strategy="restrict">
+              - name: XCCDF Value var_accounts_user_umask # promote to variable
+  set_fact:
+    var_accounts_user_umask: !!str
+              <xccdf-1.1:sub xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1" idref="var_accounts_user_umask" />
+              tags:
+    - always
+
+- name: Set user umask in /etc/bashrc
+  replace:
+    path: /etc/bashrc
+    regexp: umask.*
+    replace: umask {{ var_accounts_user_umask }}
+  tags:
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - accounts_umask_etc_bashrc
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+            </fix>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-export export-name="oval:ssg-var_accounts_user_umask:var:1" value-id="var_accounts_user_umask" />
+              <check-content-ref name="oval:ssg-accounts_umask_etc_bashrc:def:1" href="ssg-ubuntu2004-oval.xml" />
+            </check>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-accounts_umask_etc_bashrc_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+          <Rule id="accounts_umask_etc_csh_cshrc" selected="false" severity="unknown">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure the Default C Shell Umask is Set Correctly</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+              To ensure the default umask for users of the C shell is set properly,
+add or correct the
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+              setting in
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/csh.cshrc</html:code>
+              to read as follows:
+              <html:pre xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1">
+                umask
+                <xccdf-1.1:sub idref="var_accounts_user_umask" />
+              </html:pre>
+            </description>
+            <reference href="https://www.cisecurity.org/benchmark/ubuntu_linux/">5.4.4</reference>
+            <reference href="https://www.cisecurity.org/controls/">18</reference>
+            <reference href="https://www.isaca.org/resources/cobit">APO13.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.02</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.03</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-000366</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116731">4.3.4.3.3</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.1.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.5</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.6.1.5</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-004-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.2</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.2</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">AC-6(1)</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+            <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-2</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00228</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">The umask value influences the permissions assigned to files when they are created.
+A misconfigured umask value could result in files with excessive permissions that can be read or
+written to by unauthorized users.</rationale>
+            <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="accounts_umask_etc_csh_cshrc" system="urn:xccdf:fix:script:ansible" complexity="low" disruption="low" strategy="restrict">
+              - name: XCCDF Value var_accounts_user_umask # promote to variable
+  set_fact:
+    var_accounts_user_umask: !!str
+              <xccdf-1.1:sub xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1" idref="var_accounts_user_umask" />
+              tags:
+    - always
+
+- name: Set user umask in /etc/csh.cshrc
+  replace:
+    path: /etc/csh.cshrc
+    regexp: umask.*
+    replace: umask {{ var_accounts_user_umask }}
+  tags:
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - accounts_umask_etc_csh_cshrc
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - unknown_severity
+            </fix>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-export export-name="oval:ssg-var_accounts_user_umask:var:1" value-id="var_accounts_user_umask" />
+              <check-content-ref name="oval:ssg-accounts_umask_etc_csh_cshrc:def:1" href="ssg-ubuntu2004-oval.xml" />
+            </check>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-accounts_umask_etc_csh_cshrc_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+          <Rule id="accounts_umask_etc_login_defs" selected="false" severity="medium">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure the Default Umask is Set Correctly in login.defs</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+              To ensure the default umask controlled by
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/login.defs</html:code>
+              is set properly,
+add or correct the
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">UMASK</html:code>
+              setting in
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/login.defs</html:code>
+              to read as follows:
+              <html:pre xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1">
+                UMASK
+                <xccdf-1.1:sub idref="var_accounts_user_umask" />
+              </html:pre>
+            </description>
+            <reference href="http://www.ssi.gouv.fr/administration/bonnes-pratiques/">BP28(R35)</reference>
+            <reference href="https://www.cisecurity.org/benchmark/ubuntu_linux/">5.4.4</reference>
+            <reference href="https://www.cisecurity.org/controls/">11</reference>
+            <reference href="https://www.cisecurity.org/controls/">18</reference>
+            <reference href="https://www.cisecurity.org/controls/">3</reference>
+            <reference href="https://www.cisecurity.org/controls/">9</reference>
+            <reference href="https://www.isaca.org/resources/cobit">APO13.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.02</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.03</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI10.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI10.02</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI10.03</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI10.05</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-000366</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116731">4.3.4.3.2</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116731">4.3.4.3.3</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116785">SR 7.6</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.12.1.2</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.12.5.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.12.6.2</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.1.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.2</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.3</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.4</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.5</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.6.1.5</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-004-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.2</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.2</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">AC-6(1)</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+            <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-1</reference>
+            <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-2</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00228</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux">UBTU-20-010016</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">The umask value influences the permissions assigned to files when they are created.
+A misconfigured umask value could result in files with excessive permissions that can be read and
+written to by unauthorized users.</rationale>
+            <platform idref="cpe:/a:login_defs" />
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-export export-name="oval:ssg-var_accounts_user_umask:var:1" value-id="var_accounts_user_umask" />
+              <check-content-ref name="oval:ssg-accounts_umask_etc_login_defs:def:1" href="ssg-ubuntu2004-oval.xml" />
+            </check>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-accounts_umask_etc_login_defs_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+          <Rule id="accounts_umask_etc_profile" selected="false" severity="unknown">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure the Default Umask is Set Correctly in /etc/profile</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+              To ensure the default umask controlled by
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/profile</html:code>
+              is set properly,
+add or correct the
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">umask</html:code>
+              setting in
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">/etc/profile</html:code>
+              to read as follows:
+              <html:pre xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1">
+                umask
+                <xccdf-1.1:sub idref="var_accounts_user_umask" />
+              </html:pre>
+            </description>
+            <reference href="http://www.ssi.gouv.fr/administration/bonnes-pratiques/">BP28(R35)</reference>
+            <reference href="https://www.cisecurity.org/benchmark/ubuntu_linux/">5.4.4</reference>
+            <reference href="https://www.cisecurity.org/controls/">18</reference>
+            <reference href="https://www.isaca.org/resources/cobit">APO13.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.01</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.02</reference>
+            <reference href="https://www.isaca.org/resources/cobit">BAI03.03</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-000366</reference>
+            <reference href="https://www.isa.org/templates/one-column.aspx?pageid=111294&amp;productId=116731">4.3.4.3.3</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.1.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.1</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.14.2.5</reference>
+            <reference href="https://www.iso.org/standard/54534.html">A.6.1.5</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-003-3 R5.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-004-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.2</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R2.3</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.1</reference>
+            <reference href="https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx">CIP-007-3 R5.1.2</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">AC-6(1)</reference>
+            <reference href="http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf">CM-6(a)</reference>
+            <reference href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf">PR.IP-2</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00228</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">The umask value influences the permissions assigned to files when they are created.
+A misconfigured umask value could result in files with excessive permissions that can be read or
+written to by unauthorized users.</rationale>
+            <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="accounts_umask_etc_profile" system="urn:xccdf:fix:script:sh">
+              var_accounts_user_umask="
+              <xccdf-1.1:sub xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1" idref="var_accounts_user_umask" />
+              "
+
+
+
+grep -q umask /etc/profile &amp;&amp; \
+  sed -i "s/umask.*/umask $var_accounts_user_umask/g" /etc/profile
+if ! [ $? -eq 0 ]; then
+    echo "umask $var_accounts_user_umask" &gt;&gt; /etc/profile
+fi
+            </fix>
+            <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="accounts_umask_etc_profile" system="urn:xccdf:fix:script:ansible" complexity="low" disruption="low" strategy="restrict">
+              - name: XCCDF Value var_accounts_user_umask # promote to variable
+  set_fact:
+    var_accounts_user_umask: !!str
+              <xccdf-1.1:sub xmlns:xccdf-1.1="http://checklists.nist.gov/xccdf/1.1" idref="var_accounts_user_umask" />
+              tags:
+    - always
+
+- name: Set user umask in /etc/profile
+  replace:
+    path: /etc/profile
+    regexp: umask.*
+    replace: umask {{ var_accounts_user_umask }}
+  tags:
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - accounts_umask_etc_profile
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - unknown_severity
+            </fix>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-export export-name="oval:ssg-var_accounts_user_umask:var:1" value-id="var_accounts_user_umask" />
+              <check-content-ref name="oval:ssg-accounts_umask_etc_profile:def:1" href="ssg-ubuntu2004-oval.xml" />
+            </check>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-accounts_umask_etc_profile_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+          <Rule id="accounts_umask_interactive_users" selected="false" severity="medium">
+            <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure the Default Umask is Set Correctly For Interactive Users</title>
+            <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+              Remove the
+              <html:code xmlns:html="http://www.w3.org/1999/xhtml">UMASK</html:code>
+              environment variable from all interactive users initialization files.
+            </description>
+            <reference href="https://www.cisecurity.org/benchmark/ubuntu_linux/">5.4.4</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-000366</reference>
+            <reference href="https://public.cyber.mil/stigs/cci/">CCI-001814</reference>
+            <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000480-GPOS-00227</reference>
+            <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">The umask controls the default access mode assigned to newly created files. A
+umask of 077 limits new files to mode 700 or less permissive. Although umask can
+be represented as a four-digit number, the first digit representing special
+access modes is typically ignored or required to be 0. This requirement
+applies to the globally configured system defaults and the local interactive
+user defaults for each account on the system.</rationale>
+            <check system="http://scap.nist.gov/schema/ocil/2">
+              <check-content-ref name="ocil:ssg-accounts_umask_interactive_users_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+            </check>
+          </Rule>
+        </Group>
+      </Group>
+    </Group>
+    <Group id="logging">
+      <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Configure Syslog</title>
+      <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+        The syslog service has been the default Unix logging mechanism for
+many years. It has a number of downsides, including inconsistent log format,
+lack of authentication for received messages, and lack of authentication,
+encryption, or reliable transport for messages sent over a network. However,
+due to its long history, syslog is a de facto standard which is supported by
+almost all Unix applications.
+        <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+        <html:br xmlns:html="http://www.w3.org/1999/xhtml" />
+        In Ubuntu 20.04, rsyslog has replaced ksyslogd as the
+syslog daemon of choice, and it includes some additional security features
+such as reliable, connection-oriented (i.e. TCP) transmission of logs, the
+option to log to database formats, and the encryption of log data en route to
+a central logging server.
+This section discusses how to configure rsyslog for
+best effect, and how to use tools provided with the system to maintain and
+monitor logs.
+      </description>
+      <platform idref="cpe:/a:machine" />
+      <Rule id="ensure_rtc_utc_configuration" selected="false" severity="high">
+        <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure real-time clock is set to UTC</title>
+        <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">Ensure that the system real-time clock (RTC) is set to Coordinated Universal Time (UTC).</description>
+        <reference href="https://public.cyber.mil/stigs/cci/">CCI-001890</reference>
+        <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os">SRG-OS-000359-GPOS-00146</reference>
+        <reference href="https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux">UBTU-20-010230</reference>
+        <rationale xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US">If time stamps are not consistently applied and there is no common
+time reference, it is difficult to perform forensic analysis.
+
+Time stamps generated by the operating system include date and time.
+Time is commonly expressed in UTC, a modern continuation of GMT, or
+local time with an offset from UTC.</rationale>
+        <platform idref="cpe:/a:machine" />
+        <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="ensure_rtc_utc_configuration" system="urn:xccdf:fix:script:sh"># Remediation is applicable only in certain platforms
+if [ ! -f /.dockerenv ] &amp;&amp; [ ! -f /run/.containerenv ]; then
+
+if timedatectl status | grep -i "time zone" | grep -iv 'UTC\|GMT'; then
+    timedatectl set-timezone UTC
+fi
+
+else
+    &gt;&amp;2 echo 'Remediation is not applicable, nothing was done'
+fi
+</fix>
+        <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+          <check-content-ref name="oval:ssg-ensure_rtc_utc_configuration:def:1" href="ssg-ubuntu2004-oval.xml" />
+        </check>
+        <check system="http://scap.nist.gov/schema/ocil/2">
+          <check-content-ref name="ocil:ssg-ensure_rtc_utc_configuration_ocil:questionnaire:1" href="ssg-ubuntu2004-ocil.xml" />
+        </check>
+      </Rule>
+    </Group>
+  </Group>
+</Benchmark>

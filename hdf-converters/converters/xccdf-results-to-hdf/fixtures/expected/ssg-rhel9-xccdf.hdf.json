@@ -1,0 +1,2638 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2026-09-01",
+      "notices": [
+        {
+          "id": "terms_of_use",
+          "text": "Do not attempt to implement any of the settings in this guide without first testing them in a non-operational environment. The creators of this guidance assume no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, reliability, or any other characteristic."
+        }
+      ],
+      "platforms": [
+        "cpe:/o:redhat:enterprise_linux:9"
+      ],
+      "profiles": [
+        {
+          "id": "xccdf_org.ssgproject.content_profile_anssi_bp28_enhanced",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_partition_for_srv"
+          ],
+          "title": "ANSSI-BP-028 (enhanced)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_anssi_bp28_high",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_partition_for_srv"
+          ],
+          "title": "ANSSI-BP-028 (high)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_anssi_bp28_intermediary",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_partition_for_srv"
+          ],
+          "title": "ANSSI-BP-028 (intermediary)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_anssi_bp28_minimal",
+          "selectedRuleIds": [],
+          "title": "ANSSI-BP-028 (minimal)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_bsi",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_appropriate_zone",
+            "xccdf_org.ssgproject.content_rule_unnecessary_firewalld_services_ports_disabled"
+          ],
+          "title": "BSI SYS.1.1 and SYS.1.3"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_ccn_advanced",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+          ],
+          "title": "Centro Criptológico Nacional (CCN) - STIC for Red Hat Enterprise Linux 9 - Advanced"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_ccn_basic",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+          ],
+          "title": "Centro Criptológico Nacional (CCN) - STIC for Red Hat Enterprise Linux 9 - Basic"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_ccn_intermediate",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+          ],
+          "title": "Centro Criptológico Nacional (CCN) - STIC for Red Hat Enterprise Linux 9 - Intermediate"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_cis",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "CIS Red Hat Enterprise Linux 9 Benchmark for Level 2 - Server"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_cis_server_l1",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "CIS Red Hat Enterprise Linux 9 Benchmark for Level 1 - Server"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_cis_workstation_l1",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "CIS Red Hat Enterprise Linux 9 Benchmark for Level 1 - Workstation"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_cis_workstation_l2",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_bind_removed",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "CIS Red Hat Enterprise Linux 9 Benchmark for Level 2 - Workstation"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_cui",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "DRAFT - Unclassified Information in Non-federal Information Systems and Organizations (NIST 800-171)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_e8",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "Australian Cyber Security Centre (ACSC) Essential Eight"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_hipaa",
+          "selectedRuleIds": [],
+          "title": "Health Insurance Portability and Accountability Act (HIPAA)"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_ism_o",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+          ],
+          "title": "Australian Cyber Security Centre (ACSC) ISM Official"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_ospp",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "Protection Profile for General Purpose Operating Systems"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_pci-dss",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+            "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+            "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+          ],
+          "title": "PCI-DSS v4.0.1 Control Baseline for Red Hat Enterprise Linux 9"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_stig",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_configured_firewalld_default_deny",
+            "xccdf_org.ssgproject.content_rule_firewalld-backend",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "DISA STIG for Red Hat Enterprise Linux 9"
+        },
+        {
+          "id": "xccdf_org.ssgproject.content_profile_stig_gui",
+          "selectedRuleIds": [
+            "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+            "xccdf_org.ssgproject.content_rule_configured_firewalld_default_deny",
+            "xccdf_org.ssgproject.content_rule_firewalld-backend",
+            "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+            "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+            "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+          ],
+          "title": "DISA STIG with GUI for Red Hat Enterprise Linux 9"
+        }
+      ]
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "xccdf_org.ssgproject.content_group_disk_partitioning",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_partition_for_srv",
+        "xccdf_org.ssgproject.content_rule_partition_for_tmp"
+      ],
+      "title": "Disk Partitioning"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_user_umask",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc"
+      ],
+      "title": "Ensure that Users Have Sensible Umask Values"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_network-firewalld",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_firewalld-backend",
+        "xccdf_org.ssgproject.content_rule_set_firewalld_appropriate_zone",
+        "xccdf_org.ssgproject.content_rule_unnecessary_firewalld_services_ports_disabled"
+      ],
+      "title": "firewalld"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_firewalld_activation",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+        "xccdf_org.ssgproject.content_rule_service_firewalld_enabled"
+      ],
+      "title": "Inspect and Activate Default firewalld Rules"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+        "xccdf_org.ssgproject.content_rule_configured_firewalld_default_deny",
+        "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+        "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+        "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone"
+      ],
+      "title": "Strengthen the Default Ruleset"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_dns",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+        "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled"
+      ],
+      "title": "DNS Server"
+    },
+    {
+      "id": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+      "requirements": [
+        "xccdf_org.ssgproject.content_rule_package_bind_removed",
+        "xccdf_org.ssgproject.content_rule_service_named_disabled"
+      ],
+      "title": "Disable DNS Server"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "f9104756aaafe7d06cba68416941b5d98f8f542c5125b7857e4bae42988187f0"
+  },
+  "name": "xccdf-org.ssgproject.content-benchmark-rhel-9",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "If a file server (FTP, TFTP...) is hosted locally, create a separate partition\nfor /srv at installation time (or migrate it later using LVM). If\n/srv will be mounted from another system such as an NFS server, then\ncreating a separate partition is not necessary at installation time, and the\nmountpoint can instead be configured later.",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-partition_for_srv:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Srv deserves files for local network file server such as FTP. Ensuring\nthat /srv is mounted on its own partition enables the setting of\nmore restrictive mount options, and also helps ensure that\nusers cannot trivially fill partitions used for log or audit data storage.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_partition_for_srv",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "R28",
+          "url": "https://cyber.gouv.fr/sites/default/files/document/linux_configuration-en-v2.pdf"
+        }
+      ],
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_disk_partitioning",
+        "gtitle": "Disk Partitioning",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_partition_for_srv",
+        "severity": "unknown",
+        "stig_id": ""
+      },
+      "title": "Ensure /srv Located On Separate Partition"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The /tmp directory is a world-writable directory used\nfor temporary file storage. Ensure it has its own partition or\nlogical volume at installation time, or migrate it using LVM.",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-partition_for_tmp:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The /tmp partition is used as temporary storage by many programs.\nPlacing /tmp in its own partition enables the setting of more\nrestrictive mount options, which can help protect programs which use it.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": "12",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "15",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "8",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "SR 3.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 3.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 3.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 4.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 4.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.13.1.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.13.2.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.1.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SC-5(2)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.PT-4",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SYS.1.1.A6",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        },
+        {
+          "ref": "1.1.2.1.1",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        },
+        {
+          "ref": "RHEL-09-231015",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-257844r1044918_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-257844",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_disk_partitioning",
+        "gtitle": "Disk Partitioning",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_partition_for_tmp",
+        "severity": "low",
+        "stig_id": ""
+      },
+      "title": "Ensure /tmp Located On Separate Partition"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "To ensure the default umask for users of the Bash shell is set properly,\nadd or correct the umask setting in /etc/bashrc to read\nas follows:\numask \n         \n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-accounts_umask_etc_bashrc:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask value influences the permissions assigned to files when they are created.\nA misconfigured umask value could result in files with excessive permissions that can be read or\nwritten to by unauthorized users.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "18",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "A.14.1.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.5",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.6.1.5",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CIP-003-8 R5.1.1",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-003-8 R5.3",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-004-6 R2.3",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R2.1",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R2.2",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R2.3",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R5.1",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.1",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.2",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "AC-6(1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-2",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00228",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "R36",
+          "url": "https://cyber.gouv.fr/sites/default/files/document/linux_configuration-en-v2.pdf"
+        },
+        {
+          "ref": "A.6.SEC-RHEL5",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "5.4.3.3",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        },
+        {
+          "ref": "RHEL-09-412055",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-258072r1184320_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-258072",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_accounts_umask_etc_bashrc",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default Bash Umask is Set Correctly"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Firewalld can be configured with many backends, such as nftables.",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-firewalld-backend:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Nftables is modern kernel module for controlling network connections coming into a system.\nUtilizing the limit statement in \"nftables\" can help to mitigate DoS attacks.",
+          "label": "rationale"
+        },
+        {
+          "data": "Establish rate-limiting rules based on organization-defined types of DoS attacks on impacted network interfaces. You can use firewalld rich rules or advanced per-ip limiting in nftables configuration to rate-limit incoming connections to specific services. The rule doesn't configure any rate-limiting, this has to be configured individually.",
+          "label": "warning"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_firewalld-backend",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "SC-5",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SRG-OS-000420-GPOS-00186",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "RHEL-09-251030",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-257939r1044997_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-257939",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_network-firewalld",
+        "gtitle": "firewalld",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_firewalld-backend",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Configure Firewalld to Use the Nftables Backend"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Firewall zones define the trust level of network connections or interfaces.\nNote: Changing firewall settings while connected over network can result in \nbeing locked out of the system.",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-set_firewalld_appropriate_zone_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "A network interface not assigned to the appropriate zone can allow unexpected or\nundesired network traffic to be accepted on the interface.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_set_firewalld_appropriate_zone",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "SYS.1.1.A19",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_network-firewalld",
+        "gtitle": "firewalld",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_set_firewalld_appropriate_zone",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure network interfaces are assigned to appropriate zone"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Services and ports can be accepted or explicitly rejected or dropped by a zone.\nFor every zone, a default behavior can be set that handles incoming traffic that\nis not further specified. Such behavior is defined by setting the target of the zone.\nThe possible options are:\n- ACCEPT - accepts all incoming packets except those disabled by a specific rule.\n- REJECT - disables all incoming packets except those that have been allowed in\n   specific rules and the source machine is informed about the rejection.\n- DROP - disables all incoming packets except those that have been allowed in\n   specific rules and no information sent to the source machine.",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-unnecessary_firewalld_services_ports_disabled_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "To reduce the attack surface of a system, all services and ports should be blocked unless\nrequired.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_unnecessary_firewalld_services_ports_disabled",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "SYS.1.1.A19",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_network-firewalld",
+        "gtitle": "firewalld",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_unnecessary_firewalld_services_ports_disabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure Unnecessary Services and Ports Are Not Accepted"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The firewalld package can be installed with the following command:\n\n$ sudo dnf install firewalld\n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-package_firewalld_installed:def:1",
+          "label": "check"
+        },
+        {
+          "data": "\"Firewalld\" provides an easy and effective way to block/limit remote access to the system via ports, services, and protocols.\n\nRemote access services, such as those providing remote access to network devices and information systems, which lack automated control capabilities, increase risk and make remote user access management difficult at best.\n\nRemote access is access to nonpublic information systems by an authorized user (or an information system) communicating through an external, non-organization-controlled network. Remote access methods include, for example, dial-up, broadband, and wireless.\n\nRed Hat Enterprise Linux 9 functionality (e.g., SSH) must be capable of taking enforcement action if the audit reveals unauthorized activity.\nAutomated control of remote access sessions allows organizations to ensure ongoing compliance with remote access policies by enforcing connection rules of remote access applications on a variety of information system components (e.g., servers, workstations, notebook computers, smartphones, and tablets).\"",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "FMT_SMF_EXT.1",
+          "url": "https://www.niap-ccevs.org/Profile/PP.cfm"
+        },
+        {
+          "ref": "SRG-OS-000096-GPOS-00050",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000297-GPOS-00115",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000298-GPOS-00116",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00232",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "1409",
+          "url": "https://www.cyber.gov.au/acsc/view-all-content/ism"
+        },
+        {
+          "ref": "1.2.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.2",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "SYS.1.1.A19",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL3",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "4.1.2",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        },
+        {
+          "ref": "RHEL-09-251010",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-257935r1044994_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-257935",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_firewalld_activation",
+        "gtitle": "Inspect and Activate Default firewalld Rules",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_package_firewalld_installed",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Install firewalld Package"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\nThe firewalld service can be enabled with the following command:\n$ sudo systemctl enable firewalld.service\n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-service_firewalld_enabled:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Access control methods provide the ability to enhance system security posture\nby restricting services and known good IP addresses and address ranges. This\nprevents connections from unknown hosts and protocols.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "3.1.3",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171.pdf"
+        },
+        {
+          "ref": "3.4.7",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171.pdf"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CIP-003-8 R4",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-003-8 R5",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "CIP-004-6 R3",
+          "url": "https://www.nerc.com/standards/reliability-standards/cip"
+        },
+        {
+          "ref": "AC-4",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CA-3(5)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SC-7(21)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "FMT_SMF_EXT.1",
+          "url": "https://www.niap-ccevs.org/Profile/PP.cfm"
+        },
+        {
+          "ref": "SRG-OS-000096-GPOS-00050",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000297-GPOS-00115",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00231",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00232",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SYS.1.6.A5",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        },
+        {
+          "ref": "SYS.1.6.A21",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        },
+        {
+          "ref": "SYS.1.1.A19",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        },
+        {
+          "ref": "1409",
+          "url": "https://www.cyber.gov.au/acsc/view-all-content/ism"
+        },
+        {
+          "ref": "1.2.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.2",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL3",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "4.1.2",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        },
+        {
+          "ref": "RHEL-09-251015",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-257936r1044995_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-257936",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_firewalld_activation",
+        "gtitle": "Inspect and Activate Default firewalld Rules",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_service_firewalld_enabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Verify firewalld Enabled"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Configure the firewalld ports to allow approved services to have access to the system.\nTo configure firewalld to open ports, run the following command:\nfirewall-cmd --permanent --add-port=port_number/tcp\n         \nTo configure firewalld to allow access for pre-defined services, run the following\ncommand:\nfirewall-cmd --permanent --add-service=service_name\n         \n        ",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-configure_firewalld_ports_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "In order to prevent unauthorized connection of devices, unauthorized transfer of information,\nor unauthorized tunneling (i.e., embedding of data types within data types), organizations must\ndisable or restrict unused or unnecessary physical and logical ports/protocols on information\nsystems.\n\n         \nOperating systems are capable of providing a wide variety of functions and services.\nSome of the functions and services provided by default may not be necessary to support\nessential organizational operations.\nAdditionally, it is sometimes convenient to provide multiple services from a single component\n(e.g., VPN and IPS); however, doing so increases risk over limiting the services provided by\none component.\n\n         \nTo support the requirements and principles of least functionality, the operating system must\nsupport the organizational requirements, providing only essential capabilities and limiting the\nuse of ports, protocols, and/or services to only those required, authorized, and approved to\nconduct official business.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "12",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "15",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "8",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS01.04",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 3.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 3.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 3.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 4.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 4.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 5.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.11.2.6",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.13.1.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.13.2.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.1.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.6.2.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.6.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "AC-4",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CA-3(5)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SC-7(21)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.AC-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-4",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000096-GPOS-00050",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000297-GPOS-00115",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "1416",
+          "url": "https://www.cyber.gov.au/acsc/view-all-content/ism"
+        },
+        {
+          "ref": "1.3.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.3",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "SYS.1.1.A6",
+          "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Grundschutz/International/bsi_it_gs_comp_2022.pdf"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+        "gtitle": "Strengthen the Default Ruleset",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_configure_firewalld_ports",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Configure the Firewalld Ports"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Red Hat Enterprise Linux 9 incorporates the \"firewalld\" daemon, which allows for many different configurations. One of these configurations is zones.\nZones can be utilized to a deny-all, allow-by-exception approach.\nThe default \"drop\" zone will drop all incoming network packets unless it is explicitly allowed by the configuration file or is related to an outgoing network connection.",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-configured_firewalld_default_deny_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "Failure to restrict network connectivity only to authorized systems permits inbound connections from malicious systems.\nIt also permits outbound connections that may facilitate exfiltration of data.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_configured_firewalld_default_deny",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "AC-17 (1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SRG-OS-000297-GPOS-00115",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "RHEL-09-251020",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        },
+        {
+          "ref": "SV-257937r1106310_rule",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools/"
+        },
+        {
+          "ref": "V-257937",
+          "url": "https://www.cyber.mil/stigs/srg-stig-tools#vulnerability_id"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+        "gtitle": "Strengthen the Default Ruleset",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_configured_firewalld_default_deny",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Firewalld Must Employ a Deny-all, Allow-by-exception Policy for Allowing Connections to Other Systems"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Configure firewalld to restrict loopback traffic to the lo interface.\n\nThe loopback traffic must be trusted by assigning the lo interface to the\nfirewalld\n         trusted zone. However, the loopback traffic must be restricted\nto the loopback interface as an anti-spoofing measure.\n\nTo configure firewalld to restrict loopback traffic to the lo interface,\nrun the following commands:\n\nsudo firewall-cmd --permanent --zone=trusted --add-rich-rule='rule family=ipv4 source address=\"127.0.0.1\" destination not address=\"127.0.0.1\" drop'\nsudo firewall-cmd --permanent --zone=trusted --add-rich-rule='rule family=ipv6 source address=\"::1\" destination not address=\"::1\" drop'\n\n\nTo ensure firewalld settings are applied in runtime, run the following command:\nfirewall-cmd --reload\n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-firewalld_loopback_traffic_restricted:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Loopback traffic is generated between processes on machine and is typically critical to\noperation of the system. The loopback interface is the only place that loopback network\ntraffic should be seen, all other interfaces should ignore traffic on this network as an\nanti-spoofing measure.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "1.4.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.4",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL3",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "4.2.2",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+        "gtitle": "Strengthen the Default Ruleset",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_restricted",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Configure Firewalld to Restrict Loopback Traffic"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Assign loopback interface to the firewalld\n         trusted zone in order to\nexplicitly allow the loopback traffic in the system.\n\nTo configure firewalld to trust loopback traffic, run the following command:\nsudo firewall-cmd --permanent --zone=trusted --add-interface=lo\nTo ensure firewalld settings are applied in runtime, run the following command:\nfirewall-cmd --reload\n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-firewalld_loopback_traffic_trusted:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Loopback traffic is generated between processes on machine and is typically critical to\noperation of the system. The loopback interface is the only place that loopback network\ntraffic should be seen, all other interfaces should ignore traffic on this network as an\nanti-spoofing measure.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "1.4.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.4",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL3",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "4.2.2",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+        "gtitle": "Strengthen the Default Ruleset",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_firewalld_loopback_traffic_trusted",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Configure Firewalld to Trust Loopback Traffic"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "To set the default zone to drop for\nthe built-in default zone which processes incoming IPv4 and IPv6 packets,\nmodify the following line in\n/etc/firewalld/firewalld.conf to be:\nDefaultZone=drop\n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-set_firewalld_default_zone:def:1",
+          "label": "check"
+        },
+        {
+          "data": "In firewalld the default zone is applied only after all\nthe applicable rules in the table are examined for a match. Setting the\ndefault zone to drop implements proper design for a firewall, i.e.\nany packets which are not explicitly permitted should not be\naccepted.",
+          "label": "rationale"
+        },
+        {
+          "data": "To prevent denying any access to the system, automatic remediation\nof this control is not available. Remediation must be automated as\na component of machine provisioning, or followed manually as outlined\nabove.",
+          "label": "warning"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "5.10.1",
+          "url": "https://www.fbi.gov/file-repository/cjis-security-policy-v5_5_20160601-2-1.pdf"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "3.1.3",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171.pdf"
+        },
+        {
+          "ref": "3.4.7",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171.pdf"
+        },
+        {
+          "ref": "3.13.6",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171.pdf"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CA-3(5)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "SC-7(23)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "Req-1.4",
+          "url": "https://www.pcisecuritystandards.org/documents/PCI_DSS_v3-2-1.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://www.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "1416",
+          "url": "https://www.cyber.gov.au/acsc/view-all-content/ism"
+        },
+        {
+          "ref": "1.3.1",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "1.3",
+          "url": "https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Standard/PCI-DSS-v4_0.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL3",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_ruleset_modifications",
+        "gtitle": "Strengthen the Default Ruleset",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Set Default firewalld Zone for Incoming Packets"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "dnsmasq is a lightweight tool that provides DNS caching, DNS forwarding and\nDHCP (Dynamic Host Configuration Protocol) services.\n\nThe dnsmasq package can be removed with the following command:\n\n$ sudo dnf remove dnsmasq\n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-package_dnsmasq_removed:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Unless a system is specifically designated to act as a DNS\ncaching, DNS forwarding and/or DHCP server, it is recommended that the\npackage be removed to reduce the potential attack surface.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+      "impact": 0.3,
+      "severity": "low",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_dns",
+        "gtitle": "DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed",
+        "severity": "low",
+        "stig_id": ""
+      },
+      "title": "Uninstall dnsmasq Package"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\nThe dnsmasq service can be disabled with the following command:\n$ sudo systemctl mask --now dnsmasq.service\n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-service_dnsmasq_disabled:def:1",
+          "label": "check"
+        },
+        {
+          "data": "Unless a system is specifically designated to act as a DNS\ncaching, DNS forwarding and/or DHCP server, it is recommended\nthat the package be removed to reduce the potential attack surface.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "2.1.5",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_dns",
+        "gtitle": "DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_service_dnsmasq_disabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Disable dnsmasq Service"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The named service is provided by the bind package.\nThe bind package can be removed with the following command:\n\n$ sudo dnf remove bind\n\nOn Red Hat Enterprise Linux 9.6 and newer, the bind command is also provided by the bind9.18 package.\nThe bind9.18 package can be removed with the following command:\n\n$ sudo dnf remove bind9.18\n       ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-package_bind_removed:def:1",
+          "label": "check"
+        },
+        {
+          "data": "If there is no need to make DNS server software available,\nremoving it provides a safeguard against its activation.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_package_bind_removed",
+      "impact": 0.3,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-7(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "A.8.SEC-RHEL4",
+          "url": "https://www.ccn-cert.cni.es/pdf/guias/series-ccn-stic/guias-de-acceso-publico-ccn-stic/6768-ccn-stic-610a22-perfilado-de-seguridad-red-hat-enterprise-linux-9-0/file.html"
+        },
+        {
+          "ref": "2.1.4",
+          "url": "https://www.cisecurity.org/benchmark/red_hat_linux/"
+        }
+      ],
+      "severity": "low",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+        "gtitle": "Disable DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_package_bind_removed",
+        "severity": "low",
+        "stig_id": ""
+      },
+      "title": "Uninstall bind Package"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\nThe named service can be disabled with the following command:\n$ sudo systemctl mask --now named.service\n       ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-service_named_disabled:def:1",
+          "label": "check"
+        },
+        {
+          "data": "All network services involve some risk of compromise due to\nimplementation flaws and should be disabled if possible.",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.ssgproject.content_rule_service_named_disabled",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "14",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS05.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "DSS06.06",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "4.3.3.5.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.5.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.5",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.6",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.7",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.8",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.6.9",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.1",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.3.7.4",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/products/isa-62443-2-1-2009-security-for-industrial-automat"
+        },
+        {
+          "ref": "SR 1.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.10",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.11",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.12",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.13",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.8",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 1.9",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.1",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.2",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.3",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.4",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.5",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 2.7",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/products/ansi-isa-62443-3-3-99-03-03-2013-security-for-indu"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "A.9.1.2",
+          "url": "https://www.iso.org/contents/data/standard/05/45/54534.html"
+        },
+        {
+          "ref": "CM-7(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-7(b)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.PT-3",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.ssgproject.content_group_disabling_dns_server",
+        "gtitle": "Disable DNS Server",
+        "nist": [],
+        "rid": "xccdf_org.ssgproject.content_rule_service_named_disabled",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Disable named Service"
+    }
+  ],
+  "status": "loaded",
+  "summary": "This guide presents a catalog of security-relevant\nconfiguration settings for Red Hat Enterprise Linux 9. It is a rendering of\ncontent structured in the eXtensible Configuration Checklist Description Format (XCCDF)\nin order to support security automation.  The SCAP content is\nis available in the scap-security-guide package which is developed at\n\n    https://www.open-scap.org/security-policies/scap-security-guide.\n\n    \nProviding system administrators with such guidance informs them how to securely\nconfigure systems under their control in a variety of network roles. Policy\nmakers and baseline creators can use this catalog of settings, with its\nassociated references to higher-level security control catalogs, in order to\nassist them in security baseline creation. This guide is a catalog, not a\nchecklist, and satisfaction of every item is not likely to be possible or\nsensible in many operational scenarios. However, the XCCDF format enables\ngranular selection and adjustment of settings, and their association with OVAL\nand OCIL content provides an automated checking capability. Transformations of\nthis document, and its associated automated checking content, are capable of\nproviding baselines that meet a diverse set of policy objectives. Some example\nXCCDF Profiles, which are selections of items that form checklists and\ncan be used as baselines, are available with this guide. They can be\nprocessed, in an automated fashion, with tools that support the Security\nContent Automation Protocol (SCAP). The DISA STIG, which provides required\nsettings for US Department of Defense systems, is one example of a baseline\ncreated from this guidance.\n",
+  "title": "Guide to the Secure Configuration of Red Hat Enterprise Linux 9",
+  "version": "0.1.82"
+}
