@@ -61,6 +61,7 @@ const DOCS_ORDER = {
     'sarif-round-trip',
     'cti-stix',
     'siem-export',
+    'emass-crosswalk',
     // Reference
     'nist-revisions',
     'cve-ecosystem',
