@@ -741,6 +741,12 @@ https://csrc.nist.gov/schema/xccdf/1.1.4/xccdf-1.1.4-schema-bundle-20071011.zip 
 `9fa7bcbac4fef7e288d26073c59fa9bce44a681d7a02f56a48a3da17327c38c7`; not vendored here), with
 `xmllint --nonet --schema` (libxml2 2.9.13) on 2026-11-20: the trimmed fixture and the full DISA source both validate.
 
+The two SCAP Security Guide fixtures were validated on 2026-11-23 with `xmllint --nonet --schema` (libxml2 2.9.13):
+`ssg-ubuntu2004-xccdf.xml` (XCCDF 1.1) against the same NIST 1.1.4 bundle (sha256 as retrieved that day
+`9fa7bcbac4fef7e288d26073c59fa9bce44a681d7a02f56a48a3da17327c38c7`; not vendored here), the trimmed fixture and the
+untrimmed source both validate; `ssg-rhel9-xccdf.xml` (XCCDF 1.2) against the vendored `xccdf_1.2.xsd`, the trimmed
+fixture validates.
+
 ### `rule-result-dispositions.xml`
 
 **Authored, schema-confirmed — not captured tool output.** Written 2026-11-05 to
