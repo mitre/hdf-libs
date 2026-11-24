@@ -209,11 +209,15 @@ func appendExternalReference(container map[string]interface{}, ref map[string]in
 	container["externalReferences"] = append(existing, ref)
 }
 
+// recomputeCvssVersion is the one CVSS version the exploitation recompute is
+// defined for: E:H is the 3.1 Exploit Maturity value it applies.
+const recomputeCvssVersion = "3.1"
+
 // recomputeExploitation authors an inline riskAdjustment on each CVE-matched
 // finding that (a) has a 3.1 base vector and (b) whose CVE carries a structural
 // exploitation signal in the bundle. Applies CVSS Exploit Maturity E:H (the 3.1
 // analog of 4.0 E:A) and recomputes the Threat score via the hdf-utilities
-// engine. Skips (no fabrication) when a base vector is absent or non-3.1.
+// engine. Skips (no fabrication) when no cvss entry carries a 3.1 base vector.
 func recomputeExploitation(bundle *StixBundle, reqByID map[string][]map[string]interface{}, opt EnrichOptions) {
 	appliedAt := opt.AsOf
 	if appliedAt.IsZero() {
@@ -228,14 +232,14 @@ func recomputeExploitation(bundle *StixBundle, reqByID map[string][]map[string]i
 
 	for cve, src := range exploitedCVEs(bundle) {
 		for _, req := range reqByID[cve] {
-			entry := findBaseVectorEntry(req, cve)
+			entry := findBaseVectorEntry(req, cve, recomputeCvssVersion)
 			if entry == nil {
-				continue // no base vector → cannot recompute honestly; skip
+				continue // no 3.1 base vector → cannot recompute honestly; skip
 			}
 			baseVector, _ := entry["baseVector"].(string)
 			score, err := hdfutil.ComputeCvssScore(baseVector + "/E:H")
 			if err != nil {
-				continue // non-3.1 (e.g. 4.0) or unparseable → skip, never fabricate
+				continue // invalid 3.1 vector → skip, never fabricate
 			}
 			ov := buildRiskAdjustment(cve, baseVector, score, src, appliedAt, expiresAt)
 			existing, _ := req["statusOverrides"].([]interface{})
@@ -300,9 +304,11 @@ func stixExploitationReferences(o map[string]interface{}) []string {
 	return nil
 }
 
-// findBaseVectorEntry returns the finding's cvss[] entry that carries a base
-// vector for the given CVE (or a version-agnostic entry with no id), else nil.
-func findBaseVectorEntry(req map[string]interface{}, cve string) map[string]interface{} {
+// findBaseVectorEntry returns the finding's first cvss[] entry whose base vector
+// is of the wanted CVSS version and whose id is the given CVE or absent, else
+// nil. The version is part of the search because a finding can carry one entry
+// per version: trivy writes its 2.0 entry before its 3.x one.
+func findBaseVectorEntry(req map[string]interface{}, cve, version string) map[string]interface{} {
 	arr, ok := req["cvss"].([]interface{})
 	if !ok {
 		return nil
@@ -312,10 +318,15 @@ func findBaseVectorEntry(req map[string]interface{}, cve string) map[string]inte
 		if !ok {
 			continue
 		}
-		if bv, _ := m["baseVector"].(string); bv != "" {
-			if id, _ := m["id"].(string); id == "" || id == cve {
-				return m
-			}
+		bv, _ := m["baseVector"].(string)
+		if bv == "" {
+			continue
+		}
+		if v, _ := hdfutil.ParseCvssVector(bv); v != version {
+			continue
+		}
+		if id, _ := m["id"].(string); id == "" || id == cve {
+			return m
 		}
 	}
 	return nil
@@ -335,7 +346,7 @@ func buildRiskAdjustment(cve, baseVector string, score hdfutil.CvssScore, src ma
 		"appliedAt": appliedAt.Format(time.RFC3339),
 		"expiresAt": expiresAt.Format(time.RFC3339),
 		"cvss": map[string]interface{}{
-			"version":       "3.1",
+			"version":       score.Version,
 			"baseVector":    baseVector,
 			"baseScore":     score.BaseScore,
 			"threatVector":  "E:H",

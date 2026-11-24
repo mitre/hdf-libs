@@ -15,7 +15,7 @@ import type {
   Epss,
 } from '@mitre/hdf-schema';
 import { ResultStatus, TargetType, createMinimalBaseline, Version as CvssVersion } from '@mitre/hdf-schema';
-import { cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
+import { buildCvss, cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
@@ -367,30 +367,26 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
     baseVector = item.cvss3_vector || undefined;
     baseScore = parseFloatOrUndef(item.cvss3_base_score);
     threatVector = stripVersionPrefix(item.cvss3_temporal_vector);
-    threatScore = item.cvss3_temporal_score ? parseFloatSafe(item.cvss3_temporal_score) : undefined;
+    threatScore = parseFloatOrUndef(item.cvss3_temporal_score);
   } else {
     version = CvssVersion.The20;
     baseVector = stripV2Prefix(item.cvss_vector ?? '') || undefined;
     baseScore = parseFloatOrUndef(item.cvss_base_score);
     threatVector = stripV2Prefix(item.cvss_temporal_vector ?? '') || undefined;
-    threatScore = item.cvss_temporal_score ? parseFloatSafe(item.cvss_temporal_score) : undefined;
+    threatScore = parseFloatOrUndef(item.cvss_temporal_score);
   }
 
-  // Only emit base fields that are actually present: an empty baseVector would
-  // fail the schema pattern, and a missing baseScore must not be coerced to 0.
-  const entry: Cvss = {version, source};
-  if (baseVector) entry.baseVector = baseVector;
-  if (baseScore !== undefined) {
-    entry.baseScore = baseScore;
-    entry.baseSeverity = cvssSeverityFromScore(baseScore);
-  }
+  // The shared builder omits an empty baseVector (it would fail the schema
+  // pattern), never coerces a missing baseScore to 0, and scores a vector that
+  // arrives without one.
+  const entry = buildCvss({version, baseScore, baseVector, source});
   if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
   if (threatScore !== undefined) {
     entry.threatScore = threatScore;
     // Per the spec, the temporal score IS the post-threat-enrichment
     // computed score for both v2 and v3.
     entry.computedScore = threatScore;
-    entry.computedSeverity = cvssSeverityFromScore(threatScore);
+    entry.computedSeverity = cvssSeverityFromScore(version, threatScore);
   }
 
   return [entry];
@@ -413,12 +409,6 @@ function stripVersionPrefix(vector: string | undefined): string | undefined {
 
 function stripV2Prefix(vector: string): string {
   return vector.startsWith('CVSS2#') ? vector.slice('CVSS2#'.length) : vector;
-}
-
-function parseFloatSafe(s: string | undefined): number {
-  if (!s) return 0;
-  const f = Number.parseFloat(s);
-  return Number.isFinite(f) ? f : 0;
 }
 
 // parseFloatOrUndef returns the parsed number, or undefined when the source
@@ -466,8 +456,12 @@ function buildEpss(item: ReportItem, host: ReportHost): Epss | undefined {
   // non-deterministic "today".
   const date = epssDate(host);
   if (date === undefined) return undefined;
-  const score = hasScore ? parseFloatSafe(item.epss_score) : 0;
-  const percentile = hasPct ? parseFloatSafe(item.epss_percentile) : 0;
+  // Epss requires score, percentile and date together, so a member cannot be
+  // dropped on its own: a reported value that is not a finite number costs the
+  // entry rather than taking a substitute, since 0 is a real probability.
+  const score = hasScore ? parseFloatOrUndef(item.epss_score) : 0;
+  const percentile = hasPct ? parseFloatOrUndef(item.epss_percentile) : 0;
+  if (score === undefined || percentile === undefined) return undefined;
   return { date: date as unknown as Date, score, percentile };
 }
 

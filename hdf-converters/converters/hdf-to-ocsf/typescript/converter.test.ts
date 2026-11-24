@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertHdfToOcsf } from './converter.js';
+import { convertHdfToOcsf, convertHdfToOcsfBundle } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
@@ -345,4 +345,14 @@ describe('hdf-to-ocsf metric number rendering matches the Go peer', () => {
       `{"name":"Threat Score","value":"${expected}"}`,
     );
   });
+});
+
+it('adds source preservation without changing raw status or suppression', async () => {
+  const source = readFileSync(join(FIXTURES, 'input', 'override.json'));
+  const bundle = await convertHdfToOcsfBundle(source, VERSION);
+  const event = lines(bundle.events)[0];
+  const legacy = lines(convertHdfToOcsf(source.toString('utf8'), VERSION))[0];
+  expect(event.status_id).toBe(legacy.status_id);
+  expect(event.compliance).toEqual(legacy.compliance);
+  expect(obj(obj(event.unmapped).hdf_source).requirement).toEqual(JSON.parse(source.toString('utf8')).baselines[0].requirements[0]);
 });

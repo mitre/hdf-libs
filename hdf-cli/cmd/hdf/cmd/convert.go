@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const convertComponentIDFlag = "component-id"
+
 // NewConvertCmd creates the convert command.
 func NewConvertCmd() *cobra.Command {
 	var (
@@ -39,6 +41,17 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			bundle, _ := cmd.Flags().GetBool("bundle")
+			if bundle {
+				overwrite, _ := cmd.Flags().GetBool("overwrite")
+				return runConvertBundle(cmd, args, toFormat, outputPath, overwrite)
+			}
+			if cmd.Flags().Changed("output-access") {
+				return fmt.Errorf("--output-access requires --bundle")
+			}
+			if cmd.Flags().Changed("overwrite") {
+				return fmt.Errorf("--overwrite requires --bundle")
+			}
 			return dispatchConvert(cmd, args, fromFormat, toFormat, outputPath)
 		},
 	}
@@ -46,9 +59,12 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Source format (auto-detected if omitted)")
 	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().String("output-access", string(archivePrivate), "Archive access: private (creator only) or inherit (destination permissions); requires --bundle")
+	cmd.Flags().Bool("bundle", false, "Deliver one ECS, Splunk or OCSF export with its source in an evidence-package ZIP")
+	cmd.Flags().Bool("overwrite", false, "Replace an existing bundle archive; requires --bundle and never overwrites the source")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets, --to hdf only (key=value pairs, e.g., --labels system=Portal,environment=production)")
-	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output, --to hdf only")
+	cmd.Flags().String(convertComponentIDFlag, "", "Set componentId (a UUID) on all components in the output, --to hdf only")
 	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 5)")
 	cmd.Flags().String("report-type", "", "Detail level for --to html: executive, manager or administrator (default administrator)")
 	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
@@ -65,7 +81,7 @@ func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, ou
 	if err := checkHDFOnlyFlags(cmd, toFormat); err != nil {
 		return err
 	}
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if err := checkComponentIDFlag(componentID); err != nil {
 		return err
 	}
@@ -107,7 +123,7 @@ func checkHDFOnlyFlags(cmd *cobra.Command, toFormat string) error {
 	if strings.EqualFold(format, "hdf") {
 		return nil
 	}
-	for _, name := range []string{"labels", "component-id"} {
+	for _, name := range []string{"labels", convertComponentIDFlag} {
 		if cmd.Flags().Changed(name) {
 			return fmt.Errorf("--%s applies to --to hdf only, not --to %s", name, format)
 		}
@@ -450,7 +466,7 @@ func applyConvertFlags(cmd *cobra.Command, output []byte) ([]byte, error) {
 		printDebug("Applied %d labels to output", len(labels))
 	}
 
-	componentID, _ := cmd.Flags().GetString("component-id")
+	componentID, _ := cmd.Flags().GetString(convertComponentIDFlag)
 	if componentID != "" {
 		stamped, err := hdfdoc.ApplyComponentID(output, componentID, false)
 		switch {
@@ -672,7 +688,7 @@ func autoDetectFormat(data []byte, inputPath string) (format, version string, er
 			"Specify the format explicitly with --from <format>\n"+
 			"Run 'hdf convert --help' to see supported formats", inputPath)
 	}
-	format = registry.SourceNameFromFingerprintID(result.Fingerprint.ID)
+	format = registry.SourceNameFor(result.Fingerprint)
 	version = result.Version
 	printDebug("Auto-detected format: %s (confidence: %.0f%%)", format, result.Confidence*100)
 	if result.Version != "" {

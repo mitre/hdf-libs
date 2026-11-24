@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./typescript",
+    "resolveJsonModule": true
+  },
+  "include": ["typescript/**/*"],
+  "exclude": ["node_modules", "dist", "typescript/**/*.test.ts"]
+}

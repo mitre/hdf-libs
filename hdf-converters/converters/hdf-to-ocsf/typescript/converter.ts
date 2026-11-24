@@ -1,3 +1,4 @@
+import { projectExportBundle, type ExportBundle } from '../../../shared/typescript/exportbundle.js';
 import {
   type Obj,
   asMap,
@@ -288,6 +289,25 @@ function buildCompliance(req: Obj, baseline: Obj, title: string, rawStatus: stri
   return compliance;
 }
 
+function buildCVSSEntry(m: Obj): Obj {
+  const entry: Obj = {};
+  if (typeof m.baseScore === 'number') entry.base_score = floatNumber(m.baseScore); // OCSF cvss.base_score is float_t
+  setIf(entry, 'version', getStr(m, 'version'));
+  setIf(entry, 'vector_string', getStr(m, 'baseVector'));
+  setIf(entry, 'severity', getStr(m, 'baseSeverity'));
+  // Temporal/computed scoring: the environmental-adjusted score -> cvss.
+  // overall_score (float_t); the remaining temporal components -> cvss.metrics[].
+  if (typeof m.computedScore === 'number') entry.overall_score = floatNumber(m.computedScore);
+  const metrics: Obj[] = [];
+  if (typeof m.threatScore === 'number') metrics.push({ name: 'Threat Score', value: floatMetric(m.threatScore) });
+  const threatVector = getStr(m, 'threatVector');
+  if (threatVector !== '') metrics.push({ name: 'Threat Vector', value: threatVector });
+  const computedSeverity = getStr(m, 'computedSeverity');
+  if (computedSeverity !== '') metrics.push({ name: 'Computed Severity', value: computedSeverity });
+  if (metrics.length > 0) entry.metrics = metrics;
+  return entry;
+}
+
 function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
   const cve: Obj = {};
   cve.uid = firstCVE(cvssList) || getStr(req, 'id');
@@ -296,22 +316,7 @@ function buildVulnerabilities(cvssList: unknown[], req: Obj): unknown[] {
   for (const c of cvssList) {
     const m = asMap(c);
     if (!m) continue;
-    const entry: Obj = {};
-    if (typeof m.baseScore === 'number') entry.base_score = floatNumber(m.baseScore); // OCSF cvss.base_score is float_t
-    setIf(entry, 'version', getStr(m, 'version'));
-    setIf(entry, 'vector_string', getStr(m, 'baseVector'));
-    setIf(entry, 'severity', getStr(m, 'baseSeverity'));
-    // Temporal/computed scoring: the environmental-adjusted score -> cvss.
-    // overall_score (float_t); the remaining temporal components -> cvss.metrics[].
-    if (typeof m.computedScore === 'number') entry.overall_score = floatNumber(m.computedScore);
-    const metrics: Obj[] = [];
-    if (typeof m.threatScore === 'number') metrics.push({ name: 'Threat Score', value: floatMetric(m.threatScore) });
-    const threatVector = getStr(m, 'threatVector');
-    if (threatVector !== '') metrics.push({ name: 'Threat Vector', value: threatVector });
-    const computedSeverity = getStr(m, 'computedSeverity');
-    if (computedSeverity !== '') metrics.push({ name: 'Computed Severity', value: computedSeverity });
-    if (metrics.length > 0) entry.metrics = metrics;
-    cvssArr.push(entry);
+    cvssArr.push(buildCVSSEntry(m));
   }
   if (cvssArr.length > 0) cve.cvss = cvssArr;
   const cwes = stringSlice(req.cwe);
@@ -391,3 +396,7 @@ function floatMetric(f: number): string {
   return formatJsonNumber(f);
 }
 
+
+export async function convertHdfToOcsfBundle(input: Uint8Array, converterVersion = '0.1.0'): Promise<ExportBundle> {
+  return projectExportBundle(input, 'ocsf', (text) => convertHdfToOcsf(text, converterVersion));
+}

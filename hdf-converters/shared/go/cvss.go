@@ -1,57 +1,61 @@
 package shared
 
 import (
+	"math"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
+// cvssSchemaVersions maps the CVSS version strings hdf-utilities reports to
+// the schema Version enum.
+var cvssSchemaVersions = map[string]hdf.Version{
+	"2.0": hdf.The20,
+	"3.0": hdf.The30,
+	"3.1": hdf.The31,
+	"4.0": hdf.The40,
+}
+
 // CvssVersionFromVector returns the schema CVSS Version enum for a vector
-// string's prefix (CVSS:2.0/, CVSS:3.0/, CVSS:3.1/, CVSS:4.0/). An optional
-// fallback sets the version returned when the vector carries no recognized
-// prefix (e.g. historical Nessus output with no prefix passes 3.0); when
-// omitted the fallback is 3.1, the version modern scanners emit most often.
+// string, read through hdfutil.ParseCvssVector: the version a CVSS: prefix
+// names, CVSS 2.0 for a prefix-less vector carrying the 2.0-only Au metric, and
+// otherwise the fallback (3.1 when omitted; historical Nessus output with no
+// prefix passes 3.0).
 func CvssVersionFromVector(vector string, fallback ...hdf.Version) hdf.Version {
 	def := hdf.The31
 	if len(fallback) > 0 {
 		def = fallback[0]
 	}
-	switch {
-	case strings.HasPrefix(vector, "CVSS:2.0/"):
-		return hdf.The20
-	case strings.HasPrefix(vector, "CVSS:3.0/"):
-		return hdf.The30
-	case strings.HasPrefix(vector, "CVSS:3.1/"):
-		return hdf.The31
-	case strings.HasPrefix(vector, "CVSS:4.0/"):
-		return hdf.The40
-	default:
+	version, metrics := hdfutil.ParseCvssVector(vector)
+	if !strings.HasPrefix(strings.TrimLeft(vector, "/"), "CVSS:") {
+		if _, ok := metrics["Au"]; ok {
+			return hdf.The20
+		}
 		return def
 	}
+	if v, ok := cvssSchemaVersions[version]; ok {
+		return v
+	}
+	return def
 }
 
 // CvssVersionFromString maps a bare CVSS version number ("2.0", "3.0", "3.1",
 // "4.0") — as emitted in a structured version field rather than a vector
 // prefix — to the schema Version enum. Unrecognized values default to "3.1".
 func CvssVersionFromString(v string) hdf.Version {
-	switch v {
-	case "2.0":
-		return hdf.The20
-	case "3.0":
-		return hdf.The30
-	case "4.0":
-		return hdf.The40
-	default:
-		return hdf.The31
+	if version, ok := cvssSchemaVersions[v]; ok {
+		return version
 	}
+	return hdf.The31
 }
 
-// CvssSeverityFromScore maps a CVSS base/computed score to the schema
-// CVSSSeverity enum via the shared band thresholds in hdfutil. Scores below the
-// low threshold (and non-finite inputs, per hdfutil) map to the "none" band.
-func CvssSeverityFromScore(score float64) hdf.CVSSSeverity {
-	switch hdfutil.CvssScoreToSeverity(score) {
+// CvssSeverityFromScore maps a CVSS score of the given version to the schema
+// CVSSSeverity enum through hdfutil.CvssSeverityForVersion, the one place the
+// per-version scales live (NVD's v2 ranges for 2.0, the specification scale for
+// 3.x and 4.0). A score with no rating maps to "none".
+func CvssSeverityFromScore(version hdf.Version, score float64) hdf.CVSSSeverity {
+	switch hdfutil.CvssSeverityForVersion(string(version), score) {
 	case "critical":
 		return hdf.CVSSSeverityCritical
 	case "high":
@@ -77,16 +81,30 @@ type CvssInput struct {
 }
 
 // BuildCvss assembles an hdf.Cvss from the base-metric fields a converter
-// provides. Version is always set. BaseScore (and its derived BaseSeverity) is
-// set only when non-nil; BaseVector and Source are set only when non-empty.
-// Consumers needing threat/environmental/computed enrichment set those fields
-// on the returned value themselves.
+// provides. Version is always set. BaseScore is the source's score, read as
+// absent when it is not finite; without one it is computed from BaseVector
+// through hdfutil.ComputeCvssScore when the vector scores and its version is
+// the entry's version, and is otherwise absent. BaseSeverity follows BaseScore
+// on the entry's version's scale. BaseVector and Source are set only when
+// non-empty. Consumers needing threat/environmental/computed enrichment set
+// those fields themselves.
 func BuildCvss(in CvssInput) hdf.Cvss {
 	cv := hdf.Cvss{Version: in.Version}
-	if in.BaseScore != nil {
-		score := *in.BaseScore
-		cv.BaseScore = &score
-		sev := CvssSeverityFromScore(score)
+	score := in.BaseScore
+	// A non-finite score has no severity band and no JSON form: json.Marshal
+	// refuses one, which would fail the whole document over a single entry.
+	if score != nil && (math.IsNaN(*score) || math.IsInf(*score, 0)) {
+		score = nil
+	}
+	if score == nil && in.BaseVector != "" {
+		if s, err := hdfutil.ComputeCvssScore(in.BaseVector); err == nil && s.Version == string(in.Version) {
+			score = &s.BaseScore
+		}
+	}
+	if score != nil {
+		base := *score
+		cv.BaseScore = &base
+		sev := CvssSeverityFromScore(in.Version, base)
 		cv.BaseSeverity = &sev
 	}
 	if in.BaseVector != "" {

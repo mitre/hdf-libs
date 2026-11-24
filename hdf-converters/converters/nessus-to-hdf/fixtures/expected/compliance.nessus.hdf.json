@@ -33,8 +33,7 @@
             ],
             "fname": "disa_stig_rhel7.audit",
             "nist": [
-              "CM-6 b",
-              "CM-6.1 (iv)"
+              "CM-6 b"
             ],
             "plugin_publication_date": "2017/11/27",
             "plugin_type": "local",
@@ -83,8 +82,7 @@
             ],
             "fname": "disa_stig_rhel7.audit",
             "nist": [
-              "IA-5 (1) (c)",
-              "IA-5 (1).1 (v)"
+              "IA-5 (1) (c)"
             ],
             "plugin_publication_date": "2017/11/27",
             "plugin_type": "local",
@@ -182,8 +180,7 @@
             ],
             "fname": "disa_stig_rhel7.audit",
             "nist": [
-              "AU-12 c",
-              "AU-12.1 (iv)"
+              "AU-12 c"
             ],
             "plugin_publication_date": "2017/11/27",
             "plugin_type": "local",
@@ -232,9 +229,7 @@
             ],
             "fname": "disa_stig_rhel7.audit",
             "nist": [
-              "SI-11 b",
-              "SI-11 c",
-              "SI-11.1 (iv)"
+              "SI-11 b"
             ],
             "plugin_publication_date": "2017/11/27",
             "plugin_type": "local",

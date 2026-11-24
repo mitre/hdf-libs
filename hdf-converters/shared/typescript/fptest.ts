@@ -29,6 +29,8 @@ export interface FingerprintSpec {
   inputFamily: 'json' | 'xml' | 'csv' | 'text';
   /** Expected output type */
   outputType: string;
+  /** Convert-registry source the fingerprint names, if any */
+  source?: string;
   /** The fingerprint object (for direct function tests) */
   fingerprint: ConverterFingerprint;
   /** Function that registers the fingerprint */
@@ -56,6 +58,7 @@ export function runFingerprintTests(spec: FingerprintSpec): void {
       expect(fp!.direction).toBe(spec.direction);
       expect(fp!.inputFamily).toBe(spec.inputFamily);
       expect(fp!.outputType).toBe(spec.outputType);
+      expect(fp!.source).toBe(spec.source);
     });
 
     it('exports fingerprint as data (no convert function)', () => {

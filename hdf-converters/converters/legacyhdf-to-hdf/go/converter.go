@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"strconv"
+	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -356,6 +357,20 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 	return v2
 }
 
+// InSpec declares seven input types; HDF's Input_Type has six, lacking Any. So a
+// type with no counterpart is omitted rather than emitted invalid, and matching
+// is case-insensitive because profiles write these in whatever case they like.
+// The generated types expose no enumerable member list, so this is written out
+// and a test asserts it against shared/inspec-input-type-cases.json.
+var inputTypeByLowercase = map[string]hdf.InputType{
+	"string":  hdf.String,
+	"numeric": hdf.Numeric,
+	"boolean": hdf.Boolean,
+	"array":   hdf.Array,
+	"hash":    hdf.Hash,
+	"regexp":  hdf.Regexp,
+}
+
 // convertAttributes converts v1.0 attributes to v2.0 Input structs.
 // V1 attributes are generic maps of the form {"name": ..., "options": {...}};
 // InSpec nests value/type/required/sensitive/description under "options".
@@ -371,7 +386,10 @@ func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
 		}
 		options, _ := attr["options"].(map[string]interface{})
 		if options != nil {
+			// Older InSpec stores the value under "default"; "value" wins when both exist.
 			if val, exists := options["value"]; exists {
+				input.Value = val
+			} else if val, exists := options["default"]; exists {
 				input.Value = val
 			}
 			if desc, ok := options["description"].(string); ok {
@@ -384,8 +402,9 @@ func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
 				input.Required = &required
 			}
 			if t, ok := options["type"].(string); ok {
-				inputType := hdf.InputType(t)
-				input.Type = &inputType
+				if mapped, known := inputTypeByLowercase[strings.ToLower(t)]; known {
+					input.Type = &mapped
+				}
 			}
 		}
 		inputs = append(inputs, input)

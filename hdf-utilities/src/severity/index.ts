@@ -128,6 +128,24 @@ export function cvssScoreToSeverity(
   return 'critical';
 }
 
+/**
+ * Map a CVSS score to the severity of the scale its version uses: NVD's CVSS v2
+ * ranges for "2.0" (low 0.0–3.9, medium 4.0–6.9, high 7.0–10.0; 2.0 has no none
+ * or critical rating), and the specification's qualitative scale
+ * (cvssScoreToSeverity) for 3.0, 3.1 and 4.0. A negative or non-finite score is
+ * "none", no rating. Peer of the Go `CvssSeverityForVersion`.
+ */
+export function cvssSeverityForVersion(
+  version: string,
+  score: number,
+): 'none' | 'low' | 'medium' | 'high' | 'critical' {
+  if (version !== '2.0') return cvssScoreToSeverity(score);
+  if (!Number.isFinite(score) || score < 0) return 'none';
+  if (score < 4.0) return 'low';
+  if (score < 7.0) return 'medium';
+  return 'high';
+}
+
 // Severity vocabulary values that assert "no rating was made" (grype Unknown,
 // Dependency-Track UNASSIGNED, Microsoft Graph unSpecified). Distinct from the
 // zero-impact RATED tier (info/none/informational) and from grype's

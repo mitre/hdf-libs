@@ -2,6 +2,7 @@ package nessus
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -644,6 +645,21 @@ func TestBuildCvssEntries_V2OnlyWithCVE(t *testing.T) {
 	assert.InDelta(t, 5.1, *c.ComputedScore, 0.001)
 }
 
+// A CVE finding with a vector but no base score is scored from the vector, as
+// every converter's CVSS entry is.
+func TestBuildCvssEntries_V3VectorWithoutScore(t *testing.T) {
+	got := buildCvssEntries(&ReportItem{
+		CVSSScoreSource: "CVE-2024-99998",
+		CVSS3Vector:     "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+	})
+	require.Len(t, got, 1)
+	assert.Equal(t, hdf.The31, got[0].Version)
+	require.NotNil(t, got[0].BaseScore)
+	assert.InDelta(t, 10.0, *got[0].BaseScore, 0.001)
+	require.NotNil(t, got[0].BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *got[0].BaseSeverity)
+}
+
 func TestBuildCvssEntries_NoCVEScoreSource(t *testing.T) {
 	// Non-CVE score source ("Tenable" or empty) should return nil.
 	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "Tenable", CVSSBaseScore: "5.0"}))
@@ -695,7 +711,7 @@ func TestCvssSeverityMapping(t *testing.T) {
 		{9.5, hdf.CVSSSeverityCritical},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(tt.score))
+		assert.Equal(t, tt.want, shared.CvssSeverityFromScore(hdf.The31, tt.score))
 	}
 }
 
@@ -967,6 +983,294 @@ func TestCalculateTiming_UnparseableEndFallsBackToStart(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, result.Statistics.Duration)
 			assert.Zero(t, *result.Statistics.Duration, "the end time falls back to the start, not to now")
+		})
+	}
+}
+
+type computedSeverityCase struct {
+	Version          hdf.Version      `json:"version"`
+	Vector           string           `json:"vector"`
+	BaseScore        float64          `json:"baseScore"`
+	ComputedScore    float64          `json:"computedScore"`
+	ComputedSeverity hdf.CVSSSeverity `json:"computedSeverity"`
+	Note             string           `json:"note"`
+}
+
+func loadComputedSeverityCases(t *testing.T) []computedSeverityCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "cvss-computed-severity-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []computedSeverityCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+// syntheticNessusTemporalScan renders one ReportItem carrying the case's base
+// vector and score with its computed score as the temporal score, under the v2
+// or v3 element names the case's version selects.
+func syntheticNessusTemporalScan(c computedSeverityCase) string {
+	vectorEl, scoreEl, temporalEl := "cvss_vector", "cvss_base_score", "cvss_temporal_score"
+	if c.Version != hdf.The20 {
+		vectorEl, scoreEl, temporalEl = "cvss3_vector", "cvss3_base_score", "cvss3_temporal_score"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999997" pluginName="Synthetic Computed Severity Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99997</cvss_score_source>
+        <%[1]s>%[2]s</%[1]s>
+        <%[3]s>%[4]v</%[3]s>
+        <%[5]s>%[6]v</%[5]s>
+        <description>Synthetic finding for the computed-severity scale.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, vectorEl, c.Vector, scoreEl, c.BaseScore, temporalEl, c.ComputedScore)
+}
+
+// Nessus gives the temporal score, which the converter records as the computed
+// score; its severity must come from the entry's own version scale.
+func TestConvertNessusToHDF_ComputedSeverityFollowsTheEntryVersion(t *testing.T) {
+	for _, c := range loadComputedSeverityCases(t) {
+		t.Run(fmt.Sprintf("%s/%v", c.Version, c.ComputedScore), func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusTemporalScan(c)), converterVersion)
+			require.NoError(t, err)
+
+			req := findReqAcrossBaselines(result, "999997")
+			require.NotNil(t, req)
+			require.Len(t, req.Cvss, 1)
+			entry := req.Cvss[0]
+			assert.Equal(t, c.Version, entry.Version)
+			require.NotNil(t, entry.ComputedScore)
+			assert.InDelta(t, c.ComputedScore, *entry.ComputedScore, 1e-9)
+			require.NotNil(t, entry.ComputedSeverity)
+			assert.Equal(t, c.ComputedSeverity, *entry.ComputedSeverity, c.Note)
+		})
+	}
+}
+
+// syntheticNessusWithRawBaseScore renders one ReportItem whose v2 base score is
+// the given raw text, with or without a base vector beside it.
+func syntheticNessusWithRawBaseScore(rawScore string, withVector bool) string {
+	vector := ""
+	if withVector {
+		vector = "        <cvss_vector>AV:N/AC:L/Au:N/C:C/I:C/A:C</cvss_vector>\n"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999996" pluginName="Synthetic Non-Finite Score Finding" pluginFamily="Misc.">
+        <cvss_score_source>CVE-2024-99996</cvss_score_source>
+        <cvss_base_score>%s</cvss_base_score>
+%s        <description>Synthetic finding carrying a non-finite base score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, rawScore, vector)
+}
+
+// strconv.ParseFloat accepts these, so a .nessus file can put a non-finite
+// number in cvss_base_score; json.Marshal then refuses the whole document.
+func TestConvertNessusToHDF_NonFiniteBaseScore(t *testing.T) {
+	for _, raw := range []string{"NaN", "Inf", "Infinity", "-Inf"} {
+		t.Run(raw, func(t *testing.T) {
+			t.Run("the base vector supplies the score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, true)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				require.NotNil(t, entry.BaseScore)
+				assert.InDelta(t, 10.0, *entry.BaseScore, 1e-9)
+				require.NotNil(t, entry.BaseSeverity)
+				assert.Equal(t, hdf.CVSSSeverityHigh, *entry.BaseSeverity, "10.0 is high on the 2.0 scale")
+			})
+
+			t.Run("without a vector the entry carries no score", func(t *testing.T) {
+				result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawBaseScore(raw, false)), converterVersion)
+				require.NoError(t, err)
+				_, err = json.Marshal(result)
+				require.NoError(t, err, "the document must serialize")
+
+				entry := onlyCvssEntry(t, result, "999996")
+				assert.Nil(t, entry.BaseScore)
+				assert.Nil(t, entry.BaseSeverity)
+			})
+		})
+	}
+}
+
+func onlyCvssEntry(t *testing.T, result *hdf.HDFResults, pluginID string) hdf.Cvss {
+	t.Helper()
+	req := findReqAcrossBaselines(result, pluginID)
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1)
+	return req.Cvss[0]
+}
+
+// nonFiniteTemporalCase and nonFiniteEpssCase are rows of the shared table both
+// language suites read, so Go and TypeScript cannot drift on the same input.
+type nonFiniteTemporalCase struct {
+	Name          string   `json:"name"`
+	Field         string   `json:"field"`
+	Raw           string   `json:"raw"`
+	ExpectPresent bool     `json:"expectPresent"`
+	ExpectScore   *float64 `json:"expectScore"`
+}
+
+type nonFiniteEpssCase struct {
+	Name             string   `json:"name"`
+	Score            string   `json:"score"`
+	Percentile       string   `json:"percentile"`
+	ExpectEntry      bool     `json:"expectEntry"`
+	ExpectScore      *float64 `json:"expectScore"`
+	ExpectPercentile *float64 `json:"expectPercentile"`
+}
+
+func loadNonFiniteCases(t *testing.T) (temporal []nonFiniteTemporalCase, epss []nonFiniteEpssCase) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "nessus-non-finite-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		TemporalScore []nonFiniteTemporalCase `json:"temporalScore"`
+		Epss          []nonFiniteEpssCase     `json:"epss"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.TemporalScore)
+	require.NotEmpty(t, table.Epss)
+	return table.TemporalScore, table.Epss
+}
+
+// syntheticNessusWithRawTemporal renders one ReportItem whose named temporal
+// field carries the given raw text, beside a base vector of its own version.
+func syntheticNessusWithRawTemporal(field, raw string) string {
+	vector := "        <cvss_vector>AV:N/AC:L/Au:N/C:P/I:P/A:P</cvss_vector>\n"
+	if field == "cvss3_temporal_score" {
+		vector = "        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</cvss3_vector>\n"
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999995" pluginName="Synthetic Temporal" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99995</cvss_score_source>
+%s        <%s>%s</%s>
+        <description>Synthetic finding carrying a temporal score.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, vector, field, raw, field)
+}
+
+// syntheticNessusWithRawEpss renders one ReportItem carrying the given raw EPSS
+// members; an empty string omits the element, as a real scan would.
+func syntheticNessusWithRawEpss(score, percentile string) string {
+	el := ""
+	if score != "" {
+		el += fmt.Sprintf("        <epss_score>%s</epss_score>\n", score)
+	}
+	if percentile != "" {
+		el += fmt.Sprintf("        <epss_percentile>%s</epss_percentile>\n", percentile)
+	}
+	return fmt.Sprintf(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999994" pluginName="Synthetic EPSS" pluginFamily="General">
+        <cvss_score_source>CVE-2024-99994</cvss_score_source>
+        <cvss_base_score>5.0</cvss_base_score>
+%s        <description>Synthetic finding carrying EPSS members.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`, el)
+}
+
+// A temporal score the scan did not report as a finite number is absent, not a
+// substitute: Go wrote NaN and failed the document's own serialization, while
+// TypeScript wrote 0, which is a real threat score.
+func TestConvertNessusToHDF_NonFiniteTemporalScoreIsOmitted(t *testing.T) {
+	temporal, _ := loadNonFiniteCases(t)
+	for _, c := range temporal {
+		t.Run(c.Name, func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawTemporal(c.Field, c.Raw)), converterVersion)
+			require.NoError(t, err)
+			_, err = json.Marshal(result)
+			require.NoError(t, err, "the document must serialize")
+
+			entry := onlyCvssEntry(t, result, "999995")
+			if !c.ExpectPresent {
+				assert.Nil(t, entry.ThreatScore, "a score the scan did not report as finite must be absent")
+				assert.Nil(t, entry.ComputedScore)
+				assert.Nil(t, entry.ComputedSeverity)
+				return
+			}
+			require.NotNil(t, c.ExpectScore)
+			require.NotNil(t, entry.ThreatScore)
+			assert.InDelta(t, *c.ExpectScore, *entry.ThreatScore, 1e-9)
+			require.NotNil(t, entry.ComputedScore)
+			assert.InDelta(t, *c.ExpectScore, *entry.ComputedScore, 1e-9)
+			assert.NotNil(t, entry.ComputedSeverity)
+		})
+	}
+}
+
+// Epss requires score, percentile and date together, so a member the scan did
+// not report as a finite number costs the whole entry rather than taking a zero.
+func TestConvertNessusToHDF_NonFiniteEpssOmitsTheEntry(t *testing.T) {
+	_, epss := loadNonFiniteCases(t)
+	for _, c := range epss {
+		t.Run(c.Name, func(t *testing.T) {
+			result, err := ConvertNessusToHDF([]byte(syntheticNessusWithRawEpss(c.Score, c.Percentile)), converterVersion)
+			require.NoError(t, err)
+			_, err = json.Marshal(result)
+			require.NoError(t, err, "the document must serialize")
+
+			req := findReqAcrossBaselines(result, "999994")
+			require.NotNil(t, req)
+			if !c.ExpectEntry {
+				assert.Nil(t, req.Epss, "a reported member that is not a finite number must cost the entry")
+				return
+			}
+			require.NotNil(t, req.Epss)
+			require.NotNil(t, c.ExpectScore)
+			assert.InDelta(t, *c.ExpectScore, req.Epss.Score, 1e-9)
+			require.NotNil(t, c.ExpectPercentile)
+			assert.InDelta(t, *c.ExpectPercentile, req.Epss.Percentile, 1e-9)
 		})
 	}
 }

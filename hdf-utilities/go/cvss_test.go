@@ -11,27 +11,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type cvss31Case struct {
+type cvssScoreCase struct {
 	Vector   string  `json:"vector"`
 	Base     float64 `json:"base"`
 	Temporal float64 `json:"temporal"`
 	Note     string  `json:"note"`
 }
 
-func loadCvss31Cases(t *testing.T) []cvss31Case {
+// loadVectorCases reads the cases of a shared vector file in testdata; the
+// TypeScript tests read the same files, so both languages assert identical values.
+func loadVectorCases[T any](t *testing.T, name string) []T {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss31-vectors.json"))
+	return loadCaseGroup[T](t, name, "cases")
+}
+
+// loadCaseGroup reads one named array of a shared testdata file, for a file
+// carrying more than one group of cases.
+func loadCaseGroup[T any](t *testing.T, name, key string) []T {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", name))
 	require.NoError(t, err)
-	var fx struct {
-		Cases []cvss31Case `json:"cases"`
-	}
-	require.NoError(t, json.Unmarshal(data, &fx))
-	require.NotEmpty(t, fx.Cases)
-	return fx.Cases
+	var groups map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(data, &groups))
+	raw, ok := groups[key]
+	require.True(t, ok, "%s: no %q cases", name, key)
+	var cases []T
+	require.NoError(t, json.Unmarshal(raw, &cases))
+	require.NotEmpty(t, cases)
+	return cases
 }
 
 func TestComputeCvssScore31(t *testing.T) {
-	for _, c := range loadCvss31Cases(t) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss31-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			s, err := ComputeCvssScore(c.Vector)
@@ -43,14 +54,46 @@ func TestComputeCvssScore31(t *testing.T) {
 	}
 }
 
-func TestComputeCvssScore_UnsupportedVersion(t *testing.T) {
-	for _, v := range []string{
-		"CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
-		"AV:N/AC:L/Au:N/C:C/I:C/A:C",
-		"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-	} {
-		_, err := ComputeCvssScore(v)
-		assert.Error(t, err, v)
+func TestComputeCvssScore30(t *testing.T) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss30-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "3.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+		})
+	}
+}
+
+func TestComputeCvssScore20(t *testing.T) {
+	for _, c := range loadVectorCases[cvssScoreCase](t, "cvss20-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "2.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "temporal")
+			// A zero impact multiplies a negative term by f(Impact) = 0; the
+			// result must be +0, which serializes as 0 rather than -0.
+			assert.False(t, math.Signbit(s.BaseScore), "base must not be negative zero")
+			assert.False(t, math.Signbit(s.TemporalScore), "temporal must not be negative zero")
+		})
+	}
+}
+
+type cvssInvalidCase struct {
+	Vector   string `json:"vector"`
+	Mentions string `json:"mentions"`
+	Note     string `json:"note"`
+}
+
+func TestComputeCvssScore_RefusesInvalidVectors(t *testing.T) {
+	for _, c := range loadVectorCases[cvssInvalidCase](t, "cvss-invalid-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			assert.ErrorContains(t, err, c.Mentions, "%s; scored %+v", c.Note, s)
+		})
 	}
 }
 
@@ -282,6 +325,51 @@ func TestValidateCvssVector(t *testing.T) {
 	})
 }
 
+type cvssIgnoredMetricCase struct {
+	Vector     string  `json:"vector"`
+	Equivalent string  `json:"equivalent"`
+	Version    string  `json:"version"`
+	Base       float64 `json:"base"`
+	Temporal   float64 `json:"temporal"`
+	Note       string  `json:"note"`
+}
+
+type cvssUnsupportedVersionCase struct {
+	Vector  string `json:"vector"`
+	Version string `json:"version"`
+	Note    string `json:"note"`
+}
+
+const cvssPrototypeKeyFile = "cvss-prototype-key-cases.json"
+
+func TestCvssPrototypeLookupKeys(t *testing.T) {
+	for _, c := range loadCaseGroup[cvssIgnoredMetricCase](t, cvssPrototypeKeyFile, "ignoredMetricNames") {
+		t.Run("ignored metric name/"+c.Vector, func(t *testing.T) {
+			valid, errs := ValidateCvssVector(c.Vector, "")
+			assert.True(t, valid, "%s: %v", c.Note, errs)
+			assert.Empty(t, errs)
+
+			score, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err, c.Note)
+			assert.Equal(t, c.Version, score.Version)
+			assert.Equal(t, c.Base, score.BaseScore, "base")
+			assert.Equal(t, c.Temporal, score.TemporalScore, "temporal")
+
+			reference, err := ComputeCvssScore(c.Equivalent)
+			require.NoError(t, err)
+			assert.Equal(t, reference, score, "the extra metric must change nothing")
+		})
+	}
+
+	for _, c := range loadCaseGroup[cvssUnsupportedVersionCase](t, cvssPrototypeKeyFile, "unsupportedVersions") {
+		t.Run("unsupported version/"+c.Version, func(t *testing.T) {
+			valid, errs := ValidateCvssVector(c.Vector, c.Version)
+			assert.False(t, valid, c.Note)
+			assert.Equal(t, []string{"unsupported CVSS version: " + c.Version}, errs)
+		})
+	}
+}
+
 type cvss40Case struct {
 	Vector      string  `json:"vector"`
 	MacroVector string  `json:"macroVector"`
@@ -290,20 +378,22 @@ type cvss40Case struct {
 	Note        string  `json:"note"`
 }
 
-func loadCvss40Cases(t *testing.T) []cvss40Case {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "cvss40-vectors.json"))
-	require.NoError(t, err)
-	var fx struct {
-		Cases []cvss40Case `json:"cases"`
+// ComputeCvssScore is the entry point for every version; a 4.0 vector reaches
+// the MacroVector engine through it with the same results.
+func TestComputeCvssScore40(t *testing.T) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			s, err := ComputeCvssScore(c.Vector)
+			require.NoError(t, err)
+			assert.Equal(t, "4.0", s.Version)
+			assert.Equal(t, c.Base, s.BaseScore, "base")
+			assert.Equal(t, c.Temporal, s.TemporalScore, "threat")
+		})
 	}
-	require.NoError(t, json.Unmarshal(data, &fx))
-	require.NotEmpty(t, fx.Cases)
-	return fx.Cases
 }
 
 func TestComputeCvss40Score(t *testing.T) {
-	for _, c := range loadCvss40Cases(t) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			s, err := ComputeCvss40Score(c.Vector)
@@ -324,7 +414,7 @@ func TestComputeCvss40Score_FirstTestVector(t *testing.T) {
 }
 
 func TestComputeCvss40Score_MacroVector(t *testing.T) {
-	for _, c := range loadCvss40Cases(t) {
+	for _, c := range loadVectorCases[cvss40Case](t, "cvss40-vectors.json") {
 		c := c
 		t.Run(c.Vector, func(t *testing.T) {
 			assert.Equal(t, c.MacroVector, Cvss40MacroVector(c.Vector))
@@ -378,4 +468,31 @@ func containsSubstr(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+type cvssNormalizeCase struct {
+	Vector             string   `json:"vector"`
+	Version            string   `json:"version"`
+	AttackVector       string   `json:"attackVector"`
+	AttackComplexity   string   `json:"attackComplexity"`
+	PrivilegesRequired string   `json:"privilegesRequired"`
+	UserInteraction    string   `json:"userInteraction"`
+	BaseScore          *float64 `json:"baseScore"`
+	Note               string   `json:"note"`
+}
+
+func TestNormalizeCvssMetrics(t *testing.T) {
+	for _, c := range loadVectorCases[cvssNormalizeCase](t, "cvss-normalize-cases.json") {
+		t.Run(c.Vector, func(t *testing.T) {
+			want := CvssMetrics{
+				Version:            c.Version,
+				AttackVector:       c.AttackVector,
+				AttackComplexity:   c.AttackComplexity,
+				PrivilegesRequired: c.PrivilegesRequired,
+				UserInteraction:    c.UserInteraction,
+				BaseScore:          c.BaseScore,
+			}
+			assert.Equal(t, want, NormalizeCvssMetrics(c.Vector), c.Note)
+		})
+	}
 }

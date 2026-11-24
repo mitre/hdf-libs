@@ -7,11 +7,6 @@ import rawCCIData from '../../go/datasets/mappings/cci-mappings.json';
 import rawNistCCIData from '../../go/datasets/mappings/nist-cci-mappings.json';
 import { getCurrentNistRevision, nistControlsAtRevision } from '../nist/index.js';
 
-// The DISA CCI list's NIST references are Rev 4-era (they include Appendix J
-// privacy controls and SA-12/SA-19, all withdrawn or relocated in Rev 5).
-// getCCINistMappings translates to the current module-global revision.
-const NATIVE_REVISION = 4;
-
 const cciData = rawCCIData as CCIMappings;
 const nistCCIData = rawNistCCIData as NistCCIMappings;
 
@@ -37,25 +32,34 @@ export function getCCIDescription(cciId: string): string | undefined {
 }
 
 /**
- * Get the NIST control mappings for a CCI ID.
+ * Get DISA's NIST SP 800-53 references for a CCI ID at a revision. When DISA
+ * gives none at that revision, the other revision's references are translated
+ * through the NIST crosswalk, so the result never mixes revisions.
  *
  * @param cciId - The CCI ID (e.g., 'CCI-000001')
+ * @param rev - NIST revision, default the module-global revision
  * @returns Array of NIST control references, or undefined if not found
  *
  * @example
  * ```typescript
  * const mappings = getCCINistMappings('CCI-000001');
- * // Returns: ['AC-1 a', 'AC-1.1 (i and ii)', 'AC-1 a 1']
+ * // Returns: ['AC-1 a 1']
  * ```
  */
-export function getCCINistMappings(cciId: string): string[] | undefined {
+export function getCCINistMappings(cciId: string, rev: number = getCurrentNistRevision()): string[] | undefined {
   if (!cciId || typeof cciId !== 'string') {
     return undefined;
   }
 
   const item = cciData[cciId];
   if (!item) return undefined;
-  return nistControlsAtRevision(item.nist, NATIVE_REVISION, getCurrentNistRevision());
+  const own = item.nist[rev];
+  if (own?.length) return [...own];
+  for (const native of [5, 4]) {
+    const refs = item.nist[native];
+    if (native !== rev && refs?.length) return nistControlsAtRevision([...refs], native, rev);
+  }
+  return [];
 }
 
 /**

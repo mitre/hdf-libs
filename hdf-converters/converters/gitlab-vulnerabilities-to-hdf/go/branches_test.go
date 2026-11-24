@@ -2,12 +2,16 @@ package gitlab_vulnerabilities_to_hdf
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -327,3 +331,55 @@ func TestCloseOpenOverrides_NeverExpiresBeforeItWasApplied(t *testing.T) {
 }
 
 func f64(v float64) *float64 { return &v }
+
+type computedSeverityCase struct {
+	Version          hdf.Version      `json:"version"`
+	Vector           string           `json:"vector"`
+	BaseScore        float64          `json:"baseScore"`
+	ComputedScore    float64          `json:"computedScore"`
+	ComputedSeverity hdf.CVSSSeverity `json:"computedSeverity"`
+	Note             string           `json:"note"`
+}
+
+// The table is shared with the TypeScript peer and with nessus-to-hdf, whose
+// computedSeverity comes off the same scale selection.
+func loadComputedSeverityCases(t *testing.T) []computedSeverityCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetSharedDir(), "cvss-computed-severity-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []computedSeverityCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	return doc.Cases
+}
+
+// GitLab's overallScore is the computed score; its severity must come from the
+// entry's own version scale.
+func TestBuildCvss_ComputedSeverityFollowsTheEntryVersion(t *testing.T) {
+	for _, c := range loadComputedSeverityCases(t) {
+		t.Run(fmt.Sprintf("%s/%v", c.Version, c.ComputedScore), func(t *testing.T) {
+			numeric := 3.1
+			if c.Version == hdf.The20 {
+				numeric = 2
+			}
+			got := buildCvss(&Vulnerability{
+				Identifiers: []Identifier{{ExternalType: "cve", ExternalID: "CVE-2024-99997"}},
+				CVSS: []CVSSEntry{{
+					Vendor:       "NVD",
+					Vector:       c.Vector,
+					Version:      numeric,
+					BaseScore:    f64(c.BaseScore),
+					OverallScore: f64(c.ComputedScore),
+				}},
+			})
+			require.Len(t, got, 1)
+			assert.Equal(t, c.Version, got[0].Version)
+			require.NotNil(t, got[0].ComputedScore)
+			assert.InDelta(t, c.ComputedScore, *got[0].ComputedScore, 1e-9)
+			require.NotNil(t, got[0].ComputedSeverity)
+			assert.Equal(t, c.ComputedSeverity, *got[0].ComputedSeverity, c.Note)
+		})
+	}
+}

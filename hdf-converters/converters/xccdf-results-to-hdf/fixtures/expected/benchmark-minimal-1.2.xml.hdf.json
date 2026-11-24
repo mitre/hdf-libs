@@ -1,4 +1,10 @@
 {
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "accepted",
+      "benchmarkStatusDate": "2025-11-19"
+    }
+  },
   "generator": {
     "name": "xccdf-results-to-hdf",
     "version": "1.0.0"
@@ -60,8 +66,7 @@
         "gid": "V-254238",
         "gtitle": "SRG-OS-000480-GPOS-00227",
         "nist": [
-          "CM-6 b",
-          "CM-6.1 (iv)"
+          "CM-6 b"
         ],
         "rid": "SV-254238r991589_rule",
         "severity": "medium",
@@ -99,7 +104,7 @@
         "gtitle": "SRG-OS-000076-GPOS-00044",
         "nist": [
           "IA-5 (1) (d)",
-          "IA-5 (1).1 (v)"
+          "IA-5 (1) (h)"
         ],
         "rid": "SV-254239r1153440_rule",
         "severity": "medium",
@@ -137,10 +142,7 @@
         "gtitle": "SRG-OS-000480-GPOS-00227",
         "nist": [
           "CM-6 b",
-          "CM-6.1 (iv)",
-          "SI-11 a",
-          "SI-11 b",
-          "SI-11.1 (iii)"
+          "SI-11 a"
         ],
         "rid": "SV-254240r991589_rule",
         "severity": "high",

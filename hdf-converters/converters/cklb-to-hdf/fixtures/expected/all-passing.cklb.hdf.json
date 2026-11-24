@@ -93,8 +93,7 @@
             "group_id": "V-251546",
             "gtitle": "Firefox must be configured to allow only TLS 1.2 or above.",
             "nist": [
-              "AC-17 (2)",
-              "AC-17 (2).1"
+              "AC-17 (2)"
             ],
             "rid": "SV-251546r961869",
             "severity": "high",
@@ -140,9 +139,7 @@
             "group_id": "V-251547",
             "gtitle": "Firefox must be configured to ask which certificate to present to a website when a certificate is required.",
             "nist": [
-              "IA-5 (2)",
-              "IA-5 (2) (c)",
-              "IA-5 (2).1"
+              "IA-5 (2) (a) (2)"
             ],
             "rid": "SV-251547r1067550",
             "severity": "medium",
@@ -188,9 +185,7 @@
             "group_id": "V-251548",
             "gtitle": "Firefox must be configured to not automatically check for updated versions of installed search plugins.",
             "nist": [
-              "CM-7",
-              "CM-7 a",
-              "CM-7.1 (ii)"
+              "CM-7 a"
             ],
             "rid": "SV-251548r1067552",
             "severity": "medium",
@@ -236,9 +231,7 @@
             "group_id": "V-251559",
             "gtitle": "Firefox development tools must be disabled.",
             "nist": [
-              "SI-11 a",
-              "SI-11 b",
-              "SI-11.1 (iii)"
+              "SI-11 a"
             ],
             "rid": "SV-251559r961167",
             "severity": "low",
@@ -284,9 +277,7 @@
             "group_id": "V-251565",
             "gtitle": "Firefox autoplay must be disabled.",
             "nist": [
-              "CM-7",
-              "CM-7 a",
-              "CM-7.1 (ii)"
+              "CM-7 a"
             ],
             "rid": "SV-251565r960963",
             "severity": "low",

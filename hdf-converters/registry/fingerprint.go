@@ -28,6 +28,16 @@ func SourceNameFromFingerprintID(id string) string {
 	return id
 }
 
+// SourceNameFor is the one place a detection becomes a convert-registry source
+// name: the fingerprint's own Source when it declares one, else the ID rule.
+// Every caller that converts after auto-detection resolves through it.
+func SourceNameFor(fp ConverterFingerprint) string {
+	if fp.Source != "" {
+		return fp.Source
+	}
+	return SourceNameFromFingerprintID(fp.ID)
+}
+
 // DetectionResult holds a matched fingerprint and its confidence score.
 type DetectionResult struct {
 	Fingerprint ConverterFingerprint

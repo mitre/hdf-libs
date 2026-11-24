@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { describe, it, expect } from 'vitest';
 import { generateControlStub } from '../src/control-stub.js';
 import { makeRequirement, desc } from './helpers.js';
@@ -165,8 +166,7 @@ describe('generateControlStub', () => {
       descriptions: [desc('default', "it's a \"complex\" description")],
     });
     const ruby = generateControlStub(req);
-    // Should use %q() or proper escaping
-    expect(ruby).not.toMatch(/desc 'it's/); // unescaped single quote would break Ruby
+    expect(ruby).toContain(`  desc %q(it's a "complex" description)\n`);
   });
 
   it('handles severity tag in tags', () => {
@@ -224,4 +224,57 @@ describe('generateControlStub', () => {
     expect(descIdx).toBeLessThan(impactIdx);
     expect(impactIdx).toBeLessThan(tagIdx);
   });
+  // A renamed control's new id is written as a Ruby literal, never spliced raw
+  // inside the old id's quotes.
+  it('escapes a renamed control id', () => {
+    const req = makeRequirement({
+      id: "SV-2'); system('x",
+      code: "control 'SV-244540' do\n  describe true do\n    it { should eq true }\n  end\nend\n",
+    });
+    const ruby = generateControlStub(req);
+    expect(ruby.startsWith(`control "SV-2'); system('x" do`)).toBe(true);
+    if (hasRuby()) {
+      const out = execFileSync('ruby', ['-'], { input: `def control(id) STDOUT.write(id) end\n${ruby.split('\n')[0]} end\n` });
+      expect(out.toString('utf-8')).toBe(req.id);
+    }
+  });
+
+  // Every string the generator writes into Ruby reaches InSpec unchanged. Ruby
+  // loads the control under a stand-in for InSpec's DSL and reports the values.
+  it.skipIf(!hasRuby())('has every string read back unchanged by Ruby', () => {
+    const req = makeRequirement({
+      id: "SV-1'x",
+      title: "it's #{1+1}",
+      descriptions: [desc('default', 'it\'s "a" 1) step'), desc("it's", 'fix\r\nthis \\ (now)\n')],
+      tags: { gtitle: "it's #@x", cci: ["CCI's", 'a"b', 'c\\d'], nist: ["AC-1 a'b"] },
+    });
+    const src = generateControlStub(req);
+    const out = execFileSync('ruby', ['-'], { input: `${RUBY_CONTROL_DSL}${src}\nSTDOUT.write(JSON.generate($c))\n` });
+    expect(JSON.parse(out.toString('utf-8'))).toEqual({
+      id: "SV-1'x",
+      title: "it's #{1+1}",
+      descs: { default: 'it\'s "a" 1) step', "it's": 'fix\r\nthis \\ (now)\n' },
+      impact: 0.5,
+      tags: { gtitle: "it's #@x", cci: ["CCI's", 'a"b', 'c\\d'], nist: ["AC-1 a'b"] },
+    });
+  });
 });
+
+// A stand-in for InSpec's control DSL; the Go suite uses the same one.
+const RUBY_CONTROL_DSL = `require 'json'
+$c = { 'descs' => {}, 'tags' => {} }
+def control(id, &blk) $c['id'] = id; instance_eval(&blk) end
+def title(t) $c['title'] = t end
+def desc(a, b = nil) b.nil? ? $c['descs']['default'] = a : $c['descs'][a] = b end
+def impact(i) $c['impact'] = i end
+def tag(h) h.each { |k, v| $c['tags'][k.to_s] = v } end
+`;
+
+function hasRuby(): boolean {
+  try {
+    execFileSync('ruby', ['-v'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}

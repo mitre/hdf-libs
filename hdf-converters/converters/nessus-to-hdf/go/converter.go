@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -617,41 +618,33 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		return nil
 	}
 
-	c := hdf.Cvss{Source: &source}
-
+	in := shared.CvssInput{Source: source}
+	var threatVector string
+	var threatScore *float64
 	if hasV3 {
-		c.Version = detectV3Version(item.CVSS3Vector)
-		bv := item.CVSS3Vector
-		c.BaseVector = &bv
-		c.BaseScore = parseFloatPtr(item.CVSS3BaseScore)
-		if tv := stripVersionPrefix(item.CVSS3TemporalVector); tv != "" {
-			c.ThreatVector = &tv
-		}
-		if ts := parseFloatPtr(item.CVSS3TemporalScore); ts != nil {
-			c.ThreatScore = ts
-			// The v3 temporal score IS the post-threat-enrichment computed score.
-			c.ComputedScore = ts
-		}
+		in.Version = detectV3Version(item.CVSS3Vector)
+		in.BaseVector = item.CVSS3Vector
+		in.BaseScore = parseFloatPtr(item.CVSS3BaseScore)
+		threatVector = stripVersionPrefix(item.CVSS3TemporalVector)
+		threatScore = parseFloatPtr(item.CVSS3TemporalScore)
 	} else {
-		c.Version = hdf.The20
-		bv := stripV2Prefix(item.CVSSVector)
-		c.BaseVector = &bv
-		c.BaseScore = parseFloatPtr(item.CVSSBaseScore)
-		if tv := stripV2Prefix(item.CVSSTemporalVector); tv != "" {
-			c.ThreatVector = &tv
-		}
-		if ts := parseFloatPtr(item.CVSSTemporalScore); ts != nil {
-			c.ThreatScore = ts
-			c.ComputedScore = ts
-		}
+		in.Version = hdf.The20
+		in.BaseVector = stripV2Prefix(item.CVSSVector)
+		in.BaseScore = parseFloatPtr(item.CVSSBaseScore)
+		threatVector = stripV2Prefix(item.CVSSTemporalVector)
+		threatScore = parseFloatPtr(item.CVSSTemporalScore)
 	}
 
-	if c.BaseScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.BaseScore)
-		c.BaseSeverity = &sev
+	c := shared.BuildCvss(in)
+	if threatVector != "" {
+		c.ThreatVector = &threatVector
 	}
-	if c.ComputedScore != nil {
-		sev := shared.CvssSeverityFromScore(*c.ComputedScore)
+	if threatScore != nil {
+		// The temporal score IS the post-threat-enrichment computed score, for
+		// both v2 and v3.
+		c.ThreatScore = threatScore
+		c.ComputedScore = threatScore
+		sev := shared.CvssSeverityFromScore(c.Version, *threatScore)
 		c.ComputedSeverity = &sev
 	}
 
@@ -692,7 +685,9 @@ func parseFloatPtr(s string) *float64 {
 		return nil
 	}
 	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+	// ParseFloat accepts NaN, Inf and Infinity, which no HDF numeric field can
+	// carry: the document would not serialize. Read them as absent.
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
 		return nil
 	}
 	return &f
@@ -739,18 +734,16 @@ func buildCweIDs(item *ReportItem) []string {
 // scan start in YYYY-MM-DD form. Returns nil when neither score nor
 // percentile is present.
 func buildEpss(item *ReportItem, host *ReportHost) *hdf.Epss {
-	scorePtr := parseFloatPtr(item.EPSSScore)
-	pctPtr := parseFloatPtr(item.EPSSPercentile)
-	if scorePtr == nil && pctPtr == nil {
+	score, scoreReported, scoreUsable := epssMember(item.EPSSScore)
+	pct, pctReported, pctUsable := epssMember(item.EPSSPercentile)
+	// Epss requires score, percentile and date together, so a member cannot be
+	// dropped on its own: a reported value that is not a finite number costs the
+	// entry rather than taking a substitute, since 0 is a real probability.
+	if !scoreUsable || !pctUsable {
 		return nil
 	}
-	score := 0.0
-	if scorePtr != nil {
-		score = *scorePtr
-	}
-	pct := 0.0
-	if pctPtr != nil {
-		pct = *pctPtr
+	if !scoreReported && !pctReported {
+		return nil
 	}
 	date := epssDate(host)
 	return &hdf.Epss{
@@ -758,6 +751,19 @@ func buildEpss(item *ReportItem, host *ReportHost) *hdf.Epss {
 		Score:      score,
 		Percentile: pct,
 	}
+}
+
+// epssMember reads one reported EPSS member. An omitted element is not
+// reported; a value that is not a finite number is reported and unusable.
+func epssMember(raw string) (value float64, reported, usable bool) {
+	if raw == "" {
+		return 0, false, true
+	}
+	f, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+		return 0, true, false
+	}
+	return f, true, true
 }
 
 // epssDate returns the host's scan start formatted as YYYY-MM-DD, or

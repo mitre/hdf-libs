@@ -1,0 +1,46 @@
+{
+  "$comment": "Shared table for the legacy converter's InSpec input-type normalization. Read by both converters/legacyhdf-to-hdf/go/converter_test.go and converters/legacyhdf-to-hdf/typescript/converter.test.ts so the two implementations are asserted against ONE definition and cannot drift apart. `type` is the string a legacy exec-json document carries at profiles[].attributes[].options.type; `want` is the HDF Input_Type the converted input must carry, or null when the type has no counterpart in the enum and must therefore be OMITTED rather than emitted invalid. InSpec's seven input types are String, Numeric, Regexp, Array, Hash, Boolean and Any; HDF's Input_Type declares only the first six, so Any is the one real InSpec type with no home here.",
+  "$comment3": "hdfInputTypes is the HDF Input_Type enum's full membership. TypeScript asserts the generated enum still matches this list, and Go asserts its own lowercase lookup map covers exactly it. So adding a member to the schema fails the TypeScript check, updating this list then fails the Go check, and neither language can silently leave a new member unmapped.",
+  "hdfInputTypes": ["String", "Numeric", "Boolean", "Array", "Hash", "Regexp"],
+  "cases": [
+    { "name": "String passes through unchanged", "type": "String", "want": "String" },
+    { "name": "Numeric passes through unchanged", "type": "Numeric", "want": "Numeric" },
+    { "name": "Boolean passes through unchanged", "type": "Boolean", "want": "Boolean" },
+    { "name": "Array passes through unchanged", "type": "Array", "want": "Array" },
+    { "name": "Hash passes through unchanged", "type": "Hash", "want": "Hash" },
+    { "name": "Regexp passes through unchanged", "type": "Regexp", "want": "Regexp" },
+
+    { "name": "lowercase string normalizes", "type": "string", "want": "String" },
+    { "name": "lowercase numeric normalizes", "type": "numeric", "want": "Numeric" },
+    { "name": "lowercase boolean normalizes", "type": "boolean", "want": "Boolean" },
+    { "name": "lowercase array normalizes", "type": "array", "want": "Array" },
+    { "name": "lowercase hash normalizes", "type": "hash", "want": "Hash" },
+    { "name": "lowercase regexp normalizes", "type": "regexp", "want": "Regexp" },
+
+    { "name": "uppercase NUMERIC normalizes", "type": "NUMERIC", "want": "Numeric" },
+    { "name": "uppercase STRING normalizes", "type": "STRING", "want": "String" },
+    { "name": "mixed-case RegExp normalizes", "type": "RegExp", "want": "Regexp" },
+    { "name": "mixed-case bOoLeAn normalizes", "type": "bOoLeAn", "want": "Boolean" },
+
+    { "name": "InSpec's Any has no HDF counterpart, so it is omitted", "type": "Any", "want": null },
+    { "name": "lowercase any is omitted too", "type": "any", "want": null },
+    { "name": "an unrecognized type is omitted, not emitted invalid", "type": "wibble", "want": null },
+    { "name": "an empty type is omitted", "type": "", "want": null },
+    { "name": "a padded type is not recognized, so it is omitted", "type": " numeric ", "want": null },
+    { "name": "Float is not an InSpec input type and is not guessed at", "type": "Float", "want": null }
+  ],
+  "$comment2": "valueCases pins how the input VALUE is sourced. The first of (value, default) whose KEY is present wins, so false/0/\"\" are carried as data; a null there is absence, because Go's Input.Value is interface{} with omitempty and physically cannot emit a null, so carrying one in TypeScript alone would diverge the two languages.",
+  "valueCases": [
+    { "name": "options.value supplies the value", "options": { "value": 7 }, "present": true, "value": 7 },
+    { "name": "options.default supplies the value when value is absent", "options": { "default": 90 }, "present": true, "value": 90 },
+    { "name": "options.value wins when both are present", "options": { "value": 7, "default": 90 }, "present": true, "value": 7 },
+    { "name": "false is data, not absence", "options": { "default": false }, "present": true, "value": false },
+    { "name": "zero is data, not absence", "options": { "default": 0 }, "present": true, "value": 0 },
+    { "name": "an empty string is data, not absence", "options": { "default": "" }, "present": true, "value": "" },
+    { "name": "a false options.value wins over a default", "options": { "value": false, "default": "ignored" }, "present": true, "value": false },
+    { "name": "a null options.value is absence", "options": { "value": null }, "present": false },
+    { "name": "a null options.default is absence", "options": { "default": null }, "present": false },
+    { "name": "a present-but-null value does not fall through to default", "options": { "value": null, "default": 90 }, "present": false },
+    { "name": "neither key present yields no value", "options": {}, "present": false }
+  ]
+}

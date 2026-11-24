@@ -283,11 +283,12 @@ func TestBuildSnykCvss_Branches(t *testing.T) {
 	assert.InDelta(t, 5.5, *scoreOnly[0].BaseScore, 0.001)
 	assert.Nil(t, scoreOnly[0].BaseVector)
 
-	// Vector present, score zero → vector set, no base score
+	// Vector present, score zero → the vector is scored
 	vectorOnly := buildSnykCvss(SnykVuln{CVSSv3: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"})
 	require.Len(t, vectorOnly, 1)
 	assert.Equal(t, hdf.The30, vectorOnly[0].Version)
-	assert.Nil(t, vectorOnly[0].BaseScore)
+	require.NotNil(t, vectorOnly[0].BaseScore, "a vector without a score is scored from the vector")
+	assert.InDelta(t, 9.8, *vectorOnly[0].BaseScore, 0.001)
 	require.NotNil(t, vectorOnly[0].BaseVector)
 }
 

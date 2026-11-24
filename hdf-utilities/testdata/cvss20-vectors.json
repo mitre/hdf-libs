@@ -1,0 +1,28 @@
+{
+  "_comment": "CVSS 2.0 reference vectors for the score-compute engine. Base scores of the capture cases are the values NVD reports in a real Grype 0.121.3 scan of debian:12 (hdf-converters/converters/grype-to-hdf fixtures, debian@sha256:366a6da5...); every case's base and temporal values were also computed by pandatix/go-cvss v0.6.4 (MIT), used as an independent oracle and not as a dependency, and agree. Equations: FIRST CVSS v2 guide section 3.2 (https://www.first.org/cvss/v2/guide). The negative-bracket zero-impact case is the exception to the oracle agreement above: its values were computed by hand from those equations, and its note carries the arithmetic. Shared by go/cvss_test.go and test/cvss.test.ts.",
+  "cases": [
+    {"vector":"AV:L/AC:L/Au:N/C:C/I:N/A:N","base":4.9,"temporal":4.9,"note":"NVD base score for CVE-2007-5686 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:L/Au:N/C:N/I:P/A:N","base":2.1,"temporal":2.1,"note":"NVD base score for CVE-2016-2781 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:L/Au:S/C:N/I:N/A:P","base":1.7,"temporal":1.7,"note":"NVD base score for CVE-2025-6141 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:M/Au:N/C:N/I:P/A:N","base":1.9,"temporal":1.9,"note":"NVD base score for CVE-2017-18018 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:M/Au:N/C:P/I:N/A:N","base":1.9,"temporal":1.9,"note":"NVD base score for CVE-2022-0563 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:M/Au:N/C:P/I:P/A:N","base":3.3,"temporal":3.3,"note":"NVD base score for CVE-2013-4392 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:L/AC:M/Au:S/C:N/I:P/A:N","base":1.5,"temporal":1.5,"note":"NVD base score for CVE-2011-4116 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:N/C:C/I:C/A:C","base":10,"temporal":10,"note":"NVD base score for CVE-2005-2541 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:N/C:N/I:N/A:P","base":5,"temporal":5,"note":"NVD base score for CVE-2018-20796 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:N/C:P/I:N/A:N","base":5,"temporal":5,"note":"NVD base score for CVE-2019-1010024 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:N/C:P/I:P/A:P","base":7.5,"temporal":7.5,"note":"NVD base score for CVE-2019-1010022 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:S/C:N/I:N/A:P","base":4,"temporal":4,"note":"NVD base score for CVE-2010-4756 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:M/Au:N/C:N/I:N/A:P","base":4.3,"temporal":4.3,"note":"NVD base score for CVE-2022-27943 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:M/Au:N/C:N/I:P/A:N","base":4.3,"temporal":4.3,"note":"NVD base score for CVE-2011-3374 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:M/Au:N/C:P/I:N/A:N","base":4.3,"temporal":4.3,"note":"NVD base score for CVE-2011-3389 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:M/Au:N/C:P/I:P/A:P","base":6.8,"temporal":6.8,"note":"NVD base score for CVE-2019-1010023 in a Grype 0.121.3 scan of debian:12"},
+    {"vector":"AV:N/AC:L/Au:N/C:C/I:C/A:C/E:U/RL:OF/RC:UC","base":10,"temporal":6.7,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:N/AC:L/Au:N/C:P/I:P/A:P/E:POC/RL:TF/RC:UR","base":7.5,"temporal":5.8,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:L/AC:H/Au:M/C:P/I:N/A:N/E:F/RL:W/RC:C","base":0.8,"temporal":0.7,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:A/AC:M/Au:S/C:C/I:P/A:N/E:H/RL:U/RC:C","base":5.8,"temporal":5.8,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:N/AC:M/Au:N/C:P/I:N/A:N/E:ND/RL:ND/RC:ND","base":4.3,"temporal":4.3,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:N/AC:L/Au:N/C:N/I:N/A:N","base":0,"temporal":0,"note":"temporal or boundary case; expected values from pandatix/go-cvss v0.6.4"},
+    {"vector":"AV:L/AC:H/Au:M/C:N/I:N/A:N","base":0,"temporal":0,"note":"zero impact with a negative bracket: Exploitability = 20 x 0.395 x 0.35 x 0.45 = 1.24425, so (0.6 x 0) + (0.4 x 1.24425) - 1.5 = -1.0023, and f(Impact) = 0 makes the score +0, not -0; computed by hand from FIRST CVSS v2 guide section 3.2"}
+  ]
+}

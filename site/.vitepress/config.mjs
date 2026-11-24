@@ -74,6 +74,7 @@ const DOCS_ORDER = {
   ],
   contributing: [
     'developer-guide',
+    'siem-integration-testing',
     'main-snapshots',
     // Writing a mapper only comes up while writing a converter, so it follows it.
     'writing-a-converter',

@@ -723,15 +723,16 @@ func TestBuildCvssEntries_MissingMetrics(t *testing.T) {
 			{Version: "3.1", Vector: "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:L/A:L", Metrics: &CVSSMetrics{BaseScore: 3.4}},
 		},
 	}
-	got := buildCvssEntries(vuln)
+	got := buildCvssEntries(vuln, nil)
 	if len(got) != 2 {
 		t.Fatalf("expected 2 cvss entries (neither-score-nor-vector dropped), got %d", len(got))
 	}
-	if got[0].BaseScore != nil {
-		t.Errorf("metrics-less entry must omit baseScore, got %v", *got[0].BaseScore)
+	// A metrics-less entry is scored from its own vector.
+	if got[0].BaseScore == nil || *got[0].BaseScore != 9.8 {
+		t.Errorf("metrics-less entry must take its vector's score 9.8, got %v", got[0].BaseScore)
 	}
-	if got[0].BaseSeverity != nil {
-		t.Errorf("metrics-less entry must omit baseSeverity")
+	if got[0].BaseSeverity == nil || *got[0].BaseSeverity != hdf.CVSSSeverityCritical {
+		t.Errorf("metrics-less entry must take the critical severity of 9.8, got %v", got[0].BaseSeverity)
 	}
 	if got[0].BaseVector == nil {
 		t.Errorf("metrics-less entry must preserve baseVector")
@@ -1153,6 +1154,107 @@ func TestRawSourceRecord_SharedCases(t *testing.T) {
 			}
 			if rec.Content != tc.Content {
 				t.Errorf("content mismatch\n got: %q\nwant: %q", rec.Content, tc.Content)
+			}
+		})
+	}
+}
+
+// A distro-namespace match often carries no CVSS of its own while the NVD
+// record for the same CVE id sits in relatedVulnerabilities. The values below
+// are taken from a real Grype 0.121.3 scan of debian:12.
+const relatedCvssReport = `{
+	"descriptor": {"name": "grype", "version": "0.121.3"},
+	"source": {"target": {"userInput": "debian:12"}},
+	"matches": [
+		{
+			"vulnerability": {"id": "CVE-2018-20796", "namespace": "debian:distro:debian:12", "severity": "Negligible", "cvss": []},
+			"relatedVulnerabilities": [
+				{"id": "CVE-2011-3389", "namespace": "nvd:cpe", "cvss": [
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "2.0", "vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N", "metrics": {"baseScore": 4.3}}
+				]},
+				{"id": "CVE-2018-20796", "namespace": "nvd:cpe", "cvss": [
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "3.0", "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}},
+					{"source": "nvd@nist.gov", "type": "Primary", "version": "2.0", "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P", "metrics": {"baseScore": 5}}
+				]}
+			],
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "dpkg-matcher"}],
+			"artifact": {"name": "libc6", "version": "2.36-9+deb12u13", "type": "deb"}
+		},
+		{
+			"vulnerability": {"id": "CVE-2025-13151", "namespace": "debian:distro:debian:12", "severity": "High", "cvss": [
+				{"source": "134c704f-9b21-4f2e-91b3-4a467353bcc0", "type": "Secondary", "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}}
+			]},
+			"relatedVulnerabilities": [
+				{"id": "CVE-2025-13151", "namespace": "nvd:cpe", "cvss": [
+					{"source": "134c704f-9b21-4f2e-91b3-4a467353bcc0", "type": "Secondary", "version": "3.1", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "metrics": {"baseScore": 7.5}}
+				]}
+			],
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "dpkg-matcher"}],
+			"artifact": {"name": "libtasn1-6", "version": "4.19.0-2+deb12u1", "type": "deb"}
+		}
+	]
+}`
+
+func TestConvertGrype_CvssFallsBackToSameIDRelatedVulnerability(t *testing.T) {
+	results, err := ConvertGrypeToHDF([]byte(relatedCvssReport), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range results.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	type want struct {
+		version hdf.Version
+		vector  string
+		score   float64
+	}
+	cases := []struct {
+		name string
+		id   string
+		want []want
+	}{
+		{
+			name: "empty primary CVSS takes every entry of the same-id related vulnerability, never an alias",
+			id:   "Grype/CVE-2018-20796",
+			want: []want{
+				{hdf.The30, "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", 7.5},
+				{hdf.The20, "AV:N/AC:L/Au:N/C:N/I:N/A:P", 5},
+			},
+		},
+		{
+			name: "non-empty primary CVSS is used alone",
+			id:   "Grype/CVE-2025-13151",
+			want: []want{
+				{hdf.The31, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", 7.5},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req, ok := byID[tc.id]
+			if !ok {
+				t.Fatalf("requirement %s missing", tc.id)
+			}
+			if len(req.Cvss) != len(tc.want) {
+				t.Fatalf("cvss entries = %d, want %d: %+v", len(req.Cvss), len(tc.want), req.Cvss)
+			}
+			cveID := strings.TrimPrefix(tc.id, "Grype/")
+			for i, w := range tc.want {
+				got := req.Cvss[i]
+				if got.Version != w.version {
+					t.Errorf("entry %d version = %q, want %q", i, got.Version, w.version)
+				}
+				if got.BaseVector == nil || *got.BaseVector != w.vector {
+					t.Errorf("entry %d vector = %v, want %q", i, got.BaseVector, w.vector)
+				}
+				if got.BaseScore == nil || *got.BaseScore != w.score {
+					t.Errorf("entry %d score = %v, want %v", i, got.BaseScore, w.score)
+				}
+				if got.Source == nil || *got.Source != cveID {
+					t.Errorf("entry %d source = %v, want %q", i, got.Source, cveID)
+				}
 			}
 		})
 	}

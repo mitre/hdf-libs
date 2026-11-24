@@ -42,15 +42,15 @@ describe('cvssVersionFromString', () => {
 
 describe('cvssSeverityFromScore', () => {
   it('maps scores to the correct band across every threshold', () => {
-    expect(cvssSeverityFromScore(0.0)).toBe(CVSSSeverity.None);
-    expect(cvssSeverityFromScore(0.1)).toBe(CVSSSeverity.Low);
-    expect(cvssSeverityFromScore(3.9)).toBe(CVSSSeverity.Low);
-    expect(cvssSeverityFromScore(4.0)).toBe(CVSSSeverity.Medium);
-    expect(cvssSeverityFromScore(6.9)).toBe(CVSSSeverity.Medium);
-    expect(cvssSeverityFromScore(7.0)).toBe(CVSSSeverity.High);
-    expect(cvssSeverityFromScore(8.9)).toBe(CVSSSeverity.High);
-    expect(cvssSeverityFromScore(9.0)).toBe(CVSSSeverity.Critical);
-    expect(cvssSeverityFromScore(10.0)).toBe(CVSSSeverity.Critical);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 0.0)).toBe(CVSSSeverity.None);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 0.1)).toBe(CVSSSeverity.Low);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 3.9)).toBe(CVSSSeverity.Low);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 4.0)).toBe(CVSSSeverity.Medium);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 6.9)).toBe(CVSSSeverity.Medium);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 7.0)).toBe(CVSSSeverity.High);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 8.9)).toBe(CVSSSeverity.High);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 9.0)).toBe(CVSSSeverity.Critical);
+    expect(cvssSeverityFromScore(CvssVersion.The31, 10.0)).toBe(CVSSSeverity.Critical);
   });
 });
 
@@ -69,11 +69,11 @@ describe('buildCvss', () => {
     expect(cv.source).toBe('CVE-2021-44228');
   });
 
-  it('emits a 0.0 baseScore (with none severity) but omits an empty vector/source', () => {
+  it('emits a 0.0 baseScore (low: CVSS 2.0 has no none rating) but omits an empty vector/source', () => {
     const cv = buildCvss({version: CvssVersion.The20, baseScore: 0.0});
     expect(cv.version).toBe(CvssVersion.The20);
     expect(cv.baseScore).toBe(0.0);
-    expect(cv.baseSeverity).toBe(CVSSSeverity.None);
+    expect(cv.baseSeverity).toBe(CVSSSeverity.Low);
     expect(cv.baseVector).toBeUndefined();
     expect(cv.source).toBeUndefined();
   });

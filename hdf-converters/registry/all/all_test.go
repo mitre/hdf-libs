@@ -63,11 +63,11 @@ var fingerprintsNotResolvedByName = map[string]string{
 // conversion then fails with "no converter found". Counting fingerprints cannot
 // catch that, which is how oscal-component and oscal-sap regressed.
 //
-// It derives names through the same registry.SourceNameFromFingerprintID the CLI
-// resolves through, so the guard cannot pass against a stale copy of that rule.
+// It derives names through the same registry.SourceNameFor the CLI and the MCP
+// resolve through, so the guard cannot pass against a stale copy of that rule.
 func TestFingerprintDerivedNameResolves(t *testing.T) {
 	for _, fp := range registry.GetIngestFingerprints() {
-		name := registry.SourceNameFromFingerprintID(fp.ID)
+		name := registry.SourceNameFor(fp)
 		_, err := convreg.GetConverter(name, "hdf")
 		if reason, exempt := fingerprintsNotResolvedByName[fp.ID]; exempt {
 			assert.Error(t, err, "%s is exempt (%s) but now resolves — drop the exemption", fp.ID, reason)
@@ -152,4 +152,28 @@ func TestEdgeCases(t *testing.T) {
 	assert.Nil(t, registry.DetectConverter([]byte{}))
 	assert.Nil(t, registry.DetectConverter([]byte("plain text garbage")))
 	assert.Nil(t, registry.DetectConverter([]byte("{broken json")))
+}
+
+// The XCCDF/ARF fingerprint matches benchmarks, results and ARF alike, and only
+// the whole document says which; it resolves to the "xccdf" converter, which
+// reads the whole document, so every shape converts without --from.
+func TestXccdfFamilyResolvesToTheAutoDetectConverter(t *testing.T) {
+	for _, fixture := range []string{
+		"benchmark-minimal-1.1.xml",
+		"U_RHEL_9_STIG_V2R9_Manual-xccdf.xml",
+		"CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml",
+		"stig-rhel7.xml",
+		"arf-minimal.xml",
+	} {
+		t.Run(fixture, func(t *testing.T) {
+			data := readFixture(t, "xccdf-results-to-hdf", fixture)
+			result := registry.DetectConverter(data)
+			require.NotNil(t, result)
+			assert.Equal(t, "xccdf", registry.SourceNameFor(result.Fingerprint))
+			conv, err := convreg.GetConverter(registry.SourceNameFor(result.Fingerprint), "hdf")
+			require.NoError(t, err)
+			_, err = conv.Convert(data)
+			require.NoError(t, err)
+		})
+	}
 }

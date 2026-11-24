@@ -30,7 +30,8 @@
     "test:ts": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -p tsconfig.lib.json --noEmit",
+    "type-check:tests": "tsc -p tsconfig.test.json",
     "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-components.oas.json",
     "matrix": "node scripts/openapi-matrix.mjs",
     "matrix:update": "node scripts/openapi-matrix.mjs --update"

@@ -15,40 +15,44 @@ export function generateInSpecYml(
   const meta = options?.metadata;
 
   // Required: name
-  lines.push(`name: ${baseline.name}`);
+  lines.push(`name: ${yamlScalar(baseline.name)}`);
 
   // Optional metadata fields
   if (baseline.title) {
-    lines.push(`title: ${baseline.title}`);
+    lines.push(`title: ${yamlScalar(baseline.title)}`);
   }
 
   const maintainer = meta?.maintainer ?? baseline.maintainer;
   if (maintainer) {
-    lines.push(`maintainer: ${maintainer}`);
+    lines.push(`maintainer: ${yamlScalar(maintainer)}`);
   }
 
   const copyright = meta?.copyright ?? baseline.copyright;
   if (copyright) {
-    lines.push(`copyright: ${copyright}`);
+    lines.push(`copyright: ${yamlScalar(copyright)}`);
   }
 
   const license = meta?.license ?? baseline.license;
   if (license) {
-    lines.push(`license: ${license}`);
+    lines.push(`license: ${yamlScalar(license)}`);
   }
 
   if (baseline.summary) {
-    lines.push(`summary: ${baseline.summary}`);
+    lines.push(`summary: ${yamlScalar(baseline.summary)}`);
   }
 
-  // Version: metadata override takes priority
-  const version = meta?.version ?? baseline.version;
+  // Version: metadata override takes priority; otherwise <version>.<release>.0,
+  // the profileVersion shape SAF CLI writes, so profiles from both tools agree.
+  const release = benchmarkRelease(baseline);
+  const versionWithRelease =
+    baseline.version && release ? `${baseline.version}.${release}.0` : baseline.version;
+  const version = meta?.version ?? versionWithRelease;
   if (version) {
     lines.push(`version: '${version}'`);
   }
 
   // InSpec version constraint
-  const inspecVersion = options?.inspecVersion ?? '~>6.0';
+  const inspecVersion = options?.inspecVersion ?? '>= 7.0';
   lines.push(`inspec_version: '${inspecVersion}'`);
 
   // Supports array
@@ -57,16 +61,16 @@ export function generateInSpecYml(
     for (const support of baseline.supports) {
       const entries: string[] = [];
       if (support.platformName) {
-        entries.push(`  platform-name: ${support.platformName}`);
+        entries.push(`  platform-name: ${yamlScalar(support.platformName)}`);
       }
       if (support.platformFamily) {
-        entries.push(`  platform-family: ${support.platformFamily}`);
+        entries.push(`  platform-family: ${yamlScalar(support.platformFamily)}`);
       }
       if (support.platform) {
-        entries.push(`  platform: ${support.platform}`);
+        entries.push(`  platform: ${yamlScalar(support.platform)}`);
       }
       if (support.release) {
-        entries.push(`  release: ${support.release}`);
+        entries.push(`  release: ${yamlScalar(support.release)}`);
       }
       if (entries.length > 0) {
         lines.push(`- ${entries[0]!.trimStart()}`);
@@ -82,13 +86,13 @@ export function generateInSpecYml(
     lines.push('depends:');
     for (const dep of baseline.depends) {
       const entries: string[] = [];
-      if (dep.name) entries.push(`name: ${dep.name}`);
-      if (dep.git) entries.push(`git: ${dep.git}`);
-      if (dep.url) entries.push(`url: ${dep.url}`);
-      if (dep.path) entries.push(`path: ${dep.path}`);
-      if (dep.branch) entries.push(`branch: ${dep.branch}`);
-      if (dep.compliance) entries.push(`compliance: ${dep.compliance}`);
-      if (dep.supermarket) entries.push(`supermarket: ${dep.supermarket}`);
+      if (dep.name) entries.push(`name: ${yamlScalar(dep.name)}`);
+      if (dep.git) entries.push(`git: ${yamlScalar(dep.git)}`);
+      if (dep.url) entries.push(`url: ${yamlScalar(dep.url)}`);
+      if (dep.path) entries.push(`path: ${yamlScalar(dep.path)}`);
+      if (dep.branch) entries.push(`branch: ${yamlScalar(dep.branch)}`);
+      if (dep.compliance) entries.push(`compliance: ${yamlScalar(dep.compliance)}`);
+      if (dep.supermarket) entries.push(`supermarket: ${yamlScalar(dep.supermarket)}`);
       if (entries.length > 0) {
         lines.push(`- ${entries[0]}`);
         for (let i = 1; i < entries.length; i++) {
@@ -110,6 +114,27 @@ export function generateInSpecYml(
 
   lines.push(''); // trailing newline
   return lines.join('\n');
+}
+
+/**
+ * extensions.passthrough.benchmarkRelease when it is an unsigned integer, else '': DISA
+ * releases are integers, and anything else joined into <version>.<release>.0 fails
+ * InSpec's semver check.
+ */
+function benchmarkRelease(baseline: HDFBaseline): string {
+  const release = baseline.extensions?.passthrough?.['benchmarkRelease'];
+  return typeof release === 'string' && /^\d+$/.test(release) ? release : '';
+}
+
+/**
+ * Quote a scalar YAML would otherwise misread (": " in DISA prose); the trigger set
+ * matches Go's yamlScalar so both generators emit identical bytes.
+ */
+function yamlScalar(s: string): string {
+  if (/[:#{}&*!|>'"`@,\[\]]/.test(s) || s.startsWith('- ')) {
+    return `'${s.replace(/'/g, "''")}'`;
+  }
+  return s;
 }
 
 /** Format a value for inline YAML output. */

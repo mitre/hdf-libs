@@ -452,3 +452,14 @@ func TestConvert_FloatBaseScore(t *testing.T) {
 	assert.Contains(t, string(out), `"base_score":10.0`, "whole-number base_score renders with a decimal")
 	assert.NotContains(t, string(out), `"base_score":10,`, "must not emit an integer-shaped base_score")
 }
+
+func TestConvertBundleValidatesCompleteOCSFEvents(t *testing.T) {
+	schemas := classSchemas(t)
+	for _, name := range []string{"compliance.json", "cve.json", "override.json"} {
+		t.Run(name, func(t *testing.T) {
+			bundle, err := ConvertHDFToOCSFBundle(fixture(t, "input", name), converterVersion)
+			require.NoError(t, err)
+			require.Empty(t, violationsFor(t, schemas, bundle.Events))
+		})
+	}
+}

@@ -1,0 +1,300 @@
+<xccdf:Benchmark xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" xmlns:cpe="http://cpe.mitre.org/language/2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xhtml="http://www.w3.org/1999/xhtml" id="xccdf_mil.disa.stig_benchmark_RHEL_8_STIG" xml:lang="en" style="SCAP_1.2">
+      <xccdf:status date="2023-12-01">accepted</xccdf:status>
+      <xccdf:title>Red Hat Enterprise Linux 8 STIG SCAP Benchmark</xccdf:title>
+      <xccdf:description>This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.</xccdf:description>
+      <xccdf:notice id="terms-of-use" xml:lang="en" />
+      <xccdf:front-matter xml:lang="en" />
+      <xccdf:rear-matter xml:lang="en" />
+      <xccdf:reference href="https://cyber.mil">
+        <dc:publisher>DISA</dc:publisher>
+        <dc:source>STIG.DOD.MIL</dc:source>
+      </xccdf:reference>
+      <xccdf:plain-text id="release-info">Release: 1.12 Benchmark Date: 24 Jan 2024</xccdf:plain-text>
+      <xccdf:plain-text id="generator">3.4.1.22916</xccdf:plain-text>
+      <xccdf:plain-text id="conventionsVersion">1.10.0</xccdf:plain-text>
+      <cpe:platform-specification>
+        <platform xmlns="http://cpe.mitre.org/language/2.0" id="xccdf_mil.disa.stig_platform_RHEL_8-3_or_Lower">
+          <title>RHEL 8.3 or Lower</title>
+          <logical-test negate="false" operator="AND">
+            <check-fact-ref id-ref="oval:mil.disa.stig.linux:def:100008" system="http://oval.mitre.org/XMLSchema/oval-definitions-5" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </logical-test>
+        </platform>
+      </cpe:platform-specification>
+      <xccdf:platform idref="cpe:/o:redhat:enterprise_linux:8" />
+      <xccdf:version update="http://iase.disa.mil/stigs">001.012</xccdf:version>
+      <xccdf:metadata>
+        <dc:creator>DISA</dc:creator>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:contributor>DISA</dc:contributor>
+        <dc:source>STIG.DOD.MIL</dc:source>
+      </xccdf:metadata>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-1_Classified">
+        <xccdf:title>I - Mission Critical Classified</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-1_Public">
+        <xccdf:title>I - Mission Critical Public</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-1_Sensitive">
+        <xccdf:title>I - Mission Critical Sensitive</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-2_Classified">
+        <xccdf:title>II - Mission Support Classified</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-2_Public">
+        <xccdf:title>II - Mission Support Public</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-2_Sensitive">
+        <xccdf:title>II - Mission Support Sensitive</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-3_Classified">
+        <xccdf:title>III - Administrative Classified</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-3_Public">
+        <xccdf:title>III - Administrative Public</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_MAC-3_Sensitive">
+        <xccdf:title>III - Administrative Sensitive</xccdf:title>
+        <xccdf:description>&lt;ProfileDescription&gt;&lt;/ProfileDescription&gt;</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230221" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230223" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230231" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230232" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230241" selected="true" />
+        <xccdf:select idref="xccdf_mil.disa.stig_group_V-230253" selected="true" />
+      </xccdf:Profile>
+      <xccdf:Profile id="xccdf_mil.disa.stig_profile_CAT_I_Only">
+        <xccdf:title>CAT I Only</xccdf:title>
+        <xccdf:description>This profile only includes rules that are Severity Category I.</xccdf:description>
+        <xccdf:select idref="xccdf_mil.disa.stig_rule_SV-230231r877397_rule" selected="false" />
+        <xccdf:select idref="xccdf_mil.disa.stig_rule_SV-230232r877397_rule" selected="false" />
+        <xccdf:select idref="xccdf_mil.disa.stig_rule_SV-230241r627750_rule" selected="false" />
+        <xccdf:select idref="xccdf_mil.disa.stig_rule_SV-230253r627750_rule" selected="false" />
+      </xccdf:Profile>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230221">
+        <xccdf:title>SRG-OS-000480-GPOS-00227</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230221r858734_rule" weight="10.0" severity="high">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010000</xccdf:version>
+          <xccdf:title>RHEL 8 must be a vendor-supported release.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;An operating system release is considered "supported" if the vendor continues to provide security patches for the product. With an unsupported release, it will not be possible to resolve security issues discovered in the system software.
+
+Red Hat offers the Extended Update Support (EUS) add-on to a Red Hat Enterprise Linux subscription, for a fee, for those customers who wish to standardize on a specific minor release for an extended period. The RHEL 8 minor releases eligible for EUS are 8.1, 8.2, 8.4, 8.6, and 8.8. Each RHEL 8 EUS stream is available for 24 months from the availability of the minor release. RHEL 8.10 will be the final minor release overall. For more details on the Red Hat Enterprise Linux Life Cycle  visit https://access.redhat.com/support/policy/updates/errata/.
+Note: The life-cycle time spans and dates are subject to adjustment.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-000366</xccdf:ident>
+          <xccdf:fixtext fixref="F-32865r567410_fix">Upgrade to a supported version of RHEL 8.</xccdf:fixtext>
+          <xccdf:fix id="F-32865r567410_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8os:def:230221" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230223">
+        <xccdf:title>SRG-OS-000033-GPOS-00014</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230223r928585_rule" weight="10.0" severity="high">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010020</xccdf:version>
+          <xccdf:title>RHEL 8 must implement NIST FIPS-validated cryptography for the following: To provision digital signatures, to generate cryptographic hashes, and to protect data requiring data-at-rest protections in accordance with applicable federal laws, Executive Orders, directives, policies, regulations, and standards.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;Use of weak or untested encryption algorithms undermines the purposes of using encryption to protect data. The operating system must implement cryptographic modules adhering to the higher standards approved by the federal government since this provides assurance they have been tested and validated.
+
+RHEL 8 utilizes GRUB 2 as the default bootloader. Note that GRUB 2 command-line parameters are defined in the "kernelopts" variable of the /boot/grub2/grubenv file for all kernel boot entries. The command "fips-mode-setup" modifies the "kernelopts" variable, which in turn updates all kernel boot entries. 
+
+The fips=1 kernel option needs to be added to the kernel command line during system installation so that key generation is done with FIPS-approved algorithms and continuous monitoring tests in place. Users must also ensure the system has plenty of entropy during the installation process by moving the mouse around, or if no mouse is available, ensuring that many keystrokes are typed. The recommended amount of keystrokes is 256 and more. Less than 256 keystrokes may generate a nonunique key.
+
+Satisfies: SRG-OS-000033-GPOS-00014, SRG-OS-000125-GPOS-00065, SRG-OS-000396-GPOS-00176, SRG-OS-000423-GPOS-00187, SRG-OS-000478-GPOS-00223&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-000068</xccdf:ident>
+          <xccdf:fixtext fixref="F-32867r928584_fix">Configure the operating system to implement DOD-approved encryption by following the steps below:
+
+To enable strict FIPS compliance, the fips=1 kernel option needs to be added to the kernel boot parameters during system installation so key generation is done with FIPS-approved algorithms and continuous monitoring tests in place.
+
+Enable FIPS mode after installation (not strict FIPS-compliant) with the following command:
+
+     $ sudo fips-mode-setup --enable
+
+Reboot the system for the changes to take effect.</xccdf:fixtext>
+          <xccdf:fix id="F-32867r928584_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8os:def:230223" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230231">
+        <xccdf:title>SRG-OS-000073-GPOS-00041</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230231r877397_rule" weight="10.0" severity="medium">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010110</xccdf:version>
+          <xccdf:title>RHEL 8 must encrypt all stored passwords with a FIPS 140-2 approved cryptographic hashing algorithm.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.
+
+Unapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised.
+
+FIPS 140-2 is the current standard for validating that mechanisms used to access cryptographic modules utilize authentication that meets DoD requirements.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-000196</xccdf:ident>
+          <xccdf:fixtext fixref="F-32875r567440_fix">Configure RHEL 8 to encrypt all stored passwords. 
+
+Edit/Modify the following line in the "/etc/login.defs" file and set "[ENCRYPT_METHOD]" to SHA512.
+
+ENCRYPT_METHOD SHA512</xccdf:fixtext>
+          <xccdf:fix id="F-32875r567440_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8:def:103" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230232">
+        <xccdf:title>SRG-OS-000073-GPOS-00041</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230232r877397_rule" weight="10.0" severity="medium">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010120</xccdf:version>
+          <xccdf:title>RHEL 8 must employ FIPS 140-2 approved cryptographic hashing algorithms for all stored passwords.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;The system must use a strong hashing algorithm to store the password.
+
+Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-000196</xccdf:ident>
+          <xccdf:fixtext fixref="F-32876r567443_fix">Lock all interactive user accounts not using SHA-512 hashing until the passwords can be regenerated with SHA-512.</xccdf:fixtext>
+          <xccdf:fix id="F-32876r567443_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8:def:104" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230241">
+        <xccdf:title>SRG-OS-000134-GPOS-00068</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230241r627750_rule" weight="10.0" severity="low">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010171</xccdf:version>
+          <xccdf:title>RHEL 8 must have policycoreutils package installed.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;Without verification of the security functions, security functions may not operate correctly and the failure may go unnoticed. Security function is defined as the hardware, software, and/or firmware of the information system responsible for enforcing the system security policy and supporting the isolation of code and data on which the protection is based. Security functionality includes, but is not limited to, establishing system accounts, configuring access authorizations (i.e., permissions, privileges), setting events to be audited, and setting intrusion detection parameters.
+
+Policycoreutils contains the policy core utilities that are required for basic operation of an SELinux-enabled system. These utilities include load_policy to load SELinux policies, setfile to label filesystems, newrole to switch roles, and run_init to run /etc/init.d scripts in the proper context.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-001084</xccdf:ident>
+          <xccdf:fixtext fixref="F-32885r567470_fix">Configure the operating system to have the policycoreutils package installed with the following command:
+
+$ sudo yum install policycoreutils</xccdf:fixtext>
+          <xccdf:fix id="F-32885r567470_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8:def:112" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+      <xccdf:Group id="xccdf_mil.disa.stig_group_V-230253">
+        <xccdf:title>SRG-OS-000480-GPOS-00227</xccdf:title>
+        <xccdf:description>&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</xccdf:description>
+        <xccdf:Rule id="xccdf_mil.disa.stig_rule_SV-230253r627750_rule" weight="10.0" severity="low">
+          <xccdf:version update="http://iase.disa.mil/stigs">RHEL-08-010292</xccdf:version>
+          <xccdf:title>RHEL 8 must ensure the SSH server uses strong entropy.</xccdf:title>
+          <xccdf:description>&lt;VulnDiscussion&gt;The most important characteristic of a random number generator is its randomness, namely its ability to deliver random numbers that are impossible to predict.  Entropy in computer security is associated with the unpredictability of a source of randomness.  The random source with high entropy tends to achieve a uniform distribution of random values.  Random number generators are one of the most important building blocks of cryptosystems.
+
+The SSH implementation in RHEL8 uses the OPENSSL library, which does not use high-entropy sources by default.  By using the SSH_USE_STRONG_RNG environment variable the OPENSSL random generator is reseeded from /dev/random.  This setting is not recommended on computers without the hardware random generator because insufficient entropy causes the connection to be blocked until enough entropy is available.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</xccdf:description>
+          <xccdf:reference>
+            <dc:title>DPMS Target Red Hat Enterprise Linux 8</dc:title>
+            <dc:publisher>DISA</dc:publisher>
+            <dc:type>DPMS Target</dc:type>
+            <dc:subject>Red Hat Enterprise Linux 8</dc:subject>
+            <dc:identifier>2921</dc:identifier>
+          </xccdf:reference>
+          <xccdf:ident system="http://cyber.mil/cci">CCI-000366</xccdf:ident>
+          <xccdf:fixtext fixref="F-32897r567506_fix">Configure the operating system SSH server to use strong entropy.
+
+Add or modify the following line in the "/etc/sysconfig/sshd" file.
+
+SSH_USE_STRONG_RNG=32
+
+The SSH service must be restarted for changes to take effect.</xccdf:fixtext>
+          <xccdf:fix id="F-32897r567506_fix" />
+          <xccdf:check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+            <xccdf:check-content-ref name="oval:mil.disa.stig.rhel8:def:122" href="U_RHEL_8_V1R12_STIG_SCAP_1-2_Benchmark-oval.xml" />
+          </xccdf:check>
+        </xccdf:Rule>
+      </xccdf:Group>
+    </xccdf:Benchmark>

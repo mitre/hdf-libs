@@ -1,0 +1,817 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2021-12-09",
+      "notices": [
+        {
+          "id": "terms-of-use",
+          "text": "BACKGROUND. The Center for Internet Security (\"CIS\") provides benchmarks, scoring tools, software, data, information, suggestions, ideas, and other services and materials from the CIS website or elsewhere (\"Products\") as a public service to Internet users worldwide. Recommendations contained in the Products (\"Recommendations\") result from a consensus-building process that involves many security experts and are generally generic in nature. The Recommendations are intended to provide helpful information to organizations attempting to evaluate or improve the security of their networks, systems, and devices. Proper use of the Recommendations requires careful analysis and adaptation to specific user requirements. The Recommendations are not in any way intended to be a \"quick fix\" for anyone's information security needs. NO REPRESENTATIONS, WARRANTIES, OR COVENANTS. CIS makes no representations, warranties, or covenants whatsoever as to (i) the positive or negative effect of the Products or the Recommendations on the operation or the security of any particular network, computer system, network device, software, hardware, or any component of any of the foregoing or (ii) the accuracy, reliability, timeliness, or completeness of the Products or the Recommendations. CIS is providing the Products and the Recommendations \"as is\" and \"as available\" without representations, warranties, or covenants of any kind. USER AGREEMENTS. By using the Products and/or the Recommendations, I and/or my organization (\"We\") agree and acknowledge that: 1. No network, system, device, hardware, software, or component can be made fully secure; 2. We are using the Products and the Recommendations solely at our own risk; 3. We are not compensating CIS to assume any liabilities associated with our use of the Products or the Recommendations, even risks that result from CIS's negligence or failure to perform; 4. We have the sole responsibility to evaluate the risks and benefits of the Products and Recommendations to us and to adapt the Products and the Recommendations to our particular circumstances and requirements; 5. Neither CIS, nor any CIS Party (defined below) has any responsibility to make any corrections, updates, upgrades, or bug fixes; or to notify us of the need for any such corrections, updates, upgrades, or bug fixes; and 6. Neither CIS nor any CIS Party has or will have any liability to us whatsoever (whether based in contract, tort, strict liability or otherwise) for any direct, indirect, incidental, consequential, or special damages (including without limitation loss of profits, loss of sales, loss of or damage to reputation,loss of customers, loss of software, data, information or emails, loss of privacy, loss of use of any computer or other equipment, business interruption, wasted management or other staff resources or claims of any kind against us from third parties) arising out of or in any way Connected with our use of or our inability to use any of the Products or Recommendations (even if CIS has been advised of the possibility of such damages), including without limitation any liability associated with infringement of intellectual property, defects, bugs, errors, omissions, viruses, worms, backdoors, Trojan horses or other harmful items. GRANT OF LIMITED RIGHTS. CIS hereby grants each user the following rights, but only so long as the user complies with all of the terms of these Agreed Terms of Use: 1. Except to the extent that we may have received additional authorization pursuant to a written agreement with CIS, each user may download, install and use each of the Products on a single computer; 2. Each user may print one or more copies of any Product or any component of a Product that is in a .txt, .pdf, .doc, .mcw, or .rtf format, provided that all such copies are printed in full and are kept intact, including without limitation the text of this Agreed Terms of Use in its entirety. RETENTION OF INTELLECTUAL PROPERTY RIGHTS; LIMITATIONS ON DISTRIBUTION. The Products are protected by copyright and other intellectual property laws and by international treaties. We acknowledge and agree that we are not acquiring title to any intellectual property rights in the Products and that full title and all ownership rights to the Products will remain the exclusive property of CIS or CIS Parties. CIS reserves all rights not expressly granted to users in the preceding section entitled \"Grant of limited rights.\" Subject to the paragraph entitled \"Special Rules\" (which includes a waiver, granted to some classes of CIS Members, of certain limitations in this paragraph), and except as we may have otherwise agreed in a written agreement with CIS, we agree that we will not (i) decompile, disassemble, reverse engineer, or otherwise attempt to derive the source code for any software Product that is not already in the form of source code; (ii) distribute, redistribute, encumber, sell, rent, lease, lend, sublicense, or otherwise transfer or exploit rights to any Product or any component of a Product; (iii) post any Product or any component of a Product on any website, bulletin board, ftp server, newsgroup, or other similar mechanism or device, without regard to whether such mechanism or device is internal or external, (iv) remove or alter trademark, logo, copyright or other proprietary notices, legends, symbols or labels in any Product or any component of a Product; (v) remove these Agreed Terms of Use from, or alter these Agreed Terms of Use as they appear in, any Product or any component of a Product; (vi) use any Product or any component of a Product with any derivative works based directly on a Product or any component of a Product; (vii) use any Product or any component of a Product with other products or applications that are directly and specifically dependent on such Product or any component for any part of their functionality, or (viii) represent or claim a particular level of compliance with a CIS Benchmark, scoring tool or other Product. We will not facilitate or otherwise aid other individuals or entities in any of the activities listed in this paragraph. We hereby agree to indemnify, defend, and hold CIS and all of its officers, directors, members, contributors, employees, authors, developers, agents, affiliates, licensors, information and service providers, software suppliers, hardware suppliers, and all other persons who aided CIS in the creation, development, or maintenance of the Products or Recommendations (\"CIS Parties\") harmless from and against any and all liability, losses, costs, and expenses (including attorneys' fees and court costs) incurred by CIS or any CIS Party in connection with any claim arising out of any violation by us of the preceding paragraph, including without limitation CIS's right, at our expense, to assume the exclusive defense and control of any matter subject to this indemnification, and in such case, we agree to cooperate with CIS in its defense of such claim. We further agree that all CIS Parties are third-party beneficiaries of our undertakings in these Agreed Terms of Use. SPECIAL RULES. CIS has created and will from time to time create, special rules for its members and for other persons and organizations with which CIS has a written contractual relationship. Those special rules will override and supersede these Agreed Terms of Use with respect to the users who are covered by the special rules. CIS hereby grants each CIS Security Consulting or Software Vendor Member and each CIS Organizational User Member, but only so long as such Member remains in good standing with CIS and complies with all of the terms of these Agreed Terms of Use, the right to distribute the Products and Recommendations within such Member's own organization, whether by manual or electronic means. Each such Member acknowledges and agrees that the foregoing grant is subject to the terms of such Member's membership arrangement with CIS and may, therefore, be modified or terminated by CIS at any time. CHOICE OF LAW; JURISDICTION; VENUE. We acknowledge and agree that these Agreed Terms of Use will be governed by and construed in accordance with the laws of the State of Maryland, that any action at law or in equity arising out of or relating to these Agreed Terms of Use shall be filed only in the courts located in the State of Maryland, that we hereby consent and submit to the personal jurisdiction of such courts for the purposes of litigating any such action. If any of these Agreed Terms of Use shall be determined to be unlawful, void, or for any reason unenforceable, then such terms shall be deemed severable and shall not affect the validity and enforceability of any remaining provisions. BY USING THE PRODUCTS I(WE) ACKNOWLEDGE THAT WE HAVE READ THESE AGREED TERMS OF USE IN THEIR ENTIRETY, UNDERSTAND THEM, AND I(WE) AGREE TO BE BOUND BY THEM IN ALL RESPECTS."
+        }
+      ],
+      "platforms": [
+        "cpe:2.3:a:google:chrome:*:*:*:*:*:*:*"
+      ],
+      "profiles": [
+        {
+          "id": "xccdf_org.cisecurity.benchmarks_profile_Level_1_L1_-_CorporateEnterprise_Environment_general_use",
+          "selectedRuleIds": [
+            "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+            "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+            "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+            "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled"
+          ],
+          "title": "Level 1 (L1) - Corporate/Enterprise Environment (general use)"
+        },
+        {
+          "id": "xccdf_org.cisecurity.benchmarks_profile_Level_2_L2_-_High_SecuritySensitive_Data_Environment_limited_functionality",
+          "selectedRuleIds": [
+            "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+            "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+            "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+            "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications",
+            "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+            "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+            "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled",
+            "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled",
+            "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled"
+          ],
+          "title": "Level 2 (L2) - High Security/Sensitive Data Environment (limited functionality)"
+        }
+      ]
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+        "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled"
+      ],
+      "title": "Enforced Defaults"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1.1_HTTP_authentication",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled"
+      ],
+      "title": "HTTP authentication"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher"
+      ],
+      "title": "Safe Browsing settings"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+        "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+        "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled"
+      ],
+      "title": "Attack Surface Reduction"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+        "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications"
+      ],
+      "title": "Content settings"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.3_Extensions",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme"
+      ],
+      "title": "Extensions"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.6_Password_manager",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured"
+      ],
+      "title": "Password manager"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_2.8_Remote_access_Chrome_Remote_Desktop",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled"
+      ],
+      "title": "Remote access (Chrome Remote Desktop)"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_4_Data_Loss_Prevention",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled"
+      ],
+      "title": "Data Loss Prevention"
+    },
+    {
+      "id": "xccdf_org.cisecurity.benchmarks_group_4.1_Allow_or_deny_screen_capture",
+      "requirements": [
+        "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled"
+      ],
+      "title": "Allow or deny screen capture"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "3f49e5c9558c629aa496b39cf2e74615d3dc038bf80c03c85d779d969d84eb88"
+  },
+  "name": "xccdf-org.cisecurity.benchmarks-benchmark-2.1.0-cis-google-chrome-benchmark",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "\n        \nThis setting controls whether Google Cast is able to connect to all IP Addresses or only private IP Addresses as defined in RFC1918 (IPv4) and RFC4193 (IPv6). Note that if the           EnabledMediaRouter\n setting is set to           Disabled\n there is no positive or negative effect for this setting.        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow Google Cast to connect to Cast devices on all IP addresses\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Allowing Google Cast to connect to public IP addresses could allow media and other potentially sensitive data to be exposed to the public. Disabling this setting will ensure that Google Cast is only able to connect to private (ie: internal) IP addresses.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.3_L1_Ensure_Allow_Google_Cast_to_connect_to_Cast_devices_on_all_IP_addresses_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Allow Google Cast to connect to Cast devices on all IP addresses' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting controls whether audio processes in Google Chrome run in a sandbox.\n        \n          NOTE:\n Security software setups within your environment might interfere with the sandbox.        \n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow the audio sandbox to run\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Having audio processes run in a sandbox ensures that if a website misuses audio processes that data may not be manipulated or exfiltrated from the system.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.5_L1_Ensure_Allow_the_audio_sandbox_to_run_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Allow the audio sandbox to run' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Google Chrome offers to download files automatically to the default download directory without prompting.\n        If this setting is enabled, users are always asked where to save each file before downloading.\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559188",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the\nfollowing UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Ask where to save each file before downloading\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Users shall be prevented from the drive-by-downloads threat.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.6_L1_Ensure_Ask_where_to_save_each_file_before_downloading_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Ask where to save each file before downloading' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Chrome allows for processes started while the browser is open to remain running once the browser has been closed. It also allows for background apps and the current browsing session to remain active after the browser has been closed.\n        With this setting Disabled, the browser will close its processes and will stop running background apps.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559187",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Continue running background apps when Google Chrome is closed\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        If this setting is enabled, vulnerable or malicious plugins, apps and processes can continue running even after Chrome has closed.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.7_L1_Ensure_Continue_running_background_apps_when_Google_Chrome_is_closed_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Continue running background apps when Google Chrome is closed' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Google Chrome can use the Google Safe Search API to classify URLs as pornographic or not.\n        \nThe recommended state for this setting is:           Enabled\n with a value of           Filter top level sites (but not embedded iframes) for adult content\n (1)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559198",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Enabled: Do not filter sites for adult content\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Control SafeSites adult content filtering.\n\n            Impact:\n            \n              Users search results will be filtered and content such as adult text, videos and images will not be shown.\n              \n                NOTE:\n Using Googles Safe Search API may leak information which is typed/pasted by mistake into the omnibox, e.g. passwords, internal webservices, folder structures, etc.              \n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.8_L2_Ensure_Control_SafeSites_adult_content_filtering_is_set_to_Enabled_Filter_top_level_sites_but_not_embedded_iframes_for_adult_content_specified",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Control SafeSites adult content filtering' is set to 'Enabled: Filter top level sites (but not embedded iframes) for adult content' specified"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Configuring this setting allows specifying which variations are allowed to be applied in Google Chrome.\nVariations provide a means for Google to offer modifications to Google Chrome without shipping a new version of the browser by selectively enabling or disabling already existing features.\n        \n          \n            Disabled\n (0): Allows all variations to be applied to the browser (also referred to as             VariationsEnabled\n).          \n          \n            CriticalFixesOnly\n (1): Allows only variations considered critical security or stability fixes to be applied to Google Chrome.          \n          \n            VariationsDisabled\n (2), prevent all variations from being applied to the browser. Please note that this mode can potentially prevent the Google Chrome developers from providing critical security fixes in a timely manner and is thus not recommended.          \n        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n        \n          NOTE:\n Google strongly believes there is no added security benefit for turning this to critical fixes as leaving it on increases the stability of the browser.        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n (same as VariationsEnabled):            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Determine the availability of variations\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Google strongly recommends to leave this setting at the default (0 = Enable all variations), so fixes are gradually enabled (or if necessary, rapidly disabled) via the Chrome Variations framework.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.9_L1_Ensure_Determine_the_availability_of_variations_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Determine the availability of variations' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Google Chrome can disable the enforcing of Certificate Transparency requirements for a list of Legacy Certificate Authorities.\n        If this setting is disabled, certificates not properly publicly disclosed as required by Certificate Transparency are untrusted.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559200",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Disable Certificate Transparency enforcement for a list of Legacy Certificate Authorities\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Legacy Certificate Authorities shall follow the Certificate Transparency policy.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.10_L1_Ensure_Disable_Certificate_Transparency_enforcement_for_a_list_of_Legacy_Certificate_Authorities_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Disable Certificate Transparency enforcement for a list of Legacy Certificate Authorities' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Google Chrome's Component Updater updates several components of Google Chrome on a regular basis (applies only to Chrome browser components).\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n        \n          NOTE:\n Updates to any component that does not contain executable code, does not significantly alter the behavior of the browser, or is critical for its security will not be disabled (E.g. certificate revocation lists and Safe Browsing data is updated regardless of this setting). FYI chrome://components lists all components, but not if they are are affected by this settings.        \n        \n          NOTE:\n Google provided the following list of           \"some of the components\"\n controlled by this settings:        \n        \n          Recovery component\n          Pnacl\n          Floc\n          Optimization hints\n          SSL error assistant\n          CRL set\n          Origin trials\n          SW reporter\n          PKI metadata\n        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559191",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Enable component updates in Google Chrome\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Google Chrome Updater shall be used to keep the components bundled to Chrome up-to-date.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.15_L1_Ensure_Enable_component_updates_in_Google_Chrome_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Enable component updates in Google Chrome' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting allows a list of names to be specified that will be exempt from HTTP Strict Transport Security (HSTS) policy checks then potentially upgraded from http:// to https://.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\List of names that will bypass the HSTS policy check\n\n            Impact:\n            \n              None - This is the default behavior.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Allowing hostnames to be exempt from HSTS checks could allow for protocol downgrade attacks and cookie hijackings.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.26_L1_Ensure_List_of_names_that_will_bypass_the_HSTS_policy_check_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'List of names that will bypass the HSTS policy check' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting prevents the display of lookalike URL warnings on the sites listed. These warnings are typically shown on sites that Google Chrome believes might be trying to spoof another site the user is familiar with.\n        \n          \n            Disabled\n (0) or set to an empty list: Warnings may appear on any site the user visits.          \n          \n            Enabled \n (1) and set to one or more domains: No lookalike warnings pages will be shown when the user visits pages on that domain.          \n        \n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:1971117",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Suppress lookalike domain warnings on domains\n\n            Impact:\n            \n              None - This is the default behavior.\n              \n                NOTE:\n The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.              \n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Look-alike domains are intentionally misleading to give users the false impression that they’re interacting with trusted brands, leading to significant reputation damage, financial losses, and data compromise for established enterprises.\n        In addition, this technique is commonly use to host phishing sites, and often lead to account takeover attacks. Users are prompted to enter their credentials on a fake website, and scammers take control of their online accounts with little effort to engage in fraudulent activity.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1_Enforced_Defaults",
+        "gtitle": "Enforced Defaults",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.28_L1_Ensure_Suppress_lookalike_domain_warnings_on_domains_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Suppress lookalike domain warnings on domains' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          This setting controls whether third-party sub-content can open a HTTP Basic Auth dialog and is typically disabled.\n          \nThe recommended state for this setting is:             Disabled\n (0)          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\HTTP authentication\\Cross-origin HTTP Authentication prompts\n\n              Impact:\n              \n                None - This is the default behavior.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          This setting is typically disabled to help combat phishing attempts.\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.1_HTTP_authentication",
+        "gtitle": "HTTP authentication",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.1.1_L1_Ensure_Cross-origin_HTTP_Authentication_prompts_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Cross-origin HTTP Authentication prompts' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          The setting determines the functionality of Safe Browsing.\n          \n            \n              Disabled\n (0): Safe Browsing protection applies to all resources            \n            \n              Enabled\n (1), with a list of 1 or more sites: Means Safe Browsing will trust the domains you designate. It won't check them for dangerous resources such as phishing, malware, or unwanted software.            \n          \n          \nThe recommended state for this setting is:             Disabled\n (0)          \n          \n            NOTE:\n Safe Browsing's download protection service won't check downloads hosted on these domains, and its password protection service won't check for password reuse.          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browsing settings\\Configure the list of domains on which Safe Browsing will not trigger warnings\n\n              Impact:\n              \n                None - This is the default behavior.\n                \n                  NOTE:\n The only real impact is possible user annoyance if the are going to a legitimate site that is falsely considered fraudulent (a rare occurrence). This an be handled by adding the site to the allowlist and/of notifying Google of the false finding.                \n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files.\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+        "gtitle": "Safe Browsing settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.2.1_L1_Ensure_Configure_the_list_of_domains_on_which_Safe_Browsing_will_not_trigger_warnings_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Configure the list of domains on which Safe Browsing will not trigger warnings' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          Control whether Google Chrome's Safe Browsing feature is enabled and the mode it operates in. If you set this setting as mandatory, users cannot change or override the Safe Browsing setting in Google Chrome.\n          If this setting is left not set, Safe Browsing will operate in Standard Protection mode but users can change this setting.\n          \n            \n              No Protection\n (0): Safe Browsing is never active            \n            \n              Standard Protection\n (1): Safe Browsing is active in the standard mode            \n            \n              Enhanced Protection\n (2): Safe Browsing is active in the enhanced mode            \n          \n          \nThe recommended state for this setting is:             Standard Protection\n (1) or higher          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:1971122",
+          "label": "check"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Standard Protection\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Safe Browser settings\\Safe Browsing Protection Level\n\n              Impact:\n              \n                None - This is the default behavior (Standard Protection).\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          Google Safe Browsing will help protect users from a variety of malicious and fraudulent sites, or download dangerous files.\n          \n            NOTE:\n Google recommend using Enhanced Safe Browsing Mode (            2\n). Turning on Enhanced Safe Browsing will substantially increase protection from dangerous websites and downloads, but will share more date with Google.          \n          For more details please refer to the items in the References section below..\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_1.2_Safe_Browsing_settings",
+        "gtitle": "Safe Browsing settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_1.2.2_L1_Ensure_Safe_Browsing_Protection_Level_is_set_to_Enabled_Standard_Protection_or_higher",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Safe Browsing Protection Level' is set to 'Enabled: Standard Protection' or higher"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting controls whether a user is able to proceed to a webpage when an invalid SSL certificate warning has occurred.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow proceeding from the SSL warning page\n\n            Impact:\n            \n              Users will not be able to click past the invalid certificate error to view the website.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Sites protected by SSL should always be recognized as valid in the web browser. Allowing a user to make the decision as to whether what appears to be an invalid certificate could open an organization up to users visiting a site that is otherwise not secure and or malicious in nature.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.10_L2_Ensure_Allow_proceeding_from_the_SSL_warning_page_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow proceeding from the SSL warning page' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting ensures that web search results with Google are performed with SafeSearch set to always active. Disabled means SafeSearch in Google Search is not enforced.\n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Enabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Force Google SafeSearch\n\n            Impact:\n            \n              Users search results will be filtered and content such as adult text, videos and images will not be shown.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Allowing search results to present sites that may have malicious content should be prohibited to help ensure users do not accidentally visit sites that are more prone to malicious content including spyware, adware, and viruses.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.14_L2_Ensure_Force_Google_SafeSearch_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Force Google SafeSearch' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        Google Chrome performs revocation checking for server certificates that successfully validate and are signed by locally-installed CA certificates. If Google Chrome is unable to obtain revocation status information, such certificates will be treated as revoked ('hard-fail').\n        \n          Disabled\n: Google Chrome uses existing online revocation-checking settings.        \n        \nThe recommended state for this setting is:           Enabled\n (1)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559224",
+          "label": "check"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via Group Policy, set the\nfollowing UI path to               Enabled\n:            \n            Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Require online OCSP/CRL checks for local trust anchors\n\n            Impact:\n            \n              A revocation check will be performed for server certificates that successfully validate and are signed by locally-installed CA certificates. if the OCSP server goes down, then this will hard-fail and prevent browsing to those sites.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Certificates shall always be validated.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2_Attack_Surface_Reduction",
+        "gtitle": "Attack Surface Reduction",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.17_L2_Ensure_Require_online_OCSPCRL_checks_for_local_trust_anchors_is_set_to_Enabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Require online OCSP/CRL checks for local trust anchors' is set to 'Enabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          Google Chrome has an API which allows the access to nearby Bluetooth devices from the browser with users consent.\n          \n            \n              Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n (2)            \n            \n              Allow sites to ask the user to grant access to a nearby Bluetooth device\n (3)            \n          \n          \nThe recommended state for this setting is:             Enabled\n with a value of             Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n (2)          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559205",
+          "label": "check"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API\n:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Control use of the Web Bluetooth API\n\n              Impact:\n              \n                If this setting is configured, websites no longer can access nearby Bluetooth device via the API (this includes web cameras, headphones, and other Bluetooth devices) and the user will never be asked.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          A malicious website could exploit a vulnerable Bluetooth device.\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+        "gtitle": "Content settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.2.2_L2_Ensure_Control_use_of_the_Web_Bluetooth_API_is_set_to_Enabled_Do_not_allow_any_site_to_request_access_to_Bluetooth_devices_via_the_Web_Bluetooth_API",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Control use of the Web Bluetooth API' is set to 'Enabled: Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          Google Chrome offers websites to display desktop notifications. These are push messages which are sent from the website operator through Google infrastructure to Chrome.\n          \n            \n              Allow sites to show desktop notifications\n (0)            \n            \n              Do not allow any site to show desktop notifications\n (1)            \n            \n              Ask every time a site wants to show desktop notifications\n (2)            \n          \n          \nThe recommended state for this setting is:             Enabled\n with a value of             Do not allow any site to show desktop notifications\n (1)          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "oval:org.cisecurity.benchmarks:def:559204",
+          "label": "check"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: Do not allow any site to show desktop notifications\n selected from the drop down:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Content Settings\\Default notification setting\n\n              Impact:\n              \n                \nIf this setting is enabled and set to                   Do not allow any site to show desktop notifications\n, notifications will not be displayed for any sites and the user will not be asked.                \n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          If the website operator decides to send messages unencrypted Google's servers may process it as plain text. Furthermore, potentially compromised or faked notifications might trick users into clicking on a malicious link.\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications",
+      "impact": 0.5,
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.2_Content_settings",
+        "gtitle": "Content settings",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.2.4_L2_Ensure_Default_notification_setting_is_set_to_Enabled_Do_not_allow_any_site_to_show_desktop_notifications",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Default notification setting' is set to 'Enabled: Do not allow any site to show desktop notifications'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          Enabling this setting allows you to specify which app/extensions types are allowed.\n          \n            Disabled\n (0): Results in no restrictions on the acceptable extension and app types.          \n          \nThe recommended state for this setting is:             Enabled\n with the values of             extension\n,             hosted_app\n,             platform_app\n,             theme\n          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Enabled: extension, hosted_app, platform_app, theme\n:              \n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Extensions\\Configure allowed app/extension types\n\n              Impact:\n              \n                Extensions already installed will be removed if it's type is denylisted and the extension itself is not allowlisted.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          App or extension types that could be misused or are deprecated shall no longer be installed.\n          \n            NOTE:\n Google has removed support for Chrome Apps which includes the types hosted_app and platform_app. The blog post indicates that these types will require a setting to be enabled for continued use through June 2022.          \n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.3_Extensions",
+        "gtitle": "Extensions",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.3.2_L1_Ensure_Configure_allowed_appextension_types_is_set_to_Enabled_extension_hosted_app_platform_app_theme",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Configure allowed app/extension types' is set to 'Enabled: extension, hosted_app, platform_app, theme'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          Google Chrome has a built in password manager to store passwords for users. Chrome will use local authentication to allow users to gain access to these passwords.\n          \nThe recommended state for this setting is: Explicitly set to             Enabled\n (1) or             Disabled\n (0) based on the organization's needs.          \n          \n            NOTE:\n If you choose to Enable this setting please review             Disable synchronization of data with Google\n and ensure this setting is configured to meet organizational requirements.          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              To establish the recommended configuration via Group Policy, configure the following setting to meet organizational requirements:\n              Computer Configuration\\Polices\\Administrative Templates\\Google\\Google Chrome\\Password manager\\Enable the password manager\n\n              Impact:\n              \n                Organizationally dependent.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          \nThe Google Chrome password manager is             Enabled\n by default and each organization should review and determine if they want to allow users to store passwords in the Browser.  If another solution is used instead of the built in Chrome option then an organization should configure the setting to             Disabled\n.          \n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.6_Password_manager",
+        "gtitle": "Password manager",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.6.1_L1_Ensure_Enable_saving_passwords_to_the_password_manager_is_Explicitly_Configured",
+        "stig_id": ""
+      },
+      "title": "(L1) Ensure 'Enable saving passwords to the password manager' is Explicitly Configured"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          This is a setting for Chrome Remote desktop. If this setting is Disabled, the remote access host service cannot be started or configured to accept incoming connections.\n          \n            \n              Disabled\n (0): Prevent remote access connections to this machine            \n            \n              Enabled\n (1): Allow remote access connections to this machine            \n          \n          \nThe recommended state for this setting is:             Disabled\n (0)          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via Group Policy, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Remote Access\\Allow remote access connections to this machine\n\n              Impact:\n              \n                This setting will disable Chrome Remote Desktop. In general, Chrome Remote Desktop is not used by most businesses, so disabling it should have no impact.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          Only approved remote access systems should be used.\n          \n            NOTE:\n If Chrome Remote Desktop is approved and required for use, then this setting can be ignored.          \n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_2.8_Remote_access_Chrome_Remote_Desktop",
+        "gtitle": "Remote access (Chrome Remote Desktop)",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_2.8.1_Ensure_Allow_remote_access_connections_to_this_machine_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "Ensure 'Allow remote access connections to this machine' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n        This setting allows access to local files by allowing file selection dialogs in Google Chrome.\n        \nThe recommended state for this setting is:           Disabled\n (0)        \n      ",
+          "label": "default"
+        },
+        {
+          "data": "\n        \n          \n            \nTo establish the recommended configuration via GP, set the following UI path to               Disabled\n:            \n            Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow invocation of file selection dialogs\n\n            Impact:\n            \n              If you disable this setting users will no longer be prompted when performing actions which would trigger a file selection dialog. Instead, the file selection dialog box assumes the user clicked \"Cancel\". Being as this is not the default behavior, impact to the user will be noticeable, and the user will not be able to upload and download files.\n            \n          \n        \n      ",
+          "label": "fix"
+        },
+        {
+          "data": "\n        Allowing users to import favorites, uploading files, and savings links could pose potential security risks by allowing data to be uploaded to external sites or by downloading malicious files. By not allowing the file selection dialog the end-user will not be prompted for uploads/downloads preventing data exfiltration and possible system infection by malware.\n      ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_4_Data_Loss_Prevention",
+        "gtitle": "Data Loss Prevention",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_4.4_L2_Ensure_Allow_invocation_of_file_selection_dialogs_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow invocation of file selection dialogs' is set to 'Disabled'"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n          This setting controls whether Google Chrome can use screen-share APIs including web-based online meetings, video, or screen sharing.\n          \nThe recommended state for this setting is:             Disabled\n (0)          \n          \n            NOTE:\n This setting is not considered (and a site will be allowed to use screen-share APIs) if the site matches an origin pattern in any of the following other settings:             ScreenCaptureAllowedByOrigins\n,             WindowCaptureAllowedByOrigins\n,             TabCaptureAllowedByOrigins\n,             SameOriginTabCaptureAllowedByOrigins\n.          \n        ",
+          "label": "default"
+        },
+        {
+          "data": "\n          \n            \n              \nTo establish the recommended configuration via GP, set the following UI path to                 Disabled\n:              \n              Computer Configuration\\Policies\\Administrative Templates\\Google\\Google Chrome\\Allow or deny screen capture\\Allow or deny screen capture\n\n              Impact:\n              \n                Users will be unable to utilize APIs which support web-based meetings (video conferencing screen sharing), video, and screen capture.  This could potentially have disruption to users who may have utilized these abilities in the past.\n              \n            \n          \n        ",
+          "label": "fix"
+        },
+        {
+          "data": "\n          Allowing screen-share APIs within Google Chrome could potentially allow for sensitive data to be shared via screen captures.\n        ",
+          "label": "rationale"
+        }
+      ],
+      "id": "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled",
+      "impact": 0.5,
+      "tags": {
+        "gid": "xccdf_org.cisecurity.benchmarks_group_4.1_Allow_or_deny_screen_capture",
+        "gtitle": "Allow or deny screen capture",
+        "nist": [],
+        "rid": "xccdf_org.cisecurity.benchmarks_rule_4.1.1_L2_Ensure_Allow_or_deny_screen_capture_is_set_to_Disabled",
+        "stig_id": ""
+      },
+      "title": "(L2) Ensure 'Allow or deny screen capture' is set to 'Disabled'"
+    }
+  ],
+  "status": "loaded",
+  "summary": "\n    \nThis document provides prescriptive guidance for establishing a secure configuration posture for Google Chrome Browser. This guide was tested against Google Chrome v96. To obtain the latest version of this guide, please visit       http://benchmarks.cisecurity.org\n. If you have questions, comments, or have identified ways to improve this guide, please write us at       feedback@cisecurity.org\n.    \n    \n      IMPORTANT NOTE:\n This Benchmark assumes the installation of the Goggle Chrome and Google Update ADMX/ADML templates into the Active Directory policy store for the domain(s) of interest. These can be obtained at the following web locations:    \n    \n      \n        Chrome\n      \n      \n        Google Update\n      \n    \n    \n      --- USAGE NOTES ---\n    \n    Some helpful guidance on using this Benchmark.\n    \n      Recommendation Order\n    \n    \nThis Benchmark has high-level sections based on various security related concerns (Enforced Defaults, Privacy, etc.). Within each of these major sections the recommendations are ordered alphabetically, and are grouped in the relevant sub-section where the setting is located in the Google Chrome GPO as shown in the Microsoft Group Policy Management Editor when the GPO is sorted alphabetically by setting (Clicking the       Setting\n column in the Microsoft Group Policy Management Editor right pane view).    \n    \n      Enforced Defaults\n    \n    Many of the settings specified in this Benchmark are also the default settings for the browser. These are specified for the following reasons:\n    \n      The default (Unset) setting may have the same effect as what is prescribed, but they allow the user to change these settings at any time. Actually configuring the browser setting to the prescribed value will prevent the user from changing it.\n      \nMany organizations want the ability to scan systems for Benchmark compliance and configuration drift using CIS (CIS-CAT) or CIS certified third party tools (        CIS Vendor Partners\n). Having these settings specified in the Benchmark allows for this.      \n    \n    \n      Viewing the Resulting \"Policies\" in Chrome\n    \n    \nThis benchmark is designed to use Windows Group Policy on a domain joined system to set the appropriate Windows registry values that pertain to Google Chrome. In the end, these settings change the internal \"policy\" configuration of Google Chrome. These \"Policy\" settings can be viewed in Google Chrome directly by typing       chrome://policy/\n directly into the Google Chrome address box.    \n  ",
+  "title": "CIS Google Chrome Benchmark",
+  "version": "2.1.0"
+}
