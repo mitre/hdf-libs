@@ -92,13 +92,13 @@ func TestConvertXccdfResultsToHDF_MinimalRequirementCount(t *testing.T) {
 // requirement per source <Rule>, counted independently of the converter's own
 // traversal — this is the exact bug parity missed.
 func TestConvertXccdf_BenchmarkAnchor_SSGNestedGroups(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
 	want := shared.CountXMLElements(t, input, "Rule")
 	shared.AssertRequirementCount(t, result, want,
-		"benchmark-ssg-nested-groups.xml: one requirement per <Rule> across all nested groups")
+		"ssg-rhel9-xccdf.xml: one requirement per <Rule> across all nested groups")
 }
 
 // Results mode: one requirement per <rule-result>, counted from the source.
@@ -708,9 +708,9 @@ func TestConvertXccdfResultsToHDF_CheckDescriptionFromOvalName(t *testing.T) {
 
 // The baseline path must emit rationale and warning descriptions when the source
 // Rule carries them, and text-body references (SSG/CIS style) with their href as
-// url. Pinned against benchmark-ssg-nested-groups.
+// url. Pinned against ssg-rhel9-xccdf.
 func TestConvertXccdfBenchmarkToHDF_RationaleWarningAndTextRefs(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
@@ -735,14 +735,33 @@ func TestConvertXccdfBenchmarkToHDF_RationaleWarningAndTextRefs(t *testing.T) {
 	require.Len(t, named.Refs, 1)
 	require.NotNil(t, named.Refs[0].Ref)
 	require.NotNil(t, named.Refs[0].Ref.String, "text-body reference must serialize as a string")
-	assert.Equal(t, "2.1.6", *named.Refs[0].Ref.String)
+	assert.Equal(t, "2.1.5", *named.Refs[0].Ref.String)
 	require.NotNil(t, named.Refs[0].URL)
 	assert.Equal(t, "https://www.cisecurity.org/benchmark/red_hat_linux/", *named.Refs[0].URL)
 }
 
+// An attribute value is XML text too: an escaped ampersand in an href is a
+// plain ampersand in the URL.
+func TestConvertXccdfBenchmarkToHDF_DecodesCharacterReferencesInHref(t *testing.T) {
+	input := loadFixture(t, "ssg-ubuntu2004-xccdf.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "accounts_umask_etc_bashrc")
+	require.NotNil(t, req)
+	var urls []string
+	for _, ref := range req.Refs {
+		if ref.URL != nil {
+			urls = append(urls, *ref.URL)
+			assert.NotContains(t, *ref.URL, "&amp;")
+		}
+	}
+	assert.Contains(t, urls, "https://www.isa.org/templates/one-column.aspx?pageid=111294&productId=116731")
+}
+
 // A rule carrying a <warning> must surface it as a warning description.
 func TestConvertXccdfBenchmarkToHDF_WarningDescription(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
@@ -1398,7 +1417,7 @@ func TestConvertXccdfBenchmarkToHDF_STIGTags(t *testing.T) {
 }
 
 func TestConvertXccdfBenchmark_MultiCheckPrefersOval(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
@@ -1652,17 +1671,18 @@ func findDescription(descriptions []hdf.Description, label string) *hdf.Descript
 // Real SCAP Security Guide content nests Groups and puts many Rules in one
 // Group. Modelling Group.Rule as a single element dropped every rule after the
 // first, and omitting nested Groups dropped whole subtrees — together those
-// silently discarded ~99% of the rules in an ssg-rhel8 benchmark.
+// silently discarded ~99% of the rules in an SSG benchmark.
 //
-// Fixture shape (verbatim from ComplianceAsCode v0.1.81, ssg-rhel8):
+// Fixture shape (ComplianceAsCode v0.1.82, ssg-rhel9, two of its subtrees):
 //
-//	Benchmark
-//	└── Group services
-//	    └── Group dns                      (2 rules directly on the group)
-//	        ├── Group disabling_dns_server (2 rules)
-//	        └── Group dns_server_protection (3 rules)
+//	Group services
+//	└── Group dns                        (2 rules directly on the group)
+//	    └── Group disabling_dns_server   (2 rules)
+//	Group network-firewalld              (3 rules directly on the group)
+//	├── Group firewalld_activation       (2 rules)
+//	└── Group ruleset_modifications      (5 rules)
 func TestConvertXccdfBenchmark_NestedAndMultiRuleGroups(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 
 	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
@@ -1672,7 +1692,7 @@ func TestConvertXccdfBenchmark_NestedAndMultiRuleGroups(t *testing.T) {
 		ids = append(ids, req.ID)
 	}
 
-	assert.Len(t, ids, 7, "every rule at every depth must survive")
+	assert.Len(t, ids, 17, "every rule at every depth must survive")
 
 	// Rules sitting directly on a Group that also has nested Groups.
 	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_package_dnsmasq_removed")
@@ -1681,16 +1701,18 @@ func TestConvertXccdfBenchmark_NestedAndMultiRuleGroups(t *testing.T) {
 	// keep only the last rule of a group.
 	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_package_bind_removed")
 	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_service_named_disabled")
-	// Rules from a sibling nested Group holding 3 rules.
-	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_authenticate_zone_transfers")
-	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_disable_dynamic_updates")
-	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_dns_server_disable_zone_transfers")
+	// Two sibling nested Groups under a Group that has rules of its own.
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_firewalld-backend")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_package_firewalld_installed")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_service_firewalld_enabled")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_configure_firewalld_ports")
+	assert.Contains(t, ids, "xccdf_org.ssgproject.content_rule_set_firewalld_default_zone")
 }
 
 // A Group with N rules is one RequirementGroup listing N requirements, not N
 // RequirementGroups each listing one.
 func TestConvertXccdfBenchmark_GroupCarriesAllItsRules(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 
 	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
@@ -1702,13 +1724,15 @@ func TestConvertXccdfBenchmark_GroupCarriesAllItsRules(t *testing.T) {
 
 	assert.Len(t, byID["xccdf_org.ssgproject.content_group_dns"], 2)
 	assert.Len(t, byID["xccdf_org.ssgproject.content_group_disabling_dns_server"], 2)
-	assert.Len(t, byID["xccdf_org.ssgproject.content_group_dns_server_protection"], 3)
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_network-firewalld"], 3)
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_firewalld_activation"], 2)
+	assert.Len(t, byID["xccdf_org.ssgproject.content_group_ruleset_modifications"], 5)
 
 	total := 0
 	for _, reqs := range byID {
 		total += len(reqs)
 	}
-	assert.Equal(t, 7, total, "no rule may be dropped or duplicated across groups")
+	assert.Equal(t, 17, total, "no rule may be dropped or duplicated across groups")
 }
 
 // flattenGroups is the traversal both bugs came down to.
@@ -1777,7 +1801,7 @@ func TestXccdfSeverityToHDF(t *testing.T) {
 
 // Real SSG rules carry severity="unknown"; the fixture must stay schema-valid.
 func TestConvertXccdfBenchmark_UnknownSeverityOmitted(t *testing.T) {
-	input := loadFixture(t, "benchmark-ssg-nested-groups.xml")
+	input := loadFixture(t, "ssg-rhel9-xccdf.xml")
 
 	baseline, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
@@ -1791,10 +1815,10 @@ func TestConvertXccdfBenchmark_UnknownSeverityOmitted(t *testing.T) {
 		bySeverity[string(*req.Severity)]++
 	}
 
-	// The fixture holds 2 low, 3 medium, and 2 severity="unknown" rules.
-	assert.Equal(t, 2, bySeverity["low"])
-	assert.Equal(t, 3, bySeverity["medium"])
-	assert.Equal(t, 2, bySeverity["<omitted>"], `severity="unknown" must not be emitted`)
+	// The fixture holds 3 low, 13 medium, and 1 severity="unknown" rule.
+	assert.Equal(t, 3, bySeverity["low"])
+	assert.Equal(t, 13, bySeverity["medium"])
+	assert.Equal(t, 1, bySeverity["<omitted>"], `severity="unknown" must not be emitted`)
 	assert.Zero(t, bySeverity["unknown"], "raw XCCDF severity must never reach HDF")
 }
 

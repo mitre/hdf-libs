@@ -47,7 +47,8 @@ retrieval record, so the hash is of the file itself.
 
 | Fixture | Format | Era / date | Source | sha256 | Proves | Read by |
 |---|---|---|---|---|---|---|
-| `benchmark-ssg-nested-groups.xml` | XCCDF 1.2 benchmark | SSG v0.1.81 | ComplianceAsCode build product `ssg-rhel8`, one nested Group subtree (origin not byte-matched) | `fa9bc97c…` (fixture) | Nested Groups with several Rules per Group; `check-content-ref` names with no inline content; SSG id prefixes | coverage, converter, cli |
+| `ssg-rhel9-xccdf.xml` | XCCDF 1.2 benchmark | SSG v0.1.82, 2026-09-01 (draft) | ComplianceAsCode release v0.1.82, the Benchmark component of `ssg-rhel9-ds.xml`; trimmed to 17 rules | `92204daa…` (data stream) | The current SSG shape: `xccdf_org.ssgproject.content_` ids and a ComplianceAsCode `version/@update`; nested Groups with several Rules per Group; `check-content-ref` names with no inline content; `severity="unknown"`; `fix` scripts per system and no `fixtext`; CCE idents; references by `href` for NIST 800-53, SRG, STIG, CIS and other frameworks; `stig` and `cis` profiles | coverage, converter, cli |
+| `ssg-ubuntu2004-xccdf.xml` | XCCDF 1.1 benchmark | SSG 0.1.58, 2021-10-06 (draft) | mitre/ts-inspec-objects test data (a ComplianceAsCode build; the upstream release ships no standalone XCCDF file); trimmed to 7 rules | `67ebac12…` | The older SSG shape: XCCDF 1.1, Benchmark id `UBUNTU_20-04` and bare rule ids with no prefix, identified by its ComplianceAsCode `version/@update`, not by an id prefix; CCI references; no idents; an escaped ampersand in a reference `href` | converter, cli |
 
 ## Results documents and minimal inputs
 

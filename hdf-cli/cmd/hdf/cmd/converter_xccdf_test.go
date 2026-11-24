@@ -222,7 +222,8 @@ func TestConvertCommand_AutoDetectsXccdfBenchmark(t *testing.T) {
 	for _, name := range []string{
 		"benchmark-minimal-1.1.xml",
 		"benchmark-minimal-1.2.xml",
-		"benchmark-ssg-nested-groups.xml",
+		"ssg-rhel9-xccdf.xml",
+		"ssg-ubuntu2004-xccdf.xml",
 		"U_RHEL_9_STIG_V2R9_Manual-xccdf.xml",
 		"CIS_Google_Chrome_Benchmark_v2.1.0-xccdf.xml",
 	} {

@@ -1,6 +1,6 @@
 # xccdf-results-to-hdf fixtures — provenance
 
-Recorded 2026-09-14; DISA and CIS entries added 2026-10-28 and 2026-10-29.
+Recorded 2026-09-14; DISA and CIS entries added 2026-10-28 and 2026-10-29; SCAP Security Guide entries 2026-11-23.
 Correspondence for the original files was established by content hash against
 mitre/heimdall2 at 68d88f3c5 (2026-06-16) and mitre/saf at 8037c390 (2026-06-29).
 Those are the only upstreams checked; a fixture matching neither may still
@@ -26,11 +26,115 @@ No counterpart in either upstream checked. Introduced by this repository in
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
-### `benchmark-ssg-nested-groups.xml`
-SCAP Security Guide content by its own identifiers (`xccdf_org.ssgproject.content_benchmark_RHEL-8`, "Guide to the Secure Configuration of Red Hat Enterprise Linux 8"), and the converter test that uses it states it is verbatim from ComplianceAsCode v0.1.81 `ssg-rhel8`, cut down to one nested Group subtree. SSG benchmarks are build products, not files in the ComplianceAsCode repository, so no byte match against upstream is possible from here; neither heimdall2 nor SAF carries it. Introduced by this repository in
-`fix(xccdf): traverse nested Groups, keep every rule, and map severity (#137)`, a commit that records no source. Origin not established by those searches;
-what the file says about its own producer is in the "Tool and version" section below.
-SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
+### `ssg-rhel9-xccdf.xml`
+Derived from ComplianceAsCode/content release v0.1.82 (published 2026-09-01),
+asset `scap-security-guide-0.1.82.zip`, downloaded 2026-11-20 from
+https://github.com/ComplianceAsCode/content/releases/download/v0.1.82/scap-security-guide-0.1.82.zip.
+SHA-512 of the zip as retrieved, equal to the project's published
+`scap-security-guide-0.1.82.zip.sha512`:
+`1caea418f0a5aaef7025e1655ca45a80942ea87ee832b943644ba6f9991b14a6ac5b35dddcd04b754e1fc8fbdee7b7f394507d24b123e821cca0354dc4e03cfd`
+(SHA-256 `765e84bdce7f9055f9b9c2dd0ee2b713d4255f8eec94eac6d35ea4973c28919c`,
+183,230,482 bytes). The release ships SCAP source data streams only and no
+standalone XCCDF file. The zip member `ssg-rhel9-ds.xml`, SHA-256
+`92204daafbf4f38011671ef034fae4cffb48f708516186710346a9ec702a1f8f`
+(28,867,269 bytes), is a `data-stream-collection`; the converter does not
+read one, so the fixture starts from the bytes of its `xccdf-1.2:Benchmark`
+element, component `scap_org.open-scap_comp_ssg-rhel9-xccdf.xml` (lines
+911-343,272 of the member, 19,693,179 bytes). The `data-stream-collection`
+wrapper, the `component` elements and the other components were dropped
+whole, as for the RHEL 8 V1R12 SCAP fixture; the name follows the component id.
+
+Two things were done to those bytes, and nothing else:
+
+1. The Benchmark uses namespace prefixes that the data stream declares on its
+   root element and not on the Benchmark. The five declarations it uses
+   (`cpe-lang`, `dc`, `html`, `xccdf-1.2`, `xsi`) were copied, values
+   unchanged, from the `data-stream-collection` start tag onto the Benchmark
+   start tag; without them the element is not well-formed on its own. A final
+   newline was added.
+2. Whole elements were deleted, with the white space before each: 1,523 of
+   1,540 Rules, the 170 of 183 Groups left without a Rule, 453 of 454 Values
+   (the one kept, `var_accounts_user_umask`, is the only one a kept Rule
+   names), and the 7,573 Profile entries (`select`, `refine-rule`,
+   `refine-value`, `set-value`) that pointed at a deleted item, and all 358
+   `dc:contributor` elements of the Benchmark `metadata`, which list people by
+   name and email address (one of them a user at a local host name). No text
+   inside a kept element was changed. All 20 Profiles with every entry that
+   points at a kept Rule, Group or Value, the rest of the Benchmark's
+   `metadata` (`dc:publisher`, `dc:creator`, `dc:source`), its 27 `reference`
+   elements and its `platform-specification` are kept.
+
+The 17 Rules kept (236,417 bytes): the whole `services/dns` subtree
+(`package_dnsmasq_removed`, `service_dnsmasq_disabled`, and under
+`disabling_dns_server` `package_bind_removed`, `service_named_disabled`); the
+whole `network-firewalld` subtree (three Rules on the Group, two under
+`firewalld_activation`, five under `ruleset_modifications`);
+`accounts_umask_etc_bashrc`; `partition_for_tmp` and `partition_for_srv`.
+The result validates against the vendored `xccdf_1.2.xsd` (libxml2,
+2026-11-23).
+
+It is here as the SCAP Security Guide shape of 2026: the
+`xccdf_org.ssgproject.content_` id prefix on the Benchmark, Groups, Rules,
+Values and Profiles; `version` `0.1.82` with
+`update="https://github.com/ComplianceAsCode/content/releases/latest"`;
+`style="SCAP_1.2"`; Groups nested four deep with several Rules per Group and
+Rules on a Group that also has child Groups; one Rule with
+`severity="unknown"` (`partition_for_srv`); no `fixtext` anywhere, and `fix`
+scripts for up to seven systems on one Rule (shell, Ansible, Puppet,
+Kickstart, Anaconda, Image Builder blueprint, bootc, Kubernetes across the
+file); a CCE `ident` on every Rule; OVAL, OCIL and SCE checks by
+`check-content-ref` with no inline content; `warning` on two Rules; and
+`reference` elements keyed by `href` for NIST SP 800-53 Revision 4, the
+operating system SRG, the STIG id, the STIG `SV-` and `V-` ids, CIS Controls,
+the CIS benchmark number, and ISO 27001, ISA 62443, COBIT, NIST CSF,
+NERC CIP, PCI DSS, ANSSI, BSI, CCN, CUI (800-171), OSPP, ISM and CJIS.
+`accounts_umask_etc_bashrc` and `partition_for_tmp` are each selected by the
+`stig` profile and by the `cis` profiles and carry every one of the first
+seven. It carries no CCI reference; no Rule in the full RHEL 9 Benchmark of
+this release does. The release archive's `LICENSE` file reads
+`SPDX license identifier: BSD-3-Clause`.
+
+### `ssg-ubuntu2004-xccdf.xml`
+Derived from `mitre/ts-inspec-objects` (https://github.com/mitre/ts-inspec-objects)
+`test/sample_data/xccdf/input/CIS/ssg-ubuntu2004-xccdf.xml`, read 2026-11-23
+at commit `9b260dcfec20e0e1bca33ccce1f010f1ef435627` (the file last changed in
+`f571df72`, 2022-07-20, "Fix newlines"). Git blob
+`f92aa5d19e02182ff0b8d03842a335b3972e0d34`, SHA-256 of the source as read
+`67ebac12e4cab0cc4aadcd85be1dd0d0050f1dd44b581caa112ec253412f44d8`
+(5,128,392 bytes). By its own content it is a ComplianceAsCode build of
+Ubuntu 20.04 at version 0.1.58 (`status` dated 2021-10-06). It is matched to
+that repository and not to an upstream asset: the ComplianceAsCode v0.1.58
+release (`scap-security-guide-0.1.58.zip`, read 2026-11-23, 92,774,253 bytes,
+SHA-256 `fd486973d594639e31638e23015471f09a3e847ab25c600c925c8f0743218923`)
+ships data streams only, and the Benchmark inside its `ssg-ubuntu2004-ds.xml`
+is XCCDF 1.2 with the id prefix, a different rendering of the same content.
+Where ts-inspec-objects obtained this standalone XCCDF 1.1 build was not
+established by this search; that repository files it under `CIS`, which it
+is not.
+
+Whole elements were deleted, with the white space before each, and nothing
+else was changed: 464 of 471 Rules, the 240 of 247 Groups left without a
+Rule, 427 of 428 Values (`var_accounts_user_umask` is kept), and the 2,227
+Profile entries that pointed at a deleted item, and all 222 `dc:contributor`
+elements of the Benchmark `metadata`, which list people by name and email
+address (one of them a user at a local host name). All six Profiles with
+every entry that points at a kept Rule, Group or Value, and the rest of the
+Benchmark's `metadata` (`dc:publisher`, `dc:creator`, `dc:source`) are kept.
+The seven Rules kept (47,297 bytes): the
+whole `user_umask` Group (five Rules), `policy_temp_passwords_immediate_change`
+and `ensure_rtc_utc_configuration`.
+
+It is here as the older SCAP Security Guide shape, which the id prefix does
+not identify: XCCDF 1.1 in the default namespace, `style="SCAP_1.1"`,
+Benchmark id `UBUNTU_20-04`, bare Rule, Group, Value and Profile ids
+(`accounts_umask_etc_bashrc`, `stig`, `cis_level1_server`), and `version`
+`0.1.58` with `update="https://github.com/ComplianceAsCode/content/releases/latest"`
+as the ComplianceAsCode marker identification reads (the `metadata`
+`dc:source` carries the same URL). Its Rules carry no `ident`; eight CCI
+references (`href="https://public.cyber.mil/stigs/cci/"`), at least one on each of the seven Rules;
+two Rules with `severity="unknown"`; `stig`, `standard` and four CIS level
+profiles. The ComplianceAsCode v0.1.58 release archive's `LICENSE` file reads
+`SPDX license identifier: BSD-3-Clause`.
 
 ### `CIS_Google_Chrome_Benchmark_v1.2.0-xccdf.xml`
 Byte-identical to `secutiry_tools/cis-cat-full/benchmarks/CIS_Google_Chrome_Benchmark_v1.2.0-xccdf.xml`
@@ -501,12 +605,12 @@ present. The cells this directory covers, and the ones it does not:
 
 | shape \ dialect | DISA STIG | CIS | SSG |
 |---|---|---|---|
-| benchmark, XCCDF 1.1 | AntiSpyware V4R1 (2009), ISA 2006 V1R2 (2010), Mac OS X 10.5 V1R2 (2011), IE8 V1R19 (2015), SLES 11 System z V1R12 (2018), zOS Health Checker ACF2 V6R3 (2022), MFD V2R15 (2025), RHEL 9 V2R9 (2026) | VMware ESX 3.5 v1.2.0 (2007) | none |
-| benchmark, XCCDF 1.2 | RHEL 8 V1R12 SCAP benchmark component (2024) | Chrome v1.2.0 (2017), SQL Server 2016 v1.3.0 (2021), MongoDB 4 v1.0.0 (2021), Chrome v2.1.0 (2021), Visual Studio Code GPO v1.0.0 (2025) | `benchmark-ssg-nested-groups.xml` |
+| benchmark, XCCDF 1.1 | AntiSpyware V4R1 (2009), ISA 2006 V1R2 (2010), Mac OS X 10.5 V1R2 (2011), IE8 V1R19 (2015), SLES 11 System z V1R12 (2018), zOS Health Checker ACF2 V6R3 (2022), MFD V2R15 (2025), RHEL 9 V2R9 (2026) | VMware ESX 3.5 v1.2.0 (2007) | Ubuntu 20.04, ComplianceAsCode 0.1.58 (2021) |
+| benchmark, XCCDF 1.2 | RHEL 8 V1R12 SCAP benchmark component (2024) | Chrome v1.2.0 (2017), SQL Server 2016 v1.3.0 (2021), MongoDB 4 v1.0.0 (2021), Chrome v2.1.0 (2021), Visual Studio Code GPO v1.0.0 (2025) | RHEL 9, ComplianceAsCode v0.1.82 benchmark component (2026) |
 | benchmark with results | OpenSCAP and SCC runs of RHEL 7/8 (1.2 ids) | none | none |
 | ARF | `arf-minimal.xml` | none | none |
 | standalone `TestResult` | none | none | none |
-| source data stream | none: the RHEL 8 V1R12 fixture is the XCCDF component extracted from one | — | none (SSG `-ds.xml`) |
+| source data stream | none: the RHEL 8 V1R12 fixture is the XCCDF component extracted from one | — | none: the RHEL 9 v0.1.82 fixture is the XCCDF component extracted from one |
 | tailoring | none | none | none |
 
 The empty cells are not covered by any test here; the converter does not
@@ -568,7 +672,8 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `U_SLES_V11_for_System_z_STIG_V1R12_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `SuSe_zLinux` version 1, `plain-text id="release-info"` `Release: 12 Benchmark Date: 26 Oct 2018`, `status` `accepted` dated 2018-09-19. The file carries no generator field, so the tool that produced it is not determinable from file content.
 - `U_RHEL_9_STIG_V2R9_Manual-xccdf.xml` (read 2026-10-28) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `RHEL_9_STIG` version 2, `plain-text id="release-info"` `Release: 9 Benchmark Date: 01 Jul 2026`, `status` `accepted` dated 2026-05-20; producer from `plain-text id="generator"`: `3.5.2` (no tool name given), `plain-text id="conventionsVersion"`: `1.10.0`.
 - `benchmark-stig-cisco-iosxe-router-ndm.xml` — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `Cisco_IOS-XE_Router_NDM_STIG` version 3, `plain-text id="release-info"`: `Release: 7 Benchmark Date: 01 Apr 2026`.
-- `benchmark-ssg-nested-groups.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.ssgproject.content_benchmark_RHEL-8` version 0.1.81.
+- `ssg-rhel9-xccdf.xml` (read 2026-11-23) — XCCDF 1.2 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.ssgproject.content_benchmark_RHEL-9` version 0.1.82, `version/@update` `https://github.com/ComplianceAsCode/content/releases/latest`.
+- `ssg-ubuntu2004-xccdf.xml` (read 2026-11-23) — XCCDF 1.1 Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `UBUNTU_20-04` version 0.1.58, `version/@update` `https://github.com/ComplianceAsCode/content/releases/latest`.
 - `empty.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
 - `minimal.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
 - `stig-rhel7.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.2.17`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_7_STIG` version 003.005.

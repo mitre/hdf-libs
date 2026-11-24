@@ -297,7 +297,7 @@ func TestGenerateInSpecProfile_IDTypeUnknownIsAUsageError(t *testing.T) {
 func TestGenerateInSpecProfile_IDTypeMissingIdentifierFails(t *testing.T) {
 	fixture := filepath.Join("..", "..", "..", "..",
 		"hdf-converters", "converters", "xccdf-results-to-hdf",
-		"fixtures", "input", "benchmark-ssg-nested-groups.xml")
+		"fixtures", "input", "ssg-rhel9-xccdf.xml")
 	outputDir := filepath.Join(t.TempDir(), "profile")
 	_, _, err := executeCommand("generate", "inspec-profile", fixture, outputDir, "--id-type", "version")
 	require.Error(t, err)

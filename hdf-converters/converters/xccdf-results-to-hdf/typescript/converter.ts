@@ -392,7 +392,12 @@ const PROSE_STOP_NODES = ['*.description', '*.rationale', '*.warning', '*.fixtex
 // trimValues would strip each text node before the parser concatenates them, so
 // prose interrupted by an inline element ("The <xhtml:code>x</xhtml:code> package")
 // came back as "Thepackage". Keep the whitespace, which is the source's prose.
-const PARSE_OPTIONS = { trimValues: false, stopNodes: PROSE_STOP_NODES };
+// Attribute values are XML text: decode their character references as Go does.
+const PARSE_OPTIONS = {
+  trimValues: false,
+  stopNodes: PROSE_STOP_NODES,
+  attributeValueProcessor: (_name: string, value: string): string => decodeXmlEntities(value),
+};
 
 export async function convertXccdfResultsToHdf(input: string, converterVersion = '1.0.0'): Promise<string> {
   if (!input || !input.trim()) {

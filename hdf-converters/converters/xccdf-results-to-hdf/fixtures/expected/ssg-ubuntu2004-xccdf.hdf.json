@@ -1,0 +1,858 @@
+{
+  "extensions": {
+    "passthrough": {
+      "benchmarkStatus": "draft",
+      "benchmarkStatusDate": "2021-10-06",
+      "notices": [
+        {
+          "id": "terms_of_use",
+          "text": "Do not attempt to implement any of the settings in this guide without first testing them in a non-operational environment. The creators of this guidance assume no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, reliability, or any other characteristic."
+        }
+      ],
+      "platforms": [
+        "cpe:/o:canonical:ubuntu_linux:20.04::~~lts~~~"
+      ],
+      "profiles": [
+        {
+          "id": "cis_level1_server",
+          "selectedRuleIds": [
+            "accounts_umask_etc_bashrc",
+            "accounts_umask_etc_csh_cshrc",
+            "accounts_umask_etc_login_defs",
+            "accounts_umask_etc_profile",
+            "accounts_umask_interactive_users"
+          ],
+          "title": "CIS Ubuntu 20.04 Level 1 Server Benchmark"
+        },
+        {
+          "id": "cis_level1_workstation",
+          "selectedRuleIds": [
+            "accounts_umask_etc_bashrc",
+            "accounts_umask_etc_csh_cshrc",
+            "accounts_umask_etc_login_defs",
+            "accounts_umask_etc_profile",
+            "accounts_umask_interactive_users"
+          ],
+          "title": "CIS Ubuntu 20.04 Level 1 Workstation Benchmark"
+        },
+        {
+          "id": "cis_level2_server",
+          "selectedRuleIds": [
+            "accounts_umask_etc_bashrc",
+            "accounts_umask_etc_csh_cshrc",
+            "accounts_umask_etc_login_defs",
+            "accounts_umask_etc_profile",
+            "accounts_umask_interactive_users"
+          ],
+          "title": "CIS Ubuntu 20.04 Level 2 Server Benchmark"
+        },
+        {
+          "id": "cis_level2_workstation",
+          "selectedRuleIds": [
+            "accounts_umask_etc_bashrc",
+            "accounts_umask_etc_csh_cshrc",
+            "accounts_umask_etc_login_defs",
+            "accounts_umask_etc_profile",
+            "accounts_umask_interactive_users"
+          ],
+          "title": "CIS Ubuntu 20.04 Level 2 Workstation Benchmark"
+        },
+        {
+          "id": "standard",
+          "selectedRuleIds": [],
+          "title": "Standard System Security Profile for Ubuntu 20.04"
+        },
+        {
+          "id": "stig",
+          "selectedRuleIds": [
+            "accounts_umask_etc_login_defs",
+            "ensure_rtc_utc_configuration",
+            "policy_temp_passwords_immediate_change"
+          ],
+          "title": "Canonical Ubuntu 20.04 LTS Security Technical Implementation Guide (STIG) V1R1"
+        }
+      ]
+    }
+  },
+  "generator": {
+    "name": "xccdf-results-to-hdf",
+    "version": "1.0.0"
+  },
+  "groups": [
+    {
+      "id": "account_expiration",
+      "requirements": [
+        "policy_temp_passwords_immediate_change"
+      ],
+      "title": "Set Account Expiration Parameters"
+    },
+    {
+      "id": "user_umask",
+      "requirements": [
+        "accounts_umask_etc_bashrc",
+        "accounts_umask_etc_csh_cshrc",
+        "accounts_umask_etc_login_defs",
+        "accounts_umask_etc_profile",
+        "accounts_umask_interactive_users"
+      ],
+      "title": "Ensure that Users Have Sensible Umask Values"
+    },
+    {
+      "id": "logging",
+      "requirements": [
+        "ensure_rtc_utc_configuration"
+      ],
+      "title": "Configure Syslog"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "e87fe2189ad150187a5479d32de224e799b3a3cd982c00c195ac8726bb9c8a21"
+  },
+  "name": "ubuntu-20-04",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "Temporary passwords for Ubuntu 20.04 operating system logons must\nrequire an immediate change to a permanent password.\n\nVerify that a policy exists that ensures when a user is created, it is\ncreating using a method that forces a user to change their password upon\ntheir next login.",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-policy_temp_passwords_immediate_change_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "Without providing this capability, an account may be created without a\npassword. Nonrepudiation cannot be guaranteed once an account is created if\na user is not forced to change the temporary password upon initial logon.\n\nTemporary passwords are typically used to allow access when new accounts\nare created or passwords are changed. It is common practice for\nadministrators to create temporary passwords for user accounts that allow\nthe users to log on, yet force them to change the password once they have\nsuccessfully authenticated.",
+          "label": "rationale"
+        }
+      ],
+      "id": "policy_temp_passwords_immediate_change",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "CCI-002041",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "SRG-OS-000380-GPOS-00165",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "UBTU-20-010440",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "account_expiration",
+        "gtitle": "Set Account Expiration Parameters",
+        "nist": [],
+        "rid": "policy_temp_passwords_immediate_change",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Policy Requires Immediate Change of Temporary Passwords"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n              To ensure the default umask for users of the Bash shell is set properly,\nadd or correct the\n              umask\n              setting in\n              /etc/bashrc\n              to read\nas follows:\n              \n                umask\n                \n              \n            ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-accounts_umask_etc_bashrc:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask value influences the permissions assigned to files when they are created.\nA misconfigured umask value could result in files with excessive permissions that can be read or\nwritten to by unauthorized users.",
+          "label": "rationale"
+        }
+      ],
+      "id": "accounts_umask_etc_bashrc",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "BP28(R35)",
+          "url": "http://www.ssi.gouv.fr/administration/bonnes-pratiques/"
+        },
+        {
+          "ref": "5.4.4",
+          "url": "https://www.cisecurity.org/benchmark/ubuntu_linux/"
+        },
+        {
+          "ref": "18",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "CCI-000366",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116731"
+        },
+        {
+          "ref": "A.14.1.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.6.1.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "CIP-003-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-003-3 R5.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-004-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "AC-6(1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-2",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00228",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "accounts_umask_etc_bashrc",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default Bash Umask is Set Correctly"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n              To ensure the default umask for users of the C shell is set properly,\nadd or correct the\n              umask\n              setting in\n              /etc/csh.cshrc\n              to read as follows:\n              \n                umask\n                \n              \n            ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-accounts_umask_etc_csh_cshrc:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask value influences the permissions assigned to files when they are created.\nA misconfigured umask value could result in files with excessive permissions that can be read or\nwritten to by unauthorized users.",
+          "label": "rationale"
+        }
+      ],
+      "id": "accounts_umask_etc_csh_cshrc",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "5.4.4",
+          "url": "https://www.cisecurity.org/benchmark/ubuntu_linux/"
+        },
+        {
+          "ref": "18",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "CCI-000366",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116731"
+        },
+        {
+          "ref": "A.14.1.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.6.1.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "CIP-003-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-003-3 R5.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-004-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "AC-6(1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-2",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00228",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        }
+      ],
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "accounts_umask_etc_csh_cshrc",
+        "severity": "unknown",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default C Shell Umask is Set Correctly"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n              To ensure the default umask controlled by\n              /etc/login.defs\n              is set properly,\nadd or correct the\n              UMASK\n              setting in\n              /etc/login.defs\n              to read as follows:\n              \n                UMASK\n                \n              \n            ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-accounts_umask_etc_login_defs:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask value influences the permissions assigned to files when they are created.\nA misconfigured umask value could result in files with excessive permissions that can be read and\nwritten to by unauthorized users.",
+          "label": "rationale"
+        }
+      ],
+      "id": "accounts_umask_etc_login_defs",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "BP28(R35)",
+          "url": "http://www.ssi.gouv.fr/administration/bonnes-pratiques/"
+        },
+        {
+          "ref": "5.4.4",
+          "url": "https://www.cisecurity.org/benchmark/ubuntu_linux/"
+        },
+        {
+          "ref": "11",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "18",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "3",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "9",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI10.05",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "CCI-000366",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "4.3.4.3.2",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116731"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116731"
+        },
+        {
+          "ref": "SR 7.6",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116785"
+        },
+        {
+          "ref": "A.12.1.2",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.12.5.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.12.6.2",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.1.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.2",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.3",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.4",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.6.1.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "CIP-003-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-003-3 R5.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-004-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "AC-6(1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-1",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "PR.IP-2",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00228",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "UBTU-20-010016",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "accounts_umask_etc_login_defs",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default Umask is Set Correctly in login.defs"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n              To ensure the default umask controlled by\n              /etc/profile\n              is set properly,\nadd or correct the\n              umask\n              setting in\n              /etc/profile\n              to read as follows:\n              \n                umask\n                \n              \n            ",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-accounts_umask_etc_profile:def:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask value influences the permissions assigned to files when they are created.\nA misconfigured umask value could result in files with excessive permissions that can be read or\nwritten to by unauthorized users.",
+          "label": "rationale"
+        }
+      ],
+      "id": "accounts_umask_etc_profile",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "BP28(R35)",
+          "url": "http://www.ssi.gouv.fr/administration/bonnes-pratiques/"
+        },
+        {
+          "ref": "5.4.4",
+          "url": "https://www.cisecurity.org/benchmark/ubuntu_linux/"
+        },
+        {
+          "ref": "18",
+          "url": "https://www.cisecurity.org/controls/"
+        },
+        {
+          "ref": "APO13.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.01",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.02",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "BAI03.03",
+          "url": "https://www.isaca.org/resources/cobit"
+        },
+        {
+          "ref": "CCI-000366",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "4.3.4.3.3",
+          "url": "https://www.isa.org/templates/one-column.aspx?pageid=111294\u0026productId=116731"
+        },
+        {
+          "ref": "A.14.1.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.1",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.14.2.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "A.6.1.5",
+          "url": "https://www.iso.org/standard/54534.html"
+        },
+        {
+          "ref": "CIP-003-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-003-3 R5.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-004-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R2.3",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.1",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "CIP-007-3 R5.1.2",
+          "url": "https://www.nerc.com/pa/Stand/Standard%20Purpose%20Statement%20DL/US_Standard_One-Stop-Shop.xlsx"
+        },
+        {
+          "ref": "AC-6(1)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "CM-6(a)",
+          "url": "http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r4.pdf"
+        },
+        {
+          "ref": "PR.IP-2",
+          "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.04162018.pdf"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00228",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        }
+      ],
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "accounts_umask_etc_profile",
+        "severity": "unknown",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default Umask is Set Correctly in /etc/profile"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "\n              Remove the\n              UMASK\n              environment variable from all interactive users initialization files.\n            ",
+          "label": "default"
+        },
+        {
+          "data": "ocil:ssg-accounts_umask_interactive_users_ocil:questionnaire:1",
+          "label": "check"
+        },
+        {
+          "data": "The umask controls the default access mode assigned to newly created files. A\numask of 077 limits new files to mode 700 or less permissive. Although umask can\nbe represented as a four-digit number, the first digit representing special\naccess modes is typically ignored or required to be 0. This requirement\napplies to the globally configured system defaults and the local interactive\nuser defaults for each account on the system.",
+          "label": "rationale"
+        }
+      ],
+      "id": "accounts_umask_interactive_users",
+      "impact": 0.5,
+      "refs": [
+        {
+          "ref": "5.4.4",
+          "url": "https://www.cisecurity.org/benchmark/ubuntu_linux/"
+        },
+        {
+          "ref": "CCI-000366",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "CCI-001814",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "SRG-OS-000480-GPOS-00227",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        }
+      ],
+      "severity": "medium",
+      "tags": {
+        "check_id": "http://scap.nist.gov/schema/ocil/2",
+        "gid": "user_umask",
+        "gtitle": "Ensure that Users Have Sensible Umask Values",
+        "nist": [],
+        "rid": "accounts_umask_interactive_users",
+        "severity": "medium",
+        "stig_id": ""
+      },
+      "title": "Ensure the Default Umask is Set Correctly For Interactive Users"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Ensure that the system real-time clock (RTC) is set to Coordinated Universal Time (UTC).",
+          "label": "default"
+        },
+        {
+          "data": "oval:ssg-ensure_rtc_utc_configuration:def:1",
+          "label": "check"
+        },
+        {
+          "data": "If time stamps are not consistently applied and there is no common\ntime reference, it is difficult to perform forensic analysis.\n\nTime stamps generated by the operating system include date and time.\nTime is commonly expressed in UTC, a modern continuation of GMT, or\nlocal time with an offset from UTC.",
+          "label": "rationale"
+        }
+      ],
+      "id": "ensure_rtc_utc_configuration",
+      "impact": 0.7,
+      "refs": [
+        {
+          "ref": "CCI-001890",
+          "url": "https://public.cyber.mil/stigs/cci/"
+        },
+        {
+          "ref": "SRG-OS-000359-GPOS-00146",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cgeneral-purpose-os"
+        },
+        {
+          "ref": "UBTU-20-010230",
+          "url": "https://public.cyber.mil/stigs/downloads/?_dl_facet_stigs=operating-systems%2Cunix-linux"
+        }
+      ],
+      "severity": "high",
+      "tags": {
+        "check_id": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+        "gid": "logging",
+        "gtitle": "Configure Syslog",
+        "nist": [],
+        "rid": "ensure_rtc_utc_configuration",
+        "severity": "high",
+        "stig_id": ""
+      },
+      "title": "Ensure real-time clock is set to UTC"
+    }
+  ],
+  "status": "loaded",
+  "summary": "\n    This guide presents a catalog of security-relevant\nconfiguration settings for Ubuntu 20.04. It is a rendering of\ncontent structured in the eXtensible Configuration Checklist Description Format (XCCDF)\nin order to support security automation.  The SCAP content is\nis available in the\n    scap-security-guide\n    package which is developed at\n    https://www.open-scap.org/security-policies/scap-security-guide\n    .\n    \n    \n    Providing system administrators with such guidance informs them how to securely\nconfigure systems under their control in a variety of network roles. Policy\nmakers and baseline creators can use this catalog of settings, with its\nassociated references to higher-level security control catalogs, in order to\nassist them in security baseline creation. This guide is a\n    catalog, not a\nchecklist\n    , and satisfaction of every item is not likely to be possible or\nsensible in many operational scenarios. However, the XCCDF format enables\ngranular selection and adjustment of settings, and their association with OVAL\nand OCIL content provides an automated checking capability. Transformations of\nthis document, and its associated automated checking content, are capable of\nproviding baselines that meet a diverse set of policy objectives. Some example\nXCCDF\n    Profiles\n    , which are selections of items that form checklists and\ncan be used as baselines, are available with this guide. They can be\nprocessed, in an automated fashion, with tools that support the Security\nContent Automation Protocol (SCAP). The DISA STIG, which provides required\nsettings for US Department of Defense systems, is one example of a baseline\ncreated from this guidance.\n  ",
+  "title": "Guide to the Secure Configuration of Ubuntu 20.04",
+  "version": "0.1.58"
+}
