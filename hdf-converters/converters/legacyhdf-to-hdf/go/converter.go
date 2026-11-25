@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -423,17 +424,106 @@ func convertGroup(v1 LegacyGroup) hdf.RequirementGroup {
 }
 
 // convertDependency converts a v1.0 dependency to v2.0 Dependency.
+// uriUnsafe matches one character a URI reference may not carry. '%' is unsafe:
+// only a real %XX escape survives, because a bare '%' is itself illegal.
+var uriUnsafe = regexp.MustCompile(`[^A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]`)
+
+func isHexDigit(r rune) bool {
+	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+var driveLetterPath = regexp.MustCompile(`^[A-Za-z]:/`)
+
+// scpLike matches a `[user@]dotted.host:path` git remote. A single-letter prefix
+// is a Windows drive, not a host, so it cannot match here.
+var scpLike = regexp.MustCompile(`^(?:[A-Za-z0-9_.\-]+@)?[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)+:`)
+
+func percentEncode(value string) string {
+	var b strings.Builder
+	runes := []rune(value)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		// An existing escape is kept; a bare '%' is itself illegal and becomes %25.
+		if r == '%' && i+2 < len(runes) && isHexDigit(runes[i+1]) && isHexDigit(runes[i+2]) {
+			b.WriteRune(r)
+			b.WriteRune(runes[i+1])
+			b.WriteRune(runes[i+2])
+			i += 2
+			continue
+		}
+		if uriUnsafe.MatchString(string(r)) {
+			for _, by := range []byte(string(r)) {
+				fmt.Fprintf(&b, "%%%02X", by)
+			}
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// normalizeDependencyLocation makes a legacy dependency location expressible as
+// the uri-reference HDF declares. Legacy carries it as a plain string and InSpec
+// accepts a local path, but a Windows path is not a URI reference at all: a
+// backslash is not legal in one, nor is a space. A value already expressible —
+// every remote URL, an scp-style remote, any POSIX path — is returned unchanged.
+// normalizeGitLocation adds scp handling to normalizeDependencyLocation. scp
+// syntax is not a URI reference at all: RFC 3986 forbids a colon in a relative
+// reference's first segment, and the two validators disagree about it. ssh:// is
+// git's equivalent and both accept that. Only 'git' gets this: scp syntax is
+// meaningless for 'url', where it would mangle a host:port.
+func normalizeGitLocation(value string) string {
+	if scpLike.MatchString(value) {
+		host, path, _ := strings.Cut(value, ":")
+		return "ssh://" + host + "/" + percentEncode(strings.TrimLeft(path, "/"))
+	}
+	return normalizeDependencyLocation(value)
+}
+
+func normalizeDependencyLocation(value string) string {
+	if !strings.Contains(value, `\`) && !uriUnsafe.MatchString(value) {
+		return value
+	}
+	slashed := strings.ReplaceAll(value, `\`, "/")
+
+	// A drive-letter or UNC path takes the RFC 8089 file form rather than a bare
+	// separator swap: 'C:/x' validates only by reading 'C' as a scheme.
+	switch {
+	case strings.HasPrefix(slashed, "//"):
+		return "file:" + percentEncode(slashed)
+	case driveLetterPath.MatchString(slashed):
+		return "file:///" + percentEncode(slashed)
+	default:
+		return percentEncode(slashed)
+	}
+}
+
 func convertDependency(v1 LegacyDependency) hdf.Dependency {
-	return hdf.Dependency{
+	v2 := hdf.Dependency{
 		Name:        v1.Name,
-		URL:         v1.URL,
 		Path:        v1.Path,
-		Git:         v1.Git,
 		Branch:      v1.Branch,
 		Status:      v1.Status,
 		Supermarket: v1.Supermarket,
 		Compliance:  v1.Compliance,
 	}
+	if v1.URL != nil {
+		v2.URL = hdfutil.Ptr(normalizeDependencyLocation(*v1.URL))
+	}
+	if v1.Git != nil {
+		v2.Git = hdfutil.Ptr(normalizeGitLocation(*v1.Git))
+	}
+
+	// Same one declared slot as at profile level, and the same precedence.
+	// skip_message is an undeclared extra here too, but it folds rather than
+	// drops because the declared slot means the same thing; status_message was
+	// not carried here at all.
+	v2.StatusMessage = v1.StatusMessage
+	if (v1.StatusMessage == nil || *v1.StatusMessage == "") && v1.SkipMessage != nil {
+		v2.StatusMessage = v1.SkipMessage
+	}
+
+	return v2
 }
 
 // convertSupports maps v1 profile `supports` entries (InSpec hyphenated keys)
@@ -499,7 +589,15 @@ func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
 	v2.Copyright = v1.Copyright
 	v2.CopyrightEmail = v1.CopyrightEmail
 	v2.Status = v1.Status
+
+	// Legacy carries two overlapping explanations and the closed baseline declares
+	// one slot: status_message is documented as covering why a profile was skipped,
+	// so it wins when it carries text, and skip_message is the older narrower field
+	// that was dropped here entirely.
 	v2.StatusMessage = v1.StatusMessage
+	if (v1.StatusMessage == nil || *v1.StatusMessage == "") && v1.SkipMessage != nil {
+		v2.StatusMessage = v1.SkipMessage
+	}
 
 	// Transform sha256 to integrity object
 	if v1.SHA256 != nil {

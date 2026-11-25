@@ -1,0 +1,198 @@
+{
+  "$comment": "Profile-level status explanation, read by one test per language. Legacy exec-json carries two overlapping fields \u2014 status_message, documented as \"the reason for the status, example: why it was skipped or failed to load\", and skip_message, \"the reason for skipping if it was skipped\" \u2014 while the closed Evaluated_Baseline declares only statusMessage. TypeScript used to emit skip_message under a skipMessage key the schema forbids, which passed only because the validator did not yet enforce unevaluatedProperties; Go read status_message and dropped skip_message outright. Both now fold into the one declared slot. `profile` is spliced into a legacy profile verbatim, so an absent key is an absent field and an explicit null is the null the legacy schema permits on both fields. `want: null` means statusMessage is omitted.",
+  "cases": [
+    {
+      "name": "status_message wins when it carries text",
+      "profile": {
+        "status_message": "could not load",
+        "skip_message": "skipped because of X"
+      },
+      "want": "could not load"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is absent",
+      "profile": {
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is empty",
+      "profile": {
+        "status_message": "",
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "skip_message fills the slot when status_message is null",
+      "profile": {
+        "status_message": null,
+        "skip_message": "skipped because of X"
+      },
+      "want": "skipped because of X"
+    },
+    {
+      "name": "an empty status_message is kept when nothing else explains the status",
+      "profile": {
+        "status_message": ""
+      },
+      "want": ""
+    },
+    {
+      "name": "a null skip_message is absence, not data",
+      "profile": {
+        "status_message": "loaded fine",
+        "skip_message": null
+      },
+      "want": "loaded fine"
+    },
+    {
+      "name": "both null omits the slot",
+      "profile": {
+        "status_message": null,
+        "skip_message": null
+      },
+      "want": null
+    },
+    {
+      "name": "neither present omits the slot",
+      "profile": {},
+      "want": null
+    }
+  ],
+  "dependencyCases": {
+    "$comment": "Dependency conversion, read by one test per language. `dependency` is spliced into a legacy profile's depends array verbatim and `want` is the whole converted dependency, so a field appearing in neither is asserted absent. The legacy exec-json Dependency declares nine fields and sets additionalProperties: true; HDF's Dependency is a 1:1 camelCase mirror of those nine and is closed. TypeScript therefore produced invalid output three ways \u2014 it emitted tag, commit and version (keys the format does not define and no published sample carries), emitted skip_message under a skipMessage key, and copied every unrecognized key straight into the closed shape. Both languages also dropped status_message, which HDF does declare: it sat in TypeScript's known-field set unmapped, and Go's legacy type had no field for it at all.",
+    "cases": [
+      {
+        "name": "every declared field is carried under its declared name",
+        "dependency": {
+          "name": "dep",
+          "url": "https://example.test/d",
+          "path": "../dep",
+          "git": "https://example.test/d.git",
+          "branch": "main",
+          "status": "loaded",
+          "supermarket": "org/dep",
+          "compliance": "org/dep"
+        },
+        "want": {
+          "name": "dep",
+          "url": "https://example.test/d",
+          "path": "../dep",
+          "git": "https://example.test/d.git",
+          "branch": "main",
+          "status": "loaded",
+          "supermarket": "org/dep",
+          "compliance": "org/dep"
+        }
+      },
+      {
+        "name": "status_message reaches the declared statusMessage",
+        "dependency": {
+          "name": "dep",
+          "status": "failed",
+          "status_message": "could not resolve"
+        },
+        "want": {
+          "name": "dep",
+          "status": "failed",
+          "statusMessage": "could not resolve"
+        }
+      },
+      {
+        "name": "skip_message fills the slot when status_message is absent",
+        "dependency": {
+          "name": "dep",
+          "status": "skipped",
+          "skip_message": "skipped by the run"
+        },
+        "want": {
+          "name": "dep",
+          "status": "skipped",
+          "statusMessage": "skipped by the run"
+        }
+      },
+      {
+        "name": "status_message wins when both carry text",
+        "dependency": {
+          "name": "dep",
+          "status_message": "could not resolve",
+          "skip_message": "skipped by the run"
+        },
+        "want": {
+          "name": "dep",
+          "statusMessage": "could not resolve"
+        }
+      },
+      {
+        "name": "skip_message fills the slot when status_message is empty",
+        "dependency": {
+          "name": "dep",
+          "status_message": "",
+          "skip_message": "skipped by the run"
+        },
+        "want": {
+          "name": "dep",
+          "statusMessage": "skipped by the run"
+        }
+      },
+      {
+        "name": "an empty status_message is kept when nothing else explains the status",
+        "dependency": {
+          "name": "dep",
+          "status_message": ""
+        },
+        "want": {
+          "name": "dep",
+          "statusMessage": ""
+        }
+      },
+      {
+        "name": "a null skip_message is absence, not data",
+        "dependency": {
+          "name": "dep",
+          "status_message": "loaded fine",
+          "skip_message": null
+        },
+        "want": {
+          "name": "dep",
+          "statusMessage": "loaded fine"
+        }
+      },
+      {
+        "name": "tag, commit and version are dropped because the format does not define them",
+        "dependency": {
+          "name": "dep",
+          "tag": "v1.0.0",
+          "commit": "0123456789abcdef",
+          "version": "1.0.0"
+        },
+        "want": {
+          "name": "dep"
+        }
+      },
+      {
+        "name": "an unrecognized key is dropped, not copied into the closed shape",
+        "dependency": {
+          "name": "dep",
+          "inspec_version": "5.22.0"
+        },
+        "want": {
+          "name": "dep"
+        }
+      },
+      {
+        "name": "a null declared field is absence, not data",
+        "dependency": {
+          "name": "dep",
+          "url": null,
+          "status_message": null
+        },
+        "want": {
+          "name": "dep"
+        }
+      }
+    ]
+  }
+}

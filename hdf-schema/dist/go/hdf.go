@@ -236,24 +236,26 @@ type EvaluatedBaseline struct {
 // A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.
 type Dependency struct {
 	// The branch name for a git repo.
-	Branch                                                        *string `json:"branch,omitempty"`
+	Branch                                                                                      *string `json:"branch,omitempty"`
 	// The 'user/profilename' attribute for an Automate server.
-	Compliance                                                    *string `json:"compliance,omitempty"`
-	// The location of the git repo. Example:
-	// 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'.
-	Git                                                           *string `json:"git,omitempty"`
+	Compliance                                                                                  *string `json:"compliance,omitempty"`
+	// The location of the git repo, remote or local. Example:
+	// 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'. A uri-reference rather than a
+	// uri, so a local checkout reached by relative path and an scp-style remote are both valid
+	// — matching this definition's own description and the sibling 'url'.
+	Git                                                                                         *string `json:"git,omitempty"`
 	// The name or assigned alias.
-	Name                                                          *string `json:"name,omitempty"`
+	Name                                                                                        *string `json:"name,omitempty"`
 	// The relative path if the dependency is locally available.
-	Path                                                          *string `json:"path,omitempty"`
+	Path                                                                                        *string `json:"path,omitempty"`
 	// The status. Should be: 'loaded', 'failed', or 'skipped'.
-	Status                                                        *string `json:"status,omitempty"`
+	Status                                                                                      *string `json:"status,omitempty"`
 	// The reason for the status if it is 'failed' or 'skipped'.
-	StatusMessage                                                 *string `json:"statusMessage,omitempty"`
+	StatusMessage                                                                               *string `json:"statusMessage,omitempty"`
 	// The 'user/profilename' attribute for a Supermarket server.
-	Supermarket                                                   *string `json:"supermarket,omitempty"`
+	Supermarket                                                                                 *string `json:"supermarket,omitempty"`
 	// The address of the dependency.
-	URL                                                           *string `json:"url,omitempty"`
+	URL                                                                                         *string `json:"url,omitempty"`
 }
 
 // Carrier for data outside the HDF model: `passthrough` for producer data HDF does not model,

@@ -1,0 +1,173 @@
+{
+  "$comment": "Dependency location normalization, read by one test per language. HDF declares `git` and `url` as format uri-reference, so a value must be expressible as a URI reference; legacy exec-json declares both as plain strings and InSpec accepts a local path. A Windows path is therefore not representable as-is: a backslash is not legal in a URI reference, and neither is a space. `in` is the legacy value and `want` is what the converter must emit. Values that are already expressible are carried byte-identical — only a value that cannot be is rewritten, and then by the smallest change that makes it a URI reference. A drive-letter or UNC path takes the RFC 8089 file: form rather than a bare separator swap, because 'C:/x' validates only by being read as scheme 'C', which is not what the source meant. An scp-style remote is rewritten to its ssh:// equivalent because it is NOT a valid uri-reference: RFC 3986 forbids a colon in the first segment of a relative reference, and the two shipped validators disagree about it — Ajv accepts it, santhosh-tekuri (Go) rejects it with 'first path segment in URL cannot contain colon'. The ssh:// form is the documented equivalent of scp syntax and both validators accept it. Two deliberate limits. The scp rewrite is applied to `git` only, because scp syntax is meaningless for `url` and would turn a host and port into a path segment; and it requires a dotted host, so a single-label host such as 'myserver:profiles/x' is left alone — that value still validates, read as a URI with scheme 'myserver', and over-rewriting a value would corrupt data where under-rewriting only leaves it less precise. Note also that scp syntax resolves its path against the remote user's home while ssh:// resolves from the root, which is the same target on GitHub and GitLab but not necessarily on a self-hosted remote.",
+  "cases": [
+    {
+      "name": "a remote https url is carried unchanged",
+      "field": "git",
+      "in": "https://github.com/mitre/x.git",
+      "want": "https://github.com/mitre/x.git"
+    },
+    {
+      "name": "an ssh url is carried unchanged",
+      "field": "git",
+      "in": "ssh://git@github.com/mitre/x.git",
+      "want": "ssh://git@github.com/mitre/x.git"
+    },
+    {
+      "name": "an scp-style remote becomes its ssh equivalent",
+      "field": "git",
+      "in": "git@github.com:mitre/x.git",
+      "want": "ssh://git@github.com/mitre/x.git"
+    },
+    {
+      "name": "a userless scp-style remote becomes its ssh equivalent",
+      "field": "git",
+      "in": "github.com:mitre/x.git",
+      "want": "ssh://github.com/mitre/x.git"
+    },
+    {
+      "name": "a posix relative path is carried unchanged",
+      "field": "git",
+      "in": "../local-profile",
+      "want": "../local-profile"
+    },
+    {
+      "name": "a posix absolute path is carried unchanged",
+      "field": "git",
+      "in": "/abs/path/to/profile",
+      "want": "/abs/path/to/profile"
+    },
+    {
+      "name": "a bare posix path is carried unchanged",
+      "field": "git",
+      "in": "profiles/x",
+      "want": "profiles/x"
+    },
+    {
+      "name": "a windows relative path has its separators normalized",
+      "field": "git",
+      "in": "..\\profiles\\x",
+      "want": "../profiles/x"
+    },
+    {
+      "name": "a bare windows path has its separators normalized",
+      "field": "git",
+      "in": "profiles\\x",
+      "want": "profiles/x"
+    },
+    {
+      "name": "a windows rooted path has its separators normalized",
+      "field": "git",
+      "in": "\\abs\\path",
+      "want": "/abs/path"
+    },
+    {
+      "name": "a windows drive path takes the file form",
+      "field": "git",
+      "in": "C:\\profiles\\x",
+      "want": "file:///C:/profiles/x"
+    },
+    {
+      "name": "a lowercase windows drive path takes the file form",
+      "field": "git",
+      "in": "d:\\profiles\\x",
+      "want": "file:///d:/profiles/x"
+    },
+    {
+      "name": "a UNC path takes the file form with the host",
+      "field": "git",
+      "in": "\\\\server\\share\\profile",
+      "want": "file://server/share/profile"
+    },
+    {
+      "name": "a space is percent-encoded",
+      "field": "git",
+      "in": "../my profiles/x",
+      "want": "../my%20profiles/x"
+    },
+    {
+      "name": "a windows drive path with a space takes the file form and encodes it",
+      "field": "git",
+      "in": "C:\\Program Files\\x",
+      "want": "file:///C:/Program%20Files/x"
+    },
+    {
+      "name": "an already-encoded value is not double-encoded",
+      "field": "git",
+      "in": "../my%20profiles/x",
+      "want": "../my%20profiles/x"
+    },
+    {
+      "name": "the url field is normalized the same way",
+      "field": "url",
+      "in": "..\\profiles\\x",
+      "want": "../profiles/x"
+    },
+    {
+      "name": "a remote url is carried unchanged",
+      "field": "url",
+      "in": "https://example.test/dep.tar.gz",
+      "want": "https://example.test/dep.tar.gz"
+    },
+    {
+      "name": "a bare percent is itself illegal and is encoded",
+      "field": "git",
+      "in": "../50%discount/x",
+      "want": "../50%25discount/x"
+    },
+    {
+      "name": "a windows path with a bare percent encodes both",
+      "field": "git",
+      "in": "..\\50%off\\x",
+      "want": "../50%25off/x"
+    },
+    {
+      "name": "a non-ascii path is utf-8 percent-encoded",
+      "field": "git",
+      "in": "../profils/café/x",
+      "want": "../profils/caf%C3%A9/x"
+    },
+    {
+      "name": "scp syntax is not applied to url, where it would mangle a host and port",
+      "field": "url",
+      "in": "example.com:8080/dep.tar.gz",
+      "want": "example.com:8080/dep.tar.gz"
+    },
+    {
+      "name": "a windows drive url takes the file form too",
+      "field": "url",
+      "in": "C:\\archives\\dep.tar.gz",
+      "want": "file:///C:/archives/dep.tar.gz"
+    },
+    {
+      "name": "a dotless host is left alone rather than guessed at",
+      "field": "git",
+      "in": "myserver:profiles/x",
+      "want": "myserver:profiles/x"
+    },
+    {
+      "name": "schema example git value 1 is carried unchanged and valid",
+      "field": "git",
+      "in": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
+      "want": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git"
+    },
+    {
+      "name": "schema example git value 2 is carried unchanged and valid",
+      "field": "git",
+      "in": "https://github.com/security-org/windows-2022-stig.git",
+      "want": "https://github.com/security-org/windows-2022-stig.git"
+    },
+    {
+      "name": "schema example git value 3 is carried unchanged and valid",
+      "field": "git",
+      "in": "../forks/rhel-9-stig-baseline",
+      "want": "../forks/rhel-9-stig-baseline"
+    },
+    {
+      "name": "schema example git value 4 is carried unchanged and valid",
+      "field": "git",
+      "in": "ssh://git@github.com/my-org/rhel-9-stig-baseline.git",
+      "want": "ssh://git@github.com/my-org/rhel-9-stig-baseline.git"
+    }
+  ]
+}

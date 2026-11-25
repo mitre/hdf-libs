@@ -103,18 +103,19 @@ type LegacyGroup struct {
 
 // LegacyDependency represents a profile dependency in HDF v1.0 format.
 type LegacyDependency struct {
-	Name        *string `json:"name,omitempty"`
-	URL         *string `json:"url,omitempty"`
-	Path        *string `json:"path,omitempty"`
-	Git         *string `json:"git,omitempty"`
-	Branch      *string `json:"branch,omitempty"`
-	Tag         *string `json:"tag,omitempty"`
-	Commit      *string `json:"commit,omitempty"`
-	Version     *string `json:"version,omitempty"`
-	Supermarket *string `json:"supermarket,omitempty"`
-	Compliance  *string `json:"compliance,omitempty"`
-	Status      *string `json:"status,omitempty"`
-	SkipMessage *string `json:"skip_message,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	URL           *string `json:"url,omitempty"`
+	Path          *string `json:"path,omitempty"`
+	Git           *string `json:"git,omitempty"`
+	Branch        *string `json:"branch,omitempty"`
+	Tag           *string `json:"tag,omitempty"`
+	Commit        *string `json:"commit,omitempty"`
+	Version       *string `json:"version,omitempty"`
+	Supermarket   *string `json:"supermarket,omitempty"`
+	Compliance    *string `json:"compliance,omitempty"`
+	Status        *string `json:"status,omitempty"`
+	StatusMessage *string `json:"status_message,omitempty"`
+	SkipMessage   *string `json:"skip_message,omitempty"`
 }
 
 // LegacyProfile represents a profile in HDF v1.0 format.

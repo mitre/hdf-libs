@@ -607,8 +607,10 @@ func TestConvertDependency_AllFields(t *testing.T) {
 	assert.Equal(t, url, *v2.URL)
 	require.NotNil(t, v2.Path)
 	assert.Equal(t, path, *v2.Path)
+	// The scp-style remote this fixture carries is not a valid uri-reference, so
+	// it is rewritten to the ssh:// form the schema and both validators accept.
 	require.NotNil(t, v2.Git)
-	assert.Equal(t, git, *v2.Git)
+	assert.Equal(t, "ssh://git@github.com/example/repo.git", *v2.Git)
 	require.NotNil(t, v2.Branch)
 	assert.Equal(t, branch, *v2.Branch)
 	require.NotNil(t, v2.Supermarket)
@@ -2043,4 +2045,145 @@ func TestInputTypeMapCoversTheDeclaredEnum(t *testing.T) {
 	sort.Strings(want)
 	sort.Strings(got)
 	assert.Equal(t, want, got, "every declared Input_Type member needs a lowercase lookup entry")
+}
+
+// Twin of the TypeScript 'the legacy profile status explanation folds into one
+// declared slot' block. Legacy carries status_message and skip_message, which
+// overlap, while the closed baseline declares only statusMessage; this read
+// status_message and dropped skip_message outright. The table is shared so the
+// precedence cannot drift between the two languages.
+func TestConvertProfile_StatusExplanationMatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-profile-status-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		Cases []struct {
+			Name    string          `json:"name"`
+			Profile json.RawMessage `json:"profile"`
+			Want    *string         `json:"want"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			// Unmarshalled into the real legacy type, so an explicit null and an
+			// absent key both arrive as a nil pointer, which is what absence is.
+			var v1 LegacyProfile
+			require.NoError(t, json.Unmarshal(tc.Profile, &v1))
+			v1.Name = "p"
+			v1.SHA256 = hdfutil.Ptr("abc")
+			v1.Controls = []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5)}}
+
+			v2 := convertProfile(v1)
+
+			if tc.Want == nil {
+				assert.Nil(t, v2.StatusMessage)
+				return
+			}
+			require.NotNil(t, v2.StatusMessage)
+			assert.Equal(t, *tc.Want, *v2.StatusMessage)
+		})
+	}
+}
+
+// Twin of the TypeScript 'a legacy dependency converts to the declared closed
+// shape' block. HDF's Dependency is a closed 1:1 mirror of the nine fields
+// legacy exec-json declares, while legacy sets additionalProperties: true. This
+// side dropped status_message, which HDF does declare, because the legacy type
+// carried no field for it.
+func TestConvertDependency_MatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-profile-status-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		DependencyCases struct {
+			Cases []struct {
+				Name       string          `json:"name"`
+				Dependency json.RawMessage `json:"dependency"`
+				Want       map[string]any  `json:"want"`
+			} `json:"cases"`
+		} `json:"dependencyCases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.DependencyCases.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.DependencyCases.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			var v1 LegacyDependency
+			require.NoError(t, json.Unmarshal(tc.Dependency, &v1))
+
+			got, err := json.Marshal(convertDependency(v1))
+			require.NoError(t, err)
+			want, err := json.Marshal(tc.Want)
+			require.NoError(t, err)
+			assert.JSONEq(t, string(want), string(got))
+		})
+	}
+}
+
+// Twin of the TypeScript 'a legacy dependency location becomes a usable
+// uri-reference' block. HDF declares git and url as uri-reference while legacy
+// declares plain strings and InSpec accepts a local path, so a Windows path is
+// not expressible as-is; the shared table decides what each value becomes so
+// the two languages cannot rewrite it differently.
+func TestConvertDependency_LocationMatchesSharedTable(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "legacy-dependency-location-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		Cases []struct {
+			Name  string `json:"name"`
+			Field string `json:"field"`
+			In    string `json:"in"`
+			Want  string `json:"want"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			v1 := LegacyDependency{Name: hdfutil.Ptr("dep")}
+			switch tc.Field {
+			case "git":
+				v1.Git = hdfutil.Ptr(tc.In)
+			case "url":
+				v1.URL = hdfutil.Ptr(tc.In)
+			default:
+				t.Fatalf("the table names an unsupported field %q", tc.Field)
+			}
+
+			v2 := convertDependency(v1)
+			var got *string
+			if tc.Field == "git" {
+				got = v2.Git
+			} else {
+				got = v2.URL
+			}
+			require.NotNilf(t, got, "%s must be carried", tc.Field)
+			assert.Equal(t, tc.Want, *got)
+
+			// Format assertion is optional in JSON Schema 2020-12 and this side
+			// validates with santhosh-tekuri while TypeScript uses Ajv, so the
+			// normalized value is checked against the real validator here too
+			// rather than assumed to satisfy the same uri-reference.
+			doc := LegacyHDFResults{
+				Version:    "1.0.0",
+				Platform:   LegacyPlatform{Name: "centos", Release: hdfutil.Ptr("7")},
+				Statistics: LegacyStatistics{Duration: hdfutil.Ptr(0.1)},
+				Profiles: []LegacyProfile{{
+					Name:     "p",
+					SHA256:   hdfutil.Ptr("abc"),
+					Depends:  []LegacyDependency{v1},
+					Controls: []LegacyControl{{ID: "V-1", Impact: hdfutil.Ptr(0.5)}},
+				}},
+			}
+			raw, err := json.Marshal(ConvertLegacyHDF(&doc, "1.0.0"))
+			require.NoError(t, err)
+			v := validators.Validate(raw, validators.TypeResults)
+			assert.Truef(t, v.Valid, "normalized %s=%q must validate: %s", tc.Field, tc.Want, v.Error())
+		})
+	}
 }

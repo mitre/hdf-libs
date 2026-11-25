@@ -595,13 +595,17 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(dep.path).toBe('/path/to/profile');
       expect(dep.git).toBe('https://github.com/test/profile.git');
       expect(dep.branch).toBe('main');
-      expect(dep.tag).toBe('v1.0.0');
-      expect(dep.commit).toBe('abc123');
-      expect(dep.version).toBe('1.0.0');
       expect(dep.supermarket).toBe('test/profile');
       expect(dep.compliance).toEqual({ name: 'compliance' });
       expect(dep.status).toBe('loaded');
-      expect(dep.skipMessage).toBe('Skipped');
+      // tag, commit and version are not part of the legacy format and HDF's
+      // Dependency is closed, so they are dropped rather than emitted; the
+      // overlapping skip_message folds into the declared statusMessage.
+      expect(dep).not.toHaveProperty('tag');
+      expect(dep).not.toHaveProperty('commit');
+      expect(dep).not.toHaveProperty('version');
+      expect(dep).not.toHaveProperty('skipMessage');
+      expect(dep.statusMessage).toBe('Skipped');
     });
 
     it('should convert profile/baseline with all optional fields', () => {
@@ -646,6 +650,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.status).toBe('loaded');
       expect(baseline.integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');
+      // status_message carries text, so it holds the one declared slot and the
+      // overlapping skip_message folds away; the closed baseline forbids the
+      // skipMessage key this used to assert.
       expect(baseline.statusMessage).toBe('Status message');
       expect(baseline).not.toHaveProperty('skipMessage');
     });
@@ -714,7 +721,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.baselines[0].groups![0]).toHaveProperty('custom_group_field', 'custom');
     });
 
-    it('should preserve unknown fields in dependencies', () => {
+    it('should drop unknown fields in dependencies (closed v2 shape)', () => {
       const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -730,7 +737,11 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       };
 
       const v2 = convertLegacyHdf(v1);
-      expect(v2.baselines[0].depends![0]).toHaveProperty('custom_dep_field', 'custom');
+      // Dependency is as closed as the baseline below it. This used to copy any
+      // unrecognized key straight through, which could only ever produce a
+      // document the validator rejects.
+      expect(v2.baselines[0].depends![0]).not.toHaveProperty('custom_dep_field');
+      expect(v2.baselines[0].depends![0]).toEqual({ name: 'dep' });
     });
 
     it('should drop unknown fields in profiles/baselines (closed v2 shape)', () => {
@@ -2238,6 +2249,8 @@ describe('a legacy null is omitted, not copied through', () => {
     expect(baseline.title).toBe('t');
     expect(baseline.summary).toBe('s');
     expect(baseline.status).toBe('loaded');
+    // skip_message folds into the one declared slot, which status_message holds
+    // here; the closed baseline has no skipMessage key for it to land in.
     expect(baseline.statusMessage).toBe('sm');
     expect(baseline).not.toHaveProperty('skipMessage');
     expect(baseline.parentBaseline).toBe('pp');
@@ -2496,4 +2509,160 @@ describe('a null is absence everywhere the legacy schema permits one', () => {
     expect(JSON.stringify(out)).not.toContain(':null');
     expectValidResults(out);
   });
+});
+
+// ── Profile status explanation, pinned by a shared table ──────────────────
+// Legacy carries status_message and skip_message, which overlap, while the
+// closed baseline declares only statusMessage. TypeScript emitted skip_message
+// under a skipMessage key the schema forbids and Go dropped it outright, so one
+// table decides the precedence for both languages.
+describe('the legacy profile status explanation folds into one declared slot', () => {
+  const STATUS_CASES = (JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'legacy-profile-status-cases.json'), 'utf-8'),
+  ) as {cases: {name: string; profile: Record<string, unknown>; want: string | null}[]}).cases;
+
+  function baselineFrom(profileFields: Record<string, unknown>): Record<string, unknown> {
+    const doc = {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics: {duration: 0.1},
+      profiles: [{
+        name: 'p',
+        sha256: 'abc',
+        supports: [],
+        attributes: [],
+        groups: [],
+        ...profileFields,
+        controls: [{
+          id: 'V-1',
+          title: 't',
+          impact: 0.5,
+          tags: {},
+          refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.valid ? '' : legacy.getErrorMessage()).toBe(true);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    expectValidResults(out);
+    return out.baselines[0] as unknown as Record<string, unknown>;
+  }
+
+  it('has a populated table', () => {
+    expect(STATUS_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of STATUS_CASES) {
+    it(tc.name, () => {
+      const baseline = baselineFrom(tc.profile);
+      if (tc.want === null) {
+        expect(baseline).not.toHaveProperty('statusMessage');
+      } else {
+        expect(baseline.statusMessage).toBe(tc.want);
+      }
+      expect(baseline).not.toHaveProperty('skipMessage');
+    });
+  }
+});
+
+// ── Dependency conversion, pinned by the same shared table ───────────────
+// HDF's Dependency is a closed 1:1 mirror of the nine fields legacy declares,
+// while legacy sets additionalProperties: true. TypeScript emitted
+// tag/commit/version and skip_message and copied every unrecognized key into
+// the closed shape; both languages dropped the statusMessage HDF declares.
+describe('a legacy dependency converts to the declared closed shape', () => {
+  const DEP_CASES = (JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'legacy-profile-status-cases.json'), 'utf-8'),
+  ) as {dependencyCases: {cases: {name: string; dependency: Record<string, unknown>; want: Record<string, unknown>}[]}})
+    .dependencyCases.cases;
+
+  function dependencyFrom(dep: Record<string, unknown>): Record<string, unknown> {
+    const doc = {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics: {duration: 0.1},
+      profiles: [{
+        name: 'p',
+        sha256: 'abc',
+        supports: [],
+        attributes: [],
+        groups: [],
+        depends: [dep],
+        controls: [{
+          id: 'V-1',
+          title: 't',
+          impact: 0.5,
+          tags: {},
+          refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.valid ? '' : legacy.getErrorMessage()).toBe(true);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    expectValidResults(out);
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    const depends = baseline.depends as Record<string, unknown>[];
+    expect(depends).toHaveLength(1);
+    return depends[0]!;
+  }
+
+  it('has a populated table', () => {
+    expect(DEP_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of DEP_CASES) {
+    it(tc.name, () => {
+      expect(dependencyFrom(tc.dependency)).toEqual(tc.want);
+    });
+  }
+});
+
+// ── Dependency location normalization, pinned by a shared table ──────────
+// HDF declares git and url as uri-reference; legacy declares plain strings and
+// InSpec accepts a local path. A Windows path is not expressible as a URI
+// reference at all, so it is rewritten by the smallest change that makes it
+// one, and anything already expressible is carried byte-identical.
+describe('a legacy dependency location becomes a usable uri-reference', () => {
+  const LOCATION_CASES = (JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'legacy-dependency-location-cases.json'), 'utf-8'),
+  ) as {cases: {name: string; field: string; in: string; want: string}[]}).cases;
+
+  function locationFrom(field: string, value: string): unknown {
+    const doc = {
+      version: '1.0.0',
+      platform: {name: 'centos', release: '7'},
+      statistics: {duration: 0.1},
+      profiles: [{
+        name: 'p', sha256: 'abc', supports: [], attributes: [], groups: [],
+        depends: [{name: 'dep', [field]: value}],
+        controls: [{
+          id: 'V-1', title: 't', impact: 0.5, tags: {}, refs: [],
+          source_location: {ref: 'controls/V-1.rb', line: 1},
+          results: [{status: 'passed', code_desc: 'c', start_time: '2026-01-02T03:04:05Z'}],
+        }],
+      }],
+    };
+    const legacy = validateLegacyV2(doc);
+    expect(legacy.valid, legacy.valid ? '' : legacy.getErrorMessage()).toBe(true);
+    const out = convertLegacyHdf(doc as unknown as LegacyHDFResults) as unknown as HDFV2Results;
+    expectValidResults(out);
+    const baseline = out.baselines[0] as unknown as Record<string, unknown>;
+    return (baseline.depends as Record<string, unknown>[])[0]![field];
+  }
+
+  it('has a populated table', () => {
+    expect(LOCATION_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of LOCATION_CASES) {
+    it(tc.name, () => {
+      expect(locationFrom(tc.field, tc.in)).toBe(tc.want);
+    });
+  }
 });

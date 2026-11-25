@@ -278,8 +278,8 @@
         },
         "git": {
           "type": "string",
-          "format": "uri",
-          "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+          "format": "uri-reference",
+          "description": "The location of the git repo, remote or local. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'. A uri-reference rather than a uri, so a local checkout reached by relative path and an scp-style remote are both valid — matching this definition's own description and the sibling 'url'."
         },
         "supermarket": {
           "type": "string",
@@ -314,8 +314,21 @@
           "name": "chef-supermarket-baseline",
           "supermarket": "dev-sec/linux-baseline",
           "status": "loaded"
+        },
+        {
+          "name": "local-fork-baseline",
+          "git": "../forks/rhel-9-stig-baseline",
+          "branch": "main",
+          "status": "loaded"
+        },
+        {
+          "name": "scp-remote-baseline",
+          "git": "ssh://git@github.com/my-org/rhel-9-stig-baseline.git",
+          "branch": "main",
+          "status": "loaded"
         }
       ],
+      "$comment": "Examples, in order: 1) a remote git dependency pinned to a branch; 2) a dependency resolved from a sibling directory through 'path'; 3) a dependency that failed to clone, carrying the reason in 'statusMessage'; 4) a Chef Supermarket dependency; 5) a git dependency held locally and reached by relative path, which is why 'git' is a uri-reference rather than a uri; 6) an ssh remote, the form an scp-style address normalizes to — scp syntax itself is not a valid uri-reference, because RFC 3986 forbids a colon in a relative reference's first segment.",
       "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
       "title": "Dependency"
     },
