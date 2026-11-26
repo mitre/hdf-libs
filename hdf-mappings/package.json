@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-mappings",
-  "version": "3.8.0",
+  "version": "3.9.0-next.45846038678.1",
   "description": "CCI/NIST/CIS/CMMC security framework mappings for HDF",
   "publishConfig": {
     "access": "public"
