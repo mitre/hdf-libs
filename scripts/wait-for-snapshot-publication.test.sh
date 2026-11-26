@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
-# Pins wait-for-snapshot-publication.sh offline, with a fake curl on PATH: a
-# snapshot served at once passes with every registry URL asked once and before
-# any proxy URL; an unserved package times out without the proxy ever being
-# asked; an unserved module times out naming its path; a package served on the
-# second poll is asked twice; an uppercase module path is refused up front; and
-# bad arguments are usage errors.
+# Pins wait-for-snapshot-publication.sh offline, with a fake curl on PATH:
+# unserved npm tarballs and Go proxy .info URLs are polled concurrently within
+# one shared loop under one bound; already-served items are asked once and
+# omitted from waiting progress and timeout diagnostics; an unserved package
+# or module (or both) times out with the four-part message; late responses and
+# curl failures (000) retry within the bound; an uppercase module path is
+# refused up front; and bad arguments are usage errors.
 
 set -uo pipefail
 
@@ -139,18 +140,19 @@ report "all served: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; grep -qF "served: 3 npm packages and 2 Go modules at $VERSION after " "$out" || ok=1
 report "all served: prints the success line" "$ok" "$(cat "$out")"
 ok=0; grep -qF "npm 3/3 served" "$out" && grep -qF "go 2/2 served" "$out" || ok=1
-report "all served: reports each phase complete" "$ok" "$(cat "$out")"
-ok=0; [ "$(line_of last "$REGISTRY")" -lt "$(line_of first "$PROXY")" ] || ok=1
-report "all served: every registry URL is asked before any proxy URL" "$ok"
+report "all served: reports both npm and go complete" "$ok" "$(cat "$out")"
 ok=0
 for pkg in hdf-a hdf-b hdf-c; do [ "$(asked "$(npm_url "$pkg")")" -eq 1 ] || ok=1; done
 report "all served: each registry URL is asked exactly once" "$ok" "$(cat "$log")"
+ok=0
+for mod in "$CLI" "$SCHEMA"; do [ "$(asked "$(go_url "$mod")")" -eq 1 ] || ok=1; done
+report "all served: each proxy URL is asked exactly once" "$ok" "$(cat "$log")"
 ok=0; grep -qF -- '--max-time 30' "$log" || ok=1
 report "curl is invoked with --max-time" "$ok" "$(head -n 1 "$log")"
 ok=0; grep -qF -- "--silent --output /dev/null --write-out %{http_code} --max-time 30 $(npm_url hdf-a)" "$log" || ok=1
 report "curl is invoked with the contracted argv" "$ok" "$(head -n 1 "$log")"
 
-# --- 2. a package never served: the proxy is never asked --------------------
+# --- 2. a package never served: served modules finish and are omitted from timeout ---
 
 begin npm-missing
 answer "$(npm_url hdf-a)" 200
@@ -159,12 +161,16 @@ answer "$(go_url "$CLI")" 200
 answer "$(go_url "$SCHEMA")" 200
 run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved package: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
-ok=0; timeout_message 6 "@mitre/hdf-b $CLI $SCHEMA" || ok=1
-report "unserved package: the four-part message names it" "$ok" "$(cat "$err")"
-ok=0; grep -qF "npm 2/3 served, 1 waiting: hdf-b" "$out" || ok=1
-report "unserved package: progress names the waiting package" "$ok" "$(cat "$out")"
-ok=0; [ "$(asked "$PROXY")" -eq 0 ] || ok=1
-report "unserved package: no proxy URL is asked" "$ok" "$(grep -F "$PROXY" "$log")"
+ok=0; timeout_message 6 "@mitre/hdf-b" || ok=1
+report "unserved package: the four-part message names only hdf-b" "$ok" "$(cat "$err")"
+ok=0; grep -qF "npm 2/3 served, 1 waiting: hdf-b" "$out" && grep -qF "go 2/2 served" "$out" || ok=1
+report "unserved package: progress names the waiting package and reports go complete" "$ok" "$(cat "$out")"
+ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 1 ] && [ "$(asked "$(go_url "$SCHEMA")")" -eq 1 ] || ok=1
+report "unserved package: each served proxy URL is asked once without blocking on npm" "$ok" "$(cat "$log")"
+proxy_first="$(line_of first "$PROXY")"
+npm_last="$(line_of last "$(npm_url hdf-b)")"
+ok=0; [ -n "$proxy_first" ] && [ -n "$npm_last" ] && [ "$proxy_first" -lt "$npm_last" ] || ok=1
+report "unserved package: proxy URLs are polled during early npm retry rounds" "$ok" "$(cat "$log")"
 ok=0; [ "$(asked "$(npm_url hdf-b)")" -ge 2 ] && [ "$(asked "$(npm_url hdf-a)")" -eq 1 ] || ok=1
 report "unserved package: only the waiting package is asked again" "$ok" "$(cat "$log")"
 ok=0; [ ! -s "$out" ] || ! grep -qF "served: " "$out" || ok=1
@@ -179,10 +185,29 @@ run "$VERSION" packages.txt gomods.txt 6 1
 report "unserved module: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
 ok=0; timeout_message 6 "$SCHEMA" || ok=1
 report "unserved module: the four-part message names its path" "$ok" "$(cat "$err")"
+ok=0
+for pkg in hdf-a hdf-b hdf-c; do [ "$(asked "$(npm_url "$pkg")")" -eq 1 ] || ok=1; done
+report "unserved module: each served registry URL is asked once" "$ok" "$(cat "$log")"
 ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 1 ] && [ "$(asked "$(go_url "$SCHEMA")")" -ge 2 ] || ok=1
 report "unserved module: proxy URLs are asked, the served one once" "$ok" "$(cat "$log")"
-ok=0; grep -qF "go 1/2 served, 1 waiting: $SCHEMA" "$out" || ok=1
-report "unserved module: progress names the waiting module" "$ok" "$(cat "$out")"
+ok=0; grep -qF "npm 3/3 served" "$out" && grep -qF "go 1/2 served, 1 waiting: $SCHEMA" "$out" || ok=1
+report "unserved module: progress reports npm complete and names the waiting module" "$ok" "$(cat "$out")"
+
+# --- 3b. both a package and a module never served -----------------------------
+
+begin both-missing
+answer "$(npm_url hdf-a)" 200
+answer "$(npm_url hdf-c)" 200
+answer "$(go_url "$CLI")" 200
+run "$VERSION" packages.txt gomods.txt 6 1
+report "both unserved: exits 1" "$(exit_is "$rc" 1)" "exit $rc"
+ok=0; timeout_message 6 "@mitre/hdf-b $SCHEMA" || ok=1
+report "both unserved: the four-part message names both unserved items" "$ok" "$(cat "$err")"
+ok=0
+[ "$(asked "$(npm_url hdf-a)")" -eq 1 ] && [ "$(asked "$(npm_url hdf-c)")" -eq 1 ] && [ "$(asked "$(go_url "$CLI")")" -eq 1 ] || ok=1
+report "both unserved: already-served items are asked once" "$ok" "$(cat "$log")"
+ok=0; [ "$(asked "$(npm_url hdf-b)")" -ge 2 ] && [ "$(asked "$(go_url "$SCHEMA")")" -ge 2 ] || ok=1
+report "both unserved: only unserved npm and go items are retried" "$ok" "$(cat "$log")"
 
 # --- 4. served on the second poll --------------------------------------------
 
@@ -196,8 +221,12 @@ run "$VERSION" packages.txt gomods.txt 30 1
 report "second poll: exits 0" "$(exit_is "$rc" 0)" "exit $rc: $(cat "$err")"
 ok=0; [ "$(asked "$(npm_url hdf-b)")" -eq 2 ] && [ "$(asked "$(npm_url hdf-a)")" -eq 1 ] || ok=1
 report "second poll: the late package is asked twice, the others once" "$ok" "$(cat "$log")"
-ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 2 ] || ok=1
-report "second poll: a curl failure (000) is retried" "$ok" "$(cat "$log")"
+ok=0; [ "$(asked "$(go_url "$CLI")")" -eq 2 ] && [ "$(asked "$(go_url "$SCHEMA")")" -eq 1 ] || ok=1
+report "second poll: a curl failure (000) is retried while served module is asked once" "$ok" "$(cat "$log")"
+proxy_first="$(line_of first "$PROXY")"
+npm_last="$(line_of last "$(npm_url hdf-b)")"
+ok=0; [ -n "$proxy_first" ] && [ -n "$npm_last" ] && [ "$proxy_first" -lt "$npm_last" ] || ok=1
+report "second poll: proxy URLs are polled before npm's second retry round" "$ok" "$(cat "$log")"
 ok=0; grep -qF "served: 3 npm packages and 2 Go modules at $VERSION after " "$out" || ok=1
 report "second poll: prints the success line" "$ok" "$(cat "$out")"
 
