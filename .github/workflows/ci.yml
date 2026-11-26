@@ -616,15 +616,7 @@ jobs:
           pattern: scan-*
           path: scan-artifacts
           merge-multiple: true
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: gate-cli
-          path: ${{ runner.temp }}/gate-cli
-      # upload-artifact does not preserve the executable bit.
-      - name: Put the gate CLI on PATH
-        run: |
-          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
-          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
+      - uses: $/.github/actions/setup-gate-cli
       # --from is explicit: auto-detect against a 60-converter registry could
       # mis-fingerprint and yield a valid document with zero findings.
       # Count fidelity is checked INSIDE convert: a converter declares how many
@@ -937,15 +929,7 @@ jobs:
           pattern: test-results-*
           path: test-artifacts-dl
           merge-multiple: true
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: gate-cli
-          path: ${{ runner.temp }}/gate-cli
-      # upload-artifact does not preserve the executable bit.
-      - name: Put the gate CLI on PATH
-        run: |
-          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
-          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
+      - uses: $/.github/actions/setup-gate-cli
       # A leg whose job went green while emitting nothing would otherwise be
       # invisible here. This catches an EMPTY leg, not a short one: a leg that
       # emitted some documents but not all of them still passes.
@@ -995,14 +979,7 @@ jobs:
         with:
           pattern: '{hdf-normalized-*,scan-*,test-results-*,sbom}'
           path: evidence
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: gate-cli
-          path: ${{ runner.temp }}/gate-cli
-      - name: Put the gate CLI on PATH
-        run: |
-          chmod +x "$RUNNER_TEMP/gate-cli/hdf"
-          echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
+      - uses: $/.github/actions/setup-gate-cli
       - name: Assemble and verify evidence
         working-directory: evidence
         env:

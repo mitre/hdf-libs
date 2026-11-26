@@ -1,0 +1,19 @@
+name: 'Setup trusted gate CLI'
+description: 'Download the trusted main-snapshot gate CLI artifact, verify it exists, mark it executable, and add it to PATH.'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: gate-cli
+        path: ${{ runner.temp }}/gate-cli
+
+    # upload-artifact does not preserve the executable bit.
+    - name: Put the gate CLI on PATH
+      shell: bash
+      run: |
+        cli="$RUNNER_TEMP/gate-cli/hdf"
+        [ -f "$cli" ] || { echo "::error::gate-cli binary missing at $cli"; exit 1; }
+        chmod +x "$cli"
+        echo "$RUNNER_TEMP/gate-cli" >> "$GITHUB_PATH"
