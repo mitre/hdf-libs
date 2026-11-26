@@ -3,7 +3,7 @@ module github.com/mitre/hdf-libs/hdf-cli/v3
 go 1.27.4
 
 require (
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.87.0
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.88.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/ebitengine/purego v0.11.3
