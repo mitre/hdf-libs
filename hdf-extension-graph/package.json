@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-extension-graph",
-  "version": "3.8.0",
+  "version": "3.9.0-next.45899757274.1",
   "description": "Bidirectional extension graph processing for HDF profile/baseline hierarchies",
   "publishConfig": {
     "access": "public"
@@ -39,7 +39,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-schema": "workspace:^"
+    "@mitre/hdf-schema": "3.9.0-next.45899757274.1"
   },
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^",
