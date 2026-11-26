@@ -188,7 +188,7 @@ func TestEventsDerive_RejectsNonResultsInput(t *testing.T) {
 }
 
 func TestEventsDerive_RequiresComponentIDWhenUnresolvable(t *testing.T) {
-	// The scan fixtures carry no components[], so the id cannot be defaulted.
+	// The scan fixture carries one host component without componentId.
 	_, _, err := executeCommand(
 		"events", "derive",
 		"--prev", eventsFixturePath(t, "scan-before.json"),
@@ -196,7 +196,159 @@ func TestEventsDerive_RequiresComponentIDWhenUnresolvable(t *testing.T) {
 		"--system-ref", eventsTestSystemRef,
 	)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--component-id")
+	assert.Contains(t, err.Error(), "(1 component, none with a componentId); pass --component-id")
+}
+
+func TestEventsDerive_ReportsComponentWithoutComponentID(t *testing.T) {
+	raw, err := os.ReadFile(eventsFixturePath(t, "scan-after.json"))
+	require.NoError(t, err)
+
+	cases := []struct {
+		name       string
+		components []interface{}
+		wantSubstr string
+	}{
+		{
+			name:       "zero components",
+			components: []interface{}{},
+			wantSubstr: "(0 components); pass --component-id",
+		},
+		{
+			name:       "component missing componentId",
+			components: []interface{}{map[string]string{"name": "acme-app", "type": "artifact"}},
+			wantSubstr: "(1 component, none with a componentId); pass --component-id",
+		},
+		{
+			name:       "component with unrecognized id property instead of componentId",
+			components: []interface{}{map[string]string{"name": "acme-app", "type": "artifact", "id": eventsTestComponentID}},
+			wantSubstr: "(1 component, none with a componentId); pass --component-id",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var doc map[string]interface{}
+			require.NoError(t, json.Unmarshal(raw, &doc))
+			doc["components"] = tc.components
+			nextBytes, mErr := json.Marshal(doc)
+			require.NoError(t, mErr)
+
+			nextPath := filepath.Join(t.TempDir(), "next.hdf.json")
+			require.NoError(t, os.WriteFile(nextPath, nextBytes, 0o600))
+
+			_, _, cmdErr := executeCommand(
+				"events", "derive",
+				"--prev", eventsFixturePath(t, "scan-before.json"),
+				"--next", nextPath,
+				"--system-ref", eventsTestSystemRef,
+			)
+			require.Error(t, cmdErr)
+			assert.Contains(t, cmdErr.Error(), tc.wantSubstr)
+		})
+	}
+}
+
+func TestResolveEventComponentID(t *testing.T) {
+	id1 := "11111111-1111-4111-8111-111111111111"
+	id2 := "22222222-2222-4222-8222-222222222222"
+	empty := ""
+
+	cases := []struct {
+		name       string
+		flagValue  string
+		components []hdf.Component
+		wantID     string
+		wantErr    string
+	}{
+		{
+			name:       "explicit flag overrides zero components",
+			flagValue:  id1,
+			components: nil,
+			wantID:     id1,
+		},
+		{
+			name:      "explicit flag overrides multiple componentIds",
+			flagValue: id2,
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact, ComponentID: &id1},
+				{Name: "b", Type: hdf.Artifact, ComponentID: &id2},
+			},
+			wantID: id2,
+		},
+		{
+			name: "sole component with componentId resolves",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact, ComponentID: &id1},
+			},
+			wantID: id1,
+		},
+		{
+			name: "two components with exactly one componentId resolves",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact},
+				{Name: "b", Type: hdf.Artifact, ComponentID: &id2},
+			},
+			wantID: id2,
+		},
+		{
+			name:       "zero components",
+			components: nil,
+			wantErr:    "cannot infer the component identity from the --next document (0 components); pass --component-id",
+		},
+		{
+			name: "one component with nil componentId",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact},
+			},
+			wantErr: "cannot infer the component identity from the --next document (1 component, none with a componentId); pass --component-id",
+		},
+		{
+			name: "one component with empty componentId",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact, ComponentID: &empty},
+			},
+			wantErr: "cannot infer the component identity from the --next document (1 component, none with a componentId); pass --component-id",
+		},
+		{
+			name: "multiple components all missing componentId",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact},
+				{Name: "b", Type: hdf.Artifact, ComponentID: &empty},
+			},
+			wantErr: "cannot infer the component identity from the --next document (2 components, none with a componentId); pass --component-id",
+		},
+		{
+			name: "multiple components all with componentId",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact, ComponentID: &id1},
+				{Name: "b", Type: hdf.Artifact, ComponentID: &id2},
+			},
+			wantErr: "cannot infer the component identity from the --next document (2 components with a componentId); pass --component-id",
+		},
+		{
+			name: "multiple components with mixed componentId presence",
+			components: []hdf.Component{
+				{Name: "a", Type: hdf.Artifact, ComponentID: &id1},
+				{Name: "b", Type: hdf.Artifact},
+				{Name: "c", Type: hdf.Artifact, ComponentID: &id2},
+			},
+			wantErr: "cannot infer the component identity from the --next document (3 components, 2 with a componentId); pass --component-id",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := &hdf.HDFResults{Components: tc.components}
+			got, err := resolveEventComponentID(tc.flagValue, doc)
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+				assert.Empty(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantID, got)
+		})
+	}
 }
 
 func TestEventsFold_ProducesValidComparison(t *testing.T) {

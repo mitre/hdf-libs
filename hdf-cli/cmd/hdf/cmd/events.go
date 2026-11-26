@@ -356,7 +356,21 @@ func resolveEventComponentID(flagValue string, doc *hdf.HDFResults) (string, err
 	if len(ids) == 1 {
 		return ids[0], nil
 	}
-	return "", fmt.Errorf("cannot infer the component identity from the --next document (%d components); pass --component-id", len(ids))
+	total := len(doc.Components)
+	switch {
+	case total == 0:
+		return "", fmt.Errorf("cannot infer the component identity from the --next document (0 components); pass --component-id")
+	case len(ids) == 0:
+		noun := "components"
+		if total == 1 {
+			noun = "component"
+		}
+		return "", fmt.Errorf("cannot infer the component identity from the --next document (%d %s, none with a componentId); pass --component-id", total, noun)
+	case len(ids) == total:
+		return "", fmt.Errorf("cannot infer the component identity from the --next document (%d components with a componentId); pass --component-id", total)
+	default:
+		return "", fmt.Errorf("cannot infer the component identity from the --next document (%d components, %d with a componentId); pass --component-id", total, len(ids))
+	}
 }
 
 // eventsDeriveIdentity carries the caller-supplied envelope identity for a
