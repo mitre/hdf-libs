@@ -63,84 +63,28 @@ updates:
       - dependency-name: "semgrep"
     open-pull-requests-limit: 5
 
-  # Go modules — each go.mod is a separate ecosystem entry
-  # Go modules use go.sum checksums (content-addressed, like lockfile integrity).
-  - package-ecosystem: "gomod"
-    directory: "/hdf-cli"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-converters"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-generators/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-mappings/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-parsers/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-validators/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
+  # Go modules — consolidated across all Go workspace modules so shared
+  # dependency bumps update every go.mod together instead of opening
+  # cross-module UNTIDY PRs. Go modules use go.sum checksums
+  # (content-addressed, like lockfile integrity).
   # hdf-schema/dist/go is deliberately absent: it has no external requires
   # (generated types module), so there is nothing for Dependabot to track.
+  # open-pull-requests-limit: 5 is shared across this consolidated
+  # multi-directory entry (previously 5 per module directory).
   - package-ecosystem: "gomod"
-    directory: "/hdf-diff/go"
+    directories:
+      - "/hdf-cli"
+      - "/hdf-converters"
+      - "/hdf-diff/go"
+      - "/hdf-engine/go"
+      - "/hdf-extension-graph/go"
+      - "/hdf-fixtures"
+      - "/hdf-generators/go"
+      - "/hdf-mappings/go"
+      - "/hdf-parsers/go"
+      - "/hdf-schema/testhdf/go"
+      - "/hdf-utilities/go"
+      - "/hdf-validators/go"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -149,64 +93,5 @@ updates:
     groups:
       go-dependencies:
         patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-engine/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-extension-graph/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-fixtures"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-schema/testhdf/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: "gomod"
-    directory: "/hdf-utilities/go"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    cooldown:
-      default-days: 7
-    groups:
-      go-dependencies:
-        patterns: ["*"]
+        group-by: dependency-name
     open-pull-requests-limit: 5
