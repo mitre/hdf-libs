@@ -213,7 +213,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 ## Git Policy
 
 - **Never commit without explicit permission** for each individual commit. Prepare detailed commit messages for approval first.
-- **Never push.** User handles all pushes.
+- **Never push to `main` or merge PRs without explicit approval.** After commit approval and AC verification, the agent may push a non-`main` feature branch and open a PR against `main` — wait for CI/CD on the PR to pass before starting follow-up card work unless told otherwise.
 - **No authorship attribution.** Do not add "written by Claude Code", "Co-Authored-By: Claude", or similar to commits, comments, or documentation.
 - **Brief commit messages.** Conventional-commit subject line, a blank line, then a short body (a few sentences) covering *what* changed and *why*. Don't list affected files — that's `git diff`'s job. Don't restate the subject in the body. Default to brevity; only substantial features warrant longer bodies.
 - **Run lint before proposing a commit.** At minimum run `mise exec -- golangci-lint run` (for Go changes) and/or `pnpm lint` (for TS changes) and fix all issues before asking the user to approve. The pre-commit hook will catch failures anyway, but catching them early avoids wasted time.
@@ -270,13 +270,13 @@ bd update <id> --status in_progress  # or:  bd close <id> -r "..."
 bd dolt push                         # publish the change
 ```
 
-Same pattern for creating + immediately reserving a new card. This is the Dolt issue-tracker remote only; it has no relationship to `git push` (which the user handles separately for code changes).
+Same pattern for creating + immediately reserving a new card. This is the Dolt issue-tracker remote only; it has no relationship to `git push` (which is governed by the "Git Policy" section above).
 
 If bd errors with "Database out of sync", run `bd dolt pull` first.
 
 **Architecture in one line:** issues live in a local Dolt DB and sync between clones over a Dolt remote; JSONL export is an optional interchange format, not the sync mechanism. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
-**Git policy:** the user owns every commit and push in this repo. The bd-tool's default session-completion workflow (which prescribes a mandatory `git push`) does not apply here — the "Git Policy" section above is the authoritative rule. `bd dolt push` / `bd dolt pull` (issue-tracker sync) is a separate concept; follow the dolt-sync rule above for those.
+**Git policy:** commits, pushes, and PR merges are governed by the "Git Policy" section above — never push directly to `main`, never merge without approval, and do not follow the bd-tool's default session-completion workflow that prescribes an unconditional `git push`. `bd dolt push` / `bd dolt pull` (issue-tracker sync) is a separate concept; follow the dolt-sync rule above for those.
 <!-- END BEADS INTEGRATION -->
 
 ### Card hygiene: no machine-local details
