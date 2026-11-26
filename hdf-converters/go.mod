@@ -4,11 +4,11 @@ go 1.27.4
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/aws/aws-sdk-go-v2 v1.47.7
+	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.15
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.10
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.86.1
-	github.com/aws/smithy-go v1.28.8
+	github.com/aws/smithy-go v1.28.9
 	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.8.0
 	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0
 	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.8.0
