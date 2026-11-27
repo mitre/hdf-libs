@@ -2,6 +2,37 @@ name: SIEM service smoke
 
 on:
   pull_request:
+    # Dependency closure for test/siem/harness.mjs (@mitre/hdf-converters... and
+    # hdf-cli/go.work) plus gate-cli.yml. GitHub caps PR path-filter inspection
+    # on very large diffs; unfiltered push: branches: [main] remains the backstop.
+    paths:
+      - 'hdf-schema/**'
+      - 'hdf-utilities/**'
+      - 'hdf-mappings/**'
+      - 'hdf-validators/**'
+      - 'hdf-parsers/**'
+      - 'hdf-converters/**'
+      - 'hdf-generators/**'
+      - 'hdf-diff/**'
+      - 'hdf-engine/**'
+      - 'hdf-extension-graph/**'
+      - 'hdf-fixtures/**'
+      - 'hdf-cli/**'
+      - 'test/siem/**'
+      - 'go.work'
+      - 'go.work.sum'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.base.json'
+      - '.npmrc'
+      - 'mise.toml'
+      - 'mise.lock'
+      - '.github/workflows/siem.yml'
+      - '.github/workflows/gate-cli.yml'
+      - '.github/actions/**'
+      - '.github/hdf-thresholds/tests-siem.yaml'
+      - 'scripts/resolve-gate-cli-snapshot.sh'
   push:
     branches: [main]
   workflow_dispatch:
@@ -25,6 +56,7 @@ jobs:
 
   smoke:
     name: SIEM service smoke (${{ matrix.target }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
@@ -209,12 +241,17 @@ jobs:
       - name: Every required job must succeed
         if: always()
         env:
+          EVENT_NAME: ${{ github.event_name }}
           CLI_RESULT: ${{ needs.gate-cli.result }}
           SMOKE_RESULT: ${{ needs.smoke.result }}
           INTEGRATION_RESULT: ${{ needs.integration.result }}
         run: |
           test "$CLI_RESULT" = success
-          test "$SMOKE_RESULT" = success
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            test "$SMOKE_RESULT" = success
+          else
+            test "$SMOKE_RESULT" = skipped
+          fi
           test "$INTEGRATION_RESULT" = success
       - name: Upload normalized integration evidence and negative probe
         if: always()
