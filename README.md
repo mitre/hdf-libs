@@ -189,3 +189,5 @@ pnpm test:ts
 # Go tests only
 pnpm test:go
 ```
+
+Note: Run `pnpm test` from a workspace checkout with Go and Node installed.
