@@ -145,29 +145,16 @@ describe('create-index', () => {
   });
 
   describe('error handling', () => {
-    it('should throw when generated hdf.ts is missing in an empty root directory', () => {
+    it.each([
+      { name: 'an empty root directory', createTsDir: false },
+      { name: 'a root with dist/ts but no hdf.ts', createTsDir: true },
+    ])('should throw when generated hdf.ts is missing in $name', ({ createTsDir }) => {
       const rootDir = mkdtempSync(join(tmpdir(), 'hdf-schema-missing-hdf-'));
-      try {
-        let caught: unknown;
-        try {
-          createIndex({ rootDir });
-        } catch (err) {
-          caught = err;
-        }
-        expect(caught).toBeInstanceOf(Error);
-        expect((caught as Error).message).toContain(join(rootDir, 'dist', 'ts', 'hdf.ts'));
-        expect((caught as Error).message).toContain('pnpm build:types');
-        expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
-        expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
-      } finally {
-        rmSync(rootDir, { recursive: true, force: true });
+      if (createTsDir) {
+        mkdirSync(join(rootDir, 'dist', 'ts'), { recursive: true });
       }
-    });
-
-    it('should throw when dist/ts exists without generated hdf.ts', () => {
-      const rootDir = mkdtempSync(join(tmpdir(), 'hdf-schema-missing-hdf-dir-'));
-      mkdirSync(join(rootDir, 'dist', 'ts'), { recursive: true });
       try {
+        const expectedPath = join(rootDir, 'dist', 'ts', 'hdf.ts');
         let caught: unknown;
         try {
           createIndex({ rootDir });
@@ -175,7 +162,7 @@ describe('create-index', () => {
           caught = err;
         }
         expect(caught).toBeInstanceOf(Error);
-        expect((caught as Error).message).toContain(join(rootDir, 'dist', 'ts', 'hdf.ts'));
+        expect((caught as Error).message).toContain(expectedPath);
         expect((caught as Error).message).toContain('pnpm build:types');
         expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
         expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
