@@ -108,7 +108,7 @@ jobs:
       # publishes to its default registry, https://registry.npmjs.org/, and
       # authenticates through OIDC (id-token: write) with a token it keeps in
       # memory.
-      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
           version: 2026.11.5
           install_args: node pnpm
@@ -325,7 +325,7 @@ jobs:
       # publish-npm: Node and pnpm at mise.lock's versions, with no cache
       # restored, instead of the shared setup action, which restores the mise
       # and pnpm store caches.
-      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
           version: 2026.11.5
           install_args: node pnpm
