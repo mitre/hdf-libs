@@ -1,7 +1,7 @@
 name: 'Setup hdf-libs'
 description: 'Setup Node/pnpm with mise, install dependencies, optionally setup Go. Repo must be checked out first.'
-# note -- setup will always need the TS installation; even the Go test
-# suites are orchestrated by pnpm.
+# Intended for jobs that need Node/pnpm/workspace packages (optionally alongside Go);
+# Go-only jobs (test-go, test-go-race, test-archive-macos, scan-deps) use actions/setup-go directly.
 inputs:
   go:
     description: 'Setup Go toolchain'
