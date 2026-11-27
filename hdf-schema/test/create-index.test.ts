@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, rmSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { createIndex } from '../src/create-index';
@@ -164,28 +165,67 @@ describe('create-index', () => {
       }
     });
 
-    it('should handle tsc compilation failure gracefully', () => {
-      // Inject a compile function that throws to test the error path.
-      // IMPORTANT: createIndex() cleans dist/ts/*.{js,d.ts} BEFORE calling
-      // compile. To avoid corrupting shared dist, we must restore files after.
-      // The afterAll hook runs createIndex() to rebuild, but we also guard here.
-      const backup = new Map<string, string>();
-      for (const ext of ['.js', '.d.ts']) {
-        const file = join(TS_DIR, `hdf${ext}`);
-        if (existsSync(file)) {
-          backup.set(file, readFileSync(file, 'utf-8'));
-        }
-      }
+    function makeIsolatedTsRoot(tsContent: string): string {
+      const rootDir = mkdtempSync(join(tmpdir(), 'hdf-schema-create-index-'));
+      const isolatedTsDir = join(rootDir, 'dist', 'ts');
+      mkdirSync(isolatedTsDir, { recursive: true });
+      writeFileSync(join(isolatedTsDir, 'hdf.ts'), tsContent);
+      return rootDir;
+    }
 
+    it('should throw when tsc compilation fails with an Error and skip emitting index files', () => {
+      const rootDir = makeIsolatedTsRoot('export type Ok = string;\n');
       try {
-        expect(() => createIndex({
-          compile: () => { throw new Error('tsc compilation failed'); },
-        })).not.toThrow();
-      } finally {
-        // Restore cleaned files so parallel tests aren't affected
-        for (const [file, content] of backup) {
-          writeFileSync(file, content);
+        let caught: unknown;
+        try {
+          createIndex({
+            rootDir,
+            compile: () => { throw new Error('tsc compilation failed'); },
+          });
+        } catch (err) {
+          caught = err;
         }
+        expect(caught).toBeInstanceOf(Error);
+        expect((caught as Error).message).toMatch(/Failed to compile generated TypeScript files: tsc compilation failed/);
+        expect((caught as Error).cause).toBeInstanceOf(Error);
+        expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should throw when tsc compilation fails with a non-Error value', () => {
+      const rootDir = makeIsolatedTsRoot('export type Ok = string;\n');
+      try {
+        let caught: unknown;
+        try {
+          createIndex({
+            rootDir,
+            compile: () => { throw 'raw compiler failure'; },
+          });
+        } catch (err) {
+          caught = err;
+        }
+        expect(caught).toBeInstanceOf(Error);
+        expect((caught as Error).message).toMatch(/Failed to compile generated TypeScript files: raw compiler failure/);
+        expect((caught as Error).cause).toBe('raw compiler failure');
+        expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should fail closed when real tsc fails on invalid generated TypeScript', () => {
+      const rootDir = makeIsolatedTsRoot('export const broken: number = "not a number";\n');
+      try {
+        expect(() => createIndex({ rootDir })).toThrow(/Failed to compile generated TypeScript files:/);
+        expect(existsSync(join(rootDir, 'tsconfig.dist-types.json'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
       }
     });
 

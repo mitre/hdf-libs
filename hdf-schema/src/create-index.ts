@@ -76,13 +76,16 @@ function generateSchemaExports(rootDir: string): { js: string; dts: string } {
 }
 
 export interface CreateIndexOptions {
+  /** Override the package root directory (for testing) */
+  rootDir?: string;
   /** Override the compile step (for testing) */
   compile?: (cwd: string) => void;
 }
 
 export function createIndex(options: CreateIndexOptions = {}): void {
+  const rootDir = options.rootDir ?? ROOT_DIR;
   // Check if TypeScript files exist before compiling
-  const tsDir = join(ROOT_DIR, 'dist/ts');
+  const tsDir = join(rootDir, 'dist/ts');
   const combinedTs = join(tsDir, 'hdf.ts');
 
   if (!existsSync(combinedTs)) {
@@ -132,21 +135,20 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   });
 
   try {
-    compile(ROOT_DIR);
+    compile(rootDir);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.warn('Failed to compile TypeScript files:', error);
-    return;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw Object.assign(new Error(`Failed to compile generated TypeScript files: ${reason}`), { cause: error });
   }
 
   // Copy helpers to dist
-  const helpersJs = join(ROOT_DIR, 'src/helpers.js');
-  const helpersDts = join(ROOT_DIR, 'src/helpers.d.ts');
+  const helpersJs = join(rootDir, 'src/helpers.js');
+  const helpersDts = join(rootDir, 'src/helpers.d.ts');
 
-  copyFileSync(helpersJs, join(ROOT_DIR, 'dist/helpers.js'));
-  copyFileSync(helpersDts, join(ROOT_DIR, 'dist/helpers.d.ts'));
+  copyFileSync(helpersJs, join(rootDir, 'dist/helpers.js'));
+  copyFileSync(helpersDts, join(rootDir, 'dist/helpers.d.ts'));
 
-  const schemaExports = generateSchemaExports(ROOT_DIR);
+  const schemaExports = generateSchemaExports(rootDir);
 
   const primarySource = './ts/hdf.js';
 
@@ -222,7 +224,7 @@ export * from './helpers.js';
 `;
 
   // Write both .js and .d.ts files to dist directory
-  const distDir = join(ROOT_DIR, 'dist');
+  const distDir = join(rootDir, 'dist');
   if (existsSync(distDir)) {
     writeFileSync(join(distDir, 'index.js'), indexJsContent);
     writeFileSync(join(distDir, 'index.d.ts'), indexDtsContent);
