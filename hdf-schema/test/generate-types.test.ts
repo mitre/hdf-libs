@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { canonicalTypeDescriptions, generateTypes, hostIdentityStringFields, insertComponentFields, normKey, normalizeSharedTypeDocs } from '../src/generate-types';
@@ -252,25 +253,32 @@ describe('generate-types', () => {
       }
     });
 
-    it('should handle missing schema files gracefully', { timeout: 30_000 }, async () => {
-      // Temporarily rename one schema file
-      const schemaFile = join(SCHEMAS_DIR, 'hdf-results.schema.json');
-      const tempFile = join(SCHEMAS_DIR, 'hdf-results.schema.json.temp');
-
-      if (existsSync(schemaFile)) {
-        renameSync(schemaFile, tempFile);
-      }
-
+    it.each([
+      { label: 'a single expected bundled schema is', omitted: ['hdf-results.schema.json'] },
+      { label: 'multiple expected bundled schemas are', omitted: ['hdf-results.schema.json', 'hdf-plan.schema.json'] },
+    ])('should throw when $label missing without generating output files', async ({ omitted }) => {
+      const rootDir = mkdtempSync(join(tmpdir(), 'hdf-schema-missing-schema-'));
+      const isolatedSchemasDir = join(rootDir, 'dist', 'schemas');
+      mkdirSync(isolatedSchemasDir, { recursive: true });
       try {
-        // Should not throw, just skip the missing file
-        await expect(generateTypes()).resolves.not.toThrow();
-      } finally {
-        // Restore schema file
-        if (existsSync(tempFile)) {
-          renameSync(tempFile, schemaFile);
+        const missingSet = new Set(omitted);
+        for (const file of readdirSync(SCHEMAS_DIR)) {
+          if (!missingSet.has(file)) {
+            copyFileSync(join(SCHEMAS_DIR, file), join(isolatedSchemasDir, file));
+          }
         }
-        // Regenerate with all schemas to restore correct state
-        await generateTypes();
+        const err = await generateTypes({ rootDir }).catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(Error);
+        const message = (err as Error).message;
+        expect(message).toContain(isolatedSchemasDir);
+        expect(message).toContain('pnpm build:schemas');
+        for (const file of omitted) {
+          expect(message).toContain(file);
+        }
+        expect(existsSync(join(rootDir, 'dist', 'ts', 'hdf.ts'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'go', 'hdf.go'))).toBe(false);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
       }
     });
 
