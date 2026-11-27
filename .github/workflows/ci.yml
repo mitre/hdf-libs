@@ -158,6 +158,10 @@ jobs:
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
         run: bash scripts/check-release-version.test.sh
+      - name: Go tool caching and JUnit runner scripts still fail closed
+        run: |
+          bash .github/scripts/ensure-go-tool.test.sh
+          bash .github/scripts/test-go-junit.test.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-workflows
@@ -185,14 +189,7 @@ jobs:
       - name: Locate Go tool bin directory
         id: go-bin
         shell: bash
-        run: |
-          gobin="$(go env GOBIN | tr -d '\r')"
-          if [ -n "$gobin" ]; then
-            dir="$gobin"
-          else
-            dir="$(go env GOPATH | tr -d '\r')/bin"
-          fi
-          echo "path=$dir" >> "$GITHUB_OUTPUT"
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.go-bin.outputs.path }}
@@ -495,7 +492,7 @@ jobs:
           path: |
             ${{ steps.go-caches.outputs.gomodcache }}
             ${{ steps.go-caches.outputs.gocache }}
-          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work', '**/go.sum') }}
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -826,14 +823,7 @@ jobs:
       - name: Locate Go tool bin directory
         id: go-bin
         shell: bash
-        run: |
-          gobin="$(go env GOBIN | tr -d '\r')"
-          if [ -n "$gobin" ]; then
-            dir="$gobin"
-          else
-            dir="$(go env GOPATH | tr -d '\r')/bin"
-          fi
-          echo "path=$dir" >> "$GITHUB_OUTPUT"
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.go-bin.outputs.path }}
@@ -933,14 +923,7 @@ jobs:
       - name: Locate Go tool bin directory
         id: go-bin
         shell: bash
-        run: |
-          gobin="$(go env GOBIN | tr -d '\r')"
-          if [ -n "$gobin" ]; then
-            dir="$gobin"
-          else
-            dir="$(go env GOPATH | tr -d '\r')/bin"
-          fi
-          echo "path=$dir" >> "$GITHUB_OUTPUT"
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.go-bin.outputs.path }}

@@ -4,15 +4,48 @@
 # version and host GOOS/GOARCH, reusing cached binaries verified via
 # `go version -m` without executing them (preventing Rosetta false positives).
 #
-# Usage: ensure-go-tool.sh <package-path> <version> [binary-name]
-# Prints only the resolved binary path to stdout; all logs go to stderr.
+# Usage:
+#   ensure-go-tool.sh --bin-dir
+#   ensure-go-tool.sh <package-path> <version> [binary-name]
+# Prints only the resolved directory or binary path to stdout; logs go to stderr.
 
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <package-path> <version> [binary-name]" >&2
+  echo "usage: $0 [--bin-dir | <package-path> <version> [binary-name]]" >&2
   exit 2
 }
+
+go_env() {
+  go env "$1" | tr -d '\r'
+}
+
+resolve_bin_dir() {
+  local gobin gopath
+  gobin="$(go_env GOBIN)"
+  if [ -n "$gobin" ]; then
+    printf '%s\n' "${gobin%/}"
+    return 0
+  fi
+  gopath="$(go_env GOPATH)"
+  [ -n "$gopath" ] || { echo "ensure-go-tool: go env GOPATH returned empty" >&2; exit 1; }
+  printf '%s/bin\n' "${gopath%/}"
+}
+
+default_bin_name() {
+  local p="$1" last parent
+  last="${p##*/}"
+  if [[ "$last" =~ ^v[0-9]+$ ]] && [[ "$p" == */* ]]; then
+    parent="${p%/*}"
+    last="${parent##*/}"
+  fi
+  printf '%s\n' "$last"
+}
+
+if [ "${1:-}" = "--bin-dir" ] && [ "$#" -eq 1 ]; then
+  resolve_bin_dir
+  exit 0
+fi
 
 if [ "$#" -lt 2 ] || [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
   usage
@@ -20,20 +53,9 @@ fi
 
 pkg="$1"
 version="$2"
-bin_name="${3:-${pkg##*/}}"
+bin_name="${3:-$(default_bin_name "$pkg")}"
 
-go_env() {
-  go env "$1" | tr -d '\r'
-}
-
-gobin="$(go_env GOBIN)"
-if [ -n "$gobin" ]; then
-  bin_dir="$gobin"
-else
-  gopath="$(go_env GOPATH)"
-  [ -n "$gopath" ] || { echo "ensure-go-tool: go env GOPATH returned empty" >&2; exit 1; }
-  bin_dir="${gopath%/}/bin"
-fi
+bin_dir="$(resolve_bin_dir)"
 
 goexe="$(go_env GOEXE)"
 want_goos="$(go_env GOOS)"

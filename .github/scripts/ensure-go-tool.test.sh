@@ -72,7 +72,12 @@ case "${1:-}" in
     ver="${spec##*@}"
     dest_dir="${FAKE_GOBIN:-${FAKE_GOPATH:?}/bin}"
     mkdir -p "$dest_dir"
-    name="${pkg##*/}${FAKE_GOEXE:-}"
+    last="${pkg##*/}"
+    if [[ "$last" =~ ^v[0-9]+$ ]] && [[ "$pkg" == */* ]]; then
+      parent="${pkg%/*}"
+      last="${parent##*/}"
+    fi
+    name="${last}${FAKE_GOEXE:-}"
     mod="${FAKE_INSTALL_MOD:-$pkg}"
     if [ "${FAKE_INSTALL_BAD_META:-0}" -eq 1 ]; then
       emit_meta "$mod" "$pkg" "v0.0.1-wrong" "${FAKE_GOOS:-linux}" "${FAKE_GOARCH:-amd64}" "$dest_dir/$name"
@@ -198,6 +203,36 @@ begin usage
 PATH="$work/bin:$PATH" FAKE_GO_LOG="$log" FAKE_GOPATH="$gopath" bash "$TARGET" > "$out" 2> "$err"
 rc=$?
 if [ "$rc" -eq 2 ]; then report "usage error: exits 2 on missing arguments" 0; else report "usage error: exits 2 on missing arguments" 1 "rc=$rc err=$(cat "$err")"; fi
+
+# --- 12. non-executable cached binary triggers reinstall ---
+begin non-exec
+write_cached_meta "$PKG" "$PKG" "$VER" linux amd64 "$gopath/bin/gotestsum"
+chmod -x "$gopath/bin/gotestsum"
+run_target "$PKG" "$VER"
+if [ "$rc" -eq 0 ] && [ -x "$gopath/bin/gotestsum" ] && grep -qFx "install $PKG@$VER" "$log"; then report "non-executable cache: chmod -x triggers reinstall" 0; else report "non-executable cache: chmod -x triggers reinstall" 1 "rc=$rc $(cat "$log") $(cat "$err")"; fi
+
+# --- 13. wrong GOOS in cached binary triggers reinstall ---
+begin wrong-os
+write_cached_meta "$PKG" "$PKG" "$VER" linux amd64 "$gopath/bin/gotestsum"
+FAKE_GOOS=darwin FAKE_GOARCH=amd64 run_target "$PKG" "$VER"
+if [ "$rc" -eq 0 ] && grep -qFx "install $PKG@$VER" "$log"; then report "wrong GOOS: rejects linux cache on darwin host and reinstalls" 0; else report "wrong GOOS: rejects linux cache on darwin host and reinstalls" 1 "rc=$rc $(cat "$log") $(cat "$err")"; fi
+
+# --- 14. package path ending in /vN resolves binary name from parent segment ---
+begin major-suffix
+v2_pkg="example.com/mytool/v2"
+v2_ver="v2.1.0"
+run_target "$v2_pkg" "$v2_ver"
+if [ "$rc" -eq 0 ] && [ "$(cat "$out")" = "$gopath/bin/mytool" ] && grep -qFx "install $v2_pkg@$v2_ver" "$log"; then report "major version suffix: example.com/mytool/v2 resolves mytool" 0; else report "major version suffix: example.com/mytool/v2 resolves mytool" 1 "rc=$rc out=$(cat "$out") err=$(cat "$err")"; fi
+
+# --- 15. --bin-dir resolves GOPATH/bin (stripping trailing slash) or GOBIN ---
+begin bin-dir
+PATH="$work/bin:$PATH" FAKE_GO_LOG="$log" FAKE_GOPATH="${gopath}/" bash "$TARGET" --bin-dir > "$out" 2> "$err"
+rc=$?
+if [ "$rc" -eq 0 ] && [ "$(cat "$out")" = "$gopath/bin" ]; then report "--bin-dir: prints GOPATH/bin without trailing slash" 0; else report "--bin-dir: prints GOPATH/bin without trailing slash" 1 "rc=$rc out=$(cat "$out") err=$(cat "$err")"; fi
+custom_bin="$case_dir/custom-bin"
+PATH="$work/bin:$PATH" FAKE_GO_LOG="$log" FAKE_GOPATH="$gopath" FAKE_GOBIN="$custom_bin" bash "$TARGET" --bin-dir > "$out" 2> "$err"
+rc=$?
+if [ "$rc" -eq 0 ] && [ "$(cat "$out")" = "$custom_bin" ]; then report "--bin-dir: honors GOBIN override" 0; else report "--bin-dir: honors GOBIN override" 1 "rc=$rc out=$(cat "$out") err=$(cat "$err")"; fi
 
 echo
 echo "$pass passed, $fail failed"
