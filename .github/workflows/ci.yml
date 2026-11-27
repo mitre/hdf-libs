@@ -61,10 +61,14 @@ env:
 #   scan-deps ──────┤
 #   scan-code ──────┼── gate-hdf-scans              (intended required check)
 #   check-ts ───────┤
-#   check-go ───────┤
+#   lint-go-linux ──┤
+#   lint-go-cross-os┤
+#   check-go-guards ┤
+#   scan-go-vuln ───┤
 #   check-openapi-matrix ┘
 #   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests (+ gate-cli)
-#           ├── test-go (junit; ubuntu leg = coverage) ─┘
+#           ├── test-go (junit; ubuntu leg = coverage) ─┤
+#           ├── test-go-race (go test -race ./...) ─────┤
 #           ├── verify-packages                            (intended required check)
 #           └── site-build
 #   test-archive-macos (junit) ──────────────────────────── gate-hdf-tests
@@ -461,9 +465,9 @@ jobs:
       - name: Tooling matrix matches the tracked baseline
         run: pnpm --filter @mitre/hdf-openapi run matrix
 
-  # ── Gate: Go checks ─────────────────────────────────────────────────────
-  check-go:
-    name: Check Go (lint + security)
+  # ── Gate: Go checks (parallelized) ─────────────────────────────────────
+  lint-go-linux:
+    name: Lint Go (Linux)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -473,14 +477,10 @@ jobs:
       - uses: $/.github/actions/setup
       - name: Build @mitre/hdf-schema (Go modules need hdf-schema/dist/go/)
         run: pnpm --filter @mitre/hdf-schema run build
-      # The Go scanners at the versions and checksums in mise.lock (--locked), the
-      # releases the pre-commit hook runs: golangci-lint as the release binary
-      # with its attestation check, govulncheck through go install with the Go
-      # that go.work names. The shared setup above already installed Node/pnpm.
       - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
         with:
           version: 2026.11.5
-          install_args: go golangci-lint go:golang.org/x/vuln/cmd/govulncheck
+          install_args: go golangci-lint
       - name: Locate Go cache directories
         id: go-caches
         shell: bash
@@ -499,29 +499,14 @@ jobs:
         with:
           path: ~/.cache/golangci-lint
           key: golangci-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work', 'mise.lock', '.golangci.yml', 'hdf-cli/.golangci.yml') }}
-      # Both scanners below loop per-module because neither works across a
-      # workspace: golangci-lint refuses a multi-module invocation, and
-      # govulncheck has no workspace mode (golang/go#66863). go.work is the
-      # source of the list, so a new module is picked up automatically.
-      # An empty list would let both scanners pass having scanned nothing.
+      # golangci-lint refuses a multi-module invocation; go.work enumerates every module.
       - name: Enumerate the go.work modules
         run: |
           set -o pipefail
           MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
           [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
           echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
-      # gosec runs via golangci-lint, not as a standalone step. golangci-lint
-      # searches the module directory and then each parent, so the root
-      # .golangci.yml covers every module in go.work and a new one inherits it
-      # with no second edit; hdf-cli overrides it with its own. The step below
-      # asserts that, because an unconfigured module silently falls back to
-      # defaults, which do not include gosec. (The former workflow-level
-      # excludes G304/G104 live in those configs; G115/G706 were verified
-      # unnecessary and are now enforced.)
-      #
-      # Exit 1 is golangci-lint's documented findings exit, and findings are
-      # the gate's call — so 1 is tolerated here and anything else is a tool
-      # failure.
+      # gosec runs via golangci-lint; exit 1 is findings (judged by gate-hdf-scans).
       - name: golangci-lint (SARIF; findings gate via HDF)
         run: |
           mkdir -p scan-artifacts
@@ -532,68 +517,168 @@ jobs:
               --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
             [ "$rc" -le 1 ] || exit "$rc"
           done
-      # The same modules again as Windows and macOS build them: files with a windows or
-      # darwin build tag are invisible to the pass above. Only a module with a
-      # build-constrained file can differ by GOOS (go list reports the files a GOOS
-      # leaves out), so the others are not linted twice more. Same gate, same thresholds.
-      - name: golangci-lint for Windows and macOS (SARIF; findings gate via HDF)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-go-linux
+          path: scan-artifacts/
+          retention-days: 7
+
+  lint-go-cross-os:
+    name: Lint Go (${{ matrix.goos }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [windows, darwin]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - name: Build @mitre/hdf-schema (Go modules need hdf-schema/dist/go/)
+        run: pnpm --filter @mitre/hdf-schema run build
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          version: 2026.11.5
+          install_args: go golangci-lint
+      - name: Locate Go cache directories
+        id: go-caches
+        shell: bash
+        run: |
+          echo "gomodcache=$(go env GOMODCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          echo "gocache=$(go env GOCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-caches.outputs.gomodcache }}
+            ${{ steps.go-caches.outputs.gocache }}
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ matrix.goos }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work', 'mise.lock', '.golangci.yml', 'hdf-cli/.golangci.yml') }}
+      - name: Enumerate the go.work modules
+        run: |
+          set -o pipefail
+          MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
+          [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
+          echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
+      # Only lint modules that have build-constrained files for this target GOOS.
+      - name: golangci-lint for ${{ matrix.goos }} (SARIF; findings gate via HDF)
         env:
           GOARCH: amd64
           CGO_ENABLED: '0'
+          TARGET_GOOS: ${{ matrix.goos }}
         run: |
-          for goos in windows darwin; do
-            for dir in $GO_MODULES; do
-              constrained=$(cd "$dir" && GOOS=$goos go list -f '{{if .IgnoredGoFiles}}x{{end}}' ./...)
-              case "$constrained" in *x*) ;; *) continue ;; esac
-              name=$(echo "${dir#./}" | tr '/' '-')
-              rc=0
-              (cd "$dir" && GOOS=$goos golangci-lint run --output.text.path stdout \
-                --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-$goos.sarif" ./...) || rc=$?
-              [ "$rc" -le 1 ] || exit "$rc"
-            done
+          mkdir -p scan-artifacts
+          for dir in $GO_MODULES; do
+            constrained=$(cd "$dir" && GOOS="$TARGET_GOOS" go list -f '{{if .IgnoredGoFiles}}x{{end}}' ./...)
+            case "$constrained" in *x*) ;; *) continue ;; esac
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && GOOS="$TARGET_GOOS" golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name-$TARGET_GOOS.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
           done
-      # Statfs_t.Type is int64, int32 or uint32 depending on the Linux
-      # architecture, and the archive access check compares it against filesystem
-      # magics; vet compiles that code at each width the runners above never build.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-go-cross-${{ matrix.goos }}
+          path: scan-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  check-go-guards:
+    name: Check Go guards (vet + policy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - name: Build @mitre/hdf-schema (Go modules need hdf-schema/dist/go/)
+        run: pnpm --filter @mitre/hdf-schema run build
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          version: 2026.11.5
+          install_args: go golangci-lint
+      - name: Locate Go cache directories
+        id: go-caches
+        shell: bash
+        run: |
+          echo "gomodcache=$(go env GOMODCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          echo "gocache=$(go env GOCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-caches.outputs.gomodcache }}
+            ${{ steps.go-caches.outputs.gocache }}
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-
+      # Statfs_t.Type width checks for 32-bit and big-endian Linux architectures.
       - name: Vet the CLI for every Statfs_t.Type width
         working-directory: hdf-cli
         run: |
           for arch in 386 arm s390x; do
             GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go vet ./cmd/hdf/cmd
           done
-      # In SARIF mode govulncheck exits 0 even with findings — by design, so
-      # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
-      # That makes any nonzero exit a tool failure, which the step's own
-      # `bash -e` already fails on.
       - name: Every go.work module is scanned by gosec
         run: |
           bash scripts/check-gosec-coverage.test.sh
           bash scripts/check-gosec-coverage.sh
-
       - name: Published Go modules depend only on tagged modules
-        # Static check, not a consumer build: it asserts nothing consumer-
-        # reachable depends on an in-repo module a release never tags. A local
-        # `go build ./...` cannot catch that — the replace directives make it
-        # pass here and fail for everyone else. A real external build is only
-        # possible after a tag exists.
         run: pnpm run lint:go-consumers
       - name: The Go module version script still fails closed
-        # The prepare commit rewrites go.mod requires with this script and
-        # release.yml --checks them on the tag, where a regression is found by
-        # the release; its test runs here instead.
         run: pnpm run lint:go-module-versions
       - name: The snapshot scripts still fail closed
-        # snapshot.yml derives, prepares and validates every main snapshot with
-        # these scripts, where a regression is found by the first publication;
-        # their tests run here (the prepare test needs the Go toolchain).
         run: pnpm run lint:snapshot-scripts
       - name: Every module is tidy and every sibling pin is a real version
-        # A downgrading go get drops a sibling require and tidy re-adds it at the
-        # zero pseudo-version, which no release can publish; caught here, not at
-        # the tag.
         run: pnpm run lint:go-mod-tidy
+
+  scan-go-vuln:
+    name: Scan Go vulnerabilities (govulncheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+      - name: Build @mitre/hdf-schema (Go modules need hdf-schema/dist/go/)
+        run: pnpm --filter @mitre/hdf-schema run build
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          version: 2026.11.5
+          install_args: go go:golang.org/x/vuln/cmd/govulncheck
+      - name: Locate Go cache directories
+        id: go-caches
+        shell: bash
+        run: |
+          echo "gomodcache=$(go env GOMODCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          echo "gocache=$(go env GOCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-caches.outputs.gomodcache }}
+            ${{ steps.go-caches.outputs.gocache }}
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-
+      # govulncheck has no workspace mode (golang/go#66863), so loop per go.work module.
+      - name: Enumerate the go.work modules
+        run: |
+          set -o pipefail
+          MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
+          [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
+          echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
+      # In SARIF mode govulncheck exits 0 even with findings; any nonzero exit is a tool failure.
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
+          mkdir -p scan-artifacts
           for dir in $GO_MODULES; do
             name=$(echo "${dir#./}" | tr '/' '-')
             (cd "$dir" && govulncheck -format sarif ./... \
@@ -601,7 +686,7 @@ jobs:
           done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: scan-go
+          name: scan-go-vuln
           path: scan-artifacts/
           retention-days: 7
 
@@ -627,7 +712,7 @@ jobs:
     name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [gate-cli, scan-workflows, check-ts, check-go, check-openapi-matrix, scan-deps, scan-code]
+    needs: [gate-cli, scan-workflows, check-ts, lint-go-linux, lint-go-cross-os, check-go-guards, scan-go-vuln, check-openapi-matrix, scan-deps, scan-code]
     # always(): a job that is skipped because an upstream job failed counts as
     # PASSED by branch protection, so a red scanner would turn into a green
     # required check. Run regardless, and fail explicitly on any upstream that
@@ -841,9 +926,6 @@ jobs:
           OS_TAG: ${{ matrix.os }}
           GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
         run: .github/scripts/test-go-junit.sh
-      - name: Race detector
-        if: matrix.os == 'ubuntu-latest'
-        run: cd hdf-cli && go test -race ./...
       # The built CLI, not a test seam: bundle into a folder that passes Everyone read to
       # new files, under each policy, and show what Windows itself reports with icacls.
       - name: Archive access on Windows, as icacls reports it
@@ -891,6 +973,25 @@ jobs:
           name: coverage-reports-go
           path: '**/coverage.out'
           retention-days: 30
+
+  test-go-race:
+    name: Test Go (race detector)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-artifacts
+      - name: Race detector
+        run: cd hdf-cli && go test -race ./...
 
   # macOS ACL behavior needs a Mac: a private archive is created through libSystem
   # (purego, cgo off as in release builds), so it runs natively on both architectures.
@@ -964,7 +1065,7 @@ jobs:
     name: Gate test results on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [gate-cli, test-ts, test-go, test-archive-macos]
+    needs: [gate-cli, test-ts, test-go, test-go-race, test-archive-macos]
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1039,6 +1140,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache-dependency-path: '**/go.sum'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: '{hdf-normalized-*,scan-*,test-results-*,sbom}'
@@ -1055,6 +1163,8 @@ jobs:
         working-directory: evidence
         env:
           UPSTREAM_RESULTS: ${{ toJSON(needs) }}
+          GATE_SCANS_RESULT: ${{ needs.gate-hdf-scans.result }}
+          GATE_TESTS_RESULT: ${{ needs.gate-hdf-tests.result }}
         run: |
           shopt -s nullglob
           documents=(hdf-normalized-*/*.hdf.json sbom/*.spdx.json)
@@ -1070,9 +1180,11 @@ jobs:
           # One selector per artifact directory, each with its explicit format, in a
           # single add-evidence so the batch is atomic. A directory an upstream job never
           # produced is named here and left out; run.json records which jobs those were.
+          known_dirs=()
           selectors=()
           present_dirs=()
           while read -r dir glob format; do
+            known_dirs+=("$dir")
             if [ -d "$dir" ]; then
               selectors+=(--file "$dir/$glob" --format "$format")
               present_dirs+=("$dir")
@@ -1082,7 +1194,10 @@ jobs:
           done <<'TABLE'
           scan-code semgrep.json x-semgrep
           scan-deps *.sarif x-sarif
-          scan-go *.sarif x-sarif
+          scan-go-linux *.sarif x-sarif
+          scan-go-cross-windows *.sarif x-sarif
+          scan-go-cross-darwin *.sarif x-sarif
+          scan-go-vuln *.sarif x-sarif
           scan-ts *.sarif x-sarif
           scan-workflows *.sarif x-sarif
           test-results-go-ubuntu-latest *.xml x-junit
@@ -1092,6 +1207,17 @@ jobs:
           test-results-ts-ubuntu-latest *.xml x-junit
           test-results-ts-windows-latest *.xml x-junit
           TABLE
+          for actual in scan-* test-results-*; do
+            [ -d "$actual" ] || continue
+            known=0
+            for k in "${known_dirs[@]}"; do
+              if [ "$actual" = "$k" ]; then
+                known=1
+                break
+              fi
+            done
+            [ "$known" -eq 1 ] || { echo "::error::unexpected artifact directory $actual not listed in TABLE"; exit 1; }
+          done
           hdf evidence add-evidence evidence-package.json "${selectors[@]}" --file run.json --format x-github-actions
           # Every native report present is recorded exactly once: a file a selector does
           # not name fails the job instead of vanishing from the package.
@@ -1100,6 +1226,44 @@ jobs:
           [ "${#present_dirs[@]}" -eq 0 ] || present=$(find "${present_dirs[@]}" -type f | wc -l | tr -d ' ')
           recorded=$(jq '.externalEvidence | length' evidence-package.json)
           [ "$recorded" -eq $((present + 1)) ] || { echo "::error::$present native reports present but $recorded references recorded (expected $((present + 1)) with run.json)"; exit 1; }
+          if [ "$GATE_SCANS_RESULT" = "success" ]; then
+            MODULES=$(cd .. && go work edit -json | jq -r '.Use[].DiskPath')
+            [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
+            for req in scan-code/semgrep.json scan-deps/osv-scanner.sarif scan-ts/eslint.sarif scan-workflows/zizmor.sarif; do
+              [ -s "$req" ] || { echo "::error::missing or empty expected scan report: $req"; exit 1; }
+            done
+            for dir in $MODULES; do
+              name=$(echo "${dir#./}" | tr '/' '-')
+              for req in "scan-go-linux/golangci-$name.sarif" "scan-go-vuln/govulncheck-$name.sarif"; do
+                [ -s "$req" ] || { echo "::error::missing or empty expected Go scan report: $req"; exit 1; }
+              done
+              for goos in windows darwin; do
+                constrained=$(cd "../$dir" && GOOS="$goos" GOARCH=amd64 CGO_ENABLED=0 go list -f '{{if .IgnoredGoFiles}}x{{end}}' ./...)
+                case "$constrained" in
+                  *x*)
+                    req="scan-go-cross-$goos/golangci-$name-$goos.sarif"
+                    [ -s "$req" ] || { echo "::error::missing or empty expected cross-OS scan report: $req"; exit 1; }
+                    ;;
+                esac
+              done
+            done
+          fi
+          check_nonempty_glob() {
+            local matches=("$@")
+            [ "${#matches[@]}" -gt 0 ] || return 1
+            local mf
+            for mf in "${matches[@]}"; do
+              [ -s "$mf" ] || return 1
+            done
+          }
+          if [ "$GATE_TESTS_RESULT" = "success" ]; then
+            check_nonempty_glob test-results-ts-ubuntu-latest/ts-*-ubuntu-latest.xml || { echo "::error::missing or empty expected test reports: ts ubuntu-latest"; exit 1; }
+            check_nonempty_glob test-results-ts-windows-latest/ts-*-windows-latest.xml || { echo "::error::missing or empty expected test reports: ts windows-latest"; exit 1; }
+            check_nonempty_glob test-results-go-ubuntu-latest/go-*-ubuntu-latest.xml || { echo "::error::missing or empty expected test reports: go ubuntu-latest"; exit 1; }
+            check_nonempty_glob test-results-go-windows-latest/go-*-windows-latest.xml || { echo "::error::missing or empty expected test reports: go windows-latest"; exit 1; }
+            check_nonempty_glob test-results-go-macos-15/go-*-macos-15.xml || { echo "::error::missing or empty expected test reports: go macos-15"; exit 1; }
+            check_nonempty_glob test-results-go-macos-15-intel/go-*-macos-15-intel.xml || { echo "::error::missing or empty expected test reports: go macos-15-intel"; exit 1; }
+          fi
           hdf validate evidence-package.json
           hdf evidence info evidence-package.json --verify --require-checksums --require-reachable
           mkdir -p ../evidence-dist
