@@ -11,7 +11,6 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DIST_SCHEMAS_DIR = join(__dirname, '..', 'dist', 'schemas');
 const DIST_DIR = join(__dirname, '..', 'dist');
 
 // Schemas to generate types for.
@@ -263,11 +262,19 @@ go 1.27.4
   writeFileSync(join(outputDir, 'go.mod'), goModContent);
 }
 
+export interface GenerateTypesOptions {
+  /** Package root directory containing dist/ (defaults to the hdf-schema package root). */
+  rootDir?: string;
+}
+
 /**
  * Generate types for all schemas in all languages (combined output).
  */
-export async function generateTypes(): Promise<void> {
-  if (!existsSync(DIST_SCHEMAS_DIR)) {
+export async function generateTypes(options: GenerateTypesOptions = {}): Promise<void> {
+  const distDir = options.rootDir ? join(options.rootDir, 'dist') : DIST_DIR;
+  const distSchemasDir = join(distDir, 'schemas');
+
+  if (!existsSync(distSchemasDir)) {
     throw new Error(
       'Bundled schemas not found. Run `pnpm build:schemas` first.'
     );
@@ -275,17 +282,20 @@ export async function generateTypes(): Promise<void> {
 
   // Collect schemas once — same set for all languages
   const schemasToGenerate: Array<{ path: string; name: string }> = [];
+  const missingSchemas: string[] = [];
   for (const schema of SCHEMAS) {
-    const schemaPath = join(DIST_SCHEMAS_DIR, schema.file);
+    const schemaPath = join(distSchemasDir, schema.file);
     if (!existsSync(schemaPath)) {
-      console.warn(`  Skipping ${schema.file} (not found)`);
+      missingSchemas.push(schema.file);
       continue;
     }
     schemasToGenerate.push({ path: schemaPath, name: schema.name });
   }
 
-  if (schemasToGenerate.length === 0) {
-    throw new Error('No schemas found in dist/schemas/');
+  if (missingSchemas.length > 0) {
+    throw new Error(
+      `Missing expected bundled schema(s) in ${distSchemasDir}: ${missingSchemas.join(', ')}. Run \`pnpm build:schemas\` first.`
+    );
   }
 
   // Preprocess each schema once (output is deterministic), then build a fresh
@@ -297,7 +307,7 @@ export async function generateTypes(): Promise<void> {
   }));
 
   await Promise.all(LANGUAGES.map(async (lang) => {
-    const outputDir = join(DIST_DIR, lang.dir);
+    const outputDir = join(distDir, lang.dir);
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
