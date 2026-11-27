@@ -9,16 +9,16 @@ require (
 	github.com/ebitengine/purego v0.11.3
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.8.0
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.8.0
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.9.0-next.46016944070.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.9.0-next.46016944070.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
