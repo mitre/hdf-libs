@@ -158,6 +158,10 @@ jobs:
       # so its test runs instead — the script needs only bash and jq.
       - name: The release version assertion still asserts
         run: bash scripts/check-release-version.test.sh
+      - name: Go tool caching and JUnit runner scripts still fail closed
+        run: |
+          bash .github/scripts/ensure-go-tool.test.sh
+          bash .github/scripts/test-go-junit.test.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-workflows
@@ -182,13 +186,21 @@ jobs:
         with:
           go-version-file: go.work
           cache-dependency-path: '**/go.sum'
+      - name: Locate Go tool bin directory
+        id: go-bin
+        shell: bash
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.go-bin.outputs.path }}
+          key: osv-scanner-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ env.OSV_SCANNER_VERSION }}
       # Exit codes: 0 clean, 1 findings (the gate judges those), 127 a scanner
       # or network error, 128 no package sources found. Tolerating only 0 and 1
       # means an unreachable OSV API or a scan that matched nothing fails here
       # rather than reporting a clean tree.
       - name: osv-scanner (SARIF; findings gate via HDF)
         run: |
-          go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@$OSV_SCANNER_VERSION"
+          OSV_SCANNER="$(.github/scripts/ensure-go-tool.sh github.com/google/osv-scanner/v2/cmd/osv-scanner "$OSV_SCANNER_VERSION")"
           mkdir -p scan-artifacts
           # Name the manifests instead of walking the tree. A walk also parses
           # this repo's converter fixtures — they are SBOMs and lockfiles by
@@ -207,7 +219,7 @@ jobs:
             LOCKS+=(-L "$dir/go.mod")
           done
           rc=0
-          osv-scanner scan source "${LOCKS[@]}" \
+          "$OSV_SCANNER" scan source "${LOCKS[@]}" \
             --format sarif --output-file scan-artifacts/osv-scanner.sarif > osv.log 2>&1 || rc=$?
           cat osv.log
           [ "$rc" -le 1 ] || exit "$rc"
@@ -469,6 +481,24 @@ jobs:
         with:
           version: 2026.11.5
           install_args: go golangci-lint go:golang.org/x/vuln/cmd/govulncheck
+      - name: Locate Go cache directories
+        id: go-caches
+        shell: bash
+        run: |
+          echo "gomodcache=$(go env GOMODCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          echo "gocache=$(go env GOCACHE | tr -d '\r')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-caches.outputs.gomodcache }}
+            ${{ steps.go-caches.outputs.gocache }}
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work', 'mise.lock', '.golangci.yml', 'hdf-cli/.golangci.yml') }}
       # Both scanners below loop per-module because neither works across a
       # workspace: golangci-lint refuses a multi-module invocation, and
       # govulncheck has no workspace mode (golang/go#66863). go.work is the
@@ -790,6 +820,14 @@ jobs:
         with:
           go-version-file: go.work
           cache-dependency-path: '**/go.sum'
+      - name: Locate Go tool bin directory
+        id: go-bin
+        shell: bash
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.go-bin.outputs.path }}
+          key: gotestsum-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ env.GOTESTSUM_VERSION }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build-artifacts
@@ -882,6 +920,14 @@ jobs:
         with:
           go-version-file: go.work
           cache-dependency-path: '**/go.sum'
+      - name: Locate Go tool bin directory
+        id: go-bin
+        shell: bash
+        run: echo "path=$(.github/scripts/ensure-go-tool.sh --bin-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.go-bin.outputs.path }}
+          key: gotestsum-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.work') }}-${{ env.GOTESTSUM_VERSION }}
       # The CLI command package, where the archive code lives, under gotestsum so the
       # leg leaves a JUnit record named like test-go-junit.sh names its files.
       - name: Test the CLI command package natively
@@ -889,11 +935,11 @@ jobs:
         env:
           OS_TAG: ${{ matrix.os }}
         run: |
-          go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+          GOTESTSUM="$("$GITHUB_WORKSPACE/.github/scripts/ensure-go-tool.sh" gotest.tools/gotestsum "$GOTESTSUM_VERSION")"
           mkdir -p "$GITHUB_WORKSPACE/test-artifacts"
           junit="$GITHUB_WORKSPACE/test-artifacts/go-hdf-cli-$OS_TAG.xml"
           rc=0
-          "$(go env GOPATH)/bin/gotestsum" --junitfile "$junit" -- ./cmd/hdf/cmd -count=1 || rc=$?
+          "$GOTESTSUM" --junitfile "$junit" -- ./cmd/hdf/cmd -count=1 || rc=$?
           test -s "$junit" || { echo "::error::missing JUnit output for hdf-cli on $OS_TAG"; exit 1; }
           [ "$rc" -eq 0 ] || exit "$rc"
           go vet ./cmd/hdf/cmd
