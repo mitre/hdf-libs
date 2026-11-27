@@ -43,9 +43,6 @@ env:
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
   OSV_SCANNER_VERSION: 'v2.5.1'
-  # syft for the per-commit dependency SBOM (scan-deps). The release job's
-  # download-syft action is SHA-pinned; this pins the syft release it fetches.
-  SYFT_VERSION: 'v1.51.1'
   # semgrep's version lives in .github/requirements/requirements.in, not here:
   # the install is hash-pinned and one version pin is enough.
   # semgrep-rules commit the scan uses. Bumping it is how the ruleset
@@ -264,9 +261,8 @@ jobs:
       # covers hdf-schema/dist/go, a tracked go.work module whose generated
       # go.mod carries no requirements; if it ever gains any, narrow the
       # exclusion or the SBOM will silently omit them.
+      # Anchore's SHA-pinned action manages the pinned Syft version via Dependabot.
       - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
-        with:
-          syft-version: ${{ env.SYFT_VERSION }}
       - name: Dependency SBOM (SPDX JSON; inventory, no verdict)
         run: |
           mkdir -p sbom
