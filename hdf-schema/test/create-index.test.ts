@@ -145,23 +145,29 @@ describe('create-index', () => {
   });
 
   describe('error handling', () => {
-    it('should handle missing combined hdf.ts gracefully', () => {
-      const hdfTs = join(TS_DIR, 'hdf.ts');
-      const backupPath = join(TS_DIR, 'hdf.ts.bak');
-
-      if (existsSync(hdfTs)) {
-        writeFileSync(backupPath, readFileSync(hdfTs));
-        rmSync(hdfTs);
+    it.each([
+      { name: 'an empty root directory', createTsDir: false },
+      { name: 'a root with dist/ts but no hdf.ts', createTsDir: true },
+    ])('should throw when generated hdf.ts is missing in $name', ({ createTsDir }) => {
+      const rootDir = mkdtempSync(join(tmpdir(), 'hdf-schema-missing-hdf-'));
+      if (createTsDir) {
+        mkdirSync(join(rootDir, 'dist', 'ts'), { recursive: true });
       }
-
       try {
-        // createIndex returns early with a warning when hdf.ts is absent
-        expect(() => createIndex()).not.toThrow();
-      } finally {
-        if (existsSync(backupPath)) {
-          writeFileSync(hdfTs, readFileSync(backupPath));
-          rmSync(backupPath);
+        const expectedPath = join(rootDir, 'dist', 'ts', 'hdf.ts');
+        let caught: unknown;
+        try {
+          createIndex({ rootDir });
+        } catch (err) {
+          caught = err;
         }
+        expect(caught).toBeInstanceOf(Error);
+        expect((caught as Error).message).toContain(expectedPath);
+        expect((caught as Error).message).toContain('pnpm build:types');
+        expect(existsSync(join(rootDir, 'dist', 'index.js'))).toBe(false);
+        expect(existsSync(join(rootDir, 'dist', 'index.d.ts'))).toBe(false);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
       }
     });
 
