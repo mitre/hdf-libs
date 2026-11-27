@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
 # Waits until a snapshot is served: every @mitre/<name>@<version> tarball on
-# registry.npmjs.org, then every inventoried module's v<version>.info on
-# proxy.golang.org, asking each unserved item again every <interval> seconds
-# within one <bound> for both phases. Exits 0 once everything is served, 1 with
-# the unserved items when the bound passes first, 1 when a module path needs the
-# proxy's case escaping, and 2 on a usage error. Network access is through curl.
+# registry.npmjs.org and every inventoried module's v<version>.info on
+# proxy.golang.org, polling unserved items from both registries together each
+# round every <interval> seconds within one shared <bound>. Exits 0 once
+# everything is served, 1 with the remaining unserved items when the bound
+# passes first, 1 when a module path needs the proxy's case escaping, and 2 on
+# a usage error. Network access is through curl.
 #
 # Usage: wait-for-snapshot-publication.sh <version> <packages-file> <gomods-file>
 #          [<bound-seconds, default 600>] [<interval-seconds, default 30>]
@@ -83,37 +84,63 @@ timed_out() {
   exit 1
 }
 
-# --- one phase: poll the unserved items until none is left or the bound passes --
+# --- shared polling loop: poll unserved npm packages and Go modules each round --
+#
+# Snapshot tags are pushed atomically by snapshot.yml's tag job before publish
+# runs (`needs: [prepare, build, tag]`), and snapshot.yml is the sole caller,
+# so polling proxy.golang.org alongside registry.npmjs.org cannot query
+# untagged commits or cache premature not-found responses.
 
-# wait_for <kind> <url-fn> <items...>: polls every unserved item each round,
-# printing "<kind> <served>/<total> served[, <n> waiting: <items>]", and leaves
-# the items still unserved at the bound in $unserved for the caller's message.
-wait_for() {
-  local kind="$1" url_fn="$2" total remaining
-  shift 2
-  total=$#
-  unserved=("$@")
-  while :; do
-    local still=()
-    for item in "${unserved[@]}"; do
-      served "$("$url_fn" "$item")" || still+=("$item")
-    done
-    unserved=(${still[@]+"${still[@]}"})
-    if [ "${#unserved[@]}" -eq 0 ]; then
-      echo "$kind $total/$total served"
-      return 0
-    fi
-    echo "$kind $((total - ${#unserved[@]}))/$total served, ${#unserved[@]} waiting: ${unserved[*]}"
-    remaining=$((BOUND - SECONDS))
-    [ "$remaining" -gt 0 ] || return 1
-    sleep $(( remaining < INTERVAL ? remaining : INTERVAL ))
+# poll_unserved <kind> <url-fn> <total> <items...>: polls each unserved item
+# once, prints "<kind> <served>/<total> served[, <n> waiting: <items>]", and
+# stores the remaining unserved items in _poll_still (bash 3.2 compatible).
+_poll_still=()
+poll_unserved() {
+  local kind="$1" url_fn="$2" total="$3" item
+  shift 3
+  _poll_still=()
+  for item in "$@"; do
+    served "$("$url_fn" "$item")" || _poll_still+=("$item")
   done
+  if [ "${#_poll_still[@]}" -eq 0 ]; then
+    echo "$kind $total/$total served"
+  else
+    echo "$kind $((total - ${#_poll_still[@]}))/$total served, ${#_poll_still[@]} waiting: ${_poll_still[*]}"
+  fi
 }
 
-# The proxy is asked only after the registry has shown the publication exists:
-# asked for a tag before it is pushed, proxy.golang.org caches the not-found.
-unserved=()
-wait_for npm npm_url "${packages[@]}" || timed_out "${unserved[@]/#/@mitre/}" "${modules[@]}"
-wait_for go go_url "${modules[@]}" || timed_out "${unserved[@]}"
+npm_total=${#packages[@]}
+go_total=${#modules[@]}
+unserved_npm=("${packages[@]}")
+unserved_go=("${modules[@]}")
 
-echo "served: ${#packages[@]} npm packages and ${#modules[@]} Go modules at $VERSION after ${SECONDS}s"
+while :; do
+  if [ "${#unserved_npm[@]}" -gt 0 ]; then
+    poll_unserved npm npm_url "$npm_total" "${unserved_npm[@]}"
+    unserved_npm=(${_poll_still[@]+"${_poll_still[@]}"})
+  fi
+
+  if [ "${#unserved_go[@]}" -gt 0 ]; then
+    poll_unserved go go_url "$go_total" "${unserved_go[@]}"
+    unserved_go=(${_poll_still[@]+"${_poll_still[@]}"})
+  fi
+
+  if [ "${#unserved_npm[@]}" -eq 0 ] && [ "${#unserved_go[@]}" -eq 0 ]; then
+    break
+  fi
+
+  remaining=$((BOUND - SECONDS))
+  if [ "$remaining" -le 0 ]; then
+    still_waiting=()
+    if [ "${#unserved_npm[@]}" -gt 0 ]; then
+      still_waiting+=("${unserved_npm[@]/#/@mitre/}")
+    fi
+    if [ "${#unserved_go[@]}" -gt 0 ]; then
+      still_waiting+=("${unserved_go[@]}")
+    fi
+    timed_out "${still_waiting[@]}"
+  fi
+  sleep $(( remaining < INTERVAL ? remaining : INTERVAL ))
+done
+
+echo "served: $npm_total npm packages and $go_total Go modules at $VERSION after ${SECONDS}s"
