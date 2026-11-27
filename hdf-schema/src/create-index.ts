@@ -89,9 +89,9 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   const combinedTs = join(tsDir, 'hdf.ts');
 
   if (!existsSync(combinedTs)) {
-    // eslint-disable-next-line no-console
-    console.warn('Skipping index creation: dist/ts/hdf.ts not found');
-    return;
+    throw new Error(
+      `Generated TypeScript definitions not found at ${combinedTs}. Run \`pnpm build:types\` first.`
+    );
   }
 
   // Clean compiled output so tsc doesn't refuse to overwrite its own input
